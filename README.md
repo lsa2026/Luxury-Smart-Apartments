@@ -523,3 +523,78 @@ Google Ads أو رفع الصور المحلية إلى Hostaway أو التصم
 
 > لا تشارك مفاتيح Hostaway أو رموز الوصول، ولا تضعها في المستودع أو سجلات
 > التشغيل. ألغِ أي رمز يُشتبه في تسربه.
+
+## المزامنة التلقائية والنشر (المرحلة السابعة)
+
+صفحات الموقع تقرأ الوحدات والصور والمرافق والمراجعات من PostgreSQL المحلي،
+ولا تتصل بـHostaway عند التحميل. التوافر والسعر فقط يعاد التحقق منهما مباشرة
+وبـCache قصير عند طلب الزائر.
+
+أوامر المزامنة اليدوية:
+
+```powershell
+python manage.py verify_hostaway_listings
+python manage.py sync_hostaway_properties --dry-run
+python manage.py sync_hostaway_properties
+python manage.py sync_hostaway_reviews --dry-run
+python manage.py sync_hostaway_reviews
+```
+
+يمكن تثبيت Listing Map ID بعد التحقق منه من مصدر موثق فقط:
+
+```powershell
+python manage.py set_verified_hostaway_identifiers `
+  --listing-id <LISTING_ID> `
+  --listing-map-id <VERIFIED_LISTING_MAP_ID>
+```
+
+لا يستنتج الأمر المعرف ولا يستبدل قيمة مختلفة. يبقى
+`HOSTAWAY_DIRECT_CHANNEL_ID` في `.env` المحلي فقط.
+
+### سياسة النشر
+
+تبدأ الوحدة الجديدة بـ`visibility_management=automatic`. إذا كان
+`HOSTAWAY_AUTO_PUBLISH_NEW_LISTINGS=True` فلن تظهر إلا عندما تكون نشطة وغير
+مؤرشفة، ولها اسم وصورة ظاهرة وسعة موجبة وعملة صحيحة ومعرف Listing صالح.
+يمكن جعل المدينة شرطًا أيضًا. تحفظ أسباب عدم النشر كرموز منقحة للمراجعة
+الإدارية.
+
+أي تغيير يدوي لـ`is_visible` يحول الإدارة إلى `manual`، ولذلك لا تعيد
+المزامنة إظهار وحدة أخفاها المسؤول. المحتوى المحلي وSEO وترتيب العرض لا
+تستبدلها المزامنة. الوحدة المؤرشفة لا تحذف، لكنها تصبح غير نشطة ومخفية.
+الوحدة الغائبة لا تتغير بعد تشغيل واحد؛ بعد غيابها في عمليتي مزامنة كاملتين
+ناجحتين متتاليتين توسم `source_missing` وتخفى مع الاحتفاظ بتاريخها وصورها
+ومراجعاتها.
+
+### Celery وRedis
+
+التشغيل التلقائي مغلق افتراضيًا. اضبط `REDIS_URL` و`CACHE_URL` قبل تفعيل
+`HOSTAWAY_AUTO_SYNC_ENABLED`. ابدأ العامل والجدولة في عمليتين مستقلتين:
+
+```powershell
+celery -A config worker --loglevel=INFO
+celery -A config beat --loglevel=INFO
+```
+
+الجدول الافتراضي عند التفعيل:
+
+- الوحدات كل 5 دقائق.
+- المراجعات كل 15 دقيقة.
+- معالجة أحداث Webhook المحلية كل دقيقة، وتظل غير فعالة ما دام
+  `HOSTAWAY_WEBHOOK_PROCESSING_ENABLED=False`.
+- انتهاء عروض السعر والطلبات كل 5 دقائق.
+
+كل فترة قابلة للضبط من البيئة. تستخدم المهام قفلًا عبر Django Cache؛ لذلك
+يجب استخدام Redis Cache مشتركًا عند تعدد العمال. `LocMemCache` مناسب للتطوير
+بعملية واحدة فقط. لا تحتوي مفاتيح Cache على Tokens أو بيانات ضيف، ولا يعد
+Cache مرجعًا نهائيًا للتوافر أو السعر.
+
+تعرض لوحة **سجل المزامنة** في Django Admin رابط **حالة التكامل والمزامنة**.
+الصفحة محلية للقراءة فقط وتعرض آخر تشغيل، الوحدات المعلقة والمخفية
+والمؤرشفة، وحالة إعداد Redis وCelery والـFeature Flags دون أسرار. أزرار
+المزامنة تتطلب Superuser وPOST مع CSRF. وعندما لا يكون عامل المهام مفعّلًا،
+تعرض أمر التشغيل بدل تنفيذ اتصال طويل داخل HTTP.
+
+إعدادات البيئة الجديدة موثقة في `.env.example`. عوائق الإنتاج الحالية تشمل
+إعداد Redis وعامل Celery وBeat ومراقبتها. لا تزال بوابة الدفع وعمليات كتابة
+الحجز وWebhooks الحقيقية غير مفعلة.

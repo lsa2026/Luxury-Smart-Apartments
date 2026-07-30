@@ -74,6 +74,14 @@ CACHES = {
     }
 }
 
+REDIS_URL = env("REDIS_URL", default="").strip()
+CACHE_URL = env("CACHE_URL", default="").strip()
+if CACHE_URL:
+    CACHES["default"] = {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": CACHE_URL,
+    }
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": ("django.contrib.auth.password_validation.UserAttributeSimilarityValidator")},
     {
@@ -238,6 +246,74 @@ BOOKING_MODIFICATION_RATE_LIMIT_WINDOW = 10 * 60
 HOSTAWAY_WEBHOOK_RATE_LIMIT_REQUESTS = 120
 HOSTAWAY_WEBHOOK_RATE_LIMIT_WINDOW = 60
 HOSTAWAY_WEBHOOK_MAX_PROCESSING_ATTEMPTS = 5
+
+HOSTAWAY_AUTO_SYNC_ENABLED = strict_bool("HOSTAWAY_AUTO_SYNC_ENABLED")
+HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES = optional_positive_int(
+    "HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES",
+    5,
+)
+HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES = optional_positive_int(
+    "HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES",
+    15,
+)
+HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES = optional_positive_int(
+    "HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES",
+    1,
+)
+BOOKING_EXPIRATION_INTERVAL_MINUTES = optional_positive_int(
+    "BOOKING_EXPIRATION_INTERVAL_MINUTES",
+    5,
+)
+HOSTAWAY_AUTO_PUBLISH_NEW_LISTINGS = strict_bool(
+    "HOSTAWAY_AUTO_PUBLISH_NEW_LISTINGS",
+    True,
+)
+HOSTAWAY_AUTO_PUBLISH_REQUIRE_ACTIVE = strict_bool(
+    "HOSTAWAY_AUTO_PUBLISH_REQUIRE_ACTIVE",
+    True,
+)
+HOSTAWAY_AUTO_PUBLISH_REQUIRE_IMAGE = strict_bool(
+    "HOSTAWAY_AUTO_PUBLISH_REQUIRE_IMAGE",
+    True,
+)
+HOSTAWAY_AUTO_PUBLISH_REQUIRE_CAPACITY = strict_bool(
+    "HOSTAWAY_AUTO_PUBLISH_REQUIRE_CAPACITY",
+    True,
+)
+HOSTAWAY_AUTO_PUBLISH_REQUIRE_CURRENCY = strict_bool(
+    "HOSTAWAY_AUTO_PUBLISH_REQUIRE_CURRENCY",
+    True,
+)
+HOSTAWAY_AUTO_PUBLISH_REQUIRE_CITY = strict_bool(
+    "HOSTAWAY_AUTO_PUBLISH_REQUIRE_CITY",
+)
+CELERY_SYNC_DISPATCH_ENABLED = strict_bool("CELERY_SYNC_DISPATCH_ENABLED")
+
+CELERY_BROKER_URL = REDIS_URL or "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = REDIS_URL or None
+CELERY_TASK_IGNORE_RESULT = CELERY_RESULT_BACKEND is None
+CELERY_TASK_TIME_LIMIT = 10 * 60
+CELERY_TASK_SOFT_TIME_LIMIT = 9 * 60
+CELERY_BEAT_SCHEDULE = {}
+if HOSTAWAY_AUTO_SYNC_ENABLED:
+    CELERY_BEAT_SCHEDULE = {
+        "hostaway-properties": {
+            "task": "apps.integrations.tasks.sync_hostaway_properties_task",
+            "schedule": HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES * 60,
+        },
+        "hostaway-reviews": {
+            "task": "apps.integrations.tasks.sync_hostaway_reviews_task",
+            "schedule": HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES * 60,
+        },
+        "hostaway-webhooks": {
+            "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
+            "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
+        },
+        "expire-booking-objects": {
+            "task": "apps.integrations.tasks.expire_booking_objects_task",
+            "schedule": BOOKING_EXPIRATION_INTERVAL_MINUTES * 60,
+        },
+    }
 
 LOGGING = {
     "version": 1,

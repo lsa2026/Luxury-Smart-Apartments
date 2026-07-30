@@ -3,6 +3,8 @@
 import logging
 from dataclasses import dataclass, field
 
+from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, transaction
 from django.utils import timezone
@@ -10,6 +12,7 @@ from django.utils.text import slugify
 
 from apps.integrations.models import IntegrationSyncRun
 from apps.properties.models import Amenity, Property, PropertyAmenity, PropertyImage
+from apps.properties.services.publishing import evaluate_listing_publish_readiness
 
 from .client import HostawayClient
 from .exceptions import (
@@ -35,6 +38,10 @@ class PropertySyncReport:
     properties_created: int = 0
     properties_updated: int = 0
     properties_failed: int = 0
+    properties_deactivated: int = 0
+    properties_auto_published: int = 0
+    properties_pending_review: int = 0
+    source_missing_marked: int = 0
     images_created: int = 0
     images_updated: int = 0
     images_deactivated: int = 0
@@ -42,12 +49,16 @@ class PropertySyncReport:
     amenities_linked: int = 0
     skipped: int = 0
     errors: list[str] = field(default_factory=list)
+    pagination_complete: bool = False
 
 
 @dataclass(slots=True)
 class _UnitCounts:
     property_created: int = 0
     property_updated: int = 0
+    property_deactivated: int = 0
+    property_auto_published: int = 0
+    property_pending_review: int = 0
     images_created: int = 0
     images_updated: int = 0
     images_deactivated: int = 0
@@ -188,7 +199,25 @@ def _run_sync(
             continue
         _merge_counts(report, counts)
 
-    _finish_sync_run(sync_run, report)
+    if (
+        not dry_run
+        and listing_id is None
+        and limit is None
+        and report.pagination_complete
+        and report.properties_failed == 0
+    ):
+        report.source_missing_marked = _mark_missing_properties(
+            seen_listing_ids={listing.listing_id for listing in listings},
+        )
+        report.properties_deactivated += report.source_missing_marked
+    elif not dry_run and listing_id is None and limit is None and not report.pagination_complete:
+        report.errors.append(
+            "Full listing pagination was incomplete; missing-source state was unchanged."
+        )
+
+    status = _finish_sync_run(sync_run, report)
+    if not dry_run and status == IntegrationSyncRun.Status.SUCCEEDED:
+        _invalidate_property_caches()
     return report
 
 
@@ -210,7 +239,14 @@ def _fetch_listings(
 
     records: list[dict[str, object]] = []
     offset = 0
+    expected_count: int | None = None
+    complete = False
+    pages = 0
     while limit is None or len(records) < limit:
+        pages += 1
+        if pages > 1000:
+            report.errors.append("Listing pagination safety limit reached.")
+            break
         remaining = 100 if limit is None else min(100, limit - len(records))
         page, count = client.get_listings(
             limit=remaining,
@@ -220,14 +256,26 @@ def _fetch_listings(
         records.extend(page)
         report.fetched += len(page)
         offset += len(page)
-        if not page:
-            break
         if count is not None:
-            if offset >= count:
+            if expected_count is None:
+                expected_count = count
+            elif count != expected_count:
+                report.errors.append("Listing count changed during pagination.")
+                break
+        if not page:
+            complete = expected_count is None or offset >= expected_count
+            break
+        if expected_count is not None:
+            if offset >= expected_count:
+                complete = True
                 break
             continue
         if len(page) < remaining:
+            complete = True
             break
+    if limit is not None:
+        complete = False
+    report.pagination_complete = complete
     return records
 
 
@@ -242,6 +290,18 @@ def _persist_unit(
     counts = _UnitCounts()
     existing = Property.objects.filter(hostaway_listing_id=listing.listing_id).first()
     if _is_stale(existing, listing, force):
+        if existing is not None:
+            existing.source_missing = False
+            existing.consecutive_missing_syncs = 0
+            existing.last_seen_at = timezone.now()
+            existing.save(
+                update_fields=[
+                    "source_missing",
+                    "consecutive_missing_syncs",
+                    "last_seen_at",
+                    "updated_at",
+                ]
+            )
         counts.skipped = 1
         return counts
 
@@ -253,6 +313,8 @@ def _persist_unit(
         "name_ar": "",
         "city_en": listing.city,
         "city_ar": "",
+        "is_visible": False,
+        "visibility_management": Property.VisibilityManagement.AUTOMATIC,
     }
     property_obj, created = Property.objects.update_or_create(
         hostaway_listing_id=listing.listing_id,
@@ -263,6 +325,10 @@ def _persist_unit(
         counts.property_created = 1
     else:
         counts.property_updated = 1
+
+    property_obj.source_missing = False
+    property_obj.consecutive_missing_syncs = 0
+    property_obj.last_seen_at = timezone.now()
 
     if include_images and listing.images_present:
         image_counts = _sync_images(property_obj, listing.images)
@@ -277,6 +343,21 @@ def _persist_unit(
         )
         counts.amenities_created = amenity_counts[0]
         counts.amenities_linked = amenity_counts[1]
+    publish_counts = _apply_publish_policy(property_obj, created=created)
+    counts.property_deactivated += publish_counts[0]
+    counts.property_auto_published += publish_counts[1]
+    counts.property_pending_review += publish_counts[2]
+    property_obj._sync_managed_visibility = True
+    property_obj.save(
+        update_fields=[
+            "source_missing",
+            "consecutive_missing_syncs",
+            "last_seen_at",
+            "publish_blockers",
+            "is_visible",
+            "updated_at",
+        ]
+    )
     return counts
 
 
@@ -337,6 +418,12 @@ def _simulate_unit(
                 dry_seen_amenities.add(item.amenity_id)
             if item.amenity_id not in linked_ids:
                 counts.amenities_linked += 1
+    if existing is None:
+        simulated_blockers = _listing_publish_blockers(listing, include_images=include_images)
+        if settings.HOSTAWAY_AUTO_PUBLISH_NEW_LISTINGS and not simulated_blockers:
+            counts.property_auto_published = 1
+        else:
+            counts.property_pending_review = 1
     return counts
 
 
@@ -515,6 +602,9 @@ def _is_stale(
 def _merge_counts(report: PropertySyncReport, counts: _UnitCounts) -> None:
     report.properties_created += counts.property_created
     report.properties_updated += counts.property_updated
+    report.properties_deactivated += counts.property_deactivated
+    report.properties_auto_published += counts.property_auto_published
+    report.properties_pending_review += counts.property_pending_review
     report.images_created += counts.images_created
     report.images_updated += counts.images_updated
     report.images_deactivated += counts.images_deactivated
@@ -552,9 +642,9 @@ def _finish_sync_run(
     report: PropertySyncReport,
     *,
     forced_status: str | None = None,
-) -> None:
+) -> str:
     if sync_run is None:
-        return
+        return forced_status or IntegrationSyncRun.Status.SUCCEEDED
     successful = report.properties_created + report.properties_updated
     if forced_status is not None:
         status = forced_status
@@ -579,6 +669,10 @@ def _finish_sync_run(
         "images_deactivated": report.images_deactivated,
         "amenities_created": report.amenities_created,
         "amenities_linked": report.amenities_linked,
+        "properties_deactivated": report.properties_deactivated,
+        "properties_auto_published": report.properties_auto_published,
+        "properties_pending_review": report.properties_pending_review,
+        "source_missing_marked": report.source_missing_marked,
     }
     sync_run.save(
         update_fields=[
@@ -591,5 +685,74 @@ def _finish_sync_run(
             "failed_count",
             "error_summary",
             "metadata",
+        ]
+    )
+    return status
+
+
+def _apply_publish_policy(property_obj: Property, *, created: bool) -> tuple[int, int, int]:
+    readiness = evaluate_listing_publish_readiness(property_obj)
+    property_obj.publish_blockers = list(readiness.blockers)
+    was_visible = property_obj.is_visible
+
+    if not property_obj.hostaway_is_active:
+        property_obj.is_visible = False
+    elif (
+        property_obj.visibility_management == Property.VisibilityManagement.AUTOMATIC
+        and settings.HOSTAWAY_AUTO_PUBLISH_NEW_LISTINGS
+    ):
+        property_obj.is_visible = readiness.is_ready
+
+    deactivated = int(was_visible and not property_obj.is_visible)
+    published = int(created and property_obj.is_visible)
+    pending = int(created and not property_obj.is_visible)
+    return deactivated, published, pending
+
+
+def _listing_publish_blockers(
+    listing: HostawayListing,
+    *,
+    include_images: bool,
+) -> tuple[str, ...]:
+    blockers: list[str] = []
+    if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_ACTIVE and not listing.is_active:
+        blockers.append("inactive_or_archived")
+    if not listing.name:
+        blockers.append("missing_name")
+    if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_IMAGE and (not include_images or not listing.images):
+        blockers.append("missing_visible_image")
+    if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_CAPACITY and not listing.person_capacity:
+        blockers.append("missing_capacity")
+    if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_CURRENCY and len(listing.currency_code) != 3:
+        blockers.append("missing_currency")
+    if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_CITY and not listing.city:
+        blockers.append("missing_city")
+    return tuple(blockers)
+
+
+def _mark_missing_properties(*, seen_listing_ids: set[int]) -> int:
+    newly_marked = 0
+    missing = Property.objects.exclude(hostaway_listing_id__in=seen_listing_ids)
+    for property_obj in missing.iterator():
+        property_obj.consecutive_missing_syncs += 1
+        update_fields = ["consecutive_missing_syncs", "updated_at"]
+        if property_obj.consecutive_missing_syncs >= 2 and not property_obj.source_missing:
+            property_obj.source_missing = True
+            property_obj.is_visible = False
+            property_obj.publish_blockers = sorted(
+                {*property_obj.publish_blockers, "missing_from_source"}
+            )
+            update_fields.extend(["source_missing", "is_visible", "publish_blockers"])
+            newly_marked += 1
+        property_obj._sync_managed_visibility = True
+        property_obj.save(update_fields=update_fields)
+    return newly_marked
+
+
+def _invalidate_property_caches() -> None:
+    cache.delete_many(
+        [
+            "properties:list:version",
+            "properties:detail:version",
         ]
     )

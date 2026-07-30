@@ -8,7 +8,7 @@
         <div class="container">
             {% if property.is_featured %}<span class="badge">وحدة مميزة</span>{% endif %}
             <h1>{{ property.display_name }}</h1>
-            <p>{{ property.public_address|default:property.display_city }}</p>
+            <p>{{ property.display_city }}</p>
             {% if property.short_description_ar %}
             <p class="property-lead">{{ property.short_description_ar }}</p>
             {% endif %}

@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main" dir="rtl">
+  <h1>حالة تكامل Hostaway</h1>
+  <table>
+    <tbody>
+      <tr><th>الوحدات المحلية</th><td>{{ health.local_properties }}</td></tr>
+      <tr><th>الوحدات النشطة</th><td>{{ health.active_properties }}</td></tr>
+      <tr><th>بانتظار المراجعة</th><td>{{ health.pending_review }}</td></tr>
+      <tr><th>المخفية يدويًا</th><td>{{ health.manually_hidden }}</td></tr>
+      <tr><th>المؤرشفة</th><td>{{ health.archived }}</td></tr>
+      <tr><th>Redis</th><td>{{ health.redis_status }}</td></tr>
+      <tr><th>Celery Worker</th><td>{{ health.worker_status }}</td></tr>
+      <tr><th>Celery Beat</th><td>{{ health.beat_status }}</td></tr>
+      <tr><th>مصادقة Hostaway</th><td>{{ health.authentication_status }}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>آخر تشغيل</h2>
+  <p>الوحدات: {{ health.last_property_sync|default:"لا يوجد" }}</p>
+  <p>المراجعات: {{ health.last_review_sync|default:"لا يوجد" }}</p>
+
+  <h2>Feature Flags الكتابية</h2>
+  <ul>
+    {% for name, enabled in health.write_flags.items %}
+      <li>{{ name }}: {{ enabled|yesno:"مفعّل,مغلق" }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>مزامنة آمنة</h2>
+  {% if not dispatch_enabled %}
+    <p class="help">عامل Celery غير مفعّل؛ ستعرض الأزرار أمر التشغيل بدل تنفيذ طلب طويل.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <button name="sync_action" value="properties_dry_run">Dry-run للوحدات</button>
+    <button name="sync_action" value="properties">مزامنة كل الوحدات</button>
+    <button name="sync_action" value="reviews_dry_run">Dry-run للمراجعات</button>
+    <button name="sync_action" value="reviews">مزامنة المراجعات</button>
+  </form>
+</div>
+{% endblock %}

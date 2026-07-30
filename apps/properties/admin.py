@@ -1,4 +1,5 @@
-from django.contrib import admin
+from django.conf import settings
+from django.contrib import admin, messages
 from django.db import models, transaction
 from django.http import HttpRequest
 from django.utils.html import format_html
@@ -33,6 +34,12 @@ PROPERTY_SOURCE_FIELDS = (
     "imported_at",
     "last_synced_at",
     "source_updated_at",
+    "source_missing",
+    "consecutive_missing_syncs",
+    "last_seen_at",
+    "publish_blockers",
+    "hostaway_listing_map_id_verified_at",
+    "hostaway_listing_map_id_verification_source",
     "created_at",
     "updated_at",
 )
@@ -115,8 +122,12 @@ class PropertyAdmin(admin.ModelAdmin):
         "bedrooms_number",
         "hostaway_is_active",
         "is_visible",
+        "visibility_management",
+        "source_missing",
         "is_featured",
         "last_synced_at",
+        "source_missing",
+        "visibility_management",
         "image_count",
     )
     list_filter = (
@@ -136,6 +147,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "=hostaway_listing_map_id",
     )
     readonly_fields = PROPERTY_SOURCE_FIELDS
+    actions = ("queue_selected_property_sync",)
     inlines = (PropertyImageInline, PropertyAmenityInline)
     fieldsets = (
         (
@@ -147,7 +159,8 @@ class PropertyAdmin(admin.ModelAdmin):
                     ("short_description_ar", "short_description_en"),
                     ("description_ar", "description_en"),
                     ("city_ar", "city_en"),
-                    ("is_visible", "is_featured", "sort_order"),
+                    ("is_visible", "visibility_management"),
+                    ("is_featured", "sort_order"),
                     "content_is_customized",
                 )
             },
@@ -191,7 +204,36 @@ class PropertyAdmin(admin.ModelAdmin):
         changed_data = set(getattr(form, "changed_data", []))
         if change and changed_data.intersection(PROPERTY_LOCAL_FIELDS):
             obj.content_is_customized = True
+        if change and "is_visible" in changed_data:
+            obj.visibility_management = Property.VisibilityManagement.MANUAL
         super().save_model(request, obj, form, change)
+
+    @admin.action(description="مزامنة وحدات Hostaway المحددة")
+    def queue_selected_property_sync(
+        self,
+        request: HttpRequest,
+        queryset: models.QuerySet[Property],
+    ) -> None:
+        if not request.user.is_superuser:
+            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            return
+        listing_ids = list(queryset.values_list("hostaway_listing_id", flat=True)[:100])
+        if not settings.CELERY_SYNC_DISPATCH_ENABLED:
+            commands = "; ".join(
+                f"python manage.py sync_hostaway_properties --listing-id {listing_id}"
+                for listing_id in listing_ids
+            )
+            self.message_user(
+                request,
+                f"عامل المهام غير مفعّل. شغّل: {commands}",
+                messages.WARNING,
+            )
+            return
+        from apps.integrations.tasks import sync_hostaway_properties_task
+
+        for listing_id in listing_ids:
+            sync_hostaway_properties_task.delay(listing_id=listing_id)
+        self.message_user(request, f"أضيفت {len(listing_ids)} وحدة إلى طابور المزامنة.")
 
     def save_formset(
         self,

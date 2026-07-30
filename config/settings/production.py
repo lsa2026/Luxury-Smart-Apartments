@@ -18,3 +18,8 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 HOSTAWAY_REQUIRE_SHARED_TOKEN_CACHE = True
+
+if HOSTAWAY_AUTO_SYNC_ENABLED and not REDIS_URL:  # noqa: F405
+    raise ImproperlyConfigured("REDIS_URL is required when automatic Hostaway sync is enabled.")
+if HOSTAWAY_AUTO_SYNC_ENABLED and not CACHE_URL:  # noqa: F405
+    raise ImproperlyConfigured("CACHE_URL is required when automatic Hostaway sync is enabled.")

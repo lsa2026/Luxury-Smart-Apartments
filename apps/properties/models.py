@@ -17,6 +17,10 @@ class PropertyQuerySet(models.QuerySet["Property"]):
 class Property(models.Model):
     """A bookable property linked to a Hostaway listing."""
 
+    class VisibilityManagement(models.TextChoices):
+        AUTOMATIC = "automatic", "تلقائي"
+        MANUAL = "manual", "يدوي"
+
     hostaway_listing_id = models.PositiveBigIntegerField(unique=True)
     hostaway_listing_map_id = models.PositiveBigIntegerField(
         null=True,
@@ -83,6 +87,17 @@ class Property(models.Model):
     seo_description_ar = models.CharField(max_length=320, blank=True)
     seo_description_en = models.CharField(max_length=320, blank=True)
     is_visible = models.BooleanField(default=True)
+    visibility_management = models.CharField(
+        max_length=12,
+        choices=VisibilityManagement.choices,
+        default=VisibilityManagement.MANUAL,
+    )
+    publish_blockers = models.JSONField(default=list, blank=True)
+    source_missing = models.BooleanField(default=False)
+    consecutive_missing_syncs = models.PositiveSmallIntegerField(default=0)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    hostaway_listing_map_id_verified_at = models.DateTimeField(null=True, blank=True)
+    hostaway_listing_map_id_verification_source = models.CharField(max_length=100, blank=True)
     is_featured = models.BooleanField(default=False)
     sort_order = models.PositiveIntegerField(default=0)
     content_is_customized = models.BooleanField(default=False)
@@ -99,6 +114,8 @@ class Property(models.Model):
             models.Index(fields=["city", "hostaway_is_active"]),
             models.Index(fields=["country_code", "hostaway_is_active"]),
             models.Index(fields=["last_synced_at"]),
+            models.Index(fields=["source_missing", "consecutive_missing_syncs"]),
+            models.Index(fields=["visibility_management", "is_visible"]),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -135,6 +152,15 @@ class Property(models.Model):
         return self.name_ar or self.name_en or self.hostaway_name or str(self.hostaway_listing_id)
 
     def save(self, *args: object, **kwargs: object) -> None:
+        if self.pk and not getattr(self, "_sync_managed_visibility", False):
+            previous_visibility = (
+                type(self).objects.filter(pk=self.pk).values_list("is_visible", flat=True).first()
+            )
+            if previous_visibility is not None and previous_visibility != self.is_visible:
+                self.visibility_management = self.VisibilityManagement.MANUAL
+                update_fields = kwargs.get("update_fields")
+                if update_fields is not None:
+                    kwargs["update_fields"] = set(update_fields) | {"visibility_management"}
         self.hostaway_is_active = self.derive_hostaway_is_active(self.hostaway_special_status)
         update_fields = kwargs.get("update_fields")
         if update_fields is not None:

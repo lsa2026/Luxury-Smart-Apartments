@@ -4,14 +4,17 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from django.core.cache import cache
 from django.db import DatabaseError, transaction
 from django.utils import timezone
 
+from apps.integrations.models import IntegrationSyncRun
 from apps.properties.models import Property
 from apps.reviews.models import Review
 
 from .client import HostawayClient
-from .exceptions import HostawayResponseError
+from .exceptions import HostawayError, HostawayResponseError
+from .locks import hostaway_review_sync_lock
 from .validators import HostawayReview, normalize_review
 
 logger = logging.getLogger(__name__)
@@ -41,8 +44,54 @@ def sync_reviews(
     dry_run: bool = False,
     client: HostawayClient | None = None,
     page_size: int = 100,
+    triggered_by_id: int | None = None,
 ) -> SyncReport:
     """Fetch all matching pages, then persist each review in a short transaction."""
+    with hostaway_review_sync_lock():
+        sync_run = None
+        if not dry_run:
+            sync_run = IntegrationSyncRun.objects.create(
+                sync_type=IntegrationSyncRun.SyncType.HOSTAWAY_REVIEWS,
+                status=IntegrationSyncRun.Status.RUNNING,
+                started_at=timezone.now(),
+                dry_run=False,
+                triggered_by_id=triggered_by_id,
+                metadata={"listing_id": listing_id},
+            )
+        try:
+            report = _run_review_sync(
+                listing_id=listing_id,
+                departure_from=departure_from,
+                departure_to=departure_to,
+                dry_run=dry_run,
+                client=client,
+                page_size=page_size,
+            )
+        except (HostawayError, DatabaseError, ValueError, TypeError):
+            logger.exception("Hostaway review synchronization failed at the service boundary.")
+            if sync_run is not None:
+                _finish_review_sync_run(
+                    sync_run,
+                    SyncReport(failed=1),
+                    status=IntegrationSyncRun.Status.FAILED,
+                )
+            raise
+        if sync_run is not None:
+            _finish_review_sync_run(sync_run, report)
+            if report.failed == 0:
+                cache.delete("properties:detail:version")
+        return report
+
+
+def _run_review_sync(
+    *,
+    listing_id: int | None,
+    departure_from: str | None,
+    departure_to: str | None,
+    dry_run: bool,
+    client: HostawayClient | None,
+    page_size: int,
+) -> SyncReport:
     report = SyncReport()
     raw_reviews = _fetch_all_pages(
         report=report,
@@ -108,6 +157,44 @@ def sync_reviews(
         else:
             report.updated += 1
     return report
+
+
+def _finish_review_sync_run(
+    sync_run: IntegrationSyncRun,
+    report: SyncReport,
+    *,
+    status: str | None = None,
+) -> None:
+    if status is None:
+        if report.failed and not (report.created or report.updated):
+            status = IntegrationSyncRun.Status.FAILED
+        elif report.failed:
+            status = IntegrationSyncRun.Status.PARTIALLY_SUCCEEDED
+        else:
+            status = IntegrationSyncRun.Status.SUCCEEDED
+    sync_run.status = status
+    sync_run.completed_at = timezone.now()
+    sync_run.fetched_count = report.fetched
+    sync_run.created_count = report.created
+    sync_run.updated_count = report.updated
+    sync_run.skipped_count = report.skipped
+    sync_run.failed_count = report.failed
+    sync_run.metadata = {
+        **sync_run.metadata,
+        "match_strategies": report.match_strategies,
+    }
+    sync_run.save(
+        update_fields=[
+            "status",
+            "completed_at",
+            "fetched_count",
+            "created_count",
+            "updated_count",
+            "skipped_count",
+            "failed_count",
+            "metadata",
+        ]
+    )
 
 
 def _fetch_all_pages(

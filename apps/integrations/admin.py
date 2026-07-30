@@ -1,11 +1,18 @@
+from django.conf import settings
 from django.contrib import admin, messages
-from django.http import HttpRequest
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
+from django.urls import path, reverse
 
+from .health import get_integration_health
 from .models import HostawayWebhookEvent, IntegrationSyncRun
 
 
 @admin.register(IntegrationSyncRun)
 class IntegrationSyncRunAdmin(admin.ModelAdmin):
+    change_list_template = "admin/integrations/integrationsyncrun/change_list.html"
     list_display = (
         "sync_type",
         "status",
@@ -51,6 +58,64 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
         obj: IntegrationSyncRun | None = None,
     ) -> bool:
         return False
+
+    def get_urls(self) -> list[object]:
+        custom = [
+            path(
+                "health/",
+                self.admin_site.admin_view(self.health_view),
+                name="integrations_integration_health",
+            )
+        ]
+        return custom + super().get_urls()
+
+    def health_view(self, request: HttpRequest) -> HttpResponse:
+        if not request.user.is_superuser:
+            raise PermissionDenied
+        if request.method == "POST":
+            self._dispatch_sync(request)
+            return redirect(reverse("admin:integrations_integration_health"))
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "حالة تكامل Hostaway",
+            "health": get_integration_health(),
+            "dispatch_enabled": settings.CELERY_SYNC_DISPATCH_ENABLED,
+        }
+        return render(request, "admin/integrations/integration_health.html", context)
+
+    def _dispatch_sync(self, request: HttpRequest) -> None:
+        action = request.POST.get("sync_action", "")
+        command_map = {
+            "properties": "python manage.py sync_hostaway_properties",
+            "properties_dry_run": "python manage.py sync_hostaway_properties --dry-run",
+            "reviews": "python manage.py sync_hostaway_reviews",
+            "reviews_dry_run": "python manage.py sync_hostaway_reviews --dry-run",
+        }
+        command = command_map.get(action)
+        if command is None:
+            self.message_user(request, "إجراء مزامنة غير صالح.", messages.ERROR)
+            return
+        if not settings.CELERY_SYNC_DISPATCH_ENABLED:
+            self.message_user(
+                request,
+                f"عامل المهام غير مفعّل. شغّل الأمر محليًا: {command}",
+                messages.WARNING,
+            )
+            return
+        from .tasks import sync_hostaway_properties_task, sync_hostaway_reviews_task
+
+        dry_run = action.endswith("_dry_run")
+        task = (
+            sync_hostaway_properties_task
+            if action.startswith("properties")
+            else sync_hostaway_reviews_task
+        )
+        lock_name = "properties" if action.startswith("properties") else "reviews"
+        if not cache.add(f"lsa:admin-dispatch:{lock_name}", "queued", timeout=60):
+            self.message_user(request, "توجد مزامنة مماثلة أضيفت حديثًا.", messages.WARNING)
+            return
+        task.delay(dry_run=dry_run)
+        self.message_user(request, "تمت إضافة المزامنة إلى الطابور.", messages.SUCCESS)
 
 
 @admin.register(HostawayWebhookEvent)
