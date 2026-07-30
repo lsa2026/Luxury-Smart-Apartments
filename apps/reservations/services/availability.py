@@ -33,6 +33,7 @@ CAPACITY_EXCEEDED = "capacity_exceeded"
 PROPERTY_UNAVAILABLE = "property_unavailable"
 CALENDAR_INCOMPLETE = "calendar_incomplete"
 UNAVAILABLE_DATES = "unavailable_dates"
+INVENTORY_CONFLICT = "inventory_conflict"
 CLOSED_ON_ARRIVAL = "closed_on_arrival"
 CLOSED_ON_DEPARTURE = "closed_on_departure"
 MINIMUM_STAY_NOT_MET = "minimum_stay_not_met"
@@ -57,8 +58,12 @@ MESSAGES = {
         "Not all requested calendar days could be confirmed.",
     ),
     UNAVAILABLE_DATES: (
-        "الفترة المطلوبة غير متاحة.",
-        "The requested dates are unavailable.",
+        "لا تتوفر هذه الوحدة في التواريخ المحددة. جرّب تواريخ أخرى.",
+        "This property is unavailable for the selected dates. Try other dates.",
+    ),
+    INVENTORY_CONFLICT: (
+        "لا تتوفر هذه الوحدة في التواريخ المحددة. جرّب تواريخ أخرى.",
+        "This property is unavailable for the selected dates. Try other dates.",
     ),
     CLOSED_ON_ARRIVAL: (
         "الوصول غير مسموح في التاريخ المحدد.",
@@ -121,6 +126,14 @@ class CalendarFetch:
     document: CalendarDocument
     duration_ms: int
     cache_hit: bool
+
+
+@dataclass(frozen=True, slots=True)
+class InventoryDecision:
+    is_available: bool
+    strategy: str
+    is_multi_unit: bool
+    has_conflict: bool
 
 
 class AvailabilityService:
@@ -255,11 +268,7 @@ class AvailabilityService:
         )
         invalid = self._validate_request(probe)
         if invalid is not None:
-            empty_calendar = CalendarFetch(
-                CalendarDocument((), frozenset(), ()),
-                0,
-                False,
-            )
+            empty_calendar = CalendarFetch(CalendarDocument((), frozenset(), ()), 0, False)
             return None, invalid, empty_calendar
         end_date = start_date + timedelta(days=scan_days)
         calendar = self.fetch_calendar(
@@ -491,15 +500,80 @@ def evaluate_calendar(
     if arrival_day.maximum_stay is not None and nights > arrival_day.maximum_stay:
         return MAXIMUM_STAY_EXCEEDED
 
-    for day_date in stay_dates:
-        day = by_date[day_date]
-        if day.is_available is not True:
-            return UNAVAILABLE_DATES
-        if day.available_units is not None and day.available_units <= 0:
-            return UNAVAILABLE_DATES
-        if day.desired_units_to_sell is not None and day.desired_units_to_sell <= 0:
-            return UNAVAILABLE_DATES
+    decisions = [resolve_day_inventory(by_date[day_date]) for day_date in stay_dates]
+    if any(decision.has_conflict for decision in decisions):
+        return INVENTORY_CONFLICT
+    if any(not decision.is_available for decision in decisions):
+        return UNAVAILABLE_DATES
     return AVAILABLE
+
+
+def resolve_day_inventory(day: CalendarDay) -> InventoryDecision:
+    """Resolve single- or multi-unit availability without deriving stock from bookings."""
+    multi_inventory_values = (
+        day.count_available_units,
+        day.available_units_to_sell,
+        day.desired_units_to_sell,
+        day.count_reserved_units,
+        day.count_blocked_units,
+    )
+    is_multi_unit = any(value is not None for value in multi_inventory_values)
+
+    availability_signals: dict[str, bool] = {}
+    if day.available_units_to_sell is not None:
+        availability_signals["available_units_to_sell"] = day.available_units_to_sell > 0
+    if day.count_available_units is not None:
+        availability_signals["count_available_units"] = day.count_available_units > 0
+    if day.desired_units_to_sell is not None:
+        availability_signals["desired_units_to_sell"] = day.desired_units_to_sell > 0
+    if day.is_available is not None:
+        availability_signals["is_available"] = day.is_available
+
+    has_conflict = len(set(availability_signals.values())) > 1
+    if has_conflict:
+        return InventoryDecision(
+            is_available=False,
+            strategy=INVENTORY_CONFLICT,
+            is_multi_unit=is_multi_unit,
+            has_conflict=True,
+        )
+
+    if is_multi_unit:
+        for strategy in (
+            "available_units_to_sell",
+            "count_available_units",
+            "desired_units_to_sell",
+        ):
+            if strategy in availability_signals:
+                return InventoryDecision(
+                    is_available=availability_signals[strategy],
+                    strategy=strategy,
+                    is_multi_unit=True,
+                    has_conflict=False,
+                )
+        return InventoryDecision(
+            is_available=False,
+            strategy="inventory_unconfirmed",
+            is_multi_unit=True,
+            has_conflict=False,
+        )
+
+    return InventoryDecision(
+        is_available=day.is_available is True,
+        strategy="is_available",
+        is_multi_unit=False,
+        has_conflict=False,
+    )
+
+
+def classify_inventory(days: tuple[CalendarDay, ...]) -> str:
+    """Classify the observed calendar inventory shape without changing Hostaway."""
+    decisions = [resolve_day_inventory(day) for day in days]
+    if any(decision.is_multi_unit for decision in decisions):
+        return "multi_unit"
+    if any(day.is_available is not None for day in days):
+        return "single_unit"
+    return "undetermined"
 
 
 def component_title_ar(component: PriceComponent) -> str:

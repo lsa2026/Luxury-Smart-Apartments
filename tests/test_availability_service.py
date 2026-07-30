@@ -22,6 +22,7 @@ from apps.reservations.services.availability import (
     CLOSED_ON_DEPARTURE,
     HOSTAWAY_TEMPORARILY_UNAVAILABLE,
     INVALID_DATES,
+    INVENTORY_CONFLICT,
     MAXIMUM_STAY_EXCEEDED,
     MINIMUM_STAY_NOT_MET,
     PAST_CHECK_IN,
@@ -63,8 +64,6 @@ def make_day(day_date: date, **changes: object) -> CalendarDay:
         maximum_stay=30,
         closed_on_arrival=False,
         closed_on_departure=False,
-        available_units=1,
-        desired_units_to_sell=1,
         status="available",
     )
     return replace(day, **changes)
@@ -234,12 +233,19 @@ def test_hidden_or_inactive_property_blocks_network(visible: bool, active: bool)
             MAXIMUM_STAY_EXCEEDED,
         ),
         (
-            lambda days: (replace(days[0], available_units=0), *days[1:]),
+            lambda days: (
+                replace(
+                    days[0],
+                    is_available=False,
+                    available_units_to_sell=0,
+                ),
+                *days[1:],
+            ),
             UNAVAILABLE_DATES,
         ),
         (
             lambda days: (replace(days[0], desired_units_to_sell=0), *days[1:]),
-            UNAVAILABLE_DATES,
+            INVENTORY_CONFLICT,
         ),
     ],
 )
@@ -381,3 +387,77 @@ def test_check_does_not_change_business_tables() -> None:
         Review.objects.count(),
     )
     assert after == before
+
+
+def test_inventory_conflict_prevents_price_details() -> None:
+    cache.clear()
+    start = timezone.localdate() + timedelta(days=3)
+    property_obj = make_property()
+    calendar = make_calendar(start)
+    calendar = replace(
+        calendar,
+        days=(
+            replace(
+                calendar.days[0],
+                is_available=False,
+                available_units_to_sell=1,
+            ),
+            *calendar.days[1:],
+        ),
+    )
+    fake = FakeClient(calendar)
+
+    result = AvailabilityService(client=fake).check(request_for(property_obj, check_in=start))
+
+    assert result.reason_code == INVENTORY_CONFLICT
+    assert fake.price_calls == 0
+
+
+def test_no_available_window_in_365_days_does_not_price() -> None:
+    cache.clear()
+    start = timezone.localdate()
+    property_obj = make_property()
+    calendar = CalendarDocument(
+        days=tuple(
+            make_day(start + timedelta(days=offset), is_available=False) for offset in range(366)
+        ),
+        envelope_fields=frozenset({"status", "result"}),
+        day_field_types=(("date", "string"),),
+    )
+    fake = FakeClient(calendar)
+
+    request, result, _calendar = AvailabilityService(client=fake).find_first_available(
+        property_obj=property_obj,
+        start_date=start,
+        scan_days=365,
+        stay_nights=2,
+        guests=2,
+        bypass_cache=True,
+    )
+
+    assert request is None
+    assert result.reason_code == UNAVAILABLE_DATES
+    assert fake.calendar_calls == 1
+    assert fake.price_calls == 0
+
+
+def test_first_available_window_prices_exactly_once() -> None:
+    cache.clear()
+    start = timezone.localdate()
+    property_obj = make_property()
+    fake = FakeClient(make_calendar(start, nights=10))
+
+    request, result, _calendar = AvailabilityService(client=fake).find_first_available(
+        property_obj=property_obj,
+        start_date=start,
+        scan_days=10,
+        stay_nights=2,
+        guests=2,
+        bypass_cache=True,
+    )
+
+    assert request is not None
+    assert request.check_in == start
+    assert result.reason_code == AVAILABLE
+    assert fake.calendar_calls == 1
+    assert fake.price_calls == 1

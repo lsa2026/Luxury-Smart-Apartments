@@ -45,8 +45,14 @@ def calendar_payload() -> dict[str, Any]:
                 "maximumStay": 30,
                 "closedOnArrival": 0,
                 "closedOnDeparture": None,
+                "countAvailableUnits": "3",
                 "availableUnitsToSell": "1",
+                "countReservedUnits": 2,
+                "countPendingUnits": 0,
+                "countBlockedUnits": "0",
+                "countBlockingReservations": 2,
                 "desiredUnitsToSell": 1,
+                "isProcessed": 1,
                 "newField": "ignored",
             }
         ],
@@ -96,6 +102,13 @@ def test_get_calendar_validates_and_sends_no_resources() -> None:
     assert document.days[0].price == Decimal("123.45")
     assert document.days[0].is_available is True
     assert document.days[0].closed_on_arrival is False
+    assert document.days[0].count_available_units == 3
+    assert document.days[0].available_units_to_sell == 1
+    assert document.days[0].count_reserved_units == 2
+    assert document.days[0].count_pending_units == 0
+    assert document.days[0].count_blocked_units == 0
+    assert document.days[0].count_blocking_reservations == 2
+    assert document.days[0].is_processed is True
     assert "includeResources=0" in captured["query"]
     assert "newField" in dict(document.day_field_types)
 

@@ -43,8 +43,6 @@ def calendar_document(start: object, days: int) -> CalendarDocument:
                 maximum_stay=30,
                 closed_on_arrival=False,
                 closed_on_departure=False,
-                available_units=1,
-                desired_units_to_sell=1,
                 status="available",
             )
             for offset in range(days + 1)
@@ -143,7 +141,65 @@ def test_verify_command_scans_once_and_prices_once() -> None:
             scan_days=60,
             stay_nights=2,
             guests=2,
+            diagnose_inventory=True,
             stdout=stdout,
         )
     assert calendar_mock.call_count == 1
     assert price_mock.call_count == 1
+    assert "Selected stay strategy: is_available" in stdout.getvalue()
+    assert "No-availability diagnosis: not_applicable" in stdout.getvalue()
+
+
+def test_verify_command_inventory_diagnosis_is_aggregate_only() -> None:
+    cache.clear()
+    property_obj = make_property()
+    start = timezone.localdate()
+    document = calendar_document(start, 2)
+    document = CalendarDocument(
+        days=tuple(
+            CalendarDay(
+                date=day.date,
+                is_available=False,
+                price=Decimal("0"),
+                minimum_stay=1,
+                maximum_stay=365,
+                closed_on_arrival=False,
+                closed_on_departure=False,
+                status="blocked",
+                available_units_to_sell=0,
+                count_reserved_units=1,
+                has_reservation_resources=True,
+            )
+            for day in document.days
+        ),
+        envelope_fields=document.envelope_fields,
+        day_field_types=document.day_field_types,
+        has_reservation_resources=True,
+    )
+    stdout = StringIO()
+    with (
+        patch.object(
+            HostawayClient,
+            "get_listing_calendar",
+            return_value=document,
+        ),
+        patch.object(HostawayClient, "calculate_price") as price_mock,
+    ):
+        call_command(
+            "verify_hostaway_availability",
+            listing_id=property_obj.hostaway_listing_id,
+            scan_days=2,
+            stay_nights=2,
+            guests=2,
+            diagnose_inventory=True,
+            bypass_cache=True,
+            stdout=stdout,
+        )
+
+    output = stdout.getvalue()
+    assert "Inventory type: multi_unit" in output
+    assert "isAvailable distribution: 0=3 1=0 null=0" in output
+    assert "Reservation resources field received: yes" in output
+    assert "No-availability diagnosis: no_inventory_to_sell" in output
+    assert "reservationId" not in output
+    assert price_mock.call_count == 0

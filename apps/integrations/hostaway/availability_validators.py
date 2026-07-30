@@ -19,9 +19,16 @@ class CalendarDay:
     maximum_stay: int | None
     closed_on_arrival: bool | None
     closed_on_departure: bool | None
-    available_units: int | None
-    desired_units_to_sell: int | None
     status: str
+    count_available_units: int | None = None
+    available_units_to_sell: int | None = None
+    count_reserved_units: int | None = None
+    count_pending_units: int | None = None
+    count_blocked_units: int | None = None
+    count_blocking_reservations: int | None = None
+    desired_units_to_sell: int | None = None
+    is_processed: bool | None = None
+    has_reservation_resources: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +36,7 @@ class CalendarDocument:
     days: tuple[CalendarDay, ...]
     envelope_fields: frozenset[str]
     day_field_types: tuple[tuple[str, str], ...]
+    has_reservation_resources: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,10 +79,16 @@ def validate_calendar_response(payload: Any) -> CalendarDocument:
     days: list[CalendarDay] = []
     observed_types: dict[str, set[str]] = {}
     seen_dates: set[date] = set()
+    has_reservation_resources = False
     for index, item in enumerate(result):
         if not isinstance(item, dict):
             raise HostawayResponseError(f"Hostaway calendar day {index} must be an object.")
-        _record_types(observed_types, item)
+        day_has_reservation_resources = "reservations" in item
+        has_reservation_resources |= day_has_reservation_resources
+        safe_item = {
+            key: value for key, value in item.items() if key not in {"note", "reservations"}
+        }
+        _record_types(observed_types, safe_item)
         parsed_date = _date(item.get("date"), f"result[{index}].date")
         if parsed_date in seen_dates:
             raise HostawayResponseError("Hostaway calendar contains duplicate dates.")
@@ -103,20 +117,40 @@ def validate_calendar_response(payload: Any) -> CalendarDocument:
                     item.get("closedOnDeparture"),
                     f"result[{index}].closedOnDeparture",
                 ),
-                available_units=_optional_nonnegative_int(
-                    _first_present(
-                        item,
-                        "availableUnitsToSell",
-                        "availableUnits",
-                        "countAvailableUnits",
-                    ),
+                count_available_units=_optional_nonnegative_int(
+                    item.get("countAvailableUnits"),
+                    f"result[{index}].countAvailableUnits",
+                ),
+                available_units_to_sell=_optional_nonnegative_int(
+                    _first_present(item, "availableUnitsToSell", "availableUnits"),
                     f"result[{index}].availableUnitsToSell",
+                ),
+                count_reserved_units=_optional_nonnegative_int(
+                    item.get("countReservedUnits"),
+                    f"result[{index}].countReservedUnits",
+                ),
+                count_pending_units=_optional_nonnegative_int(
+                    item.get("countPendingUnits"),
+                    f"result[{index}].countPendingUnits",
+                ),
+                count_blocked_units=_optional_nonnegative_int(
+                    item.get("countBlockedUnits"),
+                    f"result[{index}].countBlockedUnits",
+                ),
+                count_blocking_reservations=_optional_nonnegative_int(
+                    item.get("countBlockingReservations"),
+                    f"result[{index}].countBlockingReservations",
                 ),
                 desired_units_to_sell=_optional_nonnegative_int(
                     item.get("desiredUnitsToSell"),
                     f"result[{index}].desiredUnitsToSell",
                 ),
+                is_processed=_optional_bool(
+                    item.get("isProcessed"),
+                    f"result[{index}].isProcessed",
+                ),
                 status=_optional_string(item.get("status")),
+                has_reservation_resources=day_has_reservation_resources,
             )
         )
 
@@ -124,6 +158,7 @@ def validate_calendar_response(payload: Any) -> CalendarDocument:
         days=tuple(days),
         envelope_fields=frozenset(payload),
         day_field_types=_flatten_types(observed_types),
+        has_reservation_resources=has_reservation_resources,
     )
 
 

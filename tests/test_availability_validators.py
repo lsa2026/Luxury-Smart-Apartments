@@ -15,7 +15,8 @@ def test_partial_calendar_fields_are_optional() -> None:
     day = document.days[0]
     assert day.is_available is None
     assert day.price is None
-    assert day.available_units is None
+    assert day.available_units_to_sell is None
+    assert day.count_available_units is None
 
 
 def test_invalid_calendar_boolean_is_rejected() -> None:

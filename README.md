@@ -93,6 +93,13 @@ GET /v1/listings/{listingId}/calendar?includeResources=0
 متاح. الحد الأقصى للطلب 366 ليلة، وعدد الضيوف موجب ولا يتجاوز
 `person_capacity`.
 
+يحدد النظام المخزون من شكل يوم التقويم. الأيام المفردة تعتمد على `isAvailable`.
+أما عند ظهور حقول مخزون متعددة الوحدات، فالأولوية هي
+`availableUnitsToSell` ثم `countAvailableUnits` ثم `desiredUnitsToSell`.
+لا يستخدم `countReservedUnits` منفردًا لإثبات التوفر ولا يشتق المخزون من
+الحجوزات. تعارض أي إشارة مخزون مع `isAvailable` ينتج
+`inventory_conflict` ويمنع طلب السعر.
+
 بعد نجاح التقويم فقط، يحسب الخادم السعر من:
 
 ```text
@@ -112,8 +119,9 @@ Hostaway و`Decimal` للقيم المالية، ولا يعيد جمع الأس
 
 إعداد التطوير الحالي يستخدم `LocMemCache`، لذلك يظهر cache hit بين طلبات الويب
 داخل process نفسه، لكنه لا ينتقل بين عمليتي `manage.py` منفصلتين. يجب استخدام
-backend مشترك مناسب في النشر متعدد العمليات؛ لا تُخزن بيانات التقويم اليومية في
-PostgreSQL.
+Redis مشترك عند النشر بعدة workers؛ لا تُخزن بيانات التقويم اليومية في
+PostgreSQL. Cache ليس ضمانًا للتوافر، ويجب إعادة التحقق مباشرة قبل إنشاء الحجز
+والدفع مستقبلًا.
 
 أمر تحقق آمن لوحدة محلية واحدة:
 
@@ -132,6 +140,25 @@ python manage.py verify_hostaway_availability `
 ثم يرسل طلب سعر واحد على الأكثر. يمكن تحديد `--check-in` و`--check-out`، واستخدام
 `--bypass-cache` للتحقق الإداري فقط. لا يحفظ الأمر التقويم أو السعر أو JSON الخام،
 ولا يعرض موارد الحجوزات أو الملاحظات، ولا ينشئ Reservation.
+
+لتشخيص مخزون وحدة واحدة على مدى سنة دون كشف محتوى الحجوزات:
+
+```powershell
+python manage.py verify_hostaway_availability `
+  --listing-id 315816 `
+  --scan-days 365 `
+  --stay-nights 2 `
+  --guests 2 `
+  --diagnose-inventory `
+  --show-schema `
+  --strict `
+  --bypass-cache `
+  --timeout 20
+```
+
+يعرض التشخيص توزيعات وإحصاءات مجمعة فقط. إذا أعادت Hostaway مفتاح
+`reservations`، يتجاهل validator محتواه قبل إنشاء DTO ولا يسجل الملاحظات أو
+الأسماء أو المعرفات. لا يستدعي `priceDetails` ما لم يثبت التقويم توفر الفترة.
 
 ## ملكية البيانات
 
