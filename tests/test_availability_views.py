@@ -13,7 +13,12 @@ from apps.integrations.hostaway.availability_validators import (
     PriceQuote,
 )
 from apps.properties.models import Property
+from apps.reservations.models import BookingQuote
 from apps.reservations.services.availability import AvailabilityResult
+from apps.reservations.services.booking import (
+    QuoteCreation,
+    create_quote_for_property,
+)
 from apps.reservations.views import AvailabilitySearchView
 
 pytestmark = pytest.mark.django_db
@@ -81,9 +86,19 @@ class DummyService:
     def __exit__(self, *args: object) -> None:
         pass
 
-    def check(self, request: object) -> AvailabilityResult:
+    def create_booking_quote(
+        self,
+        request: object,
+        *,
+        session_hash: str,
+    ) -> QuoteCreation:
         type(self).calls += 1
-        return type(self).result
+        quote = create_quote_for_property(
+            type(self).result,
+            property_obj=request.property,
+            session_hash=session_hash,
+        )
+        return QuoteCreation(type(self).result, quote)
 
 
 @pytest.fixture
@@ -110,8 +125,8 @@ def test_home_and_property_forms_are_rtl_and_do_not_call_hostaway() -> None:
     assert response.status_code == 200
     assert detail.status_code == 200
     assert b'dir="rtl"' in response.content
-    assert b"search-availability" in response.content
-    assert b"search-availability" in detail.content
+    assert b"/reservations/quotes/" in response.content
+    assert b"/reservations/quotes/" in detail.content
 
 
 def test_availability_endpoint_rejects_get() -> None:
@@ -140,6 +155,7 @@ def test_price_result_is_rtl_and_hides_internal_fields(
         "/properties/search-availability/",
         form_data(property_obj),
         HTTP_X_CSRFTOKEN=token,
+        follow=True,
     )
     content = response.content.decode()
     assert response.status_code == 200
@@ -150,6 +166,22 @@ def test_price_result_is_rtl_and_hides_internal_fields(
     assert "technical-alias" not in content
     assert "Do not render this internal name" not in content
     assert "إنشاء حجز" not in content
+    assert mocked_service.calls == 1
+
+
+def test_quote_ignores_browser_price_and_hostaway_listing_id(
+    mocked_service: type[DummyService],
+) -> None:
+    property_obj = make_property()
+    DummyService.result = available_result(property_obj)
+    data = form_data(property_obj)
+    data["total_price"] = "0.01"
+    data["hostaway_listing_id"] = 999999
+    response = Client().post("/reservations/quotes/", data)
+    quote = BookingQuote.objects.get()
+    assert response.status_code == 302
+    assert quote.total_price == Decimal("620.0000")
+    assert quote.hostaway_listing_id == property_obj.hostaway_listing_id
     assert mocked_service.calls == 1
 
 
@@ -166,7 +198,7 @@ def test_local_rate_limit_uses_session_cache(
     client = Client()
     first = client.post("/properties/search-availability/", form_data(property_obj))
     second = client.post("/properties/search-availability/", form_data(property_obj))
-    assert first.status_code == 200
+    assert first.status_code == 302
     assert second.status_code == 429
     assert mocked_service.calls == 1
 
@@ -193,5 +225,5 @@ def test_search_query_count_is_bounded(
             "/properties/search-availability/",
             form_data(property_obj),
         )
-    assert response.status_code == 200
-    assert len(queries) <= 7
+    assert response.status_code == 302
+    assert len(queries) <= 12

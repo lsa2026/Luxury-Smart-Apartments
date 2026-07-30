@@ -247,6 +247,26 @@ class AvailabilityService:
             calendar_document=calendar.document,
         )
 
+    def create_booking_quote(
+        self,
+        request: AvailabilityRequest,
+        *,
+        session_hash: str,
+        bypass_cache: bool = False,
+    ) -> object:
+        """Verify Hostaway outside a transaction, then persist a short-lived quote."""
+        from .booking import QuoteCreation, create_quote_for_property
+
+        availability = self.check(request, bypass_cache=bypass_cache)
+        if not availability.is_available or availability.quote is None:
+            return QuoteCreation(availability=availability, quote=None)
+        quote = create_quote_for_property(
+            availability,
+            property_obj=request.property,
+            session_hash=session_hash,
+        )
+        return QuoteCreation(availability=availability, quote=quote)
+
     def find_first_available(
         self,
         *,

@@ -1,5 +1,6 @@
 """Shared Django settings."""
 
+from decimal import Decimal
 from pathlib import Path
 
 import environ
@@ -142,6 +143,25 @@ PROPERTY_IMAGE_MAX_PIXELS = 50_000_000
 
 AVAILABILITY_RATE_LIMIT_REQUESTS = 20
 AVAILABILITY_RATE_LIMIT_WINDOW = 5 * 60
+
+
+def optional_positive_int(name: str, default: int) -> int:
+    """Read a positive integer while treating an empty environment value as unset."""
+    raw_value = env(name, default="").strip()
+    value = int(raw_value) if raw_value else default
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer.")
+    return value
+
+
+BOOKING_QUOTE_TTL_SECONDS = optional_positive_int("BOOKING_QUOTE_TTL_SECONDS", 600)
+BOOKING_INTENT_TTL_SECONDS = optional_positive_int("BOOKING_INTENT_TTL_SECONDS", 1800)
+BOOKING_INCOMPLETE_RETENTION_DAYS = optional_positive_int("BOOKING_INCOMPLETE_RETENTION_DAYS", 30)
+BOOKING_PRICE_TOLERANCE = Decimal("0.00")
+BOOKING_INTENT_RATE_LIMIT_REQUESTS = 5
+BOOKING_INTENT_RATE_LIMIT_WINDOW = 10 * 60
+BOOKING_READ_RATE_LIMIT_REQUESTS = 30
+BOOKING_READ_RATE_LIMIT_WINDOW = 5 * 60
 
 LOGGING = {
     "version": 1,

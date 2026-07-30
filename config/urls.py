@@ -5,11 +5,18 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.reservations.views import AvailabilitySearchView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls")),
-    path("properties/", include("apps.reservations.urls")),
+    path(
+        "properties/search-availability/",
+        AvailabilitySearchView.as_view(),
+        name="legacy_search_availability",
+    ),
     path("properties/", include("apps.properties.urls")),
+    path("reservations/", include("apps.reservations.urls")),
     path("reviews/", include("apps.reviews.urls")),
 ]
 

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}مراجعة طلب الحجز{% endblock %}
+
+{% block content %}
+<section class="section container" aria-labelledby="intent-title">
+    <div class="section-heading">
+        <p class="eyebrow">طلب حجز مبدئي</p>
+        <h1 id="intent-title">مراجعة الطلب</h1>
+    </div>
+    <article class="facts-panel">
+        <h2>{{ intent.property.display_name }}</h2>
+        <dl class="quote-summary">
+            <div><dt>الوصول</dt><dd>{{ intent.check_in|date:"Y-m-d" }}</dd></div>
+            <div><dt>المغادرة</dt><dd>{{ intent.check_out|date:"Y-m-d" }}</dd></div>
+            <div><dt>الليالي</dt><dd>{{ intent.nights }}</dd></div>
+            <div><dt>الضيوف</dt><dd>{{ intent.guests }}</dd></div>
+            <div><dt>البريد</dt><dd>{{ masked_email }}</dd></div>
+            <div><dt>الهاتف</dt><dd>{{ masked_phone }}</dd></div>
+            <div class="quote-summary__total"><dt>الإجمالي</dt><dd>{{ intent.total_price }} {{ intent.currency }}</dd></div>
+        </dl>
+        <p class="quote-notice">هذا الطلب غير مؤكد حتى اكتمال الدفع وإنشاء الحجز.</p>
+        <button class="button" type="button" disabled aria-disabled="true">
+            الدفع سيُفعّل بعد ربط بوابة الدفع
+        </button>
+    </article>
+</section>
+{% endblock %}
