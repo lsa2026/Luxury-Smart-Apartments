@@ -154,6 +154,26 @@ def optional_positive_int(name: str, default: int) -> int:
     return value
 
 
+def strict_bool(name: str, default: bool = False) -> bool:
+    """Parse an explicit environment boolean without truthy-string surprises."""
+    raw_value = env(name, default="true" if default else "false").strip().casefold()
+    if raw_value in {"1", "true", "yes", "on"}:
+        return True
+    if raw_value in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be an explicit boolean value.")
+
+
+def optional_positive_int_or_none(name: str) -> int | None:
+    raw_value = env(name, default="").strip()
+    if not raw_value:
+        return None
+    value = int(raw_value)
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer when configured.")
+    return value
+
+
 BOOKING_QUOTE_TTL_SECONDS = optional_positive_int("BOOKING_QUOTE_TTL_SECONDS", 600)
 BOOKING_INTENT_TTL_SECONDS = optional_positive_int("BOOKING_INTENT_TTL_SECONDS", 1800)
 BOOKING_INCOMPLETE_RETENTION_DAYS = optional_positive_int("BOOKING_INCOMPLETE_RETENTION_DAYS", 30)
@@ -162,6 +182,42 @@ BOOKING_INTENT_RATE_LIMIT_REQUESTS = 5
 BOOKING_INTENT_RATE_LIMIT_WINDOW = 10 * 60
 BOOKING_READ_RATE_LIMIT_REQUESTS = 30
 BOOKING_READ_RATE_LIMIT_WINDOW = 5 * 60
+
+HOSTAWAY_LIVE_BOOKING_ENABLED = strict_bool("HOSTAWAY_LIVE_BOOKING_ENABLED")
+HOSTAWAY_WEBHOOK_RECEIVER_ENABLED = strict_bool("HOSTAWAY_WEBHOOK_RECEIVER_ENABLED")
+HOSTAWAY_WEBHOOK_PROCESSING_ENABLED = strict_bool("HOSTAWAY_WEBHOOK_PROCESSING_ENABLED")
+HOSTAWAY_WEBHOOK_BASIC_AUTH_USERNAME = env(
+    "HOSTAWAY_WEBHOOK_BASIC_AUTH_USERNAME",
+    default="",
+)
+HOSTAWAY_WEBHOOK_BASIC_AUTH_PASSWORD = env(
+    "HOSTAWAY_WEBHOOK_BASIC_AUTH_PASSWORD",
+    default="",
+)
+HOSTAWAY_WEBHOOK_MAX_BODY_BYTES = optional_positive_int(
+    "HOSTAWAY_WEBHOOK_MAX_BODY_BYTES",
+    262_144,
+)
+HOSTAWAY_WEBHOOK_ALLOWED_EVENTS = tuple(
+    value.strip()
+    for value in env.list(
+        "HOSTAWAY_WEBHOOK_ALLOWED_EVENTS",
+        default=["reservation.created", "reservation.updated"],
+    )
+    if value.strip()
+)
+HOSTAWAY_RESERVATION_PROVIDER = env(
+    "HOSTAWAY_RESERVATION_PROVIDER",
+    default="LuxurySmartApartments",
+).strip()
+HOSTAWAY_DIRECT_CHANNEL_ID = optional_positive_int_or_none("HOSTAWAY_DIRECT_CHANNEL_ID")
+HOSTAWAY_RESERVATION_REQUEST_TIMEOUT_SECONDS = optional_positive_int(
+    "HOSTAWAY_RESERVATION_REQUEST_TIMEOUT_SECONDS",
+    20,
+)
+HOSTAWAY_WEBHOOK_RATE_LIMIT_REQUESTS = 120
+HOSTAWAY_WEBHOOK_RATE_LIMIT_WINDOW = 60
+HOSTAWAY_WEBHOOK_MAX_PROCESSING_ATTEMPTS = 5
 
 LOGGING = {
     "version": 1,

@@ -17,6 +17,7 @@ urlpatterns = [
     ),
     path("properties/", include("apps.properties.urls")),
     path("reservations/", include("apps.reservations.urls")),
+    path("integrations/", include("apps.integrations.urls")),
     path("reviews/", include("apps.reviews.urls")),
 ]
 

@@ -34,6 +34,12 @@ from .listing_validators import (
     inspect_object_response,
     validate_collection_response,
 )
+from .reservation_validators import (
+    HostawayReservationCreateRequest,
+    HostawayReservationCreateResult,
+    HostawayReservationSnapshot,
+    validate_reservation_response,
+)
 from .token_provider import HostawayTokenProvider
 from .validators import validate_reviews_page
 
@@ -300,6 +306,35 @@ class HostawayClient:
             fallback_currency=fallback_currency,
         )
 
+    def create_reservation_with_price_details(
+        self,
+        request: HostawayReservationCreateRequest,
+    ) -> HostawayReservationCreateResult:
+        """Create a reservation only when the explicit live-booking flag is enabled."""
+        if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
+            raise HostawayConfigurationError("hostaway_live_booking_disabled")
+        payload = request.to_payload()
+        provider = request.provider.strip()
+        if not provider or len(provider) > 65:
+            raise HostawayConfigurationError("hostaway_reservation_provider_invalid")
+        response_payload = self._post_json(
+            "/reservations",
+            json_body=payload,
+            params=[("provider", provider)],
+        )
+        return HostawayReservationCreateResult(
+            snapshot=validate_reservation_response(response_payload)
+        )
+
+    def get_reservation(self, reservation_id: int) -> HostawayReservationSnapshot:
+        """Retrieve and sanitize one authoritative Hostaway reservation."""
+        if isinstance(reservation_id, bool) or not isinstance(reservation_id, int):
+            raise ValueError("reservation_id must be a positive integer.")
+        if reservation_id <= 0:
+            raise ValueError("reservation_id must be a positive integer.")
+        payload = self._get_json(f"/reservations/{reservation_id}", params=[])
+        return validate_reservation_response(payload)
+
     def _get_json(
         self,
         path: str,
@@ -312,8 +347,14 @@ class HostawayClient:
         except ValueError as exc:
             raise HostawayResponseError("Hostaway returned invalid JSON.") from exc
 
-    def _post_json(self, path: str, *, json_body: dict[str, Any]) -> Any:
-        response = self._authenticated_post(path, json_body=json_body)
+    def _post_json(
+        self,
+        path: str,
+        *,
+        json_body: dict[str, Any],
+        params: list[tuple[str, str | int]] | None = None,
+    ) -> Any:
+        response = self._authenticated_post(path, json_body=json_body, params=params or [])
         self._raise_for_response(response, retry_exhausted=False)
         try:
             return response.json()
@@ -374,9 +415,15 @@ class HostawayClient:
         path: str,
         *,
         json_body: dict[str, Any],
+        params: list[tuple[str, str | int]] | None = None,
     ) -> httpx.Response:
         token = self._token_provider.get_token()
-        response = self._request_post(path, json_body=json_body, token=token)
+        response = self._request_post(
+            path,
+            json_body=json_body,
+            params=params or [],
+            token=token,
+        )
         if response.status_code != 403:
             return response
 
@@ -387,7 +434,12 @@ class HostawayClient:
             raise HostawayAuthenticationError(
                 "Hostaway returned HTTP 403 and token refresh is not configured."
             ) from exc
-        return self._request_post(path, json_body=json_body, token=refreshed_token)
+        return self._request_post(
+            path,
+            json_body=json_body,
+            params=params or [],
+            token=refreshed_token,
+        )
 
     def _request_get(
         self,
@@ -412,12 +464,14 @@ class HostawayClient:
         path: str,
         *,
         json_body: dict[str, Any],
+        params: list[tuple[str, str | int]],
         token: str,
     ) -> httpx.Response:
         try:
             return self._client.post(
                 path,
                 json=json_body,
+                params=params,
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",

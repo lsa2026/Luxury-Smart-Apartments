@@ -7,7 +7,12 @@ from django.contrib.admin import ModelAdmin
 from django.http import HttpRequest
 from django.utils import timezone
 
-from .models import BookingIntent, BookingQuote
+from .models import (
+    BookingIntent,
+    BookingQuote,
+    HostawayReservationOperation,
+    Reservation,
+)
 
 
 @admin.register(BookingQuote)
@@ -163,3 +168,122 @@ class BookingIntentAdmin(ModelAdmin):
         for obj in audited_objects:
             self.log_change(request, obj, "Cancelled through the admin action.")
         self.message_user(request, f"تم إلغاء {count} طلبًا.")
+
+
+@admin.register(Reservation)
+class ReservationAdmin(ModelAdmin):
+    list_display = (
+        "public_reference",
+        "property",
+        "source_type",
+        "normalized_status",
+        "hostaway_status",
+        "hostaway_reservation_id",
+        "check_in",
+        "check_out",
+        "guests",
+        "currency",
+        "total_price",
+        "last_synced_at",
+    )
+    list_filter = ("source_type", "normalized_status", "hostaway_status", "check_in")
+    search_fields = (
+        "public_reference",
+        "hostaway_reservation_id",
+        "property__name_ar",
+        "property__name_en",
+    )
+    readonly_fields = (
+        "id",
+        "public_reference",
+        "booking_intent",
+        "property",
+        "hostaway_reservation_id",
+        "hostaway_listing_id",
+        "hostaway_listing_map_id",
+        "channel_id",
+        "source_type",
+        "normalized_status",
+        "hostaway_status",
+        "payment_status",
+        "check_in",
+        "check_out",
+        "nights",
+        "guests",
+        "currency",
+        "total_price",
+        "source_updated_at",
+        "last_synced_at",
+        "confirmed_at",
+        "cancelled_at",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: Reservation | None = None,
+    ) -> bool:
+        return False
+
+
+@admin.register(HostawayReservationOperation)
+class HostawayReservationOperationAdmin(ModelAdmin):
+    list_display = (
+        "reservation",
+        "operation_type",
+        "status",
+        "attempt_count",
+        "hostaway_reservation_id",
+        "error_code",
+        "created_at",
+    )
+    list_filter = ("operation_type", "status", "created_at")
+    search_fields = ("reservation__public_reference", "error_code")
+    actions = ("mark_unknown_for_review",)
+    readonly_fields = (
+        "id",
+        "reservation",
+        "operation_type",
+        "idempotency_key",
+        "fingerprint_preview",
+        "status",
+        "attempt_count",
+        "hostaway_reservation_id",
+        "error_code",
+        "started_at",
+        "completed_at",
+        "created_at",
+        "updated_at",
+    )
+    exclude = ("request_fingerprint",)
+
+    @admin.display(description="بصمة الطلب")
+    def fingerprint_preview(self, obj: HostawayReservationOperation) -> str:
+        return f"{obj.request_fingerprint[:8]}…"
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: HostawayReservationOperation | None = None,
+    ) -> bool:
+        return False
+
+    @admin.action(description="وضع العمليات غير المؤكدة بانتظار مراجعة")
+    def mark_unknown_for_review(self, request: HttpRequest, queryset: object) -> None:
+        if not request.user.is_superuser:
+            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            return
+        count = queryset.filter(status=HostawayReservationOperation.Status.UNKNOWN).update(
+            status=HostawayReservationOperation.Status.BLOCKED,
+            error_code="admin_review_required",
+            updated_at=timezone.now(),
+        )
+        self.message_user(request, f"تم وضع {count} عملية للمراجعة دون إعادة إرسال.")

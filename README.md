@@ -201,6 +201,92 @@ python manage.py expire_booking_intents
 الحذف التلقائي في هذه المرحلة. لا تسجل الشيفرة البريد أو الهاتف كاملين، ولا ترسل
 بيانات الضيف إلى Hostaway.
 
+## الحجز المستقبلي وUnified Webhooks
+
+تضيف المرحلة الخامسة ثلاث طبقات منفصلة:
+
+- `Reservation`: الحالة المحلية المنقحة للحجز. قد ترتبط بـ`BookingIntent` للحجز
+  المباشر، أو تكون بلا طلب عند وصول حجز من قناة خارجية. لا تكون مؤكدة إلا عند
+  وجود `hostaway_reservation_id` حقيقي.
+- `PaymentAttempt`: سجل محاولة دفع مستقبلية. لا ينشأ تلقائيًا، ولا توجد بوابة
+  دفع مفعلة حاليًا.
+- `HostawayReservationOperation`: سجل idempotency منقح يمنع إرسال طلب إنشاء
+  الحجز مرتين ولا يخزن request أو response خامًا.
+
+كود إنشاء حجز Hostaway موجود خلف حواجز متعددة، وكلها مغلقة افتراضيًا:
+
+```dotenv
+HOSTAWAY_LIVE_BOOKING_ENABLED=False
+HOSTAWAY_RESERVATION_PROVIDER=LuxurySmartApartments
+HOSTAWAY_DIRECT_CHANNEL_ID=
+HOSTAWAY_RESERVATION_REQUEST_TIMEOUT_SECONDS=20
+```
+
+لا يبدأ الاستدعاء إلا بعد دفع ناجح حقيقي، وإعادة تحقق مباشرة من التوافر
+و`priceDetails`، وتطابق السعر والعملـة، ووجود `listingMapId` و`channelId`
+موثقين. لا يُستخدم Listing ID بديلًا لـListing Map ID. يبنى `financeField` من
+مكونات السعر المعاد التحقق منها. لا يرسل النظام `forceOverbooking` أو
+`validatePaymentMethod` أو بيانات بطاقة أو Door Code أو Notes. عند timeout أو
+5xx بعد محاولة POST تصبح العملية `unknown` ولا يعاد POST تلقائيًا؛ يجب إجراء
+مصالحة آمنة أو مراجعة إدارية أولًا.
+
+لفحص المتطلبات المسبقة عبر GET فقط:
+
+```powershell
+python manage.py verify_hostaway_booking_prerequisites --listing-id 315816 --strict
+python manage.py verify_hostaway_booking_prerequisites --listing-id 315816 --show-schema
+```
+
+مستقبل Unified Webhook المحلي:
+
+```text
+POST /integrations/hostaway/webhooks/unified/
+```
+
+وهو معطل افتراضيًا، ويستخدم Basic Authentication ببيانات منفصلة لا تدخل Git:
+
+```dotenv
+HOSTAWAY_WEBHOOK_RECEIVER_ENABLED=False
+HOSTAWAY_WEBHOOK_PROCESSING_ENABLED=False
+HOSTAWAY_WEBHOOK_BASIC_AUTH_USERNAME=
+HOSTAWAY_WEBHOOK_BASIC_AUTH_PASSWORD=
+HOSTAWAY_WEBHOOK_MAX_BODY_BYTES=262144
+HOSTAWAY_WEBHOOK_ALLOWED_EVENTS=reservation.created,reservation.updated
+```
+
+لا يخزن المستقبل body الخام أو Authorization أو بيانات الضيف أو الباب أو
+الملاحظات. يحتفظ فقط بقائمة حقول تشغيلية مسموحة وhash للجسم ومفتاح deduplication.
+تقبل الأحداث المكررة بصورة idempotent، وتُسجّل الأنواع غير المعروفة
+`ignored` مع HTTP 200. طلب HTTP لا يستدعي Hostaway؛ تعالج الأحداث لاحقًا:
+
+```powershell
+python manage.py process_hostaway_webhooks --dry-run
+python manage.py process_hostaway_webhooks --limit 50
+python manage.py process_hostaway_webhooks --event-id <event-uuid>
+python manage.py process_hostaway_webhooks --retry-failed
+```
+
+المعالج يجلب الحجز الحالي عبر GET ويطابق الوحدة بـListing Map ID أولًا، ثم
+Listing ID فقط عندما يكون fallback فريدًا. يدعم وصول `reservation.updated` قبل
+`reservation.created`، ولا يسمح لحدث قديم باستبدال `source_updated_at` أحدث.
+لا يوجد Celery أو worker دائم حاليًا؛ يلزم جدولة أمر الإدارة بواسطة worker
+موثوق عند الإنتاج. يجب وضع سياسة احتفاظ للأحداث المنقحة حسب متطلبات التشغيل
+والخصوصية؛ لا يحذف النظام الأحداث تلقائيًا في هذه المرحلة.
+
+### Production Readiness Blockers
+
+- Payment provider not configured.
+- Hostaway live booking disabled.
+- Listing Map ID not verified (when absent from the trusted listing response).
+- Direct Channel ID not verified.
+- Unified Webhook not registered in Hostaway.
+- Background worker not configured.
+- Redis shared cache required for multi-worker production.
+
+لا يجوز رفع مفاتيح API أو رمز الوصول أو كلمة مرور Webhook إلى Git. تسجيل
+Unified Webhook في Hostaway وتفعيل flags خطوات إنتاج يدوية مستقلة لا تنفذها
+هذه المرحلة.
+
 ## ملكية البيانات
 
 Hostaway هو المصدر للمعرّف والحالة التشغيلية والسعة والغرف والأسرة والحمامات
@@ -356,11 +442,13 @@ python manage.py makemigrations --check
 
 ## الحدود الحالية
 
-نُفذ التحقق اللحظي من السعر والتوافر وعرض سعر مؤقت وطلب حجز محلي مبدئي فقط. لم
-يُنفذ إنشاء أو تعديل الحجوزات في Hostaway، ولم يُنفذ الدفع أو الأسعار المحفوظة
-أو تقويم دائم في PostgreSQL أو Google Analytics أو Google Ads أو رفع الصور
-المحلية إلى Hostaway أو التصميم النهائي. صفحات العرض تقرأ PostgreSQL المحلي ولا
-تستدعي Hostaway إلا عند إنشاء العرض وعند إعادة التحقق قبل إنشاء الطلب المبدئي.
+نُفذ التحقق اللحظي من السعر والتوافر، وعرض سعر مؤقت، وطلب حجز مبدئي، وحالة
+Reservation محلية، وكود إنشاء Hostaway معطل افتراضيًا، ومستقبل Webhook محلي
+غير مسجل خارجيًا. لم يُنفذ أي إنشاء أو تعديل حي للحجوزات في Hostaway، ولم يُنفذ
+الدفع أو الأسعار المحفوظة أو تقويم دائم في PostgreSQL أو Google Analytics أو
+Google Ads أو رفع الصور المحلية إلى Hostaway أو التصميم النهائي. صفحات العرض
+تقرأ PostgreSQL المحلي ولا تستدعي Hostaway إلا عند إنشاء العرض وعند إعادة
+التحقق قبل إنشاء الطلب المبدئي.
 
 > لا تشارك مفاتيح Hostaway أو رموز الوصول، ولا تضعها في المستودع أو سجلات
 > التشغيل. ألغِ أي رمز يُشتبه في تسربه.

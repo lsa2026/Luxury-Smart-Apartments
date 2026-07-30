@@ -50,6 +50,9 @@ class PriceComponent:
     value: Decimal
     total: Decimal | None
     is_included_in_total: bool | None
+    is_overridden_by_user: bool | None = None
+    is_mandatory: bool | None = None
+    is_deleted: bool | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +217,18 @@ def validate_price_response(
                 is_included_in_total=_optional_bool(
                     item.get("isIncludedInTotalPrice"),
                     f"components[{index}].isIncludedInTotalPrice",
+                ),
+                is_overridden_by_user=_optional_bool(
+                    item.get("isOverriddenByUser"),
+                    f"components[{index}].isOverriddenByUser",
+                ),
+                is_mandatory=_optional_bool(
+                    item.get("isMandatory"),
+                    f"components[{index}].isMandatory",
+                ),
+                is_deleted=_optional_bool(
+                    item.get("isDeleted"),
+                    f"components[{index}].isDeleted",
                 ),
             )
         )
