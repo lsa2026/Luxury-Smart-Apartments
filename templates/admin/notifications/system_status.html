@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div id="content-main">
+  <p>
+    <a href="{% url 'notifications:dashboard' %}">لوحة العمليات</a>
+    · <a href="{% url 'notifications:center' %}">مركز الإشعارات</a>
+  </p>
+  <table>
+    <tbody>
+      <tr><th>PostgreSQL</th><td>{{ status.database }}</td></tr>
+      <tr><th>Cache</th><td>{{ status.cache }}</td></tr>
+      <tr><th>Migrations</th><td>{{ status.migrations }}</td></tr>
+      <tr><th>Redis</th><td>{{ status.redis }}</td></tr>
+      <tr><th>Celery Worker</th><td>{{ status.celery_worker }}</td></tr>
+      <tr><th>Celery Beat</th><td>{{ status.celery_beat }}</td></tr>
+      <tr><th>Email Provider</th><td>{{ status.email_provider }}</td></tr>
+      <tr><th>Hostaway Authentication</th><td>{{ status.hostaway_auth }}</td></tr>
+      <tr><th>مهام البريد الفاشلة</th><td>{{ status.failed_email_tasks }}</td></tr>
+    </tbody>
+  </table>
+  <h2>Feature Flags</h2>
+  <ul>{% for name, enabled in status.feature_flags.items %}<li>{{ name }}: {{ enabled|yesno:"enabled,disabled" }}</li>{% endfor %}</ul>
+</div>
+{% endblock %}

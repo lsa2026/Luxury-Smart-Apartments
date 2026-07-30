@@ -186,6 +186,9 @@ class ModificationService:
         request.full_clean()
         with transaction.atomic():
             request.save(force_insert=True)
+            from apps.notifications.services.events import handle_modification_created
+
+            transaction.on_commit(lambda: handle_modification_created(request.pk))
         return ModificationCreation("created", request)
 
     @staticmethod
@@ -265,6 +268,9 @@ class ModificationService:
         request.full_clean()
         with transaction.atomic():
             request.save(force_insert=True)
+            from apps.notifications.services.events import handle_modification_created
+
+            transaction.on_commit(lambda: handle_modification_created(request.pk))
         return ModificationCreation("created", request)
 
 

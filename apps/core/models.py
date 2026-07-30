@@ -46,14 +46,24 @@ class FAQItem(models.Model):
 
 class SiteSetting(models.Model):
     site_name = models.CharField(max_length=120, default="Luxury Smart Apartments")
+    brand_name_ar = models.CharField(max_length=120, blank=True)
+    brand_name_en = models.CharField(max_length=120, blank=True)
     tagline_ar = models.CharField(max_length=240, blank=True)
     tagline_en = models.CharField(max_length=240, blank=True)
     contact_email = models.EmailField(blank=True)
     contact_phone = models.CharField(max_length=30, blank=True)
+    whatsapp_display_number = models.CharField(max_length=30, blank=True)
     whatsapp_url = models.URLField(blank=True)
     instagram_url = models.URLField(blank=True)
+    facebook_url = models.URLField(blank=True)
+    x_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
     office_hours_ar = models.CharField(max_length=200, blank=True)
     office_hours_en = models.CharField(max_length=200, blank=True)
+    public_address_ar = models.CharField(max_length=240, blank=True)
+    public_address_en = models.CharField(max_length=240, blank=True)
+    footer_text_ar = models.CharField(max_length=320, blank=True)
+    footer_text_en = models.CharField(max_length=320, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

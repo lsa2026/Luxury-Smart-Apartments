@@ -8,6 +8,7 @@ from django.urls import include, path
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
+    path("", include("apps.notifications.urls")),
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls")),
     path(

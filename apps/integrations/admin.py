@@ -6,6 +6,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 
+from apps.notifications.services.audit import record_audit
+
 from .health import get_integration_health
 from .models import HostawayWebhookEvent, IntegrationSyncRun
 
@@ -95,6 +97,14 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
         if command is None:
             self.message_user(request, "إجراء مزامنة غير صالح.", messages.ERROR)
             return
+        record_audit(
+            request=request,
+            action="hostaway.sync_requested",
+            object_type="IntegrationSyncRun",
+            object_reference=action,
+            summary="A manual Hostaway sync action was requested.",
+            metadata={"source": "admin", "dry_run": action.endswith("_dry_run")},
+        )
         if not settings.CELERY_SYNC_DISPATCH_ENABLED:
             self.message_user(
                 request,
@@ -183,5 +193,13 @@ class HostawayWebhookEventAdmin(admin.ModelAdmin):
             status=HostawayWebhookEvent.Status.RECEIVED,
             next_retry_at=None,
             error_code="",
+        )
+        record_audit(
+            request=request,
+            action="webhook.requeued",
+            object_type="HostawayWebhookEvent",
+            object_reference="bulk",
+            summary="Failed webhook events were queued for manual reprocessing.",
+            metadata={"count": count},
         )
         self.message_user(request, f"تمت إعادة {count} حدث إلى الطابور.")

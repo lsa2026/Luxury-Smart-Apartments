@@ -1,0 +1,10 @@
+{{ brand_name }}
+
+{{ heading }}
+
+{{ message }}
+{% if property_name %}الوحدة: {{ property_name }}{% endif %}
+{% if reference %}المرجع العام: {{ reference }}{% endif %}
+
+الخصوصية: {{ site_base_url }}/legal/privacy/
+التواصل: {{ site_base_url }}/contact/

@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div id="content-main">
+  <p>
+    <a href="{% url 'notifications:dashboard' %}">لوحة العمليات</a>
+    · <a href="{% url 'notifications:system_status' %}">حالة النظام</a>
+  </p>
+  <h2>غير المقروءة: {{ unread_count }}</h2>
+  <form method="get" class="module">
+    <label>النوع
+      <select name="type">
+        <option value="">الكل</option>
+        {% for value, label in notification_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>الخطورة
+      <select name="severity">
+        <option value="">الكل</option>
+        {% for value, label in severities %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit">تصفية</button>
+  </form>
+  <form method="post" action="{% url 'notifications:mark_all_read' %}">
+    {% csrf_token %}<button type="submit">تحديد الكل كمقروء</button>
+  </form>
+  <table>
+    <thead><tr><th>الإشعار</th><th>النوع</th><th>الخطورة</th><th>التاريخ</th><th></th></tr></thead>
+    <tbody>
+    {% for notification in page_obj %}
+      <tr>
+        <td>
+          <strong>{{ notification.title_ar }}</strong><br>
+          {{ notification.message_ar }}
+          {% if notification.action_url %}<br><a href="{{ notification.action_url }}">فتح العنصر</a>{% endif %}
+        </td>
+        <td>{{ notification.get_notification_type_display }}</td>
+        <td>{{ notification.get_severity_display }}</td>
+        <td>{{ notification.created_at }}</td>
+        <td>
+          {% if not notification.is_read %}
+          <form method="post" action="{% url 'notifications:mark_read' notification.pk %}">
+            {% csrf_token %}<button type="submit">مقروء</button>
+          </form>
+          {% else %}مقروء{% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">لا توجد إشعارات.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}
+  <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">التالي</a>{% endif %}
+</div>
+{% endblock %}

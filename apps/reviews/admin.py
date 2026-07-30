@@ -2,6 +2,8 @@ from django.contrib import admin, messages
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
+from apps.notifications.services.audit import record_audit
+
 from .models import Review
 
 
@@ -44,16 +46,40 @@ class ReviewAdmin(admin.ModelAdmin):
     @admin.action(description="إظهار المراجعات المحددة")
     def make_visible(self, request: HttpRequest, queryset: QuerySet[Review]) -> None:
         updated = queryset.update(is_visible=True)
+        record_audit(
+            request=request,
+            action="review.visibility_changed",
+            object_type="Review",
+            object_reference="bulk",
+            summary="Reviews were made visible.",
+            metadata={"count": updated, "status": "visible"},
+        )
         self.message_user(request, f"تم إظهار {updated} مراجعة.", messages.SUCCESS)
 
     @admin.action(description="إخفاء المراجعات المحددة")
     def make_hidden(self, request: HttpRequest, queryset: QuerySet[Review]) -> None:
         updated = queryset.update(is_visible=False)
+        record_audit(
+            request=request,
+            action="review.visibility_changed",
+            object_type="Review",
+            object_reference="bulk",
+            summary="Reviews were hidden.",
+            metadata={"count": updated, "status": "hidden"},
+        )
         self.message_user(request, f"تم إخفاء {updated} مراجعة.", messages.SUCCESS)
 
     @admin.action(description="تمييز المراجعات المحددة")
     def make_featured(self, request: HttpRequest, queryset: QuerySet[Review]) -> None:
         updated = queryset.update(is_featured=True)
+        record_audit(
+            request=request,
+            action="review.featured_changed",
+            object_type="Review",
+            object_reference="bulk",
+            summary="Reviews were featured.",
+            metadata={"count": updated, "status": "featured"},
+        )
         self.message_user(request, f"تم تمييز {updated} مراجعة.", messages.SUCCESS)
 
     def has_add_permission(self, request: HttpRequest) -> bool:

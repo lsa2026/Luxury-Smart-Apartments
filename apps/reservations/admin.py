@@ -7,6 +7,8 @@ from django.contrib.admin import ModelAdmin
 from django.http import HttpRequest
 from django.utils import timezone
 
+from apps.notifications.services.audit import record_audit
+
 from .models import (
     BookingIntent,
     BookingModificationRequest,
@@ -367,6 +369,14 @@ class BookingModificationRequestAdmin(ModelAdmin):
             approved_at=now,
             updated_at=now,
         )
+        record_audit(
+            request=request,
+            action="modification.approved_locally",
+            object_type="BookingModificationRequest",
+            object_reference="bulk",
+            summary="Modification requests were approved locally without Hostaway writes.",
+            metadata={"count": count, "status": "ready_for_hostaway"},
+        )
         self.message_user(request, f"تمت الموافقة المحلية على {count} طلب دون إرسال.")
 
     @admin.action(description="رفض الطلب محليًا")
@@ -384,6 +394,14 @@ class BookingModificationRequestAdmin(ModelAdmin):
             status=BookingModificationRequest.Status.REJECTED,
             rejected_at=now,
             updated_at=now,
+        )
+        record_audit(
+            request=request,
+            action="modification.rejected_locally",
+            object_type="BookingModificationRequest",
+            object_reference="bulk",
+            summary="Modification requests were rejected locally.",
+            metadata={"count": count, "status": "rejected"},
         )
         self.message_user(request, f"تم رفض {count} طلب محليًا.")
 

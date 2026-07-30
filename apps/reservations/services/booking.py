@@ -136,6 +136,17 @@ def consume_revalidated_quote(
             quote.status = BookingQuote.Status.UNAVAILABLE
             quote.invalidated_at = timezone.now()
             quote.save(update_fields=["status", "invalidated_at", "updated_at"])
+            from apps.notifications.services.events import dispatch_event
+
+            transaction.on_commit(
+                lambda: dispatch_event(
+                    "booking_intent.unavailable",
+                    event_key=f"quote-unavailable:{quote.pk}",
+                    related_object_type="BookingQuote",
+                    related_object_reference=str(quote.pk),
+                    action_url=f"/admin/reservations/bookingquote/{quote.pk}/change/",
+                )
+            )
             return IntentCreation("unavailable")
 
         latest = revalidated.quote
@@ -161,6 +172,17 @@ def consume_revalidated_quote(
                 revalidated,
                 property_obj=quote.property,
                 session_hash=session_hash,
+            )
+            from apps.notifications.services.events import dispatch_event
+
+            transaction.on_commit(
+                lambda: dispatch_event(
+                    "booking_intent.price_changed",
+                    event_key=f"quote-price-changed:{quote.pk}",
+                    related_object_type="BookingQuote",
+                    related_object_reference=str(quote.pk),
+                    action_url=f"/admin/reservations/bookingquote/{quote.pk}/change/",
+                )
             )
             return IntentCreation(
                 "price_changed",
@@ -212,4 +234,7 @@ def consume_revalidated_quote(
         quote.status = BookingQuote.Status.CONSUMED
         quote.consumed_at = now
         quote.save(update_fields=["status", "consumed_at", "updated_at"])
+        from apps.notifications.services.events import handle_booking_intent_created
+
+        transaction.on_commit(lambda: handle_booking_intent_created(intent.pk))
         return IntentCreation("created", intent=intent)

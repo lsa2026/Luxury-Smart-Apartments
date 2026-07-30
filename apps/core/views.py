@@ -129,13 +129,22 @@ class ContactView(View):
                 status=400,
             )
         with transaction.atomic():
-            ContactMessage.objects.create(
+            contact_message = ContactMessage.objects.create(
                 name=form.cleaned_data["name"],
                 email=form.cleaned_data["email"],
                 phone=form.cleaned_data["phone"],
                 subject=form.cleaned_data["subject"],
                 message=form.cleaned_data["message"],
                 language=translation.get_language() or "ar",
+            )
+            from apps.notifications.services.events import handle_contact_created
+
+            transaction.on_commit(
+                lambda: handle_contact_created(
+                    contact_message.pk,
+                    email=contact_message.email,
+                    language=contact_message.language,
+                )
             )
         messages.success(request, _("Your message has been received."))
         return redirect("core:contact")

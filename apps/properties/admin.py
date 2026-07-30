@@ -4,6 +4,8 @@ from django.db import models, transaction
 from django.http import HttpRequest
 from django.utils.html import format_html
 
+from apps.notifications.services.audit import record_audit
+
 from .models import Amenity, Property, PropertyAmenity, PropertyImage
 
 PROPERTY_SOURCE_FIELDS = (
@@ -225,6 +227,15 @@ class PropertyAdmin(admin.ModelAdmin):
         if change and "is_visible" in changed_data:
             obj.visibility_management = Property.VisibilityManagement.MANUAL
         super().save_model(request, obj, form, change)
+        if change and changed_data:
+            record_audit(
+                request=request,
+                action="property.content_changed",
+                object_type="Property",
+                object_reference=str(obj.pk),
+                summary="Local property presentation was updated.",
+                metadata={"fields": sorted(changed_data.intersection(PROPERTY_LOCAL_FIELDS))},
+            )
 
     @admin.action(description="مزامنة وحدات Hostaway المحددة")
     def queue_selected_property_sync(
@@ -332,6 +343,20 @@ class PropertyImageAdmin(admin.ModelAdmin):
                 is_visible=True,
             ).exclude(pk=obj.pk).update(is_cover=False)
         super().save_model(request, obj, form, change)
+        changed_data = set(getattr(form, "changed_data", []))
+        if changed_data.intersection({"is_visible", "is_cover", "sort_order"}):
+            record_audit(
+                request=request,
+                action="property_image.presentation_changed",
+                object_type="PropertyImage",
+                object_reference=str(obj.pk),
+                summary="Property image presentation was updated.",
+                metadata={
+                    "fields": sorted(
+                        changed_data.intersection({"is_visible", "is_cover", "sort_order"})
+                    )
+                },
+            )
 
     def has_delete_permission(
         self,

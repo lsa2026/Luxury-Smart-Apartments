@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.http import HttpRequest
 
+from apps.notifications.services.audit import record_audit
+
 from .models import ContactMessage, FAQItem, SitePage, SiteSetting
 
 
@@ -9,6 +11,23 @@ class SitePageAdmin(admin.ModelAdmin):
     list_display = ("slug", "title_ar", "title_en", "is_published", "updated_at")
     list_filter = ("is_published",)
     search_fields = ("slug", "title_ar", "title_en", "body_ar", "body_en")
+
+    def save_model(
+        self,
+        request: HttpRequest,
+        obj: SitePage,
+        form: object,
+        change: bool,
+    ) -> None:
+        super().save_model(request, obj, form, change)
+        record_audit(
+            request=request,
+            action="site_content.changed",
+            object_type="SitePage",
+            object_reference=obj.slug,
+            summary="Public site content was updated.",
+            metadata={"fields": getattr(form, "changed_data", [])},
+        )
 
 
 @admin.register(FAQItem)
@@ -22,17 +41,36 @@ class FAQItemAdmin(admin.ModelAdmin):
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):
     fieldsets = (
-        ("العلامة", {"fields": ("site_name", "tagline_ar", "tagline_en")}),
+        (
+            "العلامة",
+            {
+                "fields": (
+                    "site_name",
+                    "brand_name_ar",
+                    "brand_name_en",
+                    "tagline_ar",
+                    "tagline_en",
+                    "footer_text_ar",
+                    "footer_text_en",
+                )
+            },
+        ),
         (
             "التواصل",
             {
                 "fields": (
                     "contact_email",
                     "contact_phone",
+                    "whatsapp_display_number",
                     "whatsapp_url",
                     "instagram_url",
+                    "facebook_url",
+                    "x_url",
+                    "linkedin_url",
                     "office_hours_ar",
                     "office_hours_en",
+                    "public_address_ar",
+                    "public_address_en",
                 )
             },
         ),
@@ -49,6 +87,23 @@ class SiteSettingAdmin(admin.ModelAdmin):
         obj: SiteSetting | None = None,
     ) -> bool:
         return False
+
+    def save_model(
+        self,
+        request: HttpRequest,
+        obj: SiteSetting,
+        form: object,
+        change: bool,
+    ) -> None:
+        super().save_model(request, obj, form, change)
+        record_audit(
+            request=request,
+            action="site_settings.changed",
+            object_type="SiteSetting",
+            object_reference=str(obj.pk),
+            summary="Public site settings were updated.",
+            metadata={"fields": getattr(form, "changed_data", [])},
+        )
 
 
 @admin.register(ContactMessage)

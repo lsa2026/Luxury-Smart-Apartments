@@ -1,0 +1,10 @@
+{{ brand_name }}
+
+{{ heading }}
+
+{{ message }}
+{% if property_name %}Property: {{ property_name }}{% endif %}
+{% if reference %}Public reference: {{ reference }}{% endif %}
+
+Privacy: {{ site_base_url }}/legal/privacy/
+Contact: {{ site_base_url }}/contact/

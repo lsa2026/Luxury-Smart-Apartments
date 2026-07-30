@@ -4,6 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     "apps.payments.apps.PaymentsConfig",
     "apps.integrations.apps.IntegrationsConfig",
     "apps.reviews.apps.ReviewsConfig",
+    "apps.notifications.apps.NotificationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -321,6 +323,70 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
 SITE_CANONICAL_URL = env("SITE_CANONICAL_URL", default="http://localhost:8000").rstrip("/")
 CONTACT_RATE_LIMIT_REQUESTS = 5
 CONTACT_RATE_LIMIT_WINDOW = 10 * 60
+
+EMAIL_DELIVERY_ENABLED = strict_bool("EMAIL_DELIVERY_ENABLED")
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+).strip()
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="").strip()
+SUPPORT_EMAIL = env("SUPPORT_EMAIL", default="").strip()
+OPERATIONS_EMAIL = env("OPERATIONS_EMAIL", default="").strip()
+EMAIL_HOST = env("EMAIL_HOST", default="").strip()
+EMAIL_PORT = optional_positive_int("EMAIL_PORT", 587)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="").strip()
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = strict_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = strict_bool("EMAIL_USE_SSL")
+EMAIL_TIMEOUT = optional_positive_int("EMAIL_TIMEOUT_SECONDS", 15)
+EMAIL_MAX_RETRIES = optional_positive_int("EMAIL_MAX_RETRIES", 3)
+EMAIL_RETRY_DELAY_SECONDS = optional_positive_int("EMAIL_RETRY_DELAY_SECONDS", 60)
+EMAIL_BRAND_NAME = env(
+    "EMAIL_BRAND_NAME",
+    default="Luxury Smart Apartments",
+).strip()
+SITE_BASE_URL = env("SITE_BASE_URL", default=SITE_CANONICAL_URL).rstrip("/")
+
+NOTIFICATIONS_ENABLED = strict_bool("NOTIFICATIONS_ENABLED", True)
+ADMIN_NOTIFICATION_EMAIL_ENABLED = strict_bool("ADMIN_NOTIFICATION_EMAIL_ENABLED")
+CONTACT_NOTIFICATION_EMAIL_ENABLED = strict_bool("CONTACT_NOTIFICATION_EMAIL_ENABLED")
+BOOKING_NOTIFICATION_EMAIL_ENABLED = strict_bool("BOOKING_NOTIFICATION_EMAIL_ENABLED")
+MODIFICATION_NOTIFICATION_EMAIL_ENABLED = strict_bool(
+    "MODIFICATION_NOTIFICATION_EMAIL_ENABLED",
+)
+EMAIL_TASK_SCHEDULE_ENABLED = strict_bool("EMAIL_TASK_SCHEDULE_ENABLED")
+
+CONTACT_MESSAGE_RETENTION_DAYS = optional_positive_int(
+    "CONTACT_MESSAGE_RETENTION_DAYS",
+    365,
+)
+EMAIL_DELIVERY_RETENTION_DAYS = optional_positive_int(
+    "EMAIL_DELIVERY_RETENTION_DAYS",
+    180,
+)
+NOTIFICATION_RETENTION_DAYS = optional_positive_int(
+    "NOTIFICATION_RETENTION_DAYS",
+    180,
+)
+AUDIT_LOG_RETENTION_DAYS = optional_positive_int("AUDIT_LOG_RETENTION_DAYS", 730)
+
+if EMAIL_TASK_SCHEDULE_ENABLED:
+    CELERY_BEAT_SCHEDULE.update(
+        {
+            "process-email-queue": {
+                "task": "apps.notifications.tasks.process_email_queue_task",
+                "schedule": 60,
+            },
+            "cleanup-expired-notifications": {
+                "task": "apps.notifications.tasks.cleanup_expired_notifications_task",
+                "schedule": 24 * 60 * 60,
+            },
+            "daily-operations-summary": {
+                "task": "apps.notifications.tasks.send_daily_operations_summary_task",
+                "schedule": crontab(hour=8, minute=0),
+            },
+        }
+    )
 
 LOGGING = {
     "version": 1,

@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div id="content-main">
+  <p>
+    <a href="{% url 'notifications:center' %}">مركز الإشعارات</a>
+    · <a href="{% url 'notifications:system_status' %}">حالة النظام</a>
+  </p>
+  <form method="get">
+    <label>الفترة
+      <select name="period">
+        <option value="today">اليوم</option>
+        <option value="7">آخر 7 أيام</option>
+        <option value="30" selected>آخر 30 يومًا</option>
+        <option value="custom">نطاق مخصص</option>
+      </select>
+    </label>
+    <label>من <input type="date" name="start"></label>
+    <label>إلى <input type="date" name="end"></label>
+    <button type="submit">تحديث</button>
+  </form>
+  <h2>نظرة عامة</h2>
+  <table>
+    <tbody>
+      <tr><th>الوحدات</th><td>{{ report.properties_total }}</td></tr>
+      <tr><th>الظاهرة</th><td>{{ report.properties_visible }}</td></tr>
+      <tr><th>المخفية</th><td>{{ report.properties_hidden }}</td></tr>
+      <tr><th>المؤرشفة</th><td>{{ report.properties_archived }}</td></tr>
+      <tr><th>الصور</th><td>{{ report.images_total }}</td></tr>
+      <tr><th>المراجعات</th><td>{{ report.reviews_total }}</td></tr>
+      <tr><th>متوسط التقييم</th><td>{{ report.average_rating|default:"—" }}</td></tr>
+      <tr><th>رسائل التواصل الجديدة</th><td>{{ report.new_contacts }}</td></tr>
+      <tr><th>إشعارات غير مقروءة</th><td>{{ report.notification_unread }}</td></tr>
+      <tr><th>Webhooks فاشلة</th><td>{{ report.failed_webhooks }}</td></tr>
+    </tbody>
+  </table>
+  <h2>قيمة طلبات الحجز</h2>
+  <p>القيم هنا طلبات غير مدفوعة وليست إيرادات مؤكدة.</p>
+  <h3>حالات عروض السعر</h3>
+  <ul>{% for item in report.quote_statuses %}<li>{{ item.status }}: {{ item.total }}</li>{% empty %}<li>لا بيانات</li>{% endfor %}</ul>
+  <h3>حالات طلبات الحجز</h3>
+  <ul>{% for item in report.intent_statuses %}<li>{{ item.status }}: {{ item.total }}</li>{% empty %}<li>لا بيانات</li>{% endfor %}</ul>
+  <h3>تسليم البريد</h3>
+  <ul>{% for item in report.email_statuses %}<li>{{ item.status }}: {{ item.total }}</li>{% empty %}<li>لا بيانات</li>{% endfor %}</ul>
+  <h3>أكثر الوحدات مشاهدة</h3>
+  <p>تتبع المشاهدات المحلي غير مفعّل بعد؛ لن تُعرض أرقام تقديرية.</p>
+  <h2>التصدير المنقح</h2>
+  <form method="post" action="{% url 'notifications:export' 'properties' %}" style="display:inline">{% csrf_token %}<button type="submit">properties</button></form>
+  <form method="post" action="{% url 'notifications:export' 'reviews' %}" style="display:inline">{% csrf_token %}<button type="submit">reviews</button></form>
+  <form method="post" action="{% url 'notifications:export' 'contacts' %}" style="display:inline">{% csrf_token %}<button type="submit">contacts</button></form>
+  <form method="post" action="{% url 'notifications:export' 'quotes' %}" style="display:inline">{% csrf_token %}<button type="submit">quotes</button></form>
+  <form method="post" action="{% url 'notifications:export' 'intents' %}" style="display:inline">{% csrf_token %}<button type="submit">intents</button></form>
+  <form method="post" action="{% url 'notifications:export' 'modifications' %}" style="display:inline">{% csrf_token %}<button type="submit">modifications</button></form>
+  <form method="post" action="{% url 'notifications:export' 'sync_runs' %}" style="display:inline">{% csrf_token %}<button type="submit">sync_runs</button></form>
+</div>
+{% endblock %}

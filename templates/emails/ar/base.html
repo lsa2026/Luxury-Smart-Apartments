@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<body style="margin:0;background:#f5f2ec;color:#1e2529;font-family:Arial,sans-serif">
+  <main style="max-width:640px;margin:24px auto;background:#fff;padding:32px;border-radius:16px">
+    <p style="color:#8c6b3d;font-weight:700">{{ brand_name }}</p>
+    {% block content %}{% endblock %}
+    <hr style="border:0;border-top:1px solid #ddd7cd;margin:28px 0">
+    <p style="font-size:13px;color:#647078">
+      <a href="{{ site_base_url }}/legal/privacy/">الخصوصية</a>
+      · <a href="{{ site_base_url }}/contact/">التواصل</a>
+    </p>
+  </main>
+</body>
+</html>

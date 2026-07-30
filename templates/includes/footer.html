@@ -2,8 +2,16 @@
 <footer class="site-footer">
     <div class="container footer-grid">
         <div class="footer-brand">
-            <strong>Luxury Smart Apartments</strong>
+            <strong>
+                {% if LANGUAGE_CODE == "ar" and site_setting.brand_name_ar %}{{ site_setting.brand_name_ar }}{% elif LANGUAGE_CODE == "en" and site_setting.brand_name_en %}{{ site_setting.brand_name_en }}{% else %}Luxury Smart Apartments{% endif %}
+            </strong>
+            {% if LANGUAGE_CODE == "ar" and site_setting.footer_text_ar %}
+            <p>{{ site_setting.footer_text_ar }}</p>
+            {% elif LANGUAGE_CODE == "en" and site_setting.footer_text_en %}
+            <p>{{ site_setting.footer_text_en }}</p>
+            {% else %}
             <p>{% trans "Considered smart stays in Riyadh and Marrakech." %}</p>
+            {% endif %}
         </div>
         <div>
             <h2>{% trans "Explore" %}</h2>
@@ -36,9 +44,8 @@
         <address>
             {% if site_setting.contact_email %}<a href="mailto:{{ site_setting.contact_email }}">{{ site_setting.contact_email }}</a>{% endif %}
             {% if site_setting.contact_phone %}<span>{{ site_setting.contact_phone }}</span>{% endif %}
+            {% if site_setting.whatsapp_display_number %}<span>{{ site_setting.whatsapp_display_number }}</span>{% endif %}
         </address>
-        {% else %}
-        <p>{% trans "Final contact details are being prepared." %}</p>
         {% endif %}
     </div>
 </footer>

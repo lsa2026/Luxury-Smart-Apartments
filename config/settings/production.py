@@ -23,3 +23,25 @@ if HOSTAWAY_AUTO_SYNC_ENABLED and not REDIS_URL:  # noqa: F405
     raise ImproperlyConfigured("REDIS_URL is required when automatic Hostaway sync is enabled.")
 if HOSTAWAY_AUTO_SYNC_ENABLED and not CACHE_URL:  # noqa: F405
     raise ImproperlyConfigured("CACHE_URL is required when automatic Hostaway sync is enabled.")
+if EMAIL_USE_TLS and EMAIL_USE_SSL:  # noqa: F405
+    raise ImproperlyConfigured("EMAIL_USE_TLS and EMAIL_USE_SSL cannot both be enabled.")
+if EMAIL_DELIVERY_ENABLED:  # noqa: F405
+    if EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":  # noqa: F405
+        raise ImproperlyConfigured(
+            "The console email backend cannot be used for enabled production delivery."
+        )
+    required_email_settings = {
+        "DEFAULT_FROM_EMAIL": DEFAULT_FROM_EMAIL,  # noqa: F405
+        "EMAIL_BACKEND": EMAIL_BACKEND,  # noqa: F405
+    }
+    if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":  # noqa: F405
+        required_email_settings["EMAIL_HOST"] = EMAIL_HOST  # noqa: F405
+        required_email_settings["EMAIL_HOST_USER"] = EMAIL_HOST_USER  # noqa: F405
+        required_email_settings["EMAIL_HOST_PASSWORD"] = EMAIL_HOST_PASSWORD  # noqa: F405
+    missing = [name for name, value in required_email_settings.items() if not value]
+    if missing:
+        raise ImproperlyConfigured(
+            f"Email delivery is enabled but required settings are missing: {', '.join(missing)}."
+        )
+if EMAIL_TASK_SCHEDULE_ENABLED and not REDIS_URL:  # noqa: F405
+    raise ImproperlyConfigured("REDIS_URL is required when the email task schedule is enabled.")
