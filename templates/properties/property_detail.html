@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.seo_title_ar|default:property.display_name }}{% endblock %}
+
+{% block content %}
+<article>
+    <header class="property-hero section">
+        <div class="container">
+            {% if property.is_featured %}<span class="badge">وحدة مميزة</span>{% endif %}
+            <h1>{{ property.display_name }}</h1>
+            <p>{{ property.public_address|default:property.display_city }}</p>
+            {% if property.short_description_ar %}
+            <p class="property-lead">{{ property.short_description_ar }}</p>
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="section container" aria-labelledby="gallery-title">
+        <div class="section-heading">
+            <h2 id="gallery-title">معرض الصور</h2>
+        </div>
+        {% if gallery_images %}
+        <div class="gallery">
+            {% for image in gallery_images %}
+            <figure{% if image.is_cover %} class="gallery__cover"{% endif %}>
+                <img
+                    src="{{ image.display_url }}"
+                    alt="{{ image.alt_text_ar|default:image.title_ar|default:property.display_name }}"
+                    width="960"
+                    height="640"
+                    loading="lazy"
+                >
+                {% if image.caption_ar %}
+                <figcaption>{{ image.caption_ar }}</figcaption>
+                {% endif %}
+            </figure>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state"><p>لا توجد صور منشورة لهذه الوحدة بعد.</p></div>
+        {% endif %}
+    </section>
+
+    <section class="property-overview section">
+        <div class="container split-layout">
+            <div>
+                <h2>عن الوحدة</h2>
+                {% if property.description_ar %}
+                <div class="rich-copy">{{ property.description_ar|linebreaks }}</div>
+                {% elif property.description_en %}
+                <div class="rich-copy" lang="en" dir="ltr">
+                    {{ property.description_en|linebreaks }}
+                </div>
+                {% else %}
+                <p>سيتم إضافة وصف الوحدة قريبًا.</p>
+                {% endif %}
+            </div>
+            <aside class="facts-panel" aria-label="تفاصيل السعة">
+                <h2>تفاصيل الإقامة</h2>
+                <dl>
+                    <div><dt>السعة</dt><dd>{{ property.person_capacity|default:"—" }}</dd></div>
+                    <div><dt>غرف النوم</dt><dd>{{ property.bedrooms_number|default:"—" }}</dd></div>
+                    <div><dt>الأسرّة</dt><dd>{{ property.beds_number|default:"—" }}</dd></div>
+                    <div><dt>الحمامات</dt><dd>{{ property.bathrooms_number|default:"—" }}</dd></div>
+                </dl>
+            </aside>
+        </div>
+    </section>
+
+    <section class="section container" aria-labelledby="amenities-title">
+        <div class="section-heading"><h2 id="amenities-title">المرافق</h2></div>
+        {% if visible_amenities %}
+        <ul class="amenity-list">
+            {% for link in visible_amenities %}
+                {% if link.amenity.display_name %}
+                <li>{{ link.amenity.display_name }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state"><p>لم تُنشر مرافق هذه الوحدة بعد.</p></div>
+        {% endif %}
+    </section>
+
+    <section class="section container" aria-labelledby="property-reviews-title">
+        <div class="section-heading"><h2 id="property-reviews-title">مراجعات الوحدة</h2></div>
+        {% include "reviews/_review_cards.html" with reviews=property_reviews %}
+    </section>
+</article>
+{% endblock %}

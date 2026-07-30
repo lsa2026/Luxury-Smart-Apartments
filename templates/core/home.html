@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}الرئيسية | Luxury Smart Apartments{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <p class="eyebrow">إقامة أذكى، وراحة أكبر</p>
+        <h1>شقق ذكية فاخرة في قلب المدينة</h1>
+        <p>منصة الحجز قيد التجهيز. استعرض تجارب ضيوفنا الموثقة عبر Hostaway.</p>
+        <a class="button" href="{% url 'reviews:list' %}">عرض جميع المراجعات</a>
+    </div>
+</section>
+
+<section class="section container" aria-labelledby="featured-reviews-title">
+    <div class="section-heading">
+        <p class="eyebrow">تجارب حقيقية</p>
+        <h2 id="featured-reviews-title">آراء ضيوفنا</h2>
+    </div>
+    {% include "reviews/_review_cards.html" with reviews=featured_reviews %}
+</section>
+{% endblock %}

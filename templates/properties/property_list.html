@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}الوحدات | Luxury Smart Apartments{% endblock %}
+
+{% block content %}
+<section class="section container">
+    <div class="section-heading">
+        <p class="eyebrow">إقامة يومية أو شهرية</p>
+        <h1>وحداتنا</h1>
+        <p>اختر الوحدة التي تناسب إقامتك.</p>
+    </div>
+
+    {% include "properties/_property_cards.html" with properties=properties %}
+
+    {% if is_paginated %}
+    <nav class="pagination" aria-label="صفحات الوحدات">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" rel="prev">السابق</a>
+        {% endif %}
+        <span>صفحة {{ page_obj.number }} من {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" rel="next">التالي</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+</section>
+{% endblock %}
