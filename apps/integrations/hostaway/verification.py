@@ -255,7 +255,7 @@ def _inspect_listing(payload: dict[str, Any]) -> ListingVerification:
     )
     try:
         listing = normalize_listing(payload)
-        identifier = listing.listing_map_id
+        identifier = listing.listing_id
         validation_errors.extend(listing.validation_errors)
         special_status = listing.special_status
     except HostawayResponseError as exc:

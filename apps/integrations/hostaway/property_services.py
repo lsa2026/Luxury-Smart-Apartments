@@ -153,7 +153,7 @@ def _run_sync(
             continue
         listings.append(listing)
         report.errors.extend(
-            f"Listing {listing.listing_map_id}: {error}" for error in listing.validation_errors
+            f"Listing {listing.listing_id}: {error}" for error in listing.validation_errors
         )
         report.skipped += len(listing.validation_errors)
 
@@ -180,10 +180,10 @@ def _run_sync(
                     )
         except (DatabaseError, ValidationError, ValueError, TypeError):
             report.properties_failed += 1
-            report.errors.append(f"Listing {listing.listing_map_id}: database update failed")
+            report.errors.append(f"Listing {listing.listing_id}: database update failed")
             logger.exception(
                 "Failed to persist Hostaway listing id=%s.",
-                listing.listing_map_id,
+                listing.listing_id,
             )
             continue
         _merge_counts(report, counts)
@@ -212,7 +212,7 @@ def _fetch_listings(
     offset = 0
     while limit is None or len(records) < limit:
         remaining = 100 if limit is None else min(100, limit - len(records))
-        page, page_number, total_pages = client.get_listings(
+        page, count = client.get_listings(
             limit=remaining,
             offset=offset,
             include_resources=include_resources,
@@ -222,8 +222,8 @@ def _fetch_listings(
         offset += len(page)
         if not page:
             break
-        if page_number is not None and total_pages is not None:
-            if page_number >= total_pages:
+        if count is not None:
+            if offset >= count:
                 break
             continue
         if len(page) < remaining:
@@ -240,7 +240,7 @@ def _persist_unit(
     force: bool,
 ) -> _UnitCounts:
     counts = _UnitCounts()
-    existing = Property.objects.filter(hostaway_listing_map_id=listing.listing_map_id).first()
+    existing = Property.objects.filter(hostaway_listing_id=listing.listing_id).first()
     if _is_stale(existing, listing, force):
         counts.skipped = 1
         return counts
@@ -248,14 +248,14 @@ def _persist_unit(
     operational = _operational_defaults(listing)
     create_defaults = {
         **operational,
-        "slug": _unique_slug(listing.name, listing.listing_map_id),
+        "slug": _unique_slug(listing.name, listing.listing_id),
         "name_en": listing.name,
         "name_ar": "",
         "city_en": listing.city,
         "city_ar": "",
     }
     property_obj, created = Property.objects.update_or_create(
-        hostaway_listing_map_id=listing.listing_map_id,
+        hostaway_listing_id=listing.listing_id,
         defaults=operational,
         create_defaults=create_defaults,
     )
@@ -290,7 +290,7 @@ def _simulate_unit(
     dry_seen_amenities: set[int],
 ) -> _UnitCounts:
     counts = _UnitCounts()
-    existing = Property.objects.filter(hostaway_listing_map_id=listing.listing_map_id).first()
+    existing = Property.objects.filter(hostaway_listing_id=listing.listing_id).first()
     if _is_stale(existing, listing, force):
         counts.skipped = 1
         return counts
@@ -341,7 +341,7 @@ def _simulate_unit(
 
 
 def _operational_defaults(listing: HostawayListing) -> dict[str, object]:
-    return {
+    defaults: dict[str, object] = {
         "hostaway_name": listing.name,
         "hostaway_description": listing.description,
         "hostaway_internal_name": listing.internal_name,
@@ -367,6 +367,9 @@ def _operational_defaults(listing: HostawayListing) -> dict[str, object]:
         "last_synced_at": timezone.now(),
         "source_updated_at": listing.source_updated_at,
     }
+    if listing.listing_map_id is not None:
+        defaults["hostaway_listing_map_id"] = listing.listing_map_id
+    return defaults
 
 
 def _sync_images(
@@ -483,10 +486,10 @@ def _sync_amenities(
     return created_count, linked_count
 
 
-def _unique_slug(name: str, listing_map_id: int) -> str:
+def _unique_slug(name: str, listing_id: int) -> str:
     base = slugify(name, allow_unicode=True)[:150].strip("-")
     if not base:
-        base = f"unit-{listing_map_id}"
+        base = f"unit-{listing_id}"
     candidate = base
     suffix = 2
     while Property.objects.filter(slug=candidate).exists():

@@ -6,6 +6,7 @@ from django.utils.html import format_html
 from .models import Amenity, Property, PropertyAmenity, PropertyImage
 
 PROPERTY_SOURCE_FIELDS = (
+    "hostaway_listing_id",
     "hostaway_listing_map_id",
     "hostaway_name",
     "hostaway_description",
@@ -131,6 +132,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "name_en",
         "hostaway_name",
         "address",
+        "=hostaway_listing_id",
         "=hostaway_listing_map_id",
     )
     readonly_fields = PROPERTY_SOURCE_FIELDS

@@ -48,7 +48,7 @@ class FakeVerificationClient:
 
     def get_listing(
         self,
-        listing_map_id: int,
+        listing_id: int,
         *,
         include_resources: bool,
     ) -> dict[str, object]:
@@ -56,7 +56,7 @@ class FakeVerificationClient:
 
     def get_listing_document(
         self,
-        listing_map_id: int,
+        listing_id: int,
         *,
         include_resources: bool,
     ) -> HostawayObjectDocument:
@@ -95,7 +95,7 @@ class FakeVerificationClient:
         )
 
 
-def test_partial_listing_unknown_fields_and_fallback_id_do_not_write_database() -> None:
+def test_partial_listing_unknown_fields_and_primary_id_do_not_write_database() -> None:
     client = FakeVerificationClient(
         [
             {

@@ -155,7 +155,7 @@ class HostawayClient:
         limit: int = 100,
         offset: int = 0,
         include_resources: bool = True,
-    ) -> tuple[list[dict[str, Any]], int | None, int | None]:
+    ) -> tuple[list[dict[str, Any]], int | None]:
         """Fetch one documented page from GET /listings."""
         if not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100.")
@@ -170,8 +170,7 @@ class HostawayClient:
             {
                 "status": document.status,
                 "result": list(document.records),
-                "page": document.page,
-                "totalPages": document.total_pages,
+                "count": document.count,
             }
         )
         return page
@@ -200,27 +199,27 @@ class HostawayClient:
 
     def get_listing(
         self,
-        listing_map_id: int,
+        listing_id: int,
         *,
         include_resources: bool = True,
     ) -> dict[str, Any]:
         """Fetch one listing and embedded resources from GET /listings/{id}."""
         return self.get_listing_document(
-            listing_map_id,
+            listing_id,
             include_resources=include_resources,
         ).record
 
     def get_listing_document(
         self,
-        listing_map_id: int,
+        listing_id: int,
         *,
         include_resources: bool = True,
     ) -> HostawayObjectDocument:
         """Fetch a listing while retaining its actual response envelope schema."""
-        if listing_map_id <= 0:
-            raise ValueError("listing_map_id must be positive.")
+        if listing_id <= 0:
+            raise ValueError("listing_id must be positive.")
         payload = self._get_json(
-            f"/listings/{listing_map_id}",
+            f"/listings/{listing_id}",
             params=[("includeResources", int(include_resources))],
         )
         return inspect_object_response(payload)

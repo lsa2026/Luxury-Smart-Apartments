@@ -8,7 +8,7 @@ pytestmark = pytest.mark.django_db
 
 def make_property(listing_id: int, *, visible: bool = True, active: bool = True) -> Property:
     return Property.objects.create(
-        hostaway_listing_map_id=listing_id,
+        hostaway_listing_id=listing_id,
         slug=f"property-{listing_id}",
         hostaway_name=f"Source {listing_id}",
         name_ar=f"وحدة {listing_id}",

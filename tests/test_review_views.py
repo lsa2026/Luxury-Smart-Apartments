@@ -12,7 +12,7 @@ def make_review(property_obj: Property, review_id: int, *, visible: bool) -> Rev
     return Review.objects.create(
         hostaway_review_id=review_id,
         property=property_obj,
-        hostaway_listing_map_id=property_obj.hostaway_listing_map_id,
+        hostaway_listing_map_id=property_obj.hostaway_listing_id,
         review_type=Review.Type.GUEST_TO_HOST,
         status=Review.Status.PUBLISHED,
         guest_name="عبدالله الكامل",
@@ -25,7 +25,7 @@ def make_review(property_obj: Property, review_id: int, *, visible: bool) -> Rev
 
 def test_hidden_reviews_do_not_appear_in_public_view() -> None:
     property_obj = Property.objects.create(
-        hostaway_listing_map_id=7100,
+        hostaway_listing_id=7100,
         slug="test-property",
         name_ar="وحدة الاختبار",
         name_en="Test Property",

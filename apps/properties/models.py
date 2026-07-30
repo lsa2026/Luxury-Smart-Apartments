@@ -15,9 +15,14 @@ class PropertyQuerySet(models.QuerySet["Property"]):
 
 
 class Property(models.Model):
-    """A bookable property linked to a Hostaway listing map."""
+    """A bookable property linked to a Hostaway listing."""
 
-    hostaway_listing_map_id = models.PositiveBigIntegerField(unique=True)
+    hostaway_listing_id = models.PositiveBigIntegerField(unique=True)
+    hostaway_listing_map_id = models.PositiveBigIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+    )
     hostaway_name = models.CharField(max_length=255, blank=True)
     hostaway_description = models.TextField(blank=True)
     hostaway_internal_name = models.CharField(max_length=255, blank=True)
@@ -96,6 +101,11 @@ class Property(models.Model):
             models.Index(fields=["last_synced_at"]),
         ]
         constraints = [
+            models.UniqueConstraint(
+                fields=["hostaway_listing_map_id"],
+                condition=Q(hostaway_listing_map_id__isnull=False),
+                name="unique_property_listing_map_id_when_set",
+            ),
             models.CheckConstraint(
                 condition=Q(country_code="") | Q(country_code__regex=r"^[A-Za-z]{2}$"),
                 name="property_country_code_iso2",
@@ -122,9 +132,7 @@ class Property(models.Model):
         verbose_name_plural = "الوحدات"
 
     def __str__(self) -> str:
-        return (
-            self.name_ar or self.name_en or self.hostaway_name or str(self.hostaway_listing_map_id)
-        )
+        return self.name_ar or self.name_en or self.hostaway_name or str(self.hostaway_listing_id)
 
     def save(self, *args: object, **kwargs: object) -> None:
         self.hostaway_is_active = self.derive_hostaway_is_active(self.hostaway_special_status)

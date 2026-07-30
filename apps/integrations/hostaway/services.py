@@ -1,7 +1,7 @@
 """Application services for syncing Hostaway reviews."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from django.db import DatabaseError, transaction
@@ -24,6 +24,13 @@ class SyncReport:
     updated: int = 0
     skipped: int = 0
     failed: int = 0
+    match_strategies: dict[str, int] = field(
+        default_factory=lambda: {
+            "listing_map_id": 0,
+            "listing_id_fallback": 0,
+            "unmatched": 0,
+        }
+    )
 
 
 def sync_reviews(
@@ -60,13 +67,25 @@ def sync_reviews(
         normalized.append(review)
 
     listing_ids = {review.hostaway_listing_map_id for review in normalized}
-    properties = {
+    properties_by_map_id = {
         item.hostaway_listing_map_id: item
         for item in Property.objects.filter(hostaway_listing_map_id__in=listing_ids)
     }
+    fallback_ids = listing_ids.difference(properties_by_map_id)
+    properties_by_listing_id = {
+        item.hostaway_listing_id: item
+        for item in Property.objects.filter(hostaway_listing_id__in=fallback_ids)
+    }
 
     for review in normalized:
-        defaults = _review_defaults(review, properties.get(review.hostaway_listing_map_id))
+        property_obj = properties_by_map_id.get(review.hostaway_listing_map_id)
+        if property_obj is not None:
+            match_strategy = "listing_map_id"
+        else:
+            property_obj = properties_by_listing_id.get(review.hostaway_listing_map_id)
+            match_strategy = "listing_id_fallback" if property_obj is not None else "unmatched"
+        report.match_strategies[match_strategy] += 1
+        defaults = _review_defaults(review, property_obj)
         existing = Review.objects.filter(hostaway_review_id=review.hostaway_review_id).exists()
         if dry_run:
             if existing:
@@ -82,10 +101,7 @@ def sync_reviews(
                 )
         except (DatabaseError, ValueError, TypeError):
             report.failed += 1
-            logger.exception(
-                "Failed to persist Hostaway review id=%s.",
-                review.hostaway_review_id,
-            )
+            logger.exception("Failed to persist one Hostaway review.")
             continue
         if created:
             report.created += 1

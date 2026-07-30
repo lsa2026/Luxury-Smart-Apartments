@@ -37,7 +37,7 @@ def test_listing_429_has_bounded_retry() -> None:
             return httpx.Response(429, headers={"Retry-After": "0"}, request=request)
         return httpx.Response(
             200,
-            json={"status": "success", "result": [], "page": 1, "totalPages": 1},
+            json={"status": "success", "result": [], "limit": 100, "offset": 0, "count": 0},
             request=request,
         )
 
@@ -49,7 +49,8 @@ def test_listing_429_has_bounded_retry() -> None:
             sleeper=lambda seconds: None,
             max_get_attempts=3,
         )
-        records, _, _ = client.get_listings()
+        records, count = client.get_listings()
 
     assert records == []
+    assert count == 0
     assert attempts == 3

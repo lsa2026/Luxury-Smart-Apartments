@@ -39,9 +39,16 @@ def test_property_management_command_defaults_and_dry_run() -> None:
         "apps.properties.management.commands.sync_hostaway_properties.sync_properties",
         return_value=PropertySyncReport(fetched=1, properties_created=1),
     ) as sync_mock:
-        call_command("sync_hostaway_properties", "--dry-run", stdout=output)
+        call_command(
+            "sync_hostaway_properties",
+            "--dry-run",
+            "--listing-id",
+            "315814",
+            stdout=output,
+        )
 
     assert sync_mock.call_args.kwargs["dry_run"] is True
+    assert sync_mock.call_args.kwargs["listing_id"] == 315814
     assert sync_mock.call_args.kwargs["include_images"] is True
     assert sync_mock.call_args.kwargs["include_amenities"] is True
     assert "properties_created=1" in output.getvalue()

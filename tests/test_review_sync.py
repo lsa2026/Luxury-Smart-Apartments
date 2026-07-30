@@ -23,6 +23,7 @@ class FakeHostawayClient:
 @pytest.fixture
 def property_obj() -> Property:
     return Property.objects.create(
+        hostaway_listing_id=6001,
         hostaway_listing_map_id=7001,
         slug="riyadh-suite",
         name_ar="جناح الرياض",
@@ -66,6 +67,11 @@ def test_creates_new_review_from_hostaway(
     assert review.hostaway_review_id == 9001
     assert str(review.rating) == "9.5"
     assert review.public_review == "إقامة ممتازة وهادئة."
+    assert report.match_strategies == {
+        "listing_map_id": 1,
+        "listing_id_fallback": 0,
+        "unmatched": 0,
+    }
 
 
 def test_updates_existing_review_without_duplication(
@@ -165,3 +171,65 @@ def test_dry_run_does_not_write(
 
     assert report.created == 1
     assert Review.objects.count() == 0
+
+
+def test_review_matches_property_by_listing_id_fallback(
+    property_obj: Property,
+    hostaway_review: dict[str, Any],
+) -> None:
+    property_obj.hostaway_listing_map_id = None
+    property_obj.save(update_fields=["hostaway_listing_map_id"])
+    hostaway_review["listingMapId"] = property_obj.hostaway_listing_id
+
+    report = sync_reviews(client=FakeHostawayClient([([hostaway_review], 1)]))
+
+    assert Review.objects.get().property == property_obj
+    assert report.match_strategies["listing_id_fallback"] == 1
+    assert report.match_strategies["listing_map_id"] == 0
+
+
+def test_unmatched_review_is_saved_without_property(
+    property_obj: Property,
+    hostaway_review: dict[str, Any],
+) -> None:
+    hostaway_review["listingMapId"] = 999999
+
+    report = sync_reviews(client=FakeHostawayClient([([hostaway_review], 1)]))
+
+    assert Review.objects.get().property is None
+    assert report.match_strategies["unmatched"] == 1
+    assert Property.objects.count() == 1
+
+
+def test_listing_map_id_can_differ_from_listing_id(
+    property_obj: Property,
+    hostaway_review: dict[str, Any],
+) -> None:
+    assert property_obj.hostaway_listing_map_id != property_obj.hostaway_listing_id
+
+    report = sync_reviews(client=FakeHostawayClient([([hostaway_review], 1)]))
+
+    assert Review.objects.get().property == property_obj
+    assert report.match_strategies["listing_map_id"] == 1
+
+
+def test_listing_map_id_match_wins_over_listing_id_fallback(
+    hostaway_review: dict[str, Any],
+) -> None:
+    fallback_candidate = Property.objects.create(
+        hostaway_listing_id=7001,
+        slug="fallback-candidate",
+    )
+    map_candidate = Property.objects.create(
+        hostaway_listing_id=8001,
+        hostaway_listing_map_id=7001,
+        slug="map-candidate",
+    )
+
+    report = sync_reviews(client=FakeHostawayClient([([hostaway_review], 1)]))
+
+    review = Review.objects.get()
+    assert review.property == map_candidate
+    assert review.property != fallback_candidate
+    assert report.match_strategies["listing_map_id"] == 1
+    assert report.match_strategies["listing_id_fallback"] == 0

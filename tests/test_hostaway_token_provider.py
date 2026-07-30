@@ -156,8 +156,9 @@ def test_http_403_refreshes_once_and_retries_get_once() -> None:
             json={
                 "status": "success",
                 "result": [],
-                "page": 1,
-                "totalPages": 1,
+                "limit": 100,
+                "offset": 0,
+                "count": 0,
             },
             request=request,
         )
@@ -182,9 +183,10 @@ def test_http_403_refreshes_once_and_retries_get_once() -> None:
             sleeper=lambda seconds: None,
         )
         client = HostawayClient(client=api_http, token_provider=provider)
-        records, _, _ = client.get_listings()
+        records, count = client.get_listings()
 
     assert records == []
+    assert count == 0
     assert token_requests == 1
     assert get_requests == 2
 

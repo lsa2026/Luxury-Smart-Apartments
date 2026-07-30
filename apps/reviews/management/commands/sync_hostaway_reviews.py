@@ -32,7 +32,11 @@ class Command(BaseCommand):
         summary = (
             f"Hostaway reviews sync{mode}: "
             f"fetched={report.fetched}, created={report.created}, "
-            f"updated={report.updated}, skipped={report.skipped}, failed={report.failed}"
+            f"updated={report.updated}, skipped={report.skipped}, failed={report.failed}, "
+            f"matched_by_listing_map_id={report.match_strategies['listing_map_id']}, "
+            f"matched_by_listing_id_fallback="
+            f"{report.match_strategies['listing_id_fallback']}, "
+            f"unmatched={report.match_strategies['unmatched']}"
         )
         if report.failed and not (report.created or report.updated or report.skipped):
             raise CommandError(summary)

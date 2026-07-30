@@ -7,7 +7,11 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 
-from apps.integrations.hostaway.property_services import sync_properties
+from apps.integrations.hostaway.property_services import (
+    PropertySyncReport,
+    _fetch_listings,
+    sync_properties,
+)
 from apps.integrations.models import IntegrationSyncRun
 from apps.properties.models import Amenity, Property, PropertyAmenity, PropertyImage
 
@@ -19,7 +23,7 @@ class FakePropertyClient:
         self,
         *,
         detail: dict[str, Any] | None = None,
-        pages: list[tuple[list[dict[str, Any]], int | None, int | None]] | None = None,
+        pages: list[tuple[list[dict[str, Any]], int | None]] | None = None,
         amenities: list[dict[str, Any]] | None = None,
     ) -> None:
         self.detail = detail
@@ -29,17 +33,17 @@ class FakePropertyClient:
 
     def get_listing(
         self,
-        listing_map_id: int,
+        listing_id: int,
         *,
         include_resources: bool = True,
     ) -> dict[str, Any]:
         assert self.detail is not None
         return deepcopy(self.detail)
 
-    def get_listings(self, **kwargs: Any) -> tuple[list[dict[str, Any]], int | None, int | None]:
+    def get_listings(self, **kwargs: Any) -> tuple[list[dict[str, Any]], int | None]:
         self.list_calls.append(kwargs)
-        page, number, total = self.pages.pop(0)
-        return deepcopy(page), number, total
+        page, count = self.pages.pop(0)
+        return deepcopy(page), count
 
     def get_amenities(self) -> list[dict[str, Any]]:
         return deepcopy(self.amenities)
@@ -105,7 +109,8 @@ def test_creates_new_property_and_embedded_resources(
 
     property_obj = Property.objects.get()
     assert report.properties_created == 1
-    assert property_obj.hostaway_listing_map_id == 40160
+    assert property_obj.hostaway_listing_id == 40160
+    assert property_obj.hostaway_listing_map_id is None
     assert property_obj.hostaway_name == "Riyadh Smart Suite"
     assert property_obj.name_en == "Riyadh Smart Suite"
     assert property_obj.name_ar == ""
@@ -265,8 +270,8 @@ def test_property_list_pagination_is_followed(
     second["name"] = "Second"
     client = FakePropertyClient(
         pages=[
-            ([listing_payload], 1, 2),
-            ([second], 2, 2),
+            ([listing_payload], 2),
+            ([second], 2),
         ]
     )
 
@@ -300,7 +305,7 @@ def test_one_bad_listing_does_not_stop_the_remaining_list(
     invalid["id"] = None
     client = FakePropertyClient(
         pages=[
-            ([invalid, listing_payload], 1, 1),
+            ([invalid, listing_payload], 2),
         ]
     )
 
@@ -342,14 +347,63 @@ def test_unknown_special_status_is_stored_logged_and_remains_active(
     warning.assert_called_once()
 
 
-def test_listing_id_is_used_when_listing_map_id_is_absent(
+def test_listing_id_is_primary_and_map_id_remains_empty_when_absent(
     listing_payload: dict[str, Any],
 ) -> None:
     assert "listingMapId" not in listing_payload
 
     sync_one(listing_payload)
 
-    assert Property.objects.get().hostaway_listing_map_id == listing_payload["id"]
+    property_obj = Property.objects.get()
+    assert property_obj.hostaway_listing_id == listing_payload["id"]
+    assert property_obj.hostaway_listing_map_id is None
+
+
+def test_listing_map_id_is_stored_only_when_present(
+    listing_payload: dict[str, Any],
+) -> None:
+    listing_payload["listingMapId"] = 990040160
+
+    sync_one(listing_payload)
+
+    property_obj = Property.objects.get()
+    assert property_obj.hostaway_listing_id == listing_payload["id"]
+    assert property_obj.hostaway_listing_map_id == listing_payload["listingMapId"]
+
+
+def test_pagination_stops_when_count_is_smaller_than_limit() -> None:
+    client = FakePropertyClient(pages=[([{"id": 1}], 1)])
+    report = PropertySyncReport()
+
+    records = _fetch_listings(
+        client,
+        report,
+        listing_id=None,
+        include_resources=False,
+        limit=None,
+    )
+
+    assert records == [{"id": 1}]
+    assert report.fetched == 1
+    assert [call["offset"] for call in client.list_calls] == [0]
+
+
+def test_pagination_stops_after_an_empty_last_page() -> None:
+    first_page = [{"id": listing_id} for listing_id in range(1, 101)]
+    client = FakePropertyClient(pages=[(first_page, None), ([], None)])
+    report = PropertySyncReport()
+
+    records = _fetch_listings(
+        client,
+        report,
+        listing_id=None,
+        include_resources=False,
+        limit=None,
+    )
+
+    assert len(records) == 100
+    assert report.fetched == 100
+    assert [call["offset"] for call in client.list_calls] == [0, 100]
 
 
 def test_latest_activity_is_used_when_updated_on_is_absent(

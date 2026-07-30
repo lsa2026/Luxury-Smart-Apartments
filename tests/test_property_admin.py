@@ -22,6 +22,7 @@ def test_property_source_fields_are_read_only_in_admin() -> None:
     model_admin = PropertyAdmin(Property, AdminSite())
 
     readonly = model_admin.get_readonly_fields(request)
+    assert "hostaway_listing_id" in readonly
     assert "hostaway_listing_map_id" in readonly
     assert "hostaway_name" in readonly
     assert "hostaway_property_type_id" in readonly
@@ -40,7 +41,7 @@ def test_only_local_images_can_be_deleted_in_admin() -> None:
     )
     user.user_permissions.add(Permission.objects.get(codename="delete_propertyimage"))
     property_obj = Property.objects.create(
-        hostaway_listing_map_id=500,
+        hostaway_listing_id=500,
         slug="admin-property",
         name_en="Admin property",
     )

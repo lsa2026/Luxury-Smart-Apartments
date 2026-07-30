@@ -5,7 +5,7 @@ from django.db.migrations.executor import MigrationExecutor
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
-def test_listing_id_rename_migration_preserves_data() -> None:
+def test_listing_identifier_rename_migrations_preserve_data() -> None:
     executor = MigrationExecutor(connection)
     executor.migrate([("properties", "0001_initial")])
     old_apps = executor.loader.project_state([("properties", "0001_initial")]).apps
@@ -21,15 +21,15 @@ def test_listing_id_rename_migration_preserves_data() -> None:
     )
 
     executor = MigrationExecutor(connection)
-    executor.migrate([("properties", "0004_property_hostaway_special_status_and_type_rename")])
+    executor.migrate([("properties", "0005_correct_hostaway_listing_identifiers")])
     new_apps = executor.loader.project_state(
-        [("properties", "0004_property_hostaway_special_status_and_type_rename")]
+        [("properties", "0005_correct_hostaway_listing_identifiers")]
     ).apps
     new_property = new_apps.get_model("properties", "Property")
     migrated = new_property.objects.get(pk=created.pk)
 
-    assert migrated.hostaway_listing_map_id == 778899
-    assert not hasattr(migrated, "hostaway_listing_id")
+    assert migrated.hostaway_listing_id == 778899
+    assert migrated.hostaway_listing_map_id is None
 
 
 def test_property_type_rename_and_activity_state_preserve_data() -> None:
@@ -47,14 +47,16 @@ def test_property_type_rename_and_activity_state_preserve_data() -> None:
     )
 
     executor = MigrationExecutor(connection)
-    executor.migrate([("properties", "0004_property_hostaway_special_status_and_type_rename")])
+    executor.migrate([("properties", "0005_correct_hostaway_listing_identifiers")])
     new_apps = executor.loader.project_state(
-        [("properties", "0004_property_hostaway_special_status_and_type_rename")]
+        [("properties", "0005_correct_hostaway_listing_identifiers")]
     ).apps
     new_property = new_apps.get_model("properties", "Property")
     migrated = new_property.objects.get(pk=created.pk)
 
     assert migrated.hostaway_property_type_id == 7
+    assert migrated.hostaway_listing_id == 998877
+    assert migrated.hostaway_listing_map_id is None
     assert not hasattr(migrated, "property_type")
     assert migrated.hostaway_special_status == "archived"
     assert migrated.hostaway_is_active is False

@@ -71,7 +71,8 @@ class HostawayObjectDocument:
 
 @dataclass(frozen=True, slots=True)
 class HostawayListing:
-    listing_map_id: int
+    listing_id: int
+    listing_map_id: int | None
     name: str
     description: str
     internal_name: str
@@ -107,12 +108,11 @@ class HostawayListing:
 
 def validate_collection_response(
     payload: Any,
-) -> tuple[list[dict[str, Any]], int | None, int | None]:
+) -> tuple[list[dict[str, Any]], int | None]:
     """Validate a Hostaway collection response and its pagination metadata."""
     document = inspect_collection_response(payload)
-    page = _optional_metadata_integer(document.page, "page")
-    total_pages = _optional_metadata_integer(document.total_pages, "totalPages")
-    return list(document.records), page, total_pages
+    count = _optional_metadata_integer(document.count, "count")
+    return list(document.records), count
 
 
 def inspect_collection_response(payload: Any) -> HostawayCollectionPage:
@@ -155,8 +155,9 @@ def inspect_object_response(payload: Any) -> HostawayObjectDocument:
 
 def normalize_listing(payload: dict[str, Any]) -> HostawayListing:
     """Normalize one listing while isolating optional-field and child errors."""
-    listing_map_id = _positive_integer(
-        payload.get("listingMapId", payload.get("id")),
+    listing_id = _positive_integer(payload.get("id"), "id")
+    listing_map_id = _optional_positive_integer(
+        payload.get("listingMapId"),
         "listingMapId",
     )
     errors: list[str] = []
@@ -192,6 +193,7 @@ def normalize_listing(payload: dict[str, Any]) -> HostawayListing:
         )
 
     return HostawayListing(
+        listing_id=listing_id,
         listing_map_id=listing_map_id,
         name=_string(payload.get("name")),
         description=_string(payload.get("description")),
@@ -278,6 +280,8 @@ def normalize_listing(payload: dict[str, Any]) -> HostawayListing:
             "averageReviewRating",
         ),
         special_status=special_status,
+        # latestActivityOn is the best available source timestamp, but Hostaway
+        # activity does not necessarily mean the listing content was edited.
         source_updated_at=_safe_optional(
             lambda: _optional_datetime(
                 payload.get("updatedOn") or payload.get("latestActivityOn"),

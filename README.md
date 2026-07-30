@@ -64,6 +64,9 @@ python manage.py runserver
 - `properties/0004`: إعادة تسمية `property_type` إلى
   `hostaway_property_type_id` باستخدام `RenameField`، وإضافة
   `hostaway_special_status` مع الحفاظ على حالة السجلات السابقة.
+- `properties/0005`: إعادة تسمية الحقل السابق إلى `hostaway_listing_id`
+  باستخدام `RenameField` مع الحفاظ على البيانات، ثم إضافة
+  `hostaway_listing_map_id` اختياريًا بقيد فريد شرطي عند وجود قيمة.
 - `integrations/0001`: سجل تشغيل عمليات المزامنة.
 
 الصفحات:
@@ -82,10 +85,12 @@ Hostaway هو المصدر للمعرّف والحالة التشغيلية وا
 `archived`. تُحفظ أي حالة مستقبلية غير معروفة وتبقى الوحدة نشطة حتى تُراجع
 السياسة، بدل إسقاط القيمة أو إيقاف المزامنة.
 
-في العينة الفعلية أعادت Listing الحقل `id` ولم تعد `listingMapId`، لذلك يستمر
-المحول في استخدام `id` كمعرف الوحدة وفق السياسة الحالية. لم يظهر `updatedOn`
-في الوحدات، ويستخدم النظام `latestActivityOn` كبديل موثق لـ
-`source_updated_at`.
+في العينة الفعلية أعادت Listing الحقل `id` ولم تعد `listingMapId`. لذلك يُحفظ
+`Listing.id` دائمًا في `hostaway_listing_id`، ولا يُملأ
+`hostaway_listing_map_id` إلا إذا ظهر الحقل فعليًا في استجابة موثقة؛ لا ينسخ
+النظام `id` إليه. لم يظهر `updatedOn` في الوحدات، ويستخدم النظام
+`latestActivityOn` كأفضل مصدر متاح لـ`source_updated_at`. يمثل هذا الحقل آخر
+نشاط لدى Hostaway، وليس بالضرورة وقت تعديل محتوى الوحدة.
 
 قاعدة الموقع هي المصدر للمحتوى التسويقي العربي والإنجليزي وSEO و`slug` والترتيب
 والظهور والتمييز والصور المحلية وحقول عرض الصور. تملأ المزامنة `name_en` و`slug`
@@ -113,6 +118,9 @@ python manage.py sync_hostaway_properties --no-include-amenities
 `source_updated_at` أقدم من المخزن؛ لا يتجاوز قفل التزامن. يستخدم الإنتاج
 PostgreSQL advisory lock لمنع تشغيل مزامنتين في الوقت نفسه، كما يمنع قيد قاعدة
 البيانات وجود سجلين بحالة `running`.
+
+تعتمد صفحات Listing على `limit` و`offset` و`count`. لا يُشترط وجود `page` أو
+`totalPages`، وتتوقف القراءة عند بلوغ `count` أو وصول صفحة قصيرة أو فارغة.
 
 وضع `--dry-run` يجلب البيانات ويتحقق منها ويحسب التقرير دون تعديل قاعدة البيانات
 أو إنشاء سجل مزامنة.
@@ -201,8 +209,11 @@ python manage.py sync_hostaway_reviews --departure-from 2026-01-01 --departure-t
 python manage.py sync_hostaway_reviews --dry-run
 ```
 
-تطابق المراجعات الوحدة بواسطة `listingMapId` المخزن في
-`hostaway_listing_map_id`.
+تطابق المراجعات الوحدة أولًا بواسطة `Review.listingMapId` مقابل
+`Property.hostaway_listing_map_id`. إذا لم توجد نتيجة، تستخدم
+`Property.hostaway_listing_id` كـfallback. تبقى المراجعة غير مرتبطة إذا لم توجد
+وحدة، ولا تنشأ وحدة جديدة من بيانات مراجعة. يعرض التقرير أعداد الاستراتيجيات
+`listing_map_id` و`listing_id_fallback` و`unmatched`.
 
 ## الاختبارات والجودة
 
