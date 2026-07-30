@@ -1,46 +1,12 @@
+{% load i18n %}
 {% if properties %}
 <div class="property-grid">
     {% for property in properties %}
-    <article class="property-card">
-        <a class="property-card__media" href="{{ property.get_absolute_url }}">
-            {% with cover=property.cover_image %}
-                {% if cover %}
-                <img
-                    src="{{ cover.display_url }}"
-                    alt="{{ cover.alt_text_ar|default:cover.title_ar|default:property.display_name }}"
-                    width="720"
-                    height="480"
-                    loading="lazy"
-                >
-                {% else %}
-                <span class="media-empty" aria-label="لا توجد صورة متاحة">
-                    لا توجد صورة متاحة
-                </span>
-                {% endif %}
-            {% endwith %}
-        </a>
-        <div class="property-card__body">
-            {% if property.is_featured %}<span class="badge">وحدة مميزة</span>{% endif %}
-            <h2><a href="{{ property.get_absolute_url }}">{{ property.display_name }}</a></h2>
-            <p class="property-location">{{ property.display_city }}</p>
-            <div class="property-facts" aria-label="بيانات الوحدة">
-                {% if property.person_capacity != None %}
-                <span>حتى {{ property.person_capacity }} ضيوف</span>
-                {% endif %}
-                {% if property.bedrooms_number != None %}
-                <span>{{ property.bedrooms_number }} غرف</span>
-                {% endif %}
-                {% if property.beds_number != None %}
-                <span>{{ property.beds_number }} أسرّة</span>
-                {% endif %}
-            </div>
-        </div>
-    </article>
+        {% include "includes/property_card.html" %}
     {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">
-    <h2>لا توجد وحدات متاحة للعرض حاليًا</h2>
-    <p>سيتم نشر الوحدات هنا بعد مزامنتها وتجهيز محتواها.</p>
-</div>
+{% trans "No properties match your search." as empty_title %}
+{% trans "Try changing the city, capacity, or room filters." as empty_message %}
+{% include "includes/empty_state.html" %}
 {% endif %}

@@ -1,0 +1,11 @@
+{% load i18n %}
+<div class="search-panel">
+    <div class="search-panel__intro">
+        <span class="search-panel__step" aria-hidden="true">01</span>
+        <div>
+            <strong>{% trans "Choose your stay" %}</strong>
+            <small>{% trans "Live availability, checked securely" %}</small>
+        </div>
+    </div>
+    {% include "reservations/_availability_form.html" %}
+</div>

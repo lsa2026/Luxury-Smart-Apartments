@@ -1,0 +1,5 @@
+{% load i18n %}
+<div class="empty-state">
+    <h2>{% if empty_title %}{{ empty_title }}{% else %}{% trans "Nothing to show yet" %}{% endif %}</h2>
+    {% if empty_message %}<p>{{ empty_message }}</p>{% endif %}
+</div>

@@ -1,0 +1,11 @@
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<form class="language-switcher" action="{% url 'set_language' %}" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <label class="sr-only" for="language-select">{% trans "Language" %}</label>
+    <select id="language-select" name="language" data-language-select aria-label="{% trans 'Language' %}">
+        <option value="ar"{% if LANGUAGE_CODE == "ar" %} selected{% endif %}>العربية</option>
+        <option value="en"{% if LANGUAGE_CODE == "en" %} selected{% endif %}>English</option>
+    </select>
+</form>

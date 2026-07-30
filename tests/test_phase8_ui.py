@@ -1,0 +1,391 @@
+from datetime import date
+from decimal import Decimal
+from unittest.mock import patch
+
+import pytest
+from django.core.cache import cache
+from django.db import connection
+from django.test import Client
+from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.core.models import ContactMessage, FAQItem, SitePage
+from apps.payments.models import PaymentAttempt
+from apps.properties.models import Amenity, Property, PropertyAmenity, PropertyImage
+from apps.reservations.models import Reservation
+from apps.reviews.models import Review
+
+pytestmark = pytest.mark.django_db
+
+
+def property_factory(
+    listing_id: int,
+    *,
+    visible: bool = True,
+    active: bool = True,
+) -> Property:
+    return Property.objects.create(
+        hostaway_listing_id=listing_id,
+        slug=f"phase-eight-{listing_id}",
+        hostaway_name=f"Verified stay {listing_id}",
+        name_ar=f"إقامة {listing_id}",
+        name_en=f"Stay {listing_id}",
+        description_ar="وصف آمن للوحدة.",
+        description_en="Safe property description.",
+        city="Riyadh",
+        city_ar="الرياض",
+        city_en="Riyadh",
+        country_code="SA",
+        currency_code="SAR",
+        person_capacity=4,
+        bedrooms_number=2,
+        beds_number=3,
+        bathrooms_number=Decimal("2.0"),
+        is_visible=visible,
+        hostaway_special_status="" if active else "archived",
+    )
+
+
+def image_factory(property_obj: Property, image_id: int, *, visible: bool = True) -> PropertyImage:
+    return PropertyImage.objects.create(
+        property=property_obj,
+        hostaway_image_id=image_id,
+        hostaway_url=f"https://hostaway-platform.s3.us-west-2.amazonaws.com/{image_id}.jpg",
+        sync_key=f"id:{image_id}",
+        source=PropertyImage.Source.HOSTAWAY,
+        is_visible=visible,
+        is_cover=image_id % 100 == 1 and visible,
+        alt_text_ar="غرفة معيشة في الوحدة",
+        alt_text_en="Property living room",
+    )
+
+
+def review_factory(property_obj: Property, review_id: int, *, featured: bool = False) -> Review:
+    return Review.objects.create(
+        hostaway_review_id=review_id,
+        property=property_obj,
+        hostaway_listing_map_id=property_obj.hostaway_listing_id,
+        review_type=Review.Type.GUEST_TO_HOST,
+        status=Review.Status.PUBLISHED,
+        guest_name="Synthetic Guest",
+        rating=Decimal("9.0"),
+        public_review="Synthetic public review.",
+        departure_date=date(2026, 1, min(review_id, 28)),
+        is_visible=True,
+        is_featured=featured,
+        synced_at=timezone.now(),
+    )
+
+
+def populated_property(listing_id: int = 801) -> Property:
+    property_obj = property_factory(listing_id)
+    image_factory(property_obj, listing_id * 100 + 1)
+    amenity = Amenity.objects.create(
+        hostaway_amenity_id=listing_id,
+        name="WiFi",
+        name_ar="واي فاي",
+        name_en="Wi-Fi",
+    )
+    PropertyAmenity.objects.create(
+        property=property_obj,
+        amenity=amenity,
+        source=PropertyAmenity.Source.HOSTAWAY,
+    )
+    review_factory(property_obj, listing_id)
+    return property_obj
+
+
+def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
+    populated_property()
+    content = Client().get("/").content.decode()
+    assert 'lang="ar" dir="rtl"' in content
+    assert 'class="skip-link"' in content
+    assert '<main id="main-content"' in content
+    assert "<header" in content and "<footer" in content
+
+
+def test_english_switch_is_ltr_and_translated() -> None:
+    populated_property()
+    client = Client()
+    response = client.post("/i18n/setlang/", {"language": "en", "next": "/"})
+    assert response.status_code == 302
+    content = client.get("/").content.decode()
+    assert 'lang="en" dir="ltr"' in content
+    assert "Find your next smart stay" in content
+
+
+def test_language_switcher_has_both_languages() -> None:
+    content = Client().get("/").content.decode()
+    assert 'value="ar"' in content
+    assert 'value="en"' in content
+    assert "data-language-select" in content
+
+
+def test_seven_visible_properties_are_listed() -> None:
+    for listing_id in range(810, 817):
+        property_factory(listing_id)
+    response = Client().get("/properties/")
+    assert response.status_code == 200
+    assert len(response.context["properties"]) == 7
+
+
+def test_hidden_and_archived_properties_are_not_public() -> None:
+    visible = property_factory(820)
+    hidden = property_factory(821, visible=False)
+    archived = property_factory(822, active=False)
+    content = Client().get("/properties/").content.decode()
+    assert visible.name_ar in content
+    assert hidden.name_ar not in content
+    assert archived.name_ar not in content
+
+
+def test_property_card_has_dimensions_lazy_image_and_alt() -> None:
+    property_obj = populated_property(830)
+    content = Client().get("/properties/").content.decode()
+    assert property_obj.name_ar in content
+    assert 'loading="lazy"' in content
+    assert 'width="720"' in content
+    assert 'alt="غرفة معيشة في الوحدة"' in content
+
+
+def test_property_filters_use_local_database() -> None:
+    property_factory(840)
+    with patch(
+        "apps.integrations.hostaway.client.HostawayClient.get_listings",
+        side_effect=AssertionError("Hostaway must not be called"),
+    ):
+        response = Client().get("/properties/", {"city": "Riyadh", "guests": 2})
+    assert response.status_code == 200
+
+
+def test_property_detail_gallery_is_limited_and_accessible() -> None:
+    property_obj = property_factory(850)
+    for image_id in range(85001, 85013):
+        image_factory(property_obj, image_id)
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    assert content.count("data-lightbox-open") == 8
+    assert "<dialog" in content
+    assert "data-lightbox-close" in content
+    assert 'aria-label="إغلاق المعرض"' in content
+
+
+def test_hidden_image_and_private_address_are_not_rendered() -> None:
+    property_obj = populated_property(860)
+    property_obj.address = "PRIVATE ADDRESS 123"
+    property_obj.public_address = "Public district"
+    property_obj.save()
+    image_factory(property_obj, 86002, visible=False)
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    assert "PRIVATE ADDRESS 123" not in content
+    assert "86002.jpg" not in content
+
+
+def test_amenity_and_review_are_visible_on_detail() -> None:
+    property_obj = populated_property(870)
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    assert "واي فاي" in content
+    assert "Synthetic public review." in content
+
+
+def test_featured_review_is_ordered_first() -> None:
+    property_obj = property_factory(880)
+    review_factory(property_obj, 2, featured=False)
+    review_factory(property_obj, 1, featured=True)
+    content = Client().get("/reviews/").content.decode()
+    assert content.index("مميزة") < content.index("Synthetic public review.")
+
+
+def test_property_detail_does_not_call_hostaway() -> None:
+    property_obj = populated_property(890)
+    with patch(
+        "apps.integrations.hostaway.client.HostawayClient.get_listing_calendar",
+        side_effect=AssertionError("Hostaway must not be called on GET"),
+    ):
+        response = Client().get(property_obj.get_absolute_url())
+    assert response.status_code == 200
+
+
+def test_availability_form_has_csrf_dates_loading_and_submit_guard() -> None:
+    property_obj = populated_property(900)
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    assert "csrfmiddlewaretoken" in content
+    assert 'type="date"' in content
+    assert "availability-form__loading" in content
+    assert "data-submit-once" in content
+
+
+@pytest.mark.parametrize(
+    ("url", "heading"),
+    [
+        ("/about/", "من نحن"),
+        ("/faq/", "الأسئلة الشائعة"),
+        ("/contact/", "اتصل بنا"),
+        ("/legal/terms/", "الشروط والأحكام"),
+        ("/legal/privacy/", "سياسة الخصوصية"),
+        ("/legal/cancellation/", "سياسة الإلغاء"),
+        ("/legal/cookies/", "سياسة ملفات الارتباط"),
+    ],
+)
+def test_content_pages(url: str, heading: str) -> None:
+    response = Client().get(url)
+    assert response.status_code == 200
+    assert heading in response.content.decode()
+
+
+def test_faq_uses_accessible_details() -> None:
+    FAQItem.objects.create(
+        question_ar="سؤال مصطنع",
+        question_en="Synthetic question",
+        answer_ar="إجابة مصطنعة",
+        answer_en="Synthetic answer",
+    )
+    content = Client().get("/faq/").content.decode()
+    assert "<details" in content and "<summary>" in content
+
+
+def test_contact_valid_submission_is_local_only() -> None:
+    with patch("django.core.mail.send_mail", side_effect=AssertionError("No email")):
+        response = Client().post(
+            "/contact/",
+            {
+                "name": "Test Guest",
+                "email": "guest@example.invalid",
+                "phone": "",
+                "subject": "Synthetic enquiry",
+                "message": "A synthetic message with enough detail.",
+                "website": "",
+            },
+        )
+    assert response.status_code == 302
+    assert ContactMessage.objects.count() == 1
+
+
+def test_contact_honeypot_and_xss_cleaning() -> None:
+    response = Client().post(
+        "/contact/",
+        {
+            "name": "<b>Test</b>",
+            "email": "guest@example.invalid",
+            "subject": "<script>Subject</script>",
+            "message": "<img src=x> Synthetic message body.",
+            "website": "",
+        },
+    )
+    assert response.status_code == 302
+    message = ContactMessage.objects.get()
+    assert "<" not in message.name
+    assert "<" not in message.subject
+    assert "<" not in message.message
+
+
+def test_contact_honeypot_rejects_bots() -> None:
+    response = Client().post(
+        "/contact/",
+        {
+            "name": "Bot",
+            "email": "bot@example.invalid",
+            "subject": "Synthetic",
+            "message": "Long enough synthetic message.",
+            "website": "spam.example",
+        },
+    )
+    assert response.status_code == 400
+    assert ContactMessage.objects.count() == 0
+
+
+def test_contact_rate_limit() -> None:
+    cache.clear()
+    client = Client()
+    payload = {
+        "name": "Test",
+        "email": "test@example.invalid",
+        "subject": "Synthetic",
+        "message": "Long enough synthetic message.",
+        "website": "reject",
+    }
+    for _ in range(5):
+        client.post("/contact/", payload)
+    assert client.post("/contact/", payload).status_code == 429
+
+
+def test_private_pages_are_noindex() -> None:
+    property_obj = populated_property(910)
+    response = Client().post(
+        "/reservations/quotes/",
+        {
+            "property": property_obj.pk,
+            "city": property_obj.city,
+            "check_in": "2020-01-01",
+            "check_out": "2020-01-03",
+            "guests": 2,
+        },
+    )
+    assert response.status_code == 200
+    assert 'content="noindex,nofollow"' in response.content.decode()
+
+
+def test_home_has_canonical_open_graph_and_structured_data() -> None:
+    content = Client().get("/").content.decode()
+    assert 'rel="canonical"' in content
+    assert 'property="og:title"' in content
+    assert '"@type":"Organization"' in content
+    assert 'type="application/ld+json"' in content
+
+
+def test_detail_has_vacation_rental_structured_data_without_listing_id() -> None:
+    property_obj = populated_property(920)
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    assert '"@type":"VacationRental"' in content
+    assert '"@type":"BreadcrumbList"' in content
+    assert "hostaway_listing_id" not in content
+
+
+def test_public_csp_has_nonce_and_no_unsafe_inline() -> None:
+    response = Client().get("/")
+    csp = response.headers["Content-Security-Policy"]
+    assert "script-src 'self' 'nonce-" in csp
+    assert "style-src 'self';" in csp
+    assert "unsafe-inline" not in csp
+    assert "frame-ancestors 'none'" in csp
+
+
+@pytest.mark.parametrize("path", ["/missing-phase-eight-page/", "/properties/missing/"])
+def test_branded_404_pages(path: str) -> None:
+    response = Client().get(path)
+    assert response.status_code == 404
+    assert "Luxury Smart Apartments" in response.content.decode()
+
+
+def test_property_list_query_count_is_bounded() -> None:
+    for listing_id in range(930, 937):
+        property_obj = property_factory(listing_id)
+        image_factory(property_obj, listing_id * 100 + 1)
+    with CaptureQueriesContext(connection) as queries:
+        response = Client().get("/properties/")
+        assert response.status_code == 200
+    assert len(queries) <= 5
+
+
+def test_property_detail_query_count_is_bounded() -> None:
+    property_obj = populated_property(940)
+    with CaptureQueriesContext(connection) as queries:
+        response = Client().get(property_obj.get_absolute_url())
+        assert response.status_code == 200
+    assert len(queries) <= 12
+
+
+def test_public_browsing_creates_no_reservation_or_payment() -> None:
+    property_obj = populated_property(950)
+    before = (Reservation.objects.count(), PaymentAttempt.objects.count())
+    client = Client()
+    client.get("/")
+    client.get("/properties/")
+    client.get(property_obj.get_absolute_url())
+    assert (Reservation.objects.count(), PaymentAttempt.objects.count()) == before
+
+
+def test_content_models_are_admin_editable_sources() -> None:
+    assert SitePage.objects.filter(slug="about", is_published=True).exists()
+    assert FAQItem.objects.filter(is_active=True).exists()
+    assert reverse("admin:core_sitepage_changelist") == "/admin/core/sitepage/"

@@ -1,32 +1,7 @@
 {% extends "base.html" %}
-
-{% block title %}حالة طلب تعديل الحجز{% endblock %}
-
+{% load i18n %}
+{% block title %}{% trans "Request status" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% block content %}
-<section class="section container" aria-labelledby="modification-title">
-    <div class="section-heading">
-        <p class="eyebrow">طلب تعديل محلي</p>
-        <h1 id="modification-title">حالة الطلب</h1>
-    </div>
-    <article class="facts-panel">
-        <dl class="quote-summary">
-            <div><dt>نوع الطلب</dt><dd>{{ modification.get_request_type_display }}</dd></div>
-            <div><dt>الحالة</dt><dd>{{ modification.get_status_display }}</dd></div>
-            <div><dt>الوصول الحالي</dt><dd>{{ modification.old_check_in|date:"Y-m-d" }}</dd></div>
-            <div><dt>المغادرة الحالية</dt><dd>{{ modification.old_check_out|date:"Y-m-d" }}</dd></div>
-            {% if modification.new_check_in %}
-                <div><dt>الوصول المطلوب</dt><dd>{{ modification.new_check_in|date:"Y-m-d" }}</dd></div>
-                <div><dt>المغادرة المطلوبة</dt><dd>{{ modification.new_check_out|date:"Y-m-d" }}</dd></div>
-            {% endif %}
-            {% if modification.new_total != None %}
-                <div><dt>السعر الجديد</dt><dd>{{ modification.new_total }} {{ modification.currency }}</dd></div>
-                <div><dt>فرق السعر</dt><dd>{{ modification.price_difference }} {{ modification.currency }}</dd></div>
-            {% endif %}
-        </dl>
-        <p class="quote-notice">طلبك قيد المراجعة ولم يتم تعديل الحجز بعد.</p>
-        <button class="button" type="button" disabled aria-disabled="true">
-            التنفيذ في Hostaway غير مفعّل
-        </button>
-    </article>
-</section>
+<section class="section container narrow"><div class="section-heading"><p class="eyebrow">{% trans "Local change request" %}</p><h1>{% trans "Request status" %}</h1></div><article class="review-panel"><dl class="quote-summary"><div><dt>{% trans "Request type" %}</dt><dd>{{ modification.get_request_type_display }}</dd></div><div><dt>{% trans "Status" %}</dt><dd>{{ modification.get_status_display }}</dd></div><div><dt>{% trans "Current check-in" %}</dt><dd>{{ modification.old_check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Current check-out" %}</dt><dd>{{ modification.old_check_out|date:"Y-m-d" }}</dd></div>{% if modification.new_check_in %}<div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|date:"Y-m-d" }}</dd></div>{% endif %}{% if modification.new_total != None %}<div><dt>{% trans "New price" %}</dt><dd>{{ modification.new_total }} {{ modification.currency }}</dd></div><div><dt>{% trans "Price difference" %}</dt><dd>{{ modification.price_difference }} {{ modification.currency }}</dd></div>{% endif %}</dl><p class="quote-notice">{% trans "Your request is under review and the booking has not been changed yet." %}</p><button class="button" type="button" disabled aria-disabled="true">{% trans "Live Hostaway changes are disabled" %}</button></article></section>
 {% endblock %}

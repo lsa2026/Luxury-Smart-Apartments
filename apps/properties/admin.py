@@ -126,9 +126,10 @@ class PropertyAdmin(admin.ModelAdmin):
         "source_missing",
         "is_featured",
         "last_synced_at",
-        "source_missing",
-        "visibility_management",
         "image_count",
+        "arabic_content_complete",
+        "english_content_complete",
+        "seo_complete",
     )
     list_filter = (
         "city",
@@ -193,6 +194,23 @@ class PropertyAdmin(admin.ModelAdmin):
     @admin.display(description="الصور", ordering="_image_count")
     def image_count(self, obj: Property) -> int:
         return obj._image_count
+
+    @admin.display(boolean=True, description="المحتوى العربي")
+    def arabic_content_complete(self, obj: Property) -> bool:
+        return bool(obj.name_ar and obj.description_ar and obj.city_ar)
+
+    @admin.display(boolean=True, description="English content")
+    def english_content_complete(self, obj: Property) -> bool:
+        return bool(obj.name_en and obj.description_en and obj.city_en)
+
+    @admin.display(boolean=True, description="SEO")
+    def seo_complete(self, obj: Property) -> bool:
+        return bool(
+            obj.seo_title_ar
+            and obj.seo_description_ar
+            and obj.seo_title_en
+            and obj.seo_description_en
+        )
 
     def save_model(
         self,

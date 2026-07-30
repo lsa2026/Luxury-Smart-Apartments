@@ -1,38 +1,12 @@
+{% load i18n %}
 {% if reviews %}
 <div class="review-grid">
     {% for review in reviews %}
-    <article class="review-card{% if review.is_featured %} review-card--featured{% endif %}">
-        <div class="review-card__head">
-            <div>
-                <h3>{{ review.display_guest_name }}</h3>
-                {% if review.property %}
-                <p class="property-name">{{ review.property.name_ar }}</p>
-                {% else %}
-                <p class="property-name">إحدى وحداتنا</p>
-                {% endif %}
-            </div>
-            {% if review.is_featured %}<span class="badge">مميزة</span>{% endif %}
-        </div>
-        <div
-            class="stars"
-            role="img"
-            aria-label="التقييم {{ review.rating }} من 10"
-        >
-            <span aria-hidden="true">{{ review.star_display }}</span>
-        </div>
-        <p class="rating-text">{{ review.rating }} / 10</p>
-        <blockquote>{{ review.public_review }}</blockquote>
-        {% if review.departure_date %}
-        <time datetime="{{ review.departure_date|date:'Y-m-d' }}">
-            {{ review.departure_date|date:"j F Y" }}
-        </time>
-        {% endif %}
-    </article>
+        {% include "includes/review_card.html" %}
     {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">
-    <h3>لا توجد مراجعات للعرض حاليًا</h3>
-    <p>ستظهر هنا تجارب ضيوفنا بعد نشرها والتحقق منها.</p>
-</div>
+{% trans "No reviews to show yet" as empty_title %}
+{% trans "Verified guest reviews will appear here after publication." as empty_message %}
+{% include "includes/empty_state.html" %}
 {% endif %}

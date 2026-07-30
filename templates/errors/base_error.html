@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ error_code|default:"Error" }} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="error-page container"><p class="error-code">{{ error_code|default:"—" }}</p><h1>{% block error_title %}{% endblock %}</h1><p>{% block error_message %}{% endblock %}</p><div class="button-row"><a class="button" href="{% url 'core:home' %}">{% trans "Return home" %}</a><a class="button button--secondary" href="{% url 'properties:list' %}">{% trans "Browse properties" %}</a></div></section>
+{% endblock %}

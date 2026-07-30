@@ -1,0 +1,19 @@
+{% load i18n presentation %}
+<article class="review-card{% if review.is_featured %} review-card--featured{% endif %}">
+    <div class="review-card__head">
+        <div>
+            <h3>{{ review.display_guest_name }}</h3>
+            <p class="property-name">
+                {% if review.property %}{{ review.property|localized_property_name }}{% else %}{% trans "One of our properties" %}{% endif %}
+            </p>
+        </div>
+        {% if review.is_featured %}<span class="badge">{% trans "Featured" %}</span>{% endif %}
+    </div>
+    <div class="stars" role="img" aria-label="{% blocktrans with rating=review.rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
+        <span aria-hidden="true">{{ review.star_display }}</span>
+    </div>
+    <blockquote>{{ review.public_review }}</blockquote>
+    {% if review.departure_date %}
+    <time datetime="{{ review.departure_date|date:'Y-m-d' }}">{{ review.departure_date|date:"j F Y" }}</time>
+    {% endif %}
+</article>

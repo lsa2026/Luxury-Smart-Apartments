@@ -1,0 +1,8 @@
+{% load i18n %}
+{% if messages %}
+<div class="container alerts" aria-live="polite">
+    {% for message in messages %}
+    <div class="alert alert--{{ message.tags|default:'info' }}" role="status">{{ message }}</div>
+    {% endfor %}
+</div>
+{% endif %}

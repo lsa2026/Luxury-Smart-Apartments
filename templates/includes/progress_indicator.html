@@ -1,0 +1,10 @@
+{% load i18n %}
+<nav class="booking-progress" aria-label="{% trans 'Booking request progress' %}">
+    <ol>
+        <li{% if step == 1 %} aria-current="step"{% endif %} class="{% if step >= 1 %}is-active{% endif %}"><span>1</span><small>{% trans "Stay" %}</small></li>
+        <li{% if step == 2 %} aria-current="step"{% endif %} class="{% if step >= 2 %}is-active{% endif %}"><span>2</span><small>{% trans "Guest details" %}</small></li>
+        <li{% if step == 3 %} aria-current="step"{% endif %} class="{% if step >= 3 %}is-active{% endif %}"><span>3</span><small>{% trans "Review" %}</small></li>
+        <li><span>4</span><small>{% trans "Payment" %}</small></li>
+        <li><span>5</span><small>{% trans "Confirmation" %}</small></li>
+    </ol>
+</nav>

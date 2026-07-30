@@ -1,25 +1,16 @@
-<form
-    class="availability-form"
-    method="post"
-    action="{% url 'reservations:quote_create' %}"
-    data-availability-form
->
+{% load i18n %}
+<form class="availability-form" method="post" action="{% url 'reservations:quote_create' %}" data-availability-form data-submit-once novalidate>
     {% csrf_token %}
+    {% if availability_form.non_field_errors %}<div class="form-error-summary" role="alert">{{ availability_form.non_field_errors }}</div>{% endif %}
     <div class="availability-form__grid">
         {% for field in availability_form %}
-        <div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}">
-            {% if not field.is_hidden %}
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {% endif %}
+        <div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}">
+            {% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
             {{ field }}
-            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
         </div>
         {% endfor %}
-        <button class="button availability-form__submit" type="submit">
-            تحقق من التوافر
-        </button>
+        <button class="button availability-form__submit" type="submit">{% trans "Check availability" %}</button>
     </div>
-    <p class="availability-form__loading" role="status" aria-live="polite" hidden>
-        جارٍ التحقق من السعر والتوافر…
-    </p>
+    <p class="availability-form__loading" role="status" aria-live="polite" hidden>{% trans "Checking live price and availability…" %}</p>
 </form>

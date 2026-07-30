@@ -57,6 +57,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.site_context",
             ],
         },
     },
@@ -103,6 +104,8 @@ LANGUAGES = [
 TIME_ZONE = "Asia/Riyadh"
 USE_I18N = True
 USE_TZ = True
+LOCALE_PATHS = [BASE_DIR / "locale"]
+LANGUAGE_COOKIE_SAMESITE = "Lax"
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -314,6 +317,10 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
             "schedule": BOOKING_EXPIRATION_INTERVAL_MINUTES * 60,
         },
     }
+
+SITE_CANONICAL_URL = env("SITE_CANONICAL_URL", default="http://localhost:8000").rstrip("/")
+CONTACT_RATE_LIMIT_REQUESTS = 5
+CONTACT_RATE_LIMIT_WINDOW = 10 * 60
 
 LOGGING = {
     "version": 1,

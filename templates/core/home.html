@@ -1,30 +1,103 @@
 {% extends "base.html" %}
+{% load i18n presentation %}
 
-{% block title %}الرئيسية | Luxury Smart Apartments{% endblock %}
+{% block title %}{% trans "Luxury Smart Apartments | Smart stays in Riyadh and Marrakech" %}{% endblock %}
+{% block meta_description %}{% trans "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability." %}{% endblock %}
 
 {% block content %}
-<section class="hero">
+<section class="hero hero--home"{% if hero_property and hero_property.cover_image %} data-has-image{% endif %}>
+    {% if hero_property and hero_property.cover_image %}
+    <img
+        class="hero__image"
+        src="{{ hero_property.cover_image.display_url }}"
+        alt=""
+        width="1920"
+        height="1080"
+        fetchpriority="high"
+        decoding="async"
+    >
+    {% endif %}
+    <div class="hero__overlay" aria-hidden="true"></div>
+    <div class="container hero__content">
+        <p class="eyebrow">{% trans "Daily and monthly smart stays" %}</p>
+        <h1>{% trans "A calmer way to stay, designed around you." %}</h1>
+        <p>{% trans "Discover considered homes in Riyadh and Marrakech with live availability and transparent stay pricing." %}</p>
+        <div id="property-search" class="hero-search">
+            <h2 class="sr-only">{% trans "Search availability" %}</h2>
+            {% include "includes/search_form.html" %}
+        </div>
+    </div>
+</section>
+
+<section class="section container" aria-labelledby="featured-properties-title">
+    <div class="section-heading section-heading--split">
+        <div>
+            <p class="eyebrow">{% trans "Selected stays" %}</p>
+            <h2 id="featured-properties-title">{% trans "Find your next smart stay" %}</h2>
+        </div>
+        <a class="text-link" href="{% url 'properties:list' %}">{% trans "View all properties" %}</a>
+    </div>
+    {% include "properties/_property_cards.html" with properties=featured_properties %}
+</section>
+
+<section class="section section--ink" aria-labelledby="why-title">
     <div class="container">
-        <p class="eyebrow">إقامة أذكى، وراحة أكبر</p>
-        <h1>شقق ذكية فاخرة في قلب المدينة</h1>
-        <p>منصة الحجز قيد التجهيز. استعرض تجارب ضيوفنا الموثقة عبر Hostaway.</p>
-        <a class="button" href="{% url 'reviews:list' %}">عرض جميع المراجعات</a>
+        <div class="section-heading">
+            <p class="eyebrow">{% trans "Why stay with us" %}</p>
+            <h2 id="why-title">{% trans "Comfort, clarity, and thoughtful technology" %}</h2>
+        </div>
+        <div class="value-grid">
+            <article><span aria-hidden="true">01</span><h3>{% trans "Well-positioned homes" %}</h3><p>{% trans "Browse current stays across Riyadh and Marrakech." %}</p></article>
+            <article><span aria-hidden="true">02</span><h3>{% trans "Smart living" %}</h3><p>{% trans "Properties selected for a modern, practical stay." %}</p></article>
+            <article><span aria-hidden="true">03</span><h3>{% trans "Guest support" %}</h3><p>{% trans "A clear route to assistance before and during your stay." %}</p></article>
+            <article><span aria-hidden="true">04</span><h3>{% trans "Live price checks" %}</h3><p>{% trans "Pricing and availability come directly from the operating system." %}</p></article>
+            <article><span aria-hidden="true">05</span><h3>{% trans "Flexible stay lengths" %}</h3><p>{% trans "Explore both daily and monthly accommodation." %}</p></article>
+            <article><span aria-hidden="true">06</span><h3>{% trans "Family-ready options" %}</h3><p>{% trans "Filter homes by capacity, bedrooms, and beds." %}</p></article>
+        </div>
     </div>
 </section>
 
-<section class="section container availability-search" aria-labelledby="home-availability-title">
+<section class="section container" aria-labelledby="cities-title">
     <div class="section-heading">
-        <p class="eyebrow">تحقق مباشر</p>
-        <h2 id="home-availability-title">ابحث عن وحدة متاحة</h2>
+        <p class="eyebrow">{% trans "Destinations" %}</p>
+        <h2 id="cities-title">{% trans "Two cities, one considered standard" %}</h2>
     </div>
-    {% include "reservations/_availability_form.html" %}
+    <div class="city-grid">
+        {% for city in cities %}
+        <a class="city-card" href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
+            <span class="city-card__index">0{{ forloop.counter }}</span>
+            <strong>{% if LANGUAGE_CODE == "en" %}{{ city.city_en|default:city.city }}{% else %}{{ city.city_ar|default:city.city_en|default:city.city }}{% endif %}</strong>
+            <span>{% trans "Explore properties" %}</span>
+        </a>
+        {% endfor %}
+    </div>
 </section>
 
-<section class="section container" aria-labelledby="featured-reviews-title">
-    <div class="section-heading">
-        <p class="eyebrow">تجارب حقيقية</p>
-        <h2 id="featured-reviews-title">آراء ضيوفنا</h2>
+<section class="section section--soft" aria-labelledby="featured-reviews-title">
+    <div class="container">
+        <div class="section-heading section-heading--split">
+            <div>
+                <p class="eyebrow">{% trans "Verified guest experiences" %}</p>
+                <h2 id="featured-reviews-title">{% trans "What guests remember" %}</h2>
+            </div>
+            <a class="text-link" href="{% url 'reviews:list' %}">{% trans "Read all reviews" %}</a>
+        </div>
+        {% include "reviews/_review_cards.html" with reviews=featured_reviews %}
     </div>
-    {% include "reviews/_review_cards.html" with reviews=featured_reviews %}
+</section>
+
+<section class="section container" id="booking-management">
+    <div class="cta-panel">
+        <div>
+            <p class="eyebrow">{% trans "Ready when you are" %}</p>
+            <h2>{% trans "Start with the dates that work for you." %}</h2>
+            <p>{% trans "Your price and availability will be checked live before you continue." %}</p>
+        </div>
+        <a class="button" href="#property-search">{% trans "Check availability" %}</a>
+    </div>
+    <div class="management-note">
+        <h2>{% trans "Manage an existing booking" %}</h2>
+        <p>{% trans "Use the secure management link supplied with your local booking request. Live booking changes remain under review." %}</p>
+    </div>
 </section>
 {% endblock %}

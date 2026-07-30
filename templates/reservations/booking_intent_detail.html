@@ -1,28 +1,11 @@
 {% extends "base.html" %}
-
-{% block title %}مراجعة طلب الحجز{% endblock %}
-
+{% load i18n presentation %}
+{% block title %}{% trans "Review booking request" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% block content %}
-<section class="section container" aria-labelledby="intent-title">
-    <div class="section-heading">
-        <p class="eyebrow">طلب حجز مبدئي</p>
-        <h1 id="intent-title">مراجعة الطلب</h1>
-    </div>
-    <article class="facts-panel">
-        <h2>{{ intent.property.display_name }}</h2>
-        <dl class="quote-summary">
-            <div><dt>الوصول</dt><dd>{{ intent.check_in|date:"Y-m-d" }}</dd></div>
-            <div><dt>المغادرة</dt><dd>{{ intent.check_out|date:"Y-m-d" }}</dd></div>
-            <div><dt>الليالي</dt><dd>{{ intent.nights }}</dd></div>
-            <div><dt>الضيوف</dt><dd>{{ intent.guests }}</dd></div>
-            <div><dt>البريد</dt><dd>{{ masked_email }}</dd></div>
-            <div><dt>الهاتف</dt><dd>{{ masked_phone }}</dd></div>
-            <div class="quote-summary__total"><dt>الإجمالي</dt><dd>{{ intent.total_price }} {{ intent.currency }}</dd></div>
-        </dl>
-        <p class="quote-notice">هذا الطلب غير مؤكد حتى اكتمال الدفع وإنشاء الحجز.</p>
-        <button class="button" type="button" disabled aria-disabled="true">
-            الدفع سيُفعّل بعد ربط بوابة الدفع
-        </button>
-    </article>
+<section class="section container narrow">
+    {% include "includes/progress_indicator.html" with step=3 %}
+    <div class="section-heading"><p class="eyebrow">{% trans "Local booking request" %}</p><h1>{% trans "Review your request" %}</h1></div>
+    <article class="review-panel"><h2>{{ intent.property|localized_property_name }}</h2><dl class="quote-summary"><div><dt>{% trans "Check-in" %}</dt><dd>{{ intent.check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ intent.check_out|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Nights" %}</dt><dd>{{ intent.nights }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ intent.guests }}</dd></div><div><dt>{% trans "Email" %}</dt><dd>{{ masked_email }}</dd></div><div><dt>{% trans "Phone" %}</dt><dd>{{ masked_phone }}</dd></div><div class="quote-summary__total"><dt>{% trans "Total" %}</dt><dd>{{ intent.total_price }} {{ intent.currency }}</dd></div></dl><div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div><button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button></article>
 </section>
 {% endblock %}

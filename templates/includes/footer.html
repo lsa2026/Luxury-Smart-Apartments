@@ -1,0 +1,44 @@
+{% load i18n %}
+<footer class="site-footer">
+    <div class="container footer-grid">
+        <div class="footer-brand">
+            <strong>Luxury Smart Apartments</strong>
+            <p>{% trans "Considered smart stays in Riyadh and Marrakech." %}</p>
+        </div>
+        <div>
+            <h2>{% trans "Explore" %}</h2>
+            <ul>
+                <li><a href="{% url 'properties:list' %}">{% trans "Properties" %}</a></li>
+                <li><a href="{% url 'reviews:list' %}">{% trans "Guest reviews" %}</a></li>
+                <li><a href="{% url 'core:about' %}">{% trans "About" %}</a></li>
+                <li><a href="{% url 'core:contact' %}">{% trans "Contact" %}</a></li>
+            </ul>
+        </div>
+        <div>
+            <h2>{% trans "Cities" %}</h2>
+            <ul>
+                {% for city in footer_cities %}<li>{{ city }}</li>{% empty %}<li>{% trans "Coming soon" %}</li>{% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h2>{% trans "Policies" %}</h2>
+            <ul>
+                <li><a href="{% url 'core:terms' %}">{% trans "Terms" %}</a></li>
+                <li><a href="{% url 'core:privacy' %}">{% trans "Privacy" %}</a></li>
+                <li><a href="{% url 'core:cancellation' %}">{% trans "Cancellation policy" %}</a></li>
+                <li><a href="{% url 'core:cookies' %}">{% trans "Cookie policy" %}</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="container footer-bottom">
+        <p>© {{ current_year }} Luxury Smart Apartments. {% trans "All rights reserved." %}</p>
+        {% if site_setting.contact_email or site_setting.contact_phone %}
+        <address>
+            {% if site_setting.contact_email %}<a href="mailto:{{ site_setting.contact_email }}">{{ site_setting.contact_email }}</a>{% endif %}
+            {% if site_setting.contact_phone %}<span>{{ site_setting.contact_phone }}</span>{% endif %}
+        </address>
+        {% else %}
+        <p>{% trans "Final contact details are being prepared." %}</p>
+        {% endif %}
+    </div>
+</footer>

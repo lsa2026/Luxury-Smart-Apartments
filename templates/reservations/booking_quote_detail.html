@@ -1,61 +1,21 @@
 {% extends "base.html" %}
-
-{% block title %}عرض السعر{% endblock %}
-
+{% load i18n presentation %}
+{% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% block content %}
-<section class="section container" aria-labelledby="quote-title">
-    {% for message in messages %}
-    <div class="availability-message" role="status">{{ message }}</div>
-    {% endfor %}
-    <div class="section-heading">
-        <p class="eyebrow">عرض سعر مؤقت</p>
-        <h1 id="quote-title">{{ property.display_name }}</h1>
+<section class="section container checkout-shell">
+    {% include "includes/progress_indicator.html" with step=2 %}
+    <div class="section-heading"><p class="eyebrow">{% trans "Temporary live quote" %}</p><h1>{% trans "Review your stay" %}</h1></div>
+    <div class="checkout-grid">
+        <article class="quote-card quote-card--compact">
+            {% if cover_image %}<img src="{{ cover_image.display_url }}" alt="{{ cover_image.alt_text_ar|default:cover_image.alt_text_en|default:property.display_name }}" width="960" height="640" loading="lazy">{% endif %}
+            <div class="quote-card__body"><h2>{{ property|localized_property_name }}</h2><dl class="quote-summary"><div><dt>{% trans "Check-in" %}</dt><dd>{{ quote.check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ quote.check_out|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Nights" %}</dt><dd>{{ quote.nights }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ quote.guests }}</dd></div><div class="quote-summary__total"><dt>{% trans "Total price" %}</dt><dd>{{ quote.total_price }} {{ quote.currency }}</dd></div></dl>{% if quote.components %}<h3>{% trans "Price breakdown" %}</h3><ul class="price-components">{% for component in quote.components %}<li><span>{{ component.title }}</span><strong>{{ component.value }} {{ quote.currency }}</strong></li>{% endfor %}</ul>{% endif %}<p class="quote-expiry">{% blocktrans with expires=quote.expires_at|date:"Y-m-d H:i" %}This quote expires at {{ expires }}.{% endblocktrans %}</p><p class="quote-notice">{% trans "Price and availability are temporary and will be checked again before the local booking request is created." %}</p></div>
+        </article>
+        <section class="form-card booking-guest-form" aria-labelledby="guest-details-title">
+            <p class="eyebrow">{% trans "Step two" %}</p><h2 id="guest-details-title">{% trans "Guest details" %}</h2><p>{% trans "Your details remain local and are not sent to Hostaway at this stage." %}</p>
+            {% if quote_is_usable %}<form method="post" action="{% url 'reservations:guest_details' quote_reference %}" data-submit-once novalidate>{% csrf_token %}{{ guest_form.non_field_errors }}{% for field in guest_form %}<div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}">{% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}<button class="button" type="submit">{% trans "Review booking request" %}</button></form>
+            {% else %}<div class="availability-message availability-message--error"><p>{% trans "This quote is invalid or expired. Please check availability again." %}</p></div>{% endif %}
+        </section>
     </div>
-    <article class="quote-card">
-        {% if cover_image %}
-        <img src="{{ cover_image.display_url }}" alt="{{ cover_image.alt_text_ar|default:property.display_name }}" width="960" height="640" loading="lazy">
-        {% endif %}
-        <div class="quote-card__body">
-            <dl class="quote-summary">
-                <div><dt>الوصول</dt><dd>{{ quote.check_in|date:"Y-m-d" }}</dd></div>
-                <div><dt>المغادرة</dt><dd>{{ quote.check_out|date:"Y-m-d" }}</dd></div>
-                <div><dt>الليالي</dt><dd>{{ quote.nights }}</dd></div>
-                <div><dt>الضيوف</dt><dd>{{ quote.guests }}</dd></div>
-                <div class="quote-summary__total"><dt>السعر الإجمالي</dt><dd>{{ quote.total_price }} {{ quote.currency }}</dd></div>
-            </dl>
-            {% if quote.components %}
-            <ul class="price-components">
-                {% for component in quote.components %}
-                <li><span>{{ component.title }}</span><strong>{{ component.value }} {{ quote.currency }}</strong></li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            <p>ينتهي هذا العرض في {{ quote.expires_at|date:"Y-m-d H:i" }}.</p>
-            <p class="quote-notice">السعر والتوافر مؤقتان وسيعاد التحقق منهما قبل إنشاء طلب الحجز المبدئي.</p>
-        </div>
-    </article>
-
-    {% if quote_is_usable %}
-    <section class="booking-guest-form" aria-labelledby="guest-details-title">
-        <h2 id="guest-details-title">بيانات الضيف</h2>
-        <form method="post" action="{% url 'reservations:guest_details' quote_reference %}">
-            {% csrf_token %}
-            {{ guest_form.non_field_errors }}
-            {% for field in guest_form %}
-            <div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}">
-                {% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
-                {{ field }}
-                {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-            </div>
-            {% endfor %}
-            <button class="button" type="submit">مراجعة طلب الحجز</button>
-        </form>
-    </section>
-    {% else %}
-    <div class="availability-message availability-message--error">
-        عرض السعر غير صالح أو منتهي. يرجى التحقق من التوافر مجددًا.
-    </div>
-    {% endif %}
 </section>
 {% endblock %}

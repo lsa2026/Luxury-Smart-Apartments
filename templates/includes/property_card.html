@@ -1,0 +1,50 @@
+{% load i18n presentation %}
+{% with property_name=property|localized_property_name %}
+<article class="property-card">
+    <a class="property-card__media" href="{{ property.get_absolute_url }}">
+        {% with cover=property.cover_image %}
+            {% if cover %}
+            <img
+                src="{{ cover.display_url }}"
+                alt="{{ cover.alt_text_ar|default:cover.alt_text_en|default:property_name }}"
+                width="720"
+                height="480"
+                loading="lazy"
+                decoding="async"
+            >
+            {% else %}
+            <span class="media-empty" aria-label="{% trans 'No image available' %}">
+                {% trans "No image available" %}
+            </span>
+            {% endif %}
+        {% endwith %}
+    </a>
+    <div class="property-card__body">
+        <div class="property-card__meta">
+            {% if property.is_featured %}<span class="badge">{% trans "Featured" %}</span>{% endif %}
+            {% if property.average_review_rating %}
+            <span class="card-rating" aria-label="{% blocktrans with rating=property.average_review_rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
+                <span aria-hidden="true">★</span> {{ property.average_review_rating|rating_out_of_five }}
+            </span>
+            {% endif %}
+        </div>
+        <h2><a href="{{ property.get_absolute_url }}">{{ property_name }}</a></h2>
+        <p class="property-location">{{ property|localized_city }}</p>
+        <div class="property-facts" aria-label="{% trans 'Property details' %}">
+            {% if property.person_capacity != None %}
+            <span>{% blocktrans count counter=property.person_capacity %}{{ counter }} guest{% plural %}{{ counter }} guests{% endblocktrans %}</span>
+            {% endif %}
+            {% if property.bedrooms_number != None %}
+            <span>{% blocktrans count counter=property.bedrooms_number %}{{ counter }} bedroom{% plural %}{{ counter }} bedrooms{% endblocktrans %}</span>
+            {% endif %}
+            {% if property.beds_number != None %}
+            <span>{% blocktrans count counter=property.beds_number %}{{ counter }} bed{% plural %}{{ counter }} beds{% endblocktrans %}</span>
+            {% endif %}
+        </div>
+        <div class="property-card__footer">
+            <span>{% trans "Price based on dates" %}</span>
+            <a class="text-link" href="{{ property.get_absolute_url }}">{% trans "View details" %}</a>
+        </div>
+    </div>
+</article>
+{% endwith %}

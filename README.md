@@ -598,3 +598,43 @@ Cache مرجعًا نهائيًا للتوافر أو السعر.
 إعدادات البيئة الجديدة موثقة في `.env.example`. عوائق الإنتاج الحالية تشمل
 إعداد Redis وعامل Celery وBeat ومراقبتها. لا تزال بوابة الدفع وعمليات كتابة
 الحجز وWebhooks الحقيقية غير مفعلة.
+
+## واجهة المرحلة الثامنة
+
+تستخدم الواجهة العامة مكونات Django Templates قابلة لإعادة الاستخدام، ونظام
+Design Tokens موحدًا في `static/css/site.css`، وJavaScript صغيرًا دون إطار
+واجهة في `static/js/site.js`. التصميم متجاوب للجوال والجهاز اللوحي وسطح
+المكتب، ويدعم لوحة المفاتيح وحالات التركيز الواضحة و`prefers-reduced-motion`.
+
+العربية هي اللغة الافتراضية باتجاه RTL حقيقي، والإنجليزية تستخدم LTR. توجد
+كتالوجات الترجمة تحت `locale/ar` و`locale/en`. عند توفر GNU gettext يمكن
+تحديثها وتجميعها بالأوامر:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py makemessages -l ar -l en
+.\.venv\Scripts\python.exe manage.py compilemessages
+```
+
+يدير `SitePage` و`FAQItem` و`SiteSetting` محتوى الصفحات العامة دون CMS معقد.
+يخزن نموذج التواصل الرسائل محليًا في `ContactMessage` مع CSRF وHoneypot وحدود
+طول وتنقية HTML وRate Limit عبر Cache. لا يرسل بريدًا حتى يضبط مزود بريد
+صراحة. ما يزال مطلوبًا من العميل اعتماد بيانات الهاتف والبريد والشبكات
+الاجتماعية والنصوص القانونية والمحتوى التسويقي النهائي لكل وحدة.
+
+يتضمن أساس SEO عناوين ووصفًا ديناميكيًا، Canonical، وOpen Graph وTwitter
+Cards، وBreadcrumbs، وStructured Data للمنظمة والوحدات. صفحات عرض السعر
+وبيانات الضيف والطلبات الخاصة مضبوطة على `noindex`. لم تبدأ أدوات Google أو
+النشر الإنتاجي.
+
+تقرأ صفحات الوحدات من PostgreSQL المحلي ولا تتصل بـHostaway عند تحميلها.
+يحدث التحقق المباشر فقط بعد إرسال التواريخ. عرض السعر مؤقت، والدفع والحجز
+الحي غير مفعّلين، ولا تنشئ زيارة الواجهة `Reservation` أو `PaymentAttempt`.
+
+فحوصات الواجهة:
+
+```powershell
+.\.venv\Scripts\pytest.exe
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\ruff.exe format --check .
+.\.venv\Scripts\python.exe manage.py check
+```

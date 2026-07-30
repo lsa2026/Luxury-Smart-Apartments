@@ -5,6 +5,7 @@ import secrets
 
 from django import forms
 from django.utils.html import strip_tags
+from django.utils.translation import gettext_lazy as _
 
 
 def _clean_text(value: str) -> str:
@@ -13,25 +14,25 @@ def _clean_text(value: str) -> str:
 
 
 class GuestDetailsForm(forms.Form):
-    guest_first_name = forms.CharField(label="الاسم الأول", max_length=100)
-    guest_last_name = forms.CharField(label="اسم العائلة", max_length=100)
-    guest_email = forms.EmailField(label="البريد الإلكتروني", max_length=254)
+    guest_first_name = forms.CharField(label=_("First name"), max_length=100)
+    guest_last_name = forms.CharField(label=_("Last name"), max_length=100)
+    guest_email = forms.EmailField(label=_("Email address"), max_length=254)
     guest_phone = forms.CharField(
-        label="رقم الهاتف",
+        label=_("Phone number"),
         max_length=20,
-        help_text="استخدم الصيغة الدولية، مثل +9665XXXXXXXX.",
+        help_text=_("Use international format, for example +9665XXXXXXXX."),
     )
-    guest_country_code = forms.CharField(label="رمز الدولة", min_length=2, max_length=2)
+    guest_country_code = forms.CharField(label=_("Country code"), min_length=2, max_length=2)
     special_requests = forms.CharField(
-        label="طلبات خاصة",
+        label=_("Special requests"),
         max_length=1000,
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
     )
-    terms_accepted = forms.BooleanField(label="أوافق على الشروط")
-    privacy_accepted = forms.BooleanField(label="أوافق على سياسة الخصوصية")
+    terms_accepted = forms.BooleanField(label=_("I accept the terms"))
+    privacy_accepted = forms.BooleanField(label=_("I accept the privacy policy"))
     marketing_consent = forms.BooleanField(
-        label="أرغب باستلام العروض التسويقية",
+        label=_("I would like to receive marketing offers"),
         required=False,
     )
     idempotency_key = forms.CharField(widget=forms.HiddenInput(), max_length=64)
@@ -44,26 +45,26 @@ class GuestDetailsForm(forms.Form):
     def clean_guest_first_name(self) -> str:
         value = _clean_text(self.cleaned_data["guest_first_name"])
         if not value:
-            raise forms.ValidationError("الاسم الأول مطلوب.")
+            raise forms.ValidationError(_("First name is required."))
         return value
 
     def clean_guest_last_name(self) -> str:
         value = _clean_text(self.cleaned_data["guest_last_name"])
         if not value:
-            raise forms.ValidationError("اسم العائلة مطلوب.")
+            raise forms.ValidationError(_("Last name is required."))
         return value
 
     def clean_guest_phone(self) -> str:
         raw = self.cleaned_data["guest_phone"]
         normalized = re.sub(r"[\s().-]", "", raw)
         if not re.fullmatch(r"\+[1-9]\d{7,14}", normalized):
-            raise forms.ValidationError("أدخل رقمًا دوليًا صالحًا يبدأ بعلامة +.")
+            raise forms.ValidationError(_("Enter a valid international number beginning with +."))
         return normalized
 
     def clean_guest_country_code(self) -> str:
         value = self.cleaned_data["guest_country_code"].upper()
         if not re.fullmatch(r"[A-Z]{2}", value):
-            raise forms.ValidationError("رمز الدولة يجب أن يتكون من حرفين.")
+            raise forms.ValidationError(_("Country code must contain two letters."))
         return value
 
     def clean_special_requests(self) -> str:
@@ -72,5 +73,5 @@ class GuestDetailsForm(forms.Form):
     def clean_idempotency_key(self) -> str:
         value = self.cleaned_data["idempotency_key"]
         if not re.fullmatch(r"[A-Za-z0-9_-]{32,64}", value):
-            raise forms.ValidationError("معرف الطلب غير صالح.")
+            raise forms.ValidationError(_("The request identifier is invalid."))
         return value

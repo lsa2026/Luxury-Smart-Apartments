@@ -1,35 +1,38 @@
-{% load i18n static %}
+{% load i18n static presentation %}
 {% get_current_language as LANGUAGE_CODE %}
 <!doctype html>
-<html
-    lang="{{ LANGUAGE_CODE }}"
-    dir="{% if LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}"
->
+<html lang="{{ LANGUAGE_CODE }}" dir="{% if LANGUAGE_CODE == 'ar' %}rtl{% else %}ltr{% endif %}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="شقق ذكية فاخرة للإيجار اليومي والشهري">
-    <title>{% block title %}Luxury Smart Apartments{% endblock %}</title>
+    <meta name="theme-color" content="#102c2a">
+    <meta name="description" content="{% block meta_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">
+    <meta name="robots" content="{% block robots %}index,follow{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:site_name" content="Luxury Smart Apartments">
+    <meta property="og:title" content="{% block og_title %}{% trans 'Luxury Smart Apartments' %}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">
+    <meta property="og:url" content="{{ canonical_url }}">
+    {% block og_image %}{% endblock %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{% trans 'Luxury Smart Apartments' %}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">
+    <title>{% block title %}{% trans "Luxury Smart Apartments" %}{% endblock %}</title>
     <link rel="icon" type="image/jpeg" href="{% static 'images/logo.jpeg' %}">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}">
-    <script src="{% static 'js/site.js' %}" defer></script>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=8">
+    <script src="{% static 'js/site.js' %}?v=8" defer></script>
+    {% json_ld organization_data csp_nonce %}
+    {% block structured_data %}{% endblock %}
 </head>
 <body>
-    <header class="site-header">
-        <div class="container header-inner">
-            <a class="brand" href="{% url 'core:home' %}">Luxury Smart Apartments</a>
-            <nav aria-label="التنقل الرئيسي">
-                <a href="{% url 'core:home' %}">الرئيسية</a>
-                <a href="{% url 'properties:list' %}">الوحدات</a>
-                <a href="{% url 'reviews:list' %}">آراء ضيوفنا</a>
-            </nav>
-        </div>
-    </header>
-    <main id="main-content">
+    <a class="skip-link" href="#main-content">{% trans "Skip to main content" %}</a>
+    {% include "includes/header.html" %}
+    {% include "includes/alerts.html" %}
+    <main id="main-content" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
-    <footer class="site-footer">
-        <div class="container">Luxury Smart Apartments</div>
-    </footer>
+    {% include "includes/footer.html" %}
+    {% block dialogs %}{% endblock %}
 </body>
 </html>

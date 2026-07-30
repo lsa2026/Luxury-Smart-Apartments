@@ -1,49 +1,16 @@
 {% extends "base.html" %}
-
-{% block title %}إدارة الحجز{% endblock %}
-
+{% load i18n presentation %}
+{% block title %}{% trans "Manage booking" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
 {% block content %}
-<section class="section container" aria-labelledby="manage-title">
-    <div class="section-heading">
-        <p class="eyebrow">إدارة الحجز</p>
-        <h1 id="manage-title">{{ reservation.property.display_name }}</h1>
+<header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Secure booking management" %}</p><h1>{% trans "Manage booking" %}</h1><p>{{ reservation.property|localized_property_name }}</p></div></header>
+<section class="section container">
+    <article class="review-panel"><h2>{% trans "Stay summary" %}</h2><dl class="quote-summary"><div><dt>{% trans "Status" %}</dt><dd>{{ reservation.get_normalized_status_display }}</dd></div><div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests }}</dd></div><div class="quote-summary__total"><dt>{% trans "Current total" %}</dt><dd>{{ reservation.total_price }} {{ reservation.currency }}</dd></div></dl>{% if reservation.source_type == "external_channel" %}<p class="quote-notice">{% trans "Please complete changes through the booking platform or contact management." %}</p>{% else %}<p class="quote-notice">{% trans "Your request is under review and the booking has not been changed yet." %}</p>{% endif %}</article>
+    <div class="management-grid">
+        <section class="form-card"><h2>{% trans "Extend stay" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'extend' %}" data-submit-once>{% csrf_token %}{{ extension_form.as_p }}<button class="button" type="submit">{% trans "Request extension" %}</button></form></section>
+        <section class="form-card"><h2>{% trans "Change dates" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'dates' %}" data-submit-once>{% csrf_token %}{{ date_form.as_p }}<button class="button" type="submit">{% trans "Request date change" %}</button></form></section>
+        <section class="form-card"><h2>{% trans "Change guests" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'guests' %}" data-submit-once>{% csrf_token %}{{ guest_form.as_p }}<button class="button" type="submit">{% trans "Request guest change" %}</button></form></section>
+        <section class="form-card"><h2>{% trans "Request cancellation" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}" data-submit-once>{% csrf_token %}{{ cancellation_form.as_p }}<button class="button button--secondary" type="submit">{% trans "Send for review" %}</button></form></section>
     </div>
-    <div class="facts-panel">
-        <dl class="quote-summary">
-            <div><dt>الوصول</dt><dd>{{ reservation.check_in|date:"Y-m-d" }}</dd></div>
-            <div><dt>المغادرة</dt><dd>{{ reservation.check_out|date:"Y-m-d" }}</dd></div>
-            <div><dt>الضيوف</dt><dd>{{ reservation.guests }}</dd></div>
-            <div><dt>الإجمالي الحالي</dt><dd>{{ reservation.total_price }} {{ reservation.currency }}</dd></div>
-        </dl>
-        <p class="quote-notice">طلبك قيد المراجعة ولم يتم تعديل الحجز بعد.</p>
-    </div>
-
-    <h2>طلب تمديد</h2>
-    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'extend' %}">
-        {% csrf_token %}
-        {{ extension_form.as_p }}
-        <button class="button" type="submit">إرسال طلب التمديد</button>
-    </form>
-
-    <h2>تغيير التواريخ</h2>
-    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'dates' %}">
-        {% csrf_token %}
-        {{ date_form.as_p }}
-        <button class="button" type="submit">إرسال طلب تغيير التواريخ</button>
-    </form>
-
-    <h2>تغيير عدد الضيوف</h2>
-    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'guests' %}">
-        {% csrf_token %}
-        {{ guest_form.as_p }}
-        <button class="button" type="submit">إرسال طلب تغيير الضيوف</button>
-    </form>
-
-    <h2>طلب إلغاء</h2>
-    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}">
-        {% csrf_token %}
-        {{ cancellation_form.as_p }}
-        <button class="button" type="submit">إرسال طلب الإلغاء للمراجعة</button>
-    </form>
 </section>
 {% endblock %}
