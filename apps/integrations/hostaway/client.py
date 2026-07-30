@@ -34,6 +34,12 @@ from .listing_validators import (
     inspect_object_response,
     validate_collection_response,
 )
+from .modification_validators import (
+    HostawayReservationCancellationRequest,
+    HostawayReservationUpdateRequest,
+    ReservationObservationDocument,
+    validate_reservation_observations,
+)
 from .reservation_validators import (
     HostawayReservationCreateRequest,
     HostawayReservationCreateResult,
@@ -335,6 +341,63 @@ class HostawayClient:
         payload = self._get_json(f"/reservations/{reservation_id}", params=[])
         return validate_reservation_response(payload)
 
+    def retrieve_reservation_observations(
+        self,
+        *,
+        listing_id: int,
+        limit: int = 20,
+    ) -> ReservationObservationDocument:
+        """Read a PII-free projection of reservations for verification only."""
+        if isinstance(listing_id, bool) or not isinstance(listing_id, int) or listing_id <= 0:
+            raise ValueError("listing_id must be a positive integer.")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100.")
+        payload = self._get_json(
+            "/reservations",
+            params=[
+                ("listingId", listing_id),
+                ("limit", limit),
+                ("includeResources", 0),
+            ],
+        )
+        return validate_reservation_observations(payload, limit=limit)
+
+    def update_reservation(
+        self,
+        reservation_id: int,
+        request: HostawayReservationUpdateRequest,
+        *,
+        extension: bool = False,
+    ) -> HostawayReservationSnapshot:
+        """Future PUT boundary; disabled unless every relevant live flag is explicit."""
+        if not settings.HOSTAWAY_LIVE_MODIFICATION_ENABLED:
+            raise HostawayConfigurationError("hostaway_live_modification_disabled")
+        if extension and not settings.HOSTAWAY_LIVE_EXTENSION_ENABLED:
+            raise HostawayConfigurationError("hostaway_live_extension_disabled")
+        _validate_reservation_id(reservation_id)
+        self._put_json(
+            f"/reservations/{reservation_id}",
+            json_body=request.to_payload(),
+        )
+        return self.get_reservation(reservation_id)
+
+    def cancel_reservation(
+        self,
+        reservation_id: int,
+        request: HostawayReservationCancellationRequest,
+    ) -> HostawayReservationSnapshot:
+        """Future cancellation PUT boundary; never enabled implicitly."""
+        if not settings.HOSTAWAY_LIVE_CANCELLATION_ENABLED:
+            raise HostawayConfigurationError("hostaway_live_cancellation_disabled")
+        if not settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED:
+            raise HostawayConfigurationError("automatic_cancellation_disabled")
+        _validate_reservation_id(reservation_id)
+        self._put_json(
+            f"/reservations/{reservation_id}/statuses/cancelled",
+            json_body=request.to_payload(),
+        )
+        return self.get_reservation(reservation_id)
+
     def _get_json(
         self,
         path: str,
@@ -355,6 +418,14 @@ class HostawayClient:
         params: list[tuple[str, str | int]] | None = None,
     ) -> Any:
         response = self._authenticated_post(path, json_body=json_body, params=params or [])
+        self._raise_for_response(response, retry_exhausted=False)
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise HostawayResponseError("Hostaway returned invalid JSON.") from exc
+
+    def _put_json(self, path: str, *, json_body: dict[str, Any]) -> Any:
+        response = self._authenticated_put(path, json_body=json_body)
         self._raise_for_response(response, retry_exhausted=False)
         try:
             return response.json()
@@ -441,6 +512,25 @@ class HostawayClient:
             token=refreshed_token,
         )
 
+    def _authenticated_put(
+        self,
+        path: str,
+        *,
+        json_body: dict[str, Any],
+    ) -> httpx.Response:
+        token = self._token_provider.get_token()
+        response = self._request_put(path, json_body=json_body, token=token)
+        if response.status_code != 403:
+            return response
+        self._token_provider.invalidate()
+        try:
+            refreshed_token = self._token_provider.get_token(force_refresh=True)
+        except HostawayConfigurationError as exc:
+            raise HostawayAuthenticationError(
+                "Hostaway returned HTTP 403 and token refresh is not configured."
+            ) from exc
+        return self._request_put(path, json_body=json_body, token=refreshed_token)
+
     def _request_get(
         self,
         path: str,
@@ -481,6 +571,29 @@ class HostawayClient:
             raise HostawayTimeoutError("Hostaway request timed out.") from exc
         except httpx.NetworkError as exc:
             raise HostawayNetworkError("Hostaway network request failed.") from exc
+
+    def _request_put(
+        self,
+        path: str,
+        *,
+        json_body: dict[str, Any],
+        token: str,
+    ) -> httpx.Response:
+        try:
+            return self._client.put(
+                path,
+                json=json_body,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+            )
+        except httpx.TimeoutException as exc:
+            raise HostawayTimeoutError("Hostaway write result is uncertain after timeout.") from exc
+        except httpx.NetworkError as exc:
+            raise HostawayNetworkError(
+                "Hostaway write result is uncertain after a network error."
+            ) from exc
 
     @staticmethod
     def _raise_for_response(
@@ -535,3 +648,12 @@ class HostawayClient:
             except ValueError:
                 pass
         return min(4.0, 0.5 * (2 ** (attempt - 1)))
+
+
+def _validate_reservation_id(reservation_id: int) -> None:
+    if (
+        isinstance(reservation_id, bool)
+        or not isinstance(reservation_id, int)
+        or reservation_id <= 0
+    ):
+        raise ValueError("reservation_id must be a positive integer.")

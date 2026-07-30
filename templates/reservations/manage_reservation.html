@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الحجز{% endblock %}
+
+{% block content %}
+<section class="section container" aria-labelledby="manage-title">
+    <div class="section-heading">
+        <p class="eyebrow">إدارة الحجز</p>
+        <h1 id="manage-title">{{ reservation.property.display_name }}</h1>
+    </div>
+    <div class="facts-panel">
+        <dl class="quote-summary">
+            <div><dt>الوصول</dt><dd>{{ reservation.check_in|date:"Y-m-d" }}</dd></div>
+            <div><dt>المغادرة</dt><dd>{{ reservation.check_out|date:"Y-m-d" }}</dd></div>
+            <div><dt>الضيوف</dt><dd>{{ reservation.guests }}</dd></div>
+            <div><dt>الإجمالي الحالي</dt><dd>{{ reservation.total_price }} {{ reservation.currency }}</dd></div>
+        </dl>
+        <p class="quote-notice">طلبك قيد المراجعة ولم يتم تعديل الحجز بعد.</p>
+    </div>
+
+    <h2>طلب تمديد</h2>
+    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'extend' %}">
+        {% csrf_token %}
+        {{ extension_form.as_p }}
+        <button class="button" type="submit">إرسال طلب التمديد</button>
+    </form>
+
+    <h2>تغيير التواريخ</h2>
+    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'dates' %}">
+        {% csrf_token %}
+        {{ date_form.as_p }}
+        <button class="button" type="submit">إرسال طلب تغيير التواريخ</button>
+    </form>
+
+    <h2>تغيير عدد الضيوف</h2>
+    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'guests' %}">
+        {% csrf_token %}
+        {{ guest_form.as_p }}
+        <button class="button" type="submit">إرسال طلب تغيير الضيوف</button>
+    </form>
+
+    <h2>طلب إلغاء</h2>
+    <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}">
+        {% csrf_token %}
+        {{ cancellation_form.as_p }}
+        <button class="button" type="submit">إرسال طلب الإلغاء للمراجعة</button>
+    </form>
+</section>
+{% endblock %}

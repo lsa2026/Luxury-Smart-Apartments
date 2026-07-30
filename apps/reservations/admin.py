@@ -9,7 +9,9 @@ from django.utils import timezone
 
 from .models import (
     BookingIntent,
+    BookingModificationRequest,
     BookingQuote,
+    HostawayModificationOperation,
     HostawayReservationOperation,
     Reservation,
 )
@@ -283,6 +285,161 @@ class HostawayReservationOperationAdmin(ModelAdmin):
             return
         count = queryset.filter(status=HostawayReservationOperation.Status.UNKNOWN).update(
             status=HostawayReservationOperation.Status.BLOCKED,
+            error_code="admin_review_required",
+            updated_at=timezone.now(),
+        )
+        self.message_user(request, f"تم وضع {count} عملية للمراجعة دون إعادة إرسال.")
+
+
+@admin.register(BookingModificationRequest)
+class BookingModificationRequestAdmin(ModelAdmin):
+    list_display = (
+        "public_reference",
+        "reservation",
+        "request_type",
+        "status",
+        "old_check_in",
+        "old_check_out",
+        "new_check_in",
+        "new_check_out",
+        "price_difference",
+        "currency",
+        "requested_at",
+        "completed_at",
+    )
+    list_filter = ("request_type", "status", "currency", "requested_at")
+    search_fields = ("public_reference", "reservation__public_reference")
+    actions = ("approve_locally", "reject_locally")
+    fields = (
+        "id",
+        "public_reference",
+        "reservation",
+        "request_type",
+        "status",
+        "old_check_in",
+        "old_check_out",
+        "new_check_in",
+        "new_check_out",
+        "old_guests",
+        "new_guests",
+        "old_total",
+        "new_total",
+        "price_difference",
+        "currency",
+        "reason",
+        "quote_summary",
+        "requested_at",
+        "expires_at",
+        "approved_at",
+        "rejected_at",
+        "completed_at",
+        "created_at",
+        "updated_at",
+    )
+    readonly_fields = fields
+    exclude = ("quote_snapshot", "idempotency_key", "session_key_hash")
+
+    @admin.display(description="ملخص عرض السعر")
+    def quote_summary(self, obj: BookingModificationRequest) -> str:
+        components = obj.quote_snapshot.get("components", [])
+        return f"priceDetails v2 — components: {len(components)}"
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: BookingModificationRequest | None = None,
+    ) -> bool:
+        return False
+
+    @admin.action(description="موافقة محلية دون إرسال إلى Hostaway")
+    def approve_locally(self, request: HttpRequest, queryset: object) -> None:
+        if not request.user.has_perm("reservations.approve_bookingmodificationrequest"):
+            self.message_user(request, "لا تملك صلاحية الموافقة.", messages.ERROR)
+            return
+        now = timezone.now()
+        count = queryset.filter(
+            status=BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
+        ).update(
+            status=BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+            approved_at=now,
+            updated_at=now,
+        )
+        self.message_user(request, f"تمت الموافقة المحلية على {count} طلب دون إرسال.")
+
+    @admin.action(description="رفض الطلب محليًا")
+    def reject_locally(self, request: HttpRequest, queryset: object) -> None:
+        if not request.user.has_perm("reservations.reject_bookingmodificationrequest"):
+            self.message_user(request, "لا تملك صلاحية الرفض.", messages.ERROR)
+            return
+        now = timezone.now()
+        count = queryset.exclude(
+            status__in=(
+                BookingModificationRequest.Status.COMPLETED,
+                BookingModificationRequest.Status.REJECTED,
+            )
+        ).update(
+            status=BookingModificationRequest.Status.REJECTED,
+            rejected_at=now,
+            updated_at=now,
+        )
+        self.message_user(request, f"تم رفض {count} طلب محليًا.")
+
+
+@admin.register(HostawayModificationOperation)
+class HostawayModificationOperationAdmin(ModelAdmin):
+    list_display = (
+        "modification_request",
+        "operation_type",
+        "status",
+        "attempt_count",
+        "error_code",
+        "created_at",
+    )
+    list_filter = ("operation_type", "status", "created_at")
+    search_fields = ("modification_request__public_reference", "error_code")
+    actions = ("mark_unknown_for_review",)
+    fields = (
+        "id",
+        "modification_request",
+        "operation_type",
+        "idempotency_key",
+        "fingerprint_preview",
+        "status",
+        "attempt_count",
+        "hostaway_reservation_id",
+        "error_code",
+        "started_at",
+        "completed_at",
+        "created_at",
+        "updated_at",
+    )
+    readonly_fields = fields
+    exclude = ("request_fingerprint",)
+
+    @admin.display(description="بصمة الطلب")
+    def fingerprint_preview(self, obj: HostawayModificationOperation) -> str:
+        return f"{obj.request_fingerprint[:8]}…"
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: HostawayModificationOperation | None = None,
+    ) -> bool:
+        return False
+
+    @admin.action(description="وضع العمليات غير المؤكدة بانتظار مراجعة")
+    def mark_unknown_for_review(self, request: HttpRequest, queryset: object) -> None:
+        if not request.user.is_superuser:
+            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            return
+        count = queryset.filter(status=HostawayModificationOperation.Status.UNKNOWN).update(
+            status=HostawayModificationOperation.Status.BLOCKED,
             error_code="admin_review_required",
             updated_at=timezone.now(),
         )

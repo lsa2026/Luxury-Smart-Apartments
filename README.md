@@ -282,10 +282,81 @@ Listing ID فقط عندما يكون fallback فريدًا. يدعم وصول `
 - Unified Webhook not registered in Hostaway.
 - Background worker not configured.
 - Redis shared cache required for multi-worker production.
+- Confirmed direct reservation required for live modification verification.
+- Refund workflow and cancellation policy approval not configured.
+- Live modification, extension, and cancellation flags disabled.
+- External-channel modification policy not approved.
 
 لا يجوز رفع مفاتيح API أو رمز الوصول أو كلمة مرور Webhook إلى Git. تسجيل
 Unified Webhook في Hostaway وتفعيل flags خطوات إنتاج يدوية مستقلة لا تنفذها
 هذه المرحلة.
+
+## إدارة الحجز وطلبات التعديل
+
+`BookingModificationRequest` هو طلب محلي يملكه العميل عبر جلسة Django ومرجع عام
+عشوائي. لا يعني أن Reservation تغيرت في Hostaway. يدعم تمديد الإقامة وتغيير
+التواريخ أو عدد الضيوف وطلب الإلغاء المحلي.
+
+يعيد التمديد التحقق من الأيام الإضافية مباشرة، ثم يستخدم `priceDetails` version
+2 للفترة الكاملة. يحسب `price_difference = new_total - old_total` باستخدام
+`Decimal`. الفرق الموجب ينتظر الدفع مستقبلًا، والفرق الصفري أو السالب ينتظر
+مراجعة الإدارة. لا ينشأ PaymentAttempt أو Refund، ولا تتغير Reservation الأصلية
+إلا بعد نجاح كتابة Hostaway مستقبلًا ثم GET للمصالحة.
+
+طلبات القنوات الخارجية لا تصبح قابلة للتعديل أو الإلغاء التلقائي. يجب أن يجري
+العميل العملية عبر القناة أو أن تراجعها الإدارة وفق سياسة موثقة. طلب الإلغاء
+المحلي لا يغير حالة Reservation إلى `cancelled` ولا يؤكد قيمة استرداد.
+
+كل حدود الكتابة مغلقة افتراضيًا:
+
+```dotenv
+HOSTAWAY_LIVE_MODIFICATION_ENABLED=False
+HOSTAWAY_LIVE_EXTENSION_ENABLED=False
+HOSTAWAY_LIVE_CANCELLATION_ENABLED=False
+BOOKING_MODIFICATION_REQUEST_TTL_SECONDS=1800
+BOOKING_EXTENSION_MAX_NIGHTS=30
+BOOKING_MODIFICATION_CUTOFF_HOURS=48
+BOOKING_CANCELLATION_REQUEST_ENABLED=True
+BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False
+BOOKING_AUTOMATIC_CANCELLATION_ENABLED=False
+```
+
+حتى عند الموافقة المحلية، لا تنفذ لوحة الإدارة PUT ولا تسمح بوضع الطلب
+`completed` يدويًا. يحفظ `HostawayModificationOperation` بصمة HMAC وحالة
+idempotency فقط، دون request أو response خام. timeout أو 5xx بعد محاولة الكتابة
+المستقبلية يجعل الحالة `unknown` ولا يعاد PUT تلقائيًا.
+
+التوثيق الرسمي الحالي يحدد تعديل الحجز عبر
+`PUT /reservations/{reservationId}`، والإلغاء عبر
+`PUT /reservations/{reservationId}/statuses/cancelled` مع `cancelledBy`. الكود
+لا يضيف `forceOverbooking` أو بيانات بطاقة، وهو غير مفعّل حتى تثبت المعرفات
+وقيود القناة عمليًا.
+
+أوامر التحقق المقروء:
+
+```powershell
+python manage.py verify_hostaway_reservation_identifiers `
+  --listing-id 315816 --reservation-limit 20 `
+  --include-direct-reservations --show-schema --strict --timeout 20
+
+python manage.py verify_hostaway_modification_prerequisites `
+  --listing-id 315816 --show-schema --strict --timeout 20
+```
+
+الأمر الأول يعرض Channel IDs وstatus وsource وأسماء الحقول وأنواعها فقط؛ لا
+يعرض أسماء الضيوف أو البريد أو الهاتف أو أرقام الحجوزات كاملة. لا يكتب أي قيمة
+مكتشفة إلى `.env`.
+
+تنتهي الطلبات غير المكتملة دون حذفها:
+
+```powershell
+python manage.py expire_booking_modification_requests --dry-run
+python manage.py expire_booking_modification_requests --limit 500
+```
+
+تؤكد Webhooks التعديل فقط عندما يطابق GET Reservation التواريخ والضيوف والسعر
+والعملة المطلوبة. الحدث الأقدم لا يستبدل حالة أحدث، ولا ينشئ حدث غير معروف طلب
+تعديل محليًا.
 
 ## ملكية البيانات
 

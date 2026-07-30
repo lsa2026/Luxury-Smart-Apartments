@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.integrations.models import HostawayWebhookEvent
 from apps.properties.models import Property
-from apps.reservations.models import Reservation
+from apps.reservations.models import BookingModificationRequest, Reservation
 
 from .client import HostawayClient
 from .exceptions import (
@@ -132,6 +132,7 @@ def sync_reservation_snapshot(
             reservation.confirmed_at = None
         reservation.full_clean()
         reservation.save()
+        _reconcile_modification_requests(reservation, snapshot)
         return reservation, strategy, False
 
 
@@ -226,6 +227,38 @@ def _finish_event(event: HostawayWebhookEvent, status: str, code: str) -> None:
         locked.next_retry_at = None
         locked.save()
         _log_transition(locked)
+
+
+def _reconcile_modification_requests(
+    reservation: Reservation,
+    snapshot: HostawayReservationSnapshot,
+) -> None:
+    if reservation.booking_intent_id is None:
+        return
+    active = BookingModificationRequest.objects.select_for_update().filter(
+        reservation=reservation,
+        status__in=(
+            BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+            BookingModificationRequest.Status.PROCESSING,
+            BookingModificationRequest.Status.UNKNOWN,
+        ),
+    )
+    now = timezone.now()
+    for modification in active:
+        if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
+            matches = snapshot.status.casefold() in {"cancelled", "canceled"}
+        else:
+            matches = (
+                modification.new_check_in == snapshot.check_in
+                and modification.new_check_out == snapshot.check_out
+                and modification.new_guests == snapshot.guests
+                and modification.new_total == snapshot.total_price
+                and modification.currency == snapshot.currency
+            )
+        if matches:
+            modification.status = BookingModificationRequest.Status.COMPLETED
+            modification.completed_at = now
+            modification.save(update_fields=["status", "completed_at", "updated_at"])
 
 
 def _log_transition(event: HostawayWebhookEvent) -> None:

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}حالة طلب تعديل الحجز{% endblock %}
+
+{% block content %}
+<section class="section container" aria-labelledby="modification-title">
+    <div class="section-heading">
+        <p class="eyebrow">طلب تعديل محلي</p>
+        <h1 id="modification-title">حالة الطلب</h1>
+    </div>
+    <article class="facts-panel">
+        <dl class="quote-summary">
+            <div><dt>نوع الطلب</dt><dd>{{ modification.get_request_type_display }}</dd></div>
+            <div><dt>الحالة</dt><dd>{{ modification.get_status_display }}</dd></div>
+            <div><dt>الوصول الحالي</dt><dd>{{ modification.old_check_in|date:"Y-m-d" }}</dd></div>
+            <div><dt>المغادرة الحالية</dt><dd>{{ modification.old_check_out|date:"Y-m-d" }}</dd></div>
+            {% if modification.new_check_in %}
+                <div><dt>الوصول المطلوب</dt><dd>{{ modification.new_check_in|date:"Y-m-d" }}</dd></div>
+                <div><dt>المغادرة المطلوبة</dt><dd>{{ modification.new_check_out|date:"Y-m-d" }}</dd></div>
+            {% endif %}
+            {% if modification.new_total != None %}
+                <div><dt>السعر الجديد</dt><dd>{{ modification.new_total }} {{ modification.currency }}</dd></div>
+                <div><dt>فرق السعر</dt><dd>{{ modification.price_difference }} {{ modification.currency }}</dd></div>
+            {% endif %}
+        </dl>
+        <p class="quote-notice">طلبك قيد المراجعة ولم يتم تعديل الحجز بعد.</p>
+        <button class="button" type="button" disabled aria-disabled="true">
+            التنفيذ في Hostaway غير مفعّل
+        </button>
+    </article>
+</section>
+{% endblock %}

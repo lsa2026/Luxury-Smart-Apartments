@@ -21,6 +21,10 @@ def reservation_reference() -> str:
     return secrets.token_urlsafe(18)
 
 
+def modification_request_reference() -> str:
+    return secrets.token_urlsafe(18)
+
+
 class BookingQuote(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "active", "نشط"
@@ -420,6 +424,204 @@ class HostawayReservationOperation(models.Model):
         ]
         verbose_name = "عملية حجز Hostaway"
         verbose_name_plural = "عمليات حجوزات Hostaway"
+
+    def __str__(self) -> str:
+        return f"{self.operation_type} — {self.status}"
+
+
+class BookingModificationRequest(models.Model):
+    """A session-owned local request; it never implies a Hostaway change."""
+
+    class RequestType(models.TextChoices):
+        EXTEND_STAY = "extend_stay", "تمديد الإقامة"
+        CHANGE_DATES = "change_dates", "تغيير التواريخ"
+        CHANGE_GUESTS = "change_guests", "تغيير عدد الضيوف"
+        CANCEL_RESERVATION = "cancel_reservation", "طلب إلغاء"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "مسودة"
+        PENDING_REVALIDATION = "pending_revalidation", "بانتظار إعادة التحقق"
+        AWAITING_CUSTOMER_APPROVAL = (
+            "awaiting_customer_approval",
+            "بانتظار موافقة العميل",
+        )
+        AWAITING_PAYMENT = "awaiting_payment", "بانتظار الدفع"
+        PENDING_ADMIN_APPROVAL = "pending_admin_approval", "بانتظار الإدارة"
+        READY_FOR_HOSTAWAY = "ready_for_hostaway", "جاهز لـHostaway"
+        PROCESSING = "processing", "قيد التنفيذ"
+        COMPLETED = "completed", "مكتمل"
+        REJECTED = "rejected", "مرفوض"
+        EXPIRED = "expired", "منتهي"
+        PRICE_CHANGED = "price_changed", "تغير السعر"
+        UNAVAILABLE = "unavailable", "غير متاح"
+        FAILED = "failed", "فشل"
+        UNKNOWN = "unknown", "نتيجة غير مؤكدة"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_reference = models.CharField(
+        max_length=32,
+        unique=True,
+        default=modification_request_reference,
+        editable=False,
+    )
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.PROTECT,
+        related_name="modification_requests",
+    )
+    request_type = models.CharField(max_length=30, choices=RequestType.choices)
+    status = models.CharField(max_length=40, choices=Status.choices, default=Status.DRAFT)
+    old_check_in = models.DateField()
+    old_check_out = models.DateField()
+    new_check_in = models.DateField(null=True, blank=True)
+    new_check_out = models.DateField(null=True, blank=True)
+    old_guests = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    new_guests = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)],
+        null=True,
+        blank=True,
+    )
+    old_total = models.DecimalField(max_digits=14, decimal_places=4)
+    new_total = models.DecimalField(max_digits=14, decimal_places=4, null=True, blank=True)
+    price_difference = models.DecimalField(max_digits=14, decimal_places=4, default=0)
+    currency = models.CharField(max_length=3)
+    reason = models.CharField(max_length=1000, blank=True)
+    quote_snapshot = models.JSONField(default=dict, blank=True, editable=False)
+    idempotency_key = models.CharField(max_length=64, unique=True, editable=False)
+    session_key_hash = models.CharField(max_length=64, editable=False)
+    requested_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-requested_at"]
+        indexes = [
+            models.Index(fields=["status", "expires_at"]),
+            models.Index(fields=["reservation", "status"]),
+            models.Index(fields=["request_type", "-requested_at"]),
+            models.Index(fields=["created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(old_check_out__gt=F("old_check_in")),
+                name="modification_old_checkout_after_checkin",
+            ),
+            models.CheckConstraint(
+                condition=Q(new_check_in__isnull=True)
+                | Q(new_check_out__isnull=True)
+                | Q(new_check_out__gt=F("new_check_in")),
+                name="modification_new_checkout_after_checkin",
+            ),
+            models.CheckConstraint(
+                condition=Q(old_total__gte=0),
+                name="modification_old_total_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(new_total__isnull=True) | Q(new_total__gte=0),
+                name="modification_new_total_nonnegative",
+            ),
+        ]
+        permissions = [
+            ("approve_bookingmodificationrequest", "Can approve modification requests"),
+            ("reject_bookingmodificationrequest", "Can reject modification requests"),
+        ]
+        verbose_name = "طلب تعديل حجز"
+        verbose_name_plural = "طلبات تعديل الحجوزات"
+
+    def __str__(self) -> str:
+        return self.public_reference
+
+    @builtin_property
+    def is_expired(self) -> bool:
+        return self.expires_at <= timezone.now()
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.old_check_out <= self.old_check_in:
+            errors["old_check_out"] = "Old check-out must be after check-in."
+        if self.new_check_in and self.new_check_out and self.new_check_out <= self.new_check_in:
+            errors["new_check_out"] = "New check-out must be after check-in."
+        if bool(self.new_check_in) != bool(self.new_check_out):
+            errors["new_check_out"] = "Both new dates are required together."
+        if self.new_guests and self.reservation.property_id:
+            capacity = self.reservation.property.person_capacity
+            if capacity and self.new_guests > capacity:
+                errors["new_guests"] = "Guest count exceeds property capacity."
+        if self.currency:
+            self.currency = self.currency.upper()
+            if (
+                len(self.currency) != 3
+                or not self.currency.isascii()
+                or not self.currency.isalpha()
+            ):
+                errors["currency"] = "Currency must be an ISO three-letter code."
+        if len(self.reason) > 1000:
+            errors["reason"] = "Reason exceeds 1000 characters."
+        if not isinstance(self.quote_snapshot, dict):
+            errors["quote_snapshot"] = "Quote snapshot must be an object."
+        if errors:
+            raise ValidationError(errors)
+
+    @classmethod
+    def default_expiry(cls) -> datetime:
+        return timezone.now() + timedelta(seconds=settings.BOOKING_MODIFICATION_REQUEST_TTL_SECONDS)
+
+
+class HostawayModificationOperation(models.Model):
+    """Idempotency ledger for future Hostaway modification writes."""
+
+    class OperationType(models.TextChoices):
+        UPDATE_DATES = "update_dates", "تحديث التواريخ"
+        EXTEND_STAY = "extend_stay", "تمديد الإقامة"
+        UPDATE_GUESTS = "update_guests", "تحديث الضيوف"
+        CANCEL_RESERVATION = "cancel_reservation", "إلغاء الحجز"
+        RECONCILE_MODIFICATION = "reconcile_modification", "مصالحـة التعديل"
+
+    class Status(models.TextChoices):
+        PREPARED = "prepared", "مجهزة"
+        IN_PROGRESS = "in_progress", "قيد التنفيذ"
+        SUCCEEDED = "succeeded", "ناجحة"
+        FAILED = "failed", "فشلت"
+        UNKNOWN = "unknown", "غير مؤكدة"
+        BLOCKED = "blocked", "محظورة"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    modification_request = models.ForeignKey(
+        BookingModificationRequest,
+        on_delete=models.PROTECT,
+        related_name="hostaway_operations",
+    )
+    operation_type = models.CharField(max_length=35, choices=OperationType.choices)
+    idempotency_key = models.CharField(max_length=64, unique=True, editable=False)
+    request_fingerprint = models.CharField(max_length=64, editable=False)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PREPARED)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    hostaway_reservation_id = models.PositiveBigIntegerField(null=True, blank=True)
+    error_code = models.CharField(max_length=100, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["modification_request", "operation_type"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["modification_request", "operation_type"],
+                name="one_modification_operation_per_type",
+            ),
+        ]
+        verbose_name = "عملية تعديل Hostaway"
+        verbose_name_plural = "عمليات تعديل Hostaway"
 
     def __str__(self) -> str:
         return f"{self.operation_type} — {self.status}"

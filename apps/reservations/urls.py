@@ -5,6 +5,9 @@ from .views import (
     BookingIntentDetailView,
     BookingQuoteDetailView,
     GuestDetailsView,
+    ModificationCreateView,
+    ModificationDetailView,
+    ReservationManageView,
 )
 
 app_name = "reservations"
@@ -25,5 +28,20 @@ urlpatterns = [
         "requests/<str:public_reference>/",
         BookingIntentDetailView.as_view(),
         name="intent_detail",
+    ),
+    path(
+        "manage/<str:public_reference>/",
+        ReservationManageView.as_view(),
+        name="manage",
+    ),
+    path(
+        "manage/<str:public_reference>/<str:action>/",
+        ModificationCreateView.as_view(),
+        name="modification_create",
+    ),
+    path(
+        "modifications/<str:public_reference>/",
+        ModificationDetailView.as_view(),
+        name="modification_detail",
     ),
 ]

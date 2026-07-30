@@ -12,7 +12,18 @@ from apps.properties.models import Property, PropertyImage
 
 from .booking_forms import GuestDetailsForm
 from .forms import AvailabilitySearchForm
-from .models import BookingIntent, BookingQuote
+from .models import (
+    BookingIntent,
+    BookingModificationRequest,
+    BookingQuote,
+    Reservation,
+)
+from .modification_forms import (
+    CancellationRequestForm,
+    DateChangeRequestForm,
+    ExtensionRequestForm,
+    GuestChangeRequestForm,
+)
 from .security import (
     is_rate_limited,
     mask_email,
@@ -22,6 +33,7 @@ from .security import (
 )
 from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.booking import consume_revalidated_quote
+from .services.modifications import ModificationService
 from .signing import (
     quote_id_from_reference,
     quote_reference,
@@ -264,4 +276,173 @@ class BookingIntentDetailView(View):
                 "masked_email": mask_email(intent.guest_email),
                 "masked_phone": mask_phone(intent.guest_phone),
             },
+        )
+
+
+def _owned_reservation(request: HttpRequest, public_reference: str) -> Reservation:
+    try:
+        reservation = Reservation.objects.select_related(
+            "property",
+            "booking_intent",
+        ).get(public_reference=public_reference)
+    except Reservation.DoesNotExist as exc:
+        raise Http404 from exc
+    if reservation.booking_intent is None or not session_owns(
+        request,
+        reservation.booking_intent.session_key_hash,
+    ):
+        raise Http404
+    return reservation
+
+
+def _owned_modification(
+    request: HttpRequest,
+    public_reference: str,
+) -> BookingModificationRequest:
+    try:
+        modification = BookingModificationRequest.objects.select_related(
+            "reservation__property",
+            "reservation__booking_intent",
+        ).get(public_reference=public_reference)
+    except BookingModificationRequest.DoesNotExist as exc:
+        raise Http404 from exc
+    if not session_owns(request, modification.session_key_hash):
+        raise Http404
+    return modification
+
+
+class ReservationManageView(View):
+    http_method_names = ["get"]
+
+    def get(self, request: HttpRequest, public_reference: str) -> HttpResponse:
+        reservation = _owned_reservation(request, public_reference)
+        return render(
+            request,
+            "reservations/manage_reservation.html",
+            {
+                "reservation": reservation,
+                "extension_form": ExtensionRequestForm(),
+                "date_form": DateChangeRequestForm(
+                    initial={
+                        "new_check_in": reservation.check_in,
+                        "new_check_out": reservation.check_out,
+                        "new_guests": reservation.guests,
+                    }
+                ),
+                "guest_form": GuestChangeRequestForm(initial={"new_guests": reservation.guests}),
+                "cancellation_form": CancellationRequestForm(),
+            },
+        )
+
+
+class ModificationCreateView(View):
+    http_method_names = ["post"]
+    service_class = ModificationService
+
+    def post(
+        self,
+        request: HttpRequest,
+        public_reference: str,
+        action: str,
+    ) -> HttpResponse:
+        if is_rate_limited(
+            request,
+            scope="modification-create",
+            requests=settings.BOOKING_MODIFICATION_RATE_LIMIT_REQUESTS,
+            window=settings.BOOKING_MODIFICATION_RATE_LIMIT_WINDOW,
+        ):
+            return HttpResponse("Too many requests.", status=429)
+        reservation = _owned_reservation(request, public_reference)
+        session_hash = session_key_hash(request)
+        if action == "extend":
+            form = ExtensionRequestForm(request.POST)
+            if form.is_valid():
+                with self.service_class() as service:
+                    outcome = service.create_extension_quote(
+                        reservation,
+                        new_check_out=form.cleaned_data["new_check_out"],
+                        session_hash=session_hash,
+                        reason=form.cleaned_data["reason"],
+                    )
+            else:
+                return self._invalid(request, reservation, form, "extension_form")
+        elif action == "dates":
+            form = DateChangeRequestForm(request.POST)
+            if form.is_valid():
+                with self.service_class() as service:
+                    outcome = service.create_change_quote(
+                        reservation,
+                        new_check_in=form.cleaned_data["new_check_in"],
+                        new_check_out=form.cleaned_data["new_check_out"],
+                        new_guests=form.cleaned_data["new_guests"],
+                        session_hash=session_hash,
+                        reason=form.cleaned_data["reason"],
+                    )
+            else:
+                return self._invalid(request, reservation, form, "date_form")
+        elif action == "guests":
+            form = GuestChangeRequestForm(request.POST)
+            if form.is_valid():
+                with self.service_class() as service:
+                    outcome = service.create_change_quote(
+                        reservation,
+                        new_check_in=reservation.check_in,
+                        new_check_out=reservation.check_out,
+                        new_guests=form.cleaned_data["new_guests"],
+                        session_hash=session_hash,
+                        reason=form.cleaned_data["reason"],
+                    )
+            else:
+                return self._invalid(request, reservation, form, "guest_form")
+        elif action == "cancel":
+            form = CancellationRequestForm(request.POST)
+            if form.is_valid():
+                with self.service_class() as service:
+                    outcome = service.create_cancellation_request(
+                        reservation,
+                        session_hash=session_hash,
+                        reason=form.cleaned_data["reason"],
+                    )
+            else:
+                return self._invalid(request, reservation, form, "cancellation_form")
+        else:
+            raise Http404
+        if outcome.request is not None:
+            return redirect(
+                "reservations:modification_detail",
+                public_reference=outcome.request.public_reference,
+            )
+        messages.error(request, "تعذر إنشاء طلب التعديل. لم يتغير الحجز.")
+        return redirect(
+            "reservations:manage",
+            public_reference=reservation.public_reference,
+        )
+
+    @staticmethod
+    def _invalid(
+        request: HttpRequest,
+        reservation: Reservation,
+        form: object,
+        form_name: str,
+    ) -> HttpResponse:
+        context = {
+            "reservation": reservation,
+            "extension_form": ExtensionRequestForm(),
+            "date_form": DateChangeRequestForm(),
+            "guest_form": GuestChangeRequestForm(),
+            "cancellation_form": CancellationRequestForm(),
+        }
+        context[form_name] = form
+        return render(request, "reservations/manage_reservation.html", context, status=400)
+
+
+class ModificationDetailView(View):
+    http_method_names = ["get"]
+
+    def get(self, request: HttpRequest, public_reference: str) -> HttpResponse:
+        modification = _owned_modification(request, public_reference)
+        return render(
+            request,
+            "reservations/modification_detail.html",
+            {"modification": modification},
         )
