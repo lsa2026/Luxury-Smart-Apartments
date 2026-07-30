@@ -1,0 +1,25 @@
+<form
+    class="availability-form"
+    method="post"
+    action="{% url 'reservations:search_availability' %}"
+    data-availability-form
+>
+    {% csrf_token %}
+    <div class="availability-form__grid">
+        {% for field in availability_form %}
+        <div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}">
+            {% if not field.is_hidden %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% endif %}
+            {{ field }}
+            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        </div>
+        {% endfor %}
+        <button class="button availability-form__submit" type="submit">
+            تحقق من التوافر
+        </button>
+    </div>
+    <p class="availability-form__loading" role="status" aria-live="polite" hidden>
+        جارٍ التحقق من السعر والتوافر…
+    </p>
+</form>

@@ -37,5 +37,9 @@ class HostawayResponseError(HostawayError):
     """Hostaway returned a malformed or unexpected response."""
 
 
+class HostawayAvailabilityError(HostawayError):
+    """Hostaway rejected dates, stay restrictions, or price calculation."""
+
+
 class HostawaySyncAlreadyRunningError(HostawayError):
     """Another Hostaway sync of the same type is already running."""

@@ -1,6 +1,7 @@
 from django.db.models import Prefetch, QuerySet
 from django.views.generic import DetailView, ListView
 
+from apps.reservations.forms import AvailabilitySearchForm
 from apps.reviews.models import Review
 
 from .models import Property, PropertyAmenity, PropertyImage
@@ -55,4 +56,5 @@ class PropertyDetailView(DetailView):
         context["gallery_images"] = property_obj._public_images
         context["visible_amenities"] = property_obj._public_amenities
         context["property_reviews"] = property_obj._public_reviews
+        context["availability_form"] = AvailabilitySearchForm(property_obj=property_obj)
         return context

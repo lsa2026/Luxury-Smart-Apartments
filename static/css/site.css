@@ -98,6 +98,11 @@ nav a {
     background: var(--accent-dark);
 }
 
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 .section {
     padding-block: 4rem;
 }
@@ -341,6 +346,137 @@ blockquote {
     background: white;
 }
 
+.availability-search {
+    padding-block: 2.5rem;
+}
+
+.availability-form {
+    padding: 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 12px 32px rgb(23 32 27 / 6%);
+}
+
+.availability-form__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 1rem;
+}
+
+.form-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.form-field--hidden {
+    display: none;
+}
+
+.form-field label {
+    font-weight: 700;
+}
+
+.form-field input,
+.form-field select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid #bbb4a9;
+    border-radius: 0.45rem;
+    background: white;
+    color: var(--ink);
+    font: inherit;
+}
+
+.availability-form__submit {
+    min-height: 46px;
+    margin: 0;
+    border: 0;
+    font: inherit;
+}
+
+.availability-form__loading {
+    margin-bottom: 0;
+    color: var(--muted);
+}
+
+.availability-message {
+    padding: 1.25rem;
+    border-radius: 0.8rem;
+    background: white;
+}
+
+.availability-message--error {
+    border: 1px solid #b9695b;
+}
+
+.quote-card {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    background: white;
+}
+
+.quote-card > img {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+}
+
+.quote-card__body {
+    padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.quote-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.quote-summary div {
+    padding: 0.7rem;
+    border-radius: 0.5rem;
+    background: var(--paper);
+}
+
+.quote-summary dt {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.quote-summary dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+.quote-summary__total {
+    grid-column: 1 / -1;
+}
+
+.price-components {
+    padding: 0;
+    list-style: none;
+}
+
+.price-components li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.45rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.quote-notice {
+    padding: 0.75rem;
+    border-inline-start: 4px solid var(--accent);
+    background: #f7f0e5;
+}
+
 .pagination {
     justify-content: center;
     align-items: center;
@@ -376,7 +512,13 @@ blockquote {
     }
 
     .gallery,
-    .split-layout {
+    .split-layout,
+    .quote-card {
+        grid-template-columns: 1fr;
+    }
+
+    .availability-form__grid,
+    .quote-summary {
         grid-template-columns: 1fr;
     }
 }

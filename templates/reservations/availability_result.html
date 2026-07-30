@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}نتيجة التحقق من التوافر{% endblock %}
+
+{% block content %}
+<section class="section container" aria-labelledby="availability-result-title">
+    <div class="section-heading">
+        <p class="eyebrow">سعر مباشر من Hostaway</p>
+        <h1 id="availability-result-title">نتيجة التحقق من التوافر</h1>
+    </div>
+
+    {% if rate_limited %}
+    <div class="availability-message availability-message--error" role="alert">
+        {{ user_message }}
+    </div>
+    {% elif form %}
+    <div class="availability-message availability-message--error" role="alert">
+        <p>يرجى تصحيح بيانات البحث.</p>
+        {{ form.non_field_errors }}
+        {% for field in form %}
+            {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
+        {% endfor %}
+    </div>
+    {% elif availability.is_available and availability.quote %}
+    <article class="quote-card">
+        {% if cover_image %}
+        <img
+            src="{{ cover_image.display_url }}"
+            alt="{{ cover_image.alt_text_ar|default:property.display_name }}"
+            width="960"
+            height="640"
+            loading="lazy"
+        >
+        {% endif %}
+        <div class="quote-card__body">
+            <h2>{{ property.display_name }}</h2>
+            <p>{{ property.display_city }} · السعة {{ property.person_capacity }}</p>
+            <dl class="quote-summary">
+                <div><dt>الوصول</dt><dd>{{ check_in|date:"Y-m-d" }}</dd></div>
+                <div><dt>المغادرة</dt><dd>{{ check_out|date:"Y-m-d" }}</dd></div>
+                <div><dt>الليالي</dt><dd>{{ availability.nights }}</dd></div>
+                <div><dt>الضيوف</dt><dd>{{ guests }}</dd></div>
+                <div class="quote-summary__total">
+                    <dt>السعر الإجمالي</dt>
+                    <dd>{{ availability.quote.total_price }} {{ availability.quote.currency }}</dd>
+                </div>
+            </dl>
+            {% if price_components %}
+            <h3>ملخص السعر</h3>
+            <ul class="price-components">
+                {% for component in price_components %}
+                <li><span>{{ component.title }}</span><strong>{{ component.amount }} {{ availability.quote.currency }}</strong></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            <p class="quote-notice">
+                السعر والتوافر مؤقتان وسيعاد التحقق منهما قبل تأكيد الحجز.
+            </p>
+            <button class="button" type="button" disabled aria-disabled="true">
+                متابعة الحجز — قريبًا
+            </button>
+        </div>
+    </article>
+    {% else %}
+    <div class="availability-message availability-message--error" role="status">
+        <p>{{ availability.user_message_ar }}</p>
+        <p>لم يتم إنشاء حجز أو إجراء دفع.</p>
+    </div>
+    {% endif %}
+
+    <p><a href="{% if property %}{{ property.get_absolute_url }}{% else %}{% url 'core:home' %}{% endif %}">العودة</a></p>
+</section>
+{% endblock %}
