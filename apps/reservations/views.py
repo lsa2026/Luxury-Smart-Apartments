@@ -6,6 +6,7 @@ from django.core import signing
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from django.views import View
 
 from apps.properties.models import Property, PropertyImage
@@ -91,7 +92,7 @@ class AvailabilitySearchView(View):
                 "reservations/availability_result.html",
                 {
                     "rate_limited": True,
-                    "user_message": "تم تجاوز عدد محاولات التحقق. يرجى الانتظار قليلًا.",
+                    "user_message": _("Too many checks. Please wait and try again."),
                 },
                 status=429,
             )
@@ -125,7 +126,7 @@ class AvailabilitySearchView(View):
                 "reservations/availability_result.html",
                 {
                     "property": property_obj,
-                    "user_message": "تعذر إنشاء عرض سعر آمن لهذه الفترة.",
+                    "user_message": _("A secure quote could not be created for these dates."),
                 },
                 status=503,
             )
@@ -154,7 +155,7 @@ class BookingQuoteDetailView(View):
             requests=settings.BOOKING_READ_RATE_LIMIT_REQUESTS,
             window=settings.BOOKING_READ_RATE_LIMIT_WINDOW,
         ):
-            return HttpResponse("Too many requests.", status=429)
+            return HttpResponse(_("Too many requests."), status=429)
         quote = _owned_quote(request, reference)
         return render(
             request,
@@ -174,7 +175,7 @@ class GuestDetailsView(View):
             requests=settings.BOOKING_INTENT_RATE_LIMIT_REQUESTS,
             window=settings.BOOKING_INTENT_RATE_LIMIT_WINDOW,
         ):
-            return HttpResponse("Too many requests.", status=429)
+            return HttpResponse(_("Too many requests."), status=429)
         quote = _owned_quote(request, reference)
         form = GuestDetailsForm(request.POST)
         if not form.is_valid():
@@ -197,7 +198,7 @@ class GuestDetailsView(View):
             )
             quote.status = BookingQuote.Status.INVALIDATED
         if quote.status != BookingQuote.Status.ACTIVE:
-            messages.error(request, "عرض السعر لم يعد صالحًا. يرجى طلب سعر جديد.")
+            messages.error(request, _("This quote is no longer valid. Please request a new one."))
             return redirect("reservations:quote_detail", reference=reference)
 
         availability_request = AvailabilityRequest(
@@ -232,8 +233,15 @@ class GuestDetailsView(View):
         if outcome.code == "price_changed" and outcome.replacement_quote:
             messages.warning(
                 request,
-                f"تغير السعر من {outcome.old_total} إلى {outcome.new_total} "
-                f"{outcome.replacement_quote.currency}. يرجى مراجعته والموافقة مجددًا.",
+                _(
+                    "The price changed from %(old)s to %(new)s %(currency)s. "
+                    "Please review and approve it again."
+                )
+                % {
+                    "old": outcome.old_total,
+                    "new": outcome.new_total,
+                    "currency": outcome.replacement_quote.currency,
+                },
             )
             return redirect(
                 "reservations:quote_detail",
@@ -242,10 +250,13 @@ class GuestDetailsView(View):
         if outcome.code == "unavailable":
             messages.error(
                 request,
-                "لا تتوفر هذه الوحدة في التواريخ المحددة. جرّب تواريخ أخرى.",
+                _("This property is unavailable for the selected dates. Try other dates."),
             )
         else:
-            messages.error(request, "تعذر متابعة الطلب. يرجى طلب عرض سعر جديد.")
+            messages.error(
+                request,
+                _("The request could not continue. Please request a new quote."),
+            )
         return redirect("reservations:quote_detail", reference=reference)
 
 
@@ -259,7 +270,7 @@ class BookingIntentDetailView(View):
             requests=settings.BOOKING_READ_RATE_LIMIT_REQUESTS,
             window=settings.BOOKING_READ_RATE_LIMIT_WINDOW,
         ):
-            return HttpResponse("Too many requests.", status=429)
+            return HttpResponse(_("Too many requests."), status=429)
         try:
             intent = BookingIntent.objects.select_related("property", "quote").get(
                 public_reference=public_reference
@@ -351,7 +362,7 @@ class ModificationCreateView(View):
             requests=settings.BOOKING_MODIFICATION_RATE_LIMIT_REQUESTS,
             window=settings.BOOKING_MODIFICATION_RATE_LIMIT_WINDOW,
         ):
-            return HttpResponse("Too many requests.", status=429)
+            return HttpResponse(_("Too many requests."), status=429)
         reservation = _owned_reservation(request, public_reference)
         session_hash = session_key_hash(request)
         if action == "extend":
@@ -412,7 +423,10 @@ class ModificationCreateView(View):
                 "reservations:modification_detail",
                 public_reference=outcome.request.public_reference,
             )
-        messages.error(request, "تعذر إنشاء طلب التعديل. لم يتغير الحجز.")
+        messages.error(
+            request,
+            _("The change request could not be created. The booking was not changed."),
+        )
         return redirect(
             "reservations:manage",
             public_reference=reservation.public_reference,

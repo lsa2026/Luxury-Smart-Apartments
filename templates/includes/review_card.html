@@ -12,7 +12,7 @@
     <div class="stars" role="img" aria-label="{% blocktrans with rating=review.rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
         <span aria-hidden="true">{{ review.star_display }}</span>
     </div>
-    <blockquote>{{ review.public_review }}</blockquote>
+    <blockquote>{{ review|localized_review_text }}</blockquote>
     {% if review.departure_date %}
     <time datetime="{{ review.departure_date|date:'Y-m-d' }}">{{ review.departure_date|date:"j F Y" }}</time>
     {% endif %}

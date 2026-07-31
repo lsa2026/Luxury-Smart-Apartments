@@ -19,7 +19,13 @@ class ReviewAdmin(admin.ModelAdmin):
         "is_featured",
     )
     list_filter = ("property", "rating", "status", "is_visible", "is_featured")
-    search_fields = ("guest_name", "public_review")
+    search_fields = (
+        "guest_name",
+        "public_review",
+        "public_review_ar",
+        "public_review_en",
+        "public_review_fr",
+    )
     list_select_related = ("property",)
     actions = ("make_visible", "make_hidden", "make_featured")
     readonly_fields = (

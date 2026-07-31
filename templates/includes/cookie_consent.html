@@ -1,0 +1,34 @@
+{% load i18n %}
+<section class="consent-banner" data-consent-banner hidden aria-labelledby="consent-title">
+    <div>
+        <h2 id="consent-title">{% trans "Your privacy choices" %}</h2>
+        <p>{% trans "Essential cookies keep the site working. Analytics and marketing remain off unless you choose otherwise." %}</p>
+        <a href="{% url 'core:cookies' %}">{% trans "Cookie policy" %}</a>
+    </div>
+    <div class="consent-actions">
+        <button class="button button--secondary" type="button" data-consent-reject>{% trans "Reject non-essential" %}</button>
+        <button class="button button--secondary" type="button" data-consent-customize>{% trans "Customize" %}</button>
+        <button class="button button--secondary" type="button" data-consent-accept>{% trans "Accept all" %}</button>
+    </div>
+</section>
+<dialog class="consent-dialog" data-consent-dialog aria-labelledby="consent-settings-title">
+    <form method="dialog">
+        <h2 id="consent-settings-title">{% trans "Cookie settings" %}</h2>
+        <label class="consent-choice">
+            <input type="checkbox" checked disabled>
+            <span><strong>{% trans "Essential" %}</strong><small>{% trans "Required for security, sessions, and core site functions." %}</small></span>
+        </label>
+        <label class="consent-choice">
+            <input type="checkbox" data-consent-analytics>
+            <span><strong>{% trans "Analytics" %}</strong><small>{% trans "Helps us understand anonymous use of public pages." %}</small></span>
+        </label>
+        <label class="consent-choice">
+            <input type="checkbox" data-consent-marketing>
+            <span><strong>{% trans "Marketing" %}</strong><small>{% trans "Allows advertising measurement when configured." %}</small></span>
+        </label>
+        <div class="consent-actions">
+            <button class="button button--secondary" value="cancel" type="button" data-consent-close>{% trans "Close" %}</button>
+            <button class="button" value="save" type="button" data-consent-save>{% trans "Save choices" %}</button>
+        </div>
+    </form>
+</dialog>

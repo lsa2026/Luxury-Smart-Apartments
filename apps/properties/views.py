@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import DetailView, ListView
 
+from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
 from apps.reviews.models import Review
 
@@ -59,8 +60,15 @@ class PropertyListView(ListView):
         context["properties"] = page_properties
         if context.get("page_obj") is not None:
             context["page_obj"].object_list = page_properties
-        context["filter_cities"] = sorted({item.city for item in page_properties if item.city})
-        context["footer_cities"] = context["filter_cities"]
+        city_rows: dict[str, str] = {}
+        for item in page_properties:
+            if item.city:
+                city_rows[item.city] = item.display_city
+        context["filter_cities"] = [
+            {"value": value, "label": label}
+            for value, label in sorted(city_rows.items(), key=lambda row: row[1])
+        ]
+        context["footer_cities"] = [row["label"] for row in context["filter_cities"]]
         context["filter_room_types"] = sorted(
             {item.room_type for item in page_properties if item.room_type}
         )
@@ -145,25 +153,7 @@ class PropertyDetailView(DetailView):
                     {"label": _("Properties"), "url": reverse("properties:list")},
                     {"label": property_obj.display_name, "url": ""},
                 ],
-                "property_structured_data": {
-                    "@context": "https://schema.org",
-                    "@type": "VacationRental",
-                    "name": property_obj.display_name,
-                    "description": (
-                        property_obj.description_ar
-                        or property_obj.description_en
-                        or property_obj.hostaway_description
-                    )[:500],
-                    "address": {
-                        "@type": "PostalAddress",
-                        "addressLocality": property_obj.display_city,
-                        "addressCountry": property_obj.country_code,
-                    },
-                    "occupancy": {
-                        "@type": "QuantitativeValue",
-                        "maxValue": property_obj.person_capacity,
-                    },
-                },
+                "property_structured_data": property_structured_data(property_obj),
                 "breadcrumb_structured_data": {
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",

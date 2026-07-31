@@ -11,10 +11,7 @@ from apps.properties.models import Property
 
 class LocalizedPropertyChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj: Property) -> str:
-        language = (translation.get_language() or "ar").split("-")[0]
-        if language == "en":
-            return obj.name_en or obj.hostaway_name or obj.name_ar
-        return obj.name_ar or obj.name_en or obj.hostaway_name
+        return obj.display_name
 
 
 class AvailabilitySearchForm(forms.Form):
@@ -52,23 +49,35 @@ class AvailabilitySearchForm(forms.Form):
             "hostaway_listing_id",
             "name_ar",
             "name_en",
+            "name_fr",
             "hostaway_name",
             "person_capacity",
             "currency_code",
             "city_ar",
             "city_en",
+            "city_fr",
             "city",
             "is_visible",
             "hostaway_is_active",
         )
-        city_values = list(
+        city_rows = list(
             public_properties.exclude(city="")
-            .values_list("city", flat=True)
+            .values("city", "city_ar", "city_en", "city_fr")
             .distinct()
             .order_by("city")
         )
+        language = (translation.get_language() or "ar").split("-")[0]
+        language_order = {
+            "ar": ("city_ar", "city_en", "city", "city_fr"),
+            "en": ("city_en", "city", "city_fr", "city_ar"),
+            "fr": ("city_fr", "city_en", "city", "city_ar"),
+        }.get(language, ("city_ar", "city_en", "city", "city_fr"))
         self.fields["city"].choices = [("", _("All cities"))] + [
-            (city, city) for city in city_values
+            (
+                row["city"],
+                next((row[field] for field in language_order if row[field]), row["city"]),
+            )
+            for row in city_rows
         ]
         self.fields["property"].queryset = public_properties
         today = timezone.localdate().isoformat()

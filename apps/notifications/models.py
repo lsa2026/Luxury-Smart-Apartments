@@ -112,7 +112,10 @@ class EmailDelivery(models.Model):
     recipient_masked = models.CharField(max_length=254, editable=False)
     recipient_source = models.CharField(max_length=40, editable=False)
     recipient_reference = models.CharField(max_length=100, editable=False)
-    language = models.CharField(max_length=10, choices=(("ar", "العربية"), ("en", "English")))
+    language = models.CharField(
+        max_length=10,
+        choices=(("ar", "العربية"), ("en", "English"), ("fr", "Français")),
+    )
     subject = models.CharField(max_length=250)
     template_name = models.CharField(max_length=160)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)

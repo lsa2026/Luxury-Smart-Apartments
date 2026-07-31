@@ -1,17 +1,18 @@
-{% load i18n %}
+{% load i18n static presentation %}
 <footer class="site-footer">
     <div class="container footer-grid">
         <div class="footer-brand">
-            <strong>
-                {% if LANGUAGE_CODE == "ar" and site_setting.brand_name_ar %}{{ site_setting.brand_name_ar }}{% elif LANGUAGE_CODE == "en" and site_setting.brand_name_en %}{{ site_setting.brand_name_en }}{% else %}Luxury Smart Apartments{% endif %}
-            </strong>
-            {% if LANGUAGE_CODE == "ar" and site_setting.footer_text_ar %}
-            <p>{{ site_setting.footer_text_ar }}</p>
-            {% elif LANGUAGE_CODE == "en" and site_setting.footer_text_en %}
-            <p>{{ site_setting.footer_text_en }}</p>
-            {% else %}
-            <p>{% trans "Considered smart stays in Riyadh and Marrakech." %}</p>
-            {% endif %}
+            <span class="footer-brand__logo" aria-hidden="true">
+                <img src="{% static 'images/logo.jpeg' %}" alt="" width="1088" height="988" loading="lazy">
+            </span>
+            <strong>{{ site_setting|localized_field:"brand_name"|default:"Luxury Smart Apartments" }}</strong>
+            {% with footer_text=site_setting|localized_field:"footer_text" %}
+            <p>{% if footer_text %}{{ footer_text }}{% else %}{% trans "Considered smart stays in Riyadh and Marrakech." %}{% endif %}</p>
+            {% endwith %}
+            <div class="footer-brand__modes">
+                <span>{% trans "Daily stays" %}</span>
+                <span>{% trans "Monthly stays" %}</span>
+            </div>
         </div>
         <div>
             <h2>{% trans "Explore" %}</h2>
@@ -35,6 +36,7 @@
                 <li><a href="{% url 'core:privacy' %}">{% trans "Privacy" %}</a></li>
                 <li><a href="{% url 'core:cancellation' %}">{% trans "Cancellation policy" %}</a></li>
                 <li><a href="{% url 'core:cookies' %}">{% trans "Cookie policy" %}</a></li>
+                <li><button class="footer-link-button" type="button" data-consent-settings>{% trans "Cookie settings" %}</button></li>
             </ul>
         </div>
     </div>

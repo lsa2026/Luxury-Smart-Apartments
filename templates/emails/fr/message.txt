@@ -1,0 +1,10 @@
+{{ brand_name }}
+
+{{ heading }}
+
+{{ message }}
+{% if property_name %}Logement : {{ property_name }}{% endif %}
+{% if reference %}Référence publique : {{ reference }}{% endif %}
+
+Confidentialité : {{ site_base_url }}/legal/privacy/
+Contact : {{ site_base_url }}/contact/

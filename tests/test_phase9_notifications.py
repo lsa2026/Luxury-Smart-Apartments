@@ -508,8 +508,8 @@ def test_console_backend_is_supported(capsys) -> None:
 
 
 @pytest.mark.parametrize("message_type", sorted(SUBJECTS))
-@pytest.mark.parametrize("language", ["ar", "en"])
-def test_all_bilingual_email_messages_are_defined(message_type: str, language: str) -> None:
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_all_trilingual_email_messages_are_defined(message_type: str, language: str) -> None:
     assert SUBJECTS[message_type][language]
     assert MESSAGES[message_type][language]
     assert TEMPLATE_GROUPS[message_type] in {

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from .uploads import property_image_upload_to, validate_property_image
 
@@ -76,16 +76,22 @@ class Property(models.Model):
     slug = models.SlugField(max_length=180, unique=True)
     name_ar = models.CharField(max_length=200, blank=True)
     name_en = models.CharField(max_length=200, blank=True)
+    name_fr = models.CharField(max_length=200, blank=True)
     short_description_ar = models.CharField(max_length=350, blank=True)
     short_description_en = models.CharField(max_length=350, blank=True)
+    short_description_fr = models.CharField(max_length=350, blank=True)
     description_ar = models.TextField(blank=True)
     description_en = models.TextField(blank=True)
+    description_fr = models.TextField(blank=True)
     city_ar = models.CharField(max_length=120, blank=True)
     city_en = models.CharField(max_length=120, blank=True)
+    city_fr = models.CharField(max_length=120, blank=True)
     seo_title_ar = models.CharField(max_length=255, blank=True)
     seo_title_en = models.CharField(max_length=255, blank=True)
+    seo_title_fr = models.CharField(max_length=255, blank=True)
     seo_description_ar = models.CharField(max_length=320, blank=True)
     seo_description_en = models.CharField(max_length=320, blank=True)
+    seo_description_fr = models.CharField(max_length=320, blank=True)
     is_visible = models.BooleanField(default=True)
     visibility_management = models.CharField(
         max_length=12,
@@ -149,7 +155,13 @@ class Property(models.Model):
         verbose_name_plural = "الوحدات"
 
     def __str__(self) -> str:
-        return self.name_ar or self.name_en or self.hostaway_name or str(self.hostaway_listing_id)
+        return (
+            self.name_ar
+            or self.name_en
+            or self.name_fr
+            or self.hostaway_name
+            or str(self.hostaway_listing_id)
+        )
 
     def save(self, *args: object, **kwargs: object) -> None:
         if self.pk and not getattr(self, "_sync_managed_visibility", False):
@@ -177,11 +189,23 @@ class Property(models.Model):
 
     @builtin_property
     def display_name(self) -> str:
-        return self.name_ar or self.name_en or self.hostaway_name
+        language = (translation.get_language() or "ar").split("-")[0]
+        values = {
+            "ar": (self.name_ar, self.name_en, self.hostaway_name, self.name_fr),
+            "en": (self.name_en, self.hostaway_name, self.name_fr, self.name_ar),
+            "fr": (self.name_fr, self.name_en, self.hostaway_name, self.name_ar),
+        }
+        return next((value for value in values.get(language, values["ar"]) if value), "")
 
     @builtin_property
     def display_city(self) -> str:
-        return self.city_ar or self.city_en or self.city
+        language = (translation.get_language() or "ar").split("-")[0]
+        values = {
+            "ar": (self.city_ar, self.city_en, self.city, self.city_fr),
+            "en": (self.city_en, self.city, self.city_fr, self.city_ar),
+            "fr": (self.city_fr, self.city_en, self.city, self.city_ar),
+        }
+        return next((value for value in values.get(language, values["ar"]) if value), "")
 
     @builtin_property
     def cover_image(self) -> "PropertyImage | None":
@@ -217,10 +241,13 @@ class PropertyImage(models.Model):
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.LOCAL)
     title_ar = models.CharField(max_length=255, blank=True)
     title_en = models.CharField(max_length=255, blank=True)
+    title_fr = models.CharField(max_length=255, blank=True)
     alt_text_ar = models.CharField(max_length=255, blank=True)
     alt_text_en = models.CharField(max_length=255, blank=True)
+    alt_text_fr = models.CharField(max_length=255, blank=True)
     caption_ar = models.CharField(max_length=500, blank=True)
     caption_en = models.CharField(max_length=500, blank=True)
+    caption_fr = models.CharField(max_length=500, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     hostaway_sort_order = models.PositiveIntegerField(default=0)
     is_cover = models.BooleanField(default=False)
@@ -259,7 +286,13 @@ class PropertyImage(models.Model):
         verbose_name_plural = "صور الوحدات"
 
     def __str__(self) -> str:
-        return self.title_ar or self.title_en or self.hostaway_caption or f"صورة {self.pk or ''}"
+        return (
+            self.title_ar
+            or self.title_en
+            or self.title_fr
+            or self.hostaway_caption
+            or f"صورة {self.pk or ''}"
+        )
 
     def clean(self) -> None:
         super().clean()
@@ -275,14 +308,46 @@ class PropertyImage(models.Model):
         return self.hostaway_url
 
     def alt_text(self, language_code: str = "ar") -> str:
+        if language_code == "fr":
+            return (
+                self.alt_text_fr
+                or self.title_fr
+                or self.property.name_fr
+                or self.alt_text_en
+                or self.title_en
+                or self.property.name_en
+                or self.hostaway_caption
+                or self.property.hostaway_name
+                or self.alt_text_ar
+                or self.title_ar
+                or self.property.name_ar
+            )
         if language_code == "en":
-            return self.alt_text_en or self.title_en or self.property.name_en
+            return (
+                self.alt_text_en
+                or self.title_en
+                or self.property.name_en
+                or self.hostaway_caption
+                or self.property.hostaway_name
+                or self.alt_text_fr
+                or self.title_fr
+                or self.property.name_fr
+                or self.alt_text_ar
+                or self.title_ar
+                or self.property.name_ar
+            )
         return (
             self.alt_text_ar
             or self.title_ar
             or self.property.name_ar
             or self.alt_text_en
+            or self.title_en
             or self.property.name_en
+            or self.hostaway_caption
+            or self.property.hostaway_name
+            or self.alt_text_fr
+            or self.title_fr
+            or self.property.name_fr
         )
 
 
@@ -291,6 +356,7 @@ class Amenity(models.Model):
     name = models.CharField(max_length=255, blank=True)
     name_ar = models.CharField(max_length=255, blank=True)
     name_en = models.CharField(max_length=255, blank=True)
+    name_fr = models.CharField(max_length=255, blank=True)
     category = models.CharField(max_length=100, blank=True)
     icon_key = models.SlugField(max_length=80, blank=True)
     is_active = models.BooleanField(default=True)
@@ -298,17 +364,29 @@ class Amenity(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["category", "name_ar", "name_en", "name", "id"]
+        ordering = ["category", "name_ar", "name_en", "name_fr", "name", "id"]
         indexes = [models.Index(fields=["is_active", "category"])]
         verbose_name = "مرفق"
         verbose_name_plural = "المرافق"
 
     def __str__(self) -> str:
-        return self.name_ar or self.name_en or self.name or str(self.hostaway_amenity_id)
+        return (
+            self.name_ar
+            or self.name_en
+            or self.name_fr
+            or self.name
+            or str(self.hostaway_amenity_id)
+        )
 
     @builtin_property
     def display_name(self) -> str:
-        return self.name_ar or self.name_en or self.name
+        language = (translation.get_language() or "ar").split("-")[0]
+        values = {
+            "ar": (self.name_ar, self.name_en, self.name, self.name_fr),
+            "en": (self.name_en, self.name, self.name_fr, self.name_ar),
+            "fr": (self.name_fr, self.name_en, self.name, self.name_ar),
+        }
+        return next((value for value in values.get(language, values["ar"]) if value), "")
 
 
 class PropertyAmenity(models.Model):

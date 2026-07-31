@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin, messages
+from django.core.cache import cache
 from django.db import models, transaction
 from django.http import HttpRequest
 from django.utils.html import format_html
@@ -50,16 +51,22 @@ PROPERTY_LOCAL_FIELDS = {
     "slug",
     "name_ar",
     "name_en",
+    "name_fr",
     "short_description_ar",
     "short_description_en",
+    "short_description_fr",
     "description_ar",
     "description_en",
+    "description_fr",
     "city_ar",
     "city_en",
+    "city_fr",
     "seo_title_ar",
     "seo_title_en",
+    "seo_title_fr",
     "seo_description_ar",
     "seo_description_en",
+    "seo_description_fr",
     "is_visible",
     "is_featured",
     "sort_order",
@@ -77,10 +84,13 @@ class PropertyImageInline(admin.TabularInline):
         "hostaway_image_id",
         "title_ar",
         "title_en",
+        "title_fr",
         "alt_text_ar",
         "alt_text_en",
+        "alt_text_fr",
         "caption_ar",
         "caption_en",
+        "caption_fr",
         "sort_order",
         "hostaway_sort_order",
         "is_cover",
@@ -131,6 +141,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "image_count",
         "arabic_content_complete",
         "english_content_complete",
+        "french_content_complete",
         "seo_complete",
     )
     list_filter = (
@@ -144,6 +155,7 @@ class PropertyAdmin(admin.ModelAdmin):
     search_fields = (
         "name_ar",
         "name_en",
+        "name_fr",
         "hostaway_name",
         "address",
         "=hostaway_listing_id",
@@ -158,10 +170,10 @@ class PropertyAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "slug",
-                    ("name_ar", "name_en"),
-                    ("short_description_ar", "short_description_en"),
-                    ("description_ar", "description_en"),
-                    ("city_ar", "city_en"),
+                    ("name_ar", "name_en", "name_fr"),
+                    ("short_description_ar", "short_description_en", "short_description_fr"),
+                    ("description_ar", "description_en", "description_fr"),
+                    ("city_ar", "city_en", "city_fr"),
                     ("is_visible", "visibility_management"),
                     ("is_featured", "sort_order"),
                     "content_is_customized",
@@ -172,8 +184,8 @@ class PropertyAdmin(admin.ModelAdmin):
             "SEO",
             {
                 "fields": (
-                    ("seo_title_ar", "seo_title_en"),
-                    ("seo_description_ar", "seo_description_en"),
+                    ("seo_title_ar", "seo_title_en", "seo_title_fr"),
+                    ("seo_description_ar", "seo_description_en", "seo_description_fr"),
                 )
             },
         ),
@@ -191,7 +203,7 @@ class PropertyAdmin(admin.ModelAdmin):
 
     @admin.display(description="الاسم المحلي", ordering="name_ar")
     def local_name(self, obj: Property) -> str:
-        return obj.name_ar or obj.name_en or "—"
+        return obj.name_ar or obj.name_en or obj.name_fr or "—"
 
     @admin.display(description="الصور", ordering="_image_count")
     def image_count(self, obj: Property) -> int:
@@ -203,7 +215,15 @@ class PropertyAdmin(admin.ModelAdmin):
 
     @admin.display(boolean=True, description="English content")
     def english_content_complete(self, obj: Property) -> bool:
-        return bool(obj.name_en and obj.description_en and obj.city_en)
+        return bool(
+            (obj.name_en or obj.hostaway_name)
+            and (obj.description_en or obj.hostaway_description)
+            and (obj.city_en or obj.city)
+        )
+
+    @admin.display(boolean=True, description="Contenu français")
+    def french_content_complete(self, obj: Property) -> bool:
+        return bool(obj.name_fr and obj.description_fr and obj.city_fr)
 
     @admin.display(boolean=True, description="SEO")
     def seo_complete(self, obj: Property) -> bool:
@@ -212,6 +232,8 @@ class PropertyAdmin(admin.ModelAdmin):
             and obj.seo_description_ar
             and obj.seo_title_en
             and obj.seo_description_en
+            and obj.seo_title_fr
+            and obj.seo_description_fr
         )
 
     def save_model(
@@ -227,6 +249,7 @@ class PropertyAdmin(admin.ModelAdmin):
         if change and "is_visible" in changed_data:
             obj.visibility_management = Property.VisibilityManagement.MANUAL
         super().save_model(request, obj, form, change)
+        cache.delete("seo:sitemap:v1")
         if change and changed_data:
             record_audit(
                 request=request,
@@ -302,7 +325,14 @@ class PropertyImageAdmin(admin.ModelAdmin):
         "is_active_at_source",
     )
     list_filter = ("source", "is_visible", "is_cover", "is_active_at_source")
-    search_fields = ("property__name_ar", "property__name_en", "title_ar", "title_en")
+    search_fields = (
+        "property__name_ar",
+        "property__name_en",
+        "property__name_fr",
+        "title_ar",
+        "title_en",
+        "title_fr",
+    )
     readonly_fields = (
         "preview",
         "source",
@@ -379,7 +409,7 @@ class PropertyImageAdmin(admin.ModelAdmin):
 class AmenityAdmin(admin.ModelAdmin):
     list_display = ("display_name", "hostaway_amenity_id", "category", "is_active")
     list_filter = ("is_active", "category")
-    search_fields = ("name", "name_ar", "name_en")
+    search_fields = ("name", "name_ar", "name_en", "name_fr")
     readonly_fields = ("hostaway_amenity_id", "name", "created_at", "updated_at")
 
 
@@ -394,5 +424,10 @@ class PropertyAmenityAdmin(admin.ModelAdmin):
         "sort_order",
     )
     list_filter = ("source", "is_visible", "is_active_at_source")
-    search_fields = ("property__name_ar", "property__name_en", "amenity__name")
+    search_fields = (
+        "property__name_ar",
+        "property__name_en",
+        "property__name_fr",
+        "amenity__name",
+    )
     readonly_fields = ("amenity", "source", "is_active_at_source")

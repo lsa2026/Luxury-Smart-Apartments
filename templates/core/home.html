@@ -18,7 +18,15 @@
     >
     {% endif %}
     <div class="hero__overlay" aria-hidden="true"></div>
+    <div class="hero__architecture" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+    </div>
     <div class="container hero__content">
+        <div class="stay-mode-label" aria-label="{% trans 'Daily and monthly smart stays' %}">
+            <span>{% trans "Daily" %}</span>
+            <i aria-hidden="true"></i>
+            <span>{% trans "Monthly" %}</span>
+        </div>
         <p class="eyebrow">{% trans "Daily and monthly smart stays" %}</p>
         <h1>{% trans "A calmer way to stay, designed around you." %}</h1>
         <p>{% trans "Discover considered homes in Riyadh and Marrakech with live availability and transparent stay pricing." %}</p>
@@ -29,6 +37,15 @@
     </div>
 </section>
 
+<div class="experience-bar" aria-label="{% trans 'Why stay with us' %}">
+    <div class="container experience-bar__inner">
+        <div><strong>24/7</strong><span>{% trans "Guest support" %}</span></div>
+        <div><strong>01</strong><span>{% trans "Live price checks" %}</span></div>
+        <div><strong>02</strong><span>{% trans "Flexible stay lengths" %}</span></div>
+        <div><strong>✓</strong><span>{% trans "Smart living" %}</span></div>
+    </div>
+</div>
+
 <section class="section container" aria-labelledby="featured-properties-title">
     <div class="section-heading section-heading--split">
         <div>
@@ -37,7 +54,7 @@
         </div>
         <a class="text-link" href="{% url 'properties:list' %}">{% trans "View all properties" %}</a>
     </div>
-    {% include "properties/_property_cards.html" with properties=featured_properties %}
+    {% include "properties/_property_cards.html" with properties=featured_properties analytics_list_name="featured_properties" %}
 </section>
 
 <section class="section section--ink" aria-labelledby="why-title">
@@ -66,7 +83,7 @@
         {% for city in cities %}
         <a class="city-card" href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
             <span class="city-card__index">0{{ forloop.counter }}</span>
-            <strong>{% if LANGUAGE_CODE == "en" %}{{ city.city_en|default:city.city }}{% else %}{{ city.city_ar|default:city.city_en|default:city.city }}{% endif %}</strong>
+            <strong>{{ city|localized_city }}</strong>
             <span>{% trans "Explore properties" %}</span>
         </a>
         {% endfor %}

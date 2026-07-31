@@ -90,68 +90,107 @@ SUBJECTS: dict[str, dict[str, str]] = {
     "contact_confirmation": {
         "ar": "استلمنا رسالتك",
         "en": "We received your message",
+        "fr": "Nous avons reçu votre message",
     },
     "contact_admin_alert": {
         "ar": "رسالة تواصل جديدة",
         "en": "New contact message",
+        "fr": "Nouveau message de contact",
     },
     "booking_intent_created": {
         "ar": "تم إنشاء طلب حجز مبدئي",
         "en": "Your booking request was created",
+        "fr": "Votre demande de réservation a été créée",
     },
     "booking_quote_expired": {
         "ar": "انتهت صلاحية عرض السعر",
         "en": "Your quote has expired",
+        "fr": "Votre devis a expiré",
     },
     "booking_price_changed": {
         "ar": "تغير سعر طلب الحجز",
         "en": "Your booking price changed",
+        "fr": "Le prix de votre réservation a changé",
     },
     "booking_unavailable": {
         "ar": "الوحدة لم تعد متاحة",
         "en": "The property is no longer available",
+        "fr": "Le logement n’est plus disponible",
     },
     "booking_ready_for_payment": {
         "ar": "طلبك جاهز لمرحلة الدفع مستقبلًا",
         "en": "Your request is ready for the future payment step",
+        "fr": "Votre demande est prête pour la future étape de paiement",
     },
-    "extension_received": {"ar": "استلمنا طلب التمديد", "en": "Extension request received"},
+    "extension_received": {
+        "ar": "استلمنا طلب التمديد",
+        "en": "Extension request received",
+        "fr": "Demande de prolongation reçue",
+    },
     "date_change_received": {
         "ar": "استلمنا طلب تغيير التواريخ",
         "en": "Date change request received",
+        "fr": "Demande de changement de dates reçue",
     },
     "guest_change_received": {
         "ar": "استلمنا طلب تغيير الضيوف",
         "en": "Guest change request received",
+        "fr": "Demande de modification des voyageurs reçue",
     },
     "cancellation_received": {
         "ar": "استلمنا طلب الإلغاء",
         "en": "Cancellation request received",
+        "fr": "Demande d’annulation reçue",
     },
     "modification_approved": {
         "ar": "قُبل الطلب إداريًا",
         "en": "Request approved by operations",
+        "fr": "Demande approuvée par les opérations",
     },
-    "modification_rejected": {"ar": "رُفض الطلب", "en": "Request declined"},
+    "modification_rejected": {
+        "ar": "رُفض الطلب",
+        "en": "Request declined",
+        "fr": "Demande refusée",
+    },
     "modification_price_changed": {
         "ar": "تغير فرق السعر",
         "en": "Modification price difference changed",
+        "fr": "La différence de prix de la modification a changé",
     },
-    "payment_succeeded": {"ar": "تم استلام الدفع", "en": "Payment received"},
-    "reservation_confirmed": {"ar": "تم تأكيد الحجز", "en": "Reservation confirmed"},
+    "payment_succeeded": {
+        "ar": "تم استلام الدفع",
+        "en": "Payment received",
+        "fr": "Paiement reçu",
+    },
+    "reservation_confirmed": {
+        "ar": "تم تأكيد الحجز",
+        "en": "Reservation confirmed",
+        "fr": "Réservation confirmée",
+    },
     "reservation_creation_failed": {
         "ar": "تعذر إنشاء الحجز",
         "en": "Reservation creation failed",
+        "fr": "Échec de la création de la réservation",
     },
     "reservation_unknown": {
         "ar": "حالة الحجز قيد المراجعة",
         "en": "Reservation status under review",
+        "fr": "Statut de la réservation en cours d’examen",
     },
-    "reservation_cancelled": {"ar": "تم إلغاء الحجز", "en": "Reservation cancelled"},
-    "reservation_modified": {"ar": "تم تعديل الحجز", "en": "Reservation updated"},
+    "reservation_cancelled": {
+        "ar": "تم إلغاء الحجز",
+        "en": "Reservation cancelled",
+        "fr": "Réservation annulée",
+    },
+    "reservation_modified": {
+        "ar": "تم تعديل الحجز",
+        "en": "Reservation updated",
+        "fr": "Réservation mise à jour",
+    },
     "daily_operations_summary": {
         "ar": "ملخص العمليات اليومي",
         "en": "Daily operations summary",
+        "fr": "Résumé quotidien des opérations",
     },
 }
 
@@ -183,86 +222,117 @@ MESSAGES: dict[str, dict[str, str]] = {
     "contact_confirmation": {
         "ar": "شكرًا لتواصلك معنا. استلم فريقنا رسالتك وسيراجعها.",
         "en": "Thank you for contacting us. Our team has received your message.",
+        "fr": "Merci de nous avoir contactés. Notre équipe a bien reçu votre message.",
     },
     "contact_admin_alert": {
         "ar": "توجد رسالة جديدة في صندوق التواصل. افتح لوحة الإدارة لمراجعتها.",
         "en": "A new message is available in the contact inbox.",
+        "fr": "Un nouveau message est disponible dans la boîte de réception des contacts.",
     },
     "booking_intent_created": {
         "ar": "تم إنشاء طلبك المبدئي. هذا ليس حجزًا مؤكدًا ولم تُنفذ عملية دفع.",
         "en": "Your preliminary request was created. It is not confirmed or paid.",
+        "fr": "Votre demande préliminaire a été créée. Elle n’est ni confirmée ni payée.",
     },
     "booking_quote_expired": {
         "ar": "انتهت صلاحية عرض السعر. أعد التحقق للحصول على سعر وتوافر حديثين.",
         "en": "Your quote expired. Recheck for current price and availability.",
+        "fr": "Votre devis a expiré. Vérifiez à nouveau le prix et les disponibilités.",
     },
     "booking_price_changed": {
         "ar": "تغير السعر أثناء إعادة التحقق، ونحتاج إلى موافقتك على العرض الجديد.",
         "en": "The price changed during revalidation and requires your approval.",
+        "fr": "Le prix a changé lors de la vérification et nécessite votre approbation.",
     },
     "booking_unavailable": {
         "ar": "لم تعد الوحدة متاحة للفترة المحددة. لم يُنشأ أي حجز.",
         "en": "The property is no longer available for those dates. No reservation was made.",
+        "fr": "Le logement n’est plus disponible à ces dates. Aucune réservation n’a été créée.",
     },
     "booking_ready_for_payment": {
         "ar": "الطلب جاهز تقنيًا لمرحلة الدفع عند تفعيلها مستقبلًا، لكنه غير مؤكد.",
         "en": "The request is ready for the future payment step but is not confirmed.",
+        "fr": (
+            "La demande est prête pour la future étape de paiement, mais elle n’est pas confirmée."
+        ),
     },
     "extension_received": {
         "ar": "استلمنا طلب تمديد الإقامة وهو قيد المراجعة. لم يتغير الحجز بعد.",
         "en": "We received the extension request. The reservation is unchanged.",
+        "fr": "Nous avons reçu la demande de prolongation. La réservation reste inchangée.",
     },
     "date_change_received": {
         "ar": "استلمنا طلب تغيير التواريخ. لم يتغير الحجز بعد.",
         "en": "We received the date-change request. The reservation is unchanged.",
+        "fr": "Nous avons reçu la demande de changement de dates. La réservation reste inchangée.",
     },
     "guest_change_received": {
         "ar": "استلمنا طلب تغيير عدد الضيوف. لم يتغير الحجز بعد.",
         "en": "We received the guest-change request. The reservation is unchanged.",
+        "fr": (
+            "Nous avons reçu la demande de modification des voyageurs. "
+            "La réservation reste inchangée."
+        ),
     },
     "cancellation_received": {
         "ar": "استلمنا طلب الإلغاء، لكن الحجز لم يُلغ بعد ولم يُنفذ استرداد.",
         "en": "We received the cancellation request; no cancellation or refund occurred.",
+        "fr": (
+            "Nous avons reçu la demande d’annulation ; aucune annulation "
+            "ni aucun remboursement n’a encore eu lieu."
+        ),
     },
     "modification_approved": {
         "ar": "وافق فريق العمليات على الطلب محليًا. لا يعني ذلك اكتمال تعديل Hostaway.",
         "en": "Operations approved the local request; Hostaway is not yet changed.",
+        "fr": (
+            "Les opérations ont approuvé la demande locale ; Hostaway n’a pas encore été modifié."
+        ),
     },
     "modification_rejected": {
         "ar": "تعذر قبول طلب التعديل. بقي الحجز دون تغيير.",
         "en": "The modification request was declined. The reservation is unchanged.",
+        "fr": "La demande de modification a été refusée. La réservation reste inchangée.",
     },
     "modification_price_changed": {
         "ar": "تغير فرق السعر أثناء إعادة التحقق ويحتاج إلى مراجعة جديدة.",
         "en": "The price difference changed and requires another review.",
+        "fr": "La différence de prix a changé et nécessite un nouvel examen.",
     },
     "payment_succeeded": {
         "ar": "تم تسجيل نجاح الدفع. لا يُستخدم هذا القالب إلا بعد إثبات نجاح الدفع.",
         "en": "Payment succeeded. This template is only used after verified payment.",
+        "fr": "Le paiement a réussi. Ce modèle n’est utilisé qu’après vérification du paiement.",
     },
     "reservation_confirmed": {
         "ar": "تم تأكيد الحجز بعد استلام معرف حجز Hostaway.",
         "en": "The reservation was confirmed after receiving a Hostaway reservation ID.",
+        "fr": "La réservation a été confirmée après réception de l’identifiant Hostaway.",
     },
     "reservation_creation_failed": {
         "ar": "تعذر إنشاء الحجز ويحتاج فريق العمليات إلى المراجعة.",
         "en": "Reservation creation failed and requires operations review.",
+        "fr": "La création de la réservation a échoué et nécessite l’examen des opérations.",
     },
     "reservation_unknown": {
         "ar": "حالة الحجز غير مؤكدة حاليًا وتخضع للمراجعة. لا تعاود الإجراء.",
         "en": "Reservation status is uncertain and under review. Do not retry.",
+        "fr": "Le statut de la réservation est incertain et en cours d’examen. Ne réessayez pas.",
     },
     "reservation_cancelled": {
         "ar": "تم إلغاء الحجز بعد التحقق من الحالة النهائية.",
         "en": "The reservation was cancelled after final-state verification.",
+        "fr": "La réservation a été annulée après vérification de son état final.",
     },
     "reservation_modified": {
         "ar": "تم تعديل الحجز بعد التحقق من الحالة النهائية.",
         "en": "The reservation was updated after final-state verification.",
+        "fr": "La réservation a été mise à jour après vérification de son état final.",
     },
     "daily_operations_summary": {
         "ar": "يتوفر ملخص العمليات اليومي في لوحة الإدارة دون بيانات شخصية.",
         "en": "The PII-free daily operations summary is available in the admin dashboard.",
+        "fr": "Le résumé quotidien sans données personnelles est disponible dans l’administration.",
     },
 }
 
@@ -287,7 +357,7 @@ def queue_email(
     language: str,
     idempotency_key: str,
 ) -> EmailDelivery:
-    normalized_language = language if language in {"ar", "en"} else "ar"
+    normalized_language = language if language in {"ar", "en", "fr"} else "ar"
     subject = strip_tags(SUBJECTS[message_type][normalized_language]).strip()
     status = (
         EmailDelivery.Status.QUEUED
@@ -330,9 +400,7 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         )
         return intent.guest_email, {
             "reference": intent.public_reference,
-            "property_name": intent.property.name_ar
-            or intent.property.name_en
-            or intent.property.hostaway_name,
+            "property_name": _localized_property_name(intent.property, delivery.language),
         }
     if delivery.recipient_source == "modification":
         from apps.reservations.models import BookingModificationRequest
@@ -346,9 +414,14 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             raise EmailProviderError("recipient_not_available", permanent=True)
         return intent.guest_email, {
             "reference": modification.public_reference,
-            "property_name": modification.reservation.property.name_ar
-            if modification.reservation.property
-            else "",
+            "property_name": (
+                _localized_property_name(
+                    modification.reservation.property,
+                    delivery.language,
+                )
+                if modification.reservation.property
+                else ""
+            ),
         }
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
@@ -359,6 +432,19 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             raise EmailProviderError("support_email_not_configured", permanent=True)
         return settings.SUPPORT_EMAIL, {}
     raise EmailProviderError("unsupported_recipient_source", permanent=True)
+
+
+def _localized_property_name(property_obj: object, language: str) -> str:
+    order = {
+        "ar": ("name_ar", "name_en", "hostaway_name", "name_fr"),
+        "en": ("name_en", "hostaway_name", "name_fr", "name_ar"),
+        "fr": ("name_fr", "name_en", "hostaway_name", "name_ar"),
+    }.get(language, ("name_ar", "name_en", "hostaway_name", "name_fr"))
+    for field_name in order:
+        value = getattr(property_obj, field_name, "")
+        if value:
+            return str(value)
+    return ""
 
 
 def send_queued_email(

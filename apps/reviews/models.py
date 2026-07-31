@@ -3,6 +3,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils.translation import gettext
 
 from apps.properties.models import Property
 
@@ -15,7 +16,12 @@ class ReviewQuerySet(models.QuerySet["Review"]):
             status=Review.Status.PUBLISHED,
             is_visible=True,
             rating__isnull=False,
-        ).exclude(public_review="")
+        ).exclude(
+            public_review="",
+            public_review_ar="",
+            public_review_en="",
+            public_review_fr="",
+        )
 
 
 class Review(models.Model):
@@ -52,6 +58,9 @@ class Review(models.Model):
         validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("10"))],
     )
     public_review = models.TextField()
+    public_review_ar = models.TextField(blank=True)
+    public_review_en = models.TextField(blank=True)
+    public_review_fr = models.TextField(blank=True)
     reviewee_response = models.TextField(blank=True)
     arrival_date = models.DateField(null=True, blank=True)
     departure_date = models.DateField(null=True, blank=True)
@@ -92,7 +101,7 @@ class Review(models.Model):
         looks_sensitive = (
             "@" in first_name or sum(character.isdigit() for character in first_name) >= 4
         )
-        return "ضيف" if looks_sensitive or not first_name else first_name
+        return gettext("Guest") if looks_sensitive or not first_name else first_name
 
     @builtin_property
     def star_display(self) -> str:

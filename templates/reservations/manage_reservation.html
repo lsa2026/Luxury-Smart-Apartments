@@ -2,6 +2,7 @@
 {% load i18n presentation %}
 {% block title %}{% trans "Manage booking" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
 {% block content %}
 <header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Secure booking management" %}</p><h1>{% trans "Manage booking" %}</h1><p>{{ reservation.property|localized_property_name }}</p></div></header>
 <section class="section container">

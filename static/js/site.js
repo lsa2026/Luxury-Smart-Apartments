@@ -2,6 +2,64 @@
 
 document.documentElement.classList.add("js");
 
+const brandSplash = document.querySelector("[data-brand-splash]");
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+if (brandSplash) {
+    let splashSeen = false;
+
+    try {
+        splashSeen = window.sessionStorage.getItem("lsa-brand-splash") === "seen";
+    } catch {
+        splashSeen = false;
+    }
+
+    if (splashSeen || reducedMotion) {
+        brandSplash.classList.add("is-skipped");
+        brandSplash.hidden = true;
+    } else {
+        document.body.classList.add("splash-active");
+
+        try {
+            window.sessionStorage.setItem("lsa-brand-splash", "seen");
+        } catch {
+            // The splash remains a one-time animation for this page when storage is unavailable.
+        }
+
+        window.setTimeout(() => brandSplash.classList.add("is-leaving"), 2450);
+        window.setTimeout(() => {
+            brandSplash.hidden = true;
+            document.body.classList.remove("splash-active");
+        }, 3300);
+    }
+}
+
+if (!reducedMotion && "IntersectionObserver" in window) {
+    const revealTargets = document.querySelectorAll(
+        ".section-heading, .property-card, .review-card, .value-grid article, " +
+        ".city-card, .cta-panel, .management-note, .faq-item, .gallery-page figure, " +
+        ".form-card, .review-panel, .prose-card, .contact-note, .booking-sidebar__card"
+    );
+
+    revealTargets.forEach((element, index) => {
+        element.dataset.reveal = "";
+        element.style.setProperty("--reveal-delay", `${(index % 3) * 70}ms`);
+    });
+
+    document.documentElement.classList.add("reveal-ready");
+
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add("is-revealed");
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { rootMargin: "0px 0px -6% 0px", threshold: 0.08 });
+
+    revealTargets.forEach((element) => revealObserver.observe(element));
+}
+
 const menuToggle = document.querySelector("[data-menu-toggle]");
 const mobileNavigation = document.querySelector("[data-mobile-nav]");
 let menuReturnFocus = null;

@@ -106,19 +106,57 @@ def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
 
 
 def test_english_switch_is_ltr_and_translated() -> None:
-    populated_property()
+    property_obj = populated_property()
+    property_obj.description_en = ""
+    property_obj.description_fr = "Description française à ne pas afficher en anglais."
+    property_obj.hostaway_description = "Hostaway English source description."
+    property_obj.save(update_fields=["description_en", "description_fr", "hostaway_description"])
     client = Client()
-    response = client.post("/i18n/setlang/", {"language": "en", "next": "/"})
+    response = client.post(
+        "/i18n/setlang/",
+        {"language": "en", "next": property_obj.get_absolute_url()},
+    )
     assert response.status_code == 302
-    content = client.get("/").content.decode()
+    content = client.get(property_obj.get_absolute_url()).content.decode()
     assert 'lang="en" dir="ltr"' in content
-    assert "Find your next smart stay" in content
+    assert "About this stay" in content
+    assert property_obj.hostaway_description in content
+    assert property_obj.description_fr not in content
 
 
-def test_language_switcher_has_both_languages() -> None:
+def test_french_switch_is_ltr_and_translates_interface_and_hostaway_content() -> None:
+    property_obj = populated_property(802)
+    property_obj.name_fr = "Séjour intelligent 802"
+    property_obj.description_fr = "Description française complète du logement."
+    property_obj.city_fr = "Riyad"
+    property_obj.save(update_fields=["name_fr", "description_fr", "city_fr"])
+    amenity = property_obj.property_amenities.select_related("amenity").get().amenity
+    amenity.name_fr = "Wi-Fi"
+    amenity.save(update_fields=["name_fr"])
+    image = property_obj.images.get()
+    image.alt_text_fr = "Salon du logement"
+    image.save(update_fields=["alt_text_fr"])
+
+    client = Client()
+    response = client.post(
+        "/i18n/setlang/",
+        {"language": "fr", "next": property_obj.get_absolute_url()},
+    )
+    assert response.status_code == 302
+    content = client.get(property_obj.get_absolute_url()).content.decode()
+    assert 'lang="fr" dir="ltr"' in content
+    assert "À propos de ce séjour" in content
+    assert property_obj.name_fr in content
+    assert property_obj.description_fr in content
+    assert image.alt_text_fr in content
+
+
+def test_language_switcher_has_all_three_languages() -> None:
     content = Client().get("/").content.decode()
     assert 'value="ar"' in content
     assert 'value="en"' in content
+    assert 'value="fr"' in content
+    assert "Français" in content
     assert "data-language-select" in content
 
 

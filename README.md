@@ -703,3 +703,79 @@ python manage.py purge_expired_operational_data --dry-run --before 2026-01-01 --
 عناوين المرسل والدعم والعمليات، وتشغيل Redis وCelery ومراقبتهما، واعتماد
 سياسة خصوصية واحتفاظ نهائية. لا توجد بوابة دفع أو حجز حي أو Webhooks حقيقية
 أو Google Analytics في هذه المرحلة.
+
+## Google وSEO التقني (المرحلة العاشرة)
+
+جميع تكاملات Google معطلة افتراضيًا. لا يحمل الموقع GTM أو GA4 أو Google Ads
+ولا يرسل أي طلب شبكة ما دام `GOOGLE_INTEGRATIONS_ENABLED=False`. تظل
+Enhanced Conversions معطلة، ولا توجد محاولة للاتصال بحساب Google أو Search
+Console من الخادم. عند الإعداد مستقبلًا يجب استخدام معرفات صحيحة وتفعيل
+المكوّن المطلوب صراحة في `.env`؛ يفشل فحص Django بإعداد واضح إذا فُعّل
+مكوّن دون معرف صالح.
+
+يدير `static/js/consent.js` Consent Mode قبل أي تحميل محتمل لـGTM. القيم
+الافتراضية لكل من Analytics وAds وAd User Data وAd Personalization هي
+`denied`. تحفظ Cookie الموافقة الإصدار، واختياري Analytics وMarketing،
+والوقت فقط. تستخدم `SameSite=Lax` و`Secure` في الإنتاج. ليست `HttpOnly` لأن
+JavaScript في المتصفح يحتاج قراءتها لتطبيق القرار قبل تحميل الوسوم، ولا
+تحتوي أي بيانات شخصية. تغيير `COOKIE_CONSENT_VERSION` يطلب الموافقة مجددًا.
+
+توفر `static/js/analytics.js` طبقة أحداث ذات allowlist وschema ثابت. تستخدم
+الوحدة `slug` عامًّا بدل معرفات Hostaway، وتحذف المفاتيح غير المعروفة وترفض
+البريد والهاتف وأسماء الضيوف والعنوان والطلبات الخاصة ومعرفات الجلسة
+والحجوزات. الأحداث المجهزة تشمل عرض القوائم والوحدة، اختيار البطاقة، التحقق
+من التوافر، إنشاء العرض، بدء إدخال بيانات الضيف، التواصل وتغيير اللغة
+والموافقة. لا يطلق `purchase` عند `BookingQuote` أو `BookingIntent`، ولا
+يجهز إلا مستقبلًا بعد اجتماع `PaymentAttempt=succeeded` وحجز Hostaway مؤكد
+له معرف. لا يطلق `refund` دون سجل استرداد مالي حقيقي. لا يرسل Debug القيم،
+بل اسم الحدث وأسماء مفاتيحه فقط.
+
+مسارات SEO العامة:
+
+```text
+/sitemap.xml
+/robots.txt
+/admin/marketing/diagnostics/
+/admin/marketing/seo/
+```
+
+يحتوي Sitemap الصفحات العامة والوحدات الظاهرة النشطة فقط، مع `lastmod`
+وعلامات اللغات، ويقرأ PostgreSQL دون Hostaway. تمنع robots زحف الإدارة
+والصحة والتكامل ومسارات عروض وطلبات الحجز، بينما تستخدم الصفحات الخاصة
+`noindex,nofollow`. تتضمن الصفحات العامة Canonical وhreflang وOpen Graph
+وTwitter Cards. تبني صفحة الوحدة JSON-LD منقحًا من `VacationRental` عند
+اكتمال الاسم والوصف والصورة، وإلا تستخدم `LodgingBusiness`؛ لا يتضمن عنوانًا
+خاصًا أو معرف Hostaway أو توفرًا غير متحقق أو سعرًا بلا تواريخ. يعتمد
+`aggregateRating` على المراجعات المنشورة والظاهرة فقط.
+
+يدير `LegacyRedirect` مطابقة exact-path فقط، ويمنع الروابط الخارجية
+والتحويلات الدائرية ومسارات الإدارة والتكامل والصحة. التحويلات المؤكدة من
+تدقيق الموقع القديم هي `/about-us/` و`/contact-us/`، بينما روابط
+login/register/compare و`/my-bookings/` المعروفة تعيد 410. لم تُخمن روابط
+الوحدات القديمة، وتبقى بحاجة إلى مطابقة يدوية. للتحقق المحلي دون كتابة:
+
+```powershell
+python manage.py verify_legacy_redirects --dry-run --show-unmatched --check-loops
+python manage.py verify_legacy_redirects --dry-run --check-loops --strict
+```
+
+بعد نشر Staging أو Production يدويًا: اضبط `SITE_CANONICAL_URL` على HTTPS،
+أضف رمز التحقق الممنوح من Google محليًا، تحقق من Canonical وhreflang وJSON-LD
+وCSP، ثم أرسل Sitemap يدويًا في Search Console. لا تستخدم Search Console API
+ولا OAuth في هذه المرحلة. عند تفعيل GTM مستقبلًا، راجع نطاقات CSP الدنيا؛
+لا تضف wildcard أو `unsafe-eval`، ولا تضف نطاقات Ads قبل تفعيل Ads فعليًا.
+
+اختبارات المرحلة:
+
+```powershell
+.\.venv\Scripts\pytest.exe tests\test_phase10_marketing_seo.py
+.\.venv\Scripts\pytest.exe
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\ruff.exe format --check .
+.\.venv\Scripts\python.exe manage.py check --deploy --settings=config.settings.production
+```
+
+عوائق الإنتاج المتبقية: اعتماد معرفات Google وخطة GTM، اعتماد سياسة Cookie
+قانونيًا، مطابقة روابط الوحدات القديمة، ضبط النطاق الرسمي HTTPS، والتحقق
+اليدوي في Search Console. لا توجد بوابة دفع أو حجز حي، ولم يبدأ Staging أو
+النشر الإنتاجي.

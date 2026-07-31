@@ -1,12 +1,20 @@
 {% load i18n presentation %}
 {% with property_name=property|localized_property_name %}
-<article class="property-card">
+<article
+    class="property-card"
+    data-analytics-item
+    data-item-id="{{ property.slug }}"
+    data-item-name="{{ property_name }}"
+    data-item-city="{{ property|localized_city }}"
+    data-item-type="{{ property.room_type }}"
+>
     <a class="property-card__media" href="{{ property.get_absolute_url }}">
+        <span class="property-card__stay-type">{% trans "Daily · Monthly" %}</span>
         {% with cover=property.cover_image %}
             {% if cover %}
             <img
                 src="{{ cover.display_url }}"
-                alt="{{ cover.alt_text_ar|default:cover.alt_text_en|default:property_name }}"
+                alt="{{ cover|localized_image_alt|default:property_name }}"
                 width="720"
                 height="480"
                 loading="lazy"
@@ -43,7 +51,7 @@
         </div>
         <div class="property-card__footer">
             <span>{% trans "Price based on dates" %}</span>
-            <a class="text-link" href="{{ property.get_absolute_url }}">{% trans "View details" %}</a>
+            <a class="text-link" href="{{ property.get_absolute_url }}">{% trans "View details" %}<b aria-hidden="true">↗</b></a>
         </div>
     </div>
 </article>

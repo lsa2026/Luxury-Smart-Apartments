@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if properties %}
-<div class="property-grid">
+<div class="property-grid" data-analytics-list="{{ analytics_list_name|default:'properties' }}">
     {% for property in properties %}
         {% include "includes/property_card.html" %}
     {% endfor %}

@@ -2,7 +2,9 @@
 <header class="site-header" data-site-header>
     <div class="container header-inner">
         <a class="brand" href="{% url 'core:home' %}" aria-label="{% trans 'Luxury Smart Apartments home' %}">
-            <span class="brand-mark" aria-hidden="true">LSA</span>
+            <span class="brand-mark brand-mark--logo" aria-hidden="true">
+                <img src="{% static 'images/logo.jpeg' %}" alt="" width="1088" height="988">
+            </span>
             <span class="brand-copy">
                 <strong>Luxury Smart</strong>
                 <small>Apartments</small>

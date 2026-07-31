@@ -1,0 +1,2 @@
+{% extends "emails/fr/base.html" %}
+{% block content %}<h1>{{ heading }}</h1><p>{{ message }}</p>{% if property_name %}<p>Logement : {{ property_name }}</p>{% endif %}{% if reference %}<p>Référence publique : {{ reference }}</p>{% endif %}{% endblock %}

@@ -1,16 +1,32 @@
 from django.contrib import admin
+from django.core.cache import cache
 from django.http import HttpRequest
 
 from apps.notifications.services.audit import record_audit
 
-from .models import ContactMessage, FAQItem, SitePage, SiteSetting
+from .models import (
+    ContactMessage,
+    FAQItem,
+    LegacyRedirect,
+    MarketingEventReceipt,
+    SitePage,
+    SiteSetting,
+)
 
 
 @admin.register(SitePage)
 class SitePageAdmin(admin.ModelAdmin):
-    list_display = ("slug", "title_ar", "title_en", "is_published", "updated_at")
+    list_display = ("slug", "title_ar", "title_en", "title_fr", "is_published", "updated_at")
     list_filter = ("is_published",)
-    search_fields = ("slug", "title_ar", "title_en", "body_ar", "body_en")
+    search_fields = (
+        "slug",
+        "title_ar",
+        "title_en",
+        "title_fr",
+        "body_ar",
+        "body_en",
+        "body_fr",
+    )
 
     def save_model(
         self,
@@ -20,6 +36,7 @@ class SitePageAdmin(admin.ModelAdmin):
         change: bool,
     ) -> None:
         super().save_model(request, obj, form, change)
+        cache.delete("seo:sitemap:v1")
         record_audit(
             request=request,
             action="site_content.changed",
@@ -32,9 +49,16 @@ class SitePageAdmin(admin.ModelAdmin):
 
 @admin.register(FAQItem)
 class FAQItemAdmin(admin.ModelAdmin):
-    list_display = ("question_ar", "question_en", "sort_order", "is_active")
+    list_display = ("question_ar", "question_en", "question_fr", "sort_order", "is_active")
     list_filter = ("is_active",)
-    search_fields = ("question_ar", "question_en", "answer_ar", "answer_en")
+    search_fields = (
+        "question_ar",
+        "question_en",
+        "question_fr",
+        "answer_ar",
+        "answer_en",
+        "answer_fr",
+    )
     list_editable = ("sort_order", "is_active")
 
 
@@ -48,10 +72,13 @@ class SiteSettingAdmin(admin.ModelAdmin):
                     "site_name",
                     "brand_name_ar",
                     "brand_name_en",
+                    "brand_name_fr",
                     "tagline_ar",
                     "tagline_en",
+                    "tagline_fr",
                     "footer_text_ar",
                     "footer_text_en",
+                    "footer_text_fr",
                 )
             },
         ),
@@ -69,8 +96,10 @@ class SiteSettingAdmin(admin.ModelAdmin):
                     "linkedin_url",
                     "office_hours_ar",
                     "office_hours_en",
+                    "office_hours_fr",
                     "public_address_ar",
                     "public_address_en",
+                    "public_address_fr",
                 )
             },
         ),
@@ -96,6 +125,7 @@ class SiteSettingAdmin(admin.ModelAdmin):
         change: bool,
     ) -> None:
         super().save_model(request, obj, form, change)
+        cache.delete("site:settings")
         record_audit(
             request=request,
             action="site_settings.changed",
@@ -132,3 +162,70 @@ class ContactMessageAdmin(admin.ModelAdmin):
         obj: ContactMessage | None = None,
     ) -> bool:
         return request.user.is_superuser
+
+
+@admin.register(LegacyRedirect)
+class LegacyRedirectAdmin(admin.ModelAdmin):
+    list_display = (
+        "source_path",
+        "destination_path",
+        "redirect_type",
+        "is_active",
+        "hit_count",
+        "last_hit_at",
+    )
+    list_filter = ("redirect_type", "is_active")
+    search_fields = ("source_path", "destination_path")
+    readonly_fields = ("hit_count", "last_hit_at", "created_at", "updated_at")
+
+    def save_model(
+        self,
+        request: HttpRequest,
+        obj: LegacyRedirect,
+        form: object,
+        change: bool,
+    ) -> None:
+        super().save_model(request, obj, form, change)
+        record_audit(
+            request=request,
+            action="legacy_redirect.changed",
+            object_type="LegacyRedirect",
+            object_reference=obj.source_path,
+            summary="A legacy redirect mapping was updated.",
+            metadata={
+                "fields": getattr(form, "changed_data", []),
+                "redirect_type": obj.redirect_type,
+            },
+        )
+
+
+@admin.register(MarketingEventReceipt)
+class MarketingEventReceiptAdmin(admin.ModelAdmin):
+    list_display = ("event_name", "object_type", "status", "emitted_at", "created_at")
+    list_filter = ("event_name", "status", "created_at")
+    readonly_fields = (
+        "id",
+        "event_name",
+        "object_type",
+        "object_reference_hash",
+        "status",
+        "emitted_at",
+        "created_at",
+    )
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(
+        self,
+        request: HttpRequest,
+        obj: MarketingEventReceipt | None = None,
+    ) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: MarketingEventReceipt | None = None,
+    ) -> bool:
+        return False

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-30 19:23+0300\n"
+"POT-Creation-Date: 2026-07-31 03:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -46,19 +46,51 @@ msgstr ""
 msgid "Please provide a little more detail."
 msgstr ""
 
-#: .\apps\core\views.py:140
+#: .\apps\core\templatetags\presentation.py:156
+msgid "Accommodation price"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:157
+msgid "Cleaning fee"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:158
+msgid "VAT"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:159
+msgid "Tax"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:160
+msgid "City tax"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:161
+msgid "Damage deposit"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:162
+msgid "Extra guest fee"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:163
+msgid "Price item"
+msgstr ""
+
+#: .\apps\core\views.py:149
 msgid "Your message has been received."
 msgstr ""
 
-#: .\apps\properties\views.py:145 .\apps\properties\views.py:180
-#: .\templates\includes\footer.html:11 .\templates\includes\header.html:13
+#: .\apps\properties\views.py:153 .\apps\properties\views.py:170
+#: .\templates\includes\footer.html:20 .\templates\includes\header.html:15
 #: .\templates\includes\mobile_navigation.html:6
 #: .\templates\properties\property_list.html:3
 msgid "Properties"
 msgstr ""
 
-#: .\apps\properties\views.py:174 .\templates\includes\breadcrumb.html:4
-#: .\templates\includes\header.html:12
+#: .\apps\properties\views.py:164 .\templates\includes\breadcrumb.html:4
+#: .\templates\includes\header.html:14
 #: .\templates\includes\mobile_navigation.html:5
 msgid "Home"
 msgstr ""
@@ -119,58 +151,59 @@ msgstr ""
 msgid "The request identifier is invalid."
 msgstr ""
 
-#: .\apps\reservations\forms.py:21 .\templates\properties\property_list.html:9
+#: .\apps\reservations\forms.py:18 .\templates\properties\property_list.html:9
 msgid "City"
 msgstr ""
 
-#: .\apps\reservations\forms.py:23
+#: .\apps\reservations\forms.py:20
 msgid "Property"
 msgstr ""
 
-#: .\apps\reservations\forms.py:25
+#: .\apps\reservations\forms.py:22
 msgid "Choose a property"
 msgstr ""
 
-#: .\apps\reservations\forms.py:28
-#: .\templates\reservations\booking_intent_detail.html:9
-#: .\templates\reservations\booking_quote_detail.html:12
-#: .\templates\reservations\manage_reservation.html:8
+#: .\apps\reservations\forms.py:25
+#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\manage_reservation.html:9
 msgid "Check-in"
 msgstr ""
 
-#: .\apps\reservations\forms.py:32
-#: .\templates\reservations\booking_intent_detail.html:9
-#: .\templates\reservations\booking_quote_detail.html:12
-#: .\templates\reservations\manage_reservation.html:8
+#: .\apps\reservations\forms.py:29
+#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\manage_reservation.html:9
 msgid "Check-out"
 msgstr ""
 
-#: .\apps\reservations\forms.py:36
-#: .\templates\properties\property_detail.html:24
+#: .\apps\reservations\forms.py:33
+#: .\templates\properties\property_detail.html:30
 #: .\templates\properties\property_list.html:10
-#: .\templates\reservations\booking_intent_detail.html:9
-#: .\templates\reservations\booking_quote_detail.html:12
-#: .\templates\reservations\manage_reservation.html:8
+#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\manage_reservation.html:9
 msgid "Guests"
 msgstr ""
 
-#: .\apps\reservations\forms.py:70 .\templates\properties\property_list.html:9
+#: .\apps\reservations\forms.py:75 .\templates\properties\property_list.html:9
 msgid "All cities"
 msgstr ""
 
-#: .\apps\reservations\forms.py:94 .\apps\reservations\modification_forms.py:39
+#: .\apps\reservations\forms.py:103
+#: .\apps\reservations\modification_forms.py:39
 msgid "Check-out must be after check-in."
 msgstr ""
 
-#: .\apps\reservations\forms.py:96
+#: .\apps\reservations\forms.py:105
 msgid "The maximum stay is 366 nights."
 msgstr ""
 
-#: .\apps\reservations\forms.py:103
+#: .\apps\reservations\forms.py:112
 msgid "Guest count exceeds this property's capacity."
 msgstr ""
 
-#: .\apps\reservations\forms.py:110
+#: .\apps\reservations\forms.py:119
 msgid "Choose a property in the selected city."
 msgstr ""
 
@@ -196,21 +229,188 @@ msgid "New number of guests"
 msgstr ""
 
 #: .\apps\reservations\modification_forms.py:50
-msgid ""
-"I understand this is a review request and does not cancel the booking or "
-"issue a refund."
+msgid "I understand this is a review request and does not cancel the booking or issue a refund."
 msgstr ""
 
-#: .\templates\base.html:9 .\templates\base.html:15 .\templates\base.html:20
+#: .\apps\reservations\views.py:95
+#: .\templates\reservations\availability_result.html:18
+msgid "Too many checks. Please wait and try again."
+msgstr ""
+
+#: .\apps\reservations\views.py:129
+msgid "A secure quote could not be created for these dates."
+msgstr ""
+
+#: .\apps\reservations\views.py:158 .\apps\reservations\views.py:178
+#: .\apps\reservations\views.py:273 .\apps\reservations\views.py:365
+msgid "Too many requests."
+msgstr ""
+
+#: .\apps\reservations\views.py:201
+msgid "This quote is no longer valid. Please request a new one."
+msgstr ""
+
+#: .\apps\reservations\views.py:237
+#, python-format
+msgid "The price changed from %(old)s to %(new)s %(currency)s. Please review and approve it again."
+msgstr ""
+
+#: .\apps\reservations\views.py:253
+msgid "This property is unavailable for the selected dates. Try other dates."
+msgstr ""
+
+#: .\apps\reservations\views.py:258
+msgid "The request could not continue. Please request a new quote."
+msgstr ""
+
+#: .\apps\reservations\views.py:428
+msgid "The change request could not be created. The booking was not changed."
+msgstr ""
+
+#: .\apps\reviews\models.py:104
+msgid "Guest"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:6
+msgid "All checks on this page are local. No request is sent to Google."
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:9
+msgid "Google integrations"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:13
+msgid "Enhanced conversions"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:14
+msgid "Consent Mode"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:15
+msgid "Site verification"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:16
+#: .\templates\admin\core\seo_dashboard.html:17
+msgid "Sitemap URLs"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:17
+msgid "Redirect mappings"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:20
+msgid "Production blockers"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:21
+msgid "No configuration blockers detected."
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:22
+msgid "Local validation"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:24
+msgid "Render test dataLayer"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:25
+msgid "Validate structured data"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:26
+msgid "Validate redirects"
+msgstr ""
+
+#: .\templates\admin\core\marketing_diagnostics.html:27
+msgid "Validate sitemap"
+msgstr ""
+
+#: .\templates\admin\core\marketing_validation_result.html:6
+msgid "The local validation completed successfully."
+msgstr ""
+
+#: .\templates\admin\core\marketing_validation_result.html:6
+msgid "The local validation failed."
+msgstr ""
+
+#: .\templates\admin\core\marketing_validation_result.html:7
+msgid "No data was sent to Google."
+msgstr ""
+
+#: .\templates\admin\core\marketing_validation_result.html:8
+msgid "Back to diagnostics"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:8
+msgid "Missing Arabic SEO titles"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:9
+msgid "Missing English SEO titles"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:10
+msgid "Missing French SEO titles"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:11
+msgid "Missing descriptions"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:12
+msgid "Properties without images"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:13
+msgid "Images missing alternative text"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:14
+msgid "Structured data ready"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:15
+msgid "Redirect loops"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:16
+msgid "Broken redirect destinations"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:18
+msgid "Missing language content"
+msgstr ""
+
+#: .\templates\admin\core\seo_dashboard.html:21
+msgid "This dashboard reads PostgreSQL only and never contacts Google or Hostaway."
+msgstr ""
+
+#: .\templates\base.html:9 .\templates\base.html:22 .\templates\base.html:31
 msgid "Luxury smart stays in Riyadh and Marrakech."
 msgstr ""
 
-#: .\templates\base.html:14 .\templates\base.html:19 .\templates\base.html:21
+#: .\templates\base.html:21 .\templates\base.html:30 .\templates\base.html:32
 #: .\templates\core\content_page.html:6
 msgid "Luxury Smart Apartments"
 msgstr ""
 
-#: .\templates\base.html:29
+#: .\templates\base.html:61 .\templates\core\home.html:25
+#: .\templates\core\home.html:30
+msgid "Daily and monthly smart stays"
+msgstr ""
+
+#: .\templates\base.html:72 .\templates\core\home.html:26
+msgid "Daily"
+msgstr ""
+
+#: .\templates\base.html:77 .\templates\core\home.html:28
+msgid "Monthly"
+msgstr ""
+
+#: .\templates\base.html:87
 msgid "Skip to main content"
 msgstr ""
 
@@ -227,8 +427,7 @@ msgid "We are here to help"
 msgstr ""
 
 #: .\templates\core\contact.html:6
-msgid ""
-"Tell us how we can help. Messages are stored securely for our team to review."
+msgid "Tell us how we can help. Messages are stored securely for our team to review."
 msgstr ""
 
 #: .\templates\core\contact.html:8
@@ -236,8 +435,7 @@ msgid "Before you send"
 msgstr ""
 
 #: .\templates\core\contact.html:8
-msgid ""
-"Please do not include payment card details, passwords, or identity documents."
+msgid "Please do not include payment card details, passwords, or identity documents."
 msgstr ""
 
 #: .\templates\core\contact.html:8
@@ -261,8 +459,7 @@ msgid "Frequently asked questions"
 msgstr ""
 
 #: .\templates\core\faq.html:4
-msgid ""
-"Answers about stays, pricing, booking requests, and property information."
+msgid "Answers about stays, pricing, booking requests, and property information."
 msgstr ""
 
 #: .\templates\core\faq.html:6
@@ -286,146 +483,137 @@ msgid "Luxury Smart Apartments | Smart stays in Riyadh and Marrakech"
 msgstr ""
 
 #: .\templates\core\home.html:5
-msgid ""
-"Explore smart apartments and family stays in Riyadh and Marrakech, then "
-"check live price and availability."
+msgid "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability."
 msgstr ""
 
-#: .\templates\core\home.html:22
-msgid "Daily and monthly smart stays"
-msgstr ""
-
-#: .\templates\core\home.html:23
+#: .\templates\core\home.html:31
 msgid "A calmer way to stay, designed around you."
 msgstr ""
 
-#: .\templates\core\home.html:24
-msgid ""
-"Discover considered homes in Riyadh and Marrakech with live availability and "
-"transparent stay pricing."
+#: .\templates\core\home.html:32
+msgid "Discover considered homes in Riyadh and Marrakech with live availability and transparent stay pricing."
 msgstr ""
 
-#: .\templates\core\home.html:26
+#: .\templates\core\home.html:34
 msgid "Search availability"
 msgstr ""
 
-#: .\templates\core\home.html:35
-msgid "Selected stays"
-msgstr ""
-
-#: .\templates\core\home.html:36
-msgid "Find your next smart stay"
-msgstr ""
-
-#: .\templates\core\home.html:38
-msgid "View all properties"
-msgstr ""
-
-#: .\templates\core\home.html:46
+#: .\templates\core\home.html:40 .\templates\core\home.html:63
 msgid "Why stay with us"
 msgstr ""
 
-#: .\templates\core\home.html:47
-msgid "Comfort, clarity, and thoughtful technology"
-msgstr ""
-
-#: .\templates\core\home.html:50
-msgid "Well-positioned homes"
-msgstr ""
-
-#: .\templates\core\home.html:50
-msgid "Browse current stays across Riyadh and Marrakech."
-msgstr ""
-
-#: .\templates\core\home.html:51
-msgid "Smart living"
-msgstr ""
-
-#: .\templates\core\home.html:51
-msgid "Properties selected for a modern, practical stay."
-msgstr ""
-
-#: .\templates\core\home.html:52
+#: .\templates\core\home.html:42 .\templates\core\home.html:69
 msgid "Guest support"
 msgstr ""
 
-#: .\templates\core\home.html:52
-msgid "A clear route to assistance before and during your stay."
-msgstr ""
-
-#: .\templates\core\home.html:53
+#: .\templates\core\home.html:43 .\templates\core\home.html:70
 msgid "Live price checks"
 msgstr ""
 
-#: .\templates\core\home.html:53
-msgid "Pricing and availability come directly from the operating system."
-msgstr ""
-
-#: .\templates\core\home.html:54
+#: .\templates\core\home.html:44 .\templates\core\home.html:71
 msgid "Flexible stay lengths"
 msgstr ""
 
-#: .\templates\core\home.html:54
-msgid "Explore both daily and monthly accommodation."
+#: .\templates\core\home.html:45 .\templates\core\home.html:68
+msgid "Smart living"
+msgstr ""
+
+#: .\templates\core\home.html:52
+msgid "Selected stays"
+msgstr ""
+
+#: .\templates\core\home.html:53
+msgid "Find your next smart stay"
 msgstr ""
 
 #: .\templates\core\home.html:55
-msgid "Family-ready options"
+msgid "View all properties"
 msgstr ""
 
-#: .\templates\core\home.html:55
-msgid "Filter homes by capacity, bedrooms, and beds."
+#: .\templates\core\home.html:64
+msgid "Comfort, clarity, and thoughtful technology"
 msgstr ""
 
-#: .\templates\core\home.html:62
-msgid "Destinations"
+#: .\templates\core\home.html:67
+msgid "Well-positioned homes"
 msgstr ""
 
-#: .\templates\core\home.html:63
-msgid "Two cities, one considered standard"
+#: .\templates\core\home.html:67
+msgid "Browse current stays across Riyadh and Marrakech."
+msgstr ""
+
+#: .\templates\core\home.html:68
+msgid "Properties selected for a modern, practical stay."
+msgstr ""
+
+#: .\templates\core\home.html:69
+msgid "A clear route to assistance before and during your stay."
 msgstr ""
 
 #: .\templates\core\home.html:70
-msgid "Explore properties"
+msgid "Pricing and availability come directly from the operating system."
+msgstr ""
+
+#: .\templates\core\home.html:71
+msgid "Explore both daily and monthly accommodation."
+msgstr ""
+
+#: .\templates\core\home.html:72
+msgid "Family-ready options"
+msgstr ""
+
+#: .\templates\core\home.html:72
+msgid "Filter homes by capacity, bedrooms, and beds."
+msgstr ""
+
+#: .\templates\core\home.html:79
+msgid "Destinations"
 msgstr ""
 
 #: .\templates\core\home.html:80
+msgid "Two cities, one considered standard"
+msgstr ""
+
+#: .\templates\core\home.html:87
+msgid "Explore properties"
+msgstr ""
+
+#: .\templates\core\home.html:97
 msgid "Verified guest experiences"
 msgstr ""
 
-#: .\templates\core\home.html:81
+#: .\templates\core\home.html:98
 msgid "What guests remember"
 msgstr ""
 
-#: .\templates\core\home.html:83
+#: .\templates\core\home.html:100
 msgid "Read all reviews"
 msgstr ""
 
-#: .\templates\core\home.html:92
+#: .\templates\core\home.html:109
 msgid "Ready when you are"
 msgstr ""
 
-#: .\templates\core\home.html:93
+#: .\templates\core\home.html:110
 msgid "Start with the dates that work for you."
 msgstr ""
 
-#: .\templates\core\home.html:94
+#: .\templates\core\home.html:111
 msgid "Your price and availability will be checked live before you continue."
 msgstr ""
 
-#: .\templates\core\home.html:96 .\templates\properties\property_detail.html:13
+#: .\templates\core\home.html:113
+#: .\templates\properties\property_detail.html:19
 #: .\templates\reservations\_availability_form.html:13
 msgid "Check availability"
 msgstr ""
 
-#: .\templates\core\home.html:99
+#: .\templates\core\home.html:116
 msgid "Manage an existing booking"
 msgstr ""
 
-#: .\templates\core\home.html:100
-msgid ""
-"Use the secure management link supplied with your local booking request. "
-"Live booking changes remain under review."
+#: .\templates\core\home.html:117
+msgid "Use the secure management link supplied with your local booking request. Live booking changes remain under review."
 msgstr ""
 
 #: .\templates\errors\400.html:1
@@ -452,6 +640,18 @@ msgstr ""
 msgid "The address may have changed, or the page may no longer be available."
 msgstr ""
 
+#: .\templates\errors\410.html:3 .\templates\errors\410.html:9
+msgid "This page is no longer available"
+msgstr ""
+
+#: .\templates\errors\410.html:10
+msgid "The requested page was intentionally removed and has no replacement."
+msgstr ""
+
+#: .\templates\errors\410.html:11 .\templates\errors\base_error.html:6
+msgid "Return home"
+msgstr ""
+
 #: .\templates\errors\429.html:1
 msgid "Please slow down"
 msgstr ""
@@ -473,12 +673,7 @@ msgid "Service temporarily unavailable"
 msgstr ""
 
 #: .\templates\errors\503.html:1
-msgid ""
-"Live availability could not be checked right now. Please try again shortly."
-msgstr ""
-
-#: .\templates\errors\base_error.html:6
-msgid "Return home"
+msgid "Live availability could not be checked right now. Please try again shortly."
 msgstr ""
 
 #: .\templates\errors\base_error.html:6
@@ -489,95 +684,157 @@ msgstr ""
 msgid "Breadcrumb"
 msgstr ""
 
+#: .\templates\includes\cookie_consent.html:4
+msgid "Your privacy choices"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:5
+msgid "Essential cookies keep the site working. Analytics and marketing remain off unless you choose otherwise."
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:6
+#: .\templates\includes\footer.html:38
+msgid "Cookie policy"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:9
+msgid "Reject non-essential"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:10
+msgid "Customize"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:11
+msgid "Accept all"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:16
+#: .\templates\includes\footer.html:39
+msgid "Cookie settings"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:19
+msgid "Essential"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:19
+msgid "Required for security, sessions, and core site functions."
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:23
+msgid "Analytics"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:23
+msgid "Helps us understand anonymous use of public pages."
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:27
+msgid "Marketing"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:27
+msgid "Allows advertising measurement when configured."
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:30
+msgid "Close"
+msgstr ""
+
+#: .\templates\includes\cookie_consent.html:31
+msgid "Save choices"
+msgstr ""
+
 #: .\templates\includes\empty_state.html:3
 msgid "Nothing to show yet"
 msgstr ""
 
-#: .\templates\includes\footer.html:6
+#: .\templates\includes\footer.html:10
 msgid "Considered smart stays in Riyadh and Marrakech."
 msgstr ""
 
-#: .\templates\includes\footer.html:9
+#: .\templates\includes\footer.html:13
+msgid "Daily stays"
+msgstr ""
+
+#: .\templates\includes\footer.html:14
+msgid "Monthly stays"
+msgstr ""
+
+#: .\templates\includes\footer.html:18
 msgid "Explore"
 msgstr ""
 
-#: .\templates\includes\footer.html:12 .\templates\reviews\review_list.html:3
+#: .\templates\includes\footer.html:21 .\templates\reviews\review_list.html:3
 #: .\templates\reviews\review_list.html:6
 msgid "Guest reviews"
 msgstr ""
 
-#: .\templates\includes\footer.html:13 .\templates\includes\header.html:14
+#: .\templates\includes\footer.html:22 .\templates\includes\header.html:16
 #: .\templates\includes\mobile_navigation.html:7
 msgid "About"
 msgstr ""
 
-#: .\templates\includes\footer.html:14 .\templates\includes\header.html:16
+#: .\templates\includes\footer.html:23 .\templates\includes\header.html:18
 #: .\templates\includes\mobile_navigation.html:9
 msgid "Contact"
 msgstr ""
 
-#: .\templates\includes\footer.html:18
+#: .\templates\includes\footer.html:27
 msgid "Cities"
 msgstr ""
 
-#: .\templates\includes\footer.html:20
+#: .\templates\includes\footer.html:29
 msgid "Coming soon"
 msgstr ""
 
-#: .\templates\includes\footer.html:24
+#: .\templates\includes\footer.html:33
 msgid "Policies"
 msgstr ""
 
-#: .\templates\includes\footer.html:26
+#: .\templates\includes\footer.html:35
 msgid "Terms"
 msgstr ""
 
-#: .\templates\includes\footer.html:27
+#: .\templates\includes\footer.html:36
 msgid "Privacy"
 msgstr ""
 
-#: .\templates\includes\footer.html:28
+#: .\templates\includes\footer.html:37
 msgid "Cancellation policy"
 msgstr ""
 
-#: .\templates\includes\footer.html:29
-msgid "Cookie policy"
-msgstr ""
-
-#: .\templates\includes\footer.html:34
+#: .\templates\includes\footer.html:44
 msgid "All rights reserved."
-msgstr ""
-
-#: .\templates\includes\footer.html:41
-msgid "Final contact details are being prepared."
 msgstr ""
 
 #: .\templates\includes\header.html:4
 msgid "Luxury Smart Apartments home"
 msgstr ""
 
-#: .\templates\includes\header.html:11
+#: .\templates\includes\header.html:13
 msgid "Primary navigation"
 msgstr ""
 
-#: .\templates\includes\header.html:15
+#: .\templates\includes\header.html:17
 #: .\templates\includes\mobile_navigation.html:8
 msgid "FAQ"
 msgstr ""
 
-#: .\templates\includes\header.html:17
+#: .\templates\includes\header.html:19
 #: .\templates\includes\mobile_navigation.html:10
 #: .\templates\reservations\manage_reservation.html:3
-#: .\templates\reservations\manage_reservation.html:6
+#: .\templates\reservations\manage_reservation.html:7
 msgid "Manage booking"
 msgstr ""
 
-#: .\templates\includes\header.html:22
+#: .\templates\includes\header.html:24
 #: .\templates\includes\mobile_navigation.html:12
 msgid "Book now"
 msgstr ""
 
-#: .\templates\includes\header.html:29
+#: .\templates\includes\header.html:31
 msgid "Open menu"
 msgstr ""
 
@@ -604,7 +861,7 @@ msgid "Stay"
 msgstr ""
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:23
 msgid "Guest details"
 msgstr ""
 
@@ -620,53 +877,57 @@ msgstr ""
 msgid "Confirmation"
 msgstr ""
 
-#: .\templates\includes\property_card.html:16
-#: .\templates\includes\property_card.html:17
-msgid "No image available"
+#: .\templates\includes\property_card.html:12
+msgid "Daily · Monthly"
 msgstr ""
 
 #: .\templates\includes\property_card.html:24
+#: .\templates\includes\property_card.html:25
+msgid "No image available"
+msgstr ""
+
+#: .\templates\includes\property_card.html:32
 #: .\templates\includes\review_card.html:10
 msgid "Featured"
 msgstr ""
 
-#: .\templates\includes\property_card.html:26
+#: .\templates\includes\property_card.html:34
 #: .\templates\includes\review_card.html:12
-#: .\templates\properties\property_detail.html:13
+#: .\templates\properties\property_detail.html:19
 #, python-format
 msgid "Rated %(rating)s out of 5"
 msgstr ""
 
-#: .\templates\includes\property_card.html:33
+#: .\templates\includes\property_card.html:41
 msgid "Property details"
 msgstr ""
 
-#: .\templates\includes\property_card.html:35
+#: .\templates\includes\property_card.html:43
 #, python-format
 msgid "%(counter)s guest"
 msgid_plural "%(counter)s guests"
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\templates\includes\property_card.html:38
+#: .\templates\includes\property_card.html:46
 #, python-format
 msgid "%(counter)s bedroom"
 msgid_plural "%(counter)s bedrooms"
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\templates\includes\property_card.html:41
+#: .\templates\includes\property_card.html:49
 #, python-format
 msgid "%(counter)s bed"
 msgid_plural "%(counter)s beds"
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\templates\includes\property_card.html:45
+#: .\templates\includes\property_card.html:53
 msgid "Price based on dates"
 msgstr ""
 
-#: .\templates\includes\property_card.html:46
+#: .\templates\includes\property_card.html:54
 msgid "View details"
 msgstr ""
 
@@ -691,7 +952,7 @@ msgid "Try changing the city, capacity, or room filters."
 msgstr ""
 
 #: .\templates\properties\gallery.html:3
-#: .\templates\properties\property_detail.html:16
+#: .\templates\properties\property_detail.html:22
 msgid "Photo gallery"
 msgstr ""
 
@@ -723,131 +984,127 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:13
+#: .\templates\properties\property_detail.html:19
 msgid "Featured stay"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:19
+#: .\templates\properties\property_detail.html:25
 #, python-format
 msgid "View all %(count)s photos"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:20
+#: .\templates\properties\property_detail.html:26
 msgid "Photos are being prepared"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:20
+#: .\templates\properties\property_detail.html:26
 msgid "Property details remain available below."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:24
+#: .\templates\properties\property_detail.html:30
 msgid "Stay capacity"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:24
+#: .\templates\properties\property_detail.html:30
 #: .\templates\properties\property_list.html:11
 msgid "Bedrooms"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:24
+#: .\templates\properties\property_detail.html:30
 msgid "Beds"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:24
+#: .\templates\properties\property_detail.html:30
 msgid "Bathrooms"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:25
+#: .\templates\properties\property_detail.html:31
 msgid "The property"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:25
+#: .\templates\properties\property_detail.html:31
 msgid "About this stay"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:25
+#: .\templates\properties\property_detail.html:31
 msgid "A detailed description is being prepared."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:26
+#: .\templates\properties\property_detail.html:32
 msgid "Included"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:26
+#: .\templates\properties\property_detail.html:32
 msgid "Amenities"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:26
+#: .\templates\properties\property_detail.html:32
 msgid "Amenities are being reviewed"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:26
+#: .\templates\properties\property_detail.html:32
 msgid "Please contact us if you need a specific amenity."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:27
+#: .\templates\properties\property_detail.html:33
 msgid "Location"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:27
-msgid ""
-"For guest privacy and property security, the exact address is provided only "
-"through the confirmed booking process."
+#: .\templates\properties\property_detail.html:33
+msgid "For guest privacy and property security, the exact address is provided only through the confirmed booking process."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:28
+#: .\templates\properties\property_detail.html:34
 msgid "Guest experiences"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:28
+#: .\templates\properties\property_detail.html:34
 msgid "Reviews"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:28
+#: .\templates\properties\property_detail.html:34
 msgid "All reviews"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:30
-#: .\templates\reservations\availability_result.html:8
+#: .\templates\properties\property_detail.html:36
+#: .\templates\reservations\availability_result.html:17
 msgid "Live check"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:30
+#: .\templates\properties\property_detail.html:36
 msgid "Plan your stay"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:30
+#: .\templates\properties\property_detail.html:36
 msgid "Enter your dates to receive a temporary live price."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:32
+#: .\templates\properties\property_detail.html:38
 msgid "You may also like"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:32
+#: .\templates\properties\property_detail.html:38
 msgid "Similar stays"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:36
+#: .\templates\properties\property_detail.html:42
 msgid "Property photo viewer"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:36
+#: .\templates\properties\property_detail.html:42
 msgid "Close gallery"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:36
+#: .\templates\properties\property_detail.html:42
 msgid "Previous photo"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:36
+#: .\templates\properties\property_detail.html:42
 msgid "Next photo"
 msgstr ""
 
 #: .\templates\properties\property_list.html:4
-msgid ""
-"Browse visible smart apartments in Riyadh and Marrakech by city, capacity, "
-"bedrooms, and type."
+msgid "Browse visible smart apartments in Riyadh and Marrakech by city, capacity, bedrooms, and type."
 msgstr ""
 
 #: .\templates\properties\property_list.html:6
@@ -859,9 +1116,7 @@ msgid "A home for the way you travel"
 msgstr ""
 
 #: .\templates\properties\property_list.html:6
-msgid ""
-"Browse locally synchronized property information. Live price and "
-"availability are checked only when you submit dates."
+msgid "Browse locally synchronized property information. Live price and availability are checked only when you submit dates."
 msgstr ""
 
 #: .\templates\properties\property_list.html:6
@@ -911,84 +1166,77 @@ msgid "Page %(current)s of %(total)s"
 msgstr ""
 
 #: .\templates\reservations\availability_result.html:3
-#: .\templates\reservations\availability_result.html:8
+#: .\templates\reservations\availability_result.html:17
 msgid "Availability result"
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:9
-msgid "Too many checks. Please wait and try again."
-msgstr ""
-
-#: .\templates\reservations\availability_result.html:10
+#: .\templates\reservations\availability_result.html:19
 msgid "Please correct the search details"
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:11
+#: .\templates\reservations\availability_result.html:20
 msgid "The property is available"
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:11
+#: .\templates\reservations\availability_result.html:20
 msgid "A secure quote was prepared for the next step."
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:12
+#: .\templates\reservations\availability_result.html:21
 msgid "These dates are not available"
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:12
-msgid ""
-"This property is not available for the selected dates. Try different dates."
+#: .\templates\reservations\availability_result.html:21
+msgid "This property is not available for the selected dates. Try different dates."
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:12
+#: .\templates\reservations\availability_result.html:21
 msgid "No booking or payment was created."
 msgstr ""
 
-#: .\templates\reservations\availability_result.html:13
+#: .\templates\reservations\availability_result.html:22
 msgid "Go back"
 msgstr ""
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Review booking request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:8
+#: .\templates\reservations\booking_intent_detail.html:9
 msgid "Local booking request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:8
+#: .\templates\reservations\booking_intent_detail.html:9
 msgid "Review your request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
-#: .\templates\reservations\booking_quote_detail.html:12
+#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_quote_detail.html:20
 msgid "Nights"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:10
 msgid "Email"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:10
 msgid "Phone"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:10
 msgid "Total"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:10
 msgid "Not a confirmed booking"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
-msgid ""
-"This request is not confirmed until payment is completed and the booking is "
-"created."
+#: .\templates\reservations\booking_intent_detail.html:10
+msgid "This request is not confirmed until payment is completed and the booking is created."
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:10
 msgid "Payment will be enabled soon"
 msgstr ""
 
@@ -996,142 +1244,139 @@ msgstr ""
 msgid "Your price quote"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:8
+#: .\templates\reservations\booking_quote_detail.html:16
 msgid "Temporary live quote"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:8
+#: .\templates\reservations\booking_quote_detail.html:16
 msgid "Review your stay"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:12
+#: .\templates\reservations\booking_quote_detail.html:20
 msgid "Total price"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:12
+#: .\templates\reservations\booking_quote_detail.html:20
 msgid "Price breakdown"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:12
+#: .\templates\reservations\booking_quote_detail.html:20
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:12
-msgid ""
-"Price and availability are temporary and will be checked again before the "
-"local booking request is created."
+#: .\templates\reservations\booking_quote_detail.html:20
+msgid "Price and availability are temporary and will be checked again before the local booking request is created."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:23
 msgid "Step two"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:23
 msgid "Your details remain local and are not sent to Hostaway at this stage."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:17
+#: .\templates\reservations\booking_quote_detail.html:25
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:6
+#: .\templates\reservations\manage_reservation.html:7
 msgid "Secure booking management"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:8
+#: .\templates\reservations\manage_reservation.html:9
 msgid "Stay summary"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:8
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\modification_detail.html:7
 msgid "Status"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:8
+#: .\templates\reservations\manage_reservation.html:9
 msgid "Current total"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:8
-msgid ""
-"Please complete changes through the booking platform or contact management."
+#: .\templates\reservations\manage_reservation.html:9
+msgid "Please complete changes through the booking platform or contact management."
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:8
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\modification_detail.html:7
 msgid "Your request is under review and the booking has not been changed yet."
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:10
+#: .\templates\reservations\manage_reservation.html:11
 msgid "Extend stay"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:10
+#: .\templates\reservations\manage_reservation.html:11
 msgid "Request extension"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:11
+#: .\templates\reservations\manage_reservation.html:12
 msgid "Change dates"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:11
+#: .\templates\reservations\manage_reservation.html:12
 msgid "Request date change"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:12
+#: .\templates\reservations\manage_reservation.html:13
 msgid "Change guests"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:12
+#: .\templates\reservations\manage_reservation.html:13
 msgid "Request guest change"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:13
+#: .\templates\reservations\manage_reservation.html:14
 msgid "Request cancellation"
 msgstr ""
 
-#: .\templates\reservations\manage_reservation.html:13
+#: .\templates\reservations\manage_reservation.html:14
 msgid "Send for review"
 msgstr ""
 
 #: .\templates\reservations\modification_detail.html:3
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Request status"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Local change request"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Request type"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Current check-in"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Current check-out"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Requested check-in"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Requested check-out"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "New price"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Price difference"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:6
+#: .\templates\reservations\modification_detail.html:7
 msgid "Live Hostaway changes are disabled"
 msgstr ""
 
@@ -1144,8 +1389,7 @@ msgid "Verified guest reviews will appear here after publication."
 msgstr ""
 
 #: .\templates\reviews\review_list.html:4
-msgid ""
-"Published guest-to-host reviews, shown with privacy-conscious guest names."
+msgid "Published guest-to-host reviews, shown with privacy-conscious guest names."
 msgstr ""
 
 #: .\templates\reviews\review_list.html:6

@@ -1,11 +1,14 @@
 from django.urls import path
 
+from .seo import robots_txt, sitemap_xml
 from .views import ContactView, ContentPageView, FAQView, HomeView
 
 app_name = "core"
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
+    path("sitemap.xml", sitemap_xml, name="sitemap"),
+    path("robots.txt", robots_txt, name="robots"),
     path(
         "about/",
         ContentPageView.as_view(page_slug="about"),
