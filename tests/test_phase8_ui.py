@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.models import ContactMessage, FAQItem, SitePage
+from apps.core.templatetags.presentation import money_amount
 from apps.payments.models import PaymentAttempt
 from apps.properties.models import Amenity, Property, PropertyAmenity, PropertyImage
 from apps.reservations.models import Reservation
@@ -197,6 +198,14 @@ def test_property_filters_use_local_database() -> None:
     assert response.status_code == 200
 
 
+def test_property_type_filter_uses_localized_customer_label() -> None:
+    property_obj = property_factory(841)
+    property_obj.room_type = "entire_home"
+    property_obj.save(update_fields=["room_type"])
+    content = Client().get("/properties/").content.decode()
+    assert '>وحدة كاملة</option>' in content
+
+
 def test_property_detail_gallery_is_limited_and_accessible() -> None:
     property_obj = property_factory(850)
     for image_id in range(85001, 85013):
@@ -297,6 +306,32 @@ def test_contact_valid_submission_is_local_only() -> None:
         )
     assert response.status_code == 302
     assert ContactMessage.objects.count() == 1
+
+
+def test_contact_honeypot_is_rendered_once_and_success_is_visible() -> None:
+    client = Client()
+    form_content = client.get("/contact/").content.decode()
+    assert form_content.count('name="website"') == 1
+    assert ">Website</label>" not in form_content
+
+    response = client.post(
+        "/contact/",
+        {
+            "name": "Test Guest",
+            "email": "guest@example.invalid",
+            "phone": "",
+            "subject": "Synthetic enquiry",
+            "message": "A synthetic message with enough detail.",
+            "website": "",
+        },
+        follow=True,
+    )
+    assert "تم استلام رسالتك." in response.content.decode()
+
+
+def test_money_amount_is_customer_friendly() -> None:
+    assert money_amount(Decimal("5651.0000")) == "5,651.00"
+    assert money_amount(Decimal("500.256")) == "500.26"
 
 
 def test_contact_honeypot_and_xss_cleaning() -> None:
