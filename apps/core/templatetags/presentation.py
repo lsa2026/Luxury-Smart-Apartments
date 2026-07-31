@@ -175,6 +175,30 @@ def localized_price_component(title: object) -> str:
 
 
 @register.filter
+def localized_room_type(value: object) -> str:
+    labels = {
+        "entire_home": gettext_noop("Entire home"),
+        "private_room": gettext_noop("Private room"),
+        "shared_room": gettext_noop("Shared room"),
+        "hotel_room": gettext_noop("Hotel room"),
+    }
+    source = str(value or "")
+    return translation.gettext(labels.get(source, source.replace("_", " ").title()))
+
+
+@register.filter
+def money_amount(value: object) -> str:
+    try:
+        amount = Decimal(str(value)).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP,
+        )
+    except (InvalidOperation, TypeError, ValueError):
+        return str(value or "")
+    return format(amount, ",.2f")
+
+
+@register.filter
 def rating_out_of_five(value: object) -> str:
     try:
         rating = (Decimal(str(value)) / Decimal("2")).quantize(

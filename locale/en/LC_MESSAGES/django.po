@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-31 03:02+0300\n"
+"POT-Creation-Date: 2026-07-31 03:31+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -46,36 +46,52 @@ msgstr ""
 msgid "Please provide a little more detail."
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:156
+#: .\apps\core\templatetags\presentation.py:164
 msgid "Accommodation price"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:157
+#: .\apps\core\templatetags\presentation.py:165
 msgid "Cleaning fee"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:158
+#: .\apps\core\templatetags\presentation.py:166
 msgid "VAT"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:159
+#: .\apps\core\templatetags\presentation.py:167
 msgid "Tax"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:160
+#: .\apps\core\templatetags\presentation.py:168
 msgid "City tax"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:161
+#: .\apps\core\templatetags\presentation.py:169
 msgid "Damage deposit"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:162
+#: .\apps\core\templatetags\presentation.py:170
 msgid "Extra guest fee"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:163
+#: .\apps\core\templatetags\presentation.py:171
 msgid "Price item"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:180
+msgid "Entire home"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:181
+msgid "Private room"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:182
+msgid "Shared room"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:183
+msgid "Hotel room"
 msgstr ""
 
 #: .\apps\core\views.py:149
@@ -164,15 +180,15 @@ msgid "Choose a property"
 msgstr ""
 
 #: .\apps\reservations\forms.py:25
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Check-in"
 msgstr ""
 
 #: .\apps\reservations\forms.py:29
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Check-out"
 msgstr ""
@@ -180,8 +196,8 @@ msgstr ""
 #: .\apps\reservations\forms.py:33
 #: .\templates\properties\property_detail.html:30
 #: .\templates\properties\property_list.html:10
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Guests"
 msgstr ""
@@ -450,7 +466,7 @@ msgstr ""
 msgid "Please correct the highlighted fields."
 msgstr ""
 
-#: .\templates\core\contact.html:15
+#: .\templates\core\contact.html:23
 msgid "Send message"
 msgstr ""
 
@@ -861,7 +877,7 @@ msgid "Stay"
 msgstr ""
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Guest details"
 msgstr ""
 
@@ -1199,44 +1215,44 @@ msgid "Go back"
 msgstr ""
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:24
+#: .\templates\reservations\booking_quote_detail.html:25
 msgid "Review booking request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:14
 msgid "Local booking request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:14
 msgid "Review your request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Nights"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Email"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Phone"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Total"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Not a confirmed booking"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "This request is not confirmed until payment is completed and the booking is created."
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Payment will be enabled soon"
 msgstr ""
 
@@ -1244,40 +1260,40 @@ msgstr ""
 msgid "Your price quote"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:17
 msgid "Temporary live quote"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:17
 msgid "Review your stay"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Total price"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Price breakdown"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Price and availability are temporary and will be checked again before the local booking request is created."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Step two"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Your details remain local and are not sent to Hostaway at this stage."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:25
+#: .\templates\reservations\booking_quote_detail.html:26
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr ""
 
@@ -1290,7 +1306,7 @@ msgid "Stay summary"
 msgstr ""
 
 #: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Status"
 msgstr ""
 
@@ -1303,7 +1319,7 @@ msgid "Please complete changes through the booking platform or contact managemen
 msgstr ""
 
 #: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Your request is under review and the booking has not been changed yet."
 msgstr ""
 
@@ -1340,43 +1356,43 @@ msgid "Send for review"
 msgstr ""
 
 #: .\templates\reservations\modification_detail.html:3
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Request status"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Local change request"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Request type"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Current check-in"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Current check-out"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Requested check-in"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Requested check-out"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "New price"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Price difference"
 msgstr ""
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Live Hostaway changes are disabled"
 msgstr ""
 

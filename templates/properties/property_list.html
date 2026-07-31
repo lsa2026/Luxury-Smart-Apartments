@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n presentation %}
 {% block title %}{% trans "Properties" %} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{% trans "Browse visible smart apartments in Riyadh and Marrakech by city, capacity, bedrooms, and type." %}{% endblock %}
 {% block content %}
@@ -9,7 +9,7 @@
         <div class="form-field"><label for="filter-city">{% trans "City" %}</label><select id="filter-city" name="city"><option value="">{% trans "All cities" %}</option>{% for city in filter_cities %}<option value="{{ city.value }}"{% if active_filters.city == city.value %} selected{% endif %}>{{ city.label }}</option>{% endfor %}</select></div>
         <div class="form-field"><label for="filter-guests">{% trans "Guests" %}</label><input id="filter-guests" name="guests" type="number" min="1" value="{{ active_filters.guests }}"></div>
         <div class="form-field"><label for="filter-bedrooms">{% trans "Bedrooms" %}</label><input id="filter-bedrooms" name="bedrooms" type="number" min="0" value="{{ active_filters.bedrooms }}"></div>
-        {% if filter_room_types %}<div class="form-field"><label for="filter-type">{% trans "Property type" %}</label><select id="filter-type" name="room_type"><option value="">{% trans "All types" %}</option>{% for room_type in filter_room_types %}<option value="{{ room_type }}"{% if active_filters.room_type == room_type %} selected{% endif %}>{{ room_type }}</option>{% endfor %}</select></div>{% endif %}
+        {% if filter_room_types %}<div class="form-field"><label for="filter-type">{% trans "Property type" %}</label><select id="filter-type" name="room_type"><option value="">{% trans "All types" %}</option>{% for room_type in filter_room_types %}<option value="{{ room_type }}"{% if active_filters.room_type == room_type %} selected{% endif %}>{{ room_type|localized_room_type }}</option>{% endfor %}</select></div>{% endif %}
         <div class="form-field"><label for="filter-ordering">{% trans "Sort by" %}</label><select id="filter-ordering" name="ordering"><option value="featured"{% if active_filters.ordering == "featured" or not active_filters.ordering %} selected{% endif %}>{% trans "Featured first" %}</option><option value="rating"{% if active_filters.ordering == "rating" %} selected{% endif %}>{% trans "Highest rated" %}</option><option value="capacity"{% if active_filters.ordering == "capacity" %} selected{% endif %}>{% trans "Highest capacity" %}</option></select></div>
         <button class="button button--compact" type="submit">{% trans "Apply filters" %}</button>
     </form>

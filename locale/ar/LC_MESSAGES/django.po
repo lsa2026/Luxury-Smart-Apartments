@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-31 03:02+0300\n"
+"POT-Creation-Date: 2026-07-31 03:31+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,39 +45,57 @@ msgstr "تعذر إرسال هذه الرسالة."
 msgid "Please provide a little more detail."
 msgstr "يرجى إضافة مزيد من التفاصيل."
 
-#: .\apps\core\templatetags\presentation.py:156
+#: .\apps\core\templatetags\presentation.py:164
 msgid "Accommodation price"
 msgstr "سعر الإقامة"
 
-#: .\apps\core\templatetags\presentation.py:157
+#: .\apps\core\templatetags\presentation.py:165
 msgid "Cleaning fee"
 msgstr "رسوم التنظيف"
 
-#: .\apps\core\templatetags\presentation.py:158
+#: .\apps\core\templatetags\presentation.py:166
 msgid "VAT"
 msgstr "ضريبة القيمة المضافة"
 
-#: .\apps\core\templatetags\presentation.py:159
+#: .\apps\core\templatetags\presentation.py:167
 msgid "Tax"
 msgstr "الضريبة"
 
-#: .\apps\core\templatetags\presentation.py:160
-#| msgid "City"
+#: .\apps\core\templatetags\presentation.py:168
 msgid "City tax"
 msgstr "ضريبة المدينة"
 
-#: .\apps\core\templatetags\presentation.py:161
+#: .\apps\core\templatetags\presentation.py:169
 msgid "Damage deposit"
 msgstr "تأمين الأضرار"
 
-#: .\apps\core\templatetags\presentation.py:162
+#: .\apps\core\templatetags\presentation.py:170
 msgid "Extra guest fee"
 msgstr "رسوم ضيف إضافي"
 
-#: .\apps\core\templatetags\presentation.py:163
-#| msgid "Price difference"
+#: .\apps\core\templatetags\presentation.py:171
 msgid "Price item"
 msgstr "بند سعر"
+
+#: .\apps\core\templatetags\presentation.py:180
+#, fuzzy
+#| msgid "Return home"
+msgid "Entire home"
+msgstr "العودة للرئيسية"
+
+#: .\apps\core\templatetags\presentation.py:181
+msgid "Private room"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:182
+#, fuzzy
+#| msgid "Bedrooms"
+msgid "Shared room"
+msgstr "غرف النوم"
+
+#: .\apps\core\templatetags\presentation.py:183
+msgid "Hotel room"
+msgstr ""
 
 #: .\apps\core\views.py:149
 msgid "Your message has been received."
@@ -165,15 +183,15 @@ msgid "Choose a property"
 msgstr "اختر وحدة"
 
 #: .\apps\reservations\forms.py:25
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Check-in"
 msgstr "الوصول"
 
 #: .\apps\reservations\forms.py:29
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Check-out"
 msgstr "المغادرة"
@@ -181,8 +199,8 @@ msgstr "المغادرة"
 #: .\apps\reservations\forms.py:33
 #: .\templates\properties\property_detail.html:30
 #: .\templates\properties\property_list.html:10
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Guests"
 msgstr "الضيوف"
@@ -239,13 +257,11 @@ msgid "Too many checks. Please wait and try again."
 msgstr "محاولات تحقق كثيرة. انتظر ثم حاول مجددًا."
 
 #: .\apps\reservations\views.py:129
-#| msgid "A secure quote was prepared for the next step."
 msgid "A secure quote could not be created for these dates."
 msgstr "تعذر إنشاء عرض سعر آمن لهذه التواريخ."
 
 #: .\apps\reservations\views.py:158 .\apps\reservations\views.py:178
 #: .\apps\reservations\views.py:273 .\apps\reservations\views.py:365
-#| msgid "Local booking request"
 msgid "Too many requests."
 msgstr "عدد الطلبات كبير جدًا."
 
@@ -259,7 +275,6 @@ msgid "The price changed from %(old)s to %(new)s %(currency)s. Please review and
 msgstr "تغير السعر من %(old)s إلى %(new)s %(currency)s. يرجى مراجعته والموافقة عليه مجددًا."
 
 #: .\apps\reservations\views.py:253
-#| msgid "This property is not available for the selected dates. Try different dates."
 msgid "This property is unavailable for the selected dates. Try other dates."
 msgstr "هذه الوحدة غير متاحة في التواريخ المحددة. جرّب تواريخ أخرى."
 
@@ -268,12 +283,10 @@ msgid "The request could not continue. Please request a new quote."
 msgstr "تعذر متابعة الطلب. يرجى طلب عرض سعر جديد."
 
 #: .\apps\reservations\views.py:428
-#| msgid "Your request is under review and the booking has not been changed yet."
 msgid "The change request could not be created. The booking was not changed."
 msgstr "تعذر إنشاء طلب التعديل. لم يتغير الحجز."
 
 #: .\apps\reviews\models.py:104
-#| msgid "Guests"
 msgid "Guest"
 msgstr "ضيف"
 
@@ -359,7 +372,6 @@ msgid "Missing English SEO titles"
 msgstr "عناوين SEO الإنجليزية الناقصة"
 
 #: .\templates\admin\core\seo_dashboard.html:10
-#| msgid "Missing Arabic SEO titles"
 msgid "Missing French SEO titles"
 msgstr "عناوين SEO الفرنسية المفقودة"
 
@@ -457,7 +469,7 @@ msgstr "تم إرسال عدد كبير من الرسائل. انتظر ثم ح�
 msgid "Please correct the highlighted fields."
 msgstr "يرجى تصحيح الحقول المحددة."
 
-#: .\templates\core\contact.html:15
+#: .\templates\core\contact.html:23
 msgid "Send message"
 msgstr "إرسال الرسالة"
 
@@ -762,12 +774,10 @@ msgid "Considered smart stays in Riyadh and Marrakech."
 msgstr "إقامات ذكية مدروسة في الرياض ومراكش."
 
 #: .\templates\includes\footer.html:13
-#| msgid "Similar stays"
 msgid "Daily stays"
 msgstr "إقامات يومية"
 
 #: .\templates\includes\footer.html:14
-#| msgid "Daily and monthly stays"
 msgid "Monthly stays"
 msgstr "إقامات شهرية"
 
@@ -870,7 +880,7 @@ msgid "Stay"
 msgstr "الإقامة"
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Guest details"
 msgstr "بيانات الضيف"
 
@@ -887,7 +897,6 @@ msgid "Confirmation"
 msgstr "التأكيد"
 
 #: .\templates\includes\property_card.html:12
-#| msgid "Daily and monthly stays"
 msgid "Daily · Monthly"
 msgstr "يومي · شهري"
 
@@ -1221,44 +1230,44 @@ msgid "Go back"
 msgstr "العودة"
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:24
+#: .\templates\reservations\booking_quote_detail.html:25
 msgid "Review booking request"
 msgstr "مراجعة طلب الحجز"
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:14
 msgid "Local booking request"
 msgstr "طلب حجز محلي"
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:14
 msgid "Review your request"
 msgstr "راجع طلبك"
 
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Nights"
 msgstr "الليالي"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Email"
 msgstr "البريد"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Phone"
 msgstr "الهاتف"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Total"
 msgstr "الإجمالي"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Not a confirmed booking"
 msgstr "هذا الطلب غير مؤكد"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "This request is not confirmed until payment is completed and the booking is created."
 msgstr "هذا الطلب غير مؤكد حتى اكتمال الدفع وإنشاء الحجز."
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Payment will be enabled soon"
 msgstr "الدفع سيُفعّل قريبًا"
 
@@ -1266,40 +1275,40 @@ msgstr "الدفع سيُفعّل قريبًا"
 msgid "Your price quote"
 msgstr "عرض سعرك"
 
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:17
 msgid "Temporary live quote"
 msgstr "عرض سعر مؤقت"
 
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:17
 msgid "Review your stay"
 msgstr "راجع إقامتك"
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Total price"
 msgstr "السعر الإجمالي"
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Price breakdown"
 msgstr "تفاصيل السعر"
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr "ينتهي هذا العرض في %(expires)s."
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Price and availability are temporary and will be checked again before the local booking request is created."
 msgstr "السعر والتوافر مؤقتان وسيعاد التحقق منهما قبل إنشاء طلب الحجز المحلي."
 
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Step two"
 msgstr "الخطوة الثانية"
 
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Your details remain local and are not sent to Hostaway at this stage."
 msgstr "تبقى بياناتك محلية ولا تُرسل إلى Hostaway في هذه المرحلة."
 
-#: .\templates\reservations\booking_quote_detail.html:25
+#: .\templates\reservations\booking_quote_detail.html:26
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr "عرض السعر غير صالح أو منتهي. تحقق من التوافر مجددًا."
 
@@ -1312,7 +1321,7 @@ msgid "Stay summary"
 msgstr "ملخص الإقامة"
 
 #: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Status"
 msgstr "الحالة"
 
@@ -1325,12 +1334,11 @@ msgid "Please complete changes through the booking platform or contact managemen
 msgstr "يرجى إكمال التعديل من خلال منصة الحجز أو التواصل مع الإدارة."
 
 #: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Your request is under review and the booking has not been changed yet."
 msgstr "طلبك قيد المراجعة ولم يتم تعديل الحجز بعد."
 
 #: .\templates\reservations\manage_reservation.html:11
-#| msgid "Featured stay"
 msgid "Extend stay"
 msgstr "تمديد الإقامة"
 
@@ -1359,52 +1367,47 @@ msgid "Request cancellation"
 msgstr "طلب إلغاء"
 
 #: .\templates\reservations\manage_reservation.html:14
-#| msgid "Read all reviews"
 msgid "Send for review"
 msgstr "إرسال للمراجعة"
 
 #: .\templates\reservations\modification_detail.html:3
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Request status"
 msgstr "حالة الطلب"
 
-#: .\templates\reservations\modification_detail.html:7
-#| msgid "Local booking request"
+#: .\templates\reservations\modification_detail.html:11
 msgid "Local change request"
 msgstr "طلب تعديل محلي"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Request type"
 msgstr "نوع الطلب"
 
-#: .\templates\reservations\modification_detail.html:7
-#| msgid "Check-in"
+#: .\templates\reservations\modification_detail.html:11
 msgid "Current check-in"
 msgstr "الوصول الحالي"
 
-#: .\templates\reservations\modification_detail.html:7
-#| msgid "Check-out"
+#: .\templates\reservations\modification_detail.html:11
 msgid "Current check-out"
 msgstr "المغادرة الحالية"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Requested check-in"
 msgstr "الوصول المطلوب"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Requested check-out"
 msgstr "المغادرة المطلوبة"
 
-#: .\templates\reservations\modification_detail.html:7
-#| msgid "Total price"
+#: .\templates\reservations\modification_detail.html:11
 msgid "New price"
 msgstr "السعر الجديد"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Price difference"
 msgstr "فرق السعر"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Live Hostaway changes are disabled"
 msgstr "تغييرات Hostaway المباشرة معطلة"
 

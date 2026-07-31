@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-31 03:02+0300\n"
+"POT-Creation-Date: 2026-07-31 03:31+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -46,37 +46,57 @@ msgstr "Impossible d’envoyer ce message."
 msgid "Please provide a little more detail."
 msgstr "Veuillez fournir un peu plus de détails."
 
-#: .\apps\core\templatetags\presentation.py:156
+#: .\apps\core\templatetags\presentation.py:164
 msgid "Accommodation price"
 msgstr "Prix de l’hébergement"
 
-#: .\apps\core\templatetags\presentation.py:157
+#: .\apps\core\templatetags\presentation.py:165
 msgid "Cleaning fee"
 msgstr "Frais de ménage"
 
-#: .\apps\core\templatetags\presentation.py:158
+#: .\apps\core\templatetags\presentation.py:166
 msgid "VAT"
 msgstr "TVA"
 
-#: .\apps\core\templatetags\presentation.py:159
+#: .\apps\core\templatetags\presentation.py:167
 msgid "Tax"
 msgstr "Taxe"
 
-#: .\apps\core\templatetags\presentation.py:160
+#: .\apps\core\templatetags\presentation.py:168
 msgid "City tax"
 msgstr "Taxe de séjour"
 
-#: .\apps\core\templatetags\presentation.py:161
+#: .\apps\core\templatetags\presentation.py:169
 msgid "Damage deposit"
 msgstr "Dépôt de garantie"
 
-#: .\apps\core\templatetags\presentation.py:162
+#: .\apps\core\templatetags\presentation.py:170
 msgid "Extra guest fee"
 msgstr "Supplément voyageur"
 
-#: .\apps\core\templatetags\presentation.py:163
+#: .\apps\core\templatetags\presentation.py:171
 msgid "Price item"
 msgstr "Élément tarifaire"
+
+#: .\apps\core\templatetags\presentation.py:180
+#, fuzzy
+#| msgid "Return home"
+msgid "Entire home"
+msgstr "Retour à l’accueil"
+
+#: .\apps\core\templatetags\presentation.py:181
+msgid "Private room"
+msgstr ""
+
+#: .\apps\core\templatetags\presentation.py:182
+#, fuzzy
+#| msgid "Bedrooms"
+msgid "Shared room"
+msgstr "Chambres"
+
+#: .\apps\core\templatetags\presentation.py:183
+msgid "Hotel room"
+msgstr ""
 
 #: .\apps\core\views.py:149
 msgid "Your message has been received."
@@ -164,15 +184,15 @@ msgid "Choose a property"
 msgstr "Choisir un logement"
 
 #: .\apps\reservations\forms.py:25
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Check-in"
 msgstr "Arrivée"
 
 #: .\apps\reservations\forms.py:29
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Check-out"
 msgstr "Départ"
@@ -180,8 +200,8 @@ msgstr "Départ"
 #: .\apps\reservations\forms.py:33
 #: .\templates\properties\property_detail.html:30
 #: .\templates\properties\property_list.html:10
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 #: .\templates\reservations\manage_reservation.html:9
 msgid "Guests"
 msgstr "Voyageurs"
@@ -450,7 +470,7 @@ msgstr "Trop de messages ont été envoyés. Veuillez patienter avant de réessa
 msgid "Please correct the highlighted fields."
 msgstr "Veuillez corriger les champs indiqués."
 
-#: .\templates\core\contact.html:15
+#: .\templates\core\contact.html:23
 msgid "Send message"
 msgstr "Envoyer le message"
 
@@ -861,7 +881,7 @@ msgid "Stay"
 msgstr "Séjour"
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Guest details"
 msgstr "Informations du voyageur"
 
@@ -1199,44 +1219,44 @@ msgid "Go back"
 msgstr "Retour"
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:24
+#: .\templates\reservations\booking_quote_detail.html:25
 msgid "Review booking request"
 msgstr "Vérifier la demande de réservation"
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:14
 msgid "Local booking request"
 msgstr "Demande de réservation locale"
 
-#: .\templates\reservations\booking_intent_detail.html:9
+#: .\templates\reservations\booking_intent_detail.html:14
 msgid "Review your request"
 msgstr "Vérifiez votre demande"
 
-#: .\templates\reservations\booking_intent_detail.html:10
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Nights"
 msgstr "Nuits"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Email"
 msgstr "E-mail"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Phone"
 msgstr "Téléphone"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Total"
 msgstr "Total"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Not a confirmed booking"
 msgstr "Réservation non confirmée"
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "This request is not confirmed until payment is completed and the booking is created."
 msgstr "Cette demande ne sera confirmée qu’après le paiement et la création de la réservation."
 
-#: .\templates\reservations\booking_intent_detail.html:10
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Payment will be enabled soon"
 msgstr "Le paiement sera bientôt disponible"
 
@@ -1244,40 +1264,40 @@ msgstr "Le paiement sera bientôt disponible"
 msgid "Your price quote"
 msgstr "Votre devis"
 
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:17
 msgid "Temporary live quote"
 msgstr "Devis temporaire en direct"
 
-#: .\templates\reservations\booking_quote_detail.html:16
+#: .\templates\reservations\booking_quote_detail.html:17
 msgid "Review your stay"
 msgstr "Vérifiez votre séjour"
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Total price"
 msgstr "Prix total"
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Price breakdown"
 msgstr "Détail du prix"
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr "Ce devis expire le %(expires)s."
 
-#: .\templates\reservations\booking_quote_detail.html:20
+#: .\templates\reservations\booking_quote_detail.html:21
 msgid "Price and availability are temporary and will be checked again before the local booking request is created."
 msgstr "Le prix et les disponibilités sont temporaires et seront vérifiés à nouveau avant la création de la demande de réservation."
 
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Step two"
 msgstr "Deuxième étape"
 
-#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Your details remain local and are not sent to Hostaway at this stage."
 msgstr "Vos informations restent locales et ne sont pas envoyées à Hostaway à ce stade."
 
-#: .\templates\reservations\booking_quote_detail.html:25
+#: .\templates\reservations\booking_quote_detail.html:26
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr "Ce devis est invalide ou expiré. Veuillez vérifier à nouveau les disponibilités."
 
@@ -1290,7 +1310,7 @@ msgid "Stay summary"
 msgstr "Récapitulatif du séjour"
 
 #: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Status"
 msgstr "Statut"
 
@@ -1303,7 +1323,7 @@ msgid "Please complete changes through the booking platform or contact managemen
 msgstr "Effectuez les modifications via la plateforme de réservation ou contactez la gestion."
 
 #: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Your request is under review and the booking has not been changed yet."
 msgstr "Votre demande est en cours d’examen et la réservation n’a pas encore été modifiée."
 
@@ -1340,43 +1360,43 @@ msgid "Send for review"
 msgstr "Envoyer pour examen"
 
 #: .\templates\reservations\modification_detail.html:3
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Request status"
 msgstr "Statut de la demande"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Local change request"
 msgstr "Demande de modification locale"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Request type"
 msgstr "Type de demande"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Current check-in"
 msgstr "Arrivée actuelle"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Current check-out"
 msgstr "Départ actuel"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Requested check-in"
 msgstr "Arrivée demandée"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Requested check-out"
 msgstr "Départ demandé"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "New price"
 msgstr "Nouveau prix"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Price difference"
 msgstr "Différence de prix"
 
-#: .\templates\reservations\modification_detail.html:7
+#: .\templates\reservations\modification_detail.html:11
 msgid "Live Hostaway changes are disabled"
 msgstr "Les modifications Hostaway en direct sont désactivées"
 

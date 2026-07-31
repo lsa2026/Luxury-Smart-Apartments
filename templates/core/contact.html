@@ -11,7 +11,15 @@
         {% if contact_form.errors %}<div class="form-error-summary" role="alert" tabindex="-1"><strong>{% trans "Please correct the highlighted fields." %}</strong></div>{% endif %}
         <form method="post" novalidate data-submit-once>
             {% csrf_token %}<div class="honeypot" aria-hidden="true">{{ contact_form.website }}</div>
-            {% for field in contact_form.visible_fields %}<div class="form-field{% if field.errors %} form-field--error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="form-error" id="{{ field.id_for_label }}-error">{{ error }}</p>{% endfor %}</div>{% endfor %}
+            {% for field in contact_form.visible_fields %}
+                {% if field.name != "website" %}
+                <div class="form-field{% if field.errors %} form-field--error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="form-error" id="{{ field.id_for_label }}-error">{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}
+            {% endfor %}
             <button class="button" type="submit">{% trans "Send message" %}</button>
         </form>
     </div>
