@@ -79,24 +79,20 @@ msgid "Price item"
 msgstr "Élément tarifaire"
 
 #: .\apps\core\templatetags\presentation.py:180
-#, fuzzy
-#| msgid "Return home"
 msgid "Entire home"
-msgstr "Retour à l’accueil"
+msgstr "Logement entier"
 
 #: .\apps\core\templatetags\presentation.py:181
 msgid "Private room"
-msgstr ""
+msgstr "Chambre privée"
 
 #: .\apps\core\templatetags\presentation.py:182
-#, fuzzy
-#| msgid "Bedrooms"
 msgid "Shared room"
-msgstr "Chambres"
+msgstr "Chambre partagée"
 
 #: .\apps\core\templatetags\presentation.py:183
 msgid "Hotel room"
-msgstr ""
+msgstr "Chambre d’hôtel"
 
 #: .\apps\core\views.py:149
 msgid "Your message has been received."

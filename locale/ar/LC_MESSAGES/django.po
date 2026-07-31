@@ -78,24 +78,20 @@ msgid "Price item"
 msgstr "بند سعر"
 
 #: .\apps\core\templatetags\presentation.py:180
-#, fuzzy
-#| msgid "Return home"
 msgid "Entire home"
-msgstr "العودة للرئيسية"
+msgstr "وحدة كاملة"
 
 #: .\apps\core\templatetags\presentation.py:181
 msgid "Private room"
-msgstr ""
+msgstr "غرفة خاصة"
 
 #: .\apps\core\templatetags\presentation.py:182
-#, fuzzy
-#| msgid "Bedrooms"
 msgid "Shared room"
-msgstr "غرف النوم"
+msgstr "غرفة مشتركة"
 
 #: .\apps\core\templatetags\presentation.py:183
 msgid "Hotel room"
-msgstr ""
+msgstr "غرفة فندقية"
 
 #: .\apps\core\views.py:149
 msgid "Your message has been received."
