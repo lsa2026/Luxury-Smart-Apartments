@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  <p>{% trans "All checks on this page are local. No request is sent to Google." %}</p>
+  <table>
+    <tbody>
+      <tr><th>{% trans "Google integrations" %}</th><td>{{ status.integrations_enabled|yesno:"enabled,disabled" }}</td></tr>
+      <tr><th>GTM</th><td>{{ status.gtm_configured|yesno:"configured,not configured" }} — {{ status.gtm_identifier }}</td></tr>
+      <tr><th>GA4</th><td>{{ status.ga4_configured|yesno:"configured,not configured" }} — {{ status.ga4_identifier }}</td></tr>
+      <tr><th>Google Ads</th><td>{{ status.ads_configured|yesno:"configured,not configured" }} — {{ status.ads_identifier }}</td></tr>
+      <tr><th>{% trans "Enhanced conversions" %}</th><td>{{ status.enhanced_conversions|yesno:"enabled,disabled" }}</td></tr>
+      <tr><th>{% trans "Consent Mode" %}</th><td>{{ status.consent_mode|yesno:"enabled,disabled" }}</td></tr>
+      <tr><th>{% trans "Site verification" %}</th><td>{{ status.site_verification|yesno:"configured,not configured" }}</td></tr>
+      <tr><th>{% trans "Sitemap URLs" %}</th><td>{{ status.sitemap_urls }}</td></tr>
+      <tr><th>{% trans "Redirect mappings" %}</th><td>{{ status.redirect_count }}</td></tr>
+    </tbody>
+  </table>
+  <h2>{% trans "Production blockers" %}</h2>
+  <ul>{% for blocker in status.blockers %}<li>{{ blocker }}</li>{% empty %}<li>{% trans "No configuration blockers detected." %}</li>{% endfor %}</ul>
+  <h2>{% trans "Local validation" %}</h2>
+  <div class="submit-row">
+    <form method="post" action="{% url 'marketing:validate' 'event' %}">{% csrf_token %}<button type="submit">{% trans "Render test dataLayer" %}</button></form>
+    <form method="post" action="{% url 'marketing:validate' 'structured_data' %}">{% csrf_token %}<button type="submit">{% trans "Validate structured data" %}</button></form>
+    <form method="post" action="{% url 'marketing:validate' 'redirects' %}">{% csrf_token %}<button type="submit">{% trans "Validate redirects" %}</button></form>
+    <form method="post" action="{% url 'marketing:validate' 'sitemap' %}">{% csrf_token %}<button type="submit">{% trans "Validate sitemap" %}</button></form>
+  </div>
+</div>
+{% endblock %}

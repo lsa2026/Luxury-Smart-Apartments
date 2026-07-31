@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  <p>{% if valid %}{% trans "The local validation completed successfully." %}{% else %}{% trans "The local validation failed." %}{% endif %}</p>
+  <p>{% trans "No data was sent to Google." %}</p>
+  <a href="{% url 'marketing:diagnostics' %}">{% trans "Back to diagnostics" %}</a>
+</div>
+{% endblock %}

@@ -147,28 +147,35 @@ class ContactView(View):
                 )
             )
         messages.success(request, _("Your message has been received."))
+        request.session["analytics_event"] = "generate_lead"
         return redirect("core:contact")
 
 
 def error_400(request: HttpRequest, exception: Exception) -> HttpResponse:
+    request._disable_google_integrations = True
     return render(request, "errors/400.html", {"error_code": 400}, status=400)
 
 
 def error_403(request: HttpRequest, exception: Exception) -> HttpResponse:
+    request._disable_google_integrations = True
     return render(request, "errors/403.html", {"error_code": 403}, status=403)
 
 
 def error_404(request: HttpRequest, exception: Exception) -> HttpResponse:
+    request._disable_google_integrations = True
     return render(request, "errors/404.html", {"error_code": 404}, status=404)
 
 
 def error_500(request: HttpRequest) -> HttpResponse:
+    request._disable_google_integrations = True
     return render(request, "errors/500.html", {"error_code": 500}, status=500)
 
 
 def error_429(request: HttpRequest) -> HttpResponse:
+    request._disable_google_integrations = True
     return render(request, "errors/429.html", {"error_code": 429}, status=429)
 
 
 def error_503(request: HttpRequest) -> HttpResponse:
+    request._disable_google_integrations = True
     return render(request, "errors/503.html", {"error_code": 503}, status=503)

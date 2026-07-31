@@ -1,13 +1,19 @@
 {% extends "base.html" %}
 {% load i18n presentation %}
-{% block title %}{{ property|localized_property_name }} | Luxury Smart Apartments{% endblock %}
-{% block meta_description %}{% if LANGUAGE_CODE == "en" %}{{ property.seo_description_en|default:property.short_description_en|default:property.hostaway_description|truncatechars:155 }}{% else %}{{ property.seo_description_ar|default:property.short_description_ar|default:property.hostaway_description|truncatechars:155 }}{% endif %}{% endblock %}
-{% block og_title %}{{ property|localized_property_name }}{% endblock %}
-{% block twitter_title %}{{ property|localized_property_name }}{% endblock %}
-{% block og_image %}{% if property.cover_image %}<meta property="og:image" content="{{ property.cover_image.display_url }}">{% endif %}{% endblock %}
+{% block title %}{{ property|localized_property_seo_title }} | Luxury Smart Apartments{% endblock %}
+{% block meta_description %}{{ property|localized_property_meta_description|truncatechars:155 }}{% endblock %}
+{% block og_title %}{{ property|localized_property_seo_title }}{% endblock %}
+{% block twitter_title %}{{ property|localized_property_seo_title }}{% endblock %}
+{% block og_image %}{% if property.cover_image %}<meta property="og:image" content="{{ property.cover_image.display_url }}"><meta property="og:image:width" content="960"><meta property="og:image:height" content="640"><meta name="twitter:image" content="{{ property.cover_image.display_url }}">{% endif %}{% endblock %}
 {% block structured_data %}{% json_ld property_structured_data csp_nonce %}{% json_ld breadcrumb_structured_data csp_nonce %}{% endblock %}
 {% block content %}
-<article>
+<article
+    data-analytics-view-item
+    data-item-id="{{ property.slug }}"
+    data-item-name="{{ property|localized_property_name }}"
+    data-item-city="{{ property|localized_city }}"
+    data-item-type="{{ property.room_type }}"
+>
     <header class="property-heading container">
         {% include "includes/breadcrumb.html" %}
         <div class="property-heading__row"><div>{% if property.is_featured %}<span class="badge">{% trans "Featured stay" %}</span>{% endif %}<h1>{{ property|localized_property_name }}</h1><p>{{ property|localized_city }}{% if property.average_review_rating %} · <span aria-label="{% blocktrans with rating=property.average_review_rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">★ {{ property.average_review_rating|rating_out_of_five }}</span>{% endif %}</p></div><a class="button button--secondary" href="#availability">{% trans "Check availability" %}</a></div>
@@ -29,7 +35,7 @@
         </div>
         <aside class="booking-sidebar" id="availability"><div class="booking-sidebar__card"><p class="eyebrow">{% trans "Live check" %}</p><h2>{% trans "Plan your stay" %}</h2><p>{% trans "Enter your dates to receive a temporary live price." %}</p>{% include "reservations/_availability_form.html" %}</div></aside>
     </div>
-    {% if similar_properties %}<section class="section section--soft"><div class="container"><div class="section-heading"><p class="eyebrow">{% trans "You may also like" %}</p><h2>{% trans "Similar stays" %}</h2></div>{% include "properties/_property_cards.html" with properties=similar_properties %}</div></section>{% endif %}
+    {% if similar_properties %}<section class="section section--soft"><div class="container"><div class="section-heading"><p class="eyebrow">{% trans "You may also like" %}</p><h2>{% trans "Similar stays" %}</h2></div>{% include "properties/_property_cards.html" with properties=similar_properties analytics_list_name="similar_properties" %}</div></section>{% endif %}
 </article>
 {% endblock %}
 {% block dialogs %}

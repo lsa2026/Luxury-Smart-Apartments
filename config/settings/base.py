@@ -40,6 +40,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "apps.core.middleware.LegacyRedirectMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -369,6 +370,57 @@ NOTIFICATION_RETENTION_DAYS = optional_positive_int(
     180,
 )
 AUDIT_LOG_RETENTION_DAYS = optional_positive_int("AUDIT_LOG_RETENTION_DAYS", 730)
+
+GOOGLE_INTEGRATIONS_ENABLED = strict_bool("GOOGLE_INTEGRATIONS_ENABLED")
+GOOGLE_TAG_MANAGER_ENABLED = strict_bool("GOOGLE_TAG_MANAGER_ENABLED")
+GOOGLE_TAG_MANAGER_CONTAINER_ID = env(
+    "GOOGLE_TAG_MANAGER_CONTAINER_ID",
+    default="",
+).strip()
+GOOGLE_ANALYTICS_ENABLED = strict_bool("GOOGLE_ANALYTICS_ENABLED")
+GOOGLE_ANALYTICS_MEASUREMENT_ID = env(
+    "GOOGLE_ANALYTICS_MEASUREMENT_ID",
+    default="",
+).strip()
+GOOGLE_ANALYTICS_DEBUG_MODE = strict_bool("GOOGLE_ANALYTICS_DEBUG_MODE")
+GOOGLE_ADS_ENABLED = strict_bool("GOOGLE_ADS_ENABLED")
+GOOGLE_ADS_CONVERSION_ID = env("GOOGLE_ADS_CONVERSION_ID", default="").strip()
+GOOGLE_ADS_BOOKING_CONVERSION_LABEL = env(
+    "GOOGLE_ADS_BOOKING_CONVERSION_LABEL",
+    default="",
+).strip()
+GOOGLE_ADS_CONTACT_CONVERSION_LABEL = env(
+    "GOOGLE_ADS_CONTACT_CONVERSION_LABEL",
+    default="",
+).strip()
+GOOGLE_ADS_ENHANCED_CONVERSIONS_ENABLED = strict_bool("GOOGLE_ADS_ENHANCED_CONVERSIONS_ENABLED")
+GOOGLE_SITE_VERIFICATION = env("GOOGLE_SITE_VERIFICATION", default="").strip()
+GOOGLE_SEARCH_CONSOLE_ENABLED = strict_bool("GOOGLE_SEARCH_CONSOLE_ENABLED")
+GOOGLE_CONSENT_MODE_ENABLED = strict_bool("GOOGLE_CONSENT_MODE_ENABLED", True)
+GOOGLE_CONSENT_DEFAULT_ANALYTICS_STORAGE = env(
+    "GOOGLE_CONSENT_DEFAULT_ANALYTICS_STORAGE",
+    default="denied",
+).strip()
+GOOGLE_CONSENT_DEFAULT_AD_STORAGE = env(
+    "GOOGLE_CONSENT_DEFAULT_AD_STORAGE",
+    default="denied",
+).strip()
+GOOGLE_CONSENT_DEFAULT_AD_USER_DATA = env(
+    "GOOGLE_CONSENT_DEFAULT_AD_USER_DATA",
+    default="denied",
+).strip()
+GOOGLE_CONSENT_DEFAULT_AD_PERSONALIZATION = env(
+    "GOOGLE_CONSENT_DEFAULT_AD_PERSONALIZATION",
+    default="denied",
+).strip()
+COOKIE_CONSENT_ENABLED = strict_bool("COOKIE_CONSENT_ENABLED", True)
+COOKIE_CONSENT_VERSION = optional_positive_int("COOKIE_CONSENT_VERSION", 1)
+COOKIE_CONSENT_MAX_AGE_DAYS = optional_positive_int(
+    "COOKIE_CONSENT_MAX_AGE_DAYS",
+    180,
+)
+ANALYTICS_EVENT_DEBUG_ENABLED = strict_bool("ANALYTICS_EVENT_DEBUG_ENABLED")
+SITEMAP_CACHE_SECONDS = 300
 
 if EMAIL_TASK_SCHEDULE_ENABLED:
     CELERY_BEAT_SCHEDULE.update(

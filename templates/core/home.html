@@ -37,7 +37,7 @@
         </div>
         <a class="text-link" href="{% url 'properties:list' %}">{% trans "View all properties" %}</a>
     </div>
-    {% include "properties/_property_cards.html" with properties=featured_properties %}
+    {% include "properties/_property_cards.html" with properties=featured_properties analytics_list_name="featured_properties" %}
 </section>
 
 <section class="section section--ink" aria-labelledby="why-title">

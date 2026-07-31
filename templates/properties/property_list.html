@@ -13,7 +13,7 @@
         <div class="form-field"><label for="filter-ordering">{% trans "Sort by" %}</label><select id="filter-ordering" name="ordering"><option value="featured"{% if active_filters.ordering == "featured" or not active_filters.ordering %} selected{% endif %}>{% trans "Featured first" %}</option><option value="rating"{% if active_filters.ordering == "rating" %} selected{% endif %}>{% trans "Highest rated" %}</option><option value="capacity"{% if active_filters.ordering == "capacity" %} selected{% endif %}>{% trans "Highest capacity" %}</option></select></div>
         <button class="button button--compact" type="submit">{% trans "Apply filters" %}</button>
     </form>
-    {% include "properties/_property_cards.html" with properties=properties %}
+    {% include "properties/_property_cards.html" with properties=properties analytics_list_name="property_results" %}
     {% if is_paginated %}<nav class="pagination" aria-label="{% trans 'Property pages' %}">{% if page_obj.has_previous %}<a href="?{{ pagination_query }}page={{ page_obj.previous_page_number }}" rel="prev">{% trans "Previous" %}</a>{% endif %}<span>{% blocktrans with current=page_obj.number total=paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>{% if page_obj.has_next %}<a href="?{{ pagination_query }}page={{ page_obj.next_page_number }}" rel="next">{% trans "Next" %}</a>{% endif %}</nav>{% endif %}
 </section>
 {% endblock %}

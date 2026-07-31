@@ -29,6 +29,21 @@ def localized_property_name(property_obj: object) -> str:
 
 
 @register.filter
+def localized_property_seo_title(property_obj: object) -> str:
+    if _language() == "en":
+        return (
+            getattr(property_obj, "seo_title_en", "")
+            or getattr(property_obj, "seo_title_ar", "")
+            or localized_property_name(property_obj)
+        )
+    return (
+        getattr(property_obj, "seo_title_ar", "")
+        or getattr(property_obj, "seo_title_en", "")
+        or localized_property_name(property_obj)
+    )
+
+
+@register.filter
 def localized_property_description(property_obj: object) -> str:
     if _language() == "en":
         return (
@@ -40,6 +55,21 @@ def localized_property_description(property_obj: object) -> str:
         getattr(property_obj, "description_ar", "")
         or getattr(property_obj, "description_en", "")
         or getattr(property_obj, "hostaway_description", "")
+    )
+
+
+@register.filter
+def localized_property_meta_description(property_obj: object) -> str:
+    if _language() == "en":
+        return (
+            getattr(property_obj, "seo_description_en", "")
+            or getattr(property_obj, "short_description_en", "")
+            or localized_property_description(property_obj)
+        )
+    return (
+        getattr(property_obj, "seo_description_ar", "")
+        or getattr(property_obj, "short_description_ar", "")
+        or localized_property_description(property_obj)
     )
 
 

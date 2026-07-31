@@ -8,12 +8,21 @@
     <meta name="theme-color" content="#102c2a">
     <meta name="description" content="{% block meta_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">
     <meta name="robots" content="{% block robots %}index,follow{% endblock %}">
+    {% if site_verification_token %}<meta name="google-site-verification" content="{{ site_verification_token }}">{% endif %}
     <link rel="canonical" href="{% block canonical %}{{ canonical_url }}{% endblock %}">
+    {% block hreflang %}
+    <link rel="alternate" hreflang="ar" href="{{ hreflang_ar_url }}">
+    <link rel="alternate" hreflang="en" href="{{ hreflang_en_url }}">
+    <link rel="alternate" hreflang="x-default" href="{{ hreflang_ar_url }}">
+    {% endblock %}
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:site_name" content="Luxury Smart Apartments">
     <meta property="og:title" content="{% block og_title %}{% trans 'Luxury Smart Apartments' %}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">
     <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:locale" content="{% if LANGUAGE_CODE == 'ar' %}ar_SA{% else %}en_US{% endif %}">
+    {% if LANGUAGE_CODE != 'ar' %}<meta property="og:locale:alternate" content="ar_SA">{% endif %}
+    {% if LANGUAGE_CODE != 'en' %}<meta property="og:locale:alternate" content="en_US">{% endif %}
     {% block og_image %}{% endblock %}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{% block twitter_title %}{% trans 'Luxury Smart Apartments' %}{% endblock %}">
@@ -21,11 +30,37 @@
     <title>{% block title %}{% trans "Luxury Smart Apartments" %}{% endblock %}</title>
     <link rel="icon" type="image/jpeg" href="{% static 'images/logo.jpeg' %}">
     <link rel="stylesheet" href="{% static 'css/site.css' %}?v=8">
+    <script src="{% static 'js/consent.js' %}?v=10" defer></script>
+    <script src="{% static 'js/analytics.js' %}?v=10" defer></script>
     <script src="{% static 'js/site.js' %}?v=8" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
 </head>
-<body>
+<body
+    data-google-integrations-enabled="{{ google_config.google_integrations_enabled|yesno:'true,false' }}"
+    data-gtm-enabled="{{ google_config.gtm_enabled|yesno:'true,false' }}"
+    data-gtm-container-id="{{ google_config.gtm_container_id }}"
+    data-ga4-enabled="{{ google_config.ga4_enabled|yesno:'true,false' }}"
+    data-ga4-measurement-id="{{ google_config.ga4_measurement_id }}"
+    data-google-ads-enabled="{{ google_config.google_ads_enabled|yesno:'true,false' }}"
+    data-consent-mode-enabled="{{ google_config.consent_mode_enabled|yesno:'true,false' }}"
+    data-consent-default-analytics="{{ google_config.consent_defaults.analytics_storage }}"
+    data-consent-default-ad="{{ google_config.consent_defaults.ad_storage }}"
+    data-consent-default-ad-user-data="{{ google_config.consent_defaults.ad_user_data }}"
+    data-consent-default-ad-personalization="{{ google_config.consent_defaults.ad_personalization }}"
+    data-cookie-consent-enabled="{{ cookie_consent_enabled|yesno:'true,false' }}"
+    data-cookie-consent-version="{{ cookie_consent_version }}"
+    data-cookie-consent-max-age="{{ cookie_consent_max_age }}"
+    data-cookie-consent-secure="{{ cookie_consent_secure|yesno:'true,false' }}"
+    data-analytics-debug="{{ google_config.debug_enabled|yesno:'true,false' }}"
+    data-ga4-debug="{{ google_config.ga4_debug_mode|yesno:'true,false' }}"
+    data-pending-analytics-event="{{ pending_analytics_event }}"
+>
+    {% if google_config.gtm_enabled and google_config.consent %}
+        {% if google_config.consent.analytics or google_config.consent.marketing %}
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ google_config.gtm_container_id }}" height="0" width="0" class="tracking-noscript" title="Google Tag Manager"></iframe></noscript>
+        {% endif %}
+    {% endif %}
     <a class="skip-link" href="#main-content">{% trans "Skip to main content" %}</a>
     {% include "includes/header.html" %}
     {% include "includes/alerts.html" %}
@@ -33,6 +68,7 @@
         {% block content %}{% endblock %}
     </main>
     {% include "includes/footer.html" %}
+    {% if cookie_consent_enabled %}{% include "includes/cookie_consent.html" %}{% endif %}
     {% block dialogs %}{% endblock %}
 </body>
 </html>

@@ -2,8 +2,9 @@
 {% load i18n presentation %}
 {% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
 {% block content %}
-<section class="section container checkout-shell">
+<section class="section container checkout-shell" data-analytics-event="{% if quote_is_usable %}quote_created{% else %}quote_expired{% endif %}" data-analytics-reason="{% if not quote_is_usable %}expired{% endif %}" data-analytics-currency="{{ quote.currency }}" data-analytics-value="{{ quote.total_price }}" data-analytics-nights="{{ quote.nights }}" data-analytics-guests="{{ quote.guests }}">
     {% include "includes/progress_indicator.html" with step=2 %}
     <div class="section-heading"><p class="eyebrow">{% trans "Temporary live quote" %}</p><h1>{% trans "Review your stay" %}</h1></div>
     <div class="checkout-grid">
@@ -13,7 +14,7 @@
         </article>
         <section class="form-card booking-guest-form" aria-labelledby="guest-details-title">
             <p class="eyebrow">{% trans "Step two" %}</p><h2 id="guest-details-title">{% trans "Guest details" %}</h2><p>{% trans "Your details remain local and are not sent to Hostaway at this stage." %}</p>
-            {% if quote_is_usable %}<form method="post" action="{% url 'reservations:guest_details' quote_reference %}" data-submit-once novalidate>{% csrf_token %}{{ guest_form.non_field_errors }}{% for field in guest_form %}<div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}">{% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}<button class="button" type="submit">{% trans "Review booking request" %}</button></form>
+            {% if quote_is_usable %}<form method="post" action="{% url 'reservations:guest_details' quote_reference %}" data-submit-once data-analytics-event="begin_checkout" data-analytics-currency="{{ quote.currency }}" data-analytics-value="{{ quote.total_price }}" data-analytics-nights="{{ quote.nights }}" data-analytics-guests="{{ quote.guests }}" novalidate>{% csrf_token %}{{ guest_form.non_field_errors }}{% for field in guest_form %}<div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}">{% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}<button class="button" type="submit">{% trans "Review booking request" %}</button></form>
             {% else %}<div class="availability-message availability-message--error"><p>{% trans "This quote is invalid or expired. Please check availability again." %}</p></div>{% endif %}
         </section>
     </div>

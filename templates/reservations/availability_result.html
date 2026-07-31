@@ -2,8 +2,9 @@
 {% load i18n presentation %}
 {% block title %}{% trans "Availability result" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
 {% block content %}
-<section class="section container narrow">
+<section class="section container narrow"{% if availability %} data-analytics-event="availability_result" data-analytics-available="{{ availability.is_available|yesno:'true,false' }}" data-analytics-reason="{{ availability.reason_code }}" data-analytics-nights="{{ availability.nights }}"{% endif %}>
     {% include "includes/progress_indicator.html" with step=1 %}
     <div class="section-heading"><p class="eyebrow">{% trans "Live check" %}</p><h1>{% trans "Availability result" %}</h1></div>
     {% if rate_limited %}<div class="availability-message availability-message--error" role="alert">{{ user_message|default:_("Too many checks. Please wait and try again.") }}</div>

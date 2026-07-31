@@ -1,6 +1,13 @@
 {% load i18n presentation %}
 {% with property_name=property|localized_property_name %}
-<article class="property-card">
+<article
+    class="property-card"
+    data-analytics-item
+    data-item-id="{{ property.slug }}"
+    data-item-name="{{ property_name }}"
+    data-item-city="{{ property|localized_city }}"
+    data-item-type="{{ property.room_type }}"
+>
     <a class="property-card__media" href="{{ property.get_absolute_url }}">
         {% with cover=property.cover_image %}
             {% if cover %}

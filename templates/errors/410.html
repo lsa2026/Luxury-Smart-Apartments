@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "This page is no longer available" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="error-page container">
+    <p class="eyebrow">410</p>
+    <h1>{% trans "This page is no longer available" %}</h1>
+    <p>{% trans "The requested page was intentionally removed and has no replacement." %}</p>
+    <a class="button" href="{% url 'core:home' %}">{% trans "Return home" %}</a>
+</section>
+{% endblock %}

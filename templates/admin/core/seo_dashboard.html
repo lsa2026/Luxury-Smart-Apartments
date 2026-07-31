@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  <table>
+    <tbody>
+      <tr><th>{% trans "Missing Arabic SEO titles" %}</th><td>{{ seo.missing_seo_ar }}</td></tr>
+      <tr><th>{% trans "Missing English SEO titles" %}</th><td>{{ seo.missing_seo_en }}</td></tr>
+      <tr><th>{% trans "Missing descriptions" %}</th><td>{{ seo.missing_description }}</td></tr>
+      <tr><th>{% trans "Properties without images" %}</th><td>{{ seo.missing_image }}</td></tr>
+      <tr><th>{% trans "Images missing alternative text" %}</th><td>{{ seo.missing_alt }}</td></tr>
+      <tr><th>{% trans "Structured data ready" %}</th><td>{{ seo.structured_ready }}</td></tr>
+      <tr><th>{% trans "Redirect loops" %}</th><td>{{ seo.redirect_loops }}</td></tr>
+      <tr><th>{% trans "Broken redirect destinations" %}</th><td>{{ seo.broken_redirect_destinations }}</td></tr>
+      <tr><th>{% trans "Sitemap URLs" %}</th><td>{{ seo.sitemap_urls }}</td></tr>
+      <tr><th>{% trans "Missing language content" %}</th><td>{{ seo.missing_languages }}</td></tr>
+    </tbody>
+  </table>
+  <p>{% trans "This dashboard reads PostgreSQL only and never contacts Google or Hostaway." %}</p>
+</div>
+{% endblock %}
