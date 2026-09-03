@@ -1,0 +1,162 @@
+# Render Blueprint for Luxury Smart Apartments.
+#
+# Secrets are declared with `sync: false`: Render creates the variable but never
+# stores a value from this file, so live gateway and channel-manager credentials
+# are entered once in the dashboard and never committed to git.
+
+databases:
+  - name: lsa-postgres
+    databaseName: luxury_smart_apartments
+    user: lsa
+    plan: basic-256mb
+    region: frankfurt
+    postgresMajorVersion: "17"
+    ipAllowList: []          # private network only; no public Postgres access
+
+services:
+  # Shared cache and Celery broker. Production settings require a shared cache:
+  # the Hostaway token provider refuses to run on per-process memory.
+  - type: keyvalue
+    name: lsa-cache
+    plan: starter
+    region: frankfurt
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+
+  - type: web
+    name: luxury-smart-apartments
+    runtime: python
+    plan: starter
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health/live/
+    buildCommand: ./build.sh
+    startCommand: >-
+      gunicorn config.wsgi:application
+      --bind 0.0.0.0:$PORT
+      --workers 3
+      --threads 2
+      --timeout 60
+      --graceful-timeout 30
+      --max-requests 1000
+      --max-requests-jitter 100
+      --access-logfile -
+      --error-logfile -
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # DJANGO_ALLOWED_HOSTS stays empty until a custom domain is attached;
+      # production settings append RENDER_EXTERNAL_HOSTNAME automatically.
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lsa-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lsa-cache
+          property: connectionString
+      - key: CACHE_URL
+        fromService:
+          type: keyvalue
+          name: lsa-cache
+          property: connectionString
+
+      # --- HyperPay -----------------------------------------------------
+      # Disabled on first deploy. Turning HYPERPAY_ENVIRONMENT to production
+      # forces HOSTAWAY_LIVE_BOOKING_ENABLED as well (checks payments.E107),
+      # so both are flipped together in one deliberate change.
+      - key: HYPERPAY_ENABLED
+        value: "False"
+      - key: HYPERPAY_ENVIRONMENT
+        value: test
+      - key: HYPERPAY_BASE_URL
+        value: https://eu-test.oppwa.com/
+      - key: HYPERPAY_ENTITY_ID
+        sync: false
+      - key: HYPERPAY_ACCESS_TOKEN
+        sync: false
+      - key: HYPERPAY_CURRENCY
+        value: SAR
+      - key: HYPERPAY_PAYMENT_TYPE
+        value: DB
+      - key: HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED
+        value: "True"
+      - key: PAYMENT_SANDBOX_ENABLED
+        value: "False"
+
+      # --- Hostaway -----------------------------------------------------
+      - key: HOSTAWAY_BASE_URL
+        value: https://api.hostaway.com/v1
+      - key: HOSTAWAY_ACCOUNT_ID
+        sync: false
+      - key: HOSTAWAY_API_SECRET
+        sync: false
+      - key: HOSTAWAY_ACCESS_TOKEN
+        sync: false
+      - key: HOSTAWAY_LIVE_BOOKING_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_BASIC_AUTH_USERNAME
+        sync: false
+      - key: HOSTAWAY_WEBHOOK_BASIC_AUTH_PASSWORD
+        sync: false
+
+      # --- Email --------------------------------------------------------
+      # Production settings reject the console backend once delivery is on,
+      # so delivery stays off until real SMTP credentials are entered.
+      - key: EMAIL_DELIVERY_ENABLED
+        value: "False"
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_USE_SSL
+        value: "False"
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: OPERATIONS_EMAIL
+        sync: false
+      - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "False"
+
+      # --- Site ---------------------------------------------------------
+      - key: SITE_BASE_URL
+        sync: false
+      - key: SITE_CANONICAL_URL
+        sync: false
+      - key: EMAIL_BRAND_NAME
+        value: Luxury Smart Apartments
+      - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "False"

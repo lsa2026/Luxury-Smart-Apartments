@@ -1,13 +1,38 @@
 """Hardened production settings."""
 
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
 
 DEBUG = False
 
+# Render injects the assigned public hostname at runtime. Trusting it keeps the
+# service reachable on its own domain without hardcoding a generated name, while
+# any custom domain still has to be listed explicitly in DJANGO_ALLOWED_HOSTS.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:  # noqa: F405
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)  # noqa: F405
+
 if not ALLOWED_HOSTS:  # noqa: F405
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS is required in production.")
+
+# Django validates the Origin header on unsafe requests behind TLS termination,
+# so every allowed host needs a matching https origin.
+CSRF_TRUSTED_ORIGINS = [
+    f"https://*{host}" if host.startswith(".") else f"https://{host}"
+    for host in ALLOWED_HOSTS  # noqa: F405
+    if host != "*"
+]
+
+# Hashed, compressed static files served by WhiteNoise from the web process.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
