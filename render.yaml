@@ -152,10 +152,13 @@ services:
         value: "False"
 
       # --- Site ---------------------------------------------------------
+      # Public origin of the service. Not a secret, so it lives in the blueprint
+      # and stays correct on every rebuild. Replace both when a custom domain
+      # is attached, and add that domain to DJANGO_ALLOWED_HOSTS at the same time.
       - key: SITE_BASE_URL
-        sync: false
+        value: https://luxury-smart-apartments.onrender.com
       - key: SITE_CANONICAL_URL
-        sync: false
+        value: https://luxury-smart-apartments.onrender.com
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       - key: CELERY_SYNC_DISPATCH_ENABLED
