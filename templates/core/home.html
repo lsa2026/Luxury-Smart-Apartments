@@ -90,9 +90,11 @@
         <div class="destination-grid">
             {% for city in cities %}
             <a class="destination-card destination-card--{% if city.city == 'Riyadh' %}riyadh{% else %}marrakech{% endif %}" href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
-                {# A photograph of a real unit whenever one is nominated in the
-                   admin; the stock image is only the fallback for a city that
-                   has not been curated yet. #}
+                {% comment %}
+                    A photograph of a real unit whenever one is nominated in the
+                    admin; the stock image is only the fallback for a city that
+                    has not been curated yet.
+                {% endcomment %}
                 <img
                     src="{% if city.hero %}{{ city.hero.display_url }}{% elif city.city == 'Riyadh' %}https://images.unsplash.com/photo-1674386491555-5b92161e4d04?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% else %}https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% endif %}"
                     alt="{% if city.hero %}{% with city_label=city|localized_city %}{{ city.hero|localized_image_alt|default:city_label }}{% endwith %}{% elif city.city == 'Riyadh' %}{% trans 'Aerial view of Riyadh city' %}{% else %}{% trans 'Riad courtyard in Marrakech' %}{% endif %}"

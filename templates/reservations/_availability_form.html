@@ -85,13 +85,11 @@
         <div class="luxury-calendar__months" data-calendar-months></div>
 
         <div class="luxury-calendar__footer">
-            {# The hint row is already a flex line, so the reset button sits
-               beside it without new layout rules. #}
-            <p>
-                <span aria-hidden="true">◆</span>{% trans "Your arrival day stays highlighted while you choose departure." %}
-                <button class="button button--ghost button--small" type="button" data-calendar-clear disabled>{% trans "Clear dates" %}</button>
-            </p>
-            <button class="button button--gold" type="button" data-calendar-confirm disabled>{% trans "Confirm dates" %}</button>
+            <p><span aria-hidden="true">◆</span>{% trans "Your arrival day stays highlighted while you choose departure." %}</p>
+            <div class="luxury-calendar__actions">
+                <button class="button button--outline-ink button--small" type="button" data-calendar-clear disabled>{% trans "Clear dates" %}</button>
+                <button class="button button--gold" type="button" data-calendar-confirm disabled>{% trans "Confirm dates" %}</button>
+            </div>
         </div>
     </dialog>
 </form>

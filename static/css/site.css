@@ -10350,6 +10350,10 @@ body.calendar-open {
     display: flex;
     align-items: center;
     gap: 0.55rem;
+    /* Yields space to the buttons instead of forcing them to shrink, and
+       min-width lets it do so without breaking one word per line. */
+    flex: 1 1 auto;
+    min-width: 0;
     margin: 0;
     color: var(--color-muted);
     font-size: 0.75rem;
@@ -10359,7 +10363,16 @@ body.calendar-open {
     color: #bd8732;
 }
 
-.luxury-calendar__footer .button {
+.luxury-calendar__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+/* Only the primary action reserves width; the reset button fits its label so
+   the pair never crowds the hint out of the row. */
+.luxury-calendar__footer [data-calendar-confirm] {
     min-width: 10rem;
 }
 
@@ -10606,8 +10619,18 @@ body.calendar-open {
         padding: 0.85rem 1rem 1rem;
     }
 
-    .luxury-calendar__footer .button {
-        width: 100%;
+    /* The header already narrates the current step, so the long hint is the
+       first thing to drop when the sheet is this narrow. */
+    .luxury-calendar__footer p {
+        display: none;
+    }
+
+    /* Side by side and equal, rather than two stacked full-width buttons
+       pushing the confirm action below the fold. */
+    .luxury-calendar__actions > .button {
+        flex: 1 1 0;
+        width: auto;
+        min-width: 0;
     }
 }
 
