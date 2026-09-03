@@ -52,10 +52,11 @@ services:
         value: "False"
       - key: DJANGO_SECRET_KEY
         generateValue: true
-      # DJANGO_ALLOWED_HOSTS stays empty until a custom domain is attached;
-      # production settings append RENDER_EXTERNAL_HOSTNAME automatically.
+      # Explicit rather than blank: worker and beat never receive
+      # RENDER_EXTERNAL_HOSTNAME, and production settings refuse an empty host
+      # list. Append any custom domain here, comma separated.
       - key: DJANGO_ALLOWED_HOSTS
-        sync: false
+        value: luxury-smart-apartments.onrender.com
 
       - key: DATABASE_URL
         fromDatabase:
@@ -73,15 +74,18 @@ services:
           property: connectionString
 
       # --- HyperPay -----------------------------------------------------
-      # Disabled on first deploy. Turning HYPERPAY_ENVIRONMENT to production
-      # forces HOSTAWAY_LIVE_BOOKING_ENABLED as well (checks payments.E107),
-      # so both are flipped together in one deliberate change.
+      # Pointed at the production endpoint, but still switched off. Every
+      # payments check is skipped while HYPERPAY_ENABLED is False, so this
+      # staging step is inert. Enabling it and HOSTAWAY_LIVE_BOOKING_ENABLED
+      # is one deliberate change, made only after
+      # `manage.py verify_hyperpay_connectivity` proves the token is a
+      # production token: check payments.E107 rejects one without the other.
       - key: HYPERPAY_ENABLED
         value: "False"
       - key: HYPERPAY_ENVIRONMENT
-        value: test
+        value: production
       - key: HYPERPAY_BASE_URL
-        value: https://eu-test.oppwa.com/
+        value: https://eu-prod.oppwa.com/
       - key: HYPERPAY_ENTITY_ID
         sync: false
       - key: HYPERPAY_ACCESS_TOKEN
@@ -112,8 +116,19 @@ services:
         value: "False"
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
         value: "False"
+      # Scheduled synchronisation. These intervals populate CELERY_BEAT_SCHEDULE;
+      # the lsa-beat service dispatches them and lsa-worker runs them. Each task
+      # takes a Redis lock, so a slow run is skipped rather than overlapped.
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
-        value: "False"
+        value: "True"
+      - key: HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES
+        value: "5"
+      - key: HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES
+        value: "15"
+      - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
+        value: "1"
+      - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
+        value: "5"
       - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
         value: "False"
       - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
@@ -161,5 +176,149 @@ services:
         value: https://luxury-smart-apartments.onrender.com
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
+      # Lets the admin "sync now" actions hand work to the worker instead of
+      # blocking a request thread. Requires lsa-worker to be running.
       - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "True"
+
+  # Executes the queued tasks. Kept separate from the scheduler so it can be
+  # scaled up later without ever running two schedulers.
+  - type: worker
+    name: lsa-worker
+    runtime: python
+    plan: starter
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: ./build-worker.sh
+    startCommand: >-
+      celery -A config worker
+      --loglevel info
+      --concurrency 2
+      --max-tasks-per-child 100
+      --without-gossip
+      --without-mingle
+    envVars: &celery_env
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
         value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: luxury-smart-apartments.onrender.com
+      # Copied from the web service so all three processes share one signing key
+      # and one set of provider credentials, with no second place to update.
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: DJANGO_SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lsa-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lsa-cache
+          property: connectionString
+      - key: CACHE_URL
+        fromService:
+          type: keyvalue
+          name: lsa-cache
+          property: connectionString
+
+      - key: HOSTAWAY_BASE_URL
+        value: https://api.hostaway.com/v1
+      - key: HOSTAWAY_ACCOUNT_ID
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_ACCOUNT_ID
+      - key: HOSTAWAY_API_SECRET
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_API_SECRET
+      - key: HOSTAWAY_ACCESS_TOKEN
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_ACCESS_TOKEN
+      - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "True"
+      - key: HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES
+        value: "5"
+      - key: HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES
+        value: "15"
+      - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
+        value: "1"
+      - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
+        value: "5"
+      - key: HOSTAWAY_LIVE_BOOKING_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
+        value: "False"
+
+      - key: HYPERPAY_ENABLED
+        value: "False"
+      - key: HYPERPAY_ENVIRONMENT
+        value: production
+      - key: HYPERPAY_BASE_URL
+        value: https://eu-prod.oppwa.com/
+      - key: HYPERPAY_ENTITY_ID
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HYPERPAY_ENTITY_ID
+      - key: HYPERPAY_ACCESS_TOKEN
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HYPERPAY_ACCESS_TOKEN
+      - key: HYPERPAY_CURRENCY
+        value: SAR
+      - key: HYPERPAY_PAYMENT_TYPE
+        value: DB
+      - key: HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED
+        value: "True"
+      - key: PAYMENT_SANDBOX_ENABLED
+        value: "False"
+
+      - key: EMAIL_DELIVERY_ENABLED
+        value: "False"
+      - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "False"
+      - key: EMAIL_BRAND_NAME
+        value: Luxury Smart Apartments
+      - key: SITE_BASE_URL
+        value: https://luxury-smart-apartments.onrender.com
+      - key: SITE_CANONICAL_URL
+        value: https://luxury-smart-apartments.onrender.com
+      - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "True"
+
+  # The single scheduler. Exactly one instance must ever run: a second beat
+  # would dispatch every scheduled task twice.
+  - type: worker
+    name: lsa-beat
+    runtime: python
+    plan: starter
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: ./build-worker.sh
+    startCommand: >-
+      celery -A config beat
+      --loglevel info
+      --schedule /tmp/celerybeat-schedule
+    envVars: *celery_env
