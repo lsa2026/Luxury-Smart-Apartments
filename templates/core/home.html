@@ -3,118 +3,167 @@
 
 {% block title %}{% trans "Luxury Smart Apartments | Smart stays in Riyadh and Marrakech" %}{% endblock %}
 {% block meta_description %}{% trans "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability." %}{% endblock %}
+{% block og_image %}<meta property="og:image" content="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600&amp;q=85">{% endblock %}
 
 {% block content %}
-<section class="hero hero--home"{% if hero_property and hero_property.cover_image %} data-has-image{% endif %}>
-    {% if hero_property and hero_property.cover_image %}
+<section class="travel-hero" aria-labelledby="travel-hero-title">
     <img
-        class="hero__image"
-        src="{{ hero_property.cover_image.display_url }}"
-        alt=""
-        width="1920"
-        height="1080"
+        class="travel-hero__backdrop"
+        src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400&amp;q=88"
+        alt="{% trans 'Riyadh skyline and palm trees' %}"
+        width="2400"
+        height="1500"
         fetchpriority="high"
         decoding="async"
     >
-    {% endif %}
-    <div class="hero__overlay" aria-hidden="true"></div>
-    <div class="hero__architecture" aria-hidden="true">
-        <span></span><span></span><span></span><span></span>
+    <div class="travel-hero__veil" aria-hidden="true"></div>
+    <div class="travel-hero__grain" aria-hidden="true"></div>
+
+    <div class="container travel-hero__inner">
+        <div class="travel-hero__copy">
+            <div class="travel-hero__locations">
+                <span>{% trans "Riyadh" %}</span>
+                <i aria-hidden="true"></i>
+                <span>{% trans "Marrakech" %}</span>
+            </div>
+            <p class="eyebrow">{% trans "Daily and monthly smart stays" %}</p>
+            <h1 id="travel-hero-title">{% trans "Your stay should feel like part of the journey." %}</h1>
+            <p class="travel-hero__lead">{% trans "Handpicked homes in Riyadh and Marrakech, made for slow mornings, memorable nights, and effortless booking." %}</p>
+            <div class="travel-hero__actions">
+                <a class="button button--gold" href="#property-search">{% trans "Find your stay" %}</a>
+                <a class="travel-hero__link" href="#destinations">{% trans "Explore our destinations" %}<span aria-hidden="true">↙</span></a>
+            </div>
+        </div>
+
+        <a class="travel-hero__postcard" href="{% url 'properties:list' %}?city=Marrakesh" aria-label="{% trans 'Explore stays in Marrakech' %}">
+            <img
+                src="https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=900&amp;q=88"
+                alt="{% trans 'Traditional riad courtyard with a pool in Marrakech' %}"
+                width="900"
+                height="1100"
+                decoding="async"
+            >
+            <span class="travel-hero__postcard-label">
+                <small>{% trans "A different rhythm" %}</small>
+                <strong>{% trans "Marrakech" %}</strong>
+                <i aria-hidden="true">↗</i>
+            </span>
+        </a>
     </div>
-    <div class="container hero__content">
-        <div class="stay-mode-label" aria-label="{% trans 'Daily and monthly smart stays' %}">
-            <span>{% trans "Daily" %}</span>
-            <i aria-hidden="true"></i>
-            <span>{% trans "Monthly" %}</span>
+
+    <div id="property-search" class="container travel-search-wrap">
+        <div class="travel-search__title">
+            <span aria-hidden="true">⌕</span>
+            <div><strong>{% trans "Where will you wake up next?" %}</strong><small>{% trans "Book your escape in a few simple steps" %}</small></div>
         </div>
-        <p class="eyebrow">{% trans "Daily and monthly smart stays" %}</p>
-        <h1>{% trans "A calmer way to stay, designed around you." %}</h1>
-        <p>{% trans "Discover considered homes in Riyadh and Marrakech with live availability and transparent stay pricing." %}</p>
-        <div id="property-search" class="hero-search">
-            <h2 class="sr-only">{% trans "Search availability" %}</h2>
-            {% include "includes/search_form.html" %}
-        </div>
+        <div class="travel-search__form">{% include "reservations/_availability_form.html" %}</div>
     </div>
 </section>
 
-<div class="experience-bar" aria-label="{% trans 'Why stay with us' %}">
+<div class="experience-bar travel-proof" aria-label="{% trans 'Why stay with us' %}">
     <div class="container experience-bar__inner">
+        <div><strong>02</strong><span>{% trans "Exceptional destinations" %}</span></div>
         <div><strong>24/7</strong><span>{% trans "Guest support" %}</span></div>
-        <div><strong>01</strong><span>{% trans "Live price checks" %}</span></div>
-        <div><strong>02</strong><span>{% trans "Flexible stay lengths" %}</span></div>
-        <div><strong>✓</strong><span>{% trans "Smart living" %}</span></div>
+        <div><strong>100%</strong><span>{% trans "Live price checks" %}</span></div>
+        <div><strong>∞</strong><span>{% trans "Memories waiting" %}</span></div>
     </div>
 </div>
 
-<section class="section container" aria-labelledby="featured-properties-title">
+<section class="section container travel-featured" aria-labelledby="featured-properties-title">
     <div class="section-heading section-heading--split">
         <div>
             <p class="eyebrow">{% trans "Selected stays" %}</p>
-            <h2 id="featured-properties-title">{% trans "Find your next smart stay" %}</h2>
+            <h2 id="featured-properties-title">{% trans "Spaces worth travelling for" %}</h2>
+            <p class="section-heading__lead">{% trans "A considered collection for weekends away, family holidays, and longer stays." %}</p>
         </div>
-        <a class="text-link" href="{% url 'properties:list' %}">{% trans "View all properties" %}</a>
+        <a class="text-link text-link--arrow" href="{% url 'properties:list' %}">{% trans "View all properties" %}<span aria-hidden="true">←</span></a>
     </div>
     {% include "properties/_property_cards.html" with properties=featured_properties analytics_list_name="featured_properties" %}
 </section>
 
-<section class="section section--ink" aria-labelledby="why-title">
+<section class="travel-destinations" id="destinations" aria-labelledby="cities-title">
     <div class="container">
-        <div class="section-heading">
-            <p class="eyebrow">{% trans "Why stay with us" %}</p>
-            <h2 id="why-title">{% trans "Comfort, clarity, and thoughtful technology" %}</h2>
+        <div class="section-heading travel-destinations__heading">
+            <p class="eyebrow">{% trans "Only two cities. Chosen with care." %}</p>
+            <h2 id="cities-title">{% trans "Two moods, one beautiful stay" %}</h2>
         </div>
-        <div class="value-grid">
-            <article><span aria-hidden="true">01</span><h3>{% trans "Well-positioned homes" %}</h3><p>{% trans "Browse current stays across Riyadh and Marrakech." %}</p></article>
-            <article><span aria-hidden="true">02</span><h3>{% trans "Smart living" %}</h3><p>{% trans "Properties selected for a modern, practical stay." %}</p></article>
-            <article><span aria-hidden="true">03</span><h3>{% trans "Guest support" %}</h3><p>{% trans "A clear route to assistance before and during your stay." %}</p></article>
-            <article><span aria-hidden="true">04</span><h3>{% trans "Live price checks" %}</h3><p>{% trans "Pricing and availability come directly from the operating system." %}</p></article>
-            <article><span aria-hidden="true">05</span><h3>{% trans "Flexible stay lengths" %}</h3><p>{% trans "Explore both daily and monthly accommodation." %}</p></article>
-            <article><span aria-hidden="true">06</span><h3>{% trans "Family-ready options" %}</h3><p>{% trans "Filter homes by capacity, bedrooms, and beds." %}</p></article>
+        <div class="destination-grid">
+            {% for city in cities %}
+            <a class="destination-card destination-card--{% if city.city == 'Riyadh' %}riyadh{% else %}marrakech{% endif %}" href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
+                <img
+                    src="{% if city.city == 'Riyadh' %}https://images.unsplash.com/photo-1674386491555-5b92161e4d04?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% else %}https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% endif %}"
+                    alt="{% if city.city == 'Riyadh' %}{% trans 'Aerial view of Riyadh city' %}{% else %}{% trans 'Riad courtyard in Marrakech' %}{% endif %}"
+                    width="1600"
+                    height="1200"
+                    loading="lazy"
+                    decoding="async"
+                >
+                <span class="destination-card__shade" aria-hidden="true"></span>
+                <span class="destination-card__top"><b>0{{ forloop.counter }}</b><i>{% trans "Destination" %}</i></span>
+                <span class="destination-card__content">
+                    <small>{% if city.city == 'Riyadh' %}{% trans "Modern energy · Urban escapes" %}{% else %}{% trans "Warm light · Timeless character" %}{% endif %}</small>
+                    <strong>{{ city|localized_city }}</strong>
+                    <span>{% trans "Explore properties" %}<i aria-hidden="true">←</i></span>
+                </span>
+            </a>
+            {% endfor %}
         </div>
     </div>
 </section>
 
-<section class="section container" aria-labelledby="cities-title">
-    <div class="section-heading">
-        <p class="eyebrow">{% trans "Destinations" %}</p>
-        <h2 id="cities-title">{% trans "Two cities, one considered standard" %}</h2>
-    </div>
-    <div class="city-grid">
-        {% for city in cities %}
-        <a class="city-card" href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
-            <span class="city-card__index">0{{ forloop.counter }}</span>
-            <strong>{{ city|localized_city }}</strong>
-            <span>{% trans "Explore properties" %}</span>
-        </a>
-        {% endfor %}
+<section class="section travel-story" aria-labelledby="why-title">
+    <div class="container travel-story__grid">
+        <div class="travel-story__media">
+            <img src="https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1400&amp;q=86" alt="{% trans 'Elegant Moroccan courtyard in Marrakech' %}" width="1400" height="1700" loading="lazy" decoding="async">
+            <span><b>{% trans "Stay beautifully" %}</b><small>{% trans "From arrival to checkout" %}</small></span>
+        </div>
+        <div class="travel-story__content">
+            <p class="eyebrow">{% trans "A stay that gives something back" %}</p>
+            <h2 id="why-title">{% trans "More than a place to sleep" %}</h2>
+            <p class="travel-story__intro">{% trans "Every detail is considered so you can spend less time planning and more time living the trip." %}</p>
+            <div class="travel-story__points">
+                <article><span>01</span><div><h3>{% trans "A home with a sense of place" %}</h3><p>{% trans "Modern Riyadh living or the warm character of Marrakech—your stay belongs to its city." %}</p></div></article>
+                <article><span>02</span><div><h3>{% trans "Clarity before you book" %}</h3><p>{% trans "See live availability and transparent stay pricing before you continue." %}</p></div></article>
+                <article><span>03</span><div><h3>{% trans "Support that travels with you" %}</h3><p>{% trans "A clear route to assistance before arrival and throughout your stay." %}</p></div></article>
+            </div>
+            <a class="button button--outline-ink" href="{% url 'properties:list' %}">{% trans "Discover all stays" %}</a>
+        </div>
     </div>
 </section>
 
-<section class="section section--soft" aria-labelledby="featured-reviews-title">
+{% if featured_reviews %}
+<section class="section section--soft travel-reviews" aria-labelledby="featured-reviews-title">
     <div class="container">
         <div class="section-heading section-heading--split">
             <div>
                 <p class="eyebrow">{% trans "Verified guest experiences" %}</p>
-                <h2 id="featured-reviews-title">{% trans "What guests remember" %}</h2>
+                <h2 id="featured-reviews-title">{% trans "Stories brought home" %}</h2>
             </div>
-            <a class="text-link" href="{% url 'reviews:list' %}">{% trans "Read all reviews" %}</a>
+            <a class="text-link text-link--arrow" href="{% url 'reviews:list' %}">{% trans "Read all reviews" %}<span aria-hidden="true">←</span></a>
         </div>
         {% include "reviews/_review_cards.html" with reviews=featured_reviews %}
     </div>
 </section>
+{% endif %}
 
-<section class="section container" id="booking-management">
-    <div class="cta-panel">
+<section class="section container travel-final" id="booking-management">
+    <div class="travel-final__panel">
+        <img src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2000&amp;q=84" alt="" width="2000" height="900" loading="lazy" decoding="async">
+        <span class="travel-final__shade" aria-hidden="true"></span>
         <div>
-            <p class="eyebrow">{% trans "Ready when you are" %}</p>
-            <h2>{% trans "Start with the dates that work for you." %}</h2>
-            <p>{% trans "Your price and availability will be checked live before you continue." %}</p>
+            <p class="eyebrow">{% trans "Your next story starts here" %}</p>
+            <h2>{% trans "Riyadh or Marrakech?" %}</h2>
+            <p>{% trans "Choose your dates. We will take care of the rest." %}</p>
+            <a class="button button--gold" href="#property-search">{% trans "Check availability" %}</a>
         </div>
-        <a class="button" href="#property-search">{% trans "Check availability" %}</a>
     </div>
-    <div class="management-note">
-        <h2>{% trans "Manage an existing booking" %}</h2>
-        <p>{% trans "Use the secure management link supplied with your local booking request. Live booking changes remain under review." %}</p>
+    <div class="management-note management-note--portal">
+        <div>
+            <p class="eyebrow">{% trans "Already booked?" %}</p>
+            <h2>{% trans "Manage an existing booking" %}</h2>
+            <p>{% trans "Use your booking number and booking email to view your stay and send change requests." %}</p>
+        </div>
+        {% include "reservations/_reservation_access_form.html" %}
     </div>
 </section>
 {% endblock %}

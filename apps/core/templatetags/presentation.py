@@ -4,11 +4,36 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django import template
 from django.utils import translation
-from django.utils.html import format_html
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_noop
 
 register = template.Library()
+
+_ZERO_DECIMAL_CURRENCIES = frozenset(
+    {
+        "BIF",
+        "CLP",
+        "DJF",
+        "GNF",
+        "ISK",
+        "JPY",
+        "KMF",
+        "KRW",
+        "PYG",
+        "RWF",
+        "UGX",
+        "VND",
+        "VUV",
+        "XAF",
+        "XOF",
+        "XPF",
+    }
+)
+_THREE_DECIMAL_CURRENCIES = frozenset(
+    {"BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"}
+)
+_ARABIC_DIGITS = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
 
 
 def _language() -> str:
@@ -114,6 +139,50 @@ register.filter("localized_page_body", localized_body)
 
 
 @register.filter
+def structured_text(value: object) -> str:
+    """Render a small, safe subset of Markdown used by editable content pages."""
+    lines = str(value or "").replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    output: list[str] = []
+    paragraph: list[str] = []
+    list_items: list[str] = []
+
+    def flush_paragraph() -> None:
+        if paragraph:
+            output.append(f"<p>{'<br>'.join(escape(line) for line in paragraph)}</p>")
+            paragraph.clear()
+
+    def flush_list() -> None:
+        if list_items:
+            items = "".join(f"<li>{escape(item)}</li>" for item in list_items)
+            output.append(f"<ul>{items}</ul>")
+            list_items.clear()
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line:
+            flush_paragraph()
+            flush_list()
+        elif line.startswith("### "):
+            flush_paragraph()
+            flush_list()
+            output.append(f"<h3>{escape(line[4:])}</h3>")
+        elif line.startswith("## "):
+            flush_paragraph()
+            flush_list()
+            output.append(f"<h2>{escape(line[3:])}</h2>")
+        elif line.startswith("- "):
+            flush_paragraph()
+            list_items.append(line[2:].strip())
+        else:
+            flush_list()
+            paragraph.append(line)
+
+    flush_paragraph()
+    flush_list()
+    return mark_safe("".join(output))
+
+
+@register.filter
 def localized_question(obj: object) -> str:
     return _localized_value(obj, "question")
 
@@ -162,16 +231,45 @@ def localized_review_text(review: object) -> str:
 def localized_price_component(title: object) -> str:
     labels = {
         "سعر الإقامة": gettext_noop("Accommodation price"),
+        "Accommodation price": gettext_noop("Accommodation price"),
+        "Base rate": gettext_noop("Base rate"),
         "رسوم التنظيف": gettext_noop("Cleaning fee"),
+        "Cleaning fee": gettext_noop("Cleaning fee"),
+        "Service fee": gettext_noop("Service fee"),
         "ضريبة القيمة المضافة": gettext_noop("VAT"),
+        "VAT": gettext_noop("VAT"),
         "الضريبة": gettext_noop("Tax"),
+        "Tax": gettext_noop("Tax"),
         "ضريبة المدينة": gettext_noop("City tax"),
+        "City tax": gettext_noop("City tax"),
         "تأمين الأضرار": gettext_noop("Damage deposit"),
+        "Damage deposit": gettext_noop("Damage deposit"),
         "رسوم ضيف إضافي": gettext_noop("Extra guest fee"),
+        "Extra guest fee": gettext_noop("Extra guest fee"),
+        "Pet fee": gettext_noop("Pet fee"),
+        "Resort fee": gettext_noop("Resort fee"),
+        "Weekly discount": gettext_noop("Weekly discount"),
+        "Monthly discount": gettext_noop("Monthly discount"),
+        "Coupon discount": gettext_noop("Coupon discount"),
+        "Discount": gettext_noop("Discount"),
         "بند سعر": gettext_noop("Price item"),
+        "Price item": gettext_noop("Price item"),
     }
     source = str(title or "")
     return translation.gettext(labels.get(source, source))
+
+
+@register.filter
+def price_component_amount(component: object) -> object:
+    """Prefer the authoritative component total, with legacy quote compatibility."""
+    if isinstance(component, Mapping):
+        if "total" in component:
+            return component["total"]
+        return component.get("value", "")
+    total = getattr(component, "total", None)
+    if total is not None:
+        return total
+    return getattr(component, "value", "")
 
 
 @register.filter
@@ -187,6 +285,79 @@ def localized_room_type(value: object) -> str:
 
 
 @register.filter
+def localized_reservation_status(value: object) -> str:
+    labels = {
+        "awaiting_payment": gettext_noop("Awaiting payment"),
+        "ready_for_hostaway": gettext_noop("Preparing confirmation"),
+        "create_pending": gettext_noop("Preparing confirmation"),
+        "creating": gettext_noop("Confirming booking"),
+        "confirmed": gettext_noop("Confirmed"),
+        "create_failed": gettext_noop("Needs assistance"),
+        "create_unknown": gettext_noop("Under review"),
+        "sync_pending": gettext_noop("Updating"),
+        "modified": gettext_noop("Updated"),
+        "cancelled": gettext_noop("Cancelled"),
+        "unknown": gettext_noop("Under review"),
+    }
+    source = str(value or "")
+    return translation.gettext(labels.get(source, gettext_noop("Under review")))
+
+
+@register.filter
+def localized_payment_status(value: object) -> str:
+    labels = {
+        "": gettext_noop("Not paid"),
+        "created": gettext_noop("Payment pending"),
+        "pending": gettext_noop("Payment pending"),
+        "paid": gettext_noop("Payment verified"),
+        "succeeded": gettext_noop("Payment verified"),
+        "sandbox_paid": gettext_noop("Test payment completed"),
+        "failed": gettext_noop("Payment was not successful"),
+        "cancelled": gettext_noop("Payment was cancelled"),
+        "refunded": gettext_noop("Refunded"),
+        "partially_refunded": gettext_noop("Partially refunded"),
+        "review": gettext_noop("Payment needs review"),
+        "unknown": gettext_noop("Payment needs review"),
+    }
+    source = str(value or "")
+    return translation.gettext(labels.get(source, gettext_noop("Under review")))
+
+
+@register.filter
+def localized_modification_status(value: object) -> str:
+    labels = {
+        "draft": gettext_noop("Draft"),
+        "pending_revalidation": gettext_noop("Checking availability"),
+        "awaiting_customer_approval": gettext_noop("Awaiting your approval"),
+        "awaiting_payment": gettext_noop("Awaiting payment"),
+        "pending_admin_approval": gettext_noop("Under review"),
+        "ready_for_hostaway": gettext_noop("Ready to update"),
+        "processing": gettext_noop("Updating"),
+        "completed": gettext_noop("Completed"),
+        "rejected": gettext_noop("Declined"),
+        "expired": gettext_noop("Expired"),
+        "price_changed": gettext_noop("Price changed"),
+        "unavailable": gettext_noop("Unavailable"),
+        "failed": gettext_noop("Needs assistance"),
+        "unknown": gettext_noop("Under review"),
+    }
+    source = str(value or "")
+    return translation.gettext(labels.get(source, gettext_noop("Under review")))
+
+
+@register.filter
+def localized_modification_type(value: object) -> str:
+    labels = {
+        "extend_stay": gettext_noop("Extend stay"),
+        "change_dates": gettext_noop("Change dates"),
+        "change_guests": gettext_noop("Change guests"),
+        "cancel_reservation": gettext_noop("Cancellation request"),
+    }
+    source = str(value or "")
+    return translation.gettext(labels.get(source, source.replace("_", " ").title()))
+
+
+@register.filter
 def money_amount(value: object) -> str:
     try:
         amount = Decimal(str(value)).quantize(
@@ -196,6 +367,86 @@ def money_amount(value: object) -> str:
     except (InvalidOperation, TypeError, ValueError):
         return str(value or "")
     return format(amount, ",.2f")
+
+
+def _currency_precision(currency: str) -> int:
+    if currency in _ZERO_DECIMAL_CURRENCIES:
+        return 0
+    if currency in _THREE_DECIMAL_CURRENCIES:
+        return 3
+    return 2
+
+
+def _localized_money_number(amount: Decimal, language: str, precision: int) -> str:
+    number = format(amount, f",.{precision}f")
+    whole, separator, fraction = number.partition(".")
+
+    if language == "fr":
+        whole = whole.replace(",", "\u202f")
+        return whole + (f",{fraction}" if separator else "")
+
+    if language == "ar":
+        whole = whole.replace(",", "٬").translate(_ARABIC_DIGITS)
+        fraction = fraction.translate(_ARABIC_DIGITS)
+        return whole + (f"٫{fraction}" if separator else "")
+
+    return number
+
+
+@register.filter
+def localized_money(value: object, currency: object) -> str:
+    """Render a price with locale-aware separators and ISO-4217 precision."""
+    currency_code = str(currency or "").strip().upper()
+    if (
+        len(currency_code) != 3
+        or not currency_code.isascii()
+        or not currency_code.isalpha()
+    ):
+        currency_code = ""
+
+    precision = _currency_precision(currency_code)
+    try:
+        amount = Decimal(str(value))
+        if not amount.is_finite():
+            raise InvalidOperation
+        quantum = Decimal(1).scaleb(-precision)
+        amount = amount.quantize(quantum, rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError):
+        return format_html(
+            '<bdi class="money money--unavailable" dir="ltr">{}</bdi>',
+            "—",
+        )
+
+    language = _language()
+    number = _localized_money_number(amount, language, precision)
+    if not currency_code:
+        return format_html(
+            '<bdi class="money money--{}" dir="ltr">'
+            '<span class="money__amount">{}</span>'
+            "</bdi>",
+            language,
+            number,
+        )
+
+    if language == "en":
+        return format_html(
+            '<bdi class="money money--en" dir="ltr">'
+            '<span class="money__currency">{}</span>'
+            '<span class="money__amount">{}</span>'
+            "</bdi>",
+            currency_code,
+            number,
+        )
+
+    return format_html(
+        '<bdi class="money money--{}" dir="ltr">'
+        '<span class="money__amount">{}</span>'
+        '<span class="money__currency">{}</span>'
+        "</bdi>",
+        language,
+        number,
+        currency_code,
+    )
 
 
 @register.filter

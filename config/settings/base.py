@@ -2,9 +2,11 @@
 
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import urlparse
 
 import environ
 from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -150,6 +152,8 @@ HOSTAWAY_IMAGE_CSP_SOURCES = env.list(
         "https://a0.muscache.com",
     ],
 )
+if "https://images.unsplash.com" not in HOSTAWAY_IMAGE_CSP_SOURCES:
+    HOSTAWAY_IMAGE_CSP_SOURCES.append("https://images.unsplash.com")
 
 PROPERTY_IMAGE_MAX_BYTES = 10 * 1024 * 1024
 PROPERTY_IMAGE_MAX_WIDTH = 12_000
@@ -197,6 +201,65 @@ BOOKING_INTENT_RATE_LIMIT_REQUESTS = 5
 BOOKING_INTENT_RATE_LIMIT_WINDOW = 10 * 60
 BOOKING_READ_RATE_LIMIT_REQUESTS = 30
 BOOKING_READ_RATE_LIMIT_WINDOW = 5 * 60
+BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_REQUESTS = optional_positive_int(
+    "BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_REQUESTS",
+    5,
+)
+BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_WINDOW = optional_positive_int(
+    "BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_WINDOW",
+    15 * 60,
+)
+BOOKING_MANAGEMENT_SESSION_TTL_SECONDS = optional_positive_int(
+    "BOOKING_MANAGEMENT_SESSION_TTL_SECONDS",
+    4 * 60 * 60,
+)
+
+# Local, cardless payment simulation for development and acceptance testing only.
+# DEBUG is deliberately part of the guard so this can never be enabled in production
+# by a stale environment variable.
+PAYMENT_SANDBOX_ENABLED = DEBUG and strict_bool("PAYMENT_SANDBOX_ENABLED")
+
+# HyperPay TEST and production are separate, explicit configurations. Credentials
+# are never shared between them and the base URL is pinned for each environment.
+HYPERPAY_ENABLED = strict_bool("HYPERPAY_ENABLED")
+HYPERPAY_ENVIRONMENT = env("HYPERPAY_ENVIRONMENT", default="test").strip().lower()
+HYPERPAY_BASE_URL = env(
+    "HYPERPAY_BASE_URL",
+    default="https://eu-test.oppwa.com/",
+).strip()
+HYPERPAY_ENTITY_ID = env("HYPERPAY_ENTITY_ID", default="").strip()
+HYPERPAY_ACCESS_TOKEN = env("HYPERPAY_ACCESS_TOKEN", default="").strip()
+HYPERPAY_CURRENCY = env("HYPERPAY_CURRENCY", default="SAR").strip().upper()
+HYPERPAY_PAYMENT_TYPE = env("HYPERPAY_PAYMENT_TYPE", default="DB").strip().upper()
+HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED = strict_bool(
+    "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED",
+    True,
+)
+HYPERPAY_CONNECT_TIMEOUT = 5.0
+HYPERPAY_READ_TIMEOUT = 20.0
+HYPERPAY_ALLOWED_BRANDS = ("MADA", "VISA", "MASTER")
+HYPERPAY_APPROVED_BASE_URLS = {
+    "test": "https://eu-test.oppwa.com/",
+    "production": "https://eu-prod.oppwa.com/",
+}
+HYPERPAY_WIDGET_ORIGIN = HYPERPAY_BASE_URL.rstrip("/")
+if HYPERPAY_ENABLED:
+    parsed_hyperpay_url = urlparse(HYPERPAY_BASE_URL)
+    if (
+        HYPERPAY_ENVIRONMENT not in HYPERPAY_APPROVED_BASE_URLS
+        or HYPERPAY_BASE_URL
+        != HYPERPAY_APPROVED_BASE_URLS.get(HYPERPAY_ENVIRONMENT)
+        or parsed_hyperpay_url.scheme != "https"
+        or HYPERPAY_CURRENCY != "SAR"
+        or HYPERPAY_PAYMENT_TYPE != "DB"
+    ):
+        raise ImproperlyConfigured(
+            "HyperPay requires an approved TEST or production host with SAR/DB."
+        )
+    if not HYPERPAY_ENTITY_ID or not HYPERPAY_ACCESS_TOKEN:
+        raise ImproperlyConfigured(
+            "HYPERPAY_ENTITY_ID and HYPERPAY_ACCESS_TOKEN are required when HyperPay is enabled."
+        )
 
 HOSTAWAY_LIVE_BOOKING_ENABLED = strict_bool("HOSTAWAY_LIVE_BOOKING_ENABLED")
 HOSTAWAY_WEBHOOK_RECEIVER_ENABLED = strict_bool("HOSTAWAY_WEBHOOK_RECEIVER_ENABLED")
@@ -348,6 +411,8 @@ EMAIL_BRAND_NAME = env(
     default="Luxury Smart Apartments",
 ).strip()
 SITE_BASE_URL = env("SITE_BASE_URL", default=SITE_CANONICAL_URL).rstrip("/")
+EMAIL_LOGO_URL = env("EMAIL_LOGO_URL", default="").strip()
+EMAIL_CONTACT_PHONE = env("EMAIL_CONTACT_PHONE", default="").strip()
 
 NOTIFICATIONS_ENABLED = strict_bool("NOTIFICATIONS_ENABLED", True)
 ADMIN_NOTIFICATION_EMAIL_ENABLED = strict_bool("ADMIN_NOTIFICATION_EMAIL_ENABLED")

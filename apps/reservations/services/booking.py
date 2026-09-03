@@ -1,5 +1,6 @@
 """Persist quotes and consume them into local, unconfirmed booking intents."""
 
+import logging
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -14,6 +15,8 @@ from apps.integrations.hostaway.availability_validators import PriceQuote
 from ..models import BookingIntent, BookingQuote
 from ..signing import quote_fingerprint, verify_quote_fingerprint
 from .availability import AvailabilityResult, component_title_ar
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,16 +36,34 @@ class IntentCreation:
 
 def sanitized_components(price_quote: PriceQuote) -> list[dict[str, Any]]:
     components: list[dict[str, Any]] = []
+    included_total = Decimal("0")
     for component in price_quote.components:
+        if component.is_included_in_total is not True or component.is_deleted is not False:
+            continue
+        if component.total is None:
+            logger.warning(
+                "Hostaway price breakdown omitted because a component total is missing: "
+                "listing_id=%s",
+                price_quote.listing_id,
+            )
+            return []
+        included_total += component.total
         components.append(
             {
                 "type": component.type[:50],
                 "title": component_title_ar(component)[:200],
                 "quantity": component.quantity,
-                "value": format(component.value, "f"),
+                "total": format(component.total, "f"),
                 "included_in_total": component.is_included_in_total,
             }
         )
+    if included_total != price_quote.total_price:
+        logger.warning(
+            "Hostaway price breakdown omitted because its included components do not "
+            "match totalPrice: listing_id=%s",
+            price_quote.listing_id,
+        )
+        return []
     return components
 
 
@@ -206,6 +227,12 @@ def consume_revalidated_quote(
             guest_email=guest_data["guest_email"],
             guest_phone=guest_data["guest_phone"],
             guest_country_code=guest_data["guest_country_code"],
+            billing_street1=guest_data["billing_street1"],
+            billing_city=guest_data["billing_city"],
+            billing_state=guest_data["billing_state"],
+            billing_country=guest_data["billing_country"],
+            billing_postcode=guest_data["billing_postcode"],
+            language=guest_data.get("language", "ar"),
             special_requests=guest_data.get("special_requests", ""),
             status=BookingIntent.Status.AWAITING_PAYMENT,
             idempotency_key=idempotency_key,

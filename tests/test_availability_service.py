@@ -94,6 +94,7 @@ def make_quote(
         value=Decimal("500.25"),
         total=Decimal("500.25"),
         is_included_in_total=True,
+        is_deleted=False,
     )
     return PriceQuote(
         listing_id=9001,

@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.integrations.models import IntegrationSyncRun
+from apps.properties.cities import canonical_city
 from apps.properties.models import Amenity, Property, PropertyAmenity, PropertyImage
 from apps.properties.services.publishing import evaluate_listing_publish_readiness
 
@@ -311,7 +312,7 @@ def _persist_unit(
         "slug": _unique_slug(listing.name, listing.listing_id),
         "name_en": listing.name,
         "name_ar": "",
-        "city_en": listing.city,
+        "city_en": operational["city"],
         "city_ar": "",
         "is_visible": False,
         "visibility_management": Property.VisibilityManagement.AUTOMATIC,
@@ -428,6 +429,7 @@ def _simulate_unit(
 
 
 def _operational_defaults(listing: HostawayListing) -> dict[str, object]:
+    public_city = canonical_city(listing.city) or listing.city
     defaults: dict[str, object] = {
         "hostaway_name": listing.name,
         "hostaway_description": listing.description,
@@ -440,7 +442,7 @@ def _operational_defaults(listing: HostawayListing) -> dict[str, object]:
         "bathrooms_number": listing.bathrooms_number,
         "address": listing.address,
         "public_address": listing.public_address,
-        "city": listing.city,
+        "city": public_city,
         "state": listing.state,
         "country": listing.country,
         "country_code": listing.country_code,

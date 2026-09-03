@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
@@ -77,6 +78,7 @@ def make_availability(
                     value=total,
                     total=total,
                     is_included_in_total=True,
+                    is_deleted=False,
                 ),
             ),
             calculated_at=timezone.now(),
@@ -114,6 +116,11 @@ def guest_data() -> dict[str, object]:
         "guest_email": "test@example.invalid",
         "guest_phone": "+966500000000",
         "guest_country_code": "SA",
+        "billing_street1": "King Fahd Road 10",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "SA",
+        "billing_postcode": "12345",
         "special_requests": "Synthetic request",
         "marketing_consent": False,
     }
@@ -135,12 +142,102 @@ def test_create_booking_quote_is_valid_sanitized_and_decimal() -> None:
             "type": "accommodation",
             "title": "سعر الإقامة",
             "quantity": None,
-            "value": "500.25",
+            "total": "500.25",
             "included_in_total": True,
         }
     ]
     assert "listingFeeSettingId" not in str(quote.components)
     assert "internal" not in str(quote.components)
+
+
+def test_quote_breakdown_uses_component_total_not_unit_value() -> None:
+    property_obj = make_property()
+    availability = make_availability(property_obj, total=Decimal("30.00"))
+    assert availability.quote is not None
+    component = replace(
+        availability.quote.components[0],
+        quantity=3,
+        value=Decimal("10.00"),
+        total=Decimal("30.00"),
+    )
+    availability = replace(
+        availability,
+        quote=replace(availability.quote, components=(component,)),
+    )
+
+    quote = create_quote_for_property(
+        availability,
+        property_obj=property_obj,
+        session_hash="a" * 64,
+    )
+
+    assert quote.components[0]["total"] == "30.00"
+    assert "value" not in quote.components[0]
+
+
+def test_quote_breakdown_excludes_optional_and_deleted_components() -> None:
+    property_obj = make_property()
+    availability = make_availability(property_obj, total=Decimal("30.00"))
+    assert availability.quote is not None
+    base = replace(
+        availability.quote.components[0],
+        value=Decimal("30.00"),
+        total=Decimal("30.00"),
+    )
+    optional = replace(
+        base,
+        name="parkingFee",
+        title="Parking fee",
+        value=Decimal("5.00"),
+        total=Decimal("5.00"),
+        is_included_in_total=False,
+    )
+    deleted = replace(
+        base,
+        name="oldFee",
+        title="Old fee",
+        value=Decimal("7.00"),
+        total=Decimal("7.00"),
+        is_deleted=True,
+    )
+    availability = replace(
+        availability,
+        quote=replace(availability.quote, components=(base, optional, deleted)),
+    )
+
+    quote = create_quote_for_property(
+        availability,
+        property_obj=property_obj,
+        session_hash="a" * 64,
+    )
+
+    assert len(quote.components) == 1
+    assert quote.components[0]["title"] == "سعر الإقامة"
+    assert quote.components[0]["total"] == "30.00"
+
+
+def test_quote_breakdown_is_hidden_when_components_do_not_match_total() -> None:
+    property_obj = make_property()
+    availability = make_availability(property_obj, total=Decimal("30.00"))
+    assert availability.quote is not None
+    mismatched = replace(
+        availability.quote.components[0],
+        value=Decimal("29.00"),
+        total=Decimal("29.00"),
+    )
+    availability = replace(
+        availability,
+        quote=replace(availability.quote, components=(mismatched,)),
+    )
+
+    quote = create_quote_for_property(
+        availability,
+        property_obj=property_obj,
+        session_hash="a" * 64,
+    )
+
+    assert quote.total_price == Decimal("30.0000")
+    assert quote.components == []
 
 
 def test_quote_fingerprint_detects_tampering() -> None:
@@ -204,8 +301,12 @@ def test_guest_form_validation_normalization_and_xss() -> None:
             "guest_first_name": "<b>Test</b>",
             "guest_last_name": "Guest",
             "guest_email": "test@example.invalid",
-            "guest_phone": "+966 (50) 000-0000",
-            "guest_country_code": "sa",
+            "guest_phone": "050 000 0000",
+            "billing_street1": "King Fahd Road 10",
+            "billing_city": "Riyadh",
+            "billing_state": "Riyadh",
+            "billing_country": "SA",
+            "billing_postcode": "12345",
             "special_requests": "<script>alert(1)</script>Quiet room",
             "terms_accepted": "on",
             "privacy_accepted": "on",
@@ -215,16 +316,83 @@ def test_guest_form_validation_normalization_and_xss() -> None:
     assert form.is_valid(), form.errors
     assert form.cleaned_data["guest_first_name"] == "Test"
     assert form.cleaned_data["guest_phone"] == "+966500000000"
-    assert form.cleaned_data["guest_country_code"] == "SA"
+    assert "guest_country_code" not in form.fields
     assert "<script>" not in form.cleaned_data["special_requests"]
     assert form.cleaned_data["marketing_consent"] is False
+
+
+def test_guest_form_uses_the_stay_country_for_a_local_mobile_number() -> None:
+    form = GuestDetailsForm(
+        {
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "test@example.invalid",
+            "guest_phone": "0612345678",
+            "billing_street1": "Avenue Hassan II 10",
+            "billing_city": "Marrakech",
+            "billing_state": "Marrakech-Safi",
+            "billing_country": "MA",
+            "billing_postcode": "40000",
+            "special_requests": "",
+            "terms_accepted": "on",
+            "privacy_accepted": "on",
+            "idempotency_key": "x" * 32,
+        },
+        default_country_code="MA",
+    )
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["guest_phone"] == "+212612345678"
+
+
+def test_guest_phone_uses_selected_billing_country_not_property_country() -> None:
+    form = GuestDetailsForm(
+        {
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "test@example.invalid",
+            "guest_phone": "0500000000",
+            "billing_street1": "King Fahd Road 10",
+            "billing_city": "Riyadh",
+            "billing_state": "Riyadh",
+            "billing_country": "SA",
+            "billing_postcode": "12345",
+            "special_requests": "",
+            "terms_accepted": "on",
+            "privacy_accepted": "on",
+            "idempotency_key": "x" * 32,
+        },
+        default_country_code="MA",
+    )
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["guest_phone"] == "+966500000000"
+    assert form.fields["billing_country"].widget.attrs["data-country-select"] == ""
+
+
+def test_guest_form_rejects_unknown_billing_country_choice() -> None:
+    data = {
+        "guest_first_name": "Test",
+        "guest_last_name": "Guest",
+        "guest_email": "test@example.invalid",
+        "guest_phone": "+966500000000",
+        "billing_street1": "King Fahd Road 10",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "XX",
+        "billing_postcode": "12345",
+        "special_requests": "",
+        "terms_accepted": "on",
+        "privacy_accepted": "on",
+        "idempotency_key": "x" * 32,
+    }
+    assert GuestDetailsForm(data).is_valid() is False
 
 
 @pytest.mark.parametrize(
     "overrides",
     [
         {"guest_email": "not-email"},
-        {"guest_phone": "0500000000"},
+        {"guest_phone": "12345"},
         {"special_requests": "x" * 1001},
         {"guest_first_name": "<b></b>"},
         {"guest_last_name": "<i></i>"},
@@ -237,8 +405,12 @@ def test_guest_form_rejects_invalid_input(overrides: dict[str, str]) -> None:
         "guest_first_name": "Test",
         "guest_last_name": "Guest",
         "guest_email": "test@example.invalid",
-        "guest_phone": "+966500000000",
-        "guest_country_code": "SA",
+        "guest_phone": "0500000000",
+        "billing_street1": "King Fahd Road 10",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "SA",
+        "billing_postcode": "12345",
         "special_requests": "",
         "terms_accepted": "on",
         "privacy_accepted": "on",

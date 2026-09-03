@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -58,8 +59,12 @@ def form_data() -> dict[str, str]:
         "guest_first_name": "Test",
         "guest_last_name": "Guest",
         "guest_email": "test@example.invalid",
-        "guest_phone": "+966500000000",
-        "guest_country_code": "SA",
+        "guest_phone": "0500000000",
+        "billing_street1": "King Fahd Road 10",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "SA",
+        "billing_postcode": "12345",
         "special_requests": "Synthetic",
         "terms_accepted": "on",
         "privacy_accepted": "on",
@@ -78,6 +83,77 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     assert str(quote.pk) not in content
     assert quote.session_key_hash not in content
     assert 'name="total_price"' not in content
+    assert 'name="guest_country_code"' not in content
+    assert "05XXXXXXXX" in content
+    assert 'inputmode="tel"' in content
+    assert 'data-guest-journey' in content
+    assert 'data-journey-panel="1"' in content
+    assert 'data-journey-panel="2"' in content
+    assert 'data-country-select' in content
+    assert 'data-initial-step="1"' in content
+    assert "عنوان الدفع" in content
+    assert "عنوان الشارع" in content
+    assert "المدينة" in content
+    assert "المنطقة أو المحافظة" in content
+    assert "الدولة" in content
+    assert "الرمز البريدي" in content
+    assert "الفوترة" not in content
+
+
+@pytest.mark.parametrize(
+    ("language", "labels"),
+    [
+        (
+            "ar",
+            (
+                "عنوان الدفع",
+                "عنوان الشارع",
+                "المدينة",
+                "المنطقة أو المحافظة",
+                "الدولة",
+                "الرمز البريدي",
+                "متابعة إلى عنوان الدفع",
+            ),
+        ),
+        (
+            "en",
+            (
+                "Payment address",
+                "Street address",
+                "City",
+                "State or region",
+                "Country",
+                "Postal code",
+                "Continue to payment address",
+            ),
+        ),
+        (
+            "fr",
+            (
+                "Adresse de paiement",
+                "Adresse",
+                "Ville",
+                "État ou région",
+                "Pays",
+                "Code postal",
+                "Continuer vers l’adresse de paiement",
+            ),
+        ),
+    ],
+)
+def test_payment_address_labels_follow_selected_language(
+    language: str,
+    labels: tuple[str, ...],
+) -> None:
+    client, _quote, reference = owned_client_quote()
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+
+    response = client.get(f"/reservations/quotes/{reference}/")
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    for label in labels:
+        assert label in content
 
 
 def test_other_session_gets_generic_404_for_quote() -> None:
@@ -128,6 +204,8 @@ def test_guest_submit_revalidates_and_creates_local_intent(
     intent = BookingIntent.objects.get()
     assert intent.status == BookingIntent.Status.AWAITING_PAYMENT
     assert intent.guest_email == "test@example.invalid"
+    assert intent.guest_phone == "+966500000000"
+    assert intent.guest_country_code == "SA"
     assert "/reservations/requests/" in response.url
 
 
@@ -145,6 +223,7 @@ def test_invalid_guest_form_never_revalidates(
     )
     assert response.status_code == 400
     assert RevalidationService.calls == 0
+    assert 'data-initial-step="2"' in response.content.decode()
 
 
 def test_intent_page_is_owned_masks_pii_and_says_not_confirmed() -> None:

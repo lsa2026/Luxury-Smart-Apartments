@@ -75,6 +75,23 @@ class SecurityHeadersMiddleware:
         script_sources = ["'self'", f"'nonce-{request.csp_nonce}'"]
         connect_sources = ["'self'"]
         frame_sources = ["'self'"]
+        form_action_sources = ["'self'"]
+        font_sources = ["'self'"]
+        hyperpay_page = settings.HYPERPAY_ENABLED and request.path.startswith(
+            "/payments/hyperpay/"
+        )
+        if hyperpay_page:
+            script_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
+            connect_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
+            frame_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
+            form_action_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
+            font_sources.extend(["data:", settings.HYPERPAY_WIDGET_ORIGIN])
+            image_sources = f"{image_sources} {settings.HYPERPAY_WIDGET_ORIGIN}"
+            # COPYandPAY creates a runtime stylesheet and inserts its widget rules
+            # into it. Keep this relaxation isolated to the TEST payment route.
+            style_sources = (
+                f"{style_sources} 'unsafe-inline' {settings.HYPERPAY_WIDGET_ORIGIN}"
+            )
         if google_allowed and (
             settings.GOOGLE_TAG_MANAGER_ENABLED or settings.GOOGLE_ANALYTICS_ENABLED
         ):
@@ -98,17 +115,23 @@ class SecurityHeadersMiddleware:
         response.setdefault(
             "Content-Security-Policy",
             (
-                "default-src 'self'; base-uri 'self'; form-action 'self'; "
+                "default-src 'self'; base-uri 'self'; "
+                f"form-action {' '.join(form_action_sources)}; "
                 "frame-ancestors 'none'; object-src 'none'; "
                 f"img-src 'self' data: {image_sources}; "
                 f"style-src {style_sources}; "
                 f"script-src {' '.join(script_sources)}; "
                 f"connect-src {' '.join(connect_sources)}; "
-                f"frame-src {' '.join(frame_sources)}"
+                f"frame-src {' '.join(frame_sources)}; "
+                f"font-src {' '.join(font_sources)}"
             ),
         )
         response.setdefault(
             "Permissions-Policy",
-            "camera=(), microphone=(), geolocation=(), payment=()",
+            (
+                "camera=(), microphone=(), geolocation=(), payment=(self)"
+                if hyperpay_page
+                else "camera=(), microphone=(), geolocation=(), payment=()"
+            ),
         )
         return response

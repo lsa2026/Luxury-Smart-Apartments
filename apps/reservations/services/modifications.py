@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
 from django.utils.html import strip_tags
 
+from apps.integrations.hostaway.availability_validators import PriceQuote
 from apps.integrations.hostaway.exceptions import HostawayError
 
 from ..models import BookingModificationRequest, Reservation
@@ -27,6 +28,12 @@ from .booking import sanitized_components
 class ModificationCreation:
     code: str
     request: BookingModificationRequest | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ModificationRevalidation:
+    code: str
+    quote: PriceQuote | None = None
 
 
 class ModificationService:
@@ -170,7 +177,12 @@ class ModificationService:
         request = BookingModificationRequest(
             reservation=reservation,
             request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
-            status=BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL,
+            status=(
+                BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+                if settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+                and settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+                else BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
+            ),
             old_check_in=reservation.check_in,
             old_check_out=reservation.check_out,
             old_guests=reservation.guests,
@@ -190,6 +202,80 @@ class ModificationService:
 
             transaction.on_commit(lambda: handle_modification_created(request.pk))
         return ModificationCreation("created", request)
+
+    def revalidate_for_payment(
+        self,
+        modification: BookingModificationRequest,
+    ) -> ModificationRevalidation:
+        """Recheck inventory and the full trusted price immediately before payment."""
+
+        reservation = modification.reservation
+        if (
+            modification.status != BookingModificationRequest.Status.AWAITING_PAYMENT
+            or modification.is_expired
+            or reservation.normalized_status != Reservation.Status.CONFIRMED
+            or modification.new_check_in is None
+            or modification.new_check_out is None
+            or modification.new_guests is None
+            or modification.new_total is None
+            or modification.old_check_in != reservation.check_in
+            or modification.old_check_out != reservation.check_out
+            or modification.old_guests != reservation.guests
+            or modification.old_total != reservation.total_price
+            or modification.currency != reservation.currency
+            or reservation.property is None
+        ):
+            return ModificationRevalidation("modification_not_payable")
+        try:
+            if (
+                modification.request_type
+                == BookingModificationRequest.RequestType.EXTEND_STAY
+            ):
+                calendar = self.availability_service.fetch_calendar(
+                    property_obj=reservation.property,
+                    start_date=reservation.check_out,
+                    end_date=modification.new_check_out,
+                    bypass_cache=True,
+                )
+                reason_code = evaluate_calendar(
+                    calendar.document.days,
+                    check_in=reservation.check_out,
+                    check_out=modification.new_check_out,
+                )
+                if reason_code != AVAILABLE:
+                    return ModificationRevalidation(reason_code)
+                quote = self.availability_service.client.calculate_price(
+                    reservation.property.hostaway_listing_id,
+                    check_in=modification.new_check_in,
+                    check_out=modification.new_check_out,
+                    guests=modification.new_guests,
+                    fallback_currency=reservation.currency,
+                )
+            else:
+                result = self.availability_service.check(
+                    AvailabilityRequest(
+                        property=reservation.property,
+                        check_in=modification.new_check_in,
+                        check_out=modification.new_check_out,
+                        guests=modification.new_guests,
+                    ),
+                    bypass_cache=True,
+                )
+                if not result.is_available or result.quote is None:
+                    return ModificationRevalidation(result.reason_code)
+                quote = result.quote
+        except (HostawayError, ValueError):
+            return ModificationRevalidation("hostaway_temporarily_unavailable")
+
+        if quote.currency != modification.currency:
+            return ModificationRevalidation("currency_changed", quote)
+        if (
+            quote.total_price != modification.new_total
+            or quote.total_price - reservation.total_price
+            != modification.price_difference
+        ):
+            return ModificationRevalidation("price_changed", quote)
+        return ModificationRevalidation("ready", quote)
 
     @staticmethod
     def _persist_priced_request(
@@ -219,10 +305,15 @@ class ModificationService:
             return ModificationCreation("idempotent", existing)
         if difference > 0:
             status = BookingModificationRequest.Status.AWAITING_PAYMENT
+        elif difference == 0 and settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL:
+            status = BookingModificationRequest.Status.READY_FOR_HOSTAWAY
         else:
             status = BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
         cutoff = timezone.now() + timedelta(hours=settings.BOOKING_MODIFICATION_CUTOFF_HOURS)
-        if reservation.check_in <= timezone.localtime(cutoff).date():
+        if (
+            not settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+            and reservation.check_in <= timezone.localtime(cutoff).date()
+        ):
             status = BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
         snapshot = {
             "price_version": 2,

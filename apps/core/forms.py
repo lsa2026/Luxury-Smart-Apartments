@@ -10,14 +10,38 @@ def _clean_text(value: str) -> str:
 
 
 class ContactForm(forms.Form):
-    name = forms.CharField(label=_("Name"), max_length=150)
-    email = forms.EmailField(label=_("Email address"), max_length=254)
-    phone = forms.CharField(label=_("Phone (optional)"), max_length=30, required=False)
-    subject = forms.CharField(label=_("Subject"), max_length=200)
+    name = forms.CharField(
+        label=_("Name"),
+        max_length=150,
+        widget=forms.TextInput(attrs={"autocomplete": "name"}),
+    )
+    email = forms.EmailField(
+        label=_("Email address"),
+        max_length=254,
+        widget=forms.EmailInput(attrs={"autocomplete": "email", "inputmode": "email"}),
+    )
+    phone = forms.CharField(
+        label=_("Phone (optional)"),
+        max_length=30,
+        required=False,
+        widget=forms.TextInput(
+            attrs={"autocomplete": "tel", "inputmode": "tel", "dir": "ltr"}
+        ),
+    )
+    subject = forms.CharField(
+        label=_("Subject"),
+        max_length=200,
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+    )
     message = forms.CharField(
         label=_("Message"),
         max_length=2000,
-        widget=forms.Textarea(attrs={"rows": 7}),
+        widget=forms.Textarea(
+            attrs={
+                "rows": 7,
+                "placeholder": _("Include your booking number if your message is about a stay."),
+            }
+        ),
     )
     website = forms.CharField(
         required=False,

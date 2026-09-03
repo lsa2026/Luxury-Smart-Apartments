@@ -125,6 +125,7 @@ class BookingIntent(models.Model):
         DRAFT = "draft", "مسودة"
         PENDING_REVALIDATION = "pending_revalidation", "بانتظار إعادة التحقق"
         AWAITING_PAYMENT = "awaiting_payment", "جاهز للدفع"
+        PAYMENT_VERIFIED = "payment_verified", "تم التحقق من الدفع"
         PRICE_CHANGED = "price_changed", "تغير السعر"
         UNAVAILABLE = "unavailable", "غير متاح"
         EXPIRED = "expired", "منتهي"
@@ -143,6 +144,13 @@ class BookingIntent(models.Model):
         on_delete=models.PROTECT,
         related_name="booking_intent",
     )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="booking_intents",
+        null=True,
+        blank=True,
+    )
     property = models.ForeignKey(
         "properties.Property",
         on_delete=models.PROTECT,
@@ -159,6 +167,16 @@ class BookingIntent(models.Model):
     guest_email = models.EmailField(max_length=254)
     guest_phone = models.CharField(max_length=20)
     guest_country_code = models.CharField(max_length=2)
+    billing_street1 = models.CharField(max_length=100, default="")
+    billing_city = models.CharField(max_length=80, default="")
+    billing_state = models.CharField(max_length=50, default="")
+    billing_country = models.CharField(max_length=2, default="SA")
+    billing_postcode = models.CharField(max_length=16, default="")
+    language = models.CharField(
+        max_length=5,
+        choices=(("ar", "العربية"), ("en", "English"), ("fr", "Français")),
+        default="ar",
+    )
     special_requests = models.TextField(max_length=1000, blank=True)
     status = models.CharField(
         max_length=30,
@@ -219,6 +237,20 @@ class BookingIntent(models.Model):
             len(self.currency) != 3 or not self.currency.isascii() or not self.currency.isalpha()
         ):
             errors["currency"] = "Currency must be a three-letter code."
+        from apps.payments.countries import normalize_country_code
+
+        try:
+            self.billing_country = normalize_country_code(self.billing_country)
+        except ValueError:
+            errors["billing_country"] = "Billing country must be an ISO alpha-2 code."
+        for field_name in (
+            "billing_street1",
+            "billing_city",
+            "billing_state",
+            "billing_postcode",
+        ):
+            if not getattr(self, field_name).strip():
+                errors[field_name] = "This billing field is required."
         if errors:
             raise ValidationError(errors)
 
@@ -228,7 +260,7 @@ class BookingIntent(models.Model):
 
 
 class Reservation(models.Model):
-    """Sanitized local reservation state; confirmation requires a Hostaway ID."""
+    """Sanitized local reservation state; live confirmation requires a Hostaway ID."""
 
     class SourceType(models.TextChoices):
         DIRECT_WEBSITE = "direct_website", "الموقع المباشر"
@@ -289,6 +321,7 @@ class Reservation(models.Model):
         choices=SourceType.choices,
         default=SourceType.UNKNOWN,
     )
+    is_test = models.BooleanField(default=False, editable=False)
     normalized_status = models.CharField(
         max_length=30,
         choices=Status.choices,
@@ -328,7 +361,8 @@ class Reservation(models.Model):
             ),
             models.CheckConstraint(
                 condition=~Q(normalized_status="confirmed")
-                | Q(hostaway_reservation_id__isnull=False),
+                | Q(hostaway_reservation_id__isnull=False)
+                | Q(is_test=True),
                 name="reservation_confirmed_requires_hostaway_id",
             ),
             models.CheckConstraint(
@@ -359,7 +393,11 @@ class Reservation(models.Model):
                 or not self.currency.isalpha()
             ):
                 errors["currency"] = "Currency must be an ISO three-letter code."
-        if self.normalized_status == self.Status.CONFIRMED and self.hostaway_reservation_id is None:
+        if (
+            self.normalized_status == self.Status.CONFIRMED
+            and self.hostaway_reservation_id is None
+            and not self.is_test
+        ):
             errors["hostaway_reservation_id"] = "Confirmed reservations require a Hostaway ID."
         if self.confirmed_at and self.cancelled_at:
             errors["cancelled_at"] = "A reservation cannot be confirmed and cancelled together."

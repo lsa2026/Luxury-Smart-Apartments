@@ -1,0 +1,31 @@
+{% load i18n %}
+<form
+    class="booking-access-form"
+    method="post"
+    action="{% url 'reservations:manage_access' %}"
+    data-submit-once
+    novalidate
+>
+    {% csrf_token %}
+    {% if reservation_access_form.non_field_errors %}
+    <div class="form-error form-error--panel" role="alert">
+        {% for error in reservation_access_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    <div class="booking-access-form__fields">
+        {% for field in reservation_access_form %}
+        <div class="form-field{% if field.errors %} form-field--error{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <button class="button booking-access-form__submit" type="submit">
+            {% trans "Open my booking" %}
+        </button>
+    </div>
+    <p class="booking-access-form__privacy">
+        <span aria-hidden="true">✓</span>
+        {% trans "Your details are used only to verify this booking." %}
+    </p>
+</form>

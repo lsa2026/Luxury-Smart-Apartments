@@ -10,6 +10,8 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 
+from .branding import BRAND_NAME
+
 
 class SitePage(models.Model):
     slug = models.SlugField(max_length=80, unique=True)
@@ -23,6 +25,7 @@ class SitePage(models.Model):
     meta_description_en = models.CharField(max_length=320, blank=True)
     meta_description_fr = models.CharField(max_length=320, blank=True)
     is_published = models.BooleanField(default=True)
+    last_reviewed_at = models.DateField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -57,7 +60,7 @@ class FAQItem(models.Model):
 
 
 class SiteSetting(models.Model):
-    site_name = models.CharField(max_length=120, default="Luxury Smart Apartments")
+    site_name = models.CharField(max_length=120, default=BRAND_NAME)
     brand_name_ar = models.CharField(max_length=120, blank=True)
     brand_name_en = models.CharField(max_length=120, blank=True)
     brand_name_fr = models.CharField(max_length=120, blank=True)
@@ -89,6 +92,21 @@ class SiteSetting(models.Model):
 
     def __str__(self) -> str:
         return self.site_name
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.site_name = BRAND_NAME
+        self.brand_name_ar = BRAND_NAME
+        self.brand_name_en = BRAND_NAME
+        self.brand_name_fr = BRAND_NAME
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            kwargs["update_fields"] = set(update_fields) | {
+                "site_name",
+                "brand_name_ar",
+                "brand_name_en",
+                "brand_name_fr",
+            }
+        super().save(*args, **kwargs)
 
 
 class ContactMessage(models.Model):

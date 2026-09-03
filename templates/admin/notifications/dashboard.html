@@ -1,55 +1,69 @@
 {% extends "admin/base_site.html" %}
+{% load admin_dashboard %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} lsa-operations-page{% endblock %}
 {% block content %}
-<div id="content-main">
-  <p>
-    <a href="{% url 'notifications:center' %}">مركز الإشعارات</a>
-    · <a href="{% url 'notifications:system_status' %}">حالة النظام</a>
-  </p>
-  <form method="get">
-    <label>الفترة
-      <select name="period">
-        <option value="today">اليوم</option>
-        <option value="7">آخر 7 أيام</option>
-        <option value="30" selected>آخر 30 يومًا</option>
-        <option value="custom">نطاق مخصص</option>
-      </select>
-    </label>
-    <label>من <input type="date" name="start"></label>
-    <label>إلى <input type="date" name="end"></label>
-    <button type="submit">تحديث</button>
+<main class="lsa-dashboard lsa-operations-screen">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div><span class="lsa-kicker"><i></i> مركز التقارير</span><h1>الأداء التشغيلي</h1><p>قراءة موحّدة لحالة المحتوى والحجوزات والتواصل خلال الفترة المحددة.</p></div>
+    <nav class="lsa-section-nav" aria-label="شاشات العمليات">
+      <a class="is-current" href="{% url 'notifications:dashboard' %}">التقارير</a>
+      <a href="{% url 'notifications:center' %}">الإشعارات</a>
+      <a href="{% url 'notifications:system_status' %}">حالة النظام</a>
+    </nav>
+  </section>
+
+  <form method="get" class="lsa-filter-bar lsa-period-filter">
+    <label><span>الفترة</span><select name="period">
+      <option value="today" {% if selected_period == 'today' %}selected{% endif %}>اليوم</option>
+      <option value="7" {% if selected_period == '7' %}selected{% endif %}>آخر 7 أيام</option>
+      <option value="30" {% if selected_period == '30' %}selected{% endif %}>آخر 30 يومًا</option>
+      <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>نطاق مخصص</option>
+    </select></label>
+    <label><span>من</span><input type="date" name="start" value="{{ request.GET.start }}"></label>
+    <label><span>إلى</span><input type="date" name="end" value="{{ request.GET.end }}"></label>
+    <button type="submit" class="lsa-btn lsa-btn--gold">تحديث التقرير</button>
+    <small>{{ report.period_start|date:"d M Y" }} — {{ report.period_end|date:"d M Y" }}</small>
   </form>
-  <h2>نظرة عامة</h2>
-  <table>
-    <tbody>
-      <tr><th>الوحدات</th><td>{{ report.properties_total }}</td></tr>
-      <tr><th>الظاهرة</th><td>{{ report.properties_visible }}</td></tr>
-      <tr><th>المخفية</th><td>{{ report.properties_hidden }}</td></tr>
-      <tr><th>المؤرشفة</th><td>{{ report.properties_archived }}</td></tr>
-      <tr><th>الصور</th><td>{{ report.images_total }}</td></tr>
-      <tr><th>المراجعات</th><td>{{ report.reviews_total }}</td></tr>
-      <tr><th>متوسط التقييم</th><td>{{ report.average_rating|default:"—" }}</td></tr>
-      <tr><th>رسائل التواصل الجديدة</th><td>{{ report.new_contacts }}</td></tr>
-      <tr><th>إشعارات غير مقروءة</th><td>{{ report.notification_unread }}</td></tr>
-      <tr><th>Webhooks فاشلة</th><td>{{ report.failed_webhooks }}</td></tr>
-    </tbody>
-  </table>
-  <h2>قيمة طلبات الحجز</h2>
-  <p>القيم هنا طلبات غير مدفوعة وليست إيرادات مؤكدة.</p>
-  <h3>حالات عروض السعر</h3>
-  <ul>{% for item in report.quote_statuses %}<li>{{ item.status }}: {{ item.total }}</li>{% empty %}<li>لا بيانات</li>{% endfor %}</ul>
-  <h3>حالات طلبات الحجز</h3>
-  <ul>{% for item in report.intent_statuses %}<li>{{ item.status }}: {{ item.total }}</li>{% empty %}<li>لا بيانات</li>{% endfor %}</ul>
-  <h3>تسليم البريد</h3>
-  <ul>{% for item in report.email_statuses %}<li>{{ item.status }}: {{ item.total }}</li>{% empty %}<li>لا بيانات</li>{% endfor %}</ul>
-  <h3>أكثر الوحدات مشاهدة</h3>
-  <p>تتبع المشاهدات المحلي غير مفعّل بعد؛ لن تُعرض أرقام تقديرية.</p>
-  <h2>التصدير المنقح</h2>
-  <form method="post" action="{% url 'notifications:export' 'properties' %}" style="display:inline">{% csrf_token %}<button type="submit">properties</button></form>
-  <form method="post" action="{% url 'notifications:export' 'reviews' %}" style="display:inline">{% csrf_token %}<button type="submit">reviews</button></form>
-  <form method="post" action="{% url 'notifications:export' 'contacts' %}" style="display:inline">{% csrf_token %}<button type="submit">contacts</button></form>
-  <form method="post" action="{% url 'notifications:export' 'quotes' %}" style="display:inline">{% csrf_token %}<button type="submit">quotes</button></form>
-  <form method="post" action="{% url 'notifications:export' 'intents' %}" style="display:inline">{% csrf_token %}<button type="submit">intents</button></form>
-  <form method="post" action="{% url 'notifications:export' 'modifications' %}" style="display:inline">{% csrf_token %}<button type="submit">modifications</button></form>
-  <form method="post" action="{% url 'notifications:export' 'sync_runs' %}" style="display:inline">{% csrf_token %}<button type="submit">sync_runs</button></form>
-</div>
+
+  <section class="lsa-stat-grid lsa-stat-grid--six" aria-label="مؤشرات التقرير">
+    <a class="lsa-stat" href="{% url 'admin:properties_property_changelist' %}"><span class="lsa-stat__meta">الوحدات المنشورة</span><strong>{{ report.properties_visible }}</strong><small>{{ report.properties_hidden }} مخفية · {{ report.properties_archived }} مؤرشفة</small></a>
+    <a class="lsa-stat" href="{% url 'admin:properties_propertyimage_changelist' %}"><span class="lsa-stat__meta">صور الوحدات</span><strong>{{ report.images_total }}</strong><small>ضمن {{ report.properties_total }} وحدة محلية</small></a>
+    <a class="lsa-stat" href="{% url 'admin:reviews_review_changelist' %}"><span class="lsa-stat__meta">التقييمات</span><strong>{{ report.reviews_total }}</strong><small>متوسط {{ report.average_rating|floatformat:1|default:"—" }} من 5</small></a>
+    <a class="lsa-stat" href="{% url 'admin:core_contactmessage_changelist' %}"><span class="lsa-stat__meta">رسائل جديدة</span><strong>{{ report.new_contacts }}</strong><small>خلال الفترة المحددة</small></a>
+    <a class="lsa-stat" href="{% url 'notifications:center' %}"><span class="lsa-stat__meta">تنبيهات غير مقروءة</span><strong>{{ report.notification_unread }}</strong><small>تحتاج متابعة الفريق</small></a>
+    <a class="lsa-stat" href="{% url 'admin:integrations_hostawaywebhookevent_changelist' %}"><span class="lsa-stat__meta">Webhooks فاشلة</span><strong>{{ report.failed_webhooks }}</strong><small>خلال الفترة المحددة</small></a>
+  </section>
+
+  <section class="lsa-report-grid">
+    <article class="lsa-panel">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">مسار العميل</span><h2>طلبات الحجز والحجوزات</h2></div><a href="{% url 'admin_customers' %}">فتح مركز العملاء ←</a></header>
+      <div class="lsa-callout lsa-callout--info"><strong>قيمة طلبات الحجز</strong><span>مؤشر للطلب المتوقع وليست إيرادات مؤكدة حتى نجاح الدفع.</span></div>
+      <div class="lsa-breakdown-grid">
+        <div><h3>طلبات الحجز</h3><ul class="lsa-metric-list">{% for item in report.intent_statuses %}<li><span>{{ item.status|admin_status_label }}</span><b>{{ item.total }}</b></li>{% empty %}<li class="lsa-empty-state">لا توجد طلبات في هذه الفترة</li>{% endfor %}</ul></div>
+        <div><h3>الحجوزات</h3><ul class="lsa-metric-list">{% for item in report.reservation_statuses %}<li><span>{{ item.normalized_status|admin_status_label }}</span><b>{{ item.total }}</b></li>{% empty %}<li class="lsa-empty-state">لا توجد حجوزات في هذه الفترة</li>{% endfor %}</ul></div>
+      </div>
+    </article>
+    <article class="lsa-panel">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">ما بعد الحجز</span><h2>التعديل وتسليم البريد</h2></div></header>
+      <div class="lsa-breakdown-grid">
+        <div><h3>طلبات التعديل</h3><ul class="lsa-metric-list">{% for item in report.modification_statuses %}<li><span>{{ item.status|admin_status_label }}</span><b>{{ item.total }}</b></li>{% empty %}<li class="lsa-empty-state">لا توجد تعديلات في هذه الفترة</li>{% endfor %}</ul></div>
+        <div><h3>رسائل البريد</h3><ul class="lsa-metric-list">{% for item in report.email_statuses %}<li><span>{{ item.status|admin_status_label }}</span><b>{{ item.total }}</b></li>{% empty %}<li class="lsa-empty-state">لا توجد رسائل في هذه الفترة</li>{% endfor %}</ul></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="lsa-panel lsa-export-panel">
+    <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">بيانات آمنة</span><h2>تصدير التقارير المنقحة</h2><p>ملفات CSV لا تتضمن بيانات عميل حساسة.</p></div></header>
+    <div class="lsa-export-grid">
+      <form method="post" action="{% url 'notifications:export' 'properties' %}">{% csrf_token %}<button type="submit">الوحدات <span>CSV ↓</span></button></form>
+      <form method="post" action="{% url 'notifications:export' 'reviews' %}">{% csrf_token %}<button type="submit">التقييمات <span>CSV ↓</span></button></form>
+      <form method="post" action="{% url 'notifications:export' 'contacts' %}">{% csrf_token %}<button type="submit">التواصل <span>CSV ↓</span></button></form>
+      <form method="post" action="{% url 'notifications:export' 'quotes' %}">{% csrf_token %}<button type="submit">عروض السعر <span>CSV ↓</span></button></form>
+      <form method="post" action="{% url 'notifications:export' 'intents' %}">{% csrf_token %}<button type="submit">طلبات الحجز <span>CSV ↓</span></button></form>
+      <form method="post" action="{% url 'notifications:export' 'modifications' %}">{% csrf_token %}<button type="submit">التعديلات <span>CSV ↓</span></button></form>
+      <form method="post" action="{% url 'notifications:export' 'sync_runs' %}">{% csrf_token %}<button type="submit">المزامنة <span>CSV ↓</span></button></form>
+    </div>
+  </section>
+</main>
 {% endblock %}

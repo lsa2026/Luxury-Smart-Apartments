@@ -1,43 +1,52 @@
 {% extends "admin/base_site.html" %}
-
+{% load admin_dashboard %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} lsa-operations-page{% endblock %}
 {% block content %}
-<div id="content-main" dir="rtl">
-  <h1>حالة تكامل Hostaway</h1>
-  <table>
-    <tbody>
-      <tr><th>الوحدات المحلية</th><td>{{ health.local_properties }}</td></tr>
-      <tr><th>الوحدات النشطة</th><td>{{ health.active_properties }}</td></tr>
-      <tr><th>بانتظار المراجعة</th><td>{{ health.pending_review }}</td></tr>
-      <tr><th>المخفية يدويًا</th><td>{{ health.manually_hidden }}</td></tr>
-      <tr><th>المؤرشفة</th><td>{{ health.archived }}</td></tr>
-      <tr><th>Redis</th><td>{{ health.redis_status }}</td></tr>
-      <tr><th>Celery Worker</th><td>{{ health.worker_status }}</td></tr>
-      <tr><th>Celery Beat</th><td>{{ health.beat_status }}</td></tr>
-      <tr><th>مصادقة Hostaway</th><td>{{ health.authentication_status }}</td></tr>
-    </tbody>
-  </table>
+<main class="lsa-dashboard lsa-operations-screen">
+  <section class="lsa-page-head lsa-page-head--hostaway">
+    <div><span class="lsa-kicker"><i></i> التكامل الرئيسي</span><h1>Hostaway</h1><p>حالة المصدر والمزامنة ومفاتيح العمليات الكتابية في واجهة واحدة واضحة.</p></div>
+    <div class="lsa-page-head__actions"><a href="{% url 'admin:integrations_integrationsyncrun_changelist' %}" class="lsa-btn lsa-btn--ghost">سجل المزامنة</a><a href="{% url 'admin:integrations_hostawaywebhookevent_changelist' %}" class="lsa-btn lsa-btn--ghost">Webhooks</a></div>
+  </section>
 
-  <h2>آخر تشغيل</h2>
-  <p>الوحدات: {{ health.last_property_sync|default:"لا يوجد" }}</p>
-  <p>المراجعات: {{ health.last_review_sync|default:"لا يوجد" }}</p>
+  <section class="lsa-stat-grid" aria-label="ملخص وحدات Hostaway">
+    <article class="lsa-stat"><span class="lsa-stat__meta">الوحدات المحلية</span><strong>{{ health.local_properties }}</strong><small>إجمالي المصدر المحلي</small></article>
+    <article class="lsa-stat"><span class="lsa-stat__meta">الوحدات النشطة</span><strong>{{ health.active_properties }}</strong><small>نشطة في Hostaway</small></article>
+    <a class="lsa-stat" href="{% url 'admin:properties_property_changelist' %}?is_visible__exact=0"><span class="lsa-stat__meta">بانتظار المراجعة</span><strong>{{ health.pending_review }}</strong><small>{{ health.manually_hidden }} مخفية يدويًا</small></a>
+    <article class="lsa-stat"><span class="lsa-stat__meta">المؤرشفة</span><strong>{{ health.archived }}</strong><small>غير نشطة في المصدر</small></article>
+  </section>
 
-  <h2>Feature Flags الكتابية</h2>
-  <ul>
-    {% for name, enabled in health.write_flags.items %}
-      <li>{{ name }}: {{ enabled|yesno:"مفعّل,مغلق" }}</li>
-    {% endfor %}
-  </ul>
+  <section class="lsa-report-grid">
+    <article class="lsa-panel">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">البنية</span><h2>جاهزية المزامنة</h2></div></header>
+      <ul class="lsa-health__list lsa-health__list--roomy">
+        <li><span><i class="{% if health.authentication_status == 'configured' %}is-ok{% else %}is-warn{% endif %}"></i>بيانات المصادقة</span><b>{% if health.authentication_status == 'configured' %}مهيأة{% else %}غير مهيأة{% endif %}</b></li>
+        <li><span><i class="{% if health.redis_status == 'available' %}is-ok{% else %}is-warn{% endif %}"></i>Redis / Cache</span><b>{{ health.redis_status|admin_status_label }}</b></li>
+        <li><span><i class="{% if health.worker_status == 'available' %}is-ok{% else %}is-warn{% endif %}"></i>عامل المهام</span><b>{{ health.worker_status|admin_status_label }}</b></li>
+        <li><span><i class="{% if health.beat_status == 'enabled' %}is-ok{% else %}is-neutral{% endif %}"></i>الجدولة الآلية</span><b>{% if health.beat_status == 'enabled' %}مفعلة{% else %}مغلقة{% endif %}</b></li>
+      </ul>
+    </article>
+    <article class="lsa-panel">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">آخر تشغيل</span><h2>سجل المصدر</h2></div></header>
+      <dl class="lsa-activity-list">
+        <div><dt>الوحدات</dt><dd>{% if health.last_property_sync %}<strong>{{ health.last_property_sync.get_status_display }}</strong><small>{{ health.last_property_sync.started_at|timesince }} مضت · {{ health.last_property_sync.fetched_count }} عنصر</small>{% else %}<strong>لا يوجد تشغيل سابق</strong>{% endif %}</dd></div>
+        <div><dt>التقييمات</dt><dd>{% if health.last_review_sync %}<strong>{{ health.last_review_sync.get_status_display }}</strong><small>{{ health.last_review_sync.started_at|timesince }} مضت · {{ health.last_review_sync.fetched_count }} عنصر</small>{% else %}<strong>لا يوجد تشغيل سابق</strong>{% endif %}</dd></div>
+      </dl>
+    </article>
+  </section>
 
-  <h2>مزامنة آمنة</h2>
-  {% if not dispatch_enabled %}
-    <p class="help">عامل Celery غير مفعّل؛ ستعرض الأزرار أمر التشغيل بدل تنفيذ طلب طويل.</p>
-  {% endif %}
-  <form method="post">
-    {% csrf_token %}
-    <button name="sync_action" value="properties_dry_run">Dry-run للوحدات</button>
-    <button name="sync_action" value="properties">مزامنة كل الوحدات</button>
-    <button name="sync_action" value="reviews_dry_run">Dry-run للمراجعات</button>
-    <button name="sync_action" value="reviews">مزامنة المراجعات</button>
-  </form>
-</div>
+  <section class="lsa-panel lsa-write-flags">
+    <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">حماية العمليات</span><h2>مفاتيح Hostaway الكتابية</h2><p>تشغيل أي مفتاح حي يعني السماح للتطبيق بالتأثير على بيانات Hostaway الفعلية.</p></div></header>
+    <div class="lsa-flag-grid">{% for name, enabled in health.write_flags.items %}<div class="{% if enabled %}is-enabled{% endif %}"><span>{{ name|admin_label }}</span><b>{% if enabled %}مفعّل{% else %}مغلق{% endif %}</b></div>{% endfor %}</div>
+  </section>
+
+  <section class="lsa-panel lsa-sync-actions">
+    <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">تشغيل يدوي</span><h2>المزامنة الآمنة</h2><p>ابدأ دائمًا بالمعاينة الجافة قبل أي مزامنة فعلية.</p></div></header>
+    {% if not dispatch_enabled %}<div class="lsa-callout lsa-callout--warn"><strong>عامل المهام غير مفعّل</strong><span>لن تنفذ الأزرار مزامنة الآن؛ ستظهر رسالة بأمر التشغيل المحلي.</span></div>{% endif %}
+    <form method="post" class="lsa-sync-form">{% csrf_token %}
+      <div><span>الوحدات</span><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="properties_dry_run">معاينة جافة</button><button class="lsa-btn lsa-btn--danger-outline" name="sync_action" value="properties">مزامنة فعلية</button></div>
+      <div><span>التقييمات</span><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="reviews_dry_run">معاينة جافة</button><button class="lsa-btn lsa-btn--danger-outline" name="sync_action" value="reviews">مزامنة فعلية</button></div>
+    </form>
+  </section>
+</main>
 {% endblock %}

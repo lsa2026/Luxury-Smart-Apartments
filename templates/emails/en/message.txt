@@ -1,10 +1,17 @@
 {{ brand_name }}
 
 {{ heading }}
-
 {{ message }}
-{% if property_name %}Property: {{ property_name }}{% endif %}
-{% if reference %}Public reference: {{ reference }}{% endif %}
 
+{% if property_name %}Property: {{ property_name }}{% endif %}
+{% if check_in %}Check-in: {{ check_in }}
+Check-out: {{ check_out }}
+Guests: {{ guests }}{% endif %}
+{% if booking_reference %}Booking number: {{ booking_reference }}{% elif reference %}Reference: {{ reference }}{% endif %}
+{% if request_reference %}Update reference: {{ request_reference }}{% endif %}
+{% if manage_url %}Manage booking: {{ manage_url }}{% endif %}
+
+Website: {{ site_url }}
+{% if contact_phone %}Contact number: {{ contact_phone }}{% endif %}
+{% if support_email %}Email: {{ support_email }}{% endif %}
 Privacy: {{ site_base_url }}/legal/privacy/
-Contact: {{ site_base_url }}/contact/

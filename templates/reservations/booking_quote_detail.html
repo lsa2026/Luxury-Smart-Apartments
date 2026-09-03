@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% load i18n presentation %}
+
 {% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
+
 {% block content %}
 <section
-    class="section container checkout-shell"
+    class="quote-review"
     data-analytics-event="{% if quote_is_usable %}quote_created{% else %}quote_expired{% endif %}"
     data-analytics-reason="{% if not quote_is_usable %}expired{% endif %}"
     data-analytics-currency="{{ quote.currency }}"
@@ -13,18 +15,296 @@
     data-analytics-nights="{{ quote.nights }}"
     data-analytics-guests="{{ quote.guests }}"
 >
-    {% include "includes/progress_indicator.html" with step=2 %}
-    <div class="section-heading"><p class="eyebrow">{% trans "Temporary live quote" %}</p><h1>{% trans "Review your stay" %}</h1></div>
-    <div class="checkout-grid">
-        <article class="quote-card quote-card--compact">
-            {% if cover_image %}<img src="{{ cover_image.display_url }}" alt="{{ cover_image|localized_image_alt|default:property.display_name }}" width="960" height="640" loading="lazy">{% endif %}
-            <div class="quote-card__body"><h2>{{ property|localized_property_name }}</h2><dl class="quote-summary"><div><dt>{% trans "Check-in" %}</dt><dd>{{ quote.check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ quote.check_out|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Nights" %}</dt><dd>{{ quote.nights }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ quote.guests }}</dd></div><div class="quote-summary__total"><dt>{% trans "Total price" %}</dt><dd>{{ quote.total_price|money_amount }} {{ quote.currency }}</dd></div></dl>{% if quote.components %}<h3>{% trans "Price breakdown" %}</h3><ul class="price-components">{% for component in quote.components %}<li><span>{{ component.title|localized_price_component }}</span><strong>{{ component.value|money_amount }} {{ quote.currency }}</strong></li>{% endfor %}</ul>{% endif %}<p class="quote-expiry">{% blocktrans with expires=quote.expires_at|date:"Y-m-d H:i" %}This quote expires at {{ expires }}.{% endblocktrans %}</p><p class="quote-notice">{% trans "Price and availability are temporary and will be checked again before the local booking request is created." %}</p></div>
-        </article>
-        <section class="form-card booking-guest-form" aria-labelledby="guest-details-title">
-            <p class="eyebrow">{% trans "Step two" %}</p><h2 id="guest-details-title">{% trans "Guest details" %}</h2><p>{% trans "Your details remain local and are not sent to Hostaway at this stage." %}</p>
-            {% if quote_is_usable %}<form method="post" action="{% url 'reservations:guest_details' quote_reference %}" data-submit-once data-analytics-event="begin_checkout" data-analytics-currency="{{ quote.currency }}" data-analytics-value="{{ quote.total_price }}" data-analytics-nights="{{ quote.nights }}" data-analytics-guests="{{ quote.guests }}" novalidate>{% csrf_token %}{{ guest_form.non_field_errors }}{% for field in guest_form %}<div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}">{% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}{{ field }}{% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}<button class="button" type="submit">{% trans "Review booking request" %}</button></form>
-            {% else %}<div class="availability-message availability-message--error"><p>{% trans "This quote is invalid or expired. Please check availability again." %}</p></div>{% endif %}
-        </section>
+    <div class="container quote-review__inner">
+        {% include "includes/progress_indicator.html" with step=2 %}
+
+        <header class="quote-review__heading">
+            <div>
+                <p class="eyebrow">{% trans "Temporary live quote" %}</p>
+                <h1>{% trans "Review your stay" %}</h1>
+                <p>{% trans "Price and availability are temporary and will be checked again before the local booking request is created." %}</p>
+            </div>
+            <div class="quote-review__secure">
+                <span aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="19" height="19">
+                        <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6zM12 14v2.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                    </svg>
+                </span>
+                <small>{% trans "Secure access" %}</small>
+            </div>
+        </header>
+
+        <div class="quote-review__grid">
+            <article class="quote-review__stay" aria-labelledby="quote-property-title">
+                <div class="quote-review__media">
+                    {% if cover_image %}
+                    <img
+                        src="{{ cover_image.display_url }}"
+                        alt="{{ cover_image|localized_image_alt|default:property.display_name }}"
+                        width="960"
+                        height="640"
+                    >
+                    {% else %}
+                    <div class="quote-review__media-empty" aria-hidden="true">
+                        <span>LS</span>
+                    </div>
+                    {% endif %}
+                    <span class="quote-review__live-badge">
+                        <i aria-hidden="true"></i>
+                        {% trans "Temporary live quote" %}
+                    </span>
+                    <div class="quote-review__media-copy">
+                        <small>{% trans "Stay" %}</small>
+                        <h2 id="quote-property-title">{{ property|localized_property_name }}</h2>
+                    </div>
+                </div>
+
+                <div class="quote-review__stay-body">
+                    <div class="quote-review__dates" aria-label="{% trans 'Stay details' %}">
+                        <div>
+                            <span class="quote-review__date-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="20" height="20">
+                                    <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                                </svg>
+                            </span>
+                            <span>
+                                <small>{% trans "Check-in" %}</small>
+                                <time datetime="{{ quote.check_in|date:'Y-m-d' }}">{{ quote.check_in|date:"Y-m-d" }}</time>
+                            </span>
+                        </div>
+                        <span class="quote-review__date-route" aria-hidden="true"><i></i><b></b><i></i></span>
+                        <div>
+                            <span class="quote-review__date-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="20" height="20">
+                                    <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5zM8 13h3m2 0h3m-8 3h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                                </svg>
+                            </span>
+                            <span>
+                                <small>{% trans "Check-out" %}</small>
+                                <time datetime="{{ quote.check_out|date:'Y-m-d' }}">{{ quote.check_out|date:"Y-m-d" }}</time>
+                            </span>
+                        </div>
+                    </div>
+
+                    <dl class="quote-review__facts">
+                        <div>
+                            <dt>{% trans "Nights" %}</dt>
+                            <dd>{{ quote.nights }}</dd>
+                        </div>
+                        <div>
+                            <dt>{% trans "Guests" %}</dt>
+                            <dd>{{ quote.guests }}</dd>
+                        </div>
+                    </dl>
+
+                    <div class="quote-review__price">
+                        <span>{% trans "Total price" %}</span>
+                        <strong>{{ quote.total_price|localized_money:quote.currency }}</strong>
+                    </div>
+
+                    {% if quote.components %}
+                    <div class="quote-review__breakdown">
+                        <h3>{% trans "Price breakdown" %}</h3>
+                        <ul class="price-components">
+                            {% for component in quote.components %}
+                            <li>
+                                <span>{{ component.title|localized_price_component }}</span>
+                                <strong>{{ component|price_component_amount|localized_money:quote.currency }}</strong>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="quote-review__expiry">
+                        <span aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="19" height="19">
+                                <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                                <path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                            </svg>
+                        </span>
+                        <p>{% blocktrans with expires=quote.expires_at|date:"Y-m-d H:i" %}This quote expires at {{ expires }}.{% endblocktrans %}</p>
+                    </div>
+                </div>
+            </article>
+
+            <section class="quote-review__form-card" aria-labelledby="guest-details-title">
+                <header class="quote-review__form-heading">
+                    <span aria-hidden="true">02</span>
+                    <div>
+                        <p class="eyebrow">{% trans "Step two" %}</p>
+                        <h2 id="guest-details-title">{% trans "Guest details" %}</h2>
+                    </div>
+                </header>
+
+                <div class="quote-review__privacy-note">
+                    <span aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="18" height="18">
+                            <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+                        </svg>
+                    </span>
+                    <p>{% trans "Your details remain local and are not sent to Hostaway at this stage." %}</p>
+                </div>
+
+                {% if quote_is_usable %}
+                <form
+                    class="quote-review__form guest-journey"
+                    method="post"
+                    action="{% url 'reservations:guest_details' quote_reference %}"
+                    data-guest-journey
+                    data-initial-step="{{ guest_form_initial_step }}"
+                    data-submit-once
+                    data-analytics-event="begin_checkout"
+                    data-analytics-currency="{{ quote.currency }}"
+                    data-analytics-value="{{ quote.total_price }}"
+                    data-analytics-nights="{{ quote.nights }}"
+                    data-analytics-guests="{{ quote.guests }}"
+                    novalidate
+                >
+                    {% csrf_token %}
+                    {% if guest_form.non_field_errors %}
+                    <div class="form-error form-error--panel" role="alert">{{ guest_form.non_field_errors }}</div>
+                    {% endif %}
+
+                    {{ guest_form.idempotency_key }}
+
+                    <div class="guest-journey__progress" aria-label="{% trans 'Guest details progress' %}">
+                        <div class="guest-journey__progress-item is-active" data-journey-indicator="1" aria-current="step">
+                            <span>1</span>
+                            <div><strong>{% trans "Your details" %}</strong><small>{% trans "Contact information" %}</small></div>
+                        </div>
+                        <i aria-hidden="true"><b data-journey-progress></b></i>
+                        <div class="guest-journey__progress-item" data-journey-indicator="2">
+                            <span>2</span>
+                            <div><strong>{% trans "Payment address" %}</strong><small>{% trans "For secure payment" %}</small></div>
+                        </div>
+                    </div>
+
+                    <section class="guest-journey__panel is-active" data-journey-panel="1" aria-labelledby="guest-journey-contact-title">
+                        <div class="guest-journey__panel-heading">
+                            <div>
+                                <p class="eyebrow">{% trans "Primary guest" %}</p>
+                                <h3 id="guest-journey-contact-title">{% trans "How can we reach you?" %}</h3>
+                            </div>
+                            <span>{% trans "4 fields" %}</span>
+                        </div>
+
+                        <div class="quote-review__form-grid">
+                            <div class="form-field quote-review__field--guest_first_name{% if guest_form.guest_first_name.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.guest_first_name.id_for_label }}">{{ guest_form.guest_first_name.label }}</label>
+                                {{ guest_form.guest_first_name }}
+                                {% for error in guest_form.guest_first_name.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field quote-review__field--guest_last_name{% if guest_form.guest_last_name.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.guest_last_name.id_for_label }}">{{ guest_form.guest_last_name.label }}</label>
+                                {{ guest_form.guest_last_name }}
+                                {% for error in guest_form.guest_last_name.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field quote-review__field--guest_email{% if guest_form.guest_email.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.guest_email.id_for_label }}">{{ guest_form.guest_email.label }}</label>
+                                {{ guest_form.guest_email }}
+                                {% for error in guest_form.guest_email.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field quote-review__field--guest_phone{% if guest_form.guest_phone.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.guest_phone.id_for_label }}">{{ guest_form.guest_phone.label }}</label>
+                                {{ guest_form.guest_phone }}
+                                {% for error in guest_form.guest_phone.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                                {% if guest_form.guest_phone.help_text %}<small>{{ guest_form.guest_phone.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+
+                        <details class="guest-journey__optional"{% if guest_form.special_requests.errors or guest_form.marketing_consent.errors %} open{% endif %}>
+                            <summary>
+                                <span aria-hidden="true">＋</span>
+                                <div><strong>{% trans "Optional details" %}</strong><small>{% trans "Special requests and offers" %}</small></div>
+                            </summary>
+                            <div class="guest-journey__optional-body">
+                                <div class="form-field{% if guest_form.special_requests.errors %} form-field--error{% endif %}" data-journey-field>
+                                    <label for="{{ guest_form.special_requests.id_for_label }}">{{ guest_form.special_requests.label }}</label>
+                                    {{ guest_form.special_requests }}
+                                    {% for error in guest_form.special_requests.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                                </div>
+                                <div class="form-field quote-review__choice guest-journey__marketing{% if guest_form.marketing_consent.errors %} form-field--error{% endif %}">
+                                    <label for="{{ guest_form.marketing_consent.id_for_label }}">{{ guest_form.marketing_consent }}<span>{{ guest_form.marketing_consent.label }}</span></label>
+                                </div>
+                            </div>
+                        </details>
+
+                        <button class="button guest-journey__next" type="button" data-journey-next hidden>
+                            <span>{% trans "Continue to payment address" %}</span>
+                            <b aria-hidden="true">←</b>
+                        </button>
+                    </section>
+
+                    <section class="guest-journey__panel" data-journey-panel="2" aria-labelledby="guest-journey-billing-title">
+                        <div class="guest-journey__panel-heading">
+                            <div>
+                                <p class="eyebrow">{% trans "Secure payment" %}</p>
+                                <h3 id="guest-journey-billing-title">{% trans "Payment address" %}</h3>
+                            </div>
+                            <button type="button" class="guest-journey__back" data-journey-back hidden>→ {% trans "Back" %}</button>
+                        </div>
+
+                        <div class="guest-journey__billing-note">
+                            <span aria-hidden="true">✓</span>
+                            <p>{% trans "This address is required by the secure payment provider and may differ from the apartment address." %}</p>
+                        </div>
+
+                        <div class="quote-review__form-grid guest-journey__billing-grid">
+                            <div class="form-field guest-journey__field--street{% if guest_form.billing_street1.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}</label>
+                                {{ guest_form.billing_street1 }}
+                                {% for error in guest_form.billing_street1.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field guest-journey__field--country{% if guest_form.billing_country.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.billing_country.id_for_label }}">{{ guest_form.billing_country.label }}</label>
+                                {{ guest_form.billing_country }}
+                                {% for error in guest_form.billing_country.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field guest-journey__field--city{% if guest_form.billing_city.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.billing_city.id_for_label }}">{{ guest_form.billing_city.label }}</label>
+                                {{ guest_form.billing_city }}
+                                {% for error in guest_form.billing_city.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field guest-journey__field--state{% if guest_form.billing_state.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.billing_state.id_for_label }}">{{ guest_form.billing_state.label }}</label>
+                                {{ guest_form.billing_state }}
+                                {% for error in guest_form.billing_state.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field guest-journey__field--postcode{% if guest_form.billing_postcode.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.billing_postcode.id_for_label }}">{{ guest_form.billing_postcode.label }}</label>
+                                {{ guest_form.billing_postcode }}
+                                {% for error in guest_form.billing_postcode.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        {% url 'core:terms' as terms_url %}
+                        {% url 'core:privacy' as privacy_url %}
+                        <div class="guest-journey__legal" aria-label="{% trans 'Required agreements' %}">
+                            <div class="form-field quote-review__choice{% if guest_form.terms_accepted.errors %} form-field--error{% endif %}">
+                                <label for="{{ guest_form.terms_accepted.id_for_label }}">{{ guest_form.terms_accepted }}<span>{% blocktrans with url=terms_url %}I accept the <a href="{{ url }}" target="_blank">terms and conditions</a>.{% endblocktrans %}</span></label>
+                                {% for error in guest_form.terms_accepted.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field quote-review__choice{% if guest_form.privacy_accepted.errors %} form-field--error{% endif %}">
+                                <label for="{{ guest_form.privacy_accepted.id_for_label }}">{{ guest_form.privacy_accepted }}<span>{% blocktrans with url=privacy_url %}I accept the <a href="{{ url }}" target="_blank">privacy policy</a>.{% endblocktrans %}</span></label>
+                                {% for error in guest_form.privacy_accepted.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        <button class="button quote-review__submit" type="submit">
+                            <span>{% trans "Review booking request" %}</span>
+                            <b aria-hidden="true">←</b>
+                        </button>
+                        <p class="guest-journey__submit-note"><span aria-hidden="true">⌁</span>{% trans "Availability and price will be checked again before payment." %}</p>
+                    </section>
+                </form>
+                {% else %}
+                <div class="availability-message availability-message--error">
+                    <p>{% trans "This quote is invalid or expired. Please check availability again." %}</p>
+                </div>
+                {% endif %}
+            </section>
+        </div>
     </div>
 </section>
 {% endblock %}

@@ -1,16 +1,92 @@
 {% load i18n %}
-<form class="availability-form" method="post" action="{% url 'reservations:quote_create' %}" data-availability-form data-submit-once data-analytics-event="check_availability" novalidate>
+<form
+    class="availability-form"
+    method="post"
+    action="{% url 'reservations:quote_create' %}"
+    data-availability-form
+    data-submit-once
+    data-analytics-event="check_availability"
+    data-required-message="{% trans 'This field is required.' %}"
+    data-invalid-message="{% trans 'Please review this field.' %}"
+    novalidate
+>
     {% csrf_token %}
     {% if availability_form.non_field_errors %}<div class="form-error-summary" role="alert">{{ availability_form.non_field_errors }}</div>{% endif %}
+    <div class="form-error-summary availability-form__errors" data-availability-errors role="alert" tabindex="-1" hidden>
+        <strong>{% trans "Complete the required search fields" %}</strong>
+        <span>{% trans "Choose a city and your stay dates before continuing." %}</span>
+    </div>
     <div class="availability-form__grid">
         {% for field in availability_form %}
-        <div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}">
+        <div class="form-field{% if field.is_hidden %} form-field--hidden{% endif %}{% if field.errors %} form-field--error{% endif %}" data-form-field="{{ field.name }}">
             {% if not field.is_hidden %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{% endif %}
             {{ field }}
+            {% if field.name == "check_in" or field.name == "check_out" %}
+            <button class="date-trigger" type="button" data-date-trigger="{{ field.name }}" hidden>
+                <span class="date-trigger__calendar" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2v3M17 2v3M3.5 9h17M5.5 4h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+                </span>
+                <span class="date-trigger__copy">
+                    <small>{% if field.name == "check_in" %}{% trans "Arrival" %}{% else %}{% trans "Departure" %}{% endif %}</small>
+                    <strong data-date-trigger-value>{% trans "Choose date" %}</strong>
+                </span>
+                <span class="date-trigger__chevron" aria-hidden="true">⌄</span>
+            </button>
+            {% endif %}
             {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+            <p class="form-error form-error--client" data-client-error hidden></p>
         </div>
         {% endfor %}
         <button class="button availability-form__submit" type="submit">{% trans "Check availability" %}</button>
     </div>
     <p class="availability-form__loading" role="status" aria-live="polite" hidden>{% trans "Checking live price and availability…" %}</p>
+
+    <dialog
+        class="luxury-calendar"
+        data-luxury-calendar
+        data-choose-label="{% trans 'Choose date' %}"
+        data-arrival-label="{% trans 'Arrival' %}"
+        data-departure-label="{% trans 'Departure' %}"
+        data-arrival-help="{% trans 'Choose your arrival day' %}"
+        data-departure-help="{% trans 'Now choose your departure day' %}"
+        data-selected-help="{% trans 'Your stay dates are ready' %}"
+        data-night-label="{% trans 'night' %}"
+        data-nights-label="{% trans 'nights' %}"
+        aria-label="{% trans 'Choose your stay dates' %}"
+    >
+        <div class="luxury-calendar__header">
+            <div>
+                <span class="luxury-calendar__eyebrow">{% trans "Plan your stay" %}</span>
+                <h2>{% trans "Choose your stay dates" %}</h2>
+                <p data-calendar-help>{% trans "Choose your arrival day" %}</p>
+            </div>
+            <button class="luxury-calendar__close" type="button" data-calendar-close aria-label="{% trans 'Close calendar' %}">×</button>
+        </div>
+
+        <div class="luxury-calendar__selection">
+            <button type="button" data-calendar-mode="check_in">
+                <small>{% trans "Arrival" %}</small>
+                <strong data-calendar-arrival>{% trans "Choose date" %}</strong>
+            </button>
+            <span class="luxury-calendar__route" aria-hidden="true">←</span>
+            <button type="button" data-calendar-mode="check_out">
+                <small>{% trans "Departure" %}</small>
+                <strong data-calendar-departure>{% trans "Choose date" %}</strong>
+            </button>
+            <span class="luxury-calendar__nights" data-calendar-nights hidden></span>
+        </div>
+
+        <div class="luxury-calendar__navigation">
+            <button type="button" data-calendar-previous aria-label="{% trans 'Previous month' %}"><span aria-hidden="true">→</span></button>
+            <strong data-calendar-heading aria-live="polite"></strong>
+            <button type="button" data-calendar-next aria-label="{% trans 'Next month' %}"><span aria-hidden="true">←</span></button>
+        </div>
+
+        <div class="luxury-calendar__months" data-calendar-months></div>
+
+        <div class="luxury-calendar__footer">
+            <p><span aria-hidden="true">◆</span>{% trans "Your arrival day stays highlighted while you choose departure." %}</p>
+            <button class="button button--gold" type="button" data-calendar-confirm disabled>{% trans "Confirm dates" %}</button>
+        </div>
+    </dialog>
 </form>

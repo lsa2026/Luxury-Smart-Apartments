@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-31 03:31+0300\n"
+"POT-Creation-Date: 2026-08-30 18:08+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,208 +18,515 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: .\apps\core\forms.py:13
+#: .\apps\accounts\forms.py:13 .\apps\reservations\booking_forms.py:48
+msgid "First name"
+msgstr "Prénom"
+
+#: .\apps\accounts\forms.py:18 .\apps\reservations\booking_forms.py:53
+msgid "Last name"
+msgstr "Nom"
+
+#: .\apps\accounts\forms.py:23 .\apps\accounts\forms.py:62
+#: .\templates\core\contact.html:23 .\templates\includes\footer.html:81
+#: .\templates\reservations\booking_intent_detail.html:15
+msgid "Email"
+msgstr "E-mail"
+
+#: .\apps\accounts\forms.py:28
+msgid "I agree to the terms and privacy policy"
+msgstr "J’accepte les conditions générales et la politique de confidentialité"
+
+#: .\apps\accounts\forms.py:46
+msgid "An account already exists for this email."
+msgstr "Un compte existe déjà pour cette adresse e-mail."
+
+#: .\apps\accounts\views.py:45
+msgid "Your account is ready."
+msgstr "Votre compte est prêt."
+
+#: .\apps\accounts\views.py:73
+msgid "Welcome back."
+msgstr "Heureux de vous revoir."
+
+#: .\apps\accounts\views.py:82
+msgid "You have signed out securely."
+msgstr "Vous avez été déconnecté en toute sécurité."
+
+#: .\apps\core\forms.py:14
 msgid "Name"
 msgstr "Nom"
 
-#: .\apps\core\forms.py:14 .\apps\reservations\booking_forms.py:19
+#: .\apps\core\forms.py:19 .\apps\reservations\booking_forms.py:58
 msgid "Email address"
 msgstr "Adresse e-mail"
 
-#: .\apps\core\forms.py:15
+#: .\apps\core\forms.py:24
 msgid "Phone (optional)"
 msgstr "Téléphone (facultatif)"
 
-#: .\apps\core\forms.py:16
+#: .\apps\core\forms.py:32
 msgid "Subject"
 msgstr "Objet"
 
-#: .\apps\core\forms.py:18
+#: .\apps\core\forms.py:37
 msgid "Message"
 msgstr "Message"
 
-#: .\apps\core\forms.py:36
+#: .\apps\core\forms.py:42
+msgid "Include your booking number if your message is about a stay."
+msgstr "Indiquez votre numéro de réservation si votre message concerne un séjour."
+
+#: .\apps\core\forms.py:60
 msgid "Unable to send this message."
 msgstr "Impossible d’envoyer ce message."
 
-#: .\apps\core\forms.py:51
+#: .\apps\core\forms.py:75
 msgid "Please provide a little more detail."
 msgstr "Veuillez fournir un peu plus de détails."
 
-#: .\apps\core\templatetags\presentation.py:164
+#: .\apps\core\templatetags\presentation.py:233
+#: .\apps\core\templatetags\presentation.py:234
 msgid "Accommodation price"
 msgstr "Prix de l’hébergement"
 
-#: .\apps\core\templatetags\presentation.py:165
+#: .\apps\core\templatetags\presentation.py:235
+msgid "Base rate"
+msgstr "Tarif de base"
+
+#: .\apps\core\templatetags\presentation.py:236
+#: .\apps\core\templatetags\presentation.py:237
 msgid "Cleaning fee"
 msgstr "Frais de ménage"
 
-#: .\apps\core\templatetags\presentation.py:166
+#: .\apps\core\templatetags\presentation.py:238
+msgid "Service fee"
+msgstr "Frais de service"
+
+#: .\apps\core\templatetags\presentation.py:239
+#: .\apps\core\templatetags\presentation.py:240
 msgid "VAT"
 msgstr "TVA"
 
-#: .\apps\core\templatetags\presentation.py:167
+#: .\apps\core\templatetags\presentation.py:241
+#: .\apps\core\templatetags\presentation.py:242
 msgid "Tax"
 msgstr "Taxe"
 
-#: .\apps\core\templatetags\presentation.py:168
+#: .\apps\core\templatetags\presentation.py:243
+#: .\apps\core\templatetags\presentation.py:244
 msgid "City tax"
 msgstr "Taxe de séjour"
 
-#: .\apps\core\templatetags\presentation.py:169
+#: .\apps\core\templatetags\presentation.py:245
+#: .\apps\core\templatetags\presentation.py:246
 msgid "Damage deposit"
 msgstr "Dépôt de garantie"
 
-#: .\apps\core\templatetags\presentation.py:170
+#: .\apps\core\templatetags\presentation.py:247
+#: .\apps\core\templatetags\presentation.py:248
 msgid "Extra guest fee"
 msgstr "Supplément voyageur"
 
-#: .\apps\core\templatetags\presentation.py:171
+#: .\apps\core\templatetags\presentation.py:249
+msgid "Pet fee"
+msgstr "Frais pour animaux"
+
+#: .\apps\core\templatetags\presentation.py:250
+msgid "Resort fee"
+msgstr "Frais de séjour"
+
+#: .\apps\core\templatetags\presentation.py:251
+msgid "Weekly discount"
+msgstr "Remise hebdomadaire"
+
+#: .\apps\core\templatetags\presentation.py:252
+msgid "Monthly discount"
+msgstr "Remise mensuelle"
+
+#: .\apps\core\templatetags\presentation.py:253
+msgid "Coupon discount"
+msgstr "Remise avec coupon"
+
+#: .\apps\core\templatetags\presentation.py:254
+msgid "Discount"
+msgstr "Remise"
+
+#: .\apps\core\templatetags\presentation.py:255
+#: .\apps\core\templatetags\presentation.py:256
 msgid "Price item"
 msgstr "Élément tarifaire"
 
-#: .\apps\core\templatetags\presentation.py:180
+#: .\apps\core\templatetags\presentation.py:278
 msgid "Entire home"
 msgstr "Logement entier"
 
-#: .\apps\core\templatetags\presentation.py:181
+#: .\apps\core\templatetags\presentation.py:279
 msgid "Private room"
 msgstr "Chambre privée"
 
-#: .\apps\core\templatetags\presentation.py:182
+#: .\apps\core\templatetags\presentation.py:280
 msgid "Shared room"
 msgstr "Chambre partagée"
 
-#: .\apps\core\templatetags\presentation.py:183
+#: .\apps\core\templatetags\presentation.py:281
 msgid "Hotel room"
 msgstr "Chambre d’hôtel"
 
-#: .\apps\core\views.py:149
+# Booking management journey
+#: .\apps\core\templatetags\presentation.py:290
+#: .\apps\core\templatetags\presentation.py:332
+msgid "Awaiting payment"
+msgstr "En attente de paiement"
+
+#: .\apps\core\templatetags\presentation.py:291
+#: .\apps\core\templatetags\presentation.py:292
+msgid "Preparing confirmation"
+msgstr "Préparation de la confirmation"
+
+#: .\apps\core\templatetags\presentation.py:293
+msgid "Confirming booking"
+msgstr "Confirmation en cours"
+
+#: .\apps\core\templatetags\presentation.py:294
+msgid "Confirmed"
+msgstr "Confirmée"
+
+#: .\apps\core\templatetags\presentation.py:295
+#: .\apps\core\templatetags\presentation.py:341
+msgid "Needs assistance"
+msgstr "Assistance nécessaire"
+
+#: .\apps\core\templatetags\presentation.py:296
+#: .\apps\core\templatetags\presentation.py:300
+#: .\apps\core\templatetags\presentation.py:303
+#: .\apps\core\templatetags\presentation.py:323
+#: .\apps\core\templatetags\presentation.py:333
+#: .\apps\core\templatetags\presentation.py:342
+#: .\apps\core\templatetags\presentation.py:345
+msgid "Under review"
+msgstr "En cours d’examen"
+
+#: .\apps\core\templatetags\presentation.py:297
+#: .\apps\core\templatetags\presentation.py:335
+msgid "Updating"
+msgstr "Mise à jour en cours"
+
+#: .\apps\core\templatetags\presentation.py:298
+msgid "Updated"
+msgstr "Mise à jour"
+
+#: .\apps\core\templatetags\presentation.py:299
+msgid "Cancelled"
+msgstr "Annulée"
+
+#: .\apps\core\templatetags\presentation.py:309
+msgid "Not paid"
+msgstr "Non payé"
+
+#: .\apps\core\templatetags\presentation.py:310
+#: .\apps\core\templatetags\presentation.py:311
+msgid "Payment pending"
+msgstr "Paiement en attente"
+
+#: .\apps\core\templatetags\presentation.py:312
+#: .\apps\core\templatetags\presentation.py:313
+#: .\templates\payments\hyperpay_result.html:47
+msgid "Payment verified"
+msgstr "Paiement vérifié"
+
+#: .\apps\core\templatetags\presentation.py:314
+msgid "Test payment completed"
+msgstr "Paiement de test effectué"
+
+#: .\apps\core\templatetags\presentation.py:315
+#: .\templates\payments\hyperpay_result.html:35
+msgid "Payment was not successful"
+msgstr "Le paiement n’a pas abouti"
+
+#: .\apps\core\templatetags\presentation.py:316
+#: .\templates\payments\hyperpay_result.html:31
+msgid "Payment was cancelled"
+msgstr "Le paiement a été annulé"
+
+#: .\apps\core\templatetags\presentation.py:317
+msgid "Refunded"
+msgstr "Remboursé"
+
+#: .\apps\core\templatetags\presentation.py:318
+msgid "Partially refunded"
+msgstr "Partiellement remboursé"
+
+#: .\apps\core\templatetags\presentation.py:319
+#: .\apps\core\templatetags\presentation.py:320
+#: .\templates\payments\hyperpay_result.html:33
+msgid "Payment needs review"
+msgstr "Le paiement doit être examiné"
+
+#: .\apps\core\templatetags\presentation.py:329
+msgid "Draft"
+msgstr "Brouillon"
+
+#: .\apps\core\templatetags\presentation.py:330
+msgid "Checking availability"
+msgstr "Vérification des disponibilités"
+
+#: .\apps\core\templatetags\presentation.py:331
+msgid "Awaiting your approval"
+msgstr "En attente de votre approbation"
+
+#: .\apps\core\templatetags\presentation.py:334
+msgid "Ready to update"
+msgstr "Prête à être mise à jour"
+
+#: .\apps\core\templatetags\presentation.py:336
+msgid "Completed"
+msgstr "Terminée"
+
+#: .\apps\core\templatetags\presentation.py:337
+msgid "Declined"
+msgstr "Refusée"
+
+#: .\apps\core\templatetags\presentation.py:338
+msgid "Expired"
+msgstr "Expirée"
+
+#: .\apps\core\templatetags\presentation.py:339
+msgid "Price changed"
+msgstr "Prix modifié"
+
+#: .\apps\core\templatetags\presentation.py:340
+msgid "Unavailable"
+msgstr "Indisponible"
+
+#: .\apps\core\templatetags\presentation.py:351
+#: .\templates\reservations\manage_reservation.html:237
+msgid "Extend stay"
+msgstr "Prolonger le séjour"
+
+#: .\apps\core\templatetags\presentation.py:352
+#: .\templates\reservations\manage_reservation.html:273
+msgid "Change dates"
+msgstr "Modifier les dates"
+
+#: .\apps\core\templatetags\presentation.py:353
+#: .\templates\reservations\manage_reservation.html:333
+msgid "Change guests"
+msgstr "Modifier les voyageurs"
+
+#: .\apps\core\templatetags\presentation.py:354
+msgid "Cancellation request"
+msgstr "Demande d’annulation"
+
+#: .\apps\core\views.py:170
 msgid "Your message has been received."
 msgstr "Votre message a bien été reçu."
 
-#: .\apps\properties\views.py:153 .\apps\properties\views.py:170
-#: .\templates\includes\footer.html:20 .\templates\includes\header.html:15
-#: .\templates\includes\mobile_navigation.html:6
+#: .\apps\payments\views.py:58
+msgid "Secure payment could not be started. Nothing was charged; please try again."
+msgstr "Le paiement sécurisé n’a pas pu démarrer. Aucun montant n’a été débité ; veuillez réessayer."
+
+#: .\apps\payments\views.py:118
+msgid "The price-difference payment could not be started. Nothing was charged, and availability was checked again."
+msgstr "Le paiement de la différence n’a pas pu démarrer. Aucun montant n’a été débité et la disponibilité a été vérifiée à nouveau."
+
+#: .\apps\payments\views.py:232
+msgid "The local payment test completed. No financial transaction or Hostaway operation was performed."
+msgstr "Le test de paiement local est terminé. Aucune transaction financière ni opération Hostaway n’a été effectuée."
+
+#: .\apps\payments\views.py:244
+msgid "Payment rejection was simulated. You can test again without any financial charge."
+msgstr "Le refus du paiement a été simulé. Vous pouvez recommencer sans aucun débit."
+
+#: .\apps\payments\views.py:251
+msgid "Payment cancellation was simulated; the booking request did not change."
+msgstr "L’annulation du paiement a été simulée ; la demande de réservation n’a pas changé."
+
+#: .\apps\payments\views.py:304
+msgid "The local price-difference payment test completed. The original booking did not change, and nothing was sent to Hostaway."
+msgstr "Le test local du paiement de la différence est terminé. La réservation initiale n’a pas changé et rien n’a été envoyé à Hostaway."
+
+#: .\apps\payments\views.py:311
+msgid "Price-difference payment rejection was simulated without any charge."
+msgstr "Le refus du paiement de la différence a été simulé sans aucun débit."
+
+#: .\apps\payments\views.py:316
+msgid "The simulation was cancelled; the original booking remains unchanged."
+msgstr "La simulation a été annulée ; la réservation initiale reste inchangée."
+
+#: .\apps\properties\views.py:174 .\apps\properties\views.py:191
+#: .\templates\includes\footer.html:47 .\templates\includes\header.html:15
+#: .\templates\includes\mobile_navigation.html:10
 #: .\templates\properties\property_list.html:3
 msgid "Properties"
 msgstr "Logements"
 
-#: .\apps\properties\views.py:164 .\templates\includes\breadcrumb.html:4
+#: .\apps\properties\views.py:185 .\templates\includes\breadcrumb.html:4
 #: .\templates\includes\header.html:14
-#: .\templates\includes\mobile_navigation.html:5
+#: .\templates\includes\mobile_navigation.html:9
 msgid "Home"
 msgstr "Accueil"
 
-#: .\apps\reservations\booking_forms.py:17
-msgid "First name"
-msgstr "Prénom"
+#: .\apps\reservations\booking_forms.py:30
+#: .\apps\reservations\booking_forms.py:42
+msgid "Enter a valid mobile number."
+msgstr "Saisissez un numéro de mobile valide."
 
-#: .\apps\reservations\booking_forms.py:18
-msgid "Last name"
-msgstr "Nom"
-
-#: .\apps\reservations\booking_forms.py:21
+#: .\apps\reservations\booking_forms.py:63
 msgid "Phone number"
 msgstr "Numéro de téléphone"
 
-#: .\apps\reservations\booking_forms.py:23
-msgid "Use international format, for example +9665XXXXXXXX."
-msgstr "Utilisez le format international, par exemple +9665XXXXXXXX."
+#: .\apps\reservations\booking_forms.py:65
+msgid "Enter your mobile number without the country code."
+msgstr "Saisissez directement votre numéro de mobile, sans indicatif du pays."
 
-#: .\apps\reservations\booking_forms.py:25
-msgid "Country code"
-msgstr "Code pays"
-
-#: .\apps\reservations\booking_forms.py:27
-msgid "Special requests"
-msgstr "Demandes particulières"
-
-#: .\apps\reservations\booking_forms.py:32
-msgid "I accept the terms"
-msgstr "J’accepte les conditions"
-
-#: .\apps\reservations\booking_forms.py:33
-msgid "I accept the privacy policy"
-msgstr "J’accepte la politique de confidentialité"
-
-#: .\apps\reservations\booking_forms.py:35
-msgid "I would like to receive marketing offers"
-msgstr "Je souhaite recevoir des offres commerciales"
-
-#: .\apps\reservations\booking_forms.py:48
-msgid "First name is required."
-msgstr "Le prénom est obligatoire."
-
-#: .\apps\reservations\booking_forms.py:54
-msgid "Last name is required."
-msgstr "Le nom est obligatoire."
-
-#: .\apps\reservations\booking_forms.py:61
-msgid "Enter a valid international number beginning with +."
-msgstr "Saisissez un numéro international valide commençant par +."
-
-#: .\apps\reservations\booking_forms.py:67
-msgid "Country code must contain two letters."
-msgstr "Le code pays doit contenir deux lettres."
+#: .\apps\reservations\booking_forms.py:71
+msgid "For example: 05XXXXXXXX"
+msgstr "Par exemple : 05XXXXXXXX"
 
 #: .\apps\reservations\booking_forms.py:76
-msgid "The request identifier is invalid."
-msgstr "L’identifiant de la demande est invalide."
+msgid "Street address"
+msgstr "Adresse"
 
-#: .\apps\reservations\forms.py:18 .\templates\properties\property_list.html:9
+#: .\apps\reservations\booking_forms.py:81 .\apps\reservations\forms.py:80
+#: .\templates\properties\property_list.html:9
 msgid "City"
 msgstr "Ville"
 
-#: .\apps\reservations\forms.py:20
-msgid "Property"
-msgstr "Logement"
+#: .\apps\reservations\booking_forms.py:86
+msgid "State or region"
+msgstr "État ou région"
+
+#: .\apps\reservations\booking_forms.py:91
+msgid "Country"
+msgstr "Pays"
+
+#: .\apps\reservations\booking_forms.py:101
+msgid "Postal code"
+msgstr "Code postal"
+
+#: .\apps\reservations\booking_forms.py:109
+msgid "Special requests"
+msgstr "Demandes particulières"
+
+#: .\apps\reservations\booking_forms.py:115
+msgid "Optional: arrival time, accessibility, or stay preferences"
+msgstr "Facultatif : heure d’arrivée, accessibilité ou préférences de séjour"
+
+#: .\apps\reservations\booking_forms.py:119
+msgid "I accept the terms"
+msgstr "J’accepte les conditions"
+
+#: .\apps\reservations\booking_forms.py:120
+msgid "I accept the privacy policy"
+msgstr "J’accepte la politique de confidentialité"
+
+#: .\apps\reservations\booking_forms.py:122
+msgid "I would like to receive marketing offers"
+msgstr "Je souhaite recevoir des offres commerciales"
+
+#: .\apps\reservations\booking_forms.py:136
+msgid "Choose your country"
+msgstr "Choisissez votre pays"
+
+#: .\apps\reservations\booking_forms.py:146
+msgid "First name is required."
+msgstr "Le prénom est obligatoire."
+
+#: .\apps\reservations\booking_forms.py:152
+msgid "Last name is required."
+msgstr "Le nom est obligatoire."
+
+#: .\apps\reservations\booking_forms.py:162
+msgid "Enter a valid ISO two-letter country code."
+msgstr "Saisissez un code pays ISO valide à deux lettres."
+
+#: .\apps\reservations\booking_forms.py:171
+#: .\templates\reservations\_availability_form.html:9
+msgid "This field is required."
+msgstr "Ce champ est obligatoire."
+
+#: .\apps\reservations\booking_forms.py:188
+msgid "The request identifier is invalid."
+msgstr "L’identifiant de la demande est invalide."
+
+#: .\apps\reservations\forms.py:15 .\templates\payments\hyperpay_result.html:41
+#: .\templates\reservations\manage_reservation.html:94
+msgid "Booking number"
+msgstr "Numéro de réservation"
 
 #: .\apps\reservations\forms.py:22
-msgid "Choose a property"
-msgstr "Choisir un logement"
+msgid "For example: your confirmation number"
+msgstr "Par exemple : votre numéro de confirmation"
 
-#: .\apps\reservations\forms.py:25
+#: .\apps\reservations\forms.py:27
+#: .\templates\reservations\manage_reservation.html:105
+msgid "Booking email"
+msgstr "E-mail de réservation"
+
+#: .\apps\reservations\forms.py:32
+msgid "The email used for booking"
+msgstr "L’e-mail utilisé pour réserver"
+
+#: .\apps\reservations\forms.py:82
+msgid "Property (optional)"
+msgstr "Logement (facultatif)"
+
+#: .\apps\reservations\forms.py:84
+msgid "All available properties"
+msgstr "Tous les logements disponibles"
+
+#: .\apps\reservations\forms.py:89 .\templates\accounts\dashboard.html:28
+#: .\templates\properties\property_detail.html:101
+#: .\templates\reservations\availability_result.html:24
 #: .\templates\reservations\booking_intent_detail.html:15
-#: .\templates\reservations\booking_quote_detail.html:21
-#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\booking_quote_detail.html:71
+#: .\templates\reservations\manage_reservation.html:26
+#: .\templates\reservations\manage_reservation.html:166
 msgid "Check-in"
 msgstr "Arrivée"
 
-#: .\apps\reservations\forms.py:29
+#: .\apps\reservations\forms.py:96 .\templates\accounts\dashboard.html:29
+#: .\templates\properties\property_detail.html:102
+#: .\templates\reservations\availability_result.html:25
 #: .\templates\reservations\booking_intent_detail.html:15
-#: .\templates\reservations\booking_quote_detail.html:21
-#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\booking_quote_detail.html:83
+#: .\templates\reservations\manage_reservation.html:33
+#: .\templates\reservations\manage_reservation.html:178
 msgid "Check-out"
 msgstr "Départ"
 
-#: .\apps\reservations\forms.py:33
-#: .\templates\properties\property_detail.html:30
+#: .\apps\reservations\forms.py:103 .\templates\accounts\dashboard.html:30
+#: .\templates\properties\property_detail.html:80
+#: .\templates\properties\property_detail.html:103
 #: .\templates\properties\property_list.html:10
+#: .\templates\reservations\availability_result.html:26
 #: .\templates\reservations\booking_intent_detail.html:15
-#: .\templates\reservations\booking_quote_detail.html:21
-#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\booking_quote_detail.html:95
+#: .\templates\reservations\manage_reservation.html:37
+#: .\templates\reservations\manage_reservation.html:186
+#: .\templates\reservations\manage_reservation.html:316
+#: .\templates\reservations\manage_reservation.html:350
 msgid "Guests"
 msgstr "Voyageurs"
 
-#: .\apps\reservations\forms.py:75 .\templates\properties\property_list.html:9
-msgid "All cities"
-msgstr "Toutes les villes"
+#: .\apps\reservations\forms.py:134
+msgid "Choose a city"
+msgstr "Choisissez une ville"
 
-#: .\apps\reservations\forms.py:103
-#: .\apps\reservations\modification_forms.py:39
+#: .\apps\reservations\forms.py:159
+#: .\apps\reservations\modification_forms.py:71
 msgid "Check-out must be after check-in."
 msgstr "Le départ doit être postérieur à l’arrivée."
 
-#: .\apps\reservations\forms.py:105
+#: .\apps\reservations\forms.py:161
 msgid "The maximum stay is 366 nights."
 msgstr "La durée maximale du séjour est de 366 nuits."
 
-#: .\apps\reservations\forms.py:112
+#: .\apps\reservations\forms.py:168
 msgid "Guest count exceeds this property's capacity."
 msgstr "Le nombre de voyageurs dépasse la capacité de ce logement."
 
-#: .\apps\reservations\forms.py:119
+#: .\apps\reservations\forms.py:175
 msgid "Choose a property in the selected city."
 msgstr "Choisissez un logement dans la ville sélectionnée."
 
@@ -227,65 +534,220 @@ msgstr "Choisissez un logement dans la ville sélectionnée."
 msgid "Reason for the request"
 msgstr "Motif de la demande"
 
-#: .\apps\reservations\modification_forms.py:18
-#: .\apps\reservations\modification_forms.py:29
+#: .\apps\reservations\modification_forms.py:15
+msgid "Optional: tell us what you would like to change"
+msgstr "Facultatif : précisez ce que vous souhaitez modifier"
+
+#: .\apps\reservations\modification_forms.py:23
+#: .\apps\reservations\modification_forms.py:48
 msgid "New check-out date"
 msgstr "Nouvelle date de départ"
 
-#: .\apps\reservations\modification_forms.py:25
+#: .\apps\reservations\modification_forms.py:37
 msgid "New check-in date"
 msgstr "Nouvelle date d’arrivée"
 
-#: .\apps\reservations\modification_forms.py:32
+#: .\apps\reservations\modification_forms.py:59
 msgid "Number of guests"
 msgstr "Nombre de voyageurs"
 
-#: .\apps\reservations\modification_forms.py:44
+#: .\apps\reservations\modification_forms.py:77
 msgid "New number of guests"
 msgstr "Nouveau nombre de voyageurs"
 
-#: .\apps\reservations\modification_forms.py:50
+#: .\apps\reservations\modification_forms.py:88
 msgid "I understand this is a review request and does not cancel the booking or issue a refund."
 msgstr "Je comprends qu’il s’agit d’une demande d’examen qui n’annule pas la réservation et ne déclenche aucun remboursement."
 
-#: .\apps\reservations\views.py:95
-#: .\templates\reservations\availability_result.html:18
+#: .\apps\reservations\views.py:126
+#: .\templates\reservations\availability_result.html:51
 msgid "Too many checks. Please wait and try again."
 msgstr "Trop de vérifications. Veuillez patienter avant de réessayer."
 
-#: .\apps\reservations\views.py:129
+#: .\apps\reservations\views.py:233
 msgid "A secure quote could not be created for these dates."
 msgstr "Un devis sécurisé n’a pas pu être créé pour ces dates."
 
-#: .\apps\reservations\views.py:158 .\apps\reservations\views.py:178
-#: .\apps\reservations\views.py:273 .\apps\reservations\views.py:365
+#: .\apps\reservations\views.py:262 .\apps\reservations\views.py:296
+#: .\apps\reservations\views.py:408 .\apps\reservations\views.py:679
 msgid "Too many requests."
 msgstr "Trop de demandes."
 
-#: .\apps\reservations\views.py:201
+#: .\apps\reservations\views.py:323
 msgid "This quote is no longer valid. Please request a new one."
 msgstr "Ce devis n’est plus valide. Veuillez en demander un nouveau."
 
-#: .\apps\reservations\views.py:237
+#: .\apps\reservations\views.py:372
 #, python-format
 msgid "The price changed from %(old)s to %(new)s %(currency)s. Please review and approve it again."
 msgstr "Le prix est passé de %(old)s à %(new)s %(currency)s. Veuillez le vérifier et l’approuver à nouveau."
 
-#: .\apps\reservations\views.py:253
+#: .\apps\reservations\views.py:388
 msgid "This property is unavailable for the selected dates. Try other dates."
 msgstr "Ce logement n’est pas disponible aux dates sélectionnées. Essayez d’autres dates."
 
-#: .\apps\reservations\views.py:258
+#: .\apps\reservations\views.py:393
 msgid "The request could not continue. Please request a new quote."
 msgstr "La demande n’a pas pu aboutir. Veuillez demander un nouveau devis."
 
-#: .\apps\reservations\views.py:428
+#: .\apps\reservations\views.py:566
+msgid "Too many attempts. Please wait a few minutes and try again."
+msgstr "Trop de tentatives. Patientez quelques minutes puis réessayez."
+
+#: .\apps\reservations\views.py:591
+msgid "We could not match these details. Check the booking number and the email used for booking."
+msgstr "Ces informations ne correspondent à aucune réservation. Vérifiez le numéro et l’e-mail utilisés."
+
+#: .\apps\reservations\views.py:628
+msgid "Welcome back. Your booking is ready to manage."
+msgstr "Bienvenue. Votre réservation est prête à être gérée."
+
+#: .\apps\reservations\views.py:643
+msgid "You have securely left booking management."
+msgstr "Vous avez quitté la gestion de réservation en toute sécurité."
+
+#: .\apps\reservations\views.py:750
 msgid "The change request could not be created. The booking was not changed."
 msgstr "La demande de modification n’a pas pu être créée. La réservation n’a pas été modifiée."
 
 #: .\apps\reviews\models.py:104
 msgid "Guest"
 msgstr "Voyageur"
+
+#: .\templates\accounts\dashboard.html:3 .\templates\accounts\dashboard.html:9
+#: .\templates\includes\header.html:20
+#: .\templates\includes\mobile_navigation.html:15
+msgid "My bookings"
+msgstr "Mes réservations"
+
+#: .\templates\accounts\dashboard.html:9
+msgid "Private account"
+msgstr "Espace privé"
+
+#: .\templates\accounts\dashboard.html:9
+msgid "Welcome"
+msgstr "Bienvenue"
+
+#: .\templates\accounts\dashboard.html:10
+msgid "Sign out"
+msgstr "Se déconnecter"
+
+#: .\templates\accounts\dashboard.html:19
+msgid "Booking"
+msgstr "Réservation"
+
+#: .\templates\accounts\dashboard.html:22
+msgid "Test booking — no Hostaway booking"
+msgstr "Réservation de test — aucune réservation Hostaway"
+
+#: .\templates\accounts\dashboard.html:31
+#: .\templates\payments\hyperpay_checkout.html:22
+#: .\templates\reservations\booking_intent_detail.html:15
+msgid "Total"
+msgstr "Total"
+
+#: .\templates\accounts\dashboard.html:33 .\templates\includes\header.html:19
+#: .\templates\includes\mobile_navigation.html:14
+#: .\templates\payments\hyperpay_result.html:57
+#: .\templates\reservations\manage_reservation.html:4
+#: .\templates\reservations\reservation_access.html:4
+msgid "Manage booking"
+msgstr "Gérer la réservation"
+
+#: .\templates\accounts\dashboard.html:38
+msgid "No bookings yet"
+msgstr "Aucune réservation pour le moment"
+
+#: .\templates\accounts\dashboard.html:38
+msgid "Your next stay starts here"
+msgstr "Votre prochain séjour commence ici"
+
+#: .\templates\accounts\dashboard.html:38
+msgid "Bookings made while signed in will appear here automatically."
+msgstr "Les réservations effectuées après connexion apparaîtront ici automatiquement."
+
+#: .\templates\accounts\dashboard.html:38
+msgid "Explore apartments"
+msgstr "Découvrir les appartements"
+
+#: .\templates\accounts\login.html:3 .\templates\accounts\login.html:14
+#: .\templates\accounts\login.html:21 .\templates\accounts\register.html:32
+#: .\templates\includes\header.html:20
+#: .\templates\includes\mobile_navigation.html:15
+msgid "Sign in"
+msgstr "Se connecter"
+
+#: .\templates\accounts\login.html:9
+#: .\templates\reservations\manage_reservation.html:18
+#: .\templates\reservations\reservation_access.html:23
+msgid "Welcome back"
+msgstr "Bienvenue"
+
+#: .\templates\accounts\login.html:10
+msgid "Your bookings, in one place"
+msgstr "Toutes vos réservations au même endroit"
+
+#: .\templates\accounts\login.html:11
+msgid "Sign in with the same email used for your booking."
+msgstr "Connectez-vous avec l’adresse e-mail utilisée pour votre réservation."
+
+#: .\templates\accounts\login.html:23
+msgid "New here?"
+msgstr "Première visite ?"
+
+#: .\templates\accounts\login.html:23 .\templates\accounts\register.html:3
+#: .\templates\accounts\register.html:30
+msgid "Create account"
+msgstr "Créer un compte"
+
+#: .\templates\accounts\login.html:24
+msgid "Manage a booking without an account"
+msgstr "Gérer une réservation sans compte"
+
+#: .\templates\accounts\register.html:9
+msgid "Your private space"
+msgstr "Votre espace privé"
+
+#: .\templates\accounts\register.html:10
+msgid "Create your account"
+msgstr "Créez votre compte"
+
+#: .\templates\accounts\register.html:11
+msgid "Keep your test and future bookings together, and return to booking management more easily."
+msgstr "Regroupez vos réservations de test et futures, puis retrouvez plus facilement leur gestion."
+
+#: .\templates\accounts\register.html:13
+msgid "One clear view of your bookings"
+msgstr "Une vue claire de vos réservations"
+
+#: .\templates\accounts\register.html:14
+msgid "Secure access using your email"
+msgstr "Accès sécurisé avec votre adresse e-mail"
+
+#: .\templates\accounts\register.html:15
+msgid "Designed for mobile and tablet"
+msgstr "Conçu pour mobile et tablette"
+
+#: .\templates\accounts\register.html:19
+msgid "Account details"
+msgstr "Informations du compte"
+
+#: .\templates\accounts\register.html:32
+msgid "Already have an account?"
+msgstr "Vous avez déjà un compte ?"
+
+#: .\templates\admin\change_list_results.html:9
+msgid "Remove from sorting"
+msgstr "Retirer du tri"
+
+#: .\templates\admin\change_list_results.html:9
+#, python-format
+msgid "Sorting priority: %(priority_number)s"
+msgstr "Priorité de tri : %(priority_number)s"
+
+#: .\templates\admin\change_list_results.html:9
+msgid "Toggle sorting"
+msgstr "Activer ou désactiver le tri"
 
 #: .\templates\admin\core\marketing_diagnostics.html:6
 msgid "All checks on this page are local. No request is sent to Google."
@@ -405,68 +867,69 @@ msgid "This dashboard reads PostgreSQL only and never contacts Google or Hostawa
 msgstr "Ce tableau de bord consulte uniquement PostgreSQL et ne contacte jamais Google ni Hostaway."
 
 #: .\templates\base.html:9 .\templates\base.html:22 .\templates\base.html:31
+#: .\templates\includes\footer.html:11
 msgid "Luxury smart stays in Riyadh and Marrakech."
 msgstr "Séjours intelligents haut de gamme à Riyad et Marrakech."
 
 #: .\templates\base.html:21 .\templates\base.html:30 .\templates\base.html:32
-#: .\templates\core\content_page.html:6
+#: .\templates\core\content_page.html:8
 msgid "Luxury Smart Apartments"
 msgstr "Luxury Smart Apartments"
 
-#: .\templates\base.html:61 .\templates\core\home.html:25
-#: .\templates\core\home.html:30
+#: .\templates\base.html:63 .\templates\core\home.html:29
 msgid "Daily and monthly smart stays"
 msgstr "Séjours intelligents à la journée et au mois"
 
-#: .\templates\base.html:72 .\templates\core\home.html:26
+#: .\templates\base.html:74
 msgid "Daily"
 msgstr "À la journée"
 
-#: .\templates\base.html:77 .\templates\core\home.html:28
+#: .\templates\base.html:79
 msgid "Monthly"
 msgstr "Au mois"
 
-#: .\templates\base.html:87
+#: .\templates\base.html:89
 msgid "Skip to main content"
 msgstr "Aller au contenu principal"
 
-#: .\templates\core\contact.html:3 .\templates\core\contact.html:6
-msgid "Contact us"
-msgstr "Nous contacter"
-
-#: .\templates\core\contact.html:4
-msgid "Send a secure local enquiry to Luxury Smart Apartments."
-msgstr "Envoyez une demande sécurisée à Luxury Smart Apartments."
-
-#: .\templates\core\contact.html:6
+#: .\templates\core\contact.html:8
 msgid "We are here to help"
 msgstr "Nous sommes là pour vous aider"
 
-#: .\templates\core\contact.html:6
+#: .\templates\core\contact.html:10
 msgid "Tell us how we can help. Messages are stored securely for our team to review."
 msgstr "Dites-nous comment nous pouvons vous aider. Les messages sont conservés en toute sécurité pour être examinés par notre équipe."
 
-#: .\templates\core\contact.html:8
+#: .\templates\core\contact.html:30 .\templates\includes\footer.html:89
+#: .\templates\reservations\booking_intent_detail.html:15
+msgid "Phone"
+msgstr "Téléphone"
+
+#: .\templates\core\contact.html:54
 msgid "Before you send"
 msgstr "Avant l’envoi"
 
-#: .\templates\core\contact.html:8
+#: .\templates\core\contact.html:55
 msgid "Please do not include payment card details, passwords, or identity documents."
 msgstr "N’incluez aucune donnée de carte bancaire, aucun mot de passe ni document d’identité."
 
-#: .\templates\core\contact.html:8
+#: .\templates\core\contact.html:56
 msgid "Read common questions"
 msgstr "Consulter les questions fréquentes"
 
-#: .\templates\core\contact.html:10
+#: .\templates\core\contact.html:60
+msgid "Contact us"
+msgstr "Nous contacter"
+
+#: .\templates\core\contact.html:61
 msgid "Too many messages were sent. Please wait and try again."
 msgstr "Trop de messages ont été envoyés. Veuillez patienter avant de réessayer."
 
-#: .\templates\core\contact.html:11
+#: .\templates\core\contact.html:62
 msgid "Please correct the highlighted fields."
 msgstr "Veuillez corriger les champs indiqués."
 
-#: .\templates\core\contact.html:23
+#: .\templates\core\contact.html:74
 msgid "Send message"
 msgstr "Envoyer le message"
 
@@ -502,135 +965,216 @@ msgstr "Luxury Smart Apartments | Séjours intelligents à Riyad et Marrakech"
 msgid "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability."
 msgstr "Découvrez des appartements intelligents et des séjours familiaux à Riyad et Marrakech, puis vérifiez le prix et les disponibilités en direct."
 
-#: .\templates\core\home.html:31
-msgid "A calmer way to stay, designed around you."
-msgstr "Une façon plus sereine de séjourner, pensée pour vous."
+#: .\templates\core\home.html:13
+msgid "Riyadh skyline and palm trees"
+msgstr "La skyline de Riyad et ses palmiers"
 
-#: .\templates\core\home.html:32
-msgid "Discover considered homes in Riyadh and Marrakech with live availability and transparent stay pricing."
-msgstr "Découvrez des logements soigneusement sélectionnés à Riyad et Marrakech, avec disponibilités en direct et tarifs transparents."
+#: .\templates\core\home.html:25
+msgid "Riyadh"
+msgstr "Riyad"
+
+#: .\templates\core\home.html:27 .\templates\core\home.html:48
+msgid "Marrakech"
+msgstr "Marrakech"
+
+#: .\templates\core\home.html:30
+msgid "Your stay should feel like part of the journey."
+msgstr "Votre séjour devrait faire partie du voyage."
+
+#: .\templates\core\home.html:31
+msgid "Handpicked homes in Riyadh and Marrakech, made for slow mornings, memorable nights, and effortless booking."
+msgstr "Des logements choisis à Riyad et Marrakech, pour des matins paisibles, des soirées mémorables et une réservation sans effort."
+
+#: .\templates\core\home.html:33
+msgid "Find your stay"
+msgstr "Trouver votre séjour"
 
 #: .\templates\core\home.html:34
-msgid "Search availability"
-msgstr "Rechercher les disponibilités"
+msgid "Explore our destinations"
+msgstr "Découvrir nos destinations"
 
-#: .\templates\core\home.html:40 .\templates\core\home.html:63
+#: .\templates\core\home.html:38
+msgid "Explore stays in Marrakech"
+msgstr "Découvrir les séjours à Marrakech"
+
+#: .\templates\core\home.html:41
+msgid "Traditional riad courtyard with a pool in Marrakech"
+msgstr "Cour de riad traditionnel avec piscine à Marrakech"
+
+#: .\templates\core\home.html:47
+msgid "A different rhythm"
+msgstr "Un autre rythme"
+
+#: .\templates\core\home.html:57
+msgid "Where will you wake up next?"
+msgstr "Où vous réveillerez-vous bientôt ?"
+
+#: .\templates\core\home.html:57
+msgid "Book your escape in a few simple steps"
+msgstr "Réservez votre escapade en quelques étapes"
+
+#: .\templates\core\home.html:63
 msgid "Why stay with us"
 msgstr "Pourquoi séjourner chez nous"
 
-#: .\templates\core\home.html:42 .\templates\core\home.html:69
+#: .\templates\core\home.html:65
+msgid "Exceptional destinations"
+msgstr "Destinations d’exception"
+
+#: .\templates\core\home.html:66
 msgid "Guest support"
 msgstr "Assistance voyageurs"
 
-#: .\templates\core\home.html:43 .\templates\core\home.html:70
+#: .\templates\core\home.html:67 .\templates\includes\property_card.html:143
+#: .\templates\properties\property_detail.html:121
 msgid "Live price checks"
 msgstr "Vérification des prix en direct"
 
-#: .\templates\core\home.html:44 .\templates\core\home.html:71
-msgid "Flexible stay lengths"
-msgstr "Durées de séjour flexibles"
+#: .\templates\core\home.html:68
+msgid "Memories waiting"
+msgstr "Souvenirs à venir"
 
-#: .\templates\core\home.html:45 .\templates\core\home.html:68
-msgid "Smart living"
-msgstr "Habitat intelligent"
-
-#: .\templates\core\home.html:52
+#: .\templates\core\home.html:75
 msgid "Selected stays"
 msgstr "Séjours sélectionnés"
 
-#: .\templates\core\home.html:53
-msgid "Find your next smart stay"
-msgstr "Trouvez votre prochain séjour intelligent"
+#: .\templates\core\home.html:76
+msgid "Spaces worth travelling for"
+msgstr "Des lieux qui valent le voyage"
 
-#: .\templates\core\home.html:55
+#: .\templates\core\home.html:77
+msgid "A considered collection for weekends away, family holidays, and longer stays."
+msgstr "Une collection pensée pour les week-ends, les vacances en famille et les longs séjours."
+
+#: .\templates\core\home.html:79
 msgid "View all properties"
 msgstr "Voir tous les logements"
 
-#: .\templates\core\home.html:64
-msgid "Comfort, clarity, and thoughtful technology"
-msgstr "Confort, clarté et technologie bien pensée"
-
-#: .\templates\core\home.html:67
-msgid "Well-positioned homes"
-msgstr "Logements bien situés"
-
-#: .\templates\core\home.html:67
-msgid "Browse current stays across Riyadh and Marrakech."
-msgstr "Découvrez les séjours disponibles à Riyad et Marrakech."
-
-#: .\templates\core\home.html:68
-msgid "Properties selected for a modern, practical stay."
-msgstr "Des logements sélectionnés pour un séjour moderne et pratique."
-
-#: .\templates\core\home.html:69
-msgid "A clear route to assistance before and during your stay."
-msgstr "Une assistance simple d’accès avant et pendant votre séjour."
-
-#: .\templates\core\home.html:70
-msgid "Pricing and availability come directly from the operating system."
-msgstr "Les tarifs et disponibilités proviennent directement du système d’exploitation."
-
-#: .\templates\core\home.html:71
-msgid "Explore both daily and monthly accommodation."
-msgstr "Découvrez des hébergements à la journée comme au mois."
-
-#: .\templates\core\home.html:72
-msgid "Family-ready options"
-msgstr "Options adaptées aux familles"
-
-#: .\templates\core\home.html:72
-msgid "Filter homes by capacity, bedrooms, and beds."
-msgstr "Filtrez les logements par capacité, chambres et lits."
-
-#: .\templates\core\home.html:79
-msgid "Destinations"
-msgstr "Destinations"
-
-#: .\templates\core\home.html:80
-msgid "Two cities, one considered standard"
-msgstr "Deux villes, un même niveau d’exigence"
-
 #: .\templates\core\home.html:87
+msgid "Only two cities. Chosen with care."
+msgstr "Deux villes seulement, choisies avec soin."
+
+#: .\templates\core\home.html:88
+msgid "Two moods, one beautiful stay"
+msgstr "Deux atmosphères, un même art du séjour"
+
+#: .\templates\core\home.html:95
+msgid "Aerial view of Riyadh city"
+msgstr "Vue aérienne de la ville de Riyad"
+
+#: .\templates\core\home.html:95
+msgid "Riad courtyard in Marrakech"
+msgstr "Cour de riad à Marrakech"
+
+#: .\templates\core\home.html:102
+msgid "Destination"
+msgstr "Destination"
+
+#: .\templates\core\home.html:104
+msgid "Modern energy · Urban escapes"
+msgstr "Énergie moderne · Escapades urbaines"
+
+#: .\templates\core\home.html:104
+msgid "Warm light · Timeless character"
+msgstr "Lumière chaude · Charme intemporel"
+
+#: .\templates\core\home.html:106
 msgid "Explore properties"
 msgstr "Découvrir les logements"
 
-#: .\templates\core\home.html:97
+#: .\templates\core\home.html:117
+msgid "Elegant Moroccan courtyard in Marrakech"
+msgstr "Élégante cour marocaine à Marrakech"
+
+#: .\templates\core\home.html:118
+msgid "Stay beautifully"
+msgstr "Séjournez avec élégance"
+
+#: .\templates\core\home.html:118
+msgid "From arrival to checkout"
+msgstr "De l’arrivée au départ"
+
+#: .\templates\core\home.html:121
+msgid "A stay that gives something back"
+msgstr "Un séjour qui vous apporte davantage"
+
+#: .\templates\core\home.html:122
+msgid "More than a place to sleep"
+msgstr "Bien plus qu’un lieu où dormir"
+
+#: .\templates\core\home.html:123
+msgid "Every detail is considered so you can spend less time planning and more time living the trip."
+msgstr "Chaque détail est pensé pour vous laisser moins de temps à organiser et plus de temps à vivre le voyage."
+
+#: .\templates\core\home.html:125
+msgid "A home with a sense of place"
+msgstr "Un logement habité par l’esprit du lieu"
+
+#: .\templates\core\home.html:125
+msgid "Modern Riyadh living or the warm character of Marrakech—your stay belongs to its city."
+msgstr "Modernité de Riyad ou chaleur de Marrakech : votre séjour s’accorde à sa ville."
+
+#: .\templates\core\home.html:126
+msgid "Clarity before you book"
+msgstr "Tout est clair avant de réserver"
+
+#: .\templates\core\home.html:126
+msgid "See live availability and transparent stay pricing before you continue."
+msgstr "Consultez les disponibilités en direct et le prix du séjour en toute transparence avant de continuer."
+
+#: .\templates\core\home.html:127
+msgid "Support that travels with you"
+msgstr "Une assistance qui vous accompagne"
+
+#: .\templates\core\home.html:127
+msgid "A clear route to assistance before arrival and throughout your stay."
+msgstr "Un accès simple à l’assistance avant votre arrivée et pendant tout votre séjour."
+
+#: .\templates\core\home.html:129
+msgid "Discover all stays"
+msgstr "Découvrir tous les séjours"
+
+#: .\templates\core\home.html:139
 msgid "Verified guest experiences"
 msgstr "Expériences de voyageurs vérifiées"
 
-#: .\templates\core\home.html:98
-msgid "What guests remember"
-msgstr "Ce que nos voyageurs retiennent"
+#: .\templates\core\home.html:140
+msgid "Stories brought home"
+msgstr "Les histoires que nos voyageurs rapportent"
 
-#: .\templates\core\home.html:100
+#: .\templates\core\home.html:142
 msgid "Read all reviews"
 msgstr "Lire tous les avis"
 
-#: .\templates\core\home.html:109
-msgid "Ready when you are"
-msgstr "Prêts quand vous l’êtes"
+#: .\templates\core\home.html:154
+msgid "Your next story starts here"
+msgstr "Votre prochaine histoire commence ici"
 
-#: .\templates\core\home.html:110
-msgid "Start with the dates that work for you."
-msgstr "Commencez par les dates qui vous conviennent."
+#: .\templates\core\home.html:155
+msgid "Riyadh or Marrakech?"
+msgstr "Riyad ou Marrakech ?"
 
-#: .\templates\core\home.html:111
-msgid "Your price and availability will be checked live before you continue."
-msgstr "Le prix et les disponibilités seront vérifiés en direct avant de continuer."
+#: .\templates\core\home.html:156
+msgid "Choose your dates. We will take care of the rest."
+msgstr "Choisissez vos dates. Nous nous occupons du reste."
 
-#: .\templates\core\home.html:113
-#: .\templates\properties\property_detail.html:19
-#: .\templates\reservations\_availability_form.html:13
+#: .\templates\core\home.html:157
+#: .\templates\properties\property_detail.html:39
+#: .\templates\reservations\_availability_form.html:40
 msgid "Check availability"
 msgstr "Vérifier les disponibilités"
 
-#: .\templates\core\home.html:116
+#: .\templates\core\home.html:162
+msgid "Already booked?"
+msgstr "Vous avez déjà réservé ?"
+
+#: .\templates\core\home.html:163
 msgid "Manage an existing booking"
 msgstr "Gérer une réservation existante"
 
-#: .\templates\core\home.html:117
-msgid "Use the secure management link supplied with your local booking request. Live booking changes remain under review."
-msgstr "Utilisez le lien de gestion sécurisé fourni avec votre demande de réservation. Les modifications en direct restent soumises à validation."
+#: .\templates\core\home.html:164
+msgid "Use your booking number and booking email to view your stay and send change requests."
+msgstr "Utilisez votre numéro et votre e-mail de réservation pour consulter le séjour et demander une modification."
 
 #: .\templates\errors\400.html:1
 msgid "We could not understand that request"
@@ -709,7 +1253,7 @@ msgid "Essential cookies keep the site working. Analytics and marketing remain o
 msgstr "Les cookies essentiels assurent le fonctionnement du site. L’analyse et le marketing restent désactivés sauf choix contraire."
 
 #: .\templates\includes\cookie_consent.html:6
-#: .\templates\includes\footer.html:38
+#: .\templates\includes\footer.html:67
 msgid "Cookie policy"
 msgstr "Politique relative aux cookies"
 
@@ -726,7 +1270,7 @@ msgid "Accept all"
 msgstr "Tout accepter"
 
 #: .\templates\includes\cookie_consent.html:16
-#: .\templates\includes\footer.html:39
+#: .\templates\includes\footer.html:68
 msgid "Cookie settings"
 msgstr "Paramètres des cookies"
 
@@ -766,93 +1310,80 @@ msgstr "Enregistrer les choix"
 msgid "Nothing to show yet"
 msgstr "Rien à afficher pour le moment"
 
-#: .\templates\includes\footer.html:10
-msgid "Considered smart stays in Riyadh and Marrakech."
-msgstr "Des séjours intelligents soigneusement pensés à Riyad et Marrakech."
+#: .\templates\includes\footer.html:19 .\templates\includes\header.html:25
+#: .\templates\includes\mobile_navigation.html:17
+msgid "Book now"
+msgstr "Réserver"
 
-#: .\templates\includes\footer.html:13
-msgid "Daily stays"
-msgstr "Séjours à la journée"
+#: .\templates\includes\footer.html:22 .\templates\includes\footer.html:50
+#: .\templates\includes\header.html:18
+#: .\templates\includes\mobile_navigation.html:13
+msgid "Contact"
+msgstr "Contact"
 
-#: .\templates\includes\footer.html:14
-msgid "Monthly stays"
-msgstr "Séjours au mois"
+#: .\templates\includes\footer.html:30 .\templates\includes\header.html:4
+msgid "Luxury Smart Apartments home"
+msgstr "Accueil Luxury Smart Apartments"
 
-#: .\templates\includes\footer.html:18
+#: .\templates\includes\footer.html:44 .\templates\includes\footer.html:45
 msgid "Explore"
 msgstr "Découvrir"
 
-#: .\templates\includes\footer.html:21 .\templates\reviews\review_list.html:3
+#: .\templates\includes\footer.html:48 .\templates\reviews\review_list.html:3
 #: .\templates\reviews\review_list.html:6
 msgid "Guest reviews"
 msgstr "Avis des voyageurs"
 
-#: .\templates\includes\footer.html:22 .\templates\includes\header.html:16
-#: .\templates\includes\mobile_navigation.html:7
+#: .\templates\includes\footer.html:49 .\templates\includes\header.html:16
+#: .\templates\includes\mobile_navigation.html:11
 msgid "About"
 msgstr "À propos"
 
-#: .\templates\includes\footer.html:23 .\templates\includes\header.html:18
-#: .\templates\includes\mobile_navigation.html:9
-msgid "Contact"
-msgstr "Contact"
-
-#: .\templates\includes\footer.html:27
+#: .\templates\includes\footer.html:55
 msgid "Cities"
 msgstr "Villes"
 
-#: .\templates\includes\footer.html:29
+#: .\templates\includes\footer.html:57
 msgid "Coming soon"
 msgstr "Bientôt disponible"
 
-#: .\templates\includes\footer.html:33
+#: .\templates\includes\footer.html:61 .\templates\includes\footer.html:62
 msgid "Policies"
 msgstr "Politiques"
 
-#: .\templates\includes\footer.html:35
+#: .\templates\includes\footer.html:64
 msgid "Terms"
 msgstr "Conditions"
 
-#: .\templates\includes\footer.html:36
+#: .\templates\includes\footer.html:65
 msgid "Privacy"
 msgstr "Confidentialité"
 
-#: .\templates\includes\footer.html:37
+#: .\templates\includes\footer.html:66
 msgid "Cancellation policy"
 msgstr "Politique d’annulation"
 
-#: .\templates\includes\footer.html:44
+#: .\templates\includes\footer.html:108
 msgid "All rights reserved."
 msgstr "Tous droits réservés."
-
-#: .\templates\includes\header.html:4
-msgid "Luxury Smart Apartments home"
-msgstr "Accueil Luxury Smart Apartments"
 
 #: .\templates\includes\header.html:13
 msgid "Primary navigation"
 msgstr "Navigation principale"
 
 #: .\templates\includes\header.html:17
-#: .\templates\includes\mobile_navigation.html:8
+#: .\templates\includes\mobile_navigation.html:12
 msgid "FAQ"
 msgstr "FAQ"
 
-#: .\templates\includes\header.html:19
-#: .\templates\includes\mobile_navigation.html:10
-#: .\templates\reservations\manage_reservation.html:3
-#: .\templates\reservations\manage_reservation.html:7
-msgid "Manage booking"
-msgstr "Gérer la réservation"
-
-#: .\templates\includes\header.html:24
-#: .\templates\includes\mobile_navigation.html:12
-msgid "Book now"
-msgstr "Réserver"
-
-#: .\templates\includes\header.html:31
+#: .\templates\includes\header.html:32 .\templates\includes\header.html:33
 msgid "Open menu"
 msgstr "Ouvrir le menu"
+
+#: .\templates\includes\header.html:34
+#: .\templates\includes\mobile_navigation.html:6
+msgid "Close menu"
+msgstr "Fermer le menu"
 
 #: .\templates\includes\language_switcher.html:6
 #: .\templates\includes\language_switcher.html:7
@@ -860,11 +1391,12 @@ msgid "Language"
 msgstr "Langue"
 
 #: .\templates\includes\loading_state.html:4
-#: .\templates\reservations\_availability_form.html:15
+#: .\templates\reservations\_availability_form.html:42
 msgid "Checking live price and availability…"
 msgstr "Vérification du prix et des disponibilités en direct…"
 
-#: .\templates\includes\mobile_navigation.html:4
+#: .\templates\includes\mobile_navigation.html:3
+#: .\templates\includes\mobile_navigation.html:8
 msgid "Mobile navigation"
 msgstr "Navigation mobile"
 
@@ -873,11 +1405,12 @@ msgid "Booking request progress"
 msgstr "Progression de la demande de réservation"
 
 #: .\templates\includes\progress_indicator.html:4
+#: .\templates\reservations\booking_quote_detail.html:57
 msgid "Stay"
 msgstr "Séjour"
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:24
+#: .\templates\reservations\booking_quote_detail.html:136
 msgid "Guest details"
 msgstr "Informations du voyageur"
 
@@ -886,6 +1419,7 @@ msgid "Review"
 msgstr "Vérification"
 
 #: .\templates\includes\progress_indicator.html:7
+#: .\templates\reservations\manage_reservation.html:131
 msgid "Payment"
 msgstr "Paiement"
 
@@ -893,63 +1427,99 @@ msgstr "Paiement"
 msgid "Confirmation"
 msgstr "Confirmation"
 
-#: .\templates\includes\property_card.html:12
-msgid "Daily · Monthly"
-msgstr "Journée · Mois"
-
-#: .\templates\includes\property_card.html:24
-#: .\templates\includes\property_card.html:25
+#: .\templates\includes\property_card.html:23
+#: .\templates\includes\property_card.html:37
+#: .\templates\includes\property_card.html:39
 msgid "No image available"
 msgstr "Aucune image disponible"
 
-#: .\templates\includes\property_card.html:32
-#: .\templates\includes\review_card.html:10
+#: .\templates\includes\property_card.html:46
+#: .\templates\properties\property_detail.html:95
+msgid "Daily · Monthly"
+msgstr "Journée · Mois"
+
+#: .\templates\includes\property_card.html:50
+#: .\templates\includes\review_card.html:14
 msgid "Featured"
 msgstr "À la une"
 
-#: .\templates\includes\property_card.html:34
-#: .\templates\includes\review_card.html:12
-#: .\templates\properties\property_detail.html:19
+#: .\templates\includes\property_card.html:60
+#: .\templates\properties\gallery.html:66
+#: .\templates\properties\property_detail.html:137
+msgid "Previous photo"
+msgstr "Photo précédente"
+
+#: .\templates\includes\property_card.html:68
+#: .\templates\properties\gallery.html:71
+#: .\templates\properties\property_detail.html:142
+msgid "Next photo"
+msgstr "Photo suivante"
+
+#: .\templates\includes\property_card.html:95
+#: .\templates\includes\review_card.html:17
+#: .\templates\properties\property_detail.html:28
 #, python-format
 msgid "Rated %(rating)s out of 5"
 msgstr "Noté %(rating)s sur 5"
 
-#: .\templates\includes\property_card.html:41
+#: .\templates\includes\property_card.html:102
+#: .\templates\properties\property_detail.html:25
 msgid "Property details"
 msgstr "Détails du logement"
 
-#: .\templates\includes\property_card.html:43
+#: .\templates\includes\property_card.html:106
 #, python-format
 msgid "%(counter)s guest"
 msgid_plural "%(counter)s guests"
 msgstr[0] "%(counter)s voyageur"
 msgstr[1] "%(counter)s voyageurs"
 
-#: .\templates\includes\property_card.html:46
+#: .\templates\includes\property_card.html:112
 #, python-format
 msgid "%(counter)s bedroom"
 msgid_plural "%(counter)s bedrooms"
 msgstr[0] "%(counter)s chambre"
 msgstr[1] "%(counter)s chambres"
 
-#: .\templates\includes\property_card.html:49
+#: .\templates\includes\property_card.html:118
 #, python-format
 msgid "%(counter)s bed"
 msgid_plural "%(counter)s beds"
 msgstr[0] "%(counter)s lit"
 msgstr[1] "%(counter)s lits"
 
-#: .\templates\includes\property_card.html:53
+#: .\templates\includes\property_card.html:126
+msgid "Total for your stay"
+msgstr "Total de votre séjour"
+
+#: .\templates\includes\property_card.html:136
+msgid "Choose this property"
+msgstr "Choisir ce logement"
+
+#: .\templates\includes\property_card.html:142
 msgid "Price based on dates"
 msgstr "Prix selon les dates"
 
-#: .\templates\includes\property_card.html:54
+#: .\templates\includes\property_card.html:146
+#: .\templates\properties\gallery.html:14
 msgid "View details"
 msgstr "Voir les détails"
 
-#: .\templates\includes\review_card.html:7
+#: .\templates\includes\review_card.html:10
 msgid "One of our properties"
 msgstr "L’un de nos logements"
+
+#: .\templates\includes\review_card.html:34
+msgid "Read more"
+msgstr "Lire la suite"
+
+#: .\templates\includes\review_card.html:36
+msgid "Show less"
+msgstr "Afficher moins"
+
+#: .\templates\includes\review_card.html:40
+msgid "Verified stay"
+msgstr "Séjour vérifié"
 
 #: .\templates\includes\search_form.html:6
 msgid "Choose your stay"
@@ -958,6 +1528,189 @@ msgstr "Choisissez votre séjour"
 #: .\templates\includes\search_form.html:7
 msgid "Live availability, checked securely"
 msgstr "Disponibilités vérifiées en direct et en toute sécurité"
+
+#: .\templates\payments\hyperpay_checkout.html:3
+#: .\templates\payments\hyperpay_checkout.html:19
+#: .\templates\reservations\booking_quote_detail.html:242
+msgid "Secure payment"
+msgstr "Paiement sécurisé"
+
+#: .\templates\payments\hyperpay_checkout.html:21
+msgid "Card details are entered directly in HyperPay's hosted form and never reach our server."
+msgstr "Les données de carte sont saisies directement dans le formulaire hébergé par HyperPay et ne transitent jamais par notre serveur."
+
+#: .\templates\payments\hyperpay_result.html:3
+#: .\templates\payments\hyperpay_result.html:10
+msgid "Payment result"
+msgstr "Résultat du paiement"
+
+#: .\templates\payments\hyperpay_result.html:11
+msgid "This page reflects the latest verified gateway response."
+msgstr "Cette page présente la dernière réponse vérifiée de la passerelle de paiement."
+
+#: .\templates\payments\hyperpay_result.html:15
+msgid "Verification is temporarily unavailable"
+msgstr "La vérification est temporairement indisponible"
+
+#: .\templates\payments\hyperpay_result.html:15
+msgid "We could not verify the payment with HyperPay. No booking has been confirmed. Please contact support before trying again."
+msgstr "Nous n’avons pas pu vérifier le paiement auprès de HyperPay. Aucune réservation n’est confirmée. Contactez l’assistance avant de réessayer."
+
+#: .\templates\payments\hyperpay_result.html:18
+msgid "Payment verified and change completed"
+msgstr "Paiement vérifié et modification effectuée"
+
+#: .\templates\payments\hyperpay_result.html:18
+msgid "Your reservation was updated successfully in Hostaway."
+msgstr "Votre réservation a été mise à jour avec succès dans Hostaway."
+
+#: .\templates\payments\hyperpay_result.html:20
+msgid "Payment verified; change pending"
+msgstr "Paiement vérifié ; modification en attente"
+
+#: .\templates\payments\hyperpay_result.html:20
+msgid "Do not pay again. The payment is recorded and the reservation change needs operational follow-up."
+msgstr "Ne payez pas de nouveau. Le paiement est enregistré et la modification nécessite un suivi opérationnel."
+
+#: .\templates\payments\hyperpay_result.html:24
+msgid "Payment verified and booking confirmed"
+msgstr "Paiement vérifié et réservation confirmée"
+
+#: .\templates\payments\hyperpay_result.html:24
+msgid "Your reservation has been created successfully."
+msgstr "Votre réservation a été créée avec succès."
+
+#: .\templates\payments\hyperpay_result.html:26
+msgid "Payment verified; booking pending"
+msgstr "Paiement vérifié ; réservation en attente"
+
+#: .\templates\payments\hyperpay_result.html:26
+msgid "Your payment was verified, but booking confirmation still requires operational review. Do not pay again."
+msgstr "Votre paiement a été vérifié, mais la confirmation de la réservation nécessite encore un examen opérationnel. Ne payez pas de nouveau."
+
+#: .\templates\payments\hyperpay_result.html:29
+msgid "Payment is still pending"
+msgstr "Le paiement est toujours en attente"
+
+#: .\templates\payments\hyperpay_result.html:29
+msgid "No booking has been confirmed yet. Please wait before checking again."
+msgstr "Aucune réservation n’est encore confirmée. Patientez avant de vérifier à nouveau."
+
+#: .\templates\payments\hyperpay_result.html:31
+msgid "No booking was confirmed."
+msgstr "Aucune réservation n’a été confirmée."
+
+#: .\templates\payments\hyperpay_result.html:33
+msgid "No booking has been confirmed automatically. Please contact support and do not pay again."
+msgstr "Aucune réservation n’a été confirmée automatiquement. Contactez l’assistance et ne payez pas de nouveau."
+
+#: .\templates\payments\hyperpay_result.html:35
+msgid "No booking was confirmed. You may return and try again."
+msgstr "Aucune réservation n’a été confirmée. Vous pouvez revenir et réessayer."
+
+#: .\templates\payments\hyperpay_result.html:39
+msgid "Amount"
+msgstr "Montant"
+
+#: .\templates\payments\hyperpay_result.html:40
+msgid "Payment status"
+msgstr "Statut du paiement"
+
+#: .\templates\payments\hyperpay_result.html:42
+msgid "Change request"
+msgstr "Demande de modification"
+
+#: .\templates\payments\hyperpay_result.html:46
+msgid "What happens next"
+msgstr "Prochaines étapes"
+
+#: .\templates\payments\hyperpay_result.html:48
+msgid "Booking confirmation review"
+msgstr "Examen de la confirmation"
+
+#: .\templates\payments\hyperpay_result.html:49
+msgid "Confirmation and arrival details"
+msgstr "Confirmation et informations d’arrivée"
+
+#: .\templates\payments\hyperpay_result.html:55
+msgid "View change request"
+msgstr "Voir la demande de modification"
+
+#: .\templates\payments\hyperpay_result.html:59
+msgid "View my bookings"
+msgstr "Voir mes réservations"
+
+#: .\templates\payments\hyperpay_result.html:60
+msgid "Contact support"
+msgstr "Contacter l’assistance"
+
+#: .\templates\payments\sandbox_checkout.html:3
+msgid "Test payment"
+msgstr "Paiement de test"
+
+#: .\templates\payments\sandbox_checkout.html:10
+msgid "Test payment environment"
+msgstr "Environnement de paiement de test"
+
+#: .\templates\payments\sandbox_checkout.html:10
+msgid "No real money is charged, no card details are collected, and nothing is sent to Hostaway."
+msgstr "Aucun argent réel n’est débité, aucune donnée de carte n’est collectée et rien n’est envoyé à Hostaway."
+
+#: .\templates\payments\sandbox_checkout.html:14
+msgid "Booking payment test"
+msgstr "Test du paiement de réservation"
+
+#: .\templates\payments\sandbox_checkout.html:14
+msgid "Difference payment test"
+msgstr "Test du paiement de la différence"
+
+#: .\templates\payments\sandbox_checkout.html:15
+msgid "Choose a test result"
+msgstr "Choisissez un résultat de test"
+
+#: .\templates\payments\sandbox_checkout.html:16
+msgid "Use the controls below to verify how the customer experience behaves. These controls never contact a bank."
+msgstr "Utilisez les commandes ci-dessous pour vérifier le parcours client. Elles ne contactent jamais une banque."
+
+#: .\templates\payments\sandbox_checkout.html:17
+msgid "Test amount"
+msgstr "Montant de test"
+
+#: .\templates\payments\sandbox_checkout.html:20
+msgid "Simulate successful payment"
+msgstr "Simuler un paiement réussi"
+
+#: .\templates\payments\sandbox_checkout.html:21
+msgid "Simulate declined payment"
+msgstr "Simuler un paiement refusé"
+
+#: .\templates\payments\sandbox_checkout.html:22
+msgid "Cancel test"
+msgstr "Annuler le test"
+
+#: .\templates\payments\sandbox_checkout.html:26
+msgid "Safe by design"
+msgstr "Sécurisé par conception"
+
+#: .\templates\payments\sandbox_checkout.html:28
+msgid "No card number or banking data"
+msgstr "Aucun numéro de carte ni donnée bancaire"
+
+#: .\templates\payments\sandbox_checkout.html:29
+msgid "No external payment gateway call"
+msgstr "Aucun appel à une passerelle de paiement externe"
+
+#: .\templates\payments\sandbox_checkout.html:30
+msgid "No Hostaway reservation or modification"
+msgstr "Aucune réservation ni modification Hostaway"
+
+#: .\templates\payments\sandbox_checkout.html:31
+msgid "Clearly marked local test records"
+msgstr "Enregistrements de test locaux clairement identifiés"
+
+#: .\templates\payments\sandbox_checkout.html:33
+msgid "Reference"
+msgstr "Référence"
 
 #: .\templates\properties\_property_cards.html:9
 msgid "No properties match your search."
@@ -968,164 +1721,203 @@ msgid "Try changing the city, capacity, or room filters."
 msgstr "Essayez de modifier la ville, la capacité ou les filtres de chambre."
 
 #: .\templates\properties\gallery.html:3
-#: .\templates\properties\property_detail.html:22
+#: .\templates\properties\property_detail.html:45
+#: .\templates\properties\property_detail.html:66
+#: .\templates\properties\property_detail.html:133
 msgid "Photo gallery"
 msgstr "Galerie photos"
 
-#: .\templates\properties\gallery.html:6
+#: .\templates\properties\gallery.html:9
 msgid "Property gallery"
 msgstr "Galerie du logement"
 
-#: .\templates\properties\gallery.html:7
+#: .\templates\properties\gallery.html:26
+#, python-format
+msgid "Open photo %(current)s"
+msgstr "Ouvrir la photo %(current)s"
+
+#: .\templates\properties\gallery.html:48
 msgid "No photos available"
 msgstr "Aucune photo disponible"
 
-#: .\templates\properties\gallery.html:7
+#: .\templates\properties\gallery.html:49
 msgid "Please return to the property page."
 msgstr "Veuillez revenir à la page du logement."
 
-#: .\templates\properties\gallery.html:7
+#: .\templates\properties\gallery.html:54
 msgid "Gallery pages"
 msgstr "Pages de la galerie"
 
-#: .\templates\properties\gallery.html:7
+#: .\templates\properties\gallery.html:55
 #: .\templates\properties\property_list.html:17
 #: .\templates\reviews\review_list.html:7
 msgid "Previous"
 msgstr "Précédent"
 
-#: .\templates\properties\gallery.html:7
+#: .\templates\properties\gallery.html:57
 #: .\templates\properties\property_list.html:17
 #: .\templates\reviews\review_list.html:7
 msgid "Next"
 msgstr "Suivant"
 
-#: .\templates\properties\property_detail.html:19
+#: .\templates\properties\gallery.html:64
+#: .\templates\properties\property_detail.html:131
+msgid "Property photo viewer"
+msgstr "Visionneuse de photos du logement"
+
+#: .\templates\properties\gallery.html:65
+#: .\templates\properties\property_detail.html:136
+msgid "Close gallery"
+msgstr "Fermer la galerie"
+
+#: .\templates\properties\property_detail.html:22
 msgid "Featured stay"
 msgstr "Séjour à la une"
 
-#: .\templates\properties\property_detail.html:25
+#: .\templates\properties\property_detail.html:22
+#: .\templates\properties\property_list.html:6
+msgid "Daily and monthly stays"
+msgstr "Séjours à la journée et au mois"
+
+#: .\templates\properties\property_detail.html:38
+#: .\templates\properties\property_detail.html:100
+msgid "Your selected stay"
+msgstr "Votre séjour sélectionné"
+
+#: .\templates\properties\property_detail.html:38
+#: .\templates\properties\property_detail.html:117
+#: .\templates\reservations\availability_result.html:50
+msgid "Live check"
+msgstr "Vérification en direct"
+
+#: .\templates\properties\property_detail.html:39
+#: .\templates\properties\property_detail.html:112
+msgid "Continue booking"
+msgstr "Poursuivre la réservation"
+
+#: .\templates\properties\property_detail.html:53
+#, python-format
+msgid "Open photo %(current)s of %(total)s"
+msgstr "Ouvrir la photo %(current)s sur %(total)s"
+
+#: .\templates\properties\property_detail.html:74
 #, python-format
 msgid "View all %(count)s photos"
 msgstr "Voir les %(count)s photos"
 
-#: .\templates\properties\property_detail.html:26
+#: .\templates\properties\property_detail.html:76
 msgid "Photos are being prepared"
 msgstr "Les photos sont en préparation"
 
-#: .\templates\properties\property_detail.html:26
+#: .\templates\properties\property_detail.html:76
 msgid "Property details remain available below."
 msgstr "Les informations du logement restent disponibles ci-dessous."
 
-#: .\templates\properties\property_detail.html:30
+#: .\templates\properties\property_detail.html:79
 msgid "Stay capacity"
 msgstr "Capacité du séjour"
 
-#: .\templates\properties\property_detail.html:30
+#: .\templates\properties\property_detail.html:81
 #: .\templates\properties\property_list.html:11
 msgid "Bedrooms"
 msgstr "Chambres"
 
-#: .\templates\properties\property_detail.html:30
+#: .\templates\properties\property_detail.html:82
 msgid "Beds"
 msgstr "Lits"
 
-#: .\templates\properties\property_detail.html:30
+#: .\templates\properties\property_detail.html:83
 msgid "Bathrooms"
 msgstr "Salles de bains"
 
-#: .\templates\properties\property_detail.html:31
+#: .\templates\properties\property_detail.html:88
 msgid "The property"
 msgstr "Le logement"
 
-#: .\templates\properties\property_detail.html:31
+#: .\templates\properties\property_detail.html:88
 msgid "About this stay"
 msgstr "À propos de ce séjour"
 
-#: .\templates\properties\property_detail.html:31
+#: .\templates\properties\property_detail.html:88
 msgid "A detailed description is being prepared."
 msgstr "Une description détaillée est en préparation."
 
-#: .\templates\properties\property_detail.html:32
+#: .\templates\properties\property_detail.html:89
 msgid "Included"
 msgstr "Inclus"
 
-#: .\templates\properties\property_detail.html:32
+#: .\templates\properties\property_detail.html:89
 msgid "Amenities"
 msgstr "Équipements"
 
-#: .\templates\properties\property_detail.html:32
+#: .\templates\properties\property_detail.html:89
 msgid "Amenities are being reviewed"
 msgstr "Les équipements sont en cours de vérification"
 
-#: .\templates\properties\property_detail.html:32
+#: .\templates\properties\property_detail.html:89
 msgid "Please contact us if you need a specific amenity."
 msgstr "Contactez-nous si vous avez besoin d’un équipement particulier."
 
-#: .\templates\properties\property_detail.html:33
+#: .\templates\properties\property_detail.html:90
 msgid "Location"
 msgstr "Emplacement"
 
-#: .\templates\properties\property_detail.html:33
+#: .\templates\properties\property_detail.html:90
 msgid "For guest privacy and property security, the exact address is provided only through the confirmed booking process."
 msgstr "Pour préserver la confidentialité des voyageurs et la sécurité du logement, l’adresse exacte est communiquée uniquement après confirmation de la réservation."
 
-#: .\templates\properties\property_detail.html:34
+#: .\templates\properties\property_detail.html:91
 msgid "Guest experiences"
 msgstr "Expériences des voyageurs"
 
-#: .\templates\properties\property_detail.html:34
+#: .\templates\properties\property_detail.html:91
 msgid "Reviews"
 msgstr "Avis"
 
-#: .\templates\properties\property_detail.html:34
+#: .\templates\properties\property_detail.html:91
 msgid "All reviews"
 msgstr "Tous les avis"
 
-#: .\templates\properties\property_detail.html:36
-#: .\templates\reservations\availability_result.html:17
-msgid "Live check"
-msgstr "Vérification en direct"
+#: .\templates\properties\property_detail.html:97
+msgid "Availability checked"
+msgstr "Disponibilité vérifiée"
 
-#: .\templates\properties\property_detail.html:36
+#: .\templates\properties\property_detail.html:98
+msgid "Continue with this property"
+msgstr "Continuer avec ce logement"
+
+#: .\templates\properties\property_detail.html:99
+msgid "Your dates and guest count have been kept. You do not need to search again."
+msgstr "Vos dates et le nombre de voyageurs ont été conservés. Vous n’avez pas besoin de relancer la recherche."
+
+#: .\templates\properties\property_detail.html:114
+msgid "Change dates or guests"
+msgstr "Modifier les dates ou les voyageurs"
+
+#: .\templates\properties\property_detail.html:115
+msgid "Availability is securely rechecked when you continue"
+msgstr "La disponibilité sera revérifiée en toute sécurité lorsque vous continuerez."
+
+#: .\templates\properties\property_detail.html:118
+#: .\templates\reservations\_availability_form.html:59
 msgid "Plan your stay"
 msgstr "Planifiez votre séjour"
 
-#: .\templates\properties\property_detail.html:36
+#: .\templates\properties\property_detail.html:119
 msgid "Enter your dates to receive a temporary live price."
 msgstr "Saisissez vos dates pour obtenir un prix temporaire en direct."
 
-#: .\templates\properties\property_detail.html:38
+#: .\templates\properties\property_detail.html:126
 msgid "You may also like"
 msgstr "Vous pourriez aussi aimer"
 
-#: .\templates\properties\property_detail.html:38
+#: .\templates\properties\property_detail.html:126
 msgid "Similar stays"
 msgstr "Séjours similaires"
-
-#: .\templates\properties\property_detail.html:42
-msgid "Property photo viewer"
-msgstr "Visionneuse de photos du logement"
-
-#: .\templates\properties\property_detail.html:42
-msgid "Close gallery"
-msgstr "Fermer la galerie"
-
-#: .\templates\properties\property_detail.html:42
-msgid "Previous photo"
-msgstr "Photo précédente"
-
-#: .\templates\properties\property_detail.html:42
-msgid "Next photo"
-msgstr "Photo suivante"
 
 #: .\templates\properties\property_list.html:4
 msgid "Browse visible smart apartments in Riyadh and Marrakech by city, capacity, bedrooms, and type."
 msgstr "Parcourez les appartements intelligents disponibles à Riyad et Marrakech par ville, capacité, chambres et type."
-
-#: .\templates\properties\property_list.html:6
-msgid "Daily and monthly stays"
-msgstr "Séjours à la journée et au mois"
 
 #: .\templates\properties\property_list.html:6
 msgid "A home for the way you travel"
@@ -1142,6 +1934,10 @@ msgstr "logements"
 #: .\templates\properties\property_list.html:8
 msgid "Filter properties"
 msgstr "Filtrer les logements"
+
+#: .\templates\properties\property_list.html:9
+msgid "All cities"
+msgstr "Toutes les villes"
 
 #: .\templates\properties\property_list.html:12
 msgid "Property type"
@@ -1181,41 +1977,232 @@ msgstr "Pages des logements"
 msgid "Page %(current)s of %(total)s"
 msgstr "Page %(current)s sur %(total)s"
 
+#: .\templates\reservations\_availability_form.html:10
+msgid "Please review this field."
+msgstr "Veuillez vérifier ce champ."
+
+#: .\templates\reservations\_availability_form.html:16
+msgid "Complete the required search fields"
+msgstr "Complétez les champs de recherche obligatoires"
+
+#: .\templates\reservations\_availability_form.html:17
+msgid "Choose a city and your stay dates before continuing."
+msgstr "Choisissez une ville et vos dates de séjour avant de continuer."
+
+#: .\templates\reservations\_availability_form.html:30
+#: .\templates\reservations\_availability_form.html:48
+#: .\templates\reservations\_availability_form.html:68
+#: .\templates\reservations\_management_calendar.html:10
+#: .\templates\reservations\_management_calendar.html:31
+#: .\templates\reservations\manage_reservation.html:294
+msgid "Arrival"
+msgstr "Arrivée"
+
+#: .\templates\reservations\_availability_form.html:30
+#: .\templates\reservations\_availability_form.html:49
+#: .\templates\reservations\_availability_form.html:73
+#: .\templates\reservations\_management_calendar.html:11
+#: .\templates\reservations\manage_reservation.html:306
+msgid "Departure"
+msgstr "Départ"
+
+#: .\templates\reservations\_availability_form.html:31
+#: .\templates\reservations\_availability_form.html:47
+#: .\templates\reservations\_availability_form.html:69
+#: .\templates\reservations\_availability_form.html:74
+#: .\templates\reservations\_management_calendar.html:9
+#: .\templates\reservations\_management_calendar.html:32
+#: .\templates\reservations\_management_calendar.html:37
+msgid "Choose date"
+msgstr "Choisir une date"
+
+#: .\templates\reservations\_availability_form.html:50
+#: .\templates\reservations\_availability_form.html:61
+msgid "Choose your arrival day"
+msgstr "Choisissez votre jour d’arrivée"
+
+#: .\templates\reservations\_availability_form.html:51
+msgid "Now choose your departure day"
+msgstr "Choisissez maintenant votre jour de départ"
+
+#: .\templates\reservations\_availability_form.html:52
+msgid "Your stay dates are ready"
+msgstr "Les dates de votre séjour sont prêtes"
+
+#: .\templates\reservations\_availability_form.html:53
+#: .\templates\reservations\_management_calendar.html:16
+msgid "night"
+msgstr "nuit"
+
+#: .\templates\reservations\_availability_form.html:54
+#: .\templates\reservations\_management_calendar.html:17
+msgid "nights"
+msgstr "nuits"
+
+#: .\templates\reservations\_availability_form.html:55
+#: .\templates\reservations\_availability_form.html:60
+msgid "Choose your stay dates"
+msgstr "Choisissez vos dates de séjour"
+
+#: .\templates\reservations\_availability_form.html:63
+#: .\templates\reservations\_management_calendar.html:26
+msgid "Close calendar"
+msgstr "Fermer le calendrier"
+
+#: .\templates\reservations\_availability_form.html:80
+#: .\templates\reservations\_management_calendar.html:43
+msgid "Previous month"
+msgstr "Mois précédent"
+
+#: .\templates\reservations\_availability_form.html:82
+#: .\templates\reservations\_management_calendar.html:45
+msgid "Next month"
+msgstr "Mois suivant"
+
+#: .\templates\reservations\_availability_form.html:88
+msgid "Your arrival day stays highlighted while you choose departure."
+msgstr "Votre jour d’arrivée reste surligné pendant le choix du départ."
+
+#: .\templates\reservations\_availability_form.html:89
+msgid "Confirm dates"
+msgstr "Confirmer les dates"
+
+#: .\templates\reservations\_management_calendar.html:12
+#: .\templates\reservations\_management_calendar.html:24
+msgid "Choose your new arrival day"
+msgstr "Choisissez votre nouveau jour d’arrivée"
+
+#: .\templates\reservations\_management_calendar.html:13
+msgid "Now choose your new departure day"
+msgstr "Choisissez maintenant votre nouveau jour de départ"
+
+#: .\templates\reservations\_management_calendar.html:14
+#: .\templates\reservations\_management_calendar.html:24
+msgid "Choose the new departure day for your extended stay"
+msgstr "Choisissez le nouveau jour de départ pour prolonger votre séjour"
+
+#: .\templates\reservations\_management_calendar.html:15
+msgid "Your new stay dates are ready to check"
+msgstr "Les nouvelles dates de votre séjour sont prêtes à être vérifiées"
+
+#: .\templates\reservations\_management_calendar.html:18
+msgid "Choose the new departure date"
+msgstr "Choisissez la nouvelle date de départ"
+
+#: .\templates\reservations\_management_calendar.html:18
+msgid "Choose your new stay dates"
+msgstr "Choisissez vos nouvelles dates de séjour"
+
+#: .\templates\reservations\_management_calendar.html:22
+msgid "Manage your stay"
+msgstr "Gérez votre séjour"
+
+#: .\templates\reservations\_management_calendar.html:23
+msgid "Extend your stay"
+msgstr "Prolongez votre séjour"
+
+#: .\templates\reservations\_management_calendar.html:23
+msgid "Choose your new dates"
+msgstr "Choisissez vos nouvelles dates"
+
+#: .\templates\reservations\_management_calendar.html:31
+msgid "Current departure"
+msgstr "Départ actuel"
+
+#: .\templates\reservations\_management_calendar.html:36
+#: .\templates\reservations\manage_reservation.html:257
+msgid "New departure"
+msgstr "Nouveau départ"
+
+#: .\templates\reservations\_management_calendar.html:51
+msgid "Live availability and price will be checked before the change is confirmed."
+msgstr "La disponibilité et le prix seront vérifiés en direct avant de confirmer la modification."
+
+#: .\templates\reservations\_management_calendar.html:52
+msgid "Use these dates"
+msgstr "Utiliser ces dates"
+
+#: .\templates\reservations\_reservation_access_form.html:24
+msgid "Open my booking"
+msgstr "Ouvrir ma réservation"
+
+#: .\templates\reservations\_reservation_access_form.html:29
+#: .\templates\reservations\manage_reservation.html:111
+msgid "Your details are used only to verify this booking."
+msgstr "Vos informations servent uniquement à vérifier cette réservation."
+
 #: .\templates\reservations\availability_result.html:3
-#: .\templates\reservations\availability_result.html:17
+#: .\templates\reservations\availability_result.html:50
 msgid "Availability result"
 msgstr "Résultat de disponibilité"
 
 #: .\templates\reservations\availability_result.html:19
-msgid "Please correct the search details"
-msgstr "Veuillez corriger les informations de recherche"
+msgid "Live availability"
+msgstr "Disponibilités en direct"
 
 #: .\templates\reservations\availability_result.html:20
-msgid "The property is available"
-msgstr "Le logement est disponible"
-
-#: .\templates\reservations\availability_result.html:20
-msgid "A secure quote was prepared for the next step."
-msgstr "Un devis sécurisé a été préparé pour l’étape suivante."
+#, python-format
+msgid "Available properties in %(city)s"
+msgstr "Logements disponibles à %(city)s"
 
 #: .\templates\reservations\availability_result.html:21
-msgid "These dates are not available"
-msgstr "Ces dates ne sont pas disponibles"
+msgid "Only properties available for your selected dates and guest count are shown."
+msgstr "Seuls les logements disponibles pour vos dates et le nombre de voyageurs sont affichés."
 
-#: .\templates\reservations\availability_result.html:21
-msgid "This property is not available for the selected dates. Try different dates."
-msgstr "Ce logement n’est pas disponible aux dates sélectionnées. Essayez d’autres dates."
+#: .\templates\reservations\availability_result.html:23
+msgid "Your search"
+msgstr "Votre recherche"
 
-#: .\templates\reservations\availability_result.html:21
+#: .\templates\reservations\availability_result.html:33
+#, python-format
+msgid "We found %(counter)s available property"
+msgid_plural "We found %(counter)s available properties"
+msgstr[0] "Nous avons trouvé %(counter)s logement disponible"
+msgstr[1] "Nous avons trouvé %(counter)s logements disponibles"
+
+#: .\templates\reservations\availability_result.html:42
+msgid "No available properties were found"
+msgstr "Aucun logement disponible n’a été trouvé"
+
+#: .\templates\reservations\availability_result.html:43
+msgid "Try different dates or a lower guest count, then search again."
+msgstr "Essayez d’autres dates ou moins de voyageurs, puis relancez la recherche."
+
+#: .\templates\reservations\availability_result.html:44
+#: .\templates\reservations\availability_result.html:54
 msgid "No booking or payment was created."
 msgstr "Aucune réservation ni aucun paiement n’a été créé."
 
-#: .\templates\reservations\availability_result.html:22
+#: .\templates\reservations\availability_result.html:47
+msgid "Change search"
+msgstr "Modifier la recherche"
+
+#: .\templates\reservations\availability_result.html:52
+msgid "Please correct the search details"
+msgstr "Veuillez corriger les informations de recherche"
+
+#: .\templates\reservations\availability_result.html:53
+msgid "The property is available"
+msgstr "Le logement est disponible"
+
+#: .\templates\reservations\availability_result.html:53
+msgid "A secure quote was prepared for the next step."
+msgstr "Un devis sécurisé a été préparé pour l’étape suivante."
+
+#: .\templates\reservations\availability_result.html:54
+msgid "These dates are not available"
+msgstr "Ces dates ne sont pas disponibles"
+
+#: .\templates\reservations\availability_result.html:54
+msgid "This property is not available for the selected dates. Try different dates."
+msgstr "Ce logement n’est pas disponible aux dates sélectionnées. Essayez d’autres dates."
+
+#: .\templates\reservations\availability_result.html:55
 msgid "Go back"
 msgstr "Retour"
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:25
+#: .\templates\reservations\booking_quote_detail.html:295
 msgid "Review booking request"
 msgstr "Vérifier la demande de réservation"
 
@@ -1228,21 +2215,10 @@ msgid "Review your request"
 msgstr "Vérifiez votre demande"
 
 #: .\templates\reservations\booking_intent_detail.html:15
-#: .\templates\reservations\booking_quote_detail.html:21
+#: .\templates\reservations\booking_quote_detail.html:91
+#: .\templates\reservations\manage_reservation.html:185
 msgid "Nights"
 msgstr "Nuits"
-
-#: .\templates\reservations\booking_intent_detail.html:15
-msgid "Email"
-msgstr "E-mail"
-
-#: .\templates\reservations\booking_intent_detail.html:15
-msgid "Phone"
-msgstr "Téléphone"
-
-#: .\templates\reservations\booking_intent_detail.html:15
-msgid "Total"
-msgstr "Total"
 
 #: .\templates\reservations\booking_intent_detail.html:15
 msgid "Not a confirmed booking"
@@ -1253,154 +2229,462 @@ msgid "This request is not confirmed until payment is completed and the booking 
 msgstr "Cette demande ne sera confirmée qu’après le paiement et la création de la réservation."
 
 #: .\templates\reservations\booking_intent_detail.html:15
+msgid "Continue to secure payment"
+msgstr "Continuer vers le paiement sécurisé"
+
+#: .\templates\reservations\booking_intent_detail.html:15
+#: .\templates\reservations\modification_detail.html:54
+msgid "Testing mode"
+msgstr "Mode test"
+
+#: .\templates\reservations\booking_intent_detail.html:15
+msgid "The next screen is a local simulation with no financial or Hostaway activity."
+msgstr "L’écran suivant est une simulation locale, sans activité financière ni Hostaway."
+
+#: .\templates\reservations\booking_intent_detail.html:15
+msgid "Continue to test payment"
+msgstr "Continuer vers le paiement de test"
+
+#: .\templates\reservations\booking_intent_detail.html:15
 msgid "Payment will be enabled soon"
 msgstr "Le paiement sera bientôt disponible"
 
-#: .\templates\reservations\booking_quote_detail.html:3
+#: .\templates\reservations\booking_quote_detail.html:4
 msgid "Your price quote"
 msgstr "Votre devis"
 
-#: .\templates\reservations\booking_quote_detail.html:17
+#: .\templates\reservations\booking_quote_detail.html:23
+#: .\templates\reservations\booking_quote_detail.html:54
 msgid "Temporary live quote"
 msgstr "Devis temporaire en direct"
 
-#: .\templates\reservations\booking_quote_detail.html:17
+#: .\templates\reservations\booking_quote_detail.html:24
 msgid "Review your stay"
 msgstr "Vérifiez votre séjour"
 
-#: .\templates\reservations\booking_quote_detail.html:21
+#: .\templates\reservations\booking_quote_detail.html:25
+msgid "Price and availability are temporary and will be checked again before the local booking request is created."
+msgstr "Le prix et les disponibilités sont temporaires et seront vérifiés à nouveau avant la création de la demande de réservation."
+
+#: .\templates\reservations\booking_quote_detail.html:33
+#: .\templates\reservations\manage_reservation.html:73
+#: .\templates\reservations\reservation_access.html:22
+msgid "Secure access"
+msgstr "Accès sécurisé"
+
+#: .\templates\reservations\booking_quote_detail.html:63
+#: .\templates\reservations\manage_reservation.html:24
+#: .\templates\reservations\manage_reservation.html:43
+#: .\templates\reservations\manage_reservation.html:158
+#: .\templates\reservations\reservation_access.html:31
+msgid "Stay details"
+msgstr "Détails du séjour"
+
+#: .\templates\reservations\booking_quote_detail.html:101
 msgid "Total price"
 msgstr "Prix total"
 
-#: .\templates\reservations\booking_quote_detail.html:21
+#: .\templates\reservations\booking_quote_detail.html:107
 msgid "Price breakdown"
 msgstr "Détail du prix"
 
-#: .\templates\reservations\booking_quote_detail.html:21
+#: .\templates\reservations\booking_quote_detail.html:126
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr "Ce devis expire le %(expires)s."
 
-#: .\templates\reservations\booking_quote_detail.html:21
-msgid "Price and availability are temporary and will be checked again before the local booking request is created."
-msgstr "Le prix et les disponibilités sont temporaires et seront vérifiés à nouveau avant la création de la demande de réservation."
-
-#: .\templates\reservations\booking_quote_detail.html:24
+#: .\templates\reservations\booking_quote_detail.html:135
 msgid "Step two"
 msgstr "Deuxième étape"
 
-#: .\templates\reservations\booking_quote_detail.html:24
+#: .\templates\reservations\booking_quote_detail.html:146
 msgid "Your details remain local and are not sent to Hostaway at this stage."
 msgstr "Vos informations restent locales et ne sont pas envoyées à Hostaway à ce stade."
 
-#: .\templates\reservations\booking_quote_detail.html:26
+#: .\templates\reservations\booking_quote_detail.html:171
+msgid "Guest details progress"
+msgstr "Progression des informations voyageur"
+
+#: .\templates\reservations\booking_quote_detail.html:174
+msgid "Your details"
+msgstr "Vos informations"
+
+#: .\templates\reservations\booking_quote_detail.html:174
+msgid "Contact information"
+msgstr "Coordonnées"
+
+#: .\templates\reservations\booking_quote_detail.html:179
+#: .\templates\reservations\booking_quote_detail.html:243
+msgid "Payment address"
+msgstr "Adresse de paiement"
+
+#: .\templates\reservations\booking_quote_detail.html:179
+msgid "For secure payment"
+msgstr "Pour le paiement sécurisé"
+
+#: .\templates\reservations\booking_quote_detail.html:186
+msgid "Primary guest"
+msgstr "Voyageur principal"
+
+#: .\templates\reservations\booking_quote_detail.html:187
+msgid "How can we reach you?"
+msgstr "Comment pouvons-nous vous joindre ?"
+
+#: .\templates\reservations\booking_quote_detail.html:189
+msgid "4 fields"
+msgstr "4 champs"
+
+#: .\templates\reservations\booking_quote_detail.html:219
+msgid "Optional details"
+msgstr "Informations facultatives"
+
+#: .\templates\reservations\booking_quote_detail.html:219
+msgid "Special requests and offers"
+msgstr "Demandes particulières et offres"
+
+#: .\templates\reservations\booking_quote_detail.html:234
+msgid "Continue to payment address"
+msgstr "Continuer vers l’adresse de paiement"
+
+#: .\templates\reservations\booking_quote_detail.html:245
+msgid "Back"
+msgstr "Retour"
+
+#: .\templates\reservations\booking_quote_detail.html:250
+msgid "This address is required by the secure payment provider and may differ from the apartment address."
+msgstr "Cette adresse est requise par le prestataire de paiement sécurisé et peut différer de celle de l’appartement."
+
+#: .\templates\reservations\booking_quote_detail.html:283
+msgid "Required agreements"
+msgstr "Consentements requis"
+
+#: .\templates\reservations\booking_quote_detail.html:285
+#, python-format
+msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>."
+msgstr "J’accepte les <a href=\"%(url)s\" target=\"_blank\">conditions générales</a>."
+
+#: .\templates\reservations\booking_quote_detail.html:289
+#, python-format
+msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">privacy policy</a>."
+msgstr "J’accepte la <a href=\"%(url)s\" target=\"_blank\">politique de confidentialité</a>."
+
+#: .\templates\reservations\booking_quote_detail.html:298
+msgid "Availability and price will be checked again before payment."
+msgstr "Les disponibilités et le prix seront vérifiés à nouveau avant le paiement."
+
+#: .\templates\reservations\booking_quote_detail.html:303
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr "Ce devis est invalide ou expiré. Veuillez vérifier à nouveau les disponibilités."
 
-#: .\templates\reservations\manage_reservation.html:7
-msgid "Secure booking management"
-msgstr "Gestion sécurisée de la réservation"
+#: .\templates\reservations\manage_reservation.html:13
+msgid "Your booking space"
+msgstr "Votre espace de réservation"
 
-#: .\templates\reservations\manage_reservation.html:9
-msgid "Stay summary"
-msgstr "Récapitulatif du séjour"
+#: .\templates\reservations\manage_reservation.html:21
+#: .\templates\reservations\reservation_access.html:24
+msgid "View your stay details and request an extension, date change, guest update, or cancellation."
+msgstr "Consultez votre séjour et demandez une prolongation, un changement de dates, de voyageurs ou une annulation."
 
-#: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:11
-msgid "Status"
-msgstr "Statut"
+#: .\templates\reservations\manage_reservation.html:50
+msgid "Securely leave"
+msgstr "Quitter en sécurité"
 
-#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\manage_reservation.html:83
+msgid "Test booking"
+msgstr "Réservation de test"
+
+#: .\templates\reservations\manage_reservation.html:83
+msgid "This is a local test record. No reservation or change has been sent to Hostaway."
+msgstr "Ceci est un enregistrement de test local. Aucune réservation ni modification n’a été envoyée à Hostaway."
+
+#: .\templates\reservations\manage_reservation.html:117
+msgid "Booking journey"
+msgstr "Étapes de la réservation"
+
+#: .\templates\reservations\manage_reservation.html:127
+#: .\templates\reservations\modification_detail.html:45
+msgid "Request received"
+msgstr "Demande reçue"
+
+#: .\templates\reservations\manage_reservation.html:135
+msgid "Booking confirmed"
+msgstr "Réservation confirmée"
+
+#: .\templates\reservations\manage_reservation.html:139
+msgid "Manage stay"
+msgstr "Gérer le séjour"
+
+#: .\templates\reservations\manage_reservation.html:148
+msgid "Stay overview"
+msgstr "Aperçu du séjour"
+
+#: .\templates\reservations\manage_reservation.html:149
+msgid "Your stay at a glance"
+msgstr "Votre séjour en un coup d’œil"
+
+#: .\templates\reservations\manage_reservation.html:188
 msgid "Current total"
 msgstr "Total actuel"
 
-#: .\templates\reservations\manage_reservation.html:9
+#: .\templates\reservations\manage_reservation.html:193
 msgid "Please complete changes through the booking platform or contact management."
 msgstr "Effectuez les modifications via la plateforme de réservation ou contactez la gestion."
 
-#: .\templates\reservations\manage_reservation.html:9
-#: .\templates\reservations\modification_detail.html:11
-msgid "Your request is under review and the booking has not been changed yet."
-msgstr "Votre demande est en cours d’examen et la réservation n’a pas encore été modifiée."
+#: .\templates\reservations\manage_reservation.html:195
+msgid "Changes will become available when the booking is confirmed."
+msgstr "Les modifications seront disponibles après confirmation de la réservation."
 
-#: .\templates\reservations\manage_reservation.html:11
-msgid "Extend stay"
-msgstr "Prolonger le séjour"
+#: .\templates\reservations\manage_reservation.html:197
+#: .\templates\reservations\manage_reservation.html:227
+msgid "Your confirmed booking remains unchanged until a request is approved."
+msgstr "Votre réservation confirmée reste inchangée tant qu’une demande n’est pas approuvée."
 
-#: .\templates\reservations\manage_reservation.html:11
-msgid "Request extension"
-msgstr "Demander une prolongation"
+#: .\templates\reservations\manage_reservation.html:209
+msgid "Need help?"
+msgstr "Besoin d’aide ?"
 
-#: .\templates\reservations\manage_reservation.html:12
-msgid "Change dates"
-msgstr "Modifier les dates"
+#: .\templates\reservations\manage_reservation.html:210
+msgid "We are here for your stay"
+msgstr "Nous sommes à vos côtés pendant le séjour"
 
-#: .\templates\reservations\manage_reservation.html:12
-msgid "Request date change"
-msgstr "Demander un changement de dates"
+#: .\templates\reservations\manage_reservation.html:211
+msgid "Send us a message if your request is urgent or you need help with arrival."
+msgstr "Envoyez-nous un message si votre demande est urgente ou si vous avez besoin d’aide à l’arrivée."
 
-#: .\templates\reservations\manage_reservation.html:13
-msgid "Change guests"
-msgstr "Modifier les voyageurs"
+#: .\templates\reservations\manage_reservation.html:214
+msgid "Contact guest support"
+msgstr "Contacter l’assistance voyageurs"
 
-#: .\templates\reservations\manage_reservation.html:13
-msgid "Request guest change"
-msgstr "Demander une modification des voyageurs"
+#: .\templates\reservations\manage_reservation.html:224
+msgid "Flexible stay"
+msgstr "Séjour flexible"
 
-#: .\templates\reservations\manage_reservation.html:14
+#: .\templates\reservations\manage_reservation.html:225
+msgid "What would you like to change?"
+msgstr "Que souhaitez-vous modifier ?"
+
+#: .\templates\reservations\manage_reservation.html:227
+msgid "Availability and price are checked before any change is applied."
+msgstr "Les disponibilités et le prix sont vérifiés avant toute modification."
+
+#: .\templates\reservations\manage_reservation.html:237
+msgid "Add more nights to this booking"
+msgstr "Ajouter des nuits à cette réservation"
+
+#: .\templates\reservations\manage_reservation.html:246
+#: .\templates\reservations\manage_reservation.html:282
+#: .\templates\reservations\manage_reservation.html:342
+msgid "Optional"
+msgstr "Facultatif"
+
+#: .\templates\reservations\manage_reservation.html:257
+#: .\templates\reservations\manage_reservation.html:294
+#: .\templates\reservations\manage_reservation.html:306
+msgid "Choose from calendar"
+msgstr "Choisir dans le calendrier"
+
+#: .\templates\reservations\manage_reservation.html:263
+msgid "Check extension"
+msgstr "Vérifier la prolongation"
+
+#: .\templates\reservations\manage_reservation.html:273
+msgid "Choose a different arrival or departure"
+msgstr "Choisir une autre date d’arrivée ou de départ"
+
+#: .\templates\reservations\manage_reservation.html:315
+#: .\templates\reservations\manage_reservation.html:349
+msgid "Decrease guests"
+msgstr "Réduire le nombre de voyageurs"
+
+#: .\templates\reservations\manage_reservation.html:317
+#: .\templates\reservations\manage_reservation.html:351
+msgid "Increase guests"
+msgstr "Augmenter le nombre de voyageurs"
+
+#: .\templates\reservations\manage_reservation.html:319
+#: .\templates\reservations\manage_reservation.html:353
+#, python-format
+msgid "Up to %(capacity)s guests, according to the apartment capacity."
+msgstr "Jusqu’à %(capacity)s voyageurs, selon la capacité de l’appartement."
+
+#: .\templates\reservations\manage_reservation.html:323
+msgid "Check new dates"
+msgstr "Vérifier les nouvelles dates"
+
+#: .\templates\reservations\manage_reservation.html:333
+msgid "Update the number of staying guests"
+msgstr "Modifier le nombre de voyageurs"
+
+#: .\templates\reservations\manage_reservation.html:356
+msgid "Check guest change"
+msgstr "Vérifier la modification"
+
+#: .\templates\reservations\manage_reservation.html:366
 msgid "Request cancellation"
 msgstr "Demander l’annulation"
 
-#: .\templates\reservations\manage_reservation.html:14
+#: .\templates\reservations\manage_reservation.html:366
+msgid "Review the cancellation options"
+msgstr "Consulter les options d’annulation"
+
+#: .\templates\reservations\manage_reservation.html:373
 msgid "Send for review"
 msgstr "Envoyer pour examen"
 
+#: .\templates\reservations\manage_reservation.html:383
+msgid "Stay updates"
+msgstr "Mises à jour du séjour"
+
+#: .\templates\reservations\manage_reservation.html:384
+msgid "Your requests"
+msgstr "Vos demandes"
+
+#: .\templates\reservations\manage_reservation.html:410
+msgid "You have not sent any change requests yet."
+msgstr "Vous n’avez encore envoyé aucune demande de modification."
+
 #: .\templates\reservations\modification_detail.html:3
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:10
 msgid "Request status"
 msgstr "Statut de la demande"
 
-#: .\templates\reservations\modification_detail.html:11
-msgid "Local change request"
-msgstr "Demande de modification locale"
+#: .\templates\reservations\modification_detail.html:9
+msgid "Stay update"
+msgstr "Mise à jour du séjour"
 
 #: .\templates\reservations\modification_detail.html:11
-msgid "Request type"
-msgstr "Type de demande"
+msgid "Follow your request here. Your original booking remains active until the change is completed."
+msgstr "Suivez votre demande ici. La réservation d’origine reste active jusqu’à la fin de la modification."
 
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:19
+msgid "Back to my booking"
+msgstr "Retour à ma réservation"
+
+#: .\templates\reservations\modification_detail.html:29
 msgid "Current check-in"
 msgstr "Arrivée actuelle"
 
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:30
 msgid "Current check-out"
 msgstr "Départ actuel"
 
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:32
 msgid "Requested check-in"
 msgstr "Arrivée demandée"
 
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:33
 msgid "Requested check-out"
 msgstr "Départ demandé"
 
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:36
 msgid "New price"
 msgstr "Nouveau prix"
 
-#: .\templates\reservations\modification_detail.html:11
+#: .\templates\reservations\modification_detail.html:37
 msgid "Price difference"
 msgstr "Différence de prix"
 
-#: .\templates\reservations\modification_detail.html:11
-msgid "Live Hostaway changes are disabled"
-msgstr "Les modifications Hostaway en direct sont désactivées"
+#: .\templates\reservations\modification_detail.html:41
+msgid "Change completed"
+msgstr "Modification effectuée"
 
-#: .\templates\reviews\_review_cards.html:9
+#: .\templates\reservations\modification_detail.html:41
+msgid "Your booking has been updated successfully in the reservation system."
+msgstr "Votre réservation a été mise à jour avec succès dans le système de réservation."
+
+#: .\templates\reservations\modification_detail.html:43
+msgid "Change is being applied"
+msgstr "La modification est en cours d’application"
+
+#: .\templates\reservations\modification_detail.html:43
+msgid "Payment and checks are complete. Do not pay again while the reservation update is processed."
+msgstr "Le paiement et les vérifications sont terminés. Ne payez pas de nouveau pendant le traitement de la mise à jour."
+
+#: .\templates\reservations\modification_detail.html:45
+msgid "Your original booking remains active until the change is completed."
+msgstr "Votre réservation initiale reste active jusqu’à la fin de la modification."
+
+#: .\templates\reservations\modification_detail.html:51
+msgid "Pay the difference securely"
+msgstr "Payer la différence en toute sécurité"
+
+#: .\templates\reservations\modification_detail.html:54
+msgid "Pay the difference locally without financial or Hostaway activity."
+msgstr "Payer la différence localement, sans activité financière ni Hostaway."
+
+#: .\templates\reservations\modification_detail.html:55
+msgid "Test payment of the difference"
+msgstr "Tester le paiement de la différence"
+
+#: .\templates\reservations\modification_detail.html:57
+msgid "Difference payment required"
+msgstr "Paiement de la différence requis"
+
+#: .\templates\reservations\modification_detail.html:57
+msgid "A secure payment button will appear here once the payment gateway is connected."
+msgstr "Un bouton de paiement sécurisé apparaîtra ici dès que la passerelle sera connectée."
+
+#: .\templates\reservations\modification_detail.html:60
+msgid "Payment recorded"
+msgstr "Paiement enregistré"
+
+#: .\templates\reservations\modification_detail.html:60
+msgid "Do not pay again. The reservation update is continuing from the verified payment."
+msgstr "Ne payez pas de nouveau. La mise à jour se poursuit à partir du paiement vérifié."
+
+#: .\templates\reservations\modification_detail.html:62
+msgid "Return to booking"
+msgstr "Revenir à la réservation"
+
+#: .\templates\reservations\reservation_access.html:5
+msgid "Open your secure booking management area using your booking number and email."
+msgstr "Ouvrez votre espace sécurisé avec votre numéro et votre e-mail de réservation."
+
+#: .\templates\reservations\reservation_access.html:12
+msgid "Your stay, in one place"
+msgstr "Votre séjour, en un seul endroit"
+
+#: .\templates\reservations\reservation_access.html:13
+msgid "Manage your booking easily"
+msgstr "Gérez facilement votre réservation"
+
+#: .\templates\reservations\reservation_access.html:14
+msgid "Enter the booking number from your confirmation and the email used when booking."
+msgstr "Saisissez le numéro indiqué dans la confirmation et l’e-mail utilisé pour réserver."
+
+#: .\templates\reservations\reservation_access.html:30
+msgid "Booking management features"
+msgstr "Fonctions de gestion de la réservation"
+
+#: .\templates\reservations\reservation_access.html:31
+msgid "Dates, guests, status, and total"
+msgstr "Dates, voyageurs, statut et total"
+
+#: .\templates\reservations\reservation_access.html:32
+msgid "Flexible requests"
+msgstr "Demandes flexibles"
+
+#: .\templates\reservations\reservation_access.html:32
+msgid "Extend or request another date"
+msgstr "Prolonger ou demander une autre date"
+
+#: .\templates\reservations\reservation_access.html:33
+msgid "Clear updates"
+msgstr "Suivi clair"
+
+#: .\templates\reservations\reservation_access.html:33
+msgid "Follow every request from one place"
+msgstr "Suivez chaque demande depuis un seul endroit"
+
+#: .\templates\reviews\_review_cards.html:17
+msgid "Show more reviews"
+msgstr "Afficher plus d’avis"
+
+#: .\templates\reviews\_review_cards.html:24
 msgid "No reviews to show yet"
 msgstr "Aucun avis à afficher pour le moment"
 
-#: .\templates\reviews\_review_cards.html:10
+#: .\templates\reviews\_review_cards.html:25
 msgid "Verified guest reviews will appear here after publication."
 msgstr "Les avis vérifiés des voyageurs apparaîtront ici après publication."
 
@@ -1419,3 +2703,135 @@ msgstr "Expériences publiées des voyageurs, présentées dans le respect de la
 #: .\templates\reviews\review_list.html:7
 msgid "Review pages"
 msgstr "Pages des avis"
+
+#~ msgid "Billing city"
+#~ msgstr "Ville de facturation"
+
+#~ msgid "Billing country"
+#~ msgstr "Pays de facturation"
+
+#~ msgid "Billing postcode"
+#~ msgstr "Code postal de facturation"
+
+#~ msgid "Billing address"
+#~ msgstr "Adresse de facturation"
+
+#~ msgid "Use the YYYY-MM-DD format shown in the field."
+#~ msgstr "Utilisez le format YYYY-MM-DD indiqué dans le champ."
+
+#~ msgid "Use the two-letter ISO code, for example SA."
+#~ msgstr "Utilisez le code ISO à deux lettres, par exemple SA."
+
+#~ msgid "Use YYYY-MM-DD, for example 2026-12-31."
+#~ msgstr "Utilisez le format YYYY-MM-DD, par exemple 2026-12-31."
+
+#~ msgid "Your request is under review and the booking has not been changed yet."
+#~ msgstr "Votre demande est en cours d’examen et la réservation n’a pas encore été modifiée."
+
+#~ msgid "Property"
+#~ msgstr "Logement"
+
+#~ msgid "Send a secure local enquiry to Luxury Smart Apartments."
+#~ msgstr "Envoyez une demande sécurisée à Luxury Smart Apartments."
+
+#~ msgid "Guest benefits"
+#~ msgstr "Avantages voyageurs"
+
+#~ msgid "Verified homes"
+#~ msgstr "Logements vérifiés"
+
+#~ msgid "Considered smart stays in Riyadh and Marrakech."
+#~ msgstr "Des séjours intelligents soigneusement pensés à Riyad et Marrakech."
+
+#~ msgid "Use international format, for example +9665XXXXXXXX."
+#~ msgstr "Utilisez le format international, par exemple +9665XXXXXXXX."
+
+#~ msgid "Enter a valid international number beginning with +."
+#~ msgstr "Saisissez un numéro international valide commençant par +."
+
+#~ msgid "Country code must contain two letters."
+#~ msgstr "Le code pays doit contenir deux lettres."
+
+#~ msgid "A calmer way to stay, designed around you."
+#~ msgstr "Une façon plus sereine de séjourner, pensée pour vous."
+
+#~ msgid "Discover considered homes in Riyadh and Marrakech with live availability and transparent stay pricing."
+#~ msgstr "Découvrez des logements soigneusement sélectionnés à Riyad et Marrakech, avec disponibilités en direct et tarifs transparents."
+
+#~ msgid "Search availability"
+#~ msgstr "Rechercher les disponibilités"
+
+#~ msgid "Flexible stay lengths"
+#~ msgstr "Durées de séjour flexibles"
+
+#~ msgid "Smart living"
+#~ msgstr "Habitat intelligent"
+
+#~ msgid "Find your next smart stay"
+#~ msgstr "Trouvez votre prochain séjour intelligent"
+
+#~ msgid "Comfort, clarity, and thoughtful technology"
+#~ msgstr "Confort, clarté et technologie bien pensée"
+
+#~ msgid "Well-positioned homes"
+#~ msgstr "Logements bien situés"
+
+#~ msgid "Browse current stays across Riyadh and Marrakech."
+#~ msgstr "Découvrez les séjours disponibles à Riyad et Marrakech."
+
+#~ msgid "Properties selected for a modern, practical stay."
+#~ msgstr "Des logements sélectionnés pour un séjour moderne et pratique."
+
+#~ msgid "Pricing and availability come directly from the operating system."
+#~ msgstr "Les tarifs et disponibilités proviennent directement du système d’exploitation."
+
+#~ msgid "Explore both daily and monthly accommodation."
+#~ msgstr "Découvrez des hébergements à la journée comme au mois."
+
+#~ msgid "Family-ready options"
+#~ msgstr "Options adaptées aux familles"
+
+#~ msgid "Filter homes by capacity, bedrooms, and beds."
+#~ msgstr "Filtrez les logements par capacité, chambres et lits."
+
+#~ msgid "Two cities, one considered standard"
+#~ msgstr "Deux villes, un même niveau d’exigence"
+
+#~ msgid "What guests remember"
+#~ msgstr "Ce que nos voyageurs retiennent"
+
+#~ msgid "Ready when you are"
+#~ msgstr "Prêts quand vous l’êtes"
+
+#~ msgid "Start with the dates that work for you."
+#~ msgstr "Commencez par les dates qui vous conviennent."
+
+#~ msgid "Use the secure management link supplied with your local booking request. Live booking changes remain under review."
+#~ msgstr "Utilisez le lien de gestion sécurisé fourni avec votre demande de réservation. Les modifications en direct restent soumises à validation."
+
+#~ msgid "Monthly stays"
+#~ msgstr "Séjours au mois"
+
+#~ msgid "Secure booking management"
+#~ msgstr "Gestion sécurisée de la réservation"
+
+#~ msgid "Stay summary"
+#~ msgstr "Récapitulatif du séjour"
+
+#~ msgid "Status"
+#~ msgstr "Statut"
+
+#~ msgid "Request extension"
+#~ msgstr "Demander une prolongation"
+
+#~ msgid "Request date change"
+#~ msgstr "Demander un changement de dates"
+
+#~ msgid "Request guest change"
+#~ msgstr "Demander une modification des voyageurs"
+
+#~ msgid "Request type"
+#~ msgstr "Type de demande"
+
+#~ msgid "Live Hostaway changes are disabled"
+#~ msgstr "Les modifications Hostaway en direct sont désactivées"

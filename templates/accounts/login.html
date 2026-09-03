@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Sign in" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="section container account-shell account-shell--compact">
+    <div class="account-intro">
+        <p class="eyebrow">{% trans "Welcome back" %}</p>
+        <h1>{% trans "Your bookings, in one place" %}</h1>
+        <p>{% trans "Sign in with the same email used for your booking." %}</p>
+    </div>
+    <article class="account-card">
+        <h2>{% trans "Sign in" %}</h2>
+        {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="account-form" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            <div class="field-group">{{ form.username.label_tag }}{{ form.username }}{{ form.username.errors }}</div>
+            <div class="field-group">{{ form.password.label_tag }}{{ form.password }}{{ form.password.errors }}</div>
+            <button class="button" type="submit">{% trans "Sign in" %}</button>
+        </form>
+        <p class="account-card__footer">{% trans "New here?" %} <a href="{% url 'accounts:register' %}">{% trans "Create account" %}</a></p>
+        <a class="text-link account-manage-link" href="{% url 'reservations:manage_access' %}">{% trans "Manage a booking without an account" %}</a>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n presentation %}
+{% block title %}{% trans "Secure payment" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block extra_head %}
+<script nonce="{{ csp_nonce }}">
+var wpwlOptions = {
+    paymentTarget: "_top",
+    brandDetection: true,
+    brandDetectionType: "binlist",
+    brandDetectionPriority: ["MADA", "VISA", "MASTER"]
+};
+</script>
+<script src="{{ widget_url }}" integrity="{{ widget_integrity }}" crossorigin="anonymous"></script>
+{% endblock %}
+{% block content %}
+<section class="section container narrow">
+    <div class="section-heading"><p class="eyebrow">HyperPay{% if hyperpay_environment == 'test' %} TEST/UAT{% endif %}</p><h1>{% trans "Secure payment" %}</h1></div>
+    <article class="review-panel">
+        <p>{% trans "Card details are entered directly in HyperPay's hosted form and never reach our server." %}</p>
+        <dl class="quote-summary"><div class="quote-summary__total"><dt>{% trans "Total" %}</dt><dd>{{ attempt.amount|localized_money:attempt.currency }}</dd></div></dl>
+        <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA"></form>
+        <form action="{{ result_url }}" class="paymentWidgets" data-brands="VISA MASTER"></form>
+    </article>
+</section>
+{% endblock %}

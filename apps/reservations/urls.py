@@ -7,6 +7,8 @@ from .views import (
     GuestDetailsView,
     ModificationCreateView,
     ModificationDetailView,
+    ReservationAccessView,
+    ReservationLogoutView,
     ReservationManageView,
 )
 
@@ -28,6 +30,16 @@ urlpatterns = [
         "requests/<str:public_reference>/",
         BookingIntentDetailView.as_view(),
         name="intent_detail",
+    ),
+    path(
+        "manage/",
+        ReservationAccessView.as_view(),
+        name="manage_access",
+    ),
+    path(
+        "manage/logout/",
+        ReservationLogoutView.as_view(),
+        name="manage_logout",
     ),
     path(
         "manage/<str:public_reference>/",

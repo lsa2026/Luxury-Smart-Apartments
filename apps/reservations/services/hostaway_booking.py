@@ -126,6 +126,8 @@ class HostawayBookingService:
         )
         if payment is None:
             return self._block(reservation, "successful_payment_required")
+        if payment.provider == "hyperpay" and settings.HYPERPAY_ENVIRONMENT == "test":
+            return self._block(reservation, "test_payment_live_write_blocked")
         if reservation.property is None or reservation.property.hostaway_listing_map_id is None:
             return self._block(reservation, "listing_map_id_not_verified")
         if settings.HOSTAWAY_DIRECT_CHANNEL_ID is None:
@@ -229,6 +231,11 @@ class HostawayBookingService:
             BookingIntent.objects.filter(pk=intent.pk).update(
                 status=BookingIntent.Status.COMPLETED,
                 updated_at=now,
+            )
+            from apps.notifications.services.events import handle_reservation_confirmed
+
+            transaction.on_commit(
+                lambda: handle_reservation_confirmed(locked_reservation.pk)
             )
         reservation.refresh_from_db()
         operation.refresh_from_db()

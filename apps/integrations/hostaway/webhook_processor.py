@@ -259,6 +259,13 @@ def _reconcile_modification_requests(
             modification.status = BookingModificationRequest.Status.COMPLETED
             modification.completed_at = now
             modification.save(update_fields=["status", "completed_at", "updated_at"])
+            from apps.notifications.services.events import handle_modification_completed
+
+            transaction.on_commit(
+                lambda modification_id=modification.pk: handle_modification_completed(
+                    modification_id
+                )
+            )
 
 
 def _log_transition(event: HostawayWebhookEvent) -> None:

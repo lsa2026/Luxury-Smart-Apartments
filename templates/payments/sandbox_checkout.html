@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load i18n presentation %}
+{% block title %}{% trans "Test payment" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="section container sandbox-checkout-shell">
+    <div class="sandbox-banner" role="status">
+        <span class="sandbox-banner__icon" aria-hidden="true">✓</span>
+        <div><strong>{% trans "Test payment environment" %}</strong><p>{% trans "No real money is charged, no card details are collected, and nothing is sent to Hostaway." %}</p></div>
+    </div>
+    <div class="sandbox-checkout-grid">
+        <article class="sandbox-payment-card">
+            <p class="eyebrow">{% if kind == 'booking' %}{% trans "Booking payment test" %}{% else %}{% trans "Difference payment test" %}{% endif %}</p>
+            <h1>{% trans "Choose a test result" %}</h1>
+            <p>{% trans "Use the controls below to verify how the customer experience behaves. These controls never contact a bank." %}</p>
+            <div class="sandbox-amount"><span>{% trans "Test amount" %}</span><strong>{{ amount|localized_money:subject.currency }}</strong></div>
+            <form method="post" class="sandbox-actions">
+                {% csrf_token %}
+                <button class="button" type="submit" name="action" value="success">{% trans "Simulate successful payment" %}</button>
+                <button class="button button--secondary" type="submit" name="action" value="failure">{% trans "Simulate declined payment" %}</button>
+                <button class="text-link sandbox-cancel" type="submit" name="action" value="cancel">{% trans "Cancel test" %}</button>
+            </form>
+        </article>
+        <aside class="sandbox-safety-card">
+            <h2>{% trans "Safe by design" %}</h2>
+            <ul>
+                <li>{% trans "No card number or banking data" %}</li>
+                <li>{% trans "No external payment gateway call" %}</li>
+                <li>{% trans "No Hostaway reservation or modification" %}</li>
+                <li>{% trans "Clearly marked local test records" %}</li>
+            </ul>
+            <p class="sandbox-reference">{% trans "Reference" %}<br><code>{{ subject.public_reference }}</code></p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

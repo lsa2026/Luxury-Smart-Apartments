@@ -1,19 +1,46 @@
 {% load i18n presentation %}
-<article class="review-card{% if review.is_featured %} review-card--featured{% endif %}">
-    <div class="review-card__head">
-        <div>
-            <h3>{{ review.display_guest_name }}</h3>
-            <p class="property-name">
-                {% if review.property %}{{ review.property|localized_property_name }}{% else %}{% trans "One of our properties" %}{% endif %}
-            </p>
+{% with guest_name=review.display_guest_name review_text=review|localized_review_text %}
+<article class="review-card{% if review.is_featured %} review-card--featured{% endif %}" data-review-card>
+    <header class="review-card__head">
+        <div class="review-card__guest">
+            <span class="review-card__avatar" aria-hidden="true">{{ guest_name|slice:":1"|upper }}</span>
+            <div>
+                <h3>{{ guest_name }}</h3>
+                <p class="property-name">
+                    {% if review.property %}{{ review.property|localized_property_name }}{% else %}{% trans "One of our properties" %}{% endif %}
+                </p>
+            </div>
         </div>
         {% if review.is_featured %}<span class="badge">{% trans "Featured" %}</span>{% endif %}
+    </header>
+    <div class="review-card__rating">
+        <div class="stars" role="img" aria-label="{% blocktrans with rating=review.rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
+            <span aria-hidden="true">{{ review.star_display }}</span>
+        </div>
+        <b>{{ review.rating|rating_out_of_five }}<small>/5</small></b>
     </div>
-    <div class="stars" role="img" aria-label="{% blocktrans with rating=review.rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
-        <span aria-hidden="true">{{ review.star_display }}</span>
-    </div>
-    <blockquote>{{ review|localized_review_text }}</blockquote>
-    {% if review.departure_date %}
-    <time datetime="{{ review.departure_date|date:'Y-m-d' }}">{{ review.departure_date|date:"j F Y" }}</time>
+    <blockquote class="review-card__quote">
+        <p id="review-copy-{{ review.pk }}" data-review-copy{% if review_text|length > 220 %} class="is-collapsible"{% endif %}>{{ review_text|linebreaksbr }}</p>
+    </blockquote>
+    {% if review_text|length > 220 %}
+    <button
+        class="review-card__toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="review-copy-{{ review.pk }}"
+        data-review-toggle
+        hidden
+    >
+        <span data-review-toggle-label>{% trans "Read more" %}</span>
+        <span class="review-card__toggle-icon" aria-hidden="true">⌄</span>
+        <span data-review-less-label hidden>{% trans "Show less" %}</span>
+    </button>
     {% endif %}
+    <footer class="review-card__footer">
+        <span class="review-card__verified"><span aria-hidden="true">✓</span>{% trans "Verified stay" %}</span>
+        {% if review.departure_date %}
+        <time datetime="{{ review.departure_date|date:'Y-m-d' }}">{{ review.departure_date|date:"F Y" }}</time>
+        {% endif %}
+    </footer>
 </article>
+{% endwith %}

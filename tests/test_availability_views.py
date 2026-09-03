@@ -31,6 +31,7 @@ def make_property() -> Property:
         hostaway_name="Internal synthetic source name",
         hostaway_internal_name="Do not render this internal name",
         name_ar="شقة البحث",
+        city="Riyadh",
         city_ar="الرياض",
         currency_code="SAR",
         person_capacity=4,
@@ -48,9 +49,10 @@ def available_result(property_obj: Property) -> AvailabilityResult:
         title="Base rate",
         alias="technical-alias",
         quantity=None,
-        value=Decimal("620.00"),
+        value=Decimal("310.00"),
         total=Decimal("620.00"),
         is_included_in_total=True,
+        is_deleted=False,
     )
     quote = PriceQuote(
         listing_id=property_obj.hostaway_listing_id,
@@ -79,6 +81,7 @@ def available_result(property_obj: Property) -> AvailabilityResult:
 class DummyService:
     result: AvailabilityResult
     calls = 0
+    last_bypass_cache: bool | None = None
 
     def __enter__(self) -> "DummyService":
         return self
@@ -91,8 +94,10 @@ class DummyService:
         request: object,
         *,
         session_hash: str,
+        bypass_cache: bool = False,
     ) -> QuoteCreation:
         type(self).calls += 1
+        type(self).last_bypass_cache = bypass_cache
         quote = create_quote_for_property(
             type(self).result,
             property_obj=request.property,
@@ -100,10 +105,21 @@ class DummyService:
         )
         return QuoteCreation(type(self).result, quote)
 
+    def check(
+        self,
+        request: object,
+        *,
+        bypass_cache: bool = False,
+    ) -> AvailabilityResult:
+        type(self).calls += 1
+        type(self).last_bypass_cache = bypass_cache
+        return type(self).result
+
 
 @pytest.fixture
 def mocked_service(monkeypatch: pytest.MonkeyPatch) -> type[DummyService]:
     DummyService.calls = 0
+    DummyService.last_bypass_cache = None
     monkeypatch.setattr(AvailabilitySearchView, "service_class", DummyService)
     return DummyService
 
@@ -111,11 +127,78 @@ def mocked_service(monkeypatch: pytest.MonkeyPatch) -> type[DummyService]:
 def form_data(property_obj: Property) -> dict[str, str | int]:
     check_in = timezone.localdate() + timedelta(days=5)
     return {
+        "city": "Riyadh",
         "property": property_obj.pk,
         "check_in": check_in.isoformat(),
         "check_out": (check_in + timedelta(days=2)).isoformat(),
         "guests": 2,
     }
+
+
+def test_city_only_search_lists_available_properties_without_creating_quote(
+    mocked_service: type[DummyService],
+) -> None:
+    property_obj = make_property()
+    DummyService.result = available_result(property_obj)
+    data = form_data(property_obj)
+    data["property"] = ""
+
+    response = Client().post("/reservations/quotes/", data)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "الوحدات المتاحة في الرياض" in content
+    assert property_obj.name_ar in content
+    assert "اختيار هذه الوحدة" in content
+    assert f'{property_obj.get_absolute_url()}?source=availability&amp;' in content
+    assert "check_in=" in content
+    assert "check_out=" in content
+    assert "guests=2" in content
+    assert BookingQuote.objects.count() == 0
+    assert mocked_service.calls == 1
+    assert mocked_service.last_bypass_cache is True
+
+
+def test_available_property_detail_preserves_search_without_repeating_fields() -> None:
+    property_obj = make_property()
+    check_in = timezone.localdate() + timedelta(days=5)
+    check_out = check_in + timedelta(days=2)
+    response = Client().get(
+        property_obj.get_absolute_url(),
+        {
+            "source": "availability",
+            "check_in": check_in.isoformat(),
+            "check_out": check_out.isoformat(),
+            "guests": 2,
+        },
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "متابعة الحجز" in content
+    assert "لا تحتاج إلى البحث مرة أخرى" in content
+    assert f'name="check_in" value="{check_in.isoformat()}"' in content
+    assert f'name="check_out" value="{check_out.isoformat()}"' in content
+    assert 'name="guests" value="2"' in content
+    assert "data-availability-form" not in content
+
+
+def test_invalid_available_search_context_falls_back_to_normal_availability_form() -> None:
+    property_obj = make_property()
+    response = Client().get(
+        property_obj.get_absolute_url(),
+        {
+            "source": "availability",
+            "check_in": "not-a-date",
+            "check_out": "not-a-date",
+            "guests": 2,
+        },
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "data-availability-form" in content
+    assert "متابعة الحجز" not in content
 
 
 def test_home_and_property_forms_are_rtl_and_do_not_call_hostaway() -> None:
@@ -167,6 +250,8 @@ def test_price_result_is_rtl_and_hides_internal_fields(
     assert "Do not render this internal name" not in content
     assert "إنشاء حجز" not in content
     assert mocked_service.calls == 1
+    assert mocked_service.last_bypass_cache is True
+    assert "310.00" not in content
 
 
 def test_quote_ignores_browser_price_and_hostaway_listing_id(

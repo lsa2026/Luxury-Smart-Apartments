@@ -1,17 +1,415 @@
 {% extends "base.html" %}
 {% load i18n presentation %}
+
 {% block title %}{% trans "Manage booking" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
+
 {% block content %}
-<header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Secure booking management" %}</p><h1>{% trans "Manage booking" %}</h1><p>{{ reservation.property|localized_property_name }}</p></div></header>
-<section class="section container">
-    <article class="review-panel"><h2>{% trans "Stay summary" %}</h2><dl class="quote-summary"><div><dt>{% trans "Status" %}</dt><dd>{{ reservation.get_normalized_status_display }}</dd></div><div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests }}</dd></div><div class="quote-summary__total"><dt>{% trans "Current total" %}</dt><dd>{{ reservation.total_price|money_amount }} {{ reservation.currency }}</dd></div></dl>{% if reservation.source_type == "external_channel" %}<p class="quote-notice">{% trans "Please complete changes through the booking platform or contact management." %}</p>{% else %}<p class="quote-notice">{% trans "Your request is under review and the booking has not been changed yet." %}</p>{% endif %}</article>
-    <div class="management-grid">
-        <section class="form-card"><h2>{% trans "Extend stay" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'extend' %}" data-submit-once>{% csrf_token %}{{ extension_form.as_p }}<button class="button" type="submit">{% trans "Request extension" %}</button></form></section>
-        <section class="form-card"><h2>{% trans "Change dates" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'dates' %}" data-submit-once>{% csrf_token %}{{ date_form.as_p }}<button class="button" type="submit">{% trans "Request date change" %}</button></form></section>
-        <section class="form-card"><h2>{% trans "Change guests" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'guests' %}" data-submit-once>{% csrf_token %}{{ guest_form.as_p }}<button class="button" type="submit">{% trans "Request guest change" %}</button></form></section>
-        <section class="form-card"><h2>{% trans "Request cancellation" %}</h2><form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}" data-submit-once>{% csrf_token %}{{ cancellation_form.as_p }}<button class="button button--secondary" type="submit">{% trans "Send for review" %}</button></form></section>
+<header class="booking-dashboard-hero">
+    <div class="container booking-dashboard-hero__grid">
+        <div class="booking-dashboard-hero__content">
+            <div class="booking-dashboard-hero__topline">
+                <p class="eyebrow">{% trans "Your booking space" %}</p>
+                <span class="status-pill status-pill--{{ reservation.normalized_status }}">
+                    <i aria-hidden="true"></i>{{ reservation.normalized_status|localized_reservation_status }}
+                </span>
+            </div>
+            <h1>{% trans "Welcome back" %}</h1>
+            <p class="booking-dashboard-hero__property">{{ reservation.property|localized_property_name }}</p>
+            <p class="booking-dashboard-hero__intro">
+                {% trans "View your stay details and request an extension, date change, guest update, or cancellation." %}
+            </p>
+
+            <div class="booking-dashboard-hero__facts" aria-label="{% trans 'Stay details' %}">
+                <div>
+                    <small>{% trans "Check-in" %}</small>
+                    <time datetime="{{ reservation.check_in|date:'Y-m-d' }}">{{ reservation.check_in|date:"Y-m-d" }}</time>
+                </div>
+                <div class="booking-dashboard-hero__route" aria-hidden="true">
+                    <i></i><b></b><i></i>
+                </div>
+                <div>
+                    <small>{% trans "Check-out" %}</small>
+                    <time datetime="{{ reservation.check_out|date:'Y-m-d' }}">{{ reservation.check_out|date:"Y-m-d" }}</time>
+                </div>
+                <div class="booking-dashboard-hero__guests">
+                    <small>{% trans "Guests" %}</small>
+                    <strong>{{ reservation.guests }}</strong>
+                </div>
+            </div>
+
+            <div class="booking-dashboard-hero__actions">
+                <a class="button" href="#stay-summary">{% trans "Stay details" %}</a>
+                <form method="post" action="{% url 'reservations:manage_logout' %}">
+                    {% csrf_token %}
+                    <button class="button button--ghost-light button--small" type="submit">
+                        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                            <path d="M10 5H5v14h5m5-3 4-4-4-4m4 4H9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                        </svg>
+                        {% trans "Securely leave" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <figure class="booking-dashboard-hero__media">
+            {% if cover_image %}
+            <img
+                src="{{ cover_image.display_url }}"
+                alt="{{ cover_image|localized_image_alt|default:reservation.property.display_name }}"
+                width="960"
+                height="720"
+            >
+            {% else %}
+            <div class="booking-dashboard-hero__media-empty" aria-hidden="true"><span>LS</span></div>
+            {% endif %}
+            <figcaption>
+                <span aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18">
+                        <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6zM12 14v2.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                    </svg>
+                </span>
+                <small>{% trans "Secure access" %}</small>
+            </figcaption>
+        </figure>
     </div>
+</header>
+
+<section class="section container booking-manage-shell">
+    {% if reservation.is_test %}
+    <div class="sandbox-banner sandbox-banner--compact" role="status">
+        <span class="sandbox-banner__icon" aria-hidden="true">✓</span>
+        <div><strong>{% trans "Test booking" %}</strong><p>{% trans "This is a local test record. No reservation or change has been sent to Hostaway." %}</p></div>
+    </div>
+    {% endif %}
+    <div class="booking-reference-bar">
+        <div class="booking-reference-bar__item">
+            <span class="booking-reference-bar__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="19" height="19">
+                    <path d="M4.5 7.5h15v11h-15zM8 7.5V5h8v2.5M8 12h8m-8 3h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                </svg>
+            </span>
+            <span>
+                <small>{% trans "Booking number" %}</small>
+                <strong dir="ltr">{{ reservation.public_reference }}</strong>
+            </span>
+        </div>
+        <div class="booking-reference-bar__item">
+            <span class="booking-reference-bar__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="19" height="19">
+                    <path d="M3.5 6.5h17v11h-17zM4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                </svg>
+            </span>
+            <span>
+                <small>{% trans "Booking email" %}</small>
+                <strong dir="ltr">{{ masked_email }}</strong>
+            </span>
+        </div>
+        <div class="booking-reference-bar__secure">
+            <span aria-hidden="true">✓</span>
+            <small>{% trans "Your details are used only to verify this booking." %}</small>
+        </div>
+    </div>
+
+    <section class="booking-journey-card" aria-labelledby="booking-journey-title">
+        <div class="booking-journey-card__heading">
+            <p class="eyebrow">{% trans "Booking journey" %}</p>
+            <h2 id="booking-journey-title">{{ reservation.normalized_status|localized_reservation_status }}</h2>
+            <p class="payment-state{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %} payment-state--paid{% endif %}">
+                <span aria-hidden="true">{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %}✓{% else %}◷{% endif %}</span>
+                {{ reservation.payment_status|localized_payment_status }}
+            </p>
+        </div>
+        <ol class="booking-journey">
+            <li class="is-complete">
+                <span aria-hidden="true">✓</span>
+                <strong>{% trans "Request received" %}</strong>
+            </li>
+            <li class="{% if reservation.normalized_status != 'awaiting_payment' %}is-complete{% else %}is-current{% endif %}">
+                <span aria-hidden="true">{% if reservation.normalized_status != 'awaiting_payment' %}✓{% else %}2{% endif %}</span>
+                <strong>{% trans "Payment" %}</strong>
+            </li>
+            <li class="{% if reservation.normalized_status == 'confirmed' or reservation.normalized_status == 'modified' or reservation.normalized_status == 'cancelled' %}is-complete{% else %}is-current{% endif %}">
+                <span aria-hidden="true">{% if reservation.normalized_status == 'confirmed' or reservation.normalized_status == 'modified' or reservation.normalized_status == 'cancelled' %}✓{% else %}3{% endif %}</span>
+                <strong>{% trans "Booking confirmed" %}</strong>
+            </li>
+            <li class="{% if reservation.normalized_status == 'confirmed' or reservation.normalized_status == 'modified' %}is-current{% endif %}">
+                <span aria-hidden="true">4</span>
+                <strong>{% trans "Manage stay" %}</strong>
+            </li>
+        </ol>
+    </section>
+
+    <div class="booking-manage-layout">
+        <article class="stay-summary-card" id="stay-summary">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">{% trans "Stay overview" %}</p>
+                    <h2>{% trans "Your stay at a glance" %}</h2>
+                </div>
+                <span aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="23" height="23">
+                        <path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                    </svg>
+                </span>
+            </div>
+
+            <div class="stay-summary-card__dates" aria-label="{% trans 'Stay details' %}">
+                <div>
+                    <span class="stay-summary-card__date-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                        </svg>
+                    </span>
+                    <span>
+                        <small>{% trans "Check-in" %}</small>
+                        <time datetime="{{ reservation.check_in|date:'Y-m-d' }}">{{ reservation.check_in|date:"Y-m-d" }}</time>
+                    </span>
+                </div>
+                <span class="stay-summary-card__route" aria-hidden="true"><i></i><b></b><i></i></span>
+                <div>
+                    <span class="stay-summary-card__date-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5zM8 13h3m2 0h3m-8 3h3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                        </svg>
+                    </span>
+                    <span>
+                        <small>{% trans "Check-out" %}</small>
+                        <time datetime="{{ reservation.check_out|date:'Y-m-d' }}">{{ reservation.check_out|date:"Y-m-d" }}</time>
+                    </span>
+                </div>
+            </div>
+
+            <dl class="stay-summary-card__facts">
+                <div><dt>{% trans "Nights" %}</dt><dd>{{ reservation.nights }}</dd></div>
+                <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests }}</dd></div>
+                <div class="stay-summary-card__total">
+                    <dt>{% trans "Current total" %}</dt>
+                    <dd>{{ reservation.total_price|localized_money:reservation.currency }}</dd>
+                </div>
+            </dl>
+            {% if reservation.source_type == "external_channel" %}
+            <p class="quote-notice">{% trans "Please complete changes through the booking platform or contact management." %}</p>
+            {% elif not can_request_changes %}
+            <p class="quote-notice">{% trans "Changes will become available when the booking is confirmed." %}</p>
+            {% else %}
+            <p class="management-assurance"><span aria-hidden="true">✓</span>{% trans "Your confirmed booking remains unchanged until a request is approved." %}</p>
+            {% endif %}
+        </article>
+
+        <aside class="booking-help-card">
+            <div class="booking-help-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="25" height="25">
+                    <path d="M5 17.5 3.5 21l4-1.4A9 9 0 1 0 5 17.5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                    <path d="M9.5 9.5a2.6 2.6 0 0 1 5 1c0 2-2.5 2.1-2.5 3.6m0 2.4h.01" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/>
+                </svg>
+            </div>
+            <div>
+                <p class="eyebrow">{% trans "Need help?" %}</p>
+                <h2>{% trans "We are here for your stay" %}</h2>
+                <p>{% trans "Send us a message if your request is urgent or you need help with arrival." %}</p>
+            </div>
+            <a class="button button--secondary" href="{% url 'core:contact' %}">
+                {% trans "Contact guest support" %}
+                <span aria-hidden="true">←</span>
+            </a>
+        </aside>
+    </div>
+
+    {% if can_request_changes %}
+    <section class="booking-actions" aria-labelledby="booking-actions-title">
+        <div class="section-heading section-heading--split">
+            <div>
+                <p class="eyebrow">{% trans "Flexible stay" %}</p>
+                <h2 id="booking-actions-title">{% trans "What would you like to change?" %}</h2>
+            </div>
+            <p>{% trans "Your confirmed booking remains unchanged until a request is approved." %}<br>{% trans "Availability and price are checked before any change is applied." %}</p>
+        </div>
+        <div class="management-grid">
+            <details class="booking-action-card">
+                <summary>
+                    <span class="booking-action-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="23" height="23">
+                            <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5zM12 12v5m-2.5-2.5h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                        </svg>
+                    </span>
+                    <span><strong>{% trans "Extend stay" %}</strong><small>{% trans "Add more nights to this booking" %}</small></span>
+                    <i aria-hidden="true">
+                        <svg viewBox="0 0 20 20" width="18" height="18"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg>
+                    </i>
+                </summary>
+                <form class="booking-change-form" method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'extend' %}" data-submit-once>
+                    {% csrf_token %}
+                    {% if extension_form.non_field_errors %}<div class="form-error-summary" role="alert">{{ extension_form.non_field_errors }}</div>{% endif %}
+                    <div class="booking-change-field">
+                        <label for="{{ extension_form.reason.id_for_label }}">{{ extension_form.reason.label }} <span>{% trans "Optional" %}</span></label>
+                        {{ extension_form.reason }}
+                        {% for error in extension_form.reason.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="booking-change-field booking-change-field--date">
+                        <label for="{{ extension_form.new_check_out.id_for_label }}">{{ extension_form.new_check_out.label }}</label>
+                        {{ extension_form.new_check_out }}
+                        <button class="date-trigger management-date-trigger" type="button" data-management-date-trigger="new_check_out" hidden>
+                            <span class="date-trigger__calendar" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2v3M17 2v3M3.5 9h17M5.5 4h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+                            </span>
+                            <span class="date-trigger__copy"><small>{% trans "New departure" %}</small><strong data-management-date-trigger-value>{% trans "Choose from calendar" %}</strong></span>
+                            <span class="date-trigger__chevron" aria-hidden="true">⌄</span>
+                        </button>
+                        {% for error in extension_form.new_check_out.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    {% include "reservations/_management_calendar.html" with calendar_kind="single" end_input="new_check_out" fixed_start=reservation.check_out|date:"Y-m-d" %}
+                    <button class="button" type="submit">{% trans "Check extension" %}</button>
+                </form>
+            </details>
+            <details class="booking-action-card">
+                <summary>
+                    <span class="booking-action-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="23" height="23">
+                            <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5zM8.5 14h7m-5-2-2 2 2 2m3-4 2 2-2 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                        </svg>
+                    </span>
+                    <span><strong>{% trans "Change dates" %}</strong><small>{% trans "Choose a different arrival or departure" %}</small></span>
+                    <i aria-hidden="true">
+                        <svg viewBox="0 0 20 20" width="18" height="18"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg>
+                    </i>
+                </summary>
+                <form class="booking-change-form" method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'dates' %}" data-submit-once>
+                    {% csrf_token %}
+                    {% if date_form.non_field_errors %}<div class="form-error-summary" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
+                    <div class="booking-change-field">
+                        <label for="{{ date_form.reason.id_for_label }}">{{ date_form.reason.label }} <span>{% trans "Optional" %}</span></label>
+                        {{ date_form.reason }}
+                        {% for error in date_form.reason.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="booking-change-dates">
+                        <div class="booking-change-field booking-change-field--date">
+                            <label for="{{ date_form.new_check_in.id_for_label }}">{{ date_form.new_check_in.label }}</label>
+                            {{ date_form.new_check_in }}
+                            <button class="date-trigger management-date-trigger" type="button" data-management-date-trigger="new_check_in" hidden>
+                                <span class="date-trigger__calendar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2v3M17 2v3M3.5 9h17M5.5 4h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+                                </span>
+                                <span class="date-trigger__copy"><small>{% trans "Arrival" %}</small><strong data-management-date-trigger-value>{% trans "Choose from calendar" %}</strong></span>
+                                <span class="date-trigger__chevron" aria-hidden="true">⌄</span>
+                            </button>
+                            {% for error in date_form.new_check_in.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                        </div>
+                        <div class="booking-change-field booking-change-field--date">
+                            <label for="{{ date_form.new_check_out.id_for_label }}">{{ date_form.new_check_out.label }}</label>
+                            {{ date_form.new_check_out }}
+                            <button class="date-trigger management-date-trigger" type="button" data-management-date-trigger="new_check_out" hidden>
+                                <span class="date-trigger__calendar" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false"><path d="M7 2v3M17 2v3M3.5 9h17M5.5 4h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+                                </span>
+                                <span class="date-trigger__copy"><small>{% trans "Departure" %}</small><strong data-management-date-trigger-value>{% trans "Choose from calendar" %}</strong></span>
+                                <span class="date-trigger__chevron" aria-hidden="true">⌄</span>
+                            </button>
+                            {% for error in date_form.new_check_out.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+                    <div class="booking-change-field">
+                        <label for="{{ date_form.new_guests.id_for_label }}">{{ date_form.new_guests.label }}</label>
+                        <div class="guest-stepper" data-guest-stepper>
+                            <button type="button" data-guest-stepper-decrease aria-label="{% trans 'Decrease guests' %}">−</button>
+                            <div><small>{% trans "Guests" %}</small>{{ date_form.new_guests }}</div>
+                            <button type="button" data-guest-stepper-increase aria-label="{% trans 'Increase guests' %}">+</button>
+                        </div>
+                        {% if reservation.property.person_capacity %}<p class="booking-change-field__hint">{% blocktrans with capacity=reservation.property.person_capacity %}Up to {{ capacity }} guests, according to the apartment capacity.{% endblocktrans %}</p>{% endif %}
+                        {% for error in date_form.new_guests.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    {% include "reservations/_management_calendar.html" with calendar_kind="range" start_input="new_check_in" end_input="new_check_out" %}
+                    <button class="button" type="submit">{% trans "Check new dates" %}</button>
+                </form>
+            </details>
+            <details class="booking-action-card">
+                <summary>
+                    <span class="booking-action-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="23" height="23">
+                            <path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-6 9v-2a6 6 0 0 1 12 0v2m3-9v6m-3-3h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                        </svg>
+                    </span>
+                    <span><strong>{% trans "Change guests" %}</strong><small>{% trans "Update the number of staying guests" %}</small></span>
+                    <i aria-hidden="true">
+                        <svg viewBox="0 0 20 20" width="18" height="18"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg>
+                    </i>
+                </summary>
+                <form class="booking-change-form" method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'guests' %}" data-submit-once>
+                    {% csrf_token %}
+                    {% if guest_form.non_field_errors %}<div class="form-error-summary" role="alert">{{ guest_form.non_field_errors }}</div>{% endif %}
+                    <div class="booking-change-field">
+                        <label for="{{ guest_form.reason.id_for_label }}">{{ guest_form.reason.label }} <span>{% trans "Optional" %}</span></label>
+                        {{ guest_form.reason }}
+                        {% for error in guest_form.reason.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="booking-change-field">
+                        <label for="{{ guest_form.new_guests.id_for_label }}">{{ guest_form.new_guests.label }}</label>
+                        <div class="guest-stepper" data-guest-stepper>
+                            <button type="button" data-guest-stepper-decrease aria-label="{% trans 'Decrease guests' %}">−</button>
+                            <div><small>{% trans "Guests" %}</small>{{ guest_form.new_guests }}</div>
+                            <button type="button" data-guest-stepper-increase aria-label="{% trans 'Increase guests' %}">+</button>
+                        </div>
+                        {% if reservation.property.person_capacity %}<p class="booking-change-field__hint">{% blocktrans with capacity=reservation.property.person_capacity %}Up to {{ capacity }} guests, according to the apartment capacity.{% endblocktrans %}</p>{% endif %}
+                        {% for error in guest_form.new_guests.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <button class="button" type="submit">{% trans "Check guest change" %}</button>
+                </form>
+            </details>
+            <details class="booking-action-card booking-action-card--danger">
+                <summary>
+                    <span class="booking-action-card__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="23" height="23">
+                            <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5zM9 13l6 5m0-5-6 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                        </svg>
+                    </span>
+                    <span><strong>{% trans "Request cancellation" %}</strong><small>{% trans "Review the cancellation options" %}</small></span>
+                    <i aria-hidden="true">
+                        <svg viewBox="0 0 20 20" width="18" height="18"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg>
+                    </i>
+                </summary>
+                <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}" data-submit-once>
+                    {% csrf_token %}{{ cancellation_form.as_p }}
+                    <button class="button button--secondary" type="submit">{% trans "Send for review" %}</button>
+                </form>
+            </details>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="booking-request-history" aria-labelledby="request-history-title">
+        <div class="section-heading section-heading--split">
+            <div>
+                <p class="eyebrow">{% trans "Stay updates" %}</p>
+                <h2 id="request-history-title">{% trans "Your requests" %}</h2>
+            </div>
+        </div>
+        {% if modification_requests %}
+        <div class="request-history-list">
+            {% for item in modification_requests %}
+            <a href="{% url 'reservations:modification_detail' item.public_reference %}">
+                <span class="request-history-list__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M5 12a7 7 0 1 0 2-4.9M5 4v5h5m2-1v5l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                    </svg>
+                </span>
+                <span>
+                    <strong>{{ item.request_type|localized_modification_type }}</strong>
+                    <small><time datetime="{{ item.requested_at|date:'c' }}">{{ item.requested_at|date:"Y-m-d H:i" }}</time></small>
+                </span>
+                <span class="status-pill status-pill--{{ item.status }}">{{ item.status|localized_modification_status }}</span>
+                <svg class="request-history-list__arrow" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+                    <path d="m7.5 5 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                </svg>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state empty-state--compact">
+            <span aria-hidden="true">✓</span>
+            <p>{% trans "You have not sent any change requests yet." %}</p>
+        </div>
+        {% endif %}
+    </section>
 </section>
 {% endblock %}

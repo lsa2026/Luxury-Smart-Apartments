@@ -5,11 +5,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.core.admin_views import customer_overview
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
+    path("", include("apps.accounts.urls")),
+    path("payments/", include("apps.payments.urls")),
     path("", include("apps.notifications.urls")),
     path("", include("apps.core.marketing_urls")),
+    path("admin/customers/", customer_overview, name="admin_customers"),
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls")),
     path(

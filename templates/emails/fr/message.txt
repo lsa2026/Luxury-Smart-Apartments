@@ -1,10 +1,17 @@
 {{ brand_name }}
 
 {{ heading }}
-
 {{ message }}
-{% if property_name %}Logement : {{ property_name }}{% endif %}
-{% if reference %}Référence publique : {{ reference }}{% endif %}
 
+{% if property_name %}Logement : {{ property_name }}{% endif %}
+{% if check_in %}Arrivée : {{ check_in }}
+Départ : {{ check_out }}
+Voyageurs : {{ guests }}{% endif %}
+{% if booking_reference %}Numéro de réservation : {{ booking_reference }}{% elif reference %}Référence : {{ reference }}{% endif %}
+{% if request_reference %}Référence de modification : {{ request_reference }}{% endif %}
+{% if manage_url %}Gérer la réservation : {{ manage_url }}{% endif %}
+
+Site : {{ site_url }}
+{% if contact_phone %}Téléphone : {{ contact_phone }}{% endif %}
+{% if support_email %}E-mail : {{ support_email }}{% endif %}
 Confidentialité : {{ site_base_url }}/legal/privacy/
-Contact : {{ site_base_url }}/contact/

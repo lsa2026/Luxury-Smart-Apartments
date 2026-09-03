@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load i18n presentation %}
+{% block title %}{% trans "Payment result" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="section container narrow payment-result">
+    <div class="section-heading">
+        <p class="eyebrow">HyperPay</p>
+        <h1>{% trans "Payment result" %}</h1>
+        <p>{% trans "This page reflects the latest verified gateway response." %}</p>
+    </div>
+    <article class="review-panel payment-result__panel">
+    {% if not outcome %}
+        <div class="notice notice--important"><strong>{% trans "Verification is temporarily unavailable" %}</strong><p>{% trans "We could not verify the payment with HyperPay. No booking has been confirmed. Please contact support before trying again." %}</p></div>
+    {% elif outcome.status == success and outcome.modification %}
+        {% if outcome.modification.status == 'completed' %}
+        <div class="notice"><strong>{% trans "Payment verified and change completed" %}</strong><p>{% trans "Your reservation was updated successfully in Hostaway." %}</p></div>
+        {% else %}
+        <div class="notice notice--important"><strong>{% trans "Payment verified; change pending" %}</strong><p>{% trans "Do not pay again. The payment is recorded and the reservation change needs operational follow-up." %}</p></div>
+        {% endif %}
+    {% elif outcome.status == success %}
+        {% if outcome.reservation and outcome.reservation.normalized_status == "confirmed" %}
+        <div class="notice"><strong>{% trans "Payment verified and booking confirmed" %}</strong><p>{% trans "Your reservation has been created successfully." %}</p></div>
+        {% else %}
+        <div class="notice notice--important"><strong>{% trans "Payment verified; booking pending" %}</strong><p>{% trans "Your payment was verified, but booking confirmation still requires operational review. Do not pay again." %}</p></div>
+        {% endif %}
+    {% elif outcome.status.value == "pending" %}
+        <div class="notice notice--important"><strong>{% trans "Payment is still pending" %}</strong><p>{% trans "No booking has been confirmed yet. Please wait before checking again." %}</p></div>
+    {% elif outcome.status.value == "cancelled" %}
+        <div class="notice notice--important"><strong>{% trans "Payment was cancelled" %}</strong><p>{% trans "No booking was confirmed." %}</p></div>
+    {% elif outcome.status.value == "review" or outcome.status.value == "unknown" %}
+        <div class="notice notice--important"><strong>{% trans "Payment needs review" %}</strong><p>{% trans "No booking has been confirmed automatically. Please contact support and do not pay again." %}</p></div>
+    {% else %}
+        <div class="notice notice--important"><strong>{% trans "Payment was not successful" %}</strong><p>{% trans "No booking was confirmed. You may return and try again." %}</p></div>
+    {% endif %}
+
+        <dl class="quote-summary payment-result__summary">
+            <div><dt>{% trans "Amount" %}</dt><dd>{{ attempt.amount|localized_money:attempt.currency }}</dd></div>
+            <div><dt>{% trans "Payment status" %}</dt><dd>{{ attempt.status|localized_payment_status }}</dd></div>
+            {% if outcome.reservation %}<div><dt>{% trans "Booking number" %}</dt><dd dir="ltr">{{ outcome.reservation.public_reference }}</dd></div>{% endif %}
+            {% if outcome.modification %}<div><dt>{% trans "Change request" %}</dt><dd dir="ltr">{{ outcome.modification.public_reference }}</dd></div>{% endif %}
+        </dl>
+
+        {% if outcome.status == success and outcome.reservation and outcome.reservation.normalized_status != "confirmed" %}
+        <ol class="payment-result__steps" aria-label="{% trans 'What happens next' %}">
+            <li class="is-complete"><span aria-hidden="true">✓</span><strong>{% trans "Payment verified" %}</strong></li>
+            <li class="is-current"><span aria-hidden="true">2</span><strong>{% trans "Booking confirmation review" %}</strong></li>
+            <li><span aria-hidden="true">3</span><strong>{% trans "Confirmation and arrival details" %}</strong></li>
+        </ol>
+        {% endif %}
+    </article>
+    <div class="payment-result__actions">
+        {% if outcome.modification %}
+        <a class="button" href="{% url 'reservations:modification_detail' outcome.modification.public_reference %}">{% trans "View change request" %}</a>
+        {% elif outcome.reservation %}
+        <a class="button" href="{% url 'reservations:manage' outcome.reservation.public_reference %}">{% trans "Manage booking" %}</a>
+        {% endif %}
+        {% if request.user.is_authenticated %}<a class="button button--secondary" href="{% url 'accounts:dashboard' %}">{% trans "View my bookings" %}</a>{% endif %}
+        <a class="text-link" href="{% url 'core:contact' %}">{% trans "Contact support" %}</a>
+    </div>
+</section>
+{% endblock %}

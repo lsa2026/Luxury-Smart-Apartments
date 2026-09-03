@@ -8,12 +8,17 @@ from django.db import connection
 from django.test import Client
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.core.models import ContactMessage, FAQItem, SitePage
-from apps.core.templatetags.presentation import money_amount
+from apps.core.templatetags.presentation import (
+    localized_money,
+    localized_price_component,
+    money_amount,
+)
 from apps.payments.models import PaymentAttempt
 from apps.properties.models import Amenity, Property, PropertyAmenity, PropertyImage
+from apps.reservations.forms import AvailabilitySearchForm
 from apps.reservations.models import Reservation
 from apps.reviews.models import Review
 
@@ -106,6 +111,15 @@ def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
     assert "<header" in content and "<footer" in content
 
 
+def test_footer_does_not_show_stay_mode_badges() -> None:
+    content = Client().get("/").content.decode()
+    footer = content[content.index('<footer class="site-footer"') :]
+
+    assert "إقامات يومية" not in footer
+    assert "إقامات شهرية" not in footer
+    assert "footer-brand__modes" not in footer
+
+
 def test_english_switch_is_ltr_and_translated() -> None:
     property_obj = populated_property()
     property_obj.description_en = ""
@@ -161,6 +175,86 @@ def test_language_switcher_has_all_three_languages() -> None:
     assert "data-language-select" in content
 
 
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        ("ar", [("", "اختر المدينة"), ("Riyadh", "الرياض"), ("Marrakesh", "مراكش")]),
+        ("en", [("", "Choose a city"), ("Riyadh", "Riyadh"), ("Marrakesh", "Marrakech")]),
+        ("fr", [("", "Choisissez une ville"), ("Riyadh", "Riyad"), ("Marrakesh", "Marrakech")]),
+    ],
+)
+def test_availability_filter_has_only_supported_cities(
+    language: str,
+    expected: list[tuple[str, str]],
+) -> None:
+    property_factory(806)
+    with translation.override(language):
+        choices = [
+            (value, str(label))
+            for value, label in AvailabilitySearchForm().fields["city"].choices
+        ]
+
+    assert choices == expected
+
+
+def test_availability_search_requires_city_but_not_property() -> None:
+    form = AvailabilitySearchForm()
+
+    assert form.fields["city"].required is True
+    assert form.fields["property"].required is False
+
+
+def test_availability_filter_exposes_city_capacity_and_readable_dates() -> None:
+    riyadh = property_factory(807)
+    marrakech = property_factory(808)
+    marrakech.city = "Marrakesh"
+    marrakech.city_ar = "مراكش"
+    marrakech.city_en = "Marrakech"
+    marrakech.city_fr = "Marrakech"
+    marrakech.save(update_fields=["city", "city_ar", "city_en", "city_fr"])
+
+    content = Client().get("/").content.decode()
+
+    assert f'value="{riyadh.pk}" data-city="Riyadh" data-capacity="4"' in content
+    assert f'value="{marrakech.pk}" data-city="Marrakesh" data-capacity="4"' in content
+    assert content.count('type="date"') == 2
+    assert content.count('dir="ltr" lang="en-CA"') == 2
+
+
+@pytest.mark.parametrize(
+    ("language", "expected_cities"),
+    [
+        ("ar", ("الرياض", "مراكش")),
+        ("en", ("Riyadh", "Marrakech")),
+        ("fr", ("Riyad", "Marrakech")),
+    ],
+)
+def test_footer_has_only_the_two_fixed_cities_on_every_page(
+    language: str,
+    expected_cities: tuple[str, str],
+) -> None:
+    riyadh = property_factory(803)
+    duplicate_riyadh = property_factory(804)
+    marrakech = property_factory(805)
+    marrakech.city = "Marrakech"
+    marrakech.city_ar = "مراكش"
+    marrakech.city_en = "Marrakech"
+    marrakech.city_fr = "Marrakech"
+    marrakech.save(update_fields=["city", "city_ar", "city_en", "city_fr"])
+    duplicate_riyadh.city_ar = "Manea Al Mreidi"
+    duplicate_riyadh.save(update_fields=["city_ar"])
+
+    for path in ("/", "/properties/", riyadh.get_absolute_url()):
+        content = Client().get(path, HTTP_ACCEPT_LANGUAGE=language).content.decode()
+        city_list = content[content.index("<div data-footer-cities") :]
+        city_list = city_list[: city_list.index("</ul>")]
+
+        assert city_list.count("<li>") == 2
+        assert city_list.count(f"<li>{expected_cities[0]}</li>") == 1
+        assert city_list.count(f"<li>{expected_cities[1]}</li>") == 1
+        assert "Manea Al Mreidi" not in city_list
+
+
 def test_seven_visible_properties_are_listed() -> None:
     for listing_id in range(810, 817):
         property_factory(listing_id)
@@ -188,6 +282,20 @@ def test_property_card_has_dimensions_lazy_image_and_alt() -> None:
     assert 'alt="غرفة معيشة في الوحدة"' in content
 
 
+def test_property_card_gallery_exposes_prefetched_slides_and_controls() -> None:
+    property_obj = property_factory(831)
+    for image_id in range(83101, 83106):
+        image_factory(property_obj, image_id)
+
+    content = Client().get("/properties/").content.decode()
+
+    assert content.count("data-card-slide") == 5
+    assert "data-card-previous" in content
+    assert "data-card-next" in content
+    assert content.count("data-card-dot") == 5
+    assert 'data-card-current>1</b> / 5' in content
+
+
 def test_property_filters_use_local_database() -> None:
     property_factory(840)
     with patch(
@@ -206,14 +314,18 @@ def test_property_type_filter_uses_localized_customer_label() -> None:
     assert '>وحدة كاملة</option>' in content
 
 
-def test_property_detail_gallery_is_limited_and_accessible() -> None:
+def test_property_detail_gallery_opens_all_images_without_leaving_page() -> None:
     property_obj = property_factory(850)
     for image_id in range(85001, 85013):
         image_factory(property_obj, image_id)
     content = Client().get(property_obj.get_absolute_url()).content.decode()
-    assert content.count("data-lightbox-open") == 8
+    assert content.count("data-lightbox-open") == 6
     assert "<dialog" in content
     assert "data-lightbox-close" in content
+    assert "data-lightbox-progress" in content
+    assert "data-lightbox-total>12</span>" in content
+    assert "85012.jpg" in content
+    assert f'href="{reverse("properties:gallery", args=[property_obj.slug])}"' not in content
     assert 'aria-label="إغلاق المعرض"' in content
 
 
@@ -260,6 +372,8 @@ def test_availability_form_has_csrf_dates_loading_and_submit_guard() -> None:
     assert 'type="date"' in content
     assert "availability-form__loading" in content
     assert "data-submit-once" in content
+    assert "data-availability-errors" in content
+    assert "data-required-message" in content
 
 
 @pytest.mark.parametrize(
@@ -332,6 +446,60 @@ def test_contact_honeypot_is_rendered_once_and_success_is_visible() -> None:
 def test_money_amount_is_customer_friendly() -> None:
     assert money_amount(Decimal("5651.0000")) == "5,651.00"
     assert money_amount(Decimal("500.256")) == "500.26"
+
+
+@pytest.mark.parametrize(
+    ("language", "expected_number", "currency_before_amount"),
+    [
+        ("ar", "٢٬٤٥٠٫٠٠", False),
+        ("en", "2,450.00", True),
+        ("fr", "2\u202f450,00", False),
+    ],
+)
+def test_localized_money_follows_language_conventions(
+    language: str,
+    expected_number: str,
+    currency_before_amount: bool,
+) -> None:
+    with translation.override(language):
+        rendered = str(localized_money(Decimal("2450"), "sar"))
+
+    assert expected_number in rendered
+    assert 'dir="ltr"' in rendered
+    assert "SAR" in rendered
+    assert (rendered.index("SAR") < rendered.index(expected_number)) is currency_before_amount
+
+
+def test_localized_money_uses_currency_minor_units() -> None:
+    with translation.override("en"):
+        yen = str(localized_money(Decimal("5651.8"), "JPY"))
+        dinar = str(localized_money(Decimal("12.3456"), "KWD"))
+
+    assert "JPY" in yen
+    assert "5,652" in yen
+    assert ".00" not in yen
+    assert "KWD" in dinar
+    assert "12.346" in dinar
+
+
+def test_localized_money_handles_untrusted_or_invalid_values() -> None:
+    with translation.override("en"):
+        unknown_currency = str(localized_money(Decimal("25"), "<script>"))
+        invalid_amount = str(localized_money("not-a-number", "SAR"))
+
+    assert "<script>" not in unknown_currency
+    assert "25.00" in unknown_currency
+    assert "money--unavailable" in invalid_amount
+    assert "—" in invalid_amount
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [("ar", "خصم أسبوعي"), ("en", "Weekly discount"), ("fr", "Remise hebdomadaire")],
+)
+def test_hostaway_price_component_is_localized(language: str, expected: str) -> None:
+    with translation.override(language):
+        assert localized_price_component("Weekly discount") == expected
 
 
 def test_contact_honeypot_and_xss_cleaning() -> None:

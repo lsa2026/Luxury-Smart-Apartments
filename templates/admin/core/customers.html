@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block bodyclass %}{{ block.super }} lsa-customers-page{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-customer-screen">
+  <section class="lsa-page-head">
+    <div><span class="lsa-kicker"><i></i> مركز العملاء</span><h1>العملاء والحجوزات</h1><p>صورة موحّدة لمسار العميل من طلب الحجز حتى تأكيد Hostaway والدفع.</p></div>
+    <a href="{% url 'admin:reservations_reservation_changelist' %}" class="lsa-btn lsa-btn--ghost">سجل الحجوزات</a>
+  </section>
+
+  <form method="get" class="lsa-filter-bar">
+    <label class="lsa-search"><span>⌕</span><input type="search" name="q" value="{{ query }}" placeholder="ابحث بالاسم، البريد، الجوال، المرجع أو الوحدة"></label>
+    <select name="status" aria-label="حالة الحجز"><option value="">كل حالات الحجز</option>{% for value,label in booking_statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="payment" aria-label="حالة الدفع"><option value="">كل حالات الدفع</option>{% for value,label in payment_statuses %}<option value="{{ value }}" {% if selected_payment == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <button type="submit" class="lsa-btn lsa-btn--gold">تصفية</button>
+    {% if query or selected_status or selected_payment %}<a href="{% url 'admin_customers' %}" class="lsa-reset">مسح</a>{% endif %}
+  </form>
+
+  <section class="lsa-panel lsa-recent">
+    <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{{ page_obj.paginator.count }} سجل</span><h2>سجل رحلة العميل</h2></div>{% if not can_view_pii %}<span class="lsa-privacy-note">بيانات التواصل مخفية حسب الصلاحية</span>{% endif %}</header>
+    <div class="lsa-table-wrap">
+      <table class="lsa-table lsa-customer-table">
+        <thead><tr><th>العميل</th><th>الوحدة والإقامة</th><th>حالة الطلب</th><th>الحجز في Hostaway</th><th>الدفع</th><th>الإجمالي</th><th></th></tr></thead>
+        <tbody>
+        {% for row in page_obj %}
+          <tr>
+            <td><strong>{{ row.guest_name }}</strong><small>{{ row.guest_email }}</small><small>{{ row.guest_phone }}</small></td>
+            <td><b>{{ row.intent.property }}</b><small>{{ row.intent.check_in|date:"d M Y" }} — {{ row.intent.check_out|date:"d M Y" }} · {{ row.intent.nights }} ليلة</small></td>
+            <td><span class="lsa-badge lsa-badge--{{ row.intent.status }}">{{ row.intent.get_status_display }}</span><small>#{{ row.intent.public_reference|slice:":10" }}</small></td>
+            <td>{% if row.reservation %}<span class="lsa-badge lsa-badge--{{ row.reservation.normalized_status }}">{{ row.reservation.get_normalized_status_display }}</span>{% if row.reservation.hostaway_reservation_id %}<small>HA-{{ row.reservation.hostaway_reservation_id }}</small>{% endif %}{% else %}<span class="lsa-badge lsa-badge--none">لم يُنشأ</span>{% endif %}</td>
+            <td>{% if row.payment %}<span class="lsa-badge lsa-badge--{{ row.payment.status }}">{{ row.payment.get_status_display }}</span><small>{{ row.payment.provider }}</small>{% else %}<span class="lsa-badge lsa-badge--none">لم يبدأ</span>{% endif %}</td>
+            <td><strong>{{ row.intent.total_price|floatformat:0 }}</strong> {{ row.intent.currency }}</td>
+            <td><a class="lsa-row-link" href="{% url 'admin:reservations_bookingintent_change' row.intent.pk %}">←</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="7" class="lsa-empty">لا توجد نتائج مطابقة.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+      <nav class="lsa-pagination" aria-label="الصفحات">
+        {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&status={{ selected_status }}&payment={{ selected_payment }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}
+        <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&status={{ selected_status }}&payment={{ selected_payment }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}
+      </nav>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

@@ -177,10 +177,10 @@ python manage.py verify_hostaway_availability `
 جديدة. قيمة `BOOKING_PRICE_TOLERANCE` حاليًا `0.00`، ولا تُتجاهل فروق التقريب.
 
 بعد نجاح إعادة التحقق تكون حالة الطلب `awaiting_payment`، لكنها لا تعني أن
-الحجز مؤكد. `BookingIntent` ليس `Reservation` ولا ينشئ حجزًا أو حظرًا في
-Hostaway. لم تُربط بوابة دفع بعد؛ `DisabledPaymentProvider` يمنع إنشاء جلسة دفع
-ويرجع الرمز الداخلي `payment_provider_not_configured`، ولا ينشئ
-`PaymentAttempt` وهميًا.
+الحجز مؤكد. عند تفعيل HyperPay يعاد فحص توافر Hostaway والسعر مرة أخرى مباشرة
+قبل إنشاء Checkout. بعد تحقق الخادم من الدفع يعيد `HostawayBookingService`
+الفحص، ثم ينشئ الحجز ويجلبه للمصالحة. المسار idempotent ولا يعتمد على الرجوع
+من المتصفح كدليل دفع. العملة المقبولة في HyperPay هي `SAR` فقط.
 
 يحمي النظام العرض والطلب بجلسة Django، ومرجع عام عشوائي، وhash للجلسة لا يكشف
 مفتاحها الخام. تعيد محاولة الوصول من جلسة أخرى 404 عامة. تنفذ عمليات POST
@@ -275,7 +275,7 @@ Listing ID فقط عندما يكون fallback فريدًا. يدعم وصول `
 
 ### Production Readiness Blockers
 
-- Payment provider not configured.
+- Production HyperPay credentials and brand approvals not configured.
 - Hostaway live booking disabled.
 - Listing Map ID not verified (when absent from the trusted listing response).
 - Direct Channel ID not verified.
@@ -299,9 +299,11 @@ Unified Webhook في Hostaway وتفعيل flags خطوات إنتاج يدوي�
 
 يعيد التمديد التحقق من الأيام الإضافية مباشرة، ثم يستخدم `priceDetails` version
 2 للفترة الكاملة. يحسب `price_difference = new_total - old_total` باستخدام
-`Decimal`. الفرق الموجب ينتظر الدفع مستقبلًا، والفرق الصفري أو السالب ينتظر
-مراجعة الإدارة. لا ينشأ PaymentAttempt أو Refund، ولا تتغير Reservation الأصلية
-إلا بعد نجاح كتابة Hostaway مستقبلًا ثم GET للمصالحة.
+`Decimal`. الفرق الموجب ينتقل إلى دفع HyperPay؛ ويعاد فحص التوافر والسعر قبل
+Checkout وبعد تحقق الدفع مباشرة، ثم يرسل التعديل إلى Hostaway ويجلب الحجز
+للمصالحة عند تفعيل flags الآلية. الفرق الصفري ينفذ دون دفع. فرق السعر السالب
+يبقى استثناءً صريحًا حتى يتوفر Refund آلي موثوق؛ لا يطبق التعديل قبل تسوية
+الاسترداد. لا تتغير Reservation الأصلية إلا بعد نجاح كتابة Hostaway ثم GET.
 
 طلبات القنوات الخارجية لا تصبح قابلة للتعديل أو الإلغاء التلقائي. يجب أن يجري
 العميل العملية عبر القناة أو أن تراجعها الإدارة وفق سياسة موثقة. طلب الإلغاء
@@ -321,10 +323,10 @@ BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False
 BOOKING_AUTOMATIC_CANCELLATION_ENABLED=False
 ```
 
-حتى عند الموافقة المحلية، لا تنفذ لوحة الإدارة PUT ولا تسمح بوضع الطلب
-`completed` يدويًا. يحفظ `HostawayModificationOperation` بصمة HMAC وحالة
-idempotency فقط، دون request أو response خام. timeout أو 5xx بعد محاولة الكتابة
-المستقبلية يجعل الحالة `unknown` ولا يعاد PUT تلقائيًا.
+عند تفعيل `BOOKING_AUTOMATIC_MODIFICATION_APPROVAL` وflags الكتابة المناسبة،
+ينفذ المسار الطبيعي دون تدخل إداري. يحفظ `HostawayModificationOperation` بصمة
+HMAC وحالة idempotency فقط، دون request أو response خام. timeout أو 5xx بعد
+محاولة الكتابة يجعل الحالة `unknown` ولا يعاد PUT تلقائيًا لتجنب تكرار التعديل.
 
 التوثيق الرسمي الحالي يحدد تعديل الحجز عبر
 `PUT /reservations/{reservationId}`، والإلغاء عبر
@@ -775,7 +777,12 @@ python manage.py verify_legacy_redirects --dry-run --check-loops --strict
 .\.venv\Scripts\python.exe manage.py check --deploy --settings=config.settings.production
 ```
 
+تكامل HyperPay متاح الآن لبيئة TEST/UAT فقط، ومعطل افتراضيًا حتى توضع بيانات
+الاختبار الحقيقية في `.env`. تفاصيل البنية، بطاقات الاختبار، وخطة UAT موثقة في
+[`docs/hyperpay-test-uat.md`](docs/hyperpay-test-uat.md). لا يدعم هذا التكامل
+Production أو Apple Pay في هذه المرحلة.
+
 عوائق الإنتاج المتبقية: اعتماد معرفات Google وخطة GTM، اعتماد سياسة Cookie
 قانونيًا، مطابقة روابط الوحدات القديمة، ضبط النطاق الرسمي HTTPS، والتحقق
-اليدوي في Search Console. لا توجد بوابة دفع أو حجز حي، ولم يبدأ Staging أو
-النشر الإنتاجي.
+اليدوي في Search Console. بوابة الدفع الحالية TEST/UAT فقط، ولم يبدأ Staging
+أو النشر الإنتاجي.

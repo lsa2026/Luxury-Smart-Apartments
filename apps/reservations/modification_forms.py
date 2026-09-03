@@ -9,27 +9,59 @@ class ReasonMixin(forms.Form):
         label=_("Reason for the request"),
         required=False,
         max_length=1000,
-        widget=forms.Textarea(attrs={"rows": 4}),
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "placeholder": _("Optional: tell us what you would like to change"),
+            }
+        ),
     )
 
 
 class ExtensionRequestForm(ReasonMixin):
     new_check_out = forms.DateField(
         label=_("New check-out date"),
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "type": "date",
+                "data-iso-date": "",
+                "data-management-date-input": "",
+            },
+        ),
     )
 
 
 class DateChangeRequestForm(ReasonMixin):
     new_check_in = forms.DateField(
         label=_("New check-in date"),
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "type": "date",
+                "data-iso-date": "",
+                "data-management-date-input": "",
+            },
+        ),
     )
     new_check_out = forms.DateField(
         label=_("New check-out date"),
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={
+                "type": "date",
+                "data-iso-date": "",
+                "data-management-date-input": "",
+            },
+        ),
     )
-    new_guests = forms.IntegerField(label=_("Number of guests"), min_value=1)
+    new_guests = forms.IntegerField(
+        label=_("Number of guests"),
+        min_value=1,
+        widget=forms.NumberInput(
+            attrs={"inputmode": "numeric", "data-guest-stepper-input": ""}
+        ),
+    )
 
     def clean(self) -> dict[str, object]:
         cleaned = super().clean()
@@ -41,7 +73,13 @@ class DateChangeRequestForm(ReasonMixin):
 
 
 class GuestChangeRequestForm(ReasonMixin):
-    new_guests = forms.IntegerField(label=_("New number of guests"), min_value=1)
+    new_guests = forms.IntegerField(
+        label=_("New number of guests"),
+        min_value=1,
+        widget=forms.NumberInput(
+            attrs={"inputmode": "numeric", "data-guest-stepper-input": ""}
+        ),
+    )
 
 
 class CancellationRequestForm(ReasonMixin):

@@ -6,6 +6,7 @@ from django.contrib import admin, messages
 from django.contrib.admin import ModelAdmin
 from django.http import HttpRequest
 from django.utils import timezone
+from django.utils.html import format_html
 
 from apps.notifications.services.audit import record_audit
 
@@ -75,6 +76,7 @@ class BookingIntentAdmin(ModelAdmin):
     list_display = (
         "public_reference",
         "property",
+        "customer",
         "check_in",
         "check_out",
         "guests",
@@ -95,6 +97,7 @@ class BookingIntentAdmin(ModelAdmin):
         "public_reference",
         "quote",
         "property",
+        "customer",
         "check_in",
         "check_out",
         "nights",
@@ -115,6 +118,11 @@ class BookingIntentAdmin(ModelAdmin):
         "guest_email",
         "guest_phone",
         "guest_country_code",
+        "billing_street1",
+        "billing_city",
+        "billing_state",
+        "billing_country",
+        "billing_postcode",
         "special_requests",
     )
 
@@ -126,7 +134,7 @@ class BookingIntentAdmin(ModelAdmin):
         if request.user.is_superuser or request.user.has_perm(
             "reservations.view_bookingintent_pii"
         ):
-            return self.base_fields[:10] + self.pii_fields + self.base_fields[10:]
+            return self.base_fields[:11] + self.pii_fields + self.base_fields[11:]
         return self.base_fields
 
     def get_readonly_fields(
@@ -179,6 +187,7 @@ class ReservationAdmin(ModelAdmin):
     list_display = (
         "public_reference",
         "property",
+        "is_test",
         "source_type",
         "normalized_status",
         "hostaway_status",
@@ -197,34 +206,137 @@ class ReservationAdmin(ModelAdmin):
         "property__name_ar",
         "property__name_en",
     )
-    readonly_fields = (
-        "id",
-        "public_reference",
-        "booking_intent",
-        "property",
-        "hostaway_reservation_id",
-        "hostaway_listing_id",
-        "hostaway_listing_map_id",
-        "channel_id",
-        "source_type",
-        "normalized_status",
-        "hostaway_status",
-        "payment_status",
-        "check_in",
-        "check_out",
-        "nights",
-        "guests",
-        "currency",
-        "total_price",
-        "source_updated_at",
-        "last_synced_at",
-        "confirmed_at",
-        "cancelled_at",
-        "created_at",
-        "updated_at",
+    fieldsets = (
+        (
+            "ملخص الإقامة",
+            {
+                "fields": (
+                    "reference_display",
+                    "property_display",
+                    "stay_dates_display",
+                    "occupancy_display",
+                )
+            },
+        ),
+        (
+            "الحالة والتحصيل",
+            {"fields": ("status_display", "amount_display", "source_display")},
+        ),
+        (
+            "الربط التقني مع Hostaway",
+            {
+                "classes": ("collapse",),
+                "fields": ("hostaway_display", "technical_display"),
+                "description": "معرّفات مرجعية للبحث والتشخيص فقط؛ لا تُعدّل الحجز من هذه الشاشة.",
+            },
+        ),
+        (
+            "سجل التوقيت والمزامنة",
+            {
+                "classes": ("collapse",),
+                "fields": ("sync_display", "timeline_display"),
+            },
+        ),
     )
+    readonly_fields = tuple(field.name for field in Reservation._meta.fields) + (
+        "reference_display",
+        "property_display",
+        "stay_dates_display",
+        "occupancy_display",
+        "status_display",
+        "amount_display",
+        "source_display",
+        "hostaway_display",
+        "technical_display",
+        "sync_display",
+        "timeline_display",
+    )
+    empty_value_display = "—"
+
+    @admin.display(description="مرجع الحجز")
+    def reference_display(self, obj: Reservation) -> str:
+        return format_html('<strong dir="ltr">{}</strong>', obj.public_reference)
+
+    @admin.display(description="الوحدة")
+    def property_display(self, obj: Reservation) -> object:
+        return obj.property or self.empty_value_display
+
+    @admin.display(description="فترة الإقامة")
+    def stay_dates_display(self, obj: Reservation) -> str:
+        return format_html(
+            '<span dir="ltr">{} → {}</span> · {} ليالٍ',
+            obj.check_in.strftime("%Y-%m-%d"),
+            obj.check_out.strftime("%Y-%m-%d"),
+            obj.nights,
+        )
+
+    @admin.display(description="الإشغال")
+    def occupancy_display(self, obj: Reservation) -> str:
+        return f"{obj.guests} ضيوف"
+
+    @admin.display(description="حالة الحجز والدفع")
+    def status_display(self, obj: Reservation) -> str:
+        payment_status = obj.payment_status or "لا توجد حالة دفع"
+        return f"{obj.get_normalized_status_display()} · {payment_status}"
+
+    @admin.display(description="قيمة الحجز")
+    def amount_display(self, obj: Reservation) -> str:
+        return format_html(
+            '<strong dir="ltr">{} {}</strong>',
+            f"{obj.total_price:,.2f}",
+            obj.currency,
+        )
+
+    @admin.display(description="مصدر الحجز")
+    def source_display(self, obj: Reservation) -> str:
+        test_label = " · بيانات تجريبية" if obj.is_test else ""
+        hostaway_status = f" · Hostaway: {obj.hostaway_status}" if obj.hostaway_status else ""
+        return f"{obj.get_source_type_display()}{test_label}{hostaway_status}"
+
+    @admin.display(description="معرّفات Hostaway")
+    def hostaway_display(self, obj: Reservation) -> str:
+        return format_html(
+            '<span dir="ltr">Reservation: {} · Listing: {} · Mapping: {}</span>',
+            obj.hostaway_reservation_id or "—",
+            obj.hostaway_listing_id or "—",
+            obj.hostaway_listing_map_id or "—",
+        )
+
+    @admin.display(description="معرّفات الربط المحلية")
+    def technical_display(self, obj: Reservation) -> str:
+        return format_html(
+            '<span dir="ltr">ID: {} · Intent: {} · Channel: {}</span>',
+            obj.pk,
+            obj.booking_intent_id or "—",
+            obj.channel_id or "—",
+        )
+
+    @admin.display(description="المزامنة")
+    def sync_display(self, obj: Reservation) -> str:
+        return format_html(
+            '<span dir="ltr">Source: {} · Local sync: {}</span>',
+            obj.source_updated_at or "—",
+            obj.last_synced_at or "—",
+        )
+
+    @admin.display(description="الخط الزمني")
+    def timeline_display(self, obj: Reservation) -> str:
+        return format_html(
+            '<span dir="ltr">Created: {} · Updated: {} · Confirmed: {} · Cancelled: {}</span>',
+            obj.created_at or "—",
+            obj.updated_at or "—",
+            obj.confirmed_at or "—",
+            obj.cancelled_at or "—",
+        )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(
+        self,
+        request: HttpRequest,
+        obj: Reservation | None = None,
+    ) -> bool:
         return False
 
     def has_delete_permission(

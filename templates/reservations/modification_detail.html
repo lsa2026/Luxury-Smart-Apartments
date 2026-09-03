@@ -4,9 +4,62 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block content %}
+<header class="page-hero page-hero--compact">
+    <div class="container">
+        <p class="eyebrow">{% trans "Stay update" %}</p>
+        <h1>{% trans "Request status" %}</h1>
+        <p>{% trans "Follow your request here. Your original booking remains active until the change is completed." %}</p>
+    </div>
+</header>
 <section
-    class="section container narrow"
+    class="section container narrow modification-status-shell"
     data-analytics-event="{% if modification.request_type == 'cancel_reservation' %}cancellation_request_created{% else %}modification_request_created{% endif %}"
     data-analytics-request-type="{{ modification.request_type }}"
-><div class="section-heading"><p class="eyebrow">{% trans "Local change request" %}</p><h1>{% trans "Request status" %}</h1></div><article class="review-panel"><dl class="quote-summary"><div><dt>{% trans "Request type" %}</dt><dd>{{ modification.get_request_type_display }}</dd></div><div><dt>{% trans "Status" %}</dt><dd>{{ modification.get_status_display }}</dd></div><div><dt>{% trans "Current check-in" %}</dt><dd>{{ modification.old_check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Current check-out" %}</dt><dd>{{ modification.old_check_out|date:"Y-m-d" }}</dd></div>{% if modification.new_check_in %}<div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|date:"Y-m-d" }}</dd></div>{% endif %}{% if modification.new_total != None %}<div><dt>{% trans "New price" %}</dt><dd>{{ modification.new_total|money_amount }} {{ modification.currency }}</dd></div><div><dt>{% trans "Price difference" %}</dt><dd>{{ modification.price_difference|money_amount }} {{ modification.currency }}</dd></div>{% endif %}</dl><p class="quote-notice">{% trans "Your request is under review and the booking has not been changed yet." %}</p><button class="button" type="button" disabled aria-disabled="true">{% trans "Live Hostaway changes are disabled" %}</button></article></section>
+>
+    <a class="text-link" href="{% url 'reservations:manage' modification.reservation.public_reference %}">← {% trans "Back to my booking" %}</a>
+    <article class="review-panel modification-status-card">
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">{{ modification.request_type|localized_modification_type }}</p>
+                <h2>{{ modification.status|localized_modification_status }}</h2>
+            </div>
+            <span class="status-pill">{{ modification.status|localized_modification_status }}</span>
+        </div>
+        <dl class="quote-summary">
+            <div><dt>{% trans "Current check-in" %}</dt><dd>{{ modification.old_check_in|date:"Y-m-d" }}</dd></div>
+            <div><dt>{% trans "Current check-out" %}</dt><dd>{{ modification.old_check_out|date:"Y-m-d" }}</dd></div>
+            {% if modification.new_check_in %}
+            <div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|date:"Y-m-d" }}</dd></div>
+            <div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|date:"Y-m-d" }}</dd></div>
+            {% endif %}
+            {% if modification.new_total != None %}
+            <div><dt>{% trans "New price" %}</dt><dd>{{ modification.new_total|localized_money:modification.currency }}</dd></div>
+            <div><dt>{% trans "Price difference" %}</dt><dd>{{ modification.price_difference|localized_money:modification.currency }}</dd></div>
+            {% endif %}
+        </dl>
+        {% if modification.status == 'completed' %}
+        <div class="notice notice--success"><strong>{% trans "Change completed" %}</strong><p>{% trans "Your booking has been updated successfully in the reservation system." %}</p></div>
+        {% elif modification.status == 'processing' or modification.status == 'ready_for_hostaway' %}
+        <div class="notice notice--important"><strong>{% trans "Change is being applied" %}</strong><p>{% trans "Payment and checks are complete. Do not pay again while the reservation update is processed." %}</p></div>
+        {% else %}
+        <div class="notice notice--important"><strong>{% trans "Request received" %}</strong><p>{% trans "Your original booking remains active until the change is completed." %}</p></div>
+        {% endif %}
+        {% if modification.status == 'awaiting_payment' and modification.price_difference > 0 %}
+            {% if hyperpay_enabled %}
+            <form method="post" action="{% url 'payments:hyperpay_modification' modification.public_reference %}">
+                {% csrf_token %}
+                <button class="button" type="submit">{% trans "Pay the difference securely" %}</button>
+            </form>
+            {% elif payment_sandbox_enabled %}
+            <div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "Pay the difference locally without financial or Hostaway activity." %}</span></div>
+            <a class="button" href="{% url 'payments:sandbox_modification' modification.public_reference %}">{% trans "Test payment of the difference" %}</a>
+            {% else %}
+            <div class="notice"><strong>{% trans "Difference payment required" %}</strong><p>{% trans "A secure payment button will appear here once the payment gateway is connected." %}</p></div>
+            {% endif %}
+        {% elif modification.payment_attempts.all and modification.status != 'completed' %}
+        <div class="notice notice--success"><strong>{% trans "Payment recorded" %}</strong><p>{% trans "Do not pay again. The reservation update is continuing from the verified payment." %}</p></div>
+        {% endif %}
+        <a class="button" href="{% url 'reservations:manage' modification.reservation.public_reference %}">{% trans "Return to booking" %}</a>
+    </article>
+</section>
 {% endblock %}

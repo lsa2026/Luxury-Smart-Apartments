@@ -10,8 +10,9 @@ from django.db import DatabaseError
 from django.http import HttpRequest
 from django.utils import timezone, translation
 
-from apps.properties.models import Property
+from apps.properties.cities import supported_city_labels
 
+from .branding import BRAND_NAME
 from .models import SiteSetting
 
 GOOGLE_EXCLUDED_PREFIXES = (
@@ -19,19 +20,6 @@ GOOGLE_EXCLUDED_PREFIXES = (
     "/health/",
     "/integrations/",
 )
-
-
-def _localized_city(row: dict[str, str], language: str) -> str:
-    order = {
-        "ar": ("city_ar", "city_en", "city", "city_fr"),
-        "en": ("city_en", "city", "city_fr", "city_ar"),
-        "fr": ("city_fr", "city_en", "city", "city_ar"),
-    }
-    return next(
-        (row.get(field, "") for field in order.get(language, order["ar"]) if row.get(field)),
-        "",
-    )
-
 
 def _consent_from_cookie(request: HttpRequest) -> dict[str, object] | None:
     raw_value = request.COOKIES.get("lsa_cookie_consent", "")
@@ -58,7 +46,6 @@ def _consent_from_cookie(request: HttpRequest) -> dict[str, object] | None:
 def site_context(request: HttpRequest) -> dict[str, object]:
     if getattr(request, "_local_public_context", False):
         site_setting = None
-        footer_cities: list[str] = []
     else:
         site_setting = cache.get("site:settings")
         if site_setting is None:
@@ -69,31 +56,14 @@ def site_context(request: HttpRequest) -> dict[str, object]:
             cache.set("site:settings", site_setting or False, timeout=300)
         if site_setting is False:
             site_setting = None
-        footer_city_rows = cache.get("site:footer-cities:v2")
-        if footer_city_rows is None:
-            try:
-                footer_city_rows = list(
-                    Property.objects.public()
-                    .exclude(city="")
-                    .values("city", "city_ar", "city_en", "city_fr")
-                    .distinct()[:8]
-                )
-            except DatabaseError:
-                footer_city_rows = []
-            cache.set("site:footer-cities:v2", footer_city_rows, timeout=300)
     canonical_path = request.path
     canonical_suffix = ""
     page_value = request.GET.get("page", "")
     if request.path == "/properties/" and page_value.isdigit() and int(page_value) > 1:
         canonical_suffix = f"?page={int(page_value)}"
-    site_name = site_setting.site_name if site_setting is not None else "Luxury Smart Apartments"
+    site_name = BRAND_NAME
     language = (translation.get_language() or settings.LANGUAGE_CODE).split("-")[0]
-    if getattr(request, "_local_public_context", False):
-        footer_cities = []
-    else:
-        footer_cities = [
-            city for row in footer_city_rows if (city := _localized_city(row, language))
-        ]
+    footer_cities = supported_city_labels(language)
     public_marketing_page = not request.path.startswith(GOOGLE_EXCLUDED_PREFIXES) and not getattr(
         request, "_disable_google_integrations", False
     )
@@ -176,4 +146,5 @@ def site_context(request: HttpRequest) -> dict[str, object]:
             else ""
         ),
         "pending_analytics_event": (pending_event if isinstance(pending_event, str) else ""),
+        "payment_sandbox_enabled": settings.PAYMENT_SANDBOX_ENABLED,
     }

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Create account" %} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="section container account-shell">
+    <div class="account-intro">
+        <p class="eyebrow">{% trans "Your private space" %}</p>
+        <h1>{% trans "Create your account" %}</h1>
+        <p>{% trans "Keep your test and future bookings together, and return to booking management more easily." %}</p>
+        <ul class="account-benefits">
+            <li>{% trans "One clear view of your bookings" %}</li>
+            <li>{% trans "Secure access using your email" %}</li>
+            <li>{% trans "Designed for mobile and tablet" %}</li>
+        </ul>
+    </div>
+    <article class="account-card">
+        <h2>{% trans "Account details" %}</h2>
+        {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        <form method="post" class="form-grid account-form" novalidate>
+            {% csrf_token %}
+            <div class="field-group">{{ form.first_name.label_tag }}{{ form.first_name }}{{ form.first_name.errors }}</div>
+            <div class="field-group">{{ form.last_name.label_tag }}{{ form.last_name }}{{ form.last_name.errors }}</div>
+            <div class="field-group field-group--full">{{ form.email.label_tag }}{{ form.email }}{{ form.email.errors }}</div>
+            <div class="field-group">{{ form.password1.label_tag }}{{ form.password1 }}{{ form.password1.errors }}</div>
+            <div class="field-group">{{ form.password2.label_tag }}{{ form.password2 }}{{ form.password2.errors }}</div>
+            <label class="checkbox-field field-group--full">{{ form.accept_terms }}<span>{{ form.accept_terms.label }}</span></label>
+            {{ form.accept_terms.errors }}
+            <button class="button field-group--full" type="submit">{% trans "Create account" %}</button>
+        </form>
+        <p class="account-card__footer">{% trans "Already have an account?" %} <a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a></p>
+    </article>
+</section>
+{% endblock %}

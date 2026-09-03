@@ -584,7 +584,7 @@ def test_legacy_redirect_uses_exact_path_only() -> None:
 def test_seeded_confirmed_redirects_are_available() -> None:
     assert Client().get("/about-us/").status_code == 301
     assert Client().get("/contact-us/").status_code == 301
-    assert Client().get("/my-bookings/").status_code == 410
+    assert Client().get("/my-bookings/").status_code == 302
 
 
 def test_redirect_verification_command_is_read_only() -> None:

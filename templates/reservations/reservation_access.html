@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Manage booking" %} | Luxury Smart Apartments{% endblock %}
+{% block meta_description %}{% trans "Open your secure booking management area using your booking number and email." %}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+
+{% block content %}
+<header class="page-hero page-hero--compact booking-access-hero">
+    <div class="container">
+        <p class="eyebrow">{% trans "Your stay, in one place" %}</p>
+        <h1>{% trans "Manage your booking easily" %}</h1>
+        <p>{% trans "Enter the booking number from your confirmation and the email used when booking." %}</p>
+    </div>
+</header>
+
+<section class="section container booking-access-shell">
+    <div class="booking-access-card">
+        <div class="booking-access-card__intro">
+            <span class="booking-access-card__icon" aria-hidden="true">⌁</span>
+            <p class="eyebrow">{% trans "Secure access" %}</p>
+            <h2>{% trans "Welcome back" %}</h2>
+            <p>{% trans "View your stay details and request an extension, date change, guest update, or cancellation." %}</p>
+        </div>
+        <div class="booking-access-card__form">
+            {% include "reservations/_reservation_access_form.html" %}
+        </div>
+    </div>
+    <div class="booking-access-benefits" aria-label="{% trans 'Booking management features' %}">
+        <div><span aria-hidden="true">01</span><strong>{% trans "Stay details" %}</strong><small>{% trans "Dates, guests, status, and total" %}</small></div>
+        <div><span aria-hidden="true">02</span><strong>{% trans "Flexible requests" %}</strong><small>{% trans "Extend or request another date" %}</small></div>
+        <div><span aria-hidden="true">03</span><strong>{% trans "Clear updates" %}</strong><small>{% trans "Follow every request from one place" %}</small></div>
+    </div>
+</section>
+{% endblock %}

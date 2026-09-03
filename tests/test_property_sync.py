@@ -124,6 +124,18 @@ def test_creates_new_property_and_embedded_resources(
     assert IntegrationSyncRun.objects.get().status == IntegrationSyncRun.Status.SUCCEEDED
 
 
+def test_known_neighborhood_city_is_normalized_during_sync(
+    listing_payload: dict[str, Any],
+) -> None:
+    listing_payload["city"] = "Manea Al Mreidi"
+
+    sync_one(listing_payload)
+
+    property_obj = Property.objects.get()
+    assert property_obj.city == "Riyadh"
+    assert property_obj.city_en == "Riyadh"
+
+
 def test_updates_operational_data_but_preserves_all_local_content(
     listing_payload: dict[str, Any],
 ) -> None:

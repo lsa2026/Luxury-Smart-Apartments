@@ -1,3 +1,4 @@
+from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.core.cache import cache
@@ -72,6 +73,65 @@ PROPERTY_LOCAL_FIELDS = {
     "sort_order",
 }
 
+PROPERTY_FORM_FIELDS = (
+    "slug",
+    "name_ar",
+    "name_en",
+    "name_fr",
+    "short_description_ar",
+    "short_description_en",
+    "short_description_fr",
+    "description_ar",
+    "description_en",
+    "description_fr",
+    "city_ar",
+    "city_en",
+    "city_fr",
+    "seo_title_ar",
+    "seo_title_en",
+    "seo_title_fr",
+    "seo_description_ar",
+    "seo_description_en",
+    "seo_description_fr",
+    "is_visible",
+    "visibility_management",
+    "is_featured",
+    "sort_order",
+    "content_is_customized",
+)
+
+
+class PropertyAdminForm(forms.ModelForm):
+    class Meta:
+        model = Property
+        fields = PROPERTY_FORM_FIELDS
+        labels = {
+            "slug": "الرابط المختصر",
+            "name_ar": "اسم الوحدة",
+            "short_description_ar": "الوصف المختصر",
+            "description_ar": "الوصف الكامل",
+            "city_ar": "المدينة",
+            "name_en": "Property name",
+            "short_description_en": "Short description",
+            "description_en": "Full description",
+            "city_en": "City",
+            "name_fr": "Nom du logement",
+            "short_description_fr": "Description courte",
+            "description_fr": "Description complète",
+            "city_fr": "Ville",
+            "seo_title_ar": "عنوان SEO",
+            "seo_description_ar": "وصف SEO",
+            "seo_title_en": "SEO title",
+            "seo_description_en": "SEO description",
+            "seo_title_fr": "Titre SEO",
+            "seo_description_fr": "Description SEO",
+            "is_visible": "ظاهرة في المنصة",
+            "visibility_management": "إدارة الظهور",
+            "is_featured": "وحدة مميّزة",
+            "sort_order": "ترتيب الظهور",
+            "content_is_customized": "المحتوى المحلي مخصّص",
+        }
+
 
 class PropertyImageInline(admin.TabularInline):
     model = PropertyImage
@@ -126,23 +186,19 @@ class PropertyAmenityInline(admin.TabularInline):
 
 @admin.register(Property)
 class PropertyAdmin(admin.ModelAdmin):
+    form = PropertyAdminForm
     list_display = (
         "local_name",
-        "hostaway_name",
-        "city",
-        "person_capacity",
-        "bedrooms_number",
-        "hostaway_is_active",
-        "is_visible",
-        "visibility_management",
-        "source_missing",
-        "is_featured",
-        "last_synced_at",
+        "local_city",
+        "capacity_display",
+        "bedrooms_display",
+        "source_active",
+        "platform_visible",
+        "featured_display",
         "image_count",
-        "arabic_content_complete",
-        "english_content_complete",
-        "french_content_complete",
+        "content_languages",
         "seo_complete",
+        "last_sync",
     )
     list_filter = (
         "city",
@@ -164,16 +220,13 @@ class PropertyAdmin(admin.ModelAdmin):
     readonly_fields = PROPERTY_SOURCE_FIELDS
     actions = ("queue_selected_property_sync",)
     inlines = (PropertyImageInline, PropertyAmenityInline)
+    list_per_page = 25
     fieldsets = (
         (
-            "المحتوى المحلي",
+            "النشر والعرض",
             {
                 "fields": (
                     "slug",
-                    ("name_ar", "name_en", "name_fr"),
-                    ("short_description_ar", "short_description_en", "short_description_fr"),
-                    ("description_ar", "description_en", "description_fr"),
-                    ("city_ar", "city_en", "city_fr"),
                     ("is_visible", "visibility_management"),
                     ("is_featured", "sort_order"),
                     "content_is_customized",
@@ -181,13 +234,35 @@ class PropertyAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "SEO",
+            "المحتوى العربي",
             {
                 "fields": (
-                    ("seo_title_ar", "seo_title_en", "seo_title_fr"),
-                    ("seo_description_ar", "seo_description_en", "seo_description_fr"),
+                    "name_ar",
+                    "short_description_ar",
+                    "description_ar",
+                    "city_ar",
                 )
             },
+        ),
+        (
+            "English content",
+            {"fields": ("name_en", "short_description_en", "description_en", "city_en")},
+        ),
+        (
+            "Contenu français",
+            {"fields": ("name_fr", "short_description_fr", "description_fr", "city_fr")},
+        ),
+        (
+            "SEO — العربية",
+            {"fields": ("seo_title_ar", "seo_description_ar")},
+        ),
+        (
+            "SEO — English",
+            {"fields": ("seo_title_en", "seo_description_en")},
+        ),
+        (
+            "SEO — Français",
+            {"fields": ("seo_title_fr", "seo_description_fr")},
         ),
         (
             "بيانات Hostaway التشغيلية",
@@ -205,9 +280,46 @@ class PropertyAdmin(admin.ModelAdmin):
     def local_name(self, obj: Property) -> str:
         return obj.name_ar or obj.name_en or obj.name_fr or "—"
 
+    @admin.display(description="المدينة", ordering="city")
+    def local_city(self, obj: Property) -> str:
+        return obj.city_ar or obj.city_en or obj.city_fr or obj.city or "—"
+
+    @admin.display(description="الضيوف", ordering="person_capacity")
+    def capacity_display(self, obj: Property) -> int | str:
+        return obj.person_capacity or "—"
+
+    @admin.display(description="الغرف", ordering="bedrooms_number")
+    def bedrooms_display(self, obj: Property) -> int | str:
+        return obj.bedrooms_number or "—"
+
+    @admin.display(boolean=True, description="نشط في Hostaway", ordering="hostaway_is_active")
+    def source_active(self, obj: Property) -> bool:
+        return obj.hostaway_is_active
+
+    @admin.display(boolean=True, description="ظاهر في المنصة", ordering="is_visible")
+    def platform_visible(self, obj: Property) -> bool:
+        return obj.is_visible
+
+    @admin.display(boolean=True, description="مميّز", ordering="is_featured")
+    def featured_display(self, obj: Property) -> bool:
+        return obj.is_featured
+
     @admin.display(description="الصور", ordering="_image_count")
     def image_count(self, obj: Property) -> int:
         return obj._image_count
+
+    @admin.display(description="اكتمال اللغات")
+    def content_languages(self, obj: Property) -> str:
+        values = (
+            ("AR", self.arabic_content_complete(obj)),
+            ("EN", self.english_content_complete(obj)),
+            ("FR", self.french_content_complete(obj)),
+        )
+        return " · ".join(f"{code} {'✓' if complete else '—'}" for code, complete in values)
+
+    @admin.display(description="آخر مزامنة", ordering="last_synced_at")
+    def last_sync(self, obj: Property) -> object:
+        return obj.last_synced_at
 
     @admin.display(boolean=True, description="المحتوى العربي")
     def arabic_content_complete(self, obj: Property) -> bool:

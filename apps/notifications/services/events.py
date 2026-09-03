@@ -196,7 +196,7 @@ def handle_booking_intent_created(intent_id: object) -> None:
                 recipient=intent.guest_email,
                 recipient_source="booking_intent",
                 recipient_reference=intent.public_reference,
-                language="ar",
+                language=intent.language,
                 idempotency_key=f"booking-intent-created:{intent.public_reference}",
             )
     except (DatabaseError, KeyError, ObjectDoesNotExist, ValueError) as exc:
@@ -244,8 +244,65 @@ def handle_modification_created(modification_id: object) -> None:
                 recipient=intent.guest_email,
                 recipient_source="modification",
                 recipient_reference=modification.public_reference,
-                language="ar",
+                language=intent.language,
                 idempotency_key=f"modification-created:{modification.public_reference}",
             )
     except (DatabaseError, KeyError, ValueError) as exc:
         logger.error("Modification event failed code=%s", type(exc).__name__)
+
+
+def handle_reservation_confirmed(reservation_id: object) -> None:
+    from apps.reservations.models import Reservation
+
+    try:
+        reservation = Reservation.objects.select_related("booking_intent").get(
+            pk=reservation_id
+        )
+        intent = reservation.booking_intent
+        if (
+            intent is None
+            or reservation.normalized_status != Reservation.Status.CONFIRMED
+            or not settings.BOOKING_NOTIFICATION_EMAIL_ENABLED
+        ):
+            return
+        queue_email(
+            message_type="reservation_confirmed",
+            recipient=intent.guest_email,
+            recipient_source="reservation",
+            recipient_reference=reservation.public_reference,
+            language=intent.language,
+            idempotency_key=f"reservation-confirmed:{reservation.public_reference}",
+        )
+    except (DatabaseError, KeyError, ObjectDoesNotExist, ValueError) as exc:
+        logger.error("Reservation confirmation email failed code=%s", type(exc).__name__)
+
+
+def handle_modification_completed(modification_id: object) -> None:
+    """Queue one final customer email only after Hostaway state is reconciled."""
+    from apps.reservations.models import BookingModificationRequest
+
+    try:
+        modification = BookingModificationRequest.objects.select_related(
+            "reservation__booking_intent"
+        ).get(pk=modification_id)
+        intent = modification.reservation.booking_intent
+        if (
+            intent is None
+            or modification.status != BookingModificationRequest.Status.COMPLETED
+            or not settings.MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        ):
+            return
+        is_cancellation = (
+            modification.request_type
+            == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+        )
+        queue_email(
+            message_type=("reservation_cancelled" if is_cancellation else "reservation_modified"),
+            recipient=intent.guest_email,
+            recipient_source="modification",
+            recipient_reference=modification.public_reference,
+            language=intent.language,
+            idempotency_key=f"modification-completed:{modification.public_reference}",
+        )
+    except (DatabaseError, KeyError, ObjectDoesNotExist, ValueError) as exc:
+        logger.error("Modification completion email failed code=%s", type(exc).__name__)

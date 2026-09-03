@@ -4,10 +4,11 @@ import logging
 from dataclasses import dataclass, field
 from smtplib import SMTPException, SMTPRecipientsRefused
 from typing import Any, Protocol
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.core.mail import BadHeaderError, EmailMultiAlternatives
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
@@ -63,8 +64,7 @@ class DjangoEmailProvider:
         template_root = f"emails/{request.language}/{request.template_name}"
         context = {
             **request.context,
-            "brand_name": settings.EMAIL_BRAND_NAME,
-            "site_base_url": settings.SITE_BASE_URL,
+            **_email_brand_context(request.language),
         }
         try:
             text_body = render_to_string(f"emails/{request.language}/message.txt", context)
@@ -84,6 +84,39 @@ class DjangoEmailProvider:
         if sent_count != 1:
             raise EmailProviderError("email_not_accepted")
         return EmailSendResult(sent=True, code="sent")
+
+
+def _email_brand_context(language: str) -> dict[str, str]:
+    """Resolve public brand details at send time without storing them in queue rows."""
+    del language
+    site_setting = None
+    try:
+        from apps.core.branding import BRAND_NAME
+        from apps.core.models import SiteSetting
+
+        site_setting = SiteSetting.objects.order_by("pk").first()
+    except DatabaseError:
+        logger.warning("Email brand settings unavailable; using environment fallbacks")
+
+    brand_name = BRAND_NAME
+    contact_phone = settings.EMAIL_CONTACT_PHONE
+    if site_setting is not None:
+        contact_phone = (
+            site_setting.contact_phone
+            or site_setting.whatsapp_display_number
+            or contact_phone
+        )
+    site_url = f"{settings.SITE_BASE_URL.rstrip('/')}/"
+    configured_logo = settings.EMAIL_LOGO_URL.strip()
+    logo_url = urljoin(site_url, configured_logo or "static/images/logo.jpeg")
+    return {
+        "brand_name": brand_name,
+        "site_base_url": settings.SITE_BASE_URL.rstrip("/"),
+        "site_url": site_url,
+        "logo_url": logo_url,
+        "contact_phone": contact_phone,
+        "support_email": settings.SUPPORT_EMAIL,
+    }
 
 
 SUBJECTS: dict[str, dict[str, str]] = {
@@ -401,6 +434,11 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         return intent.guest_email, {
             "reference": intent.public_reference,
             "property_name": _localized_property_name(intent.property, delivery.language),
+            "check_in": intent.check_in.strftime("%d/%m/%Y"),
+            "check_out": intent.check_out.strftime("%d/%m/%Y"),
+            "guests": intent.guests,
+            "total_price": intent.total_price,
+            "currency": intent.currency,
         }
     if delivery.recipient_source == "modification":
         from apps.reservations.models import BookingModificationRequest
@@ -413,7 +451,9 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         if intent is None:
             raise EmailProviderError("recipient_not_available", permanent=True)
         return intent.guest_email, {
-            "reference": modification.public_reference,
+            "reference": modification.reservation.public_reference,
+            "request_reference": modification.public_reference,
+            "booking_reference": modification.reservation.public_reference,
             "property_name": (
                 _localized_property_name(
                     modification.reservation.property,
@@ -422,6 +462,44 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
                 if modification.reservation.property
                 else ""
             ),
+            "check_in": (
+                modification.new_check_in or modification.reservation.check_in
+            ).strftime("%d/%m/%Y"),
+            "check_out": (
+                modification.new_check_out or modification.reservation.check_out
+            ).strftime("%d/%m/%Y"),
+            "guests": modification.new_guests or modification.reservation.guests,
+            "total_price": (
+                modification.new_total
+                if modification.new_total is not None
+                else modification.reservation.total_price
+            ),
+            "currency": modification.currency,
+            "manage_url": f"{settings.SITE_BASE_URL}/reservations/manage/",
+        }
+    if delivery.recipient_source == "reservation":
+        from apps.reservations.models import Reservation
+
+        reservation = Reservation.objects.select_related(
+            "booking_intent",
+            "property",
+        ).get(public_reference=delivery.recipient_reference)
+        intent = reservation.booking_intent
+        if intent is None:
+            raise EmailProviderError("recipient_not_available", permanent=True)
+        return intent.guest_email, {
+            "reference": reservation.public_reference,
+            "property_name": (
+                _localized_property_name(reservation.property, delivery.language)
+                if reservation.property
+                else ""
+            ),
+            "manage_url": f"{settings.SITE_BASE_URL}/reservations/manage/",
+            "check_in": reservation.check_in.strftime("%d/%m/%Y"),
+            "check_out": reservation.check_out.strftime("%d/%m/%Y"),
+            "guests": reservation.guests,
+            "total_price": reservation.total_price,
+            "currency": reservation.currency,
         }
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:

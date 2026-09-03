@@ -5,6 +5,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db import connection
+from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -34,10 +35,19 @@ def notification_center(request: HttpRequest) -> HttpResponse:
     )
     notification_type = request.GET.get("type", "")
     severity = request.GET.get("severity", "")
+    query = request.GET.get("q", "").strip()
     if notification_type in Notification.Type.values:
         queryset = queryset.filter(notification_type=notification_type)
     if severity in Notification.Severity.values:
         queryset = queryset.filter(severity=severity)
+    if query:
+        queryset = queryset.filter(
+            Q(title_ar__icontains=query)
+            | Q(title_en__icontains=query)
+            | Q(message_ar__icontains=query)
+            | Q(message_en__icontains=query)
+            | Q(related_object_reference__icontains=query)
+        )
     from django.core.paginator import Paginator
 
     page = Paginator(queryset, 25).get_page(request.GET.get("page"))
@@ -50,6 +60,9 @@ def notification_center(request: HttpRequest) -> HttpResponse:
             "notification_types": Notification.Type.choices,
             "severities": Notification.Severity.choices,
             "unread_count": queryset.filter(is_read=False).count(),
+            "query": query,
+            "selected_type": notification_type,
+            "selected_severity": severity,
         },
     )
 
@@ -83,8 +96,9 @@ def mark_all_notifications_read(request: HttpRequest) -> HttpResponse:
 @staff_member_required
 def operations_dashboard(request: HttpRequest) -> HttpResponse:
     _require_operations_permission(request)
+    selected_period = request.GET.get("period", "30")
     start_date, end_date = report_period(
-        request.GET.get("period", "30"),
+        selected_period,
         request.GET.get("start", ""),
         request.GET.get("end", ""),
     )
@@ -94,6 +108,7 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
         {
             "title": "لوحة التقارير التشغيلية",
             "report": operations_report(start_date, end_date),
+            "selected_period": selected_period,
         },
     )
 
@@ -155,6 +170,56 @@ def system_status(request: HttpRequest) -> HttpResponse:
             "email_delivery": settings.EMAIL_DELIVERY_ENABLED,
         },
     }
+    state_labels = {
+        "ok": "يعمل بصورة طبيعية",
+        "configured": "مهيأ",
+        "enabled": "مفعّل",
+        "dispatch_enabled": "إرسال المهام مفعّل",
+        "schedule_enabled": "الجدولة مفعّلة",
+        "disabled": "غير مفعّل",
+        "not_enabled": "غير مفعّل",
+        "not_configured": "غير مهيأ",
+        "pending": "توجد تحديثات معلقة",
+        "unavailable": "غير متاح",
+    }
+    raw_checks = (
+        ("قاعدة البيانات", checks.get("database", "unavailable"), "PostgreSQL واتصال التطبيق"),
+        ("التخزين المؤقت", checks.get("cache", "unavailable"), "Cache واستجابة القراءة والكتابة"),
+        ("بنية قاعدة البيانات", checks.get("migrations", "unavailable"), "توافق آخر migrations"),
+        ("إعداد التطبيق", checks.get("configuration", "unavailable"), "المفاتيح والرابط الأساسي"),
+        ("Redis", checks.get("redis", status["redis"]), "الطوابير والتخزين السريع"),
+        ("عامل المهام", status["celery_worker"], "إرسال مهام المزامنة الخلفية"),
+        ("جدولة المهام", status["celery_beat"], "المهام الدورية"),
+        ("تسليم البريد", status["email_provider"], "رسائل العملاء والنظام"),
+        ("مصادقة Hostaway", status["hostaway_auth"], "اكتمال بيانات الربط فقط"),
+    )
+    status["checks"] = [
+        {
+            "label": label,
+            "value": value,
+            "display": state_labels.get(value, value),
+            "detail": detail,
+            "state": (
+                "ok"
+                if value in {"ok", "configured", "enabled", "dispatch_enabled", "schedule_enabled"}
+                else "warn"
+                if value in {"disabled", "not_enabled", "not_configured", "pending"}
+                else "danger"
+            ),
+        }
+        for label, value, detail in raw_checks
+    ]
+    feature_labels = {
+        "live_booking": "إنشاء الحجوزات الحية",
+        "live_modification": "تعديل الحجوزات الحية",
+        "live_cancellation": "إلغاء الحجوزات الحية",
+        "webhook_receiver": "استقبال Webhooks",
+        "email_delivery": "إرسال البريد",
+    }
+    status["feature_rows"] = [
+        {"label": feature_labels[name], "enabled": enabled, "is_write": name.startswith("live_")}
+        for name, enabled in status["feature_flags"].items()
+    ]
     cache.set("operations:system-status:last-viewed", timezone.now().isoformat(), timeout=60)
     return render(
         request,

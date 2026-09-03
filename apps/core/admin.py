@@ -13,11 +13,47 @@ from .models import (
     SiteSetting,
 )
 
+admin.site.site_header = "Luxury Smart Apartments"
+admin.site.site_title = "إدارة المنصة"
+admin.site.index_title = "مركز القيادة"
+admin.site.index_template = "admin/index.html"
+
 
 @admin.register(SitePage)
 class SitePageAdmin(admin.ModelAdmin):
-    list_display = ("slug", "title_ar", "title_en", "title_fr", "is_published", "updated_at")
+    list_display = (
+        "slug",
+        "title_ar",
+        "title_en",
+        "title_fr",
+        "is_published",
+        "last_reviewed_at",
+        "updated_at",
+    )
     list_filter = ("is_published",)
+    list_editable = ("is_published",)
+    readonly_fields = ("updated_at",)
+    fieldsets = (
+        (
+            "النشر",
+            {"fields": ("slug", "is_published", "last_reviewed_at", "updated_at")},
+        ),
+        (
+            "العربية",
+            {"fields": ("title_ar", "body_ar", "meta_description_ar")},
+        ),
+        (
+            "English",
+            {"fields": ("title_en", "body_en", "meta_description_en")},
+        ),
+        (
+            "Français",
+            {
+                "classes": ("collapse",),
+                "fields": ("title_fr", "body_fr", "meta_description_fr"),
+            },
+        ),
+    )
     search_fields = (
         "slug",
         "title_ar",
@@ -70,9 +106,6 @@ class SiteSettingAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "site_name",
-                    "brand_name_ar",
-                    "brand_name_en",
-                    "brand_name_fr",
                     "tagline_ar",
                     "tagline_en",
                     "tagline_fr",
@@ -105,7 +138,7 @@ class SiteSettingAdmin(admin.ModelAdmin):
         ),
         ("النظام", {"fields": ("updated_at",)}),
     )
-    readonly_fields = ("updated_at",)
+    readonly_fields = ("site_name", "updated_at")
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return not SiteSetting.objects.exists() and super().has_add_permission(request)

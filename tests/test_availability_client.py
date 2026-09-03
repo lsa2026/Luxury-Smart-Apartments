@@ -76,6 +76,7 @@ def price_payload() -> dict[str, Any]:
                     "value": "400.20",
                     "total": "400.20",
                     "isIncludedInTotalPrice": 1,
+                    "isDeleted": 0,
                 }
             ],
             "unknown": {"safe": True},

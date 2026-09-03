@@ -31,9 +31,10 @@ def test_phase5_admin_models_are_read_only_and_block_manual_add() -> None:
 
     assert reservation_admin.has_add_permission(request) is False
     assert reservation_admin.has_delete_permission(request) is False
-    assert set(reservation_admin.readonly_fields) == {
-        field.name for field in Reservation._meta.fields
-    }
+    assert {field.name for field in Reservation._meta.fields}.issubset(
+        set(reservation_admin.readonly_fields)
+    )
+    assert reservation_admin.has_change_permission(request) is False
 
     assert operation_admin.has_add_permission(request) is False
     assert operation_admin.has_delete_permission(request) is False

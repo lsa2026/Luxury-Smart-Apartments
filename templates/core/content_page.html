@@ -3,6 +3,19 @@
 {% block title %}{{ page|localized_page_title }} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{{ page|localized_field:"meta_description" }}{% endblock %}
 {% block content %}
-<header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Luxury Smart Apartments" %}</p><h1>{{ page|localized_page_title }}</h1></div></header>
-<section class="section container"><article class="prose-card rich-copy">{{ page|localized_page_body|linebreaks }}</article></section>
+<header class="page-hero page-hero--compact">
+    <div class="container">
+        <p class="eyebrow">{% trans "Luxury Smart Apartments" %}</p>
+        <h1>{{ page|localized_page_title }}</h1>
+        {% if page.last_reviewed_at %}
+        <p class="page-review-date">
+            {% if current_language_code == "ar" %}آخر تحديث{% elif current_language_code == "fr" %}Dernière mise à jour{% else %}Last updated{% endif %}
+            <time datetime="{{ page.last_reviewed_at|date:'Y-m-d' }}">{{ page.last_reviewed_at|date:"Y-m-d" }}</time>
+        </p>
+        {% endif %}
+    </div>
+</header>
+<section class="section container content-page-shell">
+    <article class="prose-card rich-copy structured-copy">{{ page|localized_page_body|structured_text }}</article>
+</section>
 {% endblock %}

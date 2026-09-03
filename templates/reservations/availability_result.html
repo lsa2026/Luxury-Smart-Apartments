@@ -5,7 +5,7 @@
 {% block hreflang %}{% endblock %}
 {% block content %}
 <section
-    class="section container narrow"
+    class="section container{% if not city_search %} narrow{% endif %}"
     {% if availability %}
     data-analytics-event="availability_result"
     data-analytics-available="{{ availability.is_available|yesno:'true,false' }}"
@@ -13,6 +13,39 @@
     data-analytics-nights="{{ availability.nights }}"
     {% endif %}
 >
+    {% if city_search %}
+    <header class="availability-results__heading">
+        <div>
+            <p class="eyebrow">{% trans "Live availability" %}</p>
+            <h1>{% blocktrans with city=searched_city %}Available properties in {{ city }}{% endblocktrans %}</h1>
+            <p>{% trans "Only properties available for your selected dates and guest count are shown." %}</p>
+        </div>
+        <dl class="availability-results__search-summary" aria-label="{% trans 'Your search' %}">
+            <div><dt>{% trans "Check-in" %}</dt><dd><time datetime="{{ search.check_in|date:'Y-m-d' }}">{{ search.check_in|date:"j F Y" }}</time></dd></div>
+            <div><dt>{% trans "Check-out" %}</dt><dd><time datetime="{{ search.check_out|date:'Y-m-d' }}">{{ search.check_out|date:"j F Y" }}</time></dd></div>
+            <div><dt>{% trans "Guests" %}</dt><dd>{{ search.guests }}</dd></div>
+        </dl>
+    </header>
+
+    {% if availability_results %}
+    <div class="availability-results__count" role="status">
+        <span aria-hidden="true">◆</span>
+        {% blocktrans count counter=availability_results|length %}We found {{ counter }} available property{% plural %}We found {{ counter }} available properties{% endblocktrans %}
+    </div>
+    <div class="property-grid availability-results__grid" data-analytics-list="available_properties">
+        {% for result in availability_results %}
+            {% include "includes/property_card.html" with property=result.property availability_result=result.availability booking_search=search property_detail_url=result.detail_url %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="availability-message availability-message--error" role="status">
+        <h2>{% trans "No available properties were found" %}</h2>
+        <p>{% trans "Try different dates or a lower guest count, then search again." %}</p>
+        <p>{% trans "No booking or payment was created." %}</p>
+    </div>
+    {% endif %}
+    <a class="text-link availability-results__back" href="{% url 'core:home' %}#property-search">{% trans "Change search" %}</a>
+    {% else %}
     {% include "includes/progress_indicator.html" with step=1 %}
     <div class="section-heading"><p class="eyebrow">{% trans "Live check" %}</p><h1>{% trans "Availability result" %}</h1></div>
     {% if rate_limited %}<div class="availability-message availability-message--error" role="alert">{{ user_message|default:_("Too many checks. Please wait and try again.") }}</div>
@@ -20,5 +53,6 @@
     {% elif availability.is_available %}<div class="availability-message"><h2>{% trans "The property is available" %}</h2><p>{% trans "A secure quote was prepared for the next step." %}</p></div>
     {% else %}<div class="availability-message availability-message--error" role="status"><h2>{% trans "These dates are not available" %}</h2><p>{% trans "This property is not available for the selected dates. Try different dates." %}</p><p>{% trans "No booking or payment was created." %}</p></div>{% endif %}
     <a class="text-link" href="{% if property %}{{ property.get_absolute_url }}{% else %}{% url 'core:home' %}{% endif %}">{% trans "Go back" %}</a>
+    {% endif %}
 </section>
 {% endblock %}

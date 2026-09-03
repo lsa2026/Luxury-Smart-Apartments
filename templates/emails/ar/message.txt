@@ -1,10 +1,17 @@
 {{ brand_name }}
 
 {{ heading }}
-
 {{ message }}
-{% if property_name %}الوحدة: {{ property_name }}{% endif %}
-{% if reference %}المرجع العام: {{ reference }}{% endif %}
 
+{% if property_name %}الوحدة: {{ property_name }}{% endif %}
+{% if check_in %}الوصول: {{ check_in }}
+المغادرة: {{ check_out }}
+الضيوف: {{ guests }}{% endif %}
+{% if booking_reference %}رقم الحجز: {{ booking_reference }}{% elif reference %}المرجع: {{ reference }}{% endif %}
+{% if request_reference %}مرجع التعديل: {{ request_reference }}{% endif %}
+{% if manage_url %}إدارة الحجز: {{ manage_url }}{% endif %}
+
+الموقع: {{ site_url }}
+{% if contact_phone %}رقم التواصل: {{ contact_phone }}{% endif %}
+{% if support_email %}البريد: {{ support_email }}{% endif %}
 الخصوصية: {{ site_base_url }}/legal/privacy/
-التواصل: {{ site_base_url }}/contact/

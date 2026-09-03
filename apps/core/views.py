@@ -11,13 +11,27 @@ from django.utils.translation import gettext as _
 from django.views import View
 from django.views.generic import TemplateView
 
+from apps.properties.cities import supported_city_rows
 from apps.properties.models import Property, PropertyImage
-from apps.reservations.forms import AvailabilitySearchForm
+from apps.reservations.forms import AvailabilitySearchForm, ReservationAccessForm
 from apps.reservations.security import is_rate_limited
 from apps.reviews.models import Review
 
 from .forms import ContactForm
 from .models import ContactMessage, FAQItem, SitePage
+
+
+def service_worker(request: HttpRequest) -> HttpResponse:
+    """Serve a harmless root worker for browsers with an older local registration."""
+    del request
+    response = HttpResponse(
+        "self.addEventListener('install', event => self.skipWaiting());\n"
+        "self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));\n",
+        content_type="application/javascript; charset=utf-8",
+    )
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response["Service-Worker-Allowed"] = "/"
+    return response
 
 
 def _card_image_queryset() -> object:
@@ -39,18 +53,11 @@ class HomeView(TemplateView):
             .prefetch_related(
                 Prefetch(
                     "images",
-                    queryset=_card_image_queryset()[:1],
+                    queryset=_card_image_queryset()[:5],
                     to_attr="_public_images",
                 )
             )
             .order_by("-is_featured", "sort_order", "id")[:6]
-        )
-        city_rows = (
-            Property.objects.public()
-            .exclude(city="")
-            .values("city", "city_ar", "city_en", "city_fr")
-            .distinct()
-            .order_by("city")
         )
         context.update(
             {
@@ -59,8 +66,9 @@ class HomeView(TemplateView):
                 "featured_reviews": Review.objects.public()
                 .select_related("property")
                 .order_by("-is_featured", "-departure_date")[:3],
-                "cities": list(city_rows),
+                "cities": supported_city_rows(),
                 "availability_form": AvailabilitySearchForm(),
+                "reservation_access_form": ReservationAccessForm(),
             }
         )
         return context
@@ -101,8 +109,24 @@ class FAQView(TemplateView):
 class ContactView(View):
     http_method_names = ["get", "post"]
 
+    @staticmethod
+    def _context(form: ContactForm, **extra: object) -> dict[str, object]:
+        return {
+            "contact_form": form,
+            "page": get_object_or_404(
+                SitePage,
+                slug="contact",
+                is_published=True,
+            ),
+            **extra,
+        }
+
     def get(self, request: HttpRequest) -> HttpResponse:
-        return render(request, "core/contact.html", {"contact_form": ContactForm()})
+        return render(
+            request,
+            "core/contact.html",
+            self._context(ContactForm()),
+        )
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if is_rate_limited(
@@ -114,10 +138,7 @@ class ContactView(View):
             return render(
                 request,
                 "core/contact.html",
-                {
-                    "contact_form": ContactForm(request.POST),
-                    "rate_limited": True,
-                },
+                self._context(ContactForm(request.POST), rate_limited=True),
                 status=429,
             )
         form = ContactForm(request.POST)
@@ -125,7 +146,7 @@ class ContactView(View):
             return render(
                 request,
                 "core/contact.html",
-                {"contact_form": form},
+                self._context(form),
                 status=400,
             )
         with transaction.atomic():

@@ -213,8 +213,8 @@ def validate_price_response(
                     f"components[{index}].quantity",
                 ),
                 value=_required_decimal(item.get("value"), f"components[{index}].value"),
-                total=_optional_decimal(item.get("total"), f"components[{index}].total"),
-                is_included_in_total=_optional_bool(
+                total=_required_decimal(item.get("total"), f"components[{index}].total"),
+                is_included_in_total=_required_bool(
                     item.get("isIncludedInTotalPrice"),
                     f"components[{index}].isIncludedInTotalPrice",
                 ),
@@ -226,7 +226,7 @@ def validate_price_response(
                     item.get("isMandatory"),
                     f"components[{index}].isMandatory",
                 ),
-                is_deleted=_optional_bool(
+                is_deleted=_required_bool(
                     item.get("isDeleted"),
                     f"components[{index}].isDeleted",
                 ),
@@ -307,6 +307,13 @@ def _optional_bool(value: Any, field_name: str) -> bool | None:
     if value is False or value == 0 or value == "0":
         return False
     raise HostawayResponseError(f"{field_name} must be boolean or 0/1.")
+
+
+def _required_bool(value: Any, field_name: str) -> bool:
+    parsed = _optional_bool(value, field_name)
+    if parsed is None:
+        raise HostawayResponseError(f"{field_name} is required.")
+    return parsed
 
 
 def _optional_nonnegative_int(value: Any, field_name: str) -> int | None:

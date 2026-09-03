@@ -1,0 +1,54 @@
+{% load i18n %}
+<dialog
+    class="luxury-calendar management-calendar{% if calendar_kind == 'single' %} management-calendar--single{% endif %}"
+    data-management-calendar
+    data-calendar-kind="{{ calendar_kind }}"
+    data-start-input="{{ start_input|default:'' }}"
+    data-end-input="{{ end_input }}"
+    data-fixed-start="{{ fixed_start|default:'' }}"
+    data-choose-label="{% trans 'Choose date' %}"
+    data-arrival-label="{% trans 'Arrival' %}"
+    data-departure-label="{% trans 'Departure' %}"
+    data-arrival-help="{% trans 'Choose your new arrival day' %}"
+    data-departure-help="{% trans 'Now choose your new departure day' %}"
+    data-extension-help="{% trans 'Choose the new departure day for your extended stay' %}"
+    data-selected-help="{% trans 'Your new stay dates are ready to check' %}"
+    data-night-label="{% trans 'night' %}"
+    data-nights-label="{% trans 'nights' %}"
+    aria-label="{% if calendar_kind == 'single' %}{% trans 'Choose the new departure date' %}{% else %}{% trans 'Choose your new stay dates' %}{% endif %}"
+>
+    <div class="luxury-calendar__header">
+        <div>
+            <span class="luxury-calendar__eyebrow">{% trans "Manage your stay" %}</span>
+            <h2>{% if calendar_kind == "single" %}{% trans "Extend your stay" %}{% else %}{% trans "Choose your new dates" %}{% endif %}</h2>
+            <p data-management-calendar-help>{% if calendar_kind == "single" %}{% trans "Choose the new departure day for your extended stay" %}{% else %}{% trans "Choose your new arrival day" %}{% endif %}</p>
+        </div>
+        <button class="luxury-calendar__close" type="button" data-management-calendar-close aria-label="{% trans 'Close calendar' %}">×</button>
+    </div>
+
+    <div class="luxury-calendar__selection">
+        <button type="button" data-management-calendar-mode="start"{% if calendar_kind == "single" %} disabled{% endif %}>
+            <small>{% if calendar_kind == "single" %}{% trans "Current departure" %}{% else %}{% trans "Arrival" %}{% endif %}</small>
+            <strong data-management-calendar-start>{% trans "Choose date" %}</strong>
+        </button>
+        <span class="luxury-calendar__route" aria-hidden="true">←</span>
+        <button type="button" data-management-calendar-mode="end">
+            <small>{% trans "New departure" %}</small>
+            <strong data-management-calendar-end>{% trans "Choose date" %}</strong>
+        </button>
+        <span class="luxury-calendar__nights" data-management-calendar-nights hidden></span>
+    </div>
+
+    <div class="luxury-calendar__navigation">
+        <button type="button" data-management-calendar-previous aria-label="{% trans 'Previous month' %}"><span aria-hidden="true">→</span></button>
+        <strong data-management-calendar-heading aria-live="polite"></strong>
+        <button type="button" data-management-calendar-next aria-label="{% trans 'Next month' %}"><span aria-hidden="true">←</span></button>
+    </div>
+
+    <div class="luxury-calendar__months" data-management-calendar-months></div>
+
+    <div class="luxury-calendar__footer">
+        <p><span aria-hidden="true">◆</span>{% trans "Live availability and price will be checked before the change is confirmed." %}</p>
+        <button class="button button--gold" type="button" data-management-calendar-confirm disabled>{% trans "Use these dates" %}</button>
+    </div>
+</dialog>

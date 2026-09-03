@@ -4,6 +4,7 @@ from decimal import Decimal
 from io import StringIO
 
 import pytest
+from django.conf import settings
 from django.core.cache import cache
 from django.core.management import call_command
 from django.test import Client, override_settings
@@ -26,6 +27,9 @@ from apps.reservations.models import (
     Reservation,
 )
 from apps.reservations.security import SESSION_MARKER_KEY, hash_session_marker
+from apps.reservations.services.automatic_modifications import (
+    execute_automatic_modification,
+)
 from apps.reservations.services.availability import (
     AVAILABLE,
     AvailabilityResult,
@@ -456,6 +460,86 @@ def test_success_reconciles_once() -> None:
     assert HostawayModificationOperation.objects.count() == 1
 
 
+@override_settings(
+    BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=True,
+    HOSTAWAY_LIVE_MODIFICATION_ENABLED=True,
+    HOSTAWAY_LIVE_EXTENSION_ENABLED=True,
+    HYPERPAY_ENVIRONMENT="production",
+)
+def test_paid_difference_executes_automatically_in_hostaway() -> None:
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+    PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        modification_request=modification,
+        provider="hyperpay",
+        amount=modification.price_difference,
+        currency="SAR",
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key="automatic-modification-payment-000000000000000",
+    )
+    client = WriteClientStub(snapshot=updated_snapshot(modification))
+    outcome = execute_automatic_modification(
+        modification,
+        service=HostawayModificationService(client=client),
+    )
+    reservation.refresh_from_db()
+    assert outcome.code == "completed"
+    assert outcome.request.status == BookingModificationRequest.Status.COMPLETED
+    assert reservation.check_out == modification.new_check_out
+    assert client.calls == 1
+
+
+@override_settings(
+    BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=True,
+    HOSTAWAY_LIVE_MODIFICATION_ENABLED=True,
+    HOSTAWAY_LIVE_EXTENSION_ENABLED=True,
+    HYPERPAY_ENVIRONMENT="test",
+)
+def test_test_payment_cannot_modify_a_live_hostaway_reservation() -> None:
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+    PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        modification_request=modification,
+        provider="hyperpay",
+        amount=modification.price_difference,
+        currency="SAR",
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key="test-live-write-block-payment-0000000000000",
+    )
+    client = WriteClientStub(snapshot=updated_snapshot(modification))
+    outcome = execute_automatic_modification(
+        modification,
+        service=HostawayModificationService(client=client),
+    )
+    assert outcome.code == "test_payment_live_write_blocked"
+    assert client.calls == 0
+
+
+def test_verified_payment_moves_to_review_when_automation_is_disabled() -> None:
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+    PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        modification_request=modification,
+        provider="hyperpay",
+        amount=modification.price_difference,
+        currency="SAR",
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key="manual-modification-payment-00000000000000000",
+    )
+    outcome = execute_automatic_modification(modification)
+    assert outcome.code == "automatic_approval_disabled"
+    assert outcome.request.status == BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
+
+
 def test_expire_command_and_dry_run() -> None:
     modification = create_extension(confirmed_reservation()).request
     assert modification is not None
@@ -489,9 +573,132 @@ def test_manage_page_is_rtl_session_owned_and_hides_hostaway_ids() -> None:
     assert response.status_code == 200
     content = response.content.decode()
     assert 'dir="rtl"' in content
-    assert "طلبك قيد المراجعة ولم يتم تعديل الحجز بعد." in content
+    assert "يبقى حجزك المؤكد دون تغيير حتى تتم الموافقة على الطلب." in content
     assert str(reservation.hostaway_reservation_id) not in content
     assert Client().get(f"/reservations/manage/{reservation.public_reference}/").status_code == 404
+
+
+def test_manage_page_uses_calendar_pickers_and_capacity_guest_steppers() -> None:
+    client, reservation = owned_web_reservation()
+    response = client.get(f"/reservations/manage/{reservation.public_reference}/")
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert content.count("data-management-calendar") >= 2
+    assert 'data-calendar-kind="single"' in content
+    assert 'data-calendar-kind="range"' in content
+    assert 'data-management-date-trigger="new_check_in"' in content
+    assert 'data-management-date-trigger="new_check_out"' in content
+    assert 'type="date" name="new_check_in"' in content
+    assert 'type="date" name="new_check_out"' in content
+    assert content.count("data-guest-stepper") >= 2
+    assert f'max="{reservation.property.person_capacity}"' in content
+    assert f'data-fixed-start="{reservation.check_out:%Y-%m-%d}"' in content
+
+
+def test_booking_reference_and_email_open_management_from_a_new_session() -> None:
+    reservation = confirmed_reservation()
+    client = Client()
+    response = client.post(
+        "/reservations/manage/",
+        {
+            "booking_reference": reservation.public_reference,
+            "email": reservation.booking_intent.guest_email.upper(),
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == f"/reservations/manage/{reservation.public_reference}/"
+
+    management = client.get(response.url)
+    content = management.content.decode()
+    assert management.status_code == 200
+    assert reservation.public_reference in content
+    assert reservation.booking_intent.guest_email not in content
+    assert management.headers["Cache-Control"] == "no-store"
+    assert management.headers["Referrer-Policy"] == "same-origin"
+
+    cancellation = client.post(
+        f"/reservations/manage/{reservation.public_reference}/cancel/",
+        {"confirm": "on", "reason": "Plans changed"},
+    )
+    assert cancellation.status_code == 302
+    modification = BookingModificationRequest.objects.get()
+    assert client.get(
+        f"/reservations/modifications/{modification.public_reference}/"
+    ).status_code == 200
+
+
+def test_booking_access_uses_generic_error_and_requires_both_values() -> None:
+    reservation = confirmed_reservation()
+    client = Client()
+    wrong_email = client.post(
+        "/reservations/manage/",
+        {
+            "booking_reference": reservation.public_reference,
+            "email": "wrong@example.invalid",
+        },
+    )
+    assert wrong_email.status_code == 400
+    content = wrong_email.content.decode()
+    assert reservation.booking_intent.guest_email not in content
+    assert str(reservation.hostaway_reservation_id) not in content
+    assert client.get(f"/reservations/manage/{reservation.public_reference}/").status_code == 404
+
+
+@override_settings(
+    BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_REQUESTS=1,
+    BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_WINDOW=600,
+)
+def test_booking_access_is_rate_limited_and_logout_revokes_grant() -> None:
+    cache.clear()
+    reservation = confirmed_reservation()
+    client = Client()
+    credentials = {
+        "booking_reference": reservation.public_reference,
+        "email": reservation.booking_intent.guest_email,
+    }
+    assert client.post("/reservations/manage/", credentials).status_code == 302
+    assert client.post("/reservations/manage/", credentials).status_code == 429
+
+    cache.clear()
+    assert client.post("/reservations/manage/logout/").status_code == 302
+    assert client.get(f"/reservations/manage/{reservation.public_reference}/").status_code == 404
+
+
+def test_logout_also_revokes_original_booking_session() -> None:
+    client, reservation = owned_web_reservation()
+    assert client.get(f"/reservations/manage/{reservation.public_reference}/").status_code == 200
+    assert client.post("/reservations/manage/logout/").status_code == 302
+    assert client.get(f"/reservations/manage/{reservation.public_reference}/").status_code == 404
+
+
+def test_booking_access_post_requires_csrf() -> None:
+    reservation = confirmed_reservation()
+    client = Client(enforce_csrf_checks=True)
+    response = client.post(
+        "/reservations/manage/",
+        {
+            "booking_reference": reservation.public_reference,
+            "email": reservation.booking_intent.guest_email,
+        },
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("language", "heading"),
+    [
+        ("ar", "أدر حجزك بكل سهولة"),
+        ("en", "Manage your booking easily"),
+        ("fr", "Gérez facilement votre réservation"),
+    ],
+)
+def test_booking_access_page_is_localized(language: str, heading: str) -> None:
+    client = Client()
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    response = client.get("/reservations/manage/")
+    assert response.status_code == 200
+    assert heading in response.content.decode()
 
 
 def test_modification_posts_require_csrf() -> None:

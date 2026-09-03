@@ -31,12 +31,14 @@
     <meta name="twitter:description" content="{% block twitter_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">
     <title>{% block title %}{% trans "Luxury Smart Apartments" %}{% endblock %}</title>
     <link rel="icon" type="image/jpeg" href="{% static 'images/logo.jpeg' %}">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=11">
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=28">
     <script src="{% static 'js/consent.js' %}?v=10" defer></script>
     <script src="{% static 'js/analytics.js' %}?v=10" defer></script>
-    <script src="{% static 'js/site.js' %}?v=11" defer></script>
+    <script src="{% static 'js/site.js' %}?v=20" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
+    {% block extra_head %}{% endblock %}
 </head>
 <body
     data-google-integrations-enabled="{{ google_config.google_integrations_enabled|yesno:'true,false' }}"

@@ -1,9 +1,24 @@
 {% load i18n %}
 {% if reviews %}
-<div class="review-grid">
-    {% for review in reviews %}
-        {% include "includes/review_card.html" %}
-    {% endfor %}
+<div
+    class="review-collection"
+    data-review-collection
+    data-initial-count="{{ initial_review_count|default:6 }}"
+    data-mobile-initial-count="{{ mobile_initial_review_count|default:3 }}"
+    data-batch-size="{{ review_batch_size|default:3 }}"
+>
+    <div class="review-grid">
+        {% for review in reviews %}
+            {% include "includes/review_card.html" %}
+        {% endfor %}
+    </div>
+    <div class="review-collection__more" data-review-more-wrap hidden>
+        <button class="review-more-button" type="button" data-review-more>
+            <span>{% trans "Show more reviews" %}</span>
+            <span class="review-more-button__count" data-review-remaining aria-hidden="true"></span>
+            <span class="review-more-button__icon" aria-hidden="true">＋</span>
+        </button>
+    </div>
 </div>
 {% else %}
 {% trans "No reviews to show yet" as empty_title %}

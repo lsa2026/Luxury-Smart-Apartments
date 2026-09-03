@@ -1,6 +1,7 @@
 from django.db.models import Prefetch, QuerySet
 from django.http import Http404, HttpRequest, HttpResponse
 from django.urls import reverse
+from django.utils import translation
 from django.utils.translation import gettext as _
 from django.views.generic import DetailView, ListView
 
@@ -8,6 +9,7 @@ from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
 from apps.reviews.models import Review
 
+from .cities import canonical_city, supported_city_choices
 from .models import Property, PropertyAmenity, PropertyImage
 
 
@@ -29,17 +31,22 @@ class PropertyListView(ListView):
         queryset = Property.objects.public().prefetch_related(
             Prefetch(
                 "images",
-                queryset=_card_images()[:1],
+                queryset=_card_images()[:5],
                 to_attr="_public_images",
             )
         )
         city = self.request.GET.get("city", "").strip()
+        canonical_city_value = canonical_city(city)
         guests = self.request.GET.get("guests", "").strip()
         bedrooms = self.request.GET.get("bedrooms", "").strip()
         room_type = self.request.GET.get("room_type", "").strip()
         ordering = self.request.GET.get("ordering", "featured")
         if city:
-            queryset = queryset.filter(city=city)
+            queryset = (
+                queryset.filter(city=canonical_city_value)
+                if canonical_city_value
+                else queryset.none()
+            )
         if guests.isdigit():
             queryset = queryset.filter(person_capacity__gte=int(guests))
         if bedrooms.isdigit():
@@ -60,15 +67,12 @@ class PropertyListView(ListView):
         context["properties"] = page_properties
         if context.get("page_obj") is not None:
             context["page_obj"].object_list = page_properties
-        city_rows: dict[str, str] = {}
-        for item in page_properties:
-            if item.city:
-                city_rows[item.city] = item.display_city
         context["filter_cities"] = [
             {"value": value, "label": label}
-            for value, label in sorted(city_rows.items(), key=lambda row: row[1])
+            for value, label in supported_city_choices(
+                translation.get_language() or "ar"
+            )
         ]
-        context["footer_cities"] = [row["label"] for row in context["filter_cities"]]
         context["filter_room_types"] = sorted(
             {item.room_type for item in page_properties if item.room_type}
         )
@@ -88,7 +92,7 @@ class PropertyDetailView(DetailView):
         return Property.objects.public().prefetch_related(
             Prefetch(
                 "images",
-                queryset=_card_images()[:8],
+                queryset=_card_images(),
                 to_attr="_public_images",
             ),
             Prefetch(
@@ -113,6 +117,24 @@ class PropertyDetailView(DetailView):
         self.request._local_public_context = True
         context = super().get_context_data(**kwargs)
         property_obj = self.object
+        preserved_search = None
+        if self.request.GET.get("source") == "availability":
+            search_data = self.request.GET.copy()
+            search_data["city"] = canonical_city(property_obj.city)
+            search_data["property"] = str(property_obj.pk)
+            preserved_form = AvailabilitySearchForm(
+                search_data,
+                property_obj=property_obj,
+            )
+            if preserved_form.is_valid():
+                preserved_search = {
+                    "city": preserved_form.cleaned_data["city"],
+                    "property": property_obj,
+                    "check_in": preserved_form.cleaned_data["check_in"],
+                    "check_out": preserved_form.cleaned_data["check_out"],
+                    "guests": preserved_form.cleaned_data["guests"],
+                }
+        all_gallery_images = property_obj._public_images
         similar = list(
             Property.objects.public()
             .filter(city=property_obj.city)
@@ -120,7 +142,7 @@ class PropertyDetailView(DetailView):
             .prefetch_related(
                 Prefetch(
                     "images",
-                    queryset=_card_images()[:1],
+                    queryset=_card_images()[:5],
                     to_attr="_public_images",
                 )
             )[:3]
@@ -133,22 +155,21 @@ class PropertyDetailView(DetailView):
                 .prefetch_related(
                     Prefetch(
                         "images",
-                        queryset=_card_images()[:1],
+                        queryset=_card_images()[:5],
                         to_attr="_public_images",
                     )
                 )[: 3 - len(similar)]
             )
         context.update(
             {
-                "gallery_images": property_obj._public_images,
+                "gallery_images": all_gallery_images[:5],
+                "all_gallery_images": all_gallery_images,
                 "visible_amenities": property_obj._public_amenities,
                 "property_reviews": property_obj._public_reviews,
                 "availability_form": AvailabilitySearchForm(property_obj=property_obj),
+                "preserved_search": preserved_search,
                 "similar_properties": similar,
-                "total_image_count": property_obj.images.public().count(),
-                "footer_cities": sorted(
-                    {item.city for item in [property_obj, *similar] if item.city}
-                ),
+                "total_image_count": len(all_gallery_images),
                 "breadcrumb_items": [
                     {"label": _("Properties"), "url": reverse("properties:list")},
                     {"label": property_obj.display_name, "url": ""},

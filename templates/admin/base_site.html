@@ -1,0 +1,96 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | إدارة Luxury Smart Apartments{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260830-7">
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script src="{% static 'js/admin-luxury.js' %}?v=20260828-1" defer></script>
+{% endblock %}
+
+{% block header %}
+  <header id="header" class="lsa-shell-header">
+    <div class="lsa-shell-header__inner">
+      <div id="branding" class="lsa-admin-brand">
+        <a href="{% url 'admin:index' %}" class="lsa-admin-brand__mark" aria-label="لوحة القيادة">LSA</a>
+        <div>
+          <a href="{% url 'admin:index' %}" class="lsa-admin-brand__name">Luxury Smart Apartments</a>
+          <span class="lsa-admin-brand__eyebrow">مركز القيادة والتشغيل</span>
+        </div>
+      </div>
+
+      {% if user.is_authenticated %}
+        <nav class="lsa-primary-nav" aria-label="التنقل الرئيسي">
+          <a href="{% url 'admin:index' %}">الرئيسية</a>
+          {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}">العملاء</a>{% endif %}
+          {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}">الحجوزات</a>{% endif %}
+          {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}">الوحدات</a>{% endif %}
+          {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}">التقارير</a>{% endif %}
+        </nav>
+
+        <div class="lsa-header-actions">
+          <a href="{% url 'core:home' %}" target="_blank" class="lsa-icon-action" title="عرض المنصة" aria-label="عرض المنصة">↗</a>
+          <details class="lsa-command" data-lsa-command>
+            <summary class="lsa-command__trigger"><span>كل الأدوات</span><i aria-hidden="true">⌘</i></summary>
+            <div class="lsa-command__backdrop" data-lsa-command-close></div>
+            <section class="lsa-command__panel" aria-label="جميع أدوات الإدارة">
+              <header>
+                <div><span>مركز الوصول</span><strong>إلى أين تريد الذهاب؟</strong></div>
+                <button type="button" data-lsa-command-close aria-label="إغلاق">×</button>
+              </header>
+              <label class="lsa-command__search"><span>⌕</span><input type="search" placeholder="ابحث عن وحدة، حجز، محتوى أو إعداد…" data-lsa-command-search autocomplete="off"></label>
+              <div class="lsa-command__groups">
+                <div class="lsa-command__group">
+                  <h2>التشغيل والحجوزات</h2>
+                  {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}" data-lsa-command-item><b>العملاء ورحلة الحجز</b><small>بحث موحّد في العميل والحجز والدفع</small></a>{% endif %}
+                  {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}" data-lsa-command-item><b>الحجوزات المؤكدة</b><small>الوصول والمغادرة وحالة Hostaway</small></a>{% endif %}
+                  {% if perms.reservations.view_bookingmodificationrequest %}<a href="{% url 'admin:reservations_bookingmodificationrequest_changelist' %}" data-lsa-command-item><b>التعديل والتمديد</b><small>الموافقة ودفع الفرق وسجل التنفيذ</small></a>{% endif %}
+                  {% if perms.payments.view_paymentattempt %}<a href="{% url 'admin:payments_paymentattempt_changelist' %}" data-lsa-command-item><b>المدفوعات</b><small>الحالات والمراجع والمبالغ</small></a>{% endif %}
+                  {% if perms.core.view_contactmessage %}<a href="{% url 'admin:core_contactmessage_changelist' %}" data-lsa-command-item><b>رسائل العملاء</b><small>المتابعة والرد وحالة المعالجة</small></a>{% endif %}
+                </div>
+                <div class="lsa-command__group">
+                  <h2>المحتوى والتجربة</h2>
+                  {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}" data-lsa-command-item><b>الوحدات ومحتواها</b><small>النصوص والصور والمرافق والظهور</small></a>{% endif %}
+                  {% if perms.core.view_sitepage %}<a href="{% url 'admin:core_sitepage_changelist' %}" data-lsa-command-item><b>صفحات السياسات</b><small>الشروط والخصوصية والإلغاء والكوكيز</small></a>{% endif %}
+                  {% if perms.core.view_faqitem %}<a href="{% url 'admin:core_faqitem_changelist' %}" data-lsa-command-item><b>الأسئلة الشائعة</b><small>المحتوى والترتيب واللغات</small></a>{% endif %}
+                  {% if perms.reviews.view_review %}<a href="{% url 'admin:reviews_review_changelist' %}" data-lsa-command-item><b>التقييمات</b><small>الظهور والتمييز والترجمة</small></a>{% endif %}
+                  {% if perms.core.view_sitesetting %}<a href="{% url 'admin:core_sitesetting_changelist' %}" data-lsa-command-item><b>إعدادات وهوية المنصة</b><small>التواصل والشبكات والمعلومات العامة</small></a>{% endif %}
+                </div>
+                <div class="lsa-command__group">
+                  <h2>المتابعة والتكاملات</h2>
+                  {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}" data-lsa-command-item><b>التقارير التشغيلية</b><small>المؤشرات والتصدير المنقح</small></a>
+                  <a href="{% url 'notifications:center' %}" data-lsa-command-item><b>مركز الإشعارات</b><small>التنبيهات والأحداث التي تحتاج متابعة</small></a>
+                  <a href="{% url 'notifications:system_status' %}" data-lsa-command-item><b>حالة النظام</b><small>قواعد البيانات والمهام والخصائص الحية</small></a>{% endif %}
+                  {% if user.is_superuser %}<a href="{% url 'admin:integrations_integration_health' %}" data-lsa-command-item><b>تكامل Hostaway</b><small>المزامنة الآمنة وحالة الاتصال</small></a>{% endif %}
+                  {% if perms.notifications.view_auditlog %}<a href="{% url 'admin:notifications_auditlog_changelist' %}" data-lsa-command-item><b>سجل التدقيق</b><small>توثيق تغييرات فريق الإدارة</small></a>{% endif %}
+                  {% if perms.auth.view_user %}<a href="{% url 'admin:auth_user_changelist' %}" data-lsa-command-item><b>الفريق والصلاحيات</b><small>المستخدمون والأدوار والوصول</small></a>{% endif %}
+                </div>
+              </div>
+              <p class="lsa-command__empty" data-lsa-command-empty hidden>لا توجد أداة مطابقة لعبارة البحث.</p>
+            </section>
+          </details>
+
+          <details class="lsa-user-menu">
+            <summary aria-label="حساب الإدارة"><span>{{ user.get_short_name|default:user.get_username|slice:":1"|upper }}</span><i>{{ user.get_short_name|default:user.get_username }}</i></summary>
+            <div class="lsa-user-menu__panel">
+              <strong>{{ user.get_full_name|default:user.get_username }}</strong>
+              <small>{% if user.is_superuser %}مدير النظام{% else %}عضو فريق الإدارة{% endif %}</small>
+              {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">تغيير كلمة المرور</a>{% endif %}
+              {% include "admin/color_theme_toggle.html" %}
+              <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">تسجيل الخروج</button></form>
+            </div>
+          </details>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+{% endblock %}
+
+{% block footer %}
+  <div class="lsa-admin-footer"><span>Luxury Smart Apartments</span><small>لوحة تشغيل آمنة · جميع التغييرات الإدارية موثّقة</small></div>
+{% endblock %}

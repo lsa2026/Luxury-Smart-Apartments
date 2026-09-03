@@ -16,6 +16,8 @@ class PaymentAttempt(models.Model):
         EXPIRED = "expired", "منتهية"
         REFUNDED = "refunded", "مستردة"
         PARTIALLY_REFUNDED = "partially_refunded", "مستردة جزئيًا"
+        REVIEW = "review", "تحتاج مراجعة"
+        UNKNOWN = "unknown", "غير معروفة"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking_intent = models.ForeignKey(
@@ -23,8 +25,39 @@ class PaymentAttempt(models.Model):
         on_delete=models.PROTECT,
         related_name="payment_attempts",
     )
+    modification_request = models.ForeignKey(
+        "reservations.BookingModificationRequest",
+        on_delete=models.PROTECT,
+        related_name="payment_attempts",
+        null=True,
+        blank=True,
+    )
     provider = models.CharField(max_length=50)
     provider_reference = models.CharField(max_length=255, null=True, blank=True)
+    provider_checkout_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+    )
+    provider_payment_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+    )
+    merchant_transaction_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+    )
+    widget_integrity = models.CharField(max_length=255, blank=True, editable=False)
+    provider_result_code = models.CharField(max_length=100, blank=True, editable=False)
+    provider_result_description = models.CharField(max_length=255, blank=True, editable=False)
     amount = models.DecimalField(max_digits=14, decimal_places=4)
     currency = models.CharField(max_length=3)
     status = models.CharField(
@@ -34,6 +67,7 @@ class PaymentAttempt(models.Model):
     )
     idempotency_key = models.CharField(max_length=64, unique=True)
     failure_code = models.CharField(max_length=100, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

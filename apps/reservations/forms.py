@@ -6,7 +6,39 @@ from django import forms
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 
+from apps.properties.cities import canonical_city, supported_city_choices
 from apps.properties.models import Property
+
+
+class ReservationAccessForm(forms.Form):
+    booking_reference = forms.CharField(
+        label=_("Booking number"),
+        max_length=32,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "autocapitalize": "none",
+                "spellcheck": "false",
+                "placeholder": _("For example: your confirmation number"),
+            }
+        ),
+    )
+    email = forms.EmailField(
+        label=_("Booking email"),
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                "autocomplete": "email",
+                "placeholder": _("The email used for booking"),
+            }
+        ),
+    )
+
+    def clean_booking_reference(self) -> str:
+        return self.cleaned_data["booking_reference"].strip()
+
+    def clean_email(self) -> str:
+        return self.cleaned_data["email"].strip().casefold()
 
 
 class LocalizedPropertyChoiceField(forms.ModelChoiceField):
@@ -14,20 +46,58 @@ class LocalizedPropertyChoiceField(forms.ModelChoiceField):
         return obj.display_name
 
 
+class PropertyCitySelect(forms.Select):
+    """Expose safe city and capacity metadata for dependent filtering."""
+
+    def create_option(
+        self,
+        name: str,
+        value: object,
+        label: object,
+        selected: bool,
+        index: int,
+        subindex: int | None = None,
+        attrs: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        option = super().create_option(
+            name,
+            value,
+            label,
+            selected,
+            index,
+            subindex=subindex,
+            attrs=attrs,
+        )
+        instance = getattr(value, "instance", None)
+        if isinstance(instance, Property):
+            option["attrs"]["data-city"] = canonical_city(instance.city)
+            if instance.person_capacity:
+                option["attrs"]["data-capacity"] = str(instance.person_capacity)
+        return option
+
+
 class AvailabilitySearchForm(forms.Form):
-    city = forms.ChoiceField(label=_("City"), choices=(), required=False)
+    city = forms.ChoiceField(label=_("City"), choices=(), required=True)
     property = LocalizedPropertyChoiceField(
-        label=_("Property"),
+        label=_("Property (optional)"),
         queryset=Property.objects.none(),
-        empty_label=_("Choose a property"),
+        empty_label=_("All available properties"),
+        required=False,
+        widget=PropertyCitySelect(attrs={"data-property-select": ""}),
     )
     check_in = forms.DateField(
         label=_("Check-in"),
-        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        widget=forms.DateInput(
+            attrs={"type": "date", "dir": "ltr", "lang": "en-CA"},
+            format="%Y-%m-%d",
+        ),
     )
     check_out = forms.DateField(
         label=_("Check-out"),
-        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        widget=forms.DateInput(
+            attrs={"type": "date", "dir": "ltr", "lang": "en-CA"},
+            format="%Y-%m-%d",
+        ),
     )
     guests = forms.IntegerField(
         label=_("Guests"),
@@ -60,32 +130,18 @@ class AvailabilitySearchForm(forms.Form):
             "is_visible",
             "hostaway_is_active",
         )
-        city_rows = list(
-            public_properties.exclude(city="")
-            .values("city", "city_ar", "city_en", "city_fr")
-            .distinct()
-            .order_by("city")
-        )
         language = (translation.get_language() or "ar").split("-")[0]
-        language_order = {
-            "ar": ("city_ar", "city_en", "city", "city_fr"),
-            "en": ("city_en", "city", "city_fr", "city_ar"),
-            "fr": ("city_fr", "city_en", "city", "city_ar"),
-        }.get(language, ("city_ar", "city_en", "city", "city_fr"))
-        self.fields["city"].choices = [("", _("All cities"))] + [
-            (
-                row["city"],
-                next((row[field] for field in language_order if row[field]), row["city"]),
-            )
-            for row in city_rows
-        ]
-        self.fields["property"].queryset = public_properties
+        self.fields["city"].choices = [("", _("Choose a city"))] + supported_city_choices(
+            language
+        )
+        self.fields["city"].widget.attrs["data-city-select"] = ""
+        self.fields["property"].queryset = public_properties.order_by("sort_order", "id")
         today = timezone.localdate().isoformat()
         self.fields["check_in"].widget.attrs["min"] = today
         self.fields["check_out"].widget.attrs["min"] = today
         if property_obj is not None:
             self.fields["city"].widget = forms.HiddenInput()
-            self.fields["city"].initial = property_obj.city
+            self.fields["city"].initial = canonical_city(property_obj.city)
             self.fields["property"].initial = property_obj
             self.fields["property"].widget = forms.HiddenInput()
             if property_obj.person_capacity:
@@ -114,7 +170,7 @@ class AvailabilitySearchForm(forms.Form):
             isinstance(property_obj, Property)
             and isinstance(city, str)
             and city
-            and property_obj.city != city
+            and canonical_city(property_obj.city) != city
         ):
             self.add_error("property", _("Choose a property in the selected city."))
         return cleaned

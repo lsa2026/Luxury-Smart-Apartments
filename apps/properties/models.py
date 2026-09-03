@@ -214,6 +214,14 @@ class Property(models.Model):
             images = list(self.images.public())
         return next((image for image in images if image.is_cover), images[0] if images else None)
 
+    @builtin_property
+    def preview_images(self) -> list["PropertyImage"]:
+        """Return the small, already-prefetched image set used by listing cards."""
+        images = getattr(self, "_public_images", None)
+        if images is None:
+            images = list(self.images.public()[:5])
+        return list(images)
+
 
 class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):
     def public(self) -> "PropertyImageQuerySet":
