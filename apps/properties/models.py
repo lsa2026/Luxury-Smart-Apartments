@@ -5,6 +5,8 @@ from django.db import models
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone, translation
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from .uploads import property_image_upload_to, validate_property_image
 
@@ -18,8 +20,8 @@ class Property(models.Model):
     """A bookable property linked to a Hostaway listing."""
 
     class VisibilityManagement(models.TextChoices):
-        AUTOMATIC = "automatic", "تلقائي"
-        MANUAL = "manual", "يدوي"
+        AUTOMATIC = "automatic", _("Automatic")
+        MANUAL = "manual", _("Manual")
 
     hostaway_listing_id = models.PositiveBigIntegerField(unique=True)
     hostaway_listing_map_id = models.PositiveBigIntegerField(
@@ -151,8 +153,8 @@ class Property(models.Model):
                 name="property_review_rating_0_10",
             ),
         ]
-        verbose_name = "وحدة"
-        verbose_name_plural = "الوحدات"
+        verbose_name = _("Property")
+        verbose_name_plural = _("Properties")
 
     def __str__(self) -> str:
         return (
@@ -234,7 +236,7 @@ class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):
 class PropertyImage(models.Model):
     class Source(models.TextChoices):
         HOSTAWAY = "hostaway", "Hostaway"
-        LOCAL = "local", "محلية"
+        LOCAL = "local", pgettext_lazy("PropertyImage", "Local")
 
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="images")
     hostaway_image_id = models.PositiveBigIntegerField(null=True, blank=True, unique=True)
@@ -290,8 +292,8 @@ class PropertyImage(models.Model):
                 name="unique_hostaway_image_sync_key",
             ),
         ]
-        verbose_name = "صورة وحدة"
-        verbose_name_plural = "صور الوحدات"
+        verbose_name = _("Property image")
+        verbose_name_plural = _("Property images")
 
     def __str__(self) -> str:
         return (
@@ -299,7 +301,7 @@ class PropertyImage(models.Model):
             or self.title_en
             or self.title_fr
             or self.hostaway_caption
-            or f"صورة {self.pk or ''}"
+            or _("Image %(pk)s") % {"pk": self.pk or ""}
         )
 
     def clean(self) -> None:
@@ -374,8 +376,8 @@ class Amenity(models.Model):
     class Meta:
         ordering = ["category", "name_ar", "name_en", "name_fr", "name", "id"]
         indexes = [models.Index(fields=["is_active", "category"])]
-        verbose_name = "مرفق"
-        verbose_name_plural = "المرافق"
+        verbose_name = _("Amenity")
+        verbose_name_plural = _("Amenities")
 
     def __str__(self) -> str:
         return (
@@ -400,7 +402,7 @@ class Amenity(models.Model):
 class PropertyAmenity(models.Model):
     class Source(models.TextChoices):
         HOSTAWAY = "hostaway", "Hostaway"
-        LOCAL = "local", "محلي"
+        LOCAL = "local", pgettext_lazy("PropertyAmenity", "Local")
 
     property = models.ForeignKey(
         Property,
@@ -428,8 +430,8 @@ class PropertyAmenity(models.Model):
         indexes = [
             models.Index(fields=["property", "source", "is_visible", "is_active_at_source"]),
         ]
-        verbose_name = "مرفق الوحدة"
-        verbose_name_plural = "مرافق الوحدات"
+        verbose_name = _("Property amenity")
+        verbose_name_plural = _("Property amenities")
 
     def __str__(self) -> str:
         return f"{self.property} — {self.amenity}"

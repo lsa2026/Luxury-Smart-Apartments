@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.db import models, transaction
 from django.http import HttpRequest
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
 
@@ -105,31 +106,33 @@ class PropertyAdminForm(forms.ModelForm):
     class Meta:
         model = Property
         fields = PROPERTY_FORM_FIELDS
+        # The fieldset heading states which content language a group belongs to,
+        # so the three per-language variants of a field share one label.
         labels = {
-            "slug": "الرابط المختصر",
-            "name_ar": "اسم الوحدة",
-            "short_description_ar": "الوصف المختصر",
-            "description_ar": "الوصف الكامل",
-            "city_ar": "المدينة",
-            "name_en": "Property name",
-            "short_description_en": "Short description",
-            "description_en": "Full description",
-            "city_en": "City",
-            "name_fr": "Nom du logement",
-            "short_description_fr": "Description courte",
-            "description_fr": "Description complète",
-            "city_fr": "Ville",
-            "seo_title_ar": "عنوان SEO",
-            "seo_description_ar": "وصف SEO",
-            "seo_title_en": "SEO title",
-            "seo_description_en": "SEO description",
-            "seo_title_fr": "Titre SEO",
-            "seo_description_fr": "Description SEO",
-            "is_visible": "ظاهرة في المنصة",
-            "visibility_management": "إدارة الظهور",
-            "is_featured": "وحدة مميّزة",
-            "sort_order": "ترتيب الظهور",
-            "content_is_customized": "المحتوى المحلي مخصّص",
+            "slug": _("Short link"),
+            "name_ar": _("Property name"),
+            "short_description_ar": _("Short description"),
+            "description_ar": _("Full description"),
+            "city_ar": _("City"),
+            "name_en": _("Property name"),
+            "short_description_en": _("Short description"),
+            "description_en": _("Full description"),
+            "city_en": _("City"),
+            "name_fr": _("Property name"),
+            "short_description_fr": _("Short description"),
+            "description_fr": _("Full description"),
+            "city_fr": _("City"),
+            "seo_title_ar": _("SEO title"),
+            "seo_description_ar": _("SEO description"),
+            "seo_title_en": _("SEO title"),
+            "seo_description_en": _("SEO description"),
+            "seo_title_fr": _("SEO title"),
+            "seo_description_fr": _("SEO description"),
+            "is_visible": _("Visible on the platform"),
+            "visibility_management": _("Visibility management"),
+            "is_featured": _("Featured property"),
+            "sort_order": _("Display order"),
+            "content_is_customized": _("Local content is customised"),
         }
 
 
@@ -165,7 +168,7 @@ class PropertyImageInline(admin.TabularInline):
         "is_active_at_source",
     )
 
-    @admin.display(description="معاينة")
+    @admin.display(description=_("Preview"))
     def preview(self, obj: PropertyImage) -> str:
         if not obj.pk or not obj.display_url:
             return "—"
@@ -223,7 +226,7 @@ class PropertyAdmin(admin.ModelAdmin):
     list_per_page = 25
     fieldsets = (
         (
-            "النشر والعرض",
+            _("Publishing and display"),
             {
                 "fields": (
                     "slug",
@@ -234,7 +237,7 @@ class PropertyAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "المحتوى العربي",
+            _("Arabic content"),
             {
                 "fields": (
                     "name_ar",
@@ -245,27 +248,27 @@ class PropertyAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "English content",
+            _("English content"),
             {"fields": ("name_en", "short_description_en", "description_en", "city_en")},
         ),
         (
-            "Contenu français",
+            _("French content"),
             {"fields": ("name_fr", "short_description_fr", "description_fr", "city_fr")},
         ),
         (
-            "SEO — العربية",
+            _("SEO — Arabic"),
             {"fields": ("seo_title_ar", "seo_description_ar")},
         ),
         (
-            "SEO — English",
+            _("SEO — English"),
             {"fields": ("seo_title_en", "seo_description_en")},
         ),
         (
-            "SEO — Français",
+            _("SEO — French"),
             {"fields": ("seo_title_fr", "seo_description_fr")},
         ),
         (
-            "بيانات Hostaway التشغيلية",
+            _("Hostaway operational data"),
             {
                 "classes": ("collapse",),
                 "fields": PROPERTY_SOURCE_FIELDS,
@@ -276,39 +279,39 @@ class PropertyAdmin(admin.ModelAdmin):
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Property]:
         return super().get_queryset(request).annotate(_image_count=models.Count("images"))
 
-    @admin.display(description="الاسم المحلي", ordering="name_ar")
+    @admin.display(description=_("Local name"), ordering="name_ar")
     def local_name(self, obj: Property) -> str:
         return obj.name_ar or obj.name_en or obj.name_fr or "—"
 
-    @admin.display(description="المدينة", ordering="city")
+    @admin.display(description=_("City"), ordering="city")
     def local_city(self, obj: Property) -> str:
         return obj.city_ar or obj.city_en or obj.city_fr or obj.city or "—"
 
-    @admin.display(description="الضيوف", ordering="person_capacity")
+    @admin.display(description=_("Guests"), ordering="person_capacity")
     def capacity_display(self, obj: Property) -> int | str:
         return obj.person_capacity or "—"
 
-    @admin.display(description="الغرف", ordering="bedrooms_number")
+    @admin.display(description=_("Bedrooms"), ordering="bedrooms_number")
     def bedrooms_display(self, obj: Property) -> int | str:
         return obj.bedrooms_number or "—"
 
-    @admin.display(boolean=True, description="نشط في Hostaway", ordering="hostaway_is_active")
+    @admin.display(boolean=True, description=_("Active in Hostaway"), ordering="hostaway_is_active")
     def source_active(self, obj: Property) -> bool:
         return obj.hostaway_is_active
 
-    @admin.display(boolean=True, description="ظاهر في المنصة", ordering="is_visible")
+    @admin.display(boolean=True, description=_("Visible on the platform"), ordering="is_visible")
     def platform_visible(self, obj: Property) -> bool:
         return obj.is_visible
 
-    @admin.display(boolean=True, description="مميّز", ordering="is_featured")
+    @admin.display(boolean=True, description=_("Featured"), ordering="is_featured")
     def featured_display(self, obj: Property) -> bool:
         return obj.is_featured
 
-    @admin.display(description="الصور", ordering="_image_count")
+    @admin.display(description=_("Images"), ordering="_image_count")
     def image_count(self, obj: Property) -> int:
         return obj._image_count
 
-    @admin.display(description="اكتمال اللغات")
+    @admin.display(description=_("Language completeness"))
     def content_languages(self, obj: Property) -> str:
         values = (
             ("AR", self.arabic_content_complete(obj)),
@@ -317,11 +320,11 @@ class PropertyAdmin(admin.ModelAdmin):
         )
         return " · ".join(f"{code} {'✓' if complete else '—'}" for code, complete in values)
 
-    @admin.display(description="آخر مزامنة", ordering="last_synced_at")
+    @admin.display(description=_("Last sync"), ordering="last_synced_at")
     def last_sync(self, obj: Property) -> object:
         return obj.last_synced_at
 
-    @admin.display(boolean=True, description="المحتوى العربي")
+    @admin.display(boolean=True, description=_("Arabic content"))
     def arabic_content_complete(self, obj: Property) -> bool:
         return bool(obj.name_ar and obj.description_ar and obj.city_ar)
 
@@ -372,14 +375,18 @@ class PropertyAdmin(admin.ModelAdmin):
                 metadata={"fields": sorted(changed_data.intersection(PROPERTY_LOCAL_FIELDS))},
             )
 
-    @admin.action(description="مزامنة وحدات Hostaway المحددة")
+    @admin.action(description=_("Sync the selected Hostaway properties"))
     def queue_selected_property_sync(
         self,
         request: HttpRequest,
         queryset: models.QuerySet[Property],
     ) -> None:
         if not request.user.is_superuser:
-            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            self.message_user(
+                request,
+                _("This action requires elevated permissions."),
+                messages.ERROR,
+            )
             return
         listing_ids = list(queryset.values_list("hostaway_listing_id", flat=True)[:100])
         if not settings.CELERY_SYNC_DISPATCH_ENABLED:
@@ -389,7 +396,8 @@ class PropertyAdmin(admin.ModelAdmin):
             )
             self.message_user(
                 request,
-                f"عامل المهام غير مفعّل. شغّل: {commands}",
+                _("The task worker is not running. Start it with: %(commands)s")
+                % {"commands": commands},
                 messages.WARNING,
             )
             return
@@ -397,7 +405,11 @@ class PropertyAdmin(admin.ModelAdmin):
 
         for listing_id in listing_ids:
             sync_hostaway_properties_task.delay(listing_id=listing_id)
-        self.message_user(request, f"أضيفت {len(listing_ids)} وحدة إلى طابور المزامنة.")
+        self.message_user(
+            request,
+            _("Added %(count)d property to the sync queue.")
+            % {"count": len(listing_ids)},
+        )
 
     def save_formset(
         self,
@@ -459,7 +471,7 @@ class PropertyImageAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
-    @admin.display(description="معاينة")
+    @admin.display(description=_("Preview"))
     def preview(self, obj: PropertyImage) -> str:
         if not obj.pk or not obj.display_url:
             return "—"
