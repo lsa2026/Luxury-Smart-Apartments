@@ -11,6 +11,25 @@ from apps.notifications.services.audit import record_audit
 
 from .models import Amenity, Property, PropertyAmenity, PropertyImage
 
+
+def _demote_other_city_heroes(image: PropertyImage) -> None:
+    """Leave one hero per city after ``image`` claims that city.
+
+    The database can only cap this per property, because the city lives on
+    Property. Clearing the rest here keeps the home page unambiguous: choosing a
+    new photograph for a city releases the previous one rather than relying on
+    tie-breaking.
+    """
+    if not (image.is_city_hero and image.is_visible):
+        return
+    city = getattr(image.property, "city", "")
+    if not city:
+        return
+    PropertyImage.objects.filter(
+        property__city=city,
+        is_city_hero=True,
+    ).exclude(pk=image.pk).update(is_city_hero=False)
+
 PROPERTY_SOURCE_FIELDS = (
     "hostaway_listing_id",
     "hostaway_listing_map_id",
@@ -157,6 +176,7 @@ class PropertyImageInline(admin.TabularInline):
         "sort_order",
         "hostaway_sort_order",
         "is_cover",
+        "is_city_hero",
         "is_visible",
         "is_active_at_source",
     )
@@ -434,6 +454,8 @@ class PropertyAdmin(admin.ModelAdmin):
                         is_visible=True,
                     ).exclude(pk=instance.pk).update(is_cover=False)
                 instance.save()
+                if isinstance(instance, PropertyImage):
+                    _demote_other_city_heroes(instance)
             formset.save_m2m()
 
 
@@ -445,10 +467,11 @@ class PropertyImageAdmin(admin.ModelAdmin):
         "source",
         "is_visible",
         "is_cover",
+        "is_city_hero",
         "sort_order",
         "is_active_at_source",
     )
-    list_filter = ("source", "is_visible", "is_cover", "is_active_at_source")
+    list_filter = ("source", "is_visible", "is_cover", "is_city_hero", "is_active_at_source")
     search_fields = (
         "property__name_ar",
         "property__name_en",
@@ -497,8 +520,9 @@ class PropertyImageAdmin(admin.ModelAdmin):
                 is_visible=True,
             ).exclude(pk=obj.pk).update(is_cover=False)
         super().save_model(request, obj, form, change)
+        _demote_other_city_heroes(obj)
         changed_data = set(getattr(form, "changed_data", []))
-        if changed_data.intersection({"is_visible", "is_cover", "sort_order"}):
+        if changed_data.intersection({"is_visible", "is_cover", "is_city_hero", "sort_order"}):
             record_audit(
                 request=request,
                 action="property_image.presentation_changed",

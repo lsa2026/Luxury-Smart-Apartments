@@ -43,6 +43,19 @@ def _card_image_queryset() -> object:
     )
 
 
+def _cities_with_hero_images() -> list[dict[str, object]]:
+    """Return the supported cities, each carrying its own photograph if one is set.
+
+    A city without a nominated hero simply has ``None`` here, and the template
+    falls back to a stock photograph, so the home page never breaks on a city
+    whose properties have not been curated yet.
+    """
+    heroes: dict[str, PropertyImage] = {}
+    for image in PropertyImage.objects.city_heroes():
+        heroes.setdefault(image.property.city, image)
+    return [{**row, "hero": heroes.get(row["city"])} for row in supported_city_rows()]
+
+
 class HomeView(TemplateView):
     template_name = "core/home.html"
 
@@ -66,7 +79,7 @@ class HomeView(TemplateView):
                 "featured_reviews": Review.objects.public()
                 .select_related("property")
                 .order_by("-is_featured", "-departure_date")[:3],
-                "cities": supported_city_rows(),
+                "cities": _cities_with_hero_images(),
                 "availability_form": AvailabilitySearchForm(),
                 "reservation_access_form": ReservationAccessForm(),
             }

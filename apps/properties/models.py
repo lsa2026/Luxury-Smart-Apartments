@@ -232,6 +232,28 @@ class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):
             | Q(source=PropertyImage.Source.HOSTAWAY, is_active_at_source=True)
         )
 
+    def city_heroes(self) -> "PropertyImageQuerySet":
+        """Public hero images, ordered so the first one per city always wins.
+
+        A city may hold several properties and each may nominate a hero, so the
+        order settles the tie the same way the property listing does rather than
+        leaving the home page to vary between requests.
+        """
+        return (
+            self.public()
+            .filter(is_city_hero=True)
+            .filter(property__is_visible=True, property__hostaway_is_active=True)
+            .exclude(property__city="")
+            .select_related("property")
+            .order_by(
+                "property__city",
+                "-property__is_featured",
+                "property__sort_order",
+                "property_id",
+                "id",
+            )
+        )
+
 
 class PropertyImage(models.Model):
     class Source(models.TextChoices):
@@ -261,6 +283,13 @@ class PropertyImage(models.Model):
     sort_order = models.PositiveIntegerField(default=0)
     hostaway_sort_order = models.PositiveIntegerField(default=0)
     is_cover = models.BooleanField(default=False)
+    # Marks the one photo that represents this property's city on the home page.
+    # Kept separate from is_cover so the city card and the property card can show
+    # different photos: the cover sells the unit, the hero sells the destination.
+    is_city_hero = models.BooleanField(
+        default=False,
+        verbose_name=_("Represents its city on the home page"),
+    )
     is_visible = models.BooleanField(default=True)
     is_active_at_source = models.BooleanField(default=True)
     source_updated_at = models.DateTimeField(null=True, blank=True)
@@ -275,6 +304,7 @@ class PropertyImage(models.Model):
             models.Index(fields=["property", "source", "is_visible", "is_active_at_source"]),
             models.Index(fields=["property", "sort_order"]),
             models.Index(fields=["property", "is_cover"]),
+            models.Index(fields=["property", "is_city_hero"]),
         ]
         constraints = [
             models.CheckConstraint(
@@ -285,6 +315,15 @@ class PropertyImage(models.Model):
                 fields=["property"],
                 condition=Q(is_cover=True, is_visible=True),
                 name="one_visible_cover_per_property",
+            ),
+            # A city can hold several properties, and "one hero per city" is not
+            # expressible here because the city lives on Property. Capping it at
+            # one per property keeps the choice unambiguous within a listing;
+            # the home page then picks deterministically between properties.
+            models.UniqueConstraint(
+                fields=["property"],
+                condition=Q(is_city_hero=True, is_visible=True),
+                name="one_visible_city_hero_per_property",
             ),
             models.UniqueConstraint(
                 fields=["property", "sync_key"],

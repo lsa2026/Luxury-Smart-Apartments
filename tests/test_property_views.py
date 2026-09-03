@@ -87,3 +87,100 @@ def test_property_list_avoids_n_plus_one(django_assert_num_queries: object) -> N
     with django_assert_num_queries(3):
         response = Client().get("/properties/")
         assert response.status_code == 200
+
+
+# The same photograph also appears in the featured-property cards further down
+# the page, so every assertion below is scoped to the destinations grid.
+RIYADH_STOCK_PHOTO = "photo-1674386491555"
+
+
+def destinations_grid(content: str) -> str:
+    start = content.index('class="destination-grid"')
+    return content[start : content.index("</section>", start)]
+
+
+def make_hero_image(
+    property_obj: Property,
+    url: str,
+    *,
+    is_city_hero: bool = True,
+    is_visible: bool = True,
+) -> PropertyImage:
+    return PropertyImage.objects.create(
+        property=property_obj,
+        source=PropertyImage.Source.HOSTAWAY,
+        hostaway_url=url,
+        hostaway_image_id=abs(hash(url)) % 10_000_000,
+        is_city_hero=is_city_hero,
+        is_visible=is_visible,
+    )
+
+
+def test_home_page_shows_the_nominated_photo_for_each_city() -> None:
+    riyadh = make_property(101)
+    marrakesh = make_property(102)
+    marrakesh.city = "Marrakesh"
+    marrakesh.city_ar = "مراكش"
+    marrakesh.save(update_fields=["city", "city_ar"])
+    make_hero_image(riyadh, "https://example.invalid/riyadh-hero.jpg")
+    make_hero_image(marrakesh, "https://example.invalid/marrakesh-hero.jpg")
+
+    grid = destinations_grid(Client().get("/").content.decode())
+
+    assert "https://example.invalid/riyadh-hero.jpg" in grid
+    assert "https://example.invalid/marrakesh-hero.jpg" in grid
+    # The stock photographs are only a fallback and must step aside.
+    assert "images.unsplash.com" not in grid
+
+
+def test_home_page_falls_back_to_stock_for_a_city_without_a_nominated_photo() -> None:
+    make_hero_image(make_property(103), "https://example.invalid/riyadh-hero.jpg")
+
+    grid = destinations_grid(Client().get("/").content.decode())
+
+    assert "https://example.invalid/riyadh-hero.jpg" in grid
+    # Marrakesh has nothing nominated, so its card keeps the stock image
+    # rather than rendering an empty src.
+    assert "images.unsplash.com" in grid
+
+
+@pytest.mark.parametrize(
+    ("is_city_hero", "is_visible", "property_visible"),
+    [
+        (False, True, True),   # not nominated
+        (True, False, True),   # nominated but hidden
+        (True, True, False),   # nominated on an unpublished property
+    ],
+)
+def test_only_a_public_nominated_photo_reaches_the_home_page(
+    is_city_hero: bool,
+    is_visible: bool,
+    property_visible: bool,
+) -> None:
+    property_obj = make_property(104, visible=property_visible)
+    make_hero_image(
+        property_obj,
+        "https://example.invalid/should-not-appear.jpg",
+        is_city_hero=is_city_hero,
+        is_visible=is_visible,
+    )
+
+    grid = destinations_grid(Client().get("/").content.decode())
+
+    assert "https://example.invalid/should-not-appear.jpg" not in grid
+    assert RIYADH_STOCK_PHOTO in grid
+
+
+def test_a_city_with_two_nominated_photos_resolves_to_one_deterministically() -> None:
+    plain = make_property(105)
+    featured = make_property(106)
+    featured.is_featured = True
+    featured.save(update_fields=["is_featured"])
+    make_hero_image(plain, "https://example.invalid/plain.jpg")
+    make_hero_image(featured, "https://example.invalid/featured.jpg")
+
+    grid = destinations_grid(Client().get("/").content.decode())
+
+    # The featured property wins, matching how the listing orders properties.
+    assert "https://example.invalid/featured.jpg" in grid
+    assert "https://example.invalid/plain.jpg" not in grid
