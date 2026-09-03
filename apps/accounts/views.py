@@ -1,21 +1,42 @@
 """Customer registration, sign-in, and booking dashboard."""
 
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views import View
 
 from apps.reservations.models import Reservation
+from apps.reservations.security import is_rate_limited
 
+from .emails import queue_verification_email, queue_welcome_email
 from .forms import CustomerAuthenticationForm, CustomerRegistrationForm
+from .models import profile_for
 from .services import claim_reservation, claimable_reference
+from .tokens import read_verification_token
 
 CLAIM_PARAM = "claim"
+RESEND_RATE_LIMIT_REQUESTS = 3
+RESEND_RATE_LIMIT_WINDOW = 15 * 60
+
+
+def _active_language(request: HttpRequest) -> str:
+    return (getattr(request, "LANGUAGE_CODE", "") or "ar").split("-")[0]
+
+
+def _send_verification(request: HttpRequest, user: object) -> None:
+    profile = profile_for(user)
+    if profile.is_email_verified:
+        return
+    profile.verification_sent_for = user.email
+    profile.verification_sent_at = timezone.now()
+    profile.save(update_fields=["verification_sent_for", "verification_sent_at", "updated_at"])
+    queue_verification_email(user, language=_active_language(request))
 
 
 def _claim_after_authentication(request: HttpRequest, user: object) -> None:
@@ -80,7 +101,11 @@ class RegisterView(View):
             )
         user = form.save()
         login(request, user)
-        messages.success(request, _("Your account is ready."))
+        _send_verification(request, user)
+        messages.success(
+            request,
+            _("Your account is ready. Check your inbox to confirm your email address."),
+        )
         _claim_after_authentication(request, user)
         return redirect(_safe_next(request, "accounts:dashboard"))
 
@@ -140,3 +165,71 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         .order_by("-created_at")
     )
     return render(request, "accounts/dashboard.html", {"reservations": reservations})
+
+
+def verify_email(request: HttpRequest, token: str) -> HttpResponse:
+    """Confirm an address from a signed link.
+
+    Deliberately not restricted to the signed-in visitor: people open these
+    links in whichever browser their mail client hands them. The signature is
+    the proof, so it works from any session, and confirming an address that is
+    already confirmed is treated as success rather than an error.
+    """
+    payload = read_verification_token(token)
+    if payload is None:
+        messages.error(
+            request,
+            _("This confirmation link is no longer valid. Request a new one."),
+        )
+        return redirect("accounts:verify_pending")
+
+    user_pk, email = payload
+    user = get_user_model().objects.filter(pk=user_pk).first()
+    # The address must still be the one the link was issued for, otherwise an
+    # old link would confirm an address the customer has since changed.
+    if user is None or (user.email or "").strip().casefold() != email:
+        messages.error(
+            request,
+            _("This confirmation link is no longer valid. Request a new one."),
+        )
+        return redirect("accounts:verify_pending")
+
+    profile = profile_for(user)
+    if not profile.is_email_verified:
+        profile.mark_verified()
+        queue_welcome_email(user, language=_active_language(request))
+    messages.success(request, _("Your email address is confirmed."))
+    if request.user.is_authenticated and request.user.pk == user.pk:
+        return redirect("accounts:dashboard")
+    return redirect("accounts:login")
+
+
+@login_required(login_url="accounts:login")
+def verify_pending(request: HttpRequest) -> HttpResponse:
+    profile = profile_for(request.user)
+    if profile.is_email_verified:
+        return redirect("accounts:dashboard")
+    return render(request, "accounts/verify_pending.html", {"profile": profile})
+
+
+@login_required(login_url="accounts:login")
+def resend_verification(request: HttpRequest) -> HttpResponse:
+    if request.method != "POST":
+        return redirect("accounts:verify_pending")
+    profile = profile_for(request.user)
+    if profile.is_email_verified:
+        return redirect("accounts:dashboard")
+    if is_rate_limited(
+        request,
+        scope="account-verify-resend",
+        requests=RESEND_RATE_LIMIT_REQUESTS,
+        window=RESEND_RATE_LIMIT_WINDOW,
+    ):
+        messages.error(
+            request,
+            _("You have asked for several links recently. Please wait a few minutes."),
+        )
+        return redirect("accounts:verify_pending")
+    _send_verification(request, request.user)
+    messages.success(request, _("A new confirmation email is on its way."))
+    return redirect("accounts:verify_pending")

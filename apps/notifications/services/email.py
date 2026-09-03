@@ -220,6 +220,21 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "en": "Reservation updated",
         "fr": "Réservation mise à jour",
     },
+    "account_verify_email": {
+        "ar": "أكّد بريدك الإلكتروني",
+        "en": "Confirm your email address",
+        "fr": "Confirmez votre adresse e-mail",
+    },
+    "account_password_reset": {
+        "ar": "إعادة تعيين كلمة المرور",
+        "en": "Reset your password",
+        "fr": "Réinitialiser votre mot de passe",
+    },
+    "account_welcome": {
+        "ar": "أهلًا بك في عائلتنا",
+        "en": "Welcome to our family",
+        "fr": "Bienvenue dans notre famille",
+    },
     "daily_operations_summary": {
         "ar": "ملخص العمليات اليومي",
         "en": "Daily operations summary",
@@ -249,6 +264,9 @@ TEMPLATE_GROUPS = {
     "reservation_cancelled": "reservation",
     "reservation_modified": "reservation",
     "daily_operations_summary": "operations",
+    "account_verify_email": "account",
+    "account_password_reset": "account",
+    "account_welcome": "account",
 }
 
 MESSAGES: dict[str, dict[str, str]] = {
@@ -362,6 +380,27 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "The reservation was updated after final-state verification.",
         "fr": "La réservation a été mise à jour après vérification de son état final.",
     },
+    "account_verify_email": {
+        "ar": "تأكيد بريدك يحمي حسابك ويتيح لنا إرسال تفاصيل إقامتك إليك.",
+        "en": "Confirming your address protects your account and lets us send your stay details.",
+        "fr": (
+            "Confirmer votre adresse protège votre compte et nous permet de vous "
+            "envoyer les détails de votre séjour."
+        ),
+    },
+    "account_password_reset": {
+        "ar": "وصلنا طلب لإعادة تعيين كلمة مرور حسابك.",
+        "en": "We received a request to reset the password for your account.",
+        "fr": "Nous avons reçu une demande de réinitialisation du mot de passe de votre compte.",
+    },
+    "account_welcome": {
+        "ar": "حسابك جاهز. تابع حجوزاتك وعدّل تواريخك من مكان واحد.",
+        "en": "Your account is ready. Follow your bookings and change your dates in one place.",
+        "fr": (
+            "Votre compte est prêt. Suivez vos réservations et modifiez vos dates "
+            "au même endroit."
+        ),
+    },
     "daily_operations_summary": {
         "ar": "يتوفر ملخص العمليات اليومي في لوحة الإدارة دون بيانات شخصية.",
         "en": "The PII-free daily operations summary is available in the admin dashboard.",
@@ -419,7 +458,48 @@ def queue_email(
     return delivery
 
 
+def _account_links(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
+    """Resolve an account recipient and mint its link at send time.
+
+    The token is generated here rather than when the row is queued, so its
+    lifetime starts when the message actually leaves. A queue that backs up
+    therefore delays the email instead of delivering a link that is already
+    half expired.
+    """
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    from apps.accounts.tokens import make_verification_token
+
+    user = get_user_model().objects.filter(pk=int(delivery.recipient_reference)).first()
+    if user is None or not user.email:
+        raise EmailProviderError("recipient_not_available", permanent=True)
+
+    base = settings.SITE_BASE_URL.rstrip("/")
+    context: dict[str, Any] = {
+        "reference": "",
+        "first_name": user.first_name,
+        "dashboard_url": f"{base}/my-bookings/",
+    }
+    if delivery.message_type == "account_verify_email":
+        token = make_verification_token(user.pk, user.email)
+        context["action_url"] = f"{base}/account/verify/{token}/"
+        context["expires_in_days"] = 3
+    elif delivery.message_type == "account_password_reset":
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        context["action_url"] = f"{base}/account/reset/{uidb64}/{token}/"
+        context["expires_in_hours"] = int(settings.PASSWORD_RESET_TIMEOUT / 3600)
+    else:
+        context["action_url"] = context["dashboard_url"]
+    return user.email, context
+
+
 def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
+    if delivery.recipient_source == "account":
+        return _account_links(delivery)
     if delivery.recipient_source == "contact":
         from apps.core.models import ContactMessage
 

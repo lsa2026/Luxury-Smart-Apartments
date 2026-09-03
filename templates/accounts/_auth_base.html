@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% comment %}
+    Shared shell for the account pages that surround sign-in: confirming an
+    address and resetting a password. It reuses the vocabulary of the sign-in
+    page so the whole account journey reads as one design, and keeps the aside
+    in a single place instead of repeating it on every page.
+{% endcomment %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="auth-stage auth-stage--compact" aria-labelledby="auth-title">
+    <aside class="auth-aside">
+        <span class="auth-aside__veil" aria-hidden="true"></span>
+        <span class="auth-aside__glow" aria-hidden="true"></span>
+
+        <div class="auth-aside__inner">
+            <a class="auth-aside__brand" href="{% url 'core:home' %}">
+                <span class="auth-aside__logo">
+                    <img src="{% static 'images/logo.jpeg' %}" alt="" width="1088" height="988" loading="lazy">
+                </span>
+                <span>
+                    <strong>Luxury Smart Apartments</strong>
+                    <small>{% trans "Riyadh" %} · {% trans "Marrakech" %}</small>
+                </span>
+            </a>
+
+            <div class="auth-aside__copy">
+                <p class="eyebrow">{% block aside_eyebrow %}{% trans "Your account" %}{% endblock %}</p>
+                <h2>{% block aside_heading %}{% trans "Your bookings, in one place" %}{% endblock %}</h2>
+                <p>{% block aside_copy %}{% trans "Follow your stay, change your dates, and book faster next time." %}{% endblock %}</p>
+            </div>
+
+            <p class="auth-aside__signature"><span aria-hidden="true">◆</span>{% trans "We never store your card number" %}</p>
+        </div>
+    </aside>
+
+    <div class="auth-panel">
+        <header class="auth-panel__header">
+            <p class="eyebrow">{% block panel_eyebrow %}{% endblock %}</p>
+            <h1 id="auth-title">{% block panel_heading %}{% endblock %}</h1>
+            <p>{% block panel_copy %}{% endblock %}</p>
+        </header>
+
+        {% block panel_body %}{% endblock %}
+    </div>
+</section>
+{% endblock %}

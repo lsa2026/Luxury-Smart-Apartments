@@ -9,6 +9,7 @@
 الضيوف: {{ guests }}{% endif %}
 {% if booking_reference %}رقم الحجز: {{ booking_reference }}{% elif reference %}المرجع: {{ reference }}{% endif %}
 {% if request_reference %}مرجع التعديل: {{ request_reference }}{% endif %}
+{% if action_url %}الرابط: {{ action_url }}{% endif %}
 {% if manage_url %}إدارة الحجز: {{ manage_url }}{% endif %}
 
 الموقع: {{ site_url }}

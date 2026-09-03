@@ -5837,3 +5837,23 @@ msgstr ""
 #: templates/accounts/register.html
 msgid "Hide password"
 msgstr ""
+
+#: templates/accounts/login.html
+msgid "Sign in to your account"
+msgstr ""
+
+#: templates/accounts/login.html
+msgid "Continue with the email you booked with."
+msgstr ""
+
+#: templates/accounts/login.html
+msgid "Pick up where you left off"
+msgstr ""
+
+#: templates/accounts/login.html
+msgid "Quotes and stays stay ready in your dashboard."
+msgstr ""
+
+#: templates/accounts/login.html
+msgid "Use your booking number and the email you booked with."
+msgstr ""

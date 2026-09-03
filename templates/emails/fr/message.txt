@@ -9,6 +9,7 @@ Départ : {{ check_out }}
 Voyageurs : {{ guests }}{% endif %}
 {% if booking_reference %}Numéro de réservation : {{ booking_reference }}{% elif reference %}Référence : {{ reference }}{% endif %}
 {% if request_reference %}Référence de modification : {{ request_reference }}{% endif %}
+{% if action_url %}Lien : {{ action_url }}{% endif %}
 {% if manage_url %}Gérer la réservation : {{ manage_url }}{% endif %}
 
 Site : {{ site_url }}

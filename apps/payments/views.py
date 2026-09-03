@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views import View
 
+from apps.accounts.services import claimable_reference
 from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
@@ -190,6 +191,11 @@ class HyperPayResultView(View):
         if outcome and outcome.reservation:
             grant_reservation_access(request, outcome.reservation.public_reference)
         display_attempt = outcome.attempt if outcome else attempt
+        # Offered only to a guest without an account, and only for the booking
+        # this session just proved by paying for it.
+        claimable = ""
+        if outcome and outcome.reservation and not request.user.is_authenticated:
+            claimable = claimable_reference(request, outcome.reservation.public_reference)
         response = render(
             request,
             "payments/hyperpay_result.html",
@@ -197,6 +203,7 @@ class HyperPayResultView(View):
                 "attempt": display_attempt,
                 "outcome": outcome,
                 "success": HyperPayStatus.SUCCESS,
+                "claimable_reference": claimable,
             },
             status=200 if outcome else 503,
         )

@@ -518,6 +518,7 @@ def test_all_trilingual_email_messages_are_defined(message_type: str, language: 
         "modification",
         "reservation",
         "operations",
+        "account",
     }
 
 

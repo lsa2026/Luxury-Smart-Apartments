@@ -9,6 +9,7 @@ Check-out: {{ check_out }}
 Guests: {{ guests }}{% endif %}
 {% if booking_reference %}Booking number: {{ booking_reference }}{% elif reference %}Reference: {{ reference }}{% endif %}
 {% if request_reference %}Update reference: {{ request_reference }}{% endif %}
+{% if action_url %}Link: {{ action_url }}{% endif %}
 {% if manage_url %}Manage booking: {{ manage_url }}{% endif %}
 
 Website: {{ site_url }}

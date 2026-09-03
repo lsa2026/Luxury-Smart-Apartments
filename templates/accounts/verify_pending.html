@@ -1,0 +1,25 @@
+{% extends "accounts/_auth_base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Confirm your email" %} | Luxury Smart Apartments{% endblock %}
+{% block aside_eyebrow %}{% trans "One step left" %}{% endblock %}
+{% block aside_heading %}{% trans "Confirm your email address" %}{% endblock %}
+{% block aside_copy %}{% trans "A confirmed address is how we send your booking details and how you recover your account." %}{% endblock %}
+{% block panel_eyebrow %}{% trans "Confirmation" %}{% endblock %}
+{% block panel_heading %}{% trans "Check your inbox" %}{% endblock %}
+{% block panel_copy %}{% blocktrans with email=request.user.email %}We sent a confirmation link to {{ email }}. It stays valid for three days.{% endblocktrans %}{% endblock %}
+{% block panel_body %}
+<div class="auth-note">
+    <p><span aria-hidden="true">◆</span>{% trans "Nothing arrived? Look in the spam folder before asking for another link." %}</p>
+</div>
+
+<form method="post" action="{% url 'accounts:resend_verification' %}" class="auth-form">
+    {% csrf_token %}
+    <button class="button button--gold auth-form__submit" type="submit">
+        {% trans "Send the link again" %}<span aria-hidden="true">↗</span>
+    </button>
+</form>
+
+<p class="auth-panel__aside-link">
+    <a href="{% url 'accounts:dashboard' %}">{% trans "Continue to my bookings" %}</a>
+</p>
+{% endblock %}

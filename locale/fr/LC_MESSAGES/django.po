@@ -6183,3 +6183,23 @@ msgstr "Afficher le mot de passe"
 #: templates/accounts/register.html
 msgid "Hide password"
 msgstr "Masquer le mot de passe"
+
+#: templates/accounts/login.html
+msgid "Sign in to your account"
+msgstr "Connectez-vous à votre compte"
+
+#: templates/accounts/login.html
+msgid "Continue with the email you booked with."
+msgstr "Continuez avec l'e-mail utilisé pour votre réservation."
+
+#: templates/accounts/login.html
+msgid "Pick up where you left off"
+msgstr "Reprenez où vous en étiez"
+
+#: templates/accounts/login.html
+msgid "Quotes and stays stay ready in your dashboard."
+msgstr "Vos devis et séjours restent prêts dans votre tableau de bord."
+
+#: templates/accounts/login.html
+msgid "Use your booking number and the email you booked with."
+msgstr "Utilisez votre numéro de réservation et l'e-mail associé."

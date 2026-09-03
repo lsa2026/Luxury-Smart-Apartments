@@ -1,0 +1,24 @@
+{% extends "emails/ar/base.html" %}{% block content %}
+<p style="margin:0 0 12px;color:#a17e42;font-size:11px;font-weight:700;letter-spacing:.09em">حسابك لدى {{ brand_name }}</p>
+<h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;color:#102d26;font-size:28px;line-height:1.35">{{ heading }}</h1>
+<div style="width:46px;height:2px;margin:0 0 18px;background:#d5bc84"></div>
+{% if first_name %}<p style="margin:0 0 12px;color:#2c3b36;font-size:15px">أهلًا {{ first_name }},</p>{% endif %}
+<p style="margin:0 0 26px;color:#5e6c67;font-size:14px;line-height:1.95">{{ message }}</p>
+
+{% if action_url %}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:4px 0 18px">
+  <a href="{{ action_url }}" style="display:inline-block;padding:15px 38px;border-radius:10px;background:#123d34;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.03em;box-shadow:0 8px 22px rgba(18,61,52,.22)">{{ heading }}</a>
+</td></tr></table>
+
+{% if expires_in_days %}<p style="margin:0 0 20px;color:#89928e;font-size:11px;text-align:center">هذا الرابط صالح لمدة {{ expires_in_days }} أيام.</p>{% endif %}
+{% if expires_in_hours %}<p style="margin:0 0 20px;color:#89928e;font-size:11px;text-align:center">هذا الرابط صالح لمدة {{ expires_in_hours }} ساعة، ويُستخدم مرة واحدة.</p>{% endif %}
+
+<div style="padding:14px 16px;border-radius:10px;background:#f8f5ee">
+  <p style="margin:0 0 6px;color:#8a948f;font-size:10px">إن لم يعمل الزر، انسخ هذا الرابط إلى متصفحك</p>
+  <p style="margin:0;word-break:break-all"><a href="{{ action_url }}" dir="ltr" style="color:#174f43;font-size:11px;text-decoration:none">{{ action_url }}</a></p>
+</div>
+{% endif %}
+
+<p style="margin:22px 0 0;padding-top:16px;border-top:1px solid #ece7dc;color:#89928e;font-size:11px;line-height:1.85">
+  لم تطلب هذه الرسالة؟ تجاهلها بأمان — لن يتغيّر شيء في حسابك ما لم يُفتح الرابط أعلاه.
+</p>{% endblock %}
