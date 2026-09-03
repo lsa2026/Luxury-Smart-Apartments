@@ -34,15 +34,17 @@ class CustomerRegistrationForm(UserCreationForm):
         fields = ("first_name", "last_name", "email")
 
     def __init__(self, *args: object, **kwargs: object) -> None:
+        kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
         self.fields["password1"].widget.attrs["autocomplete"] = "new-password"
         self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
 
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().casefold()
-        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(
-            username__iexact=email
-        ).exists():
+        if (
+            User.objects.filter(email__iexact=email).exists()
+            or User.objects.filter(username__iexact=email).exists()
+        ):
             raise forms.ValidationError(_("An account already exists for this email."))
         return email
 
@@ -65,6 +67,7 @@ class CustomerAuthenticationForm(AuthenticationForm):
     )
 
     def __init__(self, *args: object, **kwargs: object) -> None:
+        kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
         self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 

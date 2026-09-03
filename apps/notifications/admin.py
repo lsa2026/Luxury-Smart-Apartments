@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.http import HttpRequest
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from .models import AuditLog, EmailDelivery, Notification
 
@@ -46,15 +47,23 @@ class NotificationAdmin(admin.ModelAdmin):
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
-    @admin.action(description="تحديد الإشعارات كمقروءة")
+    @admin.action(description=_("Mark notifications as read"))
     def mark_read(self, request: HttpRequest, queryset: object) -> None:
         count = queryset.update(is_read=True, read_at=timezone.now())
-        self.message_user(request, f"تم تحديث {count} إشعار.", messages.SUCCESS)
+        self.message_user(
+            request,
+            _("Updated %(count)d notification(s).") % {"count": count},
+            messages.SUCCESS,
+        )
 
-    @admin.action(description="تحديد الإشعارات كغير مقروءة")
+    @admin.action(description=_("Mark notifications as unread"))
     def mark_unread(self, request: HttpRequest, queryset: object) -> None:
         count = queryset.update(is_read=False, read_at=None)
-        self.message_user(request, f"تم تحديث {count} إشعار.", messages.SUCCESS)
+        self.message_user(
+            request,
+            _("Updated %(count)d notification(s).") % {"count": count},
+            messages.SUCCESS,
+        )
 
 
 @admin.register(EmailDelivery)

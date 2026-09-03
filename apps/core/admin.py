@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.core.cache import cache
 from django.http import HttpRequest
+from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
 
@@ -14,8 +15,8 @@ from .models import (
 )
 
 admin.site.site_header = "Luxury Smart Apartments"
-admin.site.site_title = "إدارة المنصة"
-admin.site.index_title = "مركز القيادة"
+admin.site.site_title = _("Platform administration")
+admin.site.index_title = _("Command centre")
 admin.site.index_template = "admin/index.html"
 
 
@@ -35,11 +36,11 @@ class SitePageAdmin(admin.ModelAdmin):
     readonly_fields = ("updated_at",)
     fieldsets = (
         (
-            "النشر",
+            _("Publishing"),
             {"fields": ("slug", "is_published", "last_reviewed_at", "updated_at")},
         ),
         (
-            "العربية",
+            _("Arabic"),
             {"fields": ("title_ar", "body_ar", "meta_description_ar")},
         ),
         (
@@ -102,7 +103,7 @@ class FAQItemAdmin(admin.ModelAdmin):
 class SiteSettingAdmin(admin.ModelAdmin):
     fieldsets = (
         (
-            "العلامة",
+            _("Brand"),
             {
                 "fields": (
                     "site_name",
@@ -116,7 +117,7 @@ class SiteSettingAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "التواصل",
+            _("Contact"),
             {
                 "fields": (
                     "contact_email",
@@ -136,7 +137,7 @@ class SiteSettingAdmin(admin.ModelAdmin):
                 )
             },
         ),
-        ("النظام", {"fields": ("updated_at",)}),
+        (_("System"), {"fields": ("updated_at",)}),
     )
     readonly_fields = ("site_name", "updated_at")
 

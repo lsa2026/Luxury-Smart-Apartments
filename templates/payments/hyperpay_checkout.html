@@ -6,22 +6,166 @@
 {% block extra_head %}
 <script nonce="{{ csp_nonce }}">
 var wpwlOptions = {
+    locale: "{{ LANGUAGE_CODE|default:'ar' }}",
     paymentTarget: "_top",
     brandDetection: true,
     brandDetectionType: "binlist",
-    brandDetectionPriority: ["MADA", "VISA", "MASTER"]
+    brandDetectionPriority: ["MADA", "VISA", "MASTER"],
+    onReady: function () {
+        document.documentElement.classList.add("wpwl-ready");
+    }
 };
 </script>
 <script src="{{ widget_url }}" integrity="{{ widget_integrity }}" crossorigin="anonymous"></script>
 {% endblock %}
 {% block content %}
-<section class="section container narrow">
-    <div class="section-heading"><p class="eyebrow">HyperPay{% if hyperpay_environment == 'test' %} TEST/UAT{% endif %}</p><h1>{% trans "Secure payment" %}</h1></div>
-    <article class="review-panel">
+<section class="section container checkout">
+    {% include "includes/progress_indicator.html" with step=4 %}
+
+    <div class="section-heading checkout__heading">
+        <p class="eyebrow">{% trans "Step four" %}</p>
+        <h1>{% trans "Secure payment" %}</h1>
         <p>{% trans "Card details are entered directly in HyperPay's hosted form and never reach our server." %}</p>
-        <dl class="quote-summary"><div class="quote-summary__total"><dt>{% trans "Total" %}</dt><dd>{{ attempt.amount|localized_money:attempt.currency }}</dd></div></dl>
-        <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA"></form>
-        <form action="{{ result_url }}" class="paymentWidgets" data-brands="VISA MASTER"></form>
-    </article>
+    </div>
+
+    {% if hyperpay_environment == 'test' %}
+    <p class="checkout__environment" role="status">
+        <span aria-hidden="true">⚑</span>
+        {% trans "Test environment — no real amount will be charged." %}
+    </p>
+    {% endif %}
+
+    <div class="checkout__grid">
+        <article class="checkout__payment" aria-labelledby="checkout-pay-title">
+            <header class="checkout__payment-head">
+                <h2 id="checkout-pay-title">{% trans "Choose your payment method" %}</h2>
+                <span class="checkout__lock">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                        <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                    </svg>
+                    {% trans "Encrypted" %}
+                </span>
+            </header>
+
+            <div class="checkout__methods" role="tablist" aria-label="{% trans 'Payment methods' %}">
+                <button
+                    class="checkout__method is-active"
+                    type="button"
+                    role="tab"
+                    id="method-tab-mada"
+                    aria-controls="method-panel-mada"
+                    aria-selected="true"
+                    data-checkout-method="mada"
+                >
+                    <span class="checkout__method-mark checkout__method-mark--mada" aria-hidden="true">mada</span>
+                    <span class="checkout__method-name">{% trans "mada" %}</span>
+                    <small>{% trans "Saudi debit cards" %}</small>
+                </button>
+                <button
+                    class="checkout__method"
+                    type="button"
+                    role="tab"
+                    id="method-tab-card"
+                    aria-controls="method-panel-card"
+                    aria-selected="false"
+                    tabindex="-1"
+                    data-checkout-method="card"
+                >
+                    <span class="checkout__method-mark checkout__method-mark--card" aria-hidden="true">VISA</span>
+                    <span class="checkout__method-name">{% trans "Visa / Mastercard" %}</span>
+                    <small>{% trans "Credit and debit cards" %}</small>
+                </button>
+            </div>
+
+            <div
+                class="checkout__panel"
+                id="method-panel-mada"
+                role="tabpanel"
+                aria-labelledby="method-tab-mada"
+                data-checkout-panel="mada"
+            >
+                <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA"></form>
+            </div>
+            <div
+                class="checkout__panel"
+                id="method-panel-card"
+                role="tabpanel"
+                aria-labelledby="method-tab-card"
+                data-checkout-panel="card"
+                hidden
+            >
+                <form action="{{ result_url }}" class="paymentWidgets" data-brands="VISA MASTER"></form>
+            </div>
+
+            <ul class="checkout__assurances">
+                <li>{% trans "3-D Secure verification with your bank" %}</li>
+                <li>{% trans "We never store your card number" %}</li>
+                <li>{% trans "Your booking is confirmed only after a successful payment" %}</li>
+            </ul>
+        </article>
+
+        <aside class="checkout__summary" aria-labelledby="checkout-summary-title">
+            <div class="checkout__summary-media">
+                {% if cover_image %}
+                <img
+                    src="{{ cover_image.display_url }}"
+                    alt="{{ cover_image|localized_image_alt|default:intent.property.display_name }}"
+                    width="640"
+                    height="420"
+                    loading="lazy"
+                >
+                {% else %}
+                <div class="checkout__summary-media-empty" aria-hidden="true"><span>LS</span></div>
+                {% endif %}
+                <div class="checkout__summary-media-copy">
+                    <small>{% trans "You are paying for" %}</small>
+                    <h2 id="checkout-summary-title">{% if modification %}{{ modification.reservation.property|localized_property_name }}{% else %}{{ intent.property|localized_property_name }}{% endif %}</h2>
+                </div>
+            </div>
+
+            {% if modification %}
+            <dl class="checkout__facts">
+                <div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|localized_date }}</dd></div>
+                <div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|localized_date }}</dd></div>
+            </dl>
+            {% else %}
+            <dl class="checkout__facts">
+                <div><dt>{% trans "Check-in" %}</dt><dd>{{ intent.check_in|localized_date }}</dd></div>
+                <div><dt>{% trans "Check-out" %}</dt><dd>{{ intent.check_out|localized_date }}</dd></div>
+                <div><dt>{% trans "Nights" %}</dt><dd>{{ intent.nights|localized_number }}</dd></div>
+                <div><dt>{% trans "Guests" %}</dt><dd>{{ intent.guests|localized_number }}</dd></div>
+            </dl>
+            {% endif %}
+
+            {% if not modification and intent.quote.components %}
+            <div class="checkout__breakdown">
+                <h3>{% trans "Price breakdown" %}</h3>
+                <ul class="price-components">
+                    {% for component in intent.quote.components %}
+                    <li>
+                        <span>{{ component.title|localized_price_component }}</span>
+                        <strong>{{ component|price_component_amount|localized_money:attempt.currency }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="checkout__total">
+                <span>{% if modification %}{% trans "Price difference due now" %}{% else %}{% trans "Amount due now" %}{% endif %}</span>
+                <strong>{{ attempt.amount|localized_money:attempt.currency }}</strong>
+            </div>
+
+            {% if modification %}
+            <a class="checkout__back text-link" href="{% url 'reservations:modification_detail' modification.public_reference %}">
+                {% trans "Back to your change request" %}
+            </a>
+            {% elif intent.public_reference %}
+            <a class="checkout__back text-link" href="{% url 'reservations:intent_detail' intent.public_reference %}">
+                {% trans "Back to your request" %}
+            </a>
+            {% endif %}
+        </aside>
+    </div>
 </section>
 {% endblock %}

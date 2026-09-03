@@ -43,7 +43,7 @@
         </div>
         {% endif %}
         {% if site_setting.instagram_url or site_setting.facebook_url or site_setting.whatsapp_url %}
-        <nav class="contact-social" aria-label="Social media">
+        <nav class="contact-social" aria-label="{% trans 'Follow us on social media' %}">
             {% if site_setting.instagram_url %}<a href="{{ site_setting.instagram_url }}" rel="noopener noreferrer">Instagram</a>{% endif %}
             {% if site_setting.facebook_url %}<a href="{{ site_setting.facebook_url }}" rel="noopener noreferrer">Facebook</a>{% endif %}
             {% if site_setting.whatsapp_url %}<a href="{{ site_setting.whatsapp_url }}" rel="noopener noreferrer">WhatsApp</a>{% endif %}

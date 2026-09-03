@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n presentation %}
 {% block title %}{% trans "Guest reviews" %} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{% trans "Published guest-to-host reviews, shown with privacy-conscious guest names." %}{% endblock %}
 {% block content %}
 <header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Verified stays" %}</p><h1>{% trans "Guest reviews" %}</h1><p>{% trans "Published guest experiences presented with privacy in mind." %}</p></div></header>
-<section class="section container">{% include "reviews/_review_cards.html" with reviews=reviews %}{% if is_paginated %}<nav class="pagination" aria-label="{% trans 'Review pages' %}">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" rel="prev">{% trans "Previous" %}</a>{% endif %}<span>{% blocktrans with current=page_obj.number total=paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" rel="next">{% trans "Next" %}</a>{% endif %}</nav>{% endif %}</section>
+<section class="section container"><h2 class="sr-only">{% trans "All guest reviews" %}</h2>{% include "reviews/_review_cards.html" with reviews=reviews %}{% if is_paginated %}<nav class="pagination" aria-label="{% trans 'Review pages' %}">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" rel="prev">{% trans "Previous" %}</a>{% endif %}<span>{% blocktrans with current=page_obj.number|localized_number total=paginator.num_pages|localized_number %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" rel="next">{% trans "Next" %}</a>{% endif %}</nav>{% endif %}</section>
 {% endblock %}

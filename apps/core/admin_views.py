@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.utils.translation import gettext_lazy as _
 
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingIntent
@@ -62,7 +63,7 @@ def customer_overview(request: HttpRequest) -> HttpResponse:
                 "guest_name": (
                     f"{intent.guest_first_name} {intent.guest_last_name}".strip()
                     if can_view_pii
-                    else "بيانات محمية"
+                    else _("Protected data")
                 ),
                 "guest_email": intent.guest_email if can_view_pii else "••••••••",
                 "guest_phone": intent.guest_phone if can_view_pii else "••••••••",
@@ -73,7 +74,7 @@ def customer_overview(request: HttpRequest) -> HttpResponse:
         request,
         "admin/core/customers.html",
         {
-            "title": "العملاء والحجوزات",
+            "title": _("Customers and bookings"),
             "page_obj": page,
             "query": query,
             "selected_status": booking_status,

@@ -1,0 +1,114 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main" class="lsa-dashboard">
+
+  <section class="lsa-page-head">
+    <div>
+      <span class="lsa-panel__eyebrow">{% trans "Accessibility and SEO" %}</span>
+      <h1>{% trans "Image alternative text" %}</h1>
+      <p>{% blocktrans %}Alternative text describes each photo for screen readers and search engines. Where it is empty the public site falls back to the property name, so filling it in adds detail rather than fixing a broken page.{% endblocktrans %}</p>
+    </div>
+    <div class="lsa-altbadge">
+      <strong>{{ total_missing }}</strong>
+      <span>{% trans "images still incomplete" %}</span>
+    </div>
+  </section>
+
+  <section class="lsa-alt-layout">
+
+    <aside class="lsa-panel lsa-alt-picker">
+      <header class="lsa-panel__header"><div><h2>{% trans "Properties" %}</h2></div></header>
+      <div class="lsa-alt-picker__list">
+        {% for row in summary %}
+          <a class="lsa-alt-picker__item{% if selected and row.id == selected.id %} is-active{% endif %}"
+             href="?property={{ row.id }}&missing={% if only_missing %}1{% else %}0{% endif %}">
+            <span class="lsa-alt-picker__name">{{ row.name_ar|default:row.name_en|default:row.slug }}</span>
+            <span class="lsa-alt-picker__meta">
+              {% if row.missing_count %}
+                <b class="is-pending">{{ row.missing_count }}</b>
+              {% else %}
+                <b class="is-done">✓</b>
+              {% endif %}
+              <small>{% blocktrans count counter=row.image_count %}{{ counter }} image{% plural %}{{ counter }} images{% endblocktrans %}</small>
+            </span>
+          </a>
+        {% empty %}
+          <p class="lsa-empty">{% trans "No properties yet." %}</p>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <article class="lsa-panel lsa-alt-editor">
+      {% if selected %}
+        <header class="lsa-panel__header">
+          <div>
+            <span class="lsa-panel__eyebrow">{{ selected.slug }}</span>
+            <h2>{{ selected.name_ar|default:selected.name_en|default:selected.slug }}</h2>
+          </div>
+          <a href="?property={{ selected.id }}&missing={% if only_missing %}0{% else %}1{% endif %}">
+            {% if only_missing %}{% trans "Show all images" %}{% else %}{% trans "Show only incomplete" %}{% endif %} ←
+          </a>
+        </header>
+
+        {% if images %}
+          <form method="post"
+                data-name-ar="{{ selected.name_ar }}"
+                data-name-en="{{ selected.name_en }}"
+                data-name-fr="{{ selected.name_fr }}">
+            {% csrf_token %}
+            <input type="hidden" name="property" value="{{ selected.id }}">
+
+            <div class="lsa-alt-tools">
+              <span>{% trans "Fill empty fields from the property name:" %}</span>
+              <button type="button" data-alt-fill="ar">{% trans "Arabic" %}</button>
+              <button type="button" data-alt-fill="en">{% trans "English" %}</button>
+              <button type="button" data-alt-fill="fr">{% trans "French" %}</button>
+              <small>{% trans "You can edit any suggestion before saving." %}</small>
+            </div>
+
+            <div class="lsa-alt-scroll">
+              <table class="lsa-table lsa-alt-table">
+                <thead>
+                  <tr>
+                    <th>{% trans "Photo" %}</th>
+                    <th>{% trans "Arabic" %}</th>
+                    <th>{% trans "English" %}</th>
+                    <th>{% trans "French" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for image in images %}
+                    <tr>
+                      <td class="lsa-alt-thumb">
+                        {% if image.display_url %}
+                          <img src="{{ image.display_url }}" alt="" loading="lazy" width="96" height="64">
+                        {% endif %}
+                        {% if image.is_cover %}<span class="lsa-alt-cover">{% trans "Cover" %}</span>{% endif %}
+                      </td>
+                      <td><input type="text" maxlength="255" dir="rtl" name="alt_text_ar-{{ image.pk }}" value="{{ image.alt_text_ar }}" data-alt-lang="ar"></td>
+                      <td><input type="text" maxlength="255" dir="ltr" name="alt_text_en-{{ image.pk }}" value="{{ image.alt_text_en }}" data-alt-lang="en"></td>
+                      <td><input type="text" maxlength="255" dir="ltr" name="alt_text_fr-{{ image.pk }}" value="{{ image.alt_text_fr }}" data-alt-lang="fr"></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="lsa-alt-actions">
+              <button type="submit" class="lsa-btn-primary">{% trans "Save alternative text" %}</button>
+              <small>{% blocktrans count counter=images|length %}{{ counter }} row shown{% plural %}{{ counter }} rows shown{% endblocktrans %}</small>
+            </div>
+          </form>
+        {% else %}
+          <p class="lsa-alt-clear">✓ {% trans "Every image for this property has alternative text in all three languages." %}</p>
+        {% endif %}
+      {% else %}
+        <p class="lsa-empty">{% trans "Select a property to start editing." %}</p>
+      {% endif %}
+    </article>
+
+  </section>
+</div>
+{% endblock %}

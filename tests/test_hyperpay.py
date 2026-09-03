@@ -553,6 +553,14 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
     assert "https://eu-test.oppwa.com" in csp
     assert "form-action 'self' https://eu-test.oppwa.com" in csp
     assert "style-src 'self' 'unsafe-inline' https://eu-test.oppwa.com" in csp
+    # The hosted widget ships English labels; the locale makes it follow the page.
+    assert 'locale: "ar"' in content
+    # One method is shown at a time, and the payer can confirm what they are buying.
+    assert content.count('data-checkout-method="') == 2
+    assert content.count('data-checkout-panel="') == 2
+    assert intent.property.display_name in content or "checkout__summary" in content
+    assert "checkout__total" in content
+    assert reverse("reservations:intent_detail", args=[intent.public_reference]) in content
     assert "font-src 'self' data: https://eu-test.oppwa.com" in csp
     assert "unsafe-eval" not in csp
 
@@ -594,6 +602,15 @@ def test_modification_page_opens_real_hyperpay_difference_checkout(monkeypatch) 
     assert "modification_checkout_12345678" in content
     assert "paymentWidgets.js" in content
     assert "test-access-token-secret" not in content
+    # The shared checkout template must fall back to the change request, not the
+    # booking intent, or the back link reverses against an empty reference.
+    assert (
+        reverse(
+            "reservations:modification_detail",
+            args=[modification.public_reference],
+        )
+        in content
+    )
 
 
 @override_settings(**HYPERPAY_SETTINGS)

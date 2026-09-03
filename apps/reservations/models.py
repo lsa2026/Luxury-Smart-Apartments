@@ -11,6 +11,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 
 def booking_intent_reference() -> str:
@@ -27,12 +29,12 @@ def modification_request_reference() -> str:
 
 class BookingQuote(models.Model):
     class Status(models.TextChoices):
-        ACTIVE = "active", "نشط"
-        EXPIRED = "expired", "منتهي"
-        CONSUMED = "consumed", "مستخدم"
-        INVALIDATED = "invalidated", "ملغى"
-        PRICE_CHANGED = "price_changed", "تغير السعر"
-        UNAVAILABLE = "unavailable", "غير متاح"
+        ACTIVE = "active", _("Active")
+        EXPIRED = "expired", pgettext_lazy("BookingQuote", "Expired")
+        CONSUMED = "consumed", _("Used")
+        INVALIDATED = "invalidated", pgettext_lazy("BookingQuote", "Cancelled")
+        PRICE_CHANGED = "price_changed", _("Price changed")
+        UNAVAILABLE = "unavailable", _("Unavailable")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     property = models.ForeignKey(
@@ -80,8 +82,8 @@ class BookingQuote(models.Model):
                 name="booking_quote_checkout_after_checkin",
             ),
         ]
-        verbose_name = "عرض سعر"
-        verbose_name_plural = "عروض الأسعار"
+        verbose_name = _("Booking quote")
+        verbose_name_plural = _("Booking quotes")
 
     def __str__(self) -> str:
         return f"{self.property} — {self.check_in} / {self.check_out}"
@@ -122,15 +124,15 @@ class BookingQuote(models.Model):
 
 class BookingIntent(models.Model):
     class Status(models.TextChoices):
-        DRAFT = "draft", "مسودة"
-        PENDING_REVALIDATION = "pending_revalidation", "بانتظار إعادة التحقق"
-        AWAITING_PAYMENT = "awaiting_payment", "جاهز للدفع"
-        PAYMENT_VERIFIED = "payment_verified", "تم التحقق من الدفع"
-        PRICE_CHANGED = "price_changed", "تغير السعر"
-        UNAVAILABLE = "unavailable", "غير متاح"
-        EXPIRED = "expired", "منتهي"
-        CANCELLED = "cancelled", "ملغى"
-        COMPLETED = "completed", "مكتمل"
+        DRAFT = "draft", _("Draft")
+        PENDING_REVALIDATION = "pending_revalidation", _("Awaiting re-verification")
+        AWAITING_PAYMENT = "awaiting_payment", _("Ready for payment")
+        PAYMENT_VERIFIED = "payment_verified", _("Payment verified")
+        PRICE_CHANGED = "price_changed", _("Price changed")
+        UNAVAILABLE = "unavailable", _("Unavailable")
+        EXPIRED = "expired", pgettext_lazy("BookingIntent", "Expired")
+        CANCELLED = "cancelled", pgettext_lazy("BookingIntent", "Cancelled")
+        COMPLETED = "completed", _("Completed")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_reference = models.CharField(
@@ -213,8 +215,8 @@ class BookingIntent(models.Model):
             ("view_bookingintent_pii", "Can view booking intent guest data"),
             ("cancel_bookingintent", "Can cancel booking intents"),
         ]
-        verbose_name = "طلب حجز مبدئي"
-        verbose_name_plural = "طلبات الحجز المبدئية"
+        verbose_name = _("Booking intent")
+        verbose_name_plural = _("Booking intents")
 
     def __str__(self) -> str:
         return self.public_reference
@@ -263,23 +265,23 @@ class Reservation(models.Model):
     """Sanitized local reservation state; live confirmation requires a Hostaway ID."""
 
     class SourceType(models.TextChoices):
-        DIRECT_WEBSITE = "direct_website", "الموقع المباشر"
-        HOSTAWAY_MANUAL = "hostaway_manual", "Hostaway يدوي"
-        EXTERNAL_CHANNEL = "external_channel", "قناة خارجية"
-        UNKNOWN = "unknown", "غير معروف"
+        DIRECT_WEBSITE = "direct_website", _("Live site")
+        HOSTAWAY_MANUAL = "hostaway_manual", _("Hostaway manual")
+        EXTERNAL_CHANNEL = "external_channel", _("External channel")
+        UNKNOWN = "unknown", pgettext_lazy("Reservation", "Unknown")
 
     class Status(models.TextChoices):
-        AWAITING_PAYMENT = "awaiting_payment", "بانتظار الدفع"
-        READY_FOR_HOSTAWAY = "ready_for_hostaway", "جاهز لـHostaway"
-        CREATE_PENDING = "create_pending", "إنشاء معلق"
-        CREATING = "creating", "جارٍ الإنشاء"
-        CONFIRMED = "confirmed", "مؤكد"
-        CREATE_FAILED = "create_failed", "فشل الإنشاء"
-        CREATE_UNKNOWN = "create_unknown", "نتيجة الإنشاء غير مؤكدة"
-        SYNC_PENDING = "sync_pending", "مزامنة معلقة"
-        MODIFIED = "modified", "معدل"
-        CANCELLED = "cancelled", "ملغى"
-        UNKNOWN = "unknown", "غير معروف"
+        AWAITING_PAYMENT = "awaiting_payment", _("Awaiting payment")
+        READY_FOR_HOSTAWAY = "ready_for_hostaway", _("Ready for Hostaway")
+        CREATE_PENDING = "create_pending", _("Creation pending")
+        CREATING = "creating", _("Creating")
+        CONFIRMED = "confirmed", _("Confirmed")
+        CREATE_FAILED = "create_failed", _("Creation failed")
+        CREATE_UNKNOWN = "create_unknown", _("Creation result unconfirmed")
+        SYNC_PENDING = "sync_pending", _("Sync pending")
+        MODIFIED = "modified", _("Modified")
+        CANCELLED = "cancelled", pgettext_lazy("Reservation", "Cancelled")
+        UNKNOWN = "unknown", pgettext_lazy("Reservation", "Unknown")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_reference = models.CharField(
@@ -370,8 +372,8 @@ class Reservation(models.Model):
                 name="reservation_not_confirmed_and_cancelled",
             ),
         ]
-        verbose_name = "حجز محلي"
-        verbose_name_plural = "الحجوزات المحلية"
+        verbose_name = _("Local reservation")
+        verbose_name_plural = _("Local reservations")
 
     def __str__(self) -> str:
         return self.public_reference
@@ -412,17 +414,17 @@ class HostawayReservationOperation(models.Model):
     """Idempotency and uncertainty ledger for outbound Hostaway reservation calls."""
 
     class OperationType(models.TextChoices):
-        CREATE_RESERVATION = "create_reservation", "إنشاء حجز"
-        RETRIEVE_RESERVATION = "retrieve_reservation", "جلب حجز"
-        RECONCILE_CREATION = "reconcile_creation", "مصالحـة إنشاء"
+        CREATE_RESERVATION = "create_reservation", _("Create booking")
+        RETRIEVE_RESERVATION = "retrieve_reservation", _("Fetch booking")
+        RECONCILE_CREATION = "reconcile_creation", _("Creation reconciliation")
 
     class Status(models.TextChoices):
-        PREPARED = "prepared", "مجهزة"
-        IN_PROGRESS = "in_progress", "قيد التنفيذ"
-        SUCCEEDED = "succeeded", "ناجحة"
-        FAILED = "failed", "فشلت"
-        UNKNOWN = "unknown", "غير مؤكدة"
-        BLOCKED = "blocked", "محظورة"
+        PREPARED = "prepared", pgettext_lazy("HostawayReservationOperation", "Prepared")
+        IN_PROGRESS = "in_progress", _("In progress")
+        SUCCEEDED = "succeeded", _("Successful")
+        FAILED = "failed", pgettext_lazy("HostawayReservationOperation", "Failed")
+        UNKNOWN = "unknown", _("Unconfirmed")
+        BLOCKED = "blocked", pgettext_lazy("HostawayReservationOperation", "Blocked")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reservation = models.ForeignKey(
@@ -460,8 +462,8 @@ class HostawayReservationOperation(models.Model):
                 name="one_create_operation_per_reservation",
             ),
         ]
-        verbose_name = "عملية حجز Hostaway"
-        verbose_name_plural = "عمليات حجوزات Hostaway"
+        verbose_name = _("Hostaway booking operation")
+        verbose_name_plural = _("Hostaway booking operations")
 
     def __str__(self) -> str:
         return f"{self.operation_type} — {self.status}"
@@ -471,29 +473,29 @@ class BookingModificationRequest(models.Model):
     """A session-owned local request; it never implies a Hostaway change."""
 
     class RequestType(models.TextChoices):
-        EXTEND_STAY = "extend_stay", "تمديد الإقامة"
-        CHANGE_DATES = "change_dates", "تغيير التواريخ"
-        CHANGE_GUESTS = "change_guests", "تغيير عدد الضيوف"
-        CANCEL_RESERVATION = "cancel_reservation", "طلب إلغاء"
+        EXTEND_STAY = "extend_stay", _("Extend stay")
+        CHANGE_DATES = "change_dates", _("Change dates")
+        CHANGE_GUESTS = "change_guests", _("Change guest count")
+        CANCEL_RESERVATION = "cancel_reservation", _("Cancellation request")
 
     class Status(models.TextChoices):
-        DRAFT = "draft", "مسودة"
-        PENDING_REVALIDATION = "pending_revalidation", "بانتظار إعادة التحقق"
+        DRAFT = "draft", _("Draft")
+        PENDING_REVALIDATION = "pending_revalidation", _("Awaiting re-verification")
         AWAITING_CUSTOMER_APPROVAL = (
             "awaiting_customer_approval",
-            "بانتظار موافقة العميل",
+            _("Awaiting customer approval"),
         )
-        AWAITING_PAYMENT = "awaiting_payment", "بانتظار الدفع"
-        PENDING_ADMIN_APPROVAL = "pending_admin_approval", "بانتظار الإدارة"
-        READY_FOR_HOSTAWAY = "ready_for_hostaway", "جاهز لـHostaway"
-        PROCESSING = "processing", "قيد التنفيذ"
-        COMPLETED = "completed", "مكتمل"
-        REJECTED = "rejected", "مرفوض"
-        EXPIRED = "expired", "منتهي"
-        PRICE_CHANGED = "price_changed", "تغير السعر"
-        UNAVAILABLE = "unavailable", "غير متاح"
-        FAILED = "failed", "فشل"
-        UNKNOWN = "unknown", "نتيجة غير مؤكدة"
+        AWAITING_PAYMENT = "awaiting_payment", _("Awaiting payment")
+        PENDING_ADMIN_APPROVAL = "pending_admin_approval", _("Awaiting administration")
+        READY_FOR_HOSTAWAY = "ready_for_hostaway", _("Ready for Hostaway")
+        PROCESSING = "processing", _("In progress")
+        COMPLETED = "completed", _("Completed")
+        REJECTED = "rejected", pgettext_lazy("BookingModificationRequest", "Rejected")
+        EXPIRED = "expired", pgettext_lazy("BookingModificationRequest", "Expired")
+        PRICE_CHANGED = "price_changed", _("Price changed")
+        UNAVAILABLE = "unavailable", _("Unavailable")
+        FAILED = "failed", _("Failure")
+        UNKNOWN = "unknown", _("Result unconfirmed")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_reference = models.CharField(
@@ -567,8 +569,8 @@ class BookingModificationRequest(models.Model):
             ("approve_bookingmodificationrequest", "Can approve modification requests"),
             ("reject_bookingmodificationrequest", "Can reject modification requests"),
         ]
-        verbose_name = "طلب تعديل حجز"
-        verbose_name_plural = "طلبات تعديل الحجوزات"
+        verbose_name = _("Booking modification request")
+        verbose_name_plural = _("Booking modification requests")
 
     def __str__(self) -> str:
         return self.public_reference
@@ -614,19 +616,19 @@ class HostawayModificationOperation(models.Model):
     """Idempotency ledger for future Hostaway modification writes."""
 
     class OperationType(models.TextChoices):
-        UPDATE_DATES = "update_dates", "تحديث التواريخ"
-        EXTEND_STAY = "extend_stay", "تمديد الإقامة"
-        UPDATE_GUESTS = "update_guests", "تحديث الضيوف"
-        CANCEL_RESERVATION = "cancel_reservation", "إلغاء الحجز"
-        RECONCILE_MODIFICATION = "reconcile_modification", "مصالحـة التعديل"
+        UPDATE_DATES = "update_dates", _("Update dates")
+        EXTEND_STAY = "extend_stay", _("Extend stay")
+        UPDATE_GUESTS = "update_guests", _("Update guests")
+        CANCEL_RESERVATION = "cancel_reservation", _("Cancel booking")
+        RECONCILE_MODIFICATION = "reconcile_modification", _("Modification reconciliation")
 
     class Status(models.TextChoices):
-        PREPARED = "prepared", "مجهزة"
-        IN_PROGRESS = "in_progress", "قيد التنفيذ"
-        SUCCEEDED = "succeeded", "ناجحة"
-        FAILED = "failed", "فشلت"
-        UNKNOWN = "unknown", "غير مؤكدة"
-        BLOCKED = "blocked", "محظورة"
+        PREPARED = "prepared", pgettext_lazy("HostawayModificationOperation", "Prepared")
+        IN_PROGRESS = "in_progress", _("In progress")
+        SUCCEEDED = "succeeded", _("Successful")
+        FAILED = "failed", pgettext_lazy("HostawayModificationOperation", "Failed")
+        UNKNOWN = "unknown", _("Unconfirmed")
+        BLOCKED = "blocked", pgettext_lazy("HostawayModificationOperation", "Blocked")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     modification_request = models.ForeignKey(
@@ -658,8 +660,8 @@ class HostawayModificationOperation(models.Model):
                 name="one_modification_operation_per_type",
             ),
         ]
-        verbose_name = "عملية تعديل Hostaway"
-        verbose_name_plural = "عمليات تعديل Hostaway"
+        verbose_name = _("Hostaway modification operation")
+        verbose_name_plural = _("Hostaway modification operations")
 
     def __str__(self) -> str:
         return f"{self.operation_type} — {self.status}"

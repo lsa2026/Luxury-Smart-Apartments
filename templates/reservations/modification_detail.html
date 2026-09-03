@@ -26,11 +26,11 @@
             <span class="status-pill">{{ modification.status|localized_modification_status }}</span>
         </div>
         <dl class="quote-summary">
-            <div><dt>{% trans "Current check-in" %}</dt><dd>{{ modification.old_check_in|date:"Y-m-d" }}</dd></div>
-            <div><dt>{% trans "Current check-out" %}</dt><dd>{{ modification.old_check_out|date:"Y-m-d" }}</dd></div>
+            <div><dt>{% trans "Current check-in" %}</dt><dd>{{ modification.old_check_in|localized_date }}</dd></div>
+            <div><dt>{% trans "Current check-out" %}</dt><dd>{{ modification.old_check_out|localized_date }}</dd></div>
             {% if modification.new_check_in %}
-            <div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|date:"Y-m-d" }}</dd></div>
-            <div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|date:"Y-m-d" }}</dd></div>
+            <div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|localized_date }}</dd></div>
+            <div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|localized_date }}</dd></div>
             {% endif %}
             {% if modification.new_total != None %}
             <div><dt>{% trans "New price" %}</dt><dd>{{ modification.new_total|localized_money:modification.currency }}</dd></div>

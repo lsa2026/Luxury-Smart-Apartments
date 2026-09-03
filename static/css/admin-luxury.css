@@ -458,3 +458,38 @@ html.lsa-command-open body { overflow: hidden; }
   .lsa-export-grid { grid-template-columns: 1fr; }
   .lsa-activity-list > div { grid-template-columns: 90px minmax(0,1fr); }
 }
+
+/* Image alternative text editor */
+.lsa-altbadge { display: grid; place-items: center; min-width: 104px; padding: 12px 18px; border: 1px solid var(--lsa-line); border-radius: 14px; background: var(--lsa-paper); text-align: center; }
+.lsa-altbadge strong { color: var(--lsa-ink); font-size: 24px; font-weight: 800; line-height: 1; }
+.lsa-altbadge span { margin-top: 5px; color: var(--lsa-muted); font-size: 9px; }
+.lsa-alt-layout { display: grid; grid-template-columns: minmax(0,260px) minmax(0,1fr); gap: 14px; margin-top: 14px; align-items: start; }
+.lsa-alt-picker__list { display: grid; gap: 6px; }
+.lsa-alt-picker__item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; color: var(--lsa-ink) !important; border: 1px solid var(--lsa-line); border-radius: 11px; background: color-mix(in srgb,var(--lsa-paper) 92%,var(--body-bg)); transition: border-color .18s ease, transform .18s ease; }
+.lsa-alt-picker__item:hover { transform: translateY(-1px); border-color: color-mix(in srgb,var(--lsa-gold) 50%,var(--lsa-line)); }
+.lsa-alt-picker__item.is-active { border-color: var(--lsa-gold); background: color-mix(in srgb,var(--lsa-paper) 78%,#efe2c4); }
+.lsa-alt-picker__name { min-width: 0; overflow: hidden; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.lsa-alt-picker__meta { display: grid; flex: 0 0 auto; justify-items: center; }
+.lsa-alt-picker__meta b { font-size: 12px; font-weight: 800; }
+.lsa-alt-picker__meta b.is-pending { color: #9b4d52; }
+.lsa-alt-picker__meta b.is-done { color: #2b765c; }
+.lsa-alt-picker__meta small { color: var(--lsa-muted); font-size: 8px; }
+.lsa-alt-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border: 1px dashed var(--lsa-line); border-radius: 11px; font-size: 9px; }
+.lsa-alt-tools button { padding: 5px 12px; color: var(--lsa-ink); border: 1px solid var(--lsa-line); border-radius: 99px; background: var(--lsa-paper); font-size: 9px; font-weight: 700; cursor: pointer; }
+.lsa-alt-tools button:hover { border-color: var(--lsa-gold); }
+.lsa-alt-tools small { flex: 1 1 100%; color: var(--lsa-muted); font-size: 8px; }
+.lsa-alt-scroll { max-height: 62vh; overflow: auto; border: 1px solid var(--lsa-line); border-radius: 12px; }
+.lsa-alt-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.lsa-alt-table th { position: sticky; top: 0; z-index: 1; padding: 9px 10px; color: var(--lsa-muted); background: var(--body-bg); font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.lsa-alt-table td { padding: 7px 10px; border-top: 1px solid var(--lsa-line); vertical-align: middle; }
+.lsa-alt-table input { width: 100%; padding: 7px 9px; border: 1px solid var(--lsa-line); border-radius: 9px; background: var(--lsa-paper); font-size: 10px; }
+.lsa-alt-table input:focus { border-color: var(--lsa-gold); outline: none; }
+.lsa-alt-thumb { position: relative; width: 108px; }
+.lsa-alt-thumb img { width: 96px; height: 64px; border-radius: 8px; object-fit: cover; }
+.lsa-alt-cover { display: inline-block; margin-top: 4px; padding: 2px 7px; color: #8c6527; border-radius: 99px; background: color-mix(in srgb,var(--lsa-paper) 72%,#efdfbc); font-size: 7px; font-weight: 800; }
+.lsa-alt-actions { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.lsa-btn-primary { padding: 10px 22px; color: #22322c; border: 0; border-radius: 99px; background: linear-gradient(135deg,#d9bd7c,#c2a25e); font-size: 10px; font-weight: 800; cursor: pointer; }
+.lsa-btn-primary:hover { filter: brightness(1.04); }
+.lsa-alt-actions small { color: var(--lsa-muted); font-size: 9px; }
+.lsa-alt-clear { padding: 26px; color: #2b6c55; border: 1px dashed color-mix(in srgb,#4eaa7b 40%,var(--lsa-line)); border-radius: 13px; background: color-mix(in srgb,var(--lsa-paper) 88%,#deeee7); text-align: center; font-size: 11px; font-weight: 700; }
+@media (max-width: 900px) { .lsa-alt-layout { grid-template-columns: 1fr; } }

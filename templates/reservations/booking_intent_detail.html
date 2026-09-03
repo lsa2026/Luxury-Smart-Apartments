@@ -12,6 +12,41 @@
 >
     {% include "includes/progress_indicator.html" with step=3 %}
     <div class="section-heading"><p class="eyebrow">{% trans "Local booking request" %}</p><h1>{% trans "Review your request" %}</h1></div>
-    <article class="review-panel"><h2>{{ intent.property|localized_property_name }}</h2><dl class="quote-summary"><div><dt>{% trans "Check-in" %}</dt><dd>{{ intent.check_in|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ intent.check_out|date:"Y-m-d" }}</dd></div><div><dt>{% trans "Nights" %}</dt><dd>{{ intent.nights }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ intent.guests }}</dd></div><div><dt>{% trans "Email" %}</dt><dd>{{ masked_email }}</dd></div><div><dt>{% trans "Phone" %}</dt><dd>{{ masked_phone }}</dd></div><div class="quote-summary__total"><dt>{% trans "Total" %}</dt><dd>{{ intent.total_price|localized_money:intent.currency }}</dd></div></dl><div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>{% if hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once>{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>{% elif payment_sandbox_enabled %}<div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "The next screen is a local simulation with no financial or Hostaway activity." %}</span></div><a class="button" href="{% url 'payments:sandbox_booking' intent.public_reference %}">{% trans "Continue to test payment" %}</a>{% else %}<button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button>{% endif %}</article>
+    <article class="review-panel">
+        <div class="review-panel__media">
+            {% if cover_image %}
+            <img
+                src="{{ cover_image.display_url }}"
+                alt="{{ cover_image|localized_image_alt|default:intent.property.display_name }}"
+                width="960"
+                height="640"
+                loading="lazy"
+            >
+            {% else %}
+            <div class="review-panel__media-empty" aria-hidden="true"><span>LS</span></div>
+            {% endif %}
+            <div class="review-panel__media-copy">
+                <small>{% trans "Stay" %}</small>
+                <h2>{{ intent.property|localized_property_name }}</h2>
+            </div>
+        </div>
+        <dl class="quote-summary"><div><dt>{% trans "Check-in" %}</dt><dd>{{ intent.check_in|localized_date }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ intent.check_out|localized_date }}</dd></div><div><dt>{% trans "Nights" %}</dt><dd>{{ intent.nights|localized_number }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ intent.guests|localized_number }}</dd></div><div><dt>{% trans "Email" %}</dt><dd><bdi dir="ltr">{{ masked_email }}</bdi></dd></div><div><dt>{% trans "Phone" %}</dt><dd><bdi dir="ltr">{{ masked_phone }}</bdi></dd></div></dl>
+        {% if intent.quote.components %}
+        <div class="review-panel__breakdown">
+            <h3>{% trans "Price breakdown" %}</h3>
+            <ul class="price-components">
+                {% for component in intent.quote.components %}
+                <li>
+                    <span>{{ component.title|localized_price_component }}</span>
+                    <strong>{{ component|price_component_amount|localized_money:intent.currency }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        <div class="review-panel__total">
+            <span>{% trans "Total" %}</span>
+            <strong>{{ intent.total_price|localized_money:intent.currency }}</strong>
+        </div><div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>{% if hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once>{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>{% elif payment_sandbox_enabled %}<div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "The next screen is a local simulation with no financial or Hostaway activity." %}</span></div><a class="button" href="{% url 'payments:sandbox_booking' intent.public_reference %}">{% trans "Continue to test payment" %}</a>{% else %}<button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button>{% endif %}</article>
 </section>
 {% endblock %}

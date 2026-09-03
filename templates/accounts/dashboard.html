@@ -25,9 +25,9 @@
                 {{ reservation.payment_status|localized_payment_status }}
             </p>
             <dl class="quote-summary">
-                <div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|date:"Y-m-d" }}</dd></div>
-                <div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|date:"Y-m-d" }}</dd></div>
-                <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests }}</dd></div>
+                <div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|localized_date }}</dd></div>
+                <div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|localized_date }}</dd></div>
+                <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests|localized_number }}</dd></div>
                 <div><dt>{% trans "Total" %}</dt><dd>{{ reservation.total_price|localized_money:reservation.currency }}</dd></div>
             </dl>
             <a class="button" href="{% url 'reservations:manage' reservation.public_reference %}">{% trans "Manage booking" %}</a>

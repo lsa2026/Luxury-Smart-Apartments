@@ -13,6 +13,7 @@ urlpatterns = [
     path("payments/", include("apps.payments.urls")),
     path("", include("apps.notifications.urls")),
     path("", include("apps.core.marketing_urls")),
+    path("", include("apps.properties.admin_urls")),
     path("admin/customers/", customer_overview, name="admin_customers"),
     path("admin/", admin.site.urls),
     path("", include("apps.core.urls")),

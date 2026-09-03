@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from functools import partial
 
 import pytest
 from django.core.cache import cache
@@ -14,12 +15,16 @@ from apps.integrations.hostaway.availability_validators import (
 )
 from apps.properties.models import Property
 from apps.reservations.models import BookingQuote
-from apps.reservations.services.availability import AvailabilityResult
+from apps.reservations.services.availability import (
+    AvailabilityResult,
+    AvailabilityService,
+)
 from apps.reservations.services.booking import (
     QuoteCreation,
     create_quote_for_property,
 )
 from apps.reservations.views import AvailabilitySearchView
+from tests.test_availability_service import FakeClient, make_calendar
 
 pytestmark = pytest.mark.django_db
 
@@ -156,7 +161,54 @@ def test_city_only_search_lists_available_properties_without_creating_quote(
     assert "guests=2" in content
     assert BookingQuote.objects.count() == 0
     assert mocked_service.calls == 1
-    assert mocked_service.last_bypass_cache is True
+    assert mocked_service.last_bypass_cache is False
+
+
+def test_search_without_city_or_property_covers_every_city(
+    mocked_service: type[DummyService],
+) -> None:
+    property_obj = make_property()
+    DummyService.result = available_result(property_obj)
+    data = form_data(property_obj)
+    data["city"] = ""
+    data["property"] = ""
+
+    response = Client().post("/reservations/quotes/", data)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "الوحدات المتاحة في جميع المدن" in content
+    assert property_obj.name_ar in content
+    assert BookingQuote.objects.count() == 0
+    assert mocked_service.calls == 1
+
+
+def test_repeated_browse_search_reuses_the_availability_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cache.clear()
+    property_obj = make_property()
+    check_in = timezone.localdate() + timedelta(days=5)
+    fake = FakeClient(make_calendar(check_in))
+    monkeypatch.setattr(
+        AvailabilitySearchView,
+        "service_class",
+        staticmethod(partial(AvailabilityService, client=fake)),
+    )
+    data = form_data(property_obj)
+    data["city"] = ""
+    data["property"] = ""
+
+    client = Client()
+    first = client.post("/reservations/quotes/", data)
+    second = client.post("/reservations/quotes/", data)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert property_obj.name_ar in second.content.decode()
+    # The second sweep is served entirely from the shared cache.
+    assert fake.calendar_calls == 1
+    assert fake.price_calls == 1
 
 
 def test_available_property_detail_preserves_search_without_repeating_fields() -> None:

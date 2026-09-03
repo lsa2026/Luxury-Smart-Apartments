@@ -9,6 +9,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from .branding import BRAND_NAME
 
@@ -30,8 +32,8 @@ class SitePage(models.Model):
 
     class Meta:
         ordering = ["slug"]
-        verbose_name = "صفحة محتوى"
-        verbose_name_plural = "صفحات المحتوى"
+        verbose_name = _("Content page")
+        verbose_name_plural = _("Content pages")
 
     def __str__(self) -> str:
         return self.title_ar or self.title_en or self.title_fr
@@ -52,8 +54,8 @@ class FAQItem(models.Model):
     class Meta:
         ordering = ["sort_order", "id"]
         indexes = [models.Index(fields=["is_active", "sort_order"])]
-        verbose_name = "سؤال شائع"
-        verbose_name_plural = "الأسئلة الشائعة"
+        verbose_name = _("FAQ item")
+        verbose_name_plural = _("FAQ items")
 
     def __str__(self) -> str:
         return self.question_ar or self.question_en or self.question_fr
@@ -87,8 +89,8 @@ class SiteSetting(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "إعداد الموقع"
-        verbose_name_plural = "إعدادات الموقع"
+        verbose_name = _("Site setting")
+        verbose_name_plural = _("Site settings")
 
     def __str__(self) -> str:
         return self.site_name
@@ -111,10 +113,10 @@ class SiteSetting(models.Model):
 
 class ContactMessage(models.Model):
     class Status(models.TextChoices):
-        NEW = "new", "جديدة"
-        IN_PROGRESS = "in_progress", "قيد المتابعة"
-        CLOSED = "closed", "مغلقة"
-        SPAM = "spam", "مزعجة"
+        NEW = "new", _("New")
+        IN_PROGRESS = "in_progress", _("Being followed up")
+        CLOSED = "closed", _("Closed")
+        SPAM = "spam", _("Spam")
 
     name = models.CharField(max_length=150)
     email = models.EmailField()
@@ -135,8 +137,8 @@ class ContactMessage(models.Model):
             models.Index(fields=["status", "-created_at"]),
             models.Index(fields=["-created_at"]),
         ]
-        verbose_name = "رسالة تواصل"
-        verbose_name_plural = "رسائل التواصل"
+        verbose_name = _("Contact message")
+        verbose_name_plural = _("Contact messages")
 
     def __str__(self) -> str:
         return f"{self.subject} — {self.created_at:%Y-%m-%d}"
@@ -173,8 +175,8 @@ class LegacyRedirect(models.Model):
             models.Index(fields=["is_active", "source_path"]),
             models.Index(fields=["redirect_type", "is_active"]),
         ]
-        verbose_name = "تحويل رابط قديم"
-        verbose_name_plural = "تحويلات الروابط القديمة"
+        verbose_name = _("Legacy redirect")
+        verbose_name_plural = _("Legacy redirects")
 
     def __str__(self) -> str:
         return f"{self.source_path} → {self.destination_path or '410'}"
@@ -230,9 +232,9 @@ class LegacyRedirect(models.Model):
 
 class MarketingEventReceipt(models.Model):
     class Status(models.TextChoices):
-        PREPARED = "prepared", "مجهز"
-        EMITTED = "emitted", "أرسل"
-        BLOCKED = "blocked", "محظور"
+        PREPARED = "prepared", pgettext_lazy("MarketingEventReceipt", "Prepared")
+        EMITTED = "emitted", pgettext_lazy("MarketingEventReceipt", "Sent")
+        BLOCKED = "blocked", pgettext_lazy("MarketingEventReceipt", "Blocked")
 
     FINANCIAL_EVENTS = (("purchase", "Purchase"), ("refund", "Refund"))
 
@@ -257,8 +259,8 @@ class MarketingEventReceipt(models.Model):
             ),
         ]
         indexes = [models.Index(fields=["status", "-created_at"])]
-        verbose_name = "إيصال حدث تسويقي"
-        verbose_name_plural = "إيصالات الأحداث التسويقية"
+        verbose_name = _("Marketing event receipt")
+        verbose_name_plural = _("Marketing event receipts")
         permissions = [
             ("view_marketing_diagnostics", "Can view marketing diagnostics"),
             ("view_seo_dashboard", "Can view SEO dashboard"),

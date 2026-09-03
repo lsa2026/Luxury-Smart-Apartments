@@ -7,6 +7,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from apps.properties.models import Property
@@ -62,7 +63,7 @@ def marketing_diagnostics(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "admin/core/marketing_diagnostics.html",
-        {"title": "تشخيص Google والتسويق", "status": marketing_status()},
+        {"title": _("Google and marketing diagnostics"), "status": marketing_status()},
     )
 
 
@@ -72,7 +73,7 @@ def seo_dashboard(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "admin/core/seo_dashboard.html",
-        {"title": "لوحة SEO التقنية", "seo": seo_diagnostics()},
+        {"title": _("Technical SEO dashboard"), "seo": seo_diagnostics()},
     )
 
 
@@ -100,7 +101,7 @@ def validate_marketing_component(request: HttpRequest, component: str) -> HttpRe
         request,
         "admin/core/marketing_validation_result.html",
         {
-            "title": "نتيجة التحقق المحلي",
+            "title": _("Local validation result"),
             "component": component,
             "valid": result is not None,
         },

@@ -1836,7 +1836,10 @@ h2 {
 }
 
 .account-shell--compact .account-form,
-.account-shell--compact .form-grid.account-form,
+.account-shell--compact .form-grid.account-form {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .account-form > .field-group--full,
 .account-form > .button,
 .account-form > .checkbox-field,
@@ -1850,13 +1853,59 @@ h2 {
 }
 
 .field-group label {
+    color: var(--color-text);
     font-size: 0.86rem;
     font-weight: 750;
 }
 
-.field-group input {
+.field-group input:not([type="checkbox"]),
+.field-group select,
+.field-group textarea {
     width: 100%;
     min-height: 3.15rem;
+    padding: 0.7rem 0.95rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.field-group input:not([type="checkbox"])::placeholder,
+.field-group textarea::placeholder {
+    color: var(--color-muted);
+}
+
+.field-group input:not([type="checkbox"]):hover,
+.field-group select:hover,
+.field-group textarea:hover {
+    border-color: var(--color-secondary);
+}
+
+.field-group input:not([type="checkbox"]):focus,
+.field-group select:focus,
+.field-group textarea:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgb(212 169 93 / 24%);
+    outline: none;
+}
+
+.field-group .helptext,
+.field-group ul.helptext {
+    padding: 0;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    list-style: none;
+}
+
+.field-group:has(.errorlist) input:not([type="checkbox"]),
+.field-group:has(.errorlist) select,
+.field-group:has(.errorlist) textarea {
+    border-color: var(--color-danger);
 }
 
 .checkbox-field {
@@ -2409,10 +2458,11 @@ h2 {
 
 .footer-column a {
     display: flex;
+    min-height: 2.75rem;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding-block-end: 0.45rem;
+    padding-block: 0.35rem 0.45rem;
     border-block-end: 1px solid rgb(255 255 255 / 7%);
     color: rgb(255 255 255 / 68%);
     text-decoration: none;
@@ -2778,7 +2828,7 @@ input[data-iso-date] {
 
 .footer-social a {
     display: grid;
-    width: 2.25rem;
+    width: 2.75rem;
     aspect-ratio: 1;
     place-items: center;
     border: 1px solid rgb(255 255 255 / 12%);
@@ -3340,8 +3390,8 @@ input[data-iso-date] {
     z-index: 5;
     top: 50%;
     display: grid;
-    width: 2.45rem;
-    min-height: 2.45rem;
+    width: 2.75rem;
+    min-height: 2.75rem;
     padding: 0;
     border: 1px solid rgb(255 255 255 / 48%);
     place-items: center;
@@ -3466,7 +3516,8 @@ input[data-iso-date] {
     align-items: center;
     gap: 0.35rem;
     margin: 0 0 0.35rem;
-    color: #8a775c;
+    /* #8a775c scored 4.31:1 on the card surface, just under AA for this size. */
+    color: #826f54;
     font-size: 0.76rem;
     font-weight: 750;
     letter-spacing: 0.06em;
@@ -3578,10 +3629,11 @@ input[data-iso-date] {
     position: relative;
     z-index: 2;
     display: inline-flex;
+    min-height: 2.75rem;
     flex: 0 0 auto;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.58rem 0.8rem;
+    padding: 0.58rem 0.9rem;
     color: #fff;
     background: #17112f;
     border-radius: 0.75rem;
@@ -3996,8 +4048,10 @@ input[data-iso-date] {
     }
 
     .property-card__nav {
-        width: 2.2rem;
-        min-height: 2.2rem;
+        /* Kept at the 2.75rem touch target; these arrows are the only way to
+           browse a card's photos on a phone. */
+        width: 2.75rem;
+        min-height: 2.75rem;
     }
 
     .property-card__nav--previous {
@@ -4754,11 +4808,26 @@ input[data-iso-date] {
 
 @media (max-width: 48rem) {
     .consent-banner {
+        gap: var(--space-3);
+        padding: var(--space-4);
         grid-template-columns: 1fr;
     }
 
+    .consent-banner p {
+        margin-block: 0.35rem 0;
+        font-size: 0.86rem;
+        line-height: 1.55;
+    }
+
+    .consent-actions {
+        gap: 0.45rem;
+    }
+
     .consent-actions > * {
-        flex: 1 1 10rem;
+        min-height: 2.75rem;
+        padding-inline: 0.75rem;
+        font-size: 0.84rem;
+        flex: 1 1 7rem;
     }
 }
 
@@ -5566,6 +5635,143 @@ h2 {
     border-color: rgb(222 214 202 / 85%);
     border-radius: 1.35rem;
     box-shadow: 0 18px 55px rgb(17 11 43 / 9%);
+}
+
+.review-panel__media {
+    position: relative;
+    margin: calc(clamp(1.4rem, 3vw, 2.2rem) * -1) calc(clamp(1.4rem, 3vw, 2.2rem) * -1)
+        clamp(1.3rem, 3vw, 1.9rem);
+    overflow: hidden;
+    border-radius: 1.35rem 1.35rem 0 0;
+    isolation: isolate;
+}
+
+.review-panel__media img,
+.review-panel__media-empty {
+    display: block;
+    width: 100%;
+    height: clamp(11rem, 26vw, 17rem);
+    object-fit: cover;
+}
+
+.review-panel__media-empty {
+    display: grid;
+    color: var(--color-accent);
+    background: linear-gradient(150deg, #1b1440, #2c2159);
+    font-family: var(--font-display);
+    font-size: 2rem;
+    letter-spacing: 0.18em;
+    place-items: center;
+}
+
+.review-panel__media::after {
+    position: absolute;
+    background: linear-gradient(to top, rgb(16 10 40 / 88%) 0%, rgb(16 10 40 / 12%) 55%, rgb(16 10 40 / 0%) 100%);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+}
+
+.review-panel__media-copy {
+    position: absolute;
+    z-index: 1;
+    inset-block-end: clamp(0.9rem, 2.5vw, 1.4rem);
+    inset-inline: clamp(1.1rem, 3vw, 1.9rem);
+    color: #fff;
+}
+
+.review-panel__media-copy small {
+    display: block;
+    color: var(--color-accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.review-panel__media-copy h2 {
+    margin: 0.2rem 0 0;
+    color: #fff;
+    font-size: clamp(1.25rem, 2.6vw, 1.7rem);
+    line-height: 1.25;
+    text-shadow: 0 2px 18px rgb(10 6 26 / 55%);
+}
+
+.review-panel__breakdown {
+    padding-block-start: clamp(1rem, 2.5vw, 1.4rem);
+    margin-block-start: clamp(1rem, 2.5vw, 1.4rem);
+    border-block-start: 1px solid var(--color-border);
+}
+
+.review-panel__breakdown h3 {
+    margin: 0 0 0.6rem;
+    color: var(--color-muted);
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.review-panel__breakdown .price-components {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+}
+
+.review-panel__breakdown .price-components li {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-block: 0.5rem;
+    font-size: 0.93rem;
+}
+
+.review-panel__breakdown .price-components li + li {
+    border-block-start: 1px dashed rgb(222 214 202 / 80%);
+}
+
+.review-panel__breakdown .price-components span {
+    color: var(--color-muted);
+}
+
+.review-panel__breakdown .price-components strong {
+    color: var(--color-text);
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+/* The site-wide currency code scales with its amount; keep it legible here. */
+.review-panel__breakdown .money__currency {
+    font-size: 0.72rem;
+}
+
+.review-panel__total {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: clamp(0.95rem, 2.5vw, 1.25rem) clamp(1.1rem, 3vw, 1.5rem);
+    margin-block-start: clamp(1rem, 2.5vw, 1.35rem);
+    color: #fff;
+    background: linear-gradient(135deg, #1b1440, #2c2159);
+    border-radius: 1rem;
+    box-shadow: 0 14px 34px rgb(20 16 46 / 22%);
+}
+
+.review-panel__total > span {
+    color: var(--color-accent);
+    font-size: 0.78rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.review-panel__total > strong {
+    color: #fff;
+    font: 500 clamp(1.45rem, 4vw, 2rem) var(--font-display);
 }
 
 .filter-bar {
@@ -7197,7 +7403,8 @@ h2 {
     aspect-ratio: 1;
     place-items: center;
     border: 1px solid rgb(178 138 73 / 35%);
-    color: #8e682d;
+    /* #8e682d scored 4.34:1 on this badge, just under AA. */
+    color: #836026;
     background: #f6eddd;
     border-radius: 50%;
     font: 600 1.1rem var(--font-display);
@@ -7698,7 +7905,8 @@ h2 {
 }
 
 .guest-journey__optional summary small {
-    color: #898176;
+    /* #898176 scored 3.65:1 at this size, under AA. */
+    color: #6f685e;
     font-size: 0.62rem;
 }
 
@@ -9455,7 +9663,8 @@ h2 {
 }
 
 .travel-story__points article > span {
-    color: #a07633;
+    /* #a07633 scored 3.63:1 on this cream panel, under AA for 16px text. */
+    color: #8a6425;
     font: 500 1rem var(--font-display);
 }
 
@@ -9898,6 +10107,7 @@ body.calendar-open {
 
 .luxury-calendar__header h2 {
     margin-block: 0.2rem 0.25rem;
+    color: var(--color-text);
     font-size: clamp(1.65rem, 2.6vw, 2.2rem);
 }
 
@@ -9957,7 +10167,7 @@ body.calendar-open {
 }
 
 .luxury-calendar__selection button small {
-    color: var(--color-muted);
+    color: #5f5866;
     font-size: 0.68rem;
 }
 
@@ -9970,7 +10180,7 @@ body.calendar-open {
 }
 
 .luxury-calendar__route {
-    color: #a57a35;
+    color: #8a6323;
     font-size: 1.2rem;
 }
 
@@ -10052,7 +10262,7 @@ body.calendar-open {
 
 .luxury-calendar__weekdays span {
     padding-block: 0.3rem;
-    color: #8a8175;
+    color: #6c6459;
     font-size: 0.65rem;
     font-weight: 750;
     text-align: center;
@@ -10724,5 +10934,615 @@ a.contact-channel:hover {
 @media (max-width: 30rem) {
     .mobile-nav__panel {
         width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Secure checkout
+   The HyperPay COPYandPAY widget ships its own grey theme and English labels.
+   Labels come from wpwlOptions.locale; the .wpwl-* rules below re-skin the
+   markup it injects so the hosted form reads as part of this site. The card
+   fields themselves live in HyperPay iframes and are never restyled from here.
+   ========================================================================== */
+
+.checkout__heading {
+    margin-block-end: clamp(1.2rem, 3vw, 1.8rem);
+}
+
+.checkout__environment {
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    margin-block-end: clamp(1.2rem, 3vw, 1.8rem);
+    color: #7a5510;
+    background: #fdf4e0;
+    border: 1px solid rgb(215 173 98 / 45%);
+    border-radius: var(--radius-pill);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.checkout__grid {
+    display: grid;
+    gap: clamp(1.2rem, 3vw, 2rem);
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+}
+
+.checkout__payment,
+.checkout__summary {
+    min-width: 0;
+    border: 1px solid rgb(215 173 98 / 24%);
+    background: linear-gradient(145deg, #fff, #fbf8f1);
+    border-radius: 1.35rem;
+    box-shadow: 0 18px 55px rgb(17 11 43 / 9%);
+}
+
+.checkout__payment {
+    padding: clamp(1.2rem, 3vw, 2rem);
+}
+
+.checkout__payment-head {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    margin-block-end: clamp(1rem, 2.5vw, 1.4rem);
+}
+
+.checkout__payment-head h2 {
+    margin: 0;
+    font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+}
+
+.checkout__lock {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    color: #1b5e45;
+    background: #e9f4ef;
+    border-radius: var(--radius-pill);
+    font-size: 0.74rem;
+    font-weight: 750;
+}
+
+.checkout__methods {
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    margin-block-end: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.checkout__method {
+    display: grid;
+    gap: 0.15rem;
+    min-height: 2.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    background: #fff;
+    border-radius: 1rem;
+    text-align: start;
+    cursor: pointer;
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+.checkout__method:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+}
+
+.checkout__method.is-active {
+    border-color: var(--color-accent);
+    background: #fffdf6;
+    box-shadow:
+        0 0 0 2px rgb(212 169 93 / 35%),
+        0 12px 26px rgb(20 16 46 / 10%);
+}
+
+.checkout__method-mark {
+    display: inline-grid;
+    min-width: 3.4rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    justify-self: start;
+    place-items: center;
+}
+
+.checkout__method-mark--mada {
+    color: #10594e;
+    background: #e3f2ef;
+}
+
+.checkout__method-mark--card {
+    color: #1a1f71;
+    background: #e6e8f5;
+}
+
+.checkout__method-name {
+    font-weight: 750;
+}
+
+.checkout__method small {
+    color: #5f5866;
+    font-size: 0.76rem;
+}
+
+.checkout__panel[hidden] {
+    display: none;
+}
+
+.checkout__assurances {
+    display: grid;
+    gap: 0.5rem;
+    padding: clamp(0.9rem, 2.5vw, 1.2rem) 0 0;
+    margin: clamp(1rem, 2.5vw, 1.4rem) 0 0;
+    border-block-start: 1px solid var(--color-border);
+    color: #5f5866;
+    font-size: 0.84rem;
+    list-style: none;
+}
+
+.checkout__assurances li {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.checkout__assurances li::before {
+    flex: 0 0 auto;
+    color: #1b5e45;
+    content: "\2713";
+    font-weight: 800;
+}
+
+.checkout__summary {
+    position: sticky;
+    top: 6.5rem;
+    padding: 0 clamp(1.1rem, 3vw, 1.6rem) clamp(1.2rem, 3vw, 1.6rem);
+    overflow: hidden;
+}
+
+.checkout__summary-media {
+    position: relative;
+    margin-inline: calc(clamp(1.1rem, 3vw, 1.6rem) * -1);
+    margin-block-end: clamp(1rem, 2.5vw, 1.3rem);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.checkout__summary-media img,
+.checkout__summary-media-empty {
+    display: block;
+    width: 100%;
+    height: clamp(9rem, 20vw, 12rem);
+    object-fit: cover;
+}
+
+.checkout__summary-media-empty {
+    display: grid;
+    color: var(--color-accent);
+    background: linear-gradient(150deg, #1b1440, #2c2159);
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    letter-spacing: 0.18em;
+    place-items: center;
+}
+
+.checkout__summary-media::after {
+    position: absolute;
+    background: linear-gradient(to top, rgb(16 10 40 / 88%) 0%, rgb(16 10 40 / 10%) 60%, rgb(16 10 40 / 0%) 100%);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+}
+
+.checkout__summary-media-copy {
+    position: absolute;
+    z-index: 1;
+    inset-block-end: 0.9rem;
+    inset-inline: clamp(1.1rem, 3vw, 1.6rem);
+    color: #fff;
+}
+
+.checkout__summary-media-copy small {
+    display: block;
+    color: var(--color-accent);
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.checkout__summary-media-copy h2 {
+    margin: 0.15rem 0 0;
+    color: #fff;
+    font-size: clamp(1.05rem, 2.3vw, 1.35rem);
+    line-height: 1.3;
+    text-shadow: 0 2px 18px rgb(10 6 26 / 55%);
+}
+
+.checkout__facts {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.checkout__facts div {
+    padding: 0.6rem 0.75rem;
+    background: rgb(238 232 223 / 55%);
+    border-radius: 0.7rem;
+}
+
+.checkout__facts dt {
+    color: #5f5866;
+    font-size: 0.72rem;
+}
+
+.checkout__facts dd {
+    margin: 0.1rem 0 0;
+    font-weight: 700;
+}
+
+.checkout__breakdown {
+    padding-block-start: 1rem;
+    margin-block-start: 1rem;
+    border-block-start: 1px solid var(--color-border);
+}
+
+.checkout__breakdown h3 {
+    margin: 0 0 0.5rem;
+    color: #5f5866;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.checkout__breakdown .price-components {
+    display: grid;
+    gap: 0.1rem;
+    margin: 0;
+}
+
+.checkout__breakdown .price-components li {
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-block: 0.45rem;
+    font-size: 0.9rem;
+}
+
+.checkout__breakdown .price-components li + li {
+    border-block-start: 1px dashed rgb(222 214 202 / 80%);
+}
+
+.checkout__breakdown .price-components span {
+    color: #5f5866;
+}
+
+.checkout__breakdown .money__currency {
+    font-size: 0.72rem;
+}
+
+.checkout__total {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: clamp(0.9rem, 2.4vw, 1.2rem) clamp(1rem, 2.8vw, 1.4rem);
+    margin-block-start: 1.1rem;
+    color: #fff;
+    background: linear-gradient(135deg, #1b1440, #2c2159);
+    border-radius: 1rem;
+    box-shadow: 0 14px 34px rgb(20 16 46 / 22%);
+}
+
+.checkout__total > span {
+    color: var(--color-accent);
+    font-size: 0.76rem;
+    font-weight: 750;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.checkout__total > strong {
+    color: #fff;
+    font: 500 clamp(1.35rem, 3.6vw, 1.85rem) var(--font-display);
+}
+
+.checkout__back {
+    display: block;
+    min-height: 2.75rem;
+    padding-block-start: 1rem;
+    text-align: center;
+}
+
+@media (max-width: 60rem) {
+    .checkout__grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* On a phone the summary comes first: confirm the amount, then pay. */
+    .checkout__summary {
+        position: static;
+        order: -1;
+    }
+}
+
+/* --- HyperPay COPYandPAY widget re-skin ---------------------------------- */
+
+.checkout .wpwl-form {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.checkout .wpwl-form-card {
+    margin: 0;
+}
+
+.checkout .wpwl-wrapper,
+.checkout .wpwl-group {
+    margin-block-end: 0.85rem;
+}
+
+.checkout .wpwl-label {
+    display: block;
+    margin-block-end: 0.35rem;
+    color: var(--color-text);
+    font-size: 0.84rem;
+    font-weight: 750;
+    text-align: start;
+}
+
+.checkout .wpwl-control {
+    width: 100%;
+    min-height: 3.15rem;
+    padding: 0.7rem 0.95rem;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    box-shadow: none;
+    font-size: 1rem;
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.checkout .wpwl-control:hover {
+    border-color: var(--color-secondary);
+}
+
+.checkout .wpwl-control:focus,
+.checkout .wpwl-control-iframe.wpwl-hosted-focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgb(212 169 93 / 24%);
+    outline: none;
+}
+
+.checkout .wpwl-has-error .wpwl-control,
+.checkout .wpwl-control-iframe.wpwl-hosted-error {
+    border-color: var(--color-danger);
+}
+
+.checkout .wpwl-hint,
+.checkout .wpwl-message {
+    margin-block-start: 0.3rem;
+    color: var(--color-danger);
+    font-size: 0.8rem;
+}
+
+.checkout .wpwl-brand-card {
+    inset-inline-end: 0.8rem;
+}
+
+.checkout .wpwl-button-pay {
+    width: 100%;
+    min-height: 3.4rem;
+    padding-inline: 1.4rem;
+    border: 0;
+    color: #fff;
+    background: linear-gradient(135deg, #1b1440, #2c2159);
+    border-radius: var(--radius-pill);
+    box-shadow: 0 14px 30px rgb(20 16 46 / 26%);
+    font-size: 1rem;
+    font-weight: 750;
+    text-shadow: none;
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.checkout .wpwl-button-pay:hover {
+    background: linear-gradient(135deg, #221a52, #372a6d);
+    box-shadow: 0 18px 38px rgb(20 16 46 / 32%);
+    transform: translateY(-1px);
+}
+
+.checkout .wpwl-button-pay:disabled {
+    box-shadow: none;
+    opacity: 0.55;
+    transform: none;
+}
+
+/* The widget renders its own spinner container while it boots. */
+.checkout .wpwl-loading {
+    min-height: 12rem;
+}
+
+/* Floating WhatsApp contact button: fixed to the inline end, RTL-aware, and
+   lifted above the consent banner while that banner is on screen. */
+.whatsapp-fab {
+    --whatsapp-fab-size: 3.2rem;
+
+    position: fixed;
+    inset-block-end: calc(1.5rem + var(--whatsapp-fab-offset, 0px));
+    inset-inline-end: 1.5rem;
+    z-index: 85;
+    transition: inset-block-end 220ms ease;
+}
+
+.whatsapp-fab__link {
+    position: relative;
+    display: inline-flex;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.45rem;
+    color: #fff;
+    background: linear-gradient(140deg, #2fd06f, #128c46);
+    border: 1px solid rgb(255 255 255 / 45%);
+    border-radius: var(--radius-pill);
+    box-shadow:
+        0 14px 34px rgb(9 44 42 / 28%),
+        0 0 0 1px rgb(18 61 58 / 6%);
+    text-decoration: none;
+    transition:
+        transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1),
+        box-shadow 200ms ease;
+}
+
+.whatsapp-fab__link:hover,
+.whatsapp-fab__link:focus-visible {
+    box-shadow:
+        0 20px 44px rgb(9 44 42 / 34%),
+        0 0 0 2px var(--color-accent);
+    transform: translateY(-2px);
+}
+
+.whatsapp-fab__link:active {
+    transform: translateY(0);
+}
+
+.whatsapp-fab__glyph {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--whatsapp-fab-size);
+    height: var(--whatsapp-fab-size);
+    background: rgb(255 255 255 / 12%);
+    border-radius: 50%;
+}
+
+.whatsapp-fab__glyph svg {
+    width: 1.7rem;
+    height: 1.7rem;
+    fill: currentcolor;
+}
+
+.whatsapp-fab__label {
+    display: grid;
+    max-width: 0;
+    padding-inline-end: 0;
+    overflow: hidden;
+    opacity: 0;
+    white-space: nowrap;
+    transition:
+        max-width 260ms cubic-bezier(0.2, 0.8, 0.3, 1),
+        opacity 200ms ease,
+        padding-inline-end 260ms ease;
+}
+
+.whatsapp-fab__label strong {
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.whatsapp-fab__label small {
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+}
+
+.whatsapp-fab__link:hover .whatsapp-fab__label,
+.whatsapp-fab__link:focus-visible .whatsapp-fab__label {
+    max-width: 16rem;
+    padding-inline-end: 0.9rem;
+    opacity: 1;
+}
+
+/* Attention halo. It sits behind the button and never intercepts pointer input. */
+.whatsapp-fab__halo {
+    position: absolute;
+    inset-block: 0.45rem;
+    inset-inline-start: 0.45rem;
+    width: var(--whatsapp-fab-size);
+    background: rgb(47 208 111 / 55%);
+    border-radius: 50%;
+    /* Negative depth keeps the ring behind the button face; the fixed wrapper
+       owns the stacking context, so it never slips behind the page. */
+    z-index: -1;
+    animation: whatsapp-fab-halo 2.6s ease-out infinite;
+    pointer-events: none;
+}
+
+@keyframes whatsapp-fab-halo {
+    0% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    70%,
+    100% {
+        opacity: 0;
+        transform: scale(1.65);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .whatsapp-fab,
+    .whatsapp-fab__link,
+    .whatsapp-fab__label {
+        transition: none;
+    }
+
+    .whatsapp-fab__halo {
+        animation: none;
+    }
+}
+
+@media (width <= 40rem) {
+    .whatsapp-fab {
+        --whatsapp-fab-size: 2.9rem;
+
+        inset-block-end: calc(1rem + var(--whatsapp-fab-offset, 0px));
+        inset-inline-end: 1rem;
+    }
+
+    /* Touch devices have no hover, so the label stays collapsed and the icon leads. */
+    .whatsapp-fab__link:hover .whatsapp-fab__label {
+        max-width: 0;
+        padding-inline-end: 0;
+        opacity: 0;
+    }
+}
+
+/* The splash overlay owns the viewport while it plays. */
+body.splash-active .whatsapp-fab {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media print {
+    .whatsapp-fab {
+        display: none;
     }
 }

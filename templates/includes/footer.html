@@ -107,7 +107,7 @@
         <div class="container footer-bottom">
             <p>© {{ current_year }} Luxury Smart Apartments. {% trans "All rights reserved." %}</p>
             {% if site_setting.instagram_url or site_setting.facebook_url or site_setting.whatsapp_url or site_setting.x_url or site_setting.linkedin_url %}
-            <nav class="footer-social" aria-label="Social media">
+            <nav class="footer-social" aria-label="{% trans 'Social media' %}">
                 {% if site_setting.instagram_url %}<a href="{{ site_setting.instagram_url }}" rel="noopener noreferrer" aria-label="Instagram"><span aria-hidden="true">ig</span></a>{% endif %}
                 {% if site_setting.facebook_url %}<a href="{{ site_setting.facebook_url }}" rel="noopener noreferrer" aria-label="Facebook"><span aria-hidden="true">f</span></a>{% endif %}
                 {% if site_setting.whatsapp_url %}<a href="{{ site_setting.whatsapp_url }}" rel="noopener noreferrer" aria-label="WhatsApp"><span aria-hidden="true">wa</span></a>{% endif %}

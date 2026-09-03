@@ -10,7 +10,7 @@
         {% if page.last_reviewed_at %}
         <p class="page-review-date">
             {% if current_language_code == "ar" %}آخر تحديث{% elif current_language_code == "fr" %}Dernière mise à jour{% else %}Last updated{% endif %}
-            <time datetime="{{ page.last_reviewed_at|date:'Y-m-d' }}">{{ page.last_reviewed_at|date:"Y-m-d" }}</time>
+            <time datetime="{{ page.last_reviewed_at|date:'Y-m-d' }}">{{ page.last_reviewed_at|localized_date }}</time>
         </p>
         {% endif %}
     </div>

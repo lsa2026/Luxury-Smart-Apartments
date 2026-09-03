@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% load i18n static %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | إدارة Luxury Smart Apartments{% endblock %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {% trans "Luxury Smart Apartments administration" %}{% endblock %}
 
 {% block extrastyle %}
   {{ block.super }}
@@ -17,72 +17,72 @@
   <header id="header" class="lsa-shell-header">
     <div class="lsa-shell-header__inner">
       <div id="branding" class="lsa-admin-brand">
-        <a href="{% url 'admin:index' %}" class="lsa-admin-brand__mark" aria-label="لوحة القيادة">LSA</a>
+        <a href="{% url 'admin:index' %}" class="lsa-admin-brand__mark" aria-label="{% trans "Dashboard" %}">LSA</a>
         <div>
           <a href="{% url 'admin:index' %}" class="lsa-admin-brand__name">Luxury Smart Apartments</a>
-          <span class="lsa-admin-brand__eyebrow">مركز القيادة والتشغيل</span>
+          <span class="lsa-admin-brand__eyebrow">{% trans "Command and operations centre" %}</span>
         </div>
       </div>
 
       {% if user.is_authenticated %}
-        <nav class="lsa-primary-nav" aria-label="التنقل الرئيسي">
-          <a href="{% url 'admin:index' %}">الرئيسية</a>
-          {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}">العملاء</a>{% endif %}
-          {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}">الحجوزات</a>{% endif %}
-          {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}">الوحدات</a>{% endif %}
-          {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}">التقارير</a>{% endif %}
+        <nav class="lsa-primary-nav" aria-label="{% trans "Primary navigation" %}">
+          <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+          {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}">{% trans "Customers" %}</a>{% endif %}
+          {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}">{% trans "Bookings" %}</a>{% endif %}
+          {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}">{% trans "Properties" %}</a>{% endif %}
+          {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}">{% trans "Reports" %}</a>{% endif %}
         </nav>
 
         <div class="lsa-header-actions">
-          <a href="{% url 'core:home' %}" target="_blank" class="lsa-icon-action" title="عرض المنصة" aria-label="عرض المنصة">↗</a>
+          <a href="{% url 'core:home' %}" target="_blank" class="lsa-icon-action" title="{% trans "View the platform" %}" aria-label="{% trans "View the platform" %}">↗</a>
           <details class="lsa-command" data-lsa-command>
-            <summary class="lsa-command__trigger"><span>كل الأدوات</span><i aria-hidden="true">⌘</i></summary>
+            <summary class="lsa-command__trigger"><span>{% trans "All tools" %}</span><i aria-hidden="true">⌘</i></summary>
             <div class="lsa-command__backdrop" data-lsa-command-close></div>
-            <section class="lsa-command__panel" aria-label="جميع أدوات الإدارة">
+            <section class="lsa-command__panel" aria-label="{% trans "All administration tools" %}">
               <header>
-                <div><span>مركز الوصول</span><strong>إلى أين تريد الذهاب؟</strong></div>
-                <button type="button" data-lsa-command-close aria-label="إغلاق">×</button>
+                <div><span>{% trans "Access centre" %}</span><strong>{% trans "Where do you want to go?" %}</strong></div>
+                <button type="button" data-lsa-command-close aria-label="{% trans "Close" %}">×</button>
               </header>
-              <label class="lsa-command__search"><span>⌕</span><input type="search" placeholder="ابحث عن وحدة، حجز، محتوى أو إعداد…" data-lsa-command-search autocomplete="off"></label>
+              <label class="lsa-command__search"><span>⌕</span><input type="search" placeholder="{% trans "Search for a property, booking, content or setting…" %}" data-lsa-command-search autocomplete="off"></label>
               <div class="lsa-command__groups">
                 <div class="lsa-command__group">
-                  <h2>التشغيل والحجوزات</h2>
-                  {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}" data-lsa-command-item><b>العملاء ورحلة الحجز</b><small>بحث موحّد في العميل والحجز والدفع</small></a>{% endif %}
-                  {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}" data-lsa-command-item><b>الحجوزات المؤكدة</b><small>الوصول والمغادرة وحالة Hostaway</small></a>{% endif %}
-                  {% if perms.reservations.view_bookingmodificationrequest %}<a href="{% url 'admin:reservations_bookingmodificationrequest_changelist' %}" data-lsa-command-item><b>التعديل والتمديد</b><small>الموافقة ودفع الفرق وسجل التنفيذ</small></a>{% endif %}
-                  {% if perms.payments.view_paymentattempt %}<a href="{% url 'admin:payments_paymentattempt_changelist' %}" data-lsa-command-item><b>المدفوعات</b><small>الحالات والمراجع والمبالغ</small></a>{% endif %}
-                  {% if perms.core.view_contactmessage %}<a href="{% url 'admin:core_contactmessage_changelist' %}" data-lsa-command-item><b>رسائل العملاء</b><small>المتابعة والرد وحالة المعالجة</small></a>{% endif %}
+                  <h2>{% trans "Operations and bookings" %}</h2>
+                  {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}" data-lsa-command-item><b>{% trans "Customers and the booking journey" %}</b><small>{% trans "Unified search across customer, booking and payment" %}</small></a>{% endif %}
+                  {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}" data-lsa-command-item><b>{% trans "Confirmed bookings" %}</b><small>{% trans "Check-in, check-out and Hostaway status" %}</small></a>{% endif %}
+                  {% if perms.reservations.view_bookingmodificationrequest %}<a href="{% url 'admin:reservations_bookingmodificationrequest_changelist' %}" data-lsa-command-item><b>{% trans "Modification and extension" %}</b><small>{% trans "Approval, balance payment and execution log" %}</small></a>{% endif %}
+                  {% if perms.payments.view_paymentattempt %}<a href="{% url 'admin:payments_paymentattempt_changelist' %}" data-lsa-command-item><b>{% trans "Payments" %}</b><small>{% trans "Statuses, references and amounts" %}</small></a>{% endif %}
+                  {% if perms.core.view_contactmessage %}<a href="{% url 'admin:core_contactmessage_changelist' %}" data-lsa-command-item><b>{% trans "Customer messages" %}</b><small>{% trans "Follow-up, replies and processing state" %}</small></a>{% endif %}
                 </div>
                 <div class="lsa-command__group">
-                  <h2>المحتوى والتجربة</h2>
-                  {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}" data-lsa-command-item><b>الوحدات ومحتواها</b><small>النصوص والصور والمرافق والظهور</small></a>{% endif %}
-                  {% if perms.core.view_sitepage %}<a href="{% url 'admin:core_sitepage_changelist' %}" data-lsa-command-item><b>صفحات السياسات</b><small>الشروط والخصوصية والإلغاء والكوكيز</small></a>{% endif %}
-                  {% if perms.core.view_faqitem %}<a href="{% url 'admin:core_faqitem_changelist' %}" data-lsa-command-item><b>الأسئلة الشائعة</b><small>المحتوى والترتيب واللغات</small></a>{% endif %}
-                  {% if perms.reviews.view_review %}<a href="{% url 'admin:reviews_review_changelist' %}" data-lsa-command-item><b>التقييمات</b><small>الظهور والتمييز والترجمة</small></a>{% endif %}
-                  {% if perms.core.view_sitesetting %}<a href="{% url 'admin:core_sitesetting_changelist' %}" data-lsa-command-item><b>إعدادات وهوية المنصة</b><small>التواصل والشبكات والمعلومات العامة</small></a>{% endif %}
+                  <h2>{% trans "Content and experience" %}</h2>
+                  {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}" data-lsa-command-item><b>{% trans "Properties and their content" %}</b><small>{% trans "Text, images, amenities and visibility" %}</small></a>{% endif %}
+                  {% if perms.core.view_sitepage %}<a href="{% url 'admin:core_sitepage_changelist' %}" data-lsa-command-item><b>{% trans "Policy pages" %}</b><small>{% trans "Terms, privacy, cancellation and cookies" %}</small></a>{% endif %}
+                  {% if perms.core.view_faqitem %}<a href="{% url 'admin:core_faqitem_changelist' %}" data-lsa-command-item><b>{% trans "FAQ items" %}</b><small>{% trans "Content, ordering and languages" %}</small></a>{% endif %}
+                  {% if perms.reviews.view_review %}<a href="{% url 'admin:reviews_review_changelist' %}" data-lsa-command-item><b>{% trans "Reviews" %}</b><small>{% trans "Visibility, featuring and translation" %}</small></a>{% endif %}
+                  {% if perms.core.view_sitesetting %}<a href="{% url 'admin:core_sitesetting_changelist' %}" data-lsa-command-item><b>{% trans "Platform settings and identity" %}</b><small>{% trans "Contact, social networks and public information" %}</small></a>{% endif %}
                 </div>
                 <div class="lsa-command__group">
-                  <h2>المتابعة والتكاملات</h2>
-                  {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}" data-lsa-command-item><b>التقارير التشغيلية</b><small>المؤشرات والتصدير المنقح</small></a>
-                  <a href="{% url 'notifications:center' %}" data-lsa-command-item><b>مركز الإشعارات</b><small>التنبيهات والأحداث التي تحتاج متابعة</small></a>
-                  <a href="{% url 'notifications:system_status' %}" data-lsa-command-item><b>حالة النظام</b><small>قواعد البيانات والمهام والخصائص الحية</small></a>{% endif %}
-                  {% if user.is_superuser %}<a href="{% url 'admin:integrations_integration_health' %}" data-lsa-command-item><b>تكامل Hostaway</b><small>المزامنة الآمنة وحالة الاتصال</small></a>{% endif %}
-                  {% if perms.notifications.view_auditlog %}<a href="{% url 'admin:notifications_auditlog_changelist' %}" data-lsa-command-item><b>سجل التدقيق</b><small>توثيق تغييرات فريق الإدارة</small></a>{% endif %}
-                  {% if perms.auth.view_user %}<a href="{% url 'admin:auth_user_changelist' %}" data-lsa-command-item><b>الفريق والصلاحيات</b><small>المستخدمون والأدوار والوصول</small></a>{% endif %}
+                  <h2>{% trans "Follow-up and integrations" %}</h2>
+                  {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}" data-lsa-command-item><b>{% trans "Operational reports" %}</b><small>{% trans "Indicators and redacted export" %}</small></a>
+                  <a href="{% url 'notifications:center' %}" data-lsa-command-item><b>{% trans "Notification centre" %}</b><small>{% trans "Alerts and events needing follow-up" %}</small></a>
+                  <a href="{% url 'notifications:system_status' %}" data-lsa-command-item><b>{% trans "System status" %}</b><small>{% trans "Databases, tasks and live features" %}</small></a>{% endif %}
+                  {% if user.is_superuser %}<a href="{% url 'admin:integrations_integration_health' %}" data-lsa-command-item><b>{% trans "Hostaway integration" %}</b><small>{% trans "Safe sync and connection status" %}</small></a>{% endif %}
+                  {% if perms.notifications.view_auditlog %}<a href="{% url 'admin:notifications_auditlog_changelist' %}" data-lsa-command-item><b>{% trans "Audit log" %}</b><small>{% trans "A record of administration team changes" %}</small></a>{% endif %}
+                  {% if perms.auth.view_user %}<a href="{% url 'admin:auth_user_changelist' %}" data-lsa-command-item><b>{% trans "Team and permissions" %}</b><small>{% trans "Users, roles and access" %}</small></a>{% endif %}
                 </div>
               </div>
-              <p class="lsa-command__empty" data-lsa-command-empty hidden>لا توجد أداة مطابقة لعبارة البحث.</p>
+              <p class="lsa-command__empty" data-lsa-command-empty hidden>{% trans "No tool matches your search." %}</p>
             </section>
           </details>
 
           <details class="lsa-user-menu">
-            <summary aria-label="حساب الإدارة"><span>{{ user.get_short_name|default:user.get_username|slice:":1"|upper }}</span><i>{{ user.get_short_name|default:user.get_username }}</i></summary>
+            <summary aria-label="{% trans "Administration account" %}"><span>{{ user.get_short_name|default:user.get_username|slice:":1"|upper }}</span><i>{{ user.get_short_name|default:user.get_username }}</i></summary>
             <div class="lsa-user-menu__panel">
               <strong>{{ user.get_full_name|default:user.get_username }}</strong>
-              <small>{% if user.is_superuser %}مدير النظام{% else %}عضو فريق الإدارة{% endif %}</small>
-              {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">تغيير كلمة المرور</a>{% endif %}
+              <small>{% if user.is_superuser %}{% trans "System administrator" %}{% else %}{% trans "Administration team member" %}{% endif %}</small>
+              {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">{% trans "Change password" %}</a>{% endif %}
               {% include "admin/color_theme_toggle.html" %}
-              <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">تسجيل الخروج</button></form>
+              <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">{% trans "Sign out" %}</button></form>
             </div>
           </details>
         </div>
@@ -92,5 +92,5 @@
 {% endblock %}
 
 {% block footer %}
-  <div class="lsa-admin-footer"><span>Luxury Smart Apartments</span><small>لوحة تشغيل آمنة · جميع التغييرات الإدارية موثّقة</small></div>
+  <div class="lsa-admin-footer"><span>Luxury Smart Apartments</span><small>{% trans "A safe operations console · every administrative change is recorded" %}</small></div>
 {% endblock %}

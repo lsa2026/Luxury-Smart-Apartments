@@ -24,18 +24,18 @@
             <div class="booking-dashboard-hero__facts" aria-label="{% trans 'Stay details' %}">
                 <div>
                     <small>{% trans "Check-in" %}</small>
-                    <time datetime="{{ reservation.check_in|date:'Y-m-d' }}">{{ reservation.check_in|date:"Y-m-d" }}</time>
+                    <time datetime="{{ reservation.check_in|date:'Y-m-d' }}">{{ reservation.check_in|localized_date }}</time>
                 </div>
                 <div class="booking-dashboard-hero__route" aria-hidden="true">
                     <i></i><b></b><i></i>
                 </div>
                 <div>
                     <small>{% trans "Check-out" %}</small>
-                    <time datetime="{{ reservation.check_out|date:'Y-m-d' }}">{{ reservation.check_out|date:"Y-m-d" }}</time>
+                    <time datetime="{{ reservation.check_out|date:'Y-m-d' }}">{{ reservation.check_out|localized_date }}</time>
                 </div>
                 <div class="booking-dashboard-hero__guests">
                     <small>{% trans "Guests" %}</small>
-                    <strong>{{ reservation.guests }}</strong>
+                    <strong>{{ reservation.guests|localized_number }}</strong>
                 </div>
             </div>
 
@@ -164,7 +164,7 @@
                     </span>
                     <span>
                         <small>{% trans "Check-in" %}</small>
-                        <time datetime="{{ reservation.check_in|date:'Y-m-d' }}">{{ reservation.check_in|date:"Y-m-d" }}</time>
+                        <time datetime="{{ reservation.check_in|date:'Y-m-d' }}">{{ reservation.check_in|localized_date }}</time>
                     </span>
                 </div>
                 <span class="stay-summary-card__route" aria-hidden="true"><i></i><b></b><i></i></span>
@@ -176,14 +176,14 @@
                     </span>
                     <span>
                         <small>{% trans "Check-out" %}</small>
-                        <time datetime="{{ reservation.check_out|date:'Y-m-d' }}">{{ reservation.check_out|date:"Y-m-d" }}</time>
+                        <time datetime="{{ reservation.check_out|date:'Y-m-d' }}">{{ reservation.check_out|localized_date }}</time>
                     </span>
                 </div>
             </div>
 
             <dl class="stay-summary-card__facts">
-                <div><dt>{% trans "Nights" %}</dt><dd>{{ reservation.nights }}</dd></div>
-                <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests }}</dd></div>
+                <div><dt>{% trans "Nights" %}</dt><dd>{{ reservation.nights|localized_number }}</dd></div>
+                <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests|localized_number }}</dd></div>
                 <div class="stay-summary-card__total">
                     <dt>{% trans "Current total" %}</dt>
                     <dd>{{ reservation.total_price|localized_money:reservation.currency }}</dd>
@@ -395,7 +395,7 @@
                 </span>
                 <span>
                     <strong>{{ item.request_type|localized_modification_type }}</strong>
-                    <small><time datetime="{{ item.requested_at|date:'c' }}">{{ item.requested_at|date:"Y-m-d H:i" }}</time></small>
+                    <small><time datetime="{{ item.requested_at|date:'c' }}">{{ item.requested_at|localized_datetime }}</time></small>
                 </span>
                 <span class="status-pill status-pill--{{ item.status }}">{{ item.status|localized_modification_status }}</span>
                 <svg class="request-history-list__arrow" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">

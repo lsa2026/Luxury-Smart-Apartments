@@ -1,10 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
 from django.core.cache import cache
 from django.db import connection
+from django.template import Context, Template
 from django.test import Client
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
@@ -12,7 +13,11 @@ from django.utils import timezone, translation
 
 from apps.core.models import ContactMessage, FAQItem, SitePage
 from apps.core.templatetags.presentation import (
+    localized_count,
+    localized_date,
+    localized_datetime,
     localized_money,
+    localized_number,
     localized_price_component,
     money_amount,
 )
@@ -178,9 +183,9 @@ def test_language_switcher_has_all_three_languages() -> None:
 @pytest.mark.parametrize(
     ("language", "expected"),
     [
-        ("ar", [("", "اختر المدينة"), ("Riyadh", "الرياض"), ("Marrakesh", "مراكش")]),
-        ("en", [("", "Choose a city"), ("Riyadh", "Riyadh"), ("Marrakesh", "Marrakech")]),
-        ("fr", [("", "Choisissez une ville"), ("Riyadh", "Riyad"), ("Marrakesh", "Marrakech")]),
+        ("ar", [("", "كل المدن"), ("Riyadh", "الرياض"), ("Marrakesh", "مراكش")]),
+        ("en", [("", "All cities"), ("Riyadh", "Riyadh"), ("Marrakesh", "Marrakech")]),
+        ("fr", [("", "Toutes les villes"), ("Riyadh", "Riyad"), ("Marrakesh", "Marrakech")]),
     ],
 )
 def test_availability_filter_has_only_supported_cities(
@@ -190,18 +195,18 @@ def test_availability_filter_has_only_supported_cities(
     property_factory(806)
     with translation.override(language):
         choices = [
-            (value, str(label))
-            for value, label in AvailabilitySearchForm().fields["city"].choices
+            (value, str(label)) for value, label in AvailabilitySearchForm().fields["city"].choices
         ]
 
     assert choices == expected
 
 
-def test_availability_search_requires_city_but_not_property() -> None:
+def test_availability_search_leaves_city_and_property_optional() -> None:
     form = AvailabilitySearchForm()
 
-    assert form.fields["city"].required is True
+    assert form.fields["city"].required is False
     assert form.fields["property"].required is False
+    assert form.fields["guests"].initial == 2
 
 
 def test_availability_filter_exposes_city_capacity_and_readable_dates() -> None:
@@ -293,7 +298,7 @@ def test_property_card_gallery_exposes_prefetched_slides_and_controls() -> None:
     assert "data-card-previous" in content
     assert "data-card-next" in content
     assert content.count("data-card-dot") == 5
-    assert 'data-card-current>1</b> / 5' in content
+    assert "data-card-current>1</b> / 5" in content
 
 
 def test_property_filters_use_local_database() -> None:
@@ -311,7 +316,7 @@ def test_property_type_filter_uses_localized_customer_label() -> None:
     property_obj.room_type = "entire_home"
     property_obj.save(update_fields=["room_type"])
     content = Client().get("/properties/").content.decode()
-    assert '>وحدة كاملة</option>' in content
+    assert ">وحدة كاملة</option>" in content
 
 
 def test_property_detail_gallery_opens_all_images_without_leaving_page() -> None:
@@ -468,6 +473,58 @@ def test_localized_money_follows_language_conventions(
     assert 'dir="ltr"' in rendered
     assert "SAR" in rendered
     assert (rendered.index("SAR") < rendered.index(expected_number)) is currency_before_amount
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        ("ar", "٢٥ نوفمبر ٢٠٢٦"),
+        ("en", "25 November 2026"),
+        ("fr", "25 novembre 2026"),
+    ],
+)
+def test_localized_date_matches_money_numerals(language: str, expected: str) -> None:
+    with translation.override(language):
+        assert localized_date(date(2026, 11, 25)) == expected
+
+
+def test_localized_datetime_keeps_twenty_four_hour_time() -> None:
+    moment = datetime(2026, 8, 28, 8, 47)
+    with translation.override("ar"):
+        assert localized_datetime(moment) == "٢٨ أغسطس ٢٠٢٦ ٠٨:٤٧"
+    with translation.override("en"):
+        assert localized_datetime(moment) == "28 August 2026 08:47"
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [("ar", "٣"), ("en", "3"), ("fr", "3")],
+)
+def test_localized_number_follows_the_active_language(language: str, expected: str) -> None:
+    with translation.override(language):
+        assert localized_number(3) == expected
+
+
+@pytest.mark.parametrize(
+    ("count", "expected"),
+    [(1, "١ ضيف"), (2, "٢ ضيفان"), (4, "٤ ضيوف"), (11, "١١ ضيفًا")],
+)
+def test_localized_count_keeps_arabic_plural_forms(count: int, expected: str) -> None:
+    """Arabic numerals must not cost us the six plural forms in the catalogue."""
+    template = Template(
+        "{% load i18n %}{% blocktrans count counter=n %}{{ counter }} guest"
+        "{% plural %}{{ counter }} guests{% endblocktrans %}"
+    )
+    with translation.override("ar"):
+        assert template.render(Context({"n": localized_count(count)})) == expected
+
+
+def test_localized_temporal_filters_ignore_empty_values() -> None:
+    with translation.override("ar"):
+        assert localized_date(None) == ""
+        assert localized_datetime("") == ""
+        assert localized_number(None) == ""
+        assert localized_date("not-a-date") == ""
 
 
 def test_localized_money_uses_currency_minor_units() -> None:

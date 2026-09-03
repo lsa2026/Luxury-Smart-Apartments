@@ -253,14 +253,15 @@ document.querySelectorAll("[data-availability-form]").forEach((form) => {
             if (index === 0) {
                 return;
             }
-            const matches = Boolean(selectedCity) && option.dataset.city === selectedCity;
+            // City is optional; with none chosen the whole portfolio stays selectable.
+            const matches = !selectedCity || option.dataset.city === selectedCity;
             option.hidden = !matches;
             option.disabled = !matches;
         });
         if (propertySelect.selectedOptions[0]?.disabled) {
             propertySelect.value = "";
         }
-        propertySelect.disabled = !selectedCity;
+        propertySelect.disabled = false;
         updateGuestCapacity();
     }
 
@@ -372,7 +373,12 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
         return;
     }
 
-    const locale = document.documentElement.lang || "ar";
+    const documentLanguage = document.documentElement.lang || "ar";
+    // CLDR defaults "ar" to Latin digits, but the rest of the site renders Arabic
+    // money and dates with Arabic-Indic digits, so ask for that numbering system.
+    const locale = documentLanguage.startsWith("ar")
+        ? `${documentLanguage}-u-nu-arab`
+        : documentLanguage;
     const chooseLabel = calendar.dataset.chooseLabel || "Choose date";
     const arrivalLabel = calendar.dataset.arrivalLabel || "Arrival";
     const departureLabel = calendar.dataset.departureLabel || "Departure";
@@ -710,7 +716,12 @@ document.querySelectorAll("[data-management-calendar]").forEach((calendar) => {
         return;
     }
 
-    const locale = document.documentElement.lang || "ar";
+    const documentLanguage = document.documentElement.lang || "ar";
+    // CLDR defaults "ar" to Latin digits, but the rest of the site renders Arabic
+    // money and dates with Arabic-Indic digits, so ask for that numbering system.
+    const locale = documentLanguage.startsWith("ar")
+        ? `${documentLanguage}-u-nu-arab`
+        : documentLanguage;
     const chooseLabel = calendar.dataset.chooseLabel || "Choose date";
     const shortDateFormatter = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
     const fullDateFormatter = new Intl.DateTimeFormat(locale, {
@@ -1366,4 +1377,76 @@ if (lightbox instanceof HTMLDialogElement) {
             }
         }
     });
+}
+
+// Checkout payment-method tabs. Both HyperPay widgets stay mounted so the hosted
+// iframes are never torn down; only their panels are shown or hidden.
+const checkoutMethods = document.querySelectorAll("[data-checkout-method]");
+if (checkoutMethods.length) {
+    const panels = document.querySelectorAll("[data-checkout-panel]");
+
+    function selectMethod(name, { focusTab = false } = {}) {
+        checkoutMethods.forEach((tab) => {
+            const isActive = tab.dataset.checkoutMethod === name;
+            tab.classList.toggle("is-active", isActive);
+            tab.setAttribute("aria-selected", isActive ? "true" : "false");
+            tab.tabIndex = isActive ? 0 : -1;
+            if (isActive && focusTab) {
+                tab.focus();
+            }
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.dataset.checkoutPanel !== name;
+        });
+    }
+
+    checkoutMethods.forEach((tab) => {
+        tab.addEventListener("click", () => selectMethod(tab.dataset.checkoutMethod));
+        tab.addEventListener("keydown", (event) => {
+            const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+            if (!keys.includes(event.key)) {
+                return;
+            }
+            event.preventDefault();
+            const tabs = [...checkoutMethods];
+            const current = tabs.indexOf(tab);
+            // Arrow keys follow reading order, which is mirrored in RTL.
+            const forward = document.documentElement.dir === "rtl" ? "ArrowLeft" : "ArrowRight";
+            let next = current;
+            if (event.key === "Home") {
+                next = 0;
+            } else if (event.key === "End") {
+                next = tabs.length - 1;
+            } else {
+                next = event.key === forward ? current + 1 : current - 1;
+                next = (next + tabs.length) % tabs.length;
+            }
+            selectMethod(tabs[next].dataset.checkoutMethod, { focusTab: true });
+        });
+    });
+}
+
+// Floating WhatsApp button. It keeps clear of the consent banner, which shares
+// the bottom of the viewport and can wrap to several lines on narrow screens.
+const whatsappFab = document.querySelector("[data-whatsapp-fab]");
+if (whatsappFab) {
+    const consentBanner = document.querySelector("[data-consent-banner]");
+
+    if (consentBanner) {
+        const syncOffset = () => {
+            const clear = consentBanner.hidden ? 0 : consentBanner.offsetHeight + 12;
+            whatsappFab.style.setProperty("--whatsapp-fab-offset", `${clear}px`);
+        };
+
+        syncOffset();
+        new MutationObserver(syncOffset).observe(consentBanner, {
+            attributes: true,
+            attributeFilter: ["hidden"],
+        });
+        if ("ResizeObserver" in window) {
+            new ResizeObserver(syncOffset).observe(consentBanner);
+        } else {
+            window.addEventListener("resize", syncOffset);
+        }
+    }
 }

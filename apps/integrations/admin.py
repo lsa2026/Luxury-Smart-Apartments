@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
+from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
 
@@ -79,7 +80,7 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
             return redirect(reverse("admin:integrations_integration_health"))
         context = {
             **self.admin_site.each_context(request),
-            "title": "حالة تكامل Hostaway",
+            "title": _("Hostaway integration status"),
             "health": get_integration_health(),
             "dispatch_enabled": settings.CELERY_SYNC_DISPATCH_ENABLED,
         }
@@ -95,7 +96,7 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
         }
         command = command_map.get(action)
         if command is None:
-            self.message_user(request, "إجراء مزامنة غير صالح.", messages.ERROR)
+            self.message_user(request, _("Invalid sync action."), messages.ERROR)
             return
         record_audit(
             request=request,
@@ -108,7 +109,8 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
         if not settings.CELERY_SYNC_DISPATCH_ENABLED:
             self.message_user(
                 request,
-                f"عامل المهام غير مفعّل. شغّل الأمر محليًا: {command}",
+                _("The task worker is not running. Run this command locally: %(command)s")
+                % {"command": command},
                 messages.WARNING,
             )
             return
@@ -122,10 +124,18 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
         )
         lock_name = "properties" if action.startswith("properties") else "reviews"
         if not cache.add(f"lsa:admin-dispatch:{lock_name}", "queued", timeout=60):
-            self.message_user(request, "توجد مزامنة مماثلة أضيفت حديثًا.", messages.WARNING)
+            self.message_user(
+                request,
+                _("A similar sync was queued recently."),
+                messages.WARNING,
+            )
             return
         task.delay(dry_run=dry_run)
-        self.message_user(request, "تمت إضافة المزامنة إلى الطابور.", messages.SUCCESS)
+        self.message_user(
+            request,
+            _("The sync was added to the queue."),
+            messages.SUCCESS,
+        )
 
 
 @admin.register(HostawayWebhookEvent)
@@ -164,7 +174,7 @@ class HostawayWebhookEventAdmin(admin.ModelAdmin):
     )
     readonly_fields = fields
 
-    @admin.display(description="البيانات المنقحة")
+    @admin.display(description=_("Redacted data"))
     def payload_summary(self, obj: HostawayWebhookEvent) -> str:
         keys = ", ".join(sorted(obj.sanitized_payload))
         return f"Allowed fields: {keys}" if keys else "No allowed fields"
@@ -179,10 +189,14 @@ class HostawayWebhookEventAdmin(admin.ModelAdmin):
     ) -> bool:
         return False
 
-    @admin.action(description="إعادة الأحداث الفاشلة أو القابلة للمحاولة إلى الطابور")
+    @admin.action(description=_("Requeue failed or retryable events"))
     def requeue_failed(self, request: HttpRequest, queryset: object) -> None:
         if not request.user.is_superuser:
-            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            self.message_user(
+                request,
+                _("This action requires elevated permissions."),
+                messages.ERROR,
+            )
             return
         count = queryset.filter(
             status__in=(
@@ -202,4 +216,7 @@ class HostawayWebhookEventAdmin(admin.ModelAdmin):
             summary="Failed webhook events were queued for manual reprocessing.",
             metadata={"count": count},
         )
-        self.message_user(request, f"تمت إعادة {count} حدث إلى الطابور.")
+        self.message_user(
+            request,
+            _("Requeued %(count)d event(s).") % {"count": count},
+        )

@@ -103,19 +103,19 @@
             {% if property.person_capacity != None %}
             <span>
                 <i aria-hidden="true">♙</i>
-                {% blocktrans count counter=property.person_capacity %}{{ counter }} guest{% plural %}{{ counter }} guests{% endblocktrans %}
+                {% blocktrans count counter=property.person_capacity|localized_count %}{{ counter }} guest{% plural %}{{ counter }} guests{% endblocktrans %}
             </span>
             {% endif %}
             {% if property.bedrooms_number != None %}
             <span>
                 <i aria-hidden="true">▤</i>
-                {% blocktrans count counter=property.bedrooms_number %}{{ counter }} bedroom{% plural %}{{ counter }} bedrooms{% endblocktrans %}
+                {% blocktrans count counter=property.bedrooms_number|localized_count %}{{ counter }} bedroom{% plural %}{{ counter }} bedrooms{% endblocktrans %}
             </span>
             {% endif %}
             {% if property.beds_number != None %}
             <span>
                 <i aria-hidden="true">▰</i>
-                {% blocktrans count counter=property.beds_number %}{{ counter }} bed{% plural %}{{ counter }} beds{% endblocktrans %}
+                {% blocktrans count counter=property.beds_number|localized_count %}{{ counter }} bed{% plural %}{{ counter }} beds{% endblocktrans %}
             </span>
             {% endif %}
         </div>

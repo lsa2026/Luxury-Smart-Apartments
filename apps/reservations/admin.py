@@ -7,6 +7,7 @@ from django.contrib.admin import ModelAdmin
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
 
@@ -56,7 +57,7 @@ class BookingQuoteAdmin(ModelAdmin):
     )
     readonly_fields = fields
 
-    @admin.display(description="مكونات السعر")
+    @admin.display(description=_("Price components"))
     def components_display(self, obj: BookingQuote) -> str:
         return json.dumps(obj.components, ensure_ascii=False, indent=2)
 
@@ -154,7 +155,7 @@ class BookingIntentAdmin(ModelAdmin):
     ) -> bool:
         return request.user.is_superuser
 
-    @admin.action(description="إلغاء الطلبات المبدئية المحددة")
+    @admin.action(description=_("Cancel the selected booking requests"))
     def cancel_selected(
         self,
         request: HttpRequest,
@@ -163,7 +164,11 @@ class BookingIntentAdmin(ModelAdmin):
         if not (
             request.user.is_superuser or request.user.has_perm("reservations.cancel_bookingintent")
         ):
-            self.message_user(request, "لا تملك صلاحية الإلغاء.", messages.ERROR)
+            self.message_user(
+                request,
+                _("You do not have permission to cancel."),
+                messages.ERROR,
+            )
             return
         cancellable = queryset.exclude(
             status__in=(
@@ -179,7 +184,10 @@ class BookingIntentAdmin(ModelAdmin):
         )
         for obj in audited_objects:
             self.log_change(request, obj, "Cancelled through the admin action.")
-        self.message_user(request, f"تم إلغاء {count} طلبًا.")
+        self.message_user(
+            request,
+            _("Cancelled %(count)d request(s).") % {"count": count},
+        )
 
 
 @admin.register(Reservation)
@@ -208,7 +216,7 @@ class ReservationAdmin(ModelAdmin):
     )
     fieldsets = (
         (
-            "ملخص الإقامة",
+            _("Stay summary"),
             {
                 "fields": (
                     "reference_display",
@@ -219,19 +227,22 @@ class ReservationAdmin(ModelAdmin):
             },
         ),
         (
-            "الحالة والتحصيل",
+            _("Status and collection"),
             {"fields": ("status_display", "amount_display", "source_display")},
         ),
         (
-            "الربط التقني مع Hostaway",
+            _("Hostaway technical integration"),
             {
                 "classes": ("collapse",),
                 "fields": ("hostaway_display", "technical_display"),
-                "description": "معرّفات مرجعية للبحث والتشخيص فقط؛ لا تُعدّل الحجز من هذه الشاشة.",
+                "description": _(
+                    "Reference identifiers for search and diagnostics only; "
+                    "do not edit the booking from this screen."
+                ),
             },
         ),
         (
-            "سجل التوقيت والمزامنة",
+            _("Timing and sync log"),
             {
                 "classes": ("collapse",),
                 "fields": ("sync_display", "timeline_display"),
@@ -253,33 +264,33 @@ class ReservationAdmin(ModelAdmin):
     )
     empty_value_display = "—"
 
-    @admin.display(description="مرجع الحجز")
+    @admin.display(description=_("Booking reference"))
     def reference_display(self, obj: Reservation) -> str:
         return format_html('<strong dir="ltr">{}</strong>', obj.public_reference)
 
-    @admin.display(description="الوحدة")
+    @admin.display(description=_("Property"))
     def property_display(self, obj: Reservation) -> object:
         return obj.property or self.empty_value_display
 
-    @admin.display(description="فترة الإقامة")
+    @admin.display(description=_("Stay period"))
     def stay_dates_display(self, obj: Reservation) -> str:
         return format_html(
-            '<span dir="ltr">{} → {}</span> · {} ليالٍ',
+            '<span dir="ltr">{} → {}</span> · {}',
             obj.check_in.strftime("%Y-%m-%d"),
             obj.check_out.strftime("%Y-%m-%d"),
-            obj.nights,
+            _("%(count)d nights") % {"count": obj.nights},
         )
 
-    @admin.display(description="الإشغال")
+    @admin.display(description=_("Occupancy"))
     def occupancy_display(self, obj: Reservation) -> str:
-        return f"{obj.guests} ضيوف"
+        return _("%(count)d guests") % {"count": obj.guests}
 
-    @admin.display(description="حالة الحجز والدفع")
+    @admin.display(description=_("Booking and payment status"))
     def status_display(self, obj: Reservation) -> str:
-        payment_status = obj.payment_status or "لا توجد حالة دفع"
+        payment_status = obj.payment_status or _("No payment status")
         return f"{obj.get_normalized_status_display()} · {payment_status}"
 
-    @admin.display(description="قيمة الحجز")
+    @admin.display(description=_("Booking value"))
     def amount_display(self, obj: Reservation) -> str:
         return format_html(
             '<strong dir="ltr">{} {}</strong>',
@@ -287,13 +298,13 @@ class ReservationAdmin(ModelAdmin):
             obj.currency,
         )
 
-    @admin.display(description="مصدر الحجز")
+    @admin.display(description=_("Booking source"))
     def source_display(self, obj: Reservation) -> str:
-        test_label = " · بيانات تجريبية" if obj.is_test else ""
+        test_label = f" · {_('test data')}" if obj.is_test else ""
         hostaway_status = f" · Hostaway: {obj.hostaway_status}" if obj.hostaway_status else ""
         return f"{obj.get_source_type_display()}{test_label}{hostaway_status}"
 
-    @admin.display(description="معرّفات Hostaway")
+    @admin.display(description=_("Hostaway identifiers"))
     def hostaway_display(self, obj: Reservation) -> str:
         return format_html(
             '<span dir="ltr">Reservation: {} · Listing: {} · Mapping: {}</span>',
@@ -302,7 +313,7 @@ class ReservationAdmin(ModelAdmin):
             obj.hostaway_listing_map_id or "—",
         )
 
-    @admin.display(description="معرّفات الربط المحلية")
+    @admin.display(description=_("Local integration identifiers"))
     def technical_display(self, obj: Reservation) -> str:
         return format_html(
             '<span dir="ltr">ID: {} · Intent: {} · Channel: {}</span>',
@@ -311,7 +322,7 @@ class ReservationAdmin(ModelAdmin):
             obj.channel_id or "—",
         )
 
-    @admin.display(description="المزامنة")
+    @admin.display(description=_("Sync"))
     def sync_display(self, obj: Reservation) -> str:
         return format_html(
             '<span dir="ltr">Source: {} · Local sync: {}</span>',
@@ -319,7 +330,7 @@ class ReservationAdmin(ModelAdmin):
             obj.last_synced_at or "—",
         )
 
-    @admin.display(description="الخط الزمني")
+    @admin.display(description=_("Timeline"))
     def timeline_display(self, obj: Reservation) -> str:
         return format_html(
             '<span dir="ltr">Created: {} · Updated: {} · Confirmed: {} · Cancelled: {}</span>',
@@ -378,7 +389,7 @@ class HostawayReservationOperationAdmin(ModelAdmin):
     )
     exclude = ("request_fingerprint",)
 
-    @admin.display(description="بصمة الطلب")
+    @admin.display(description=_("Request fingerprint"))
     def fingerprint_preview(self, obj: HostawayReservationOperation) -> str:
         return f"{obj.request_fingerprint[:8]}…"
 
@@ -392,17 +403,25 @@ class HostawayReservationOperationAdmin(ModelAdmin):
     ) -> bool:
         return False
 
-    @admin.action(description="وضع العمليات غير المؤكدة بانتظار مراجعة")
+    @admin.action(description=_("Mark unconfirmed operations as awaiting review"))
     def mark_unknown_for_review(self, request: HttpRequest, queryset: object) -> None:
         if not request.user.is_superuser:
-            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            self.message_user(
+                request,
+                _("This action requires elevated permissions."),
+                messages.ERROR,
+            )
             return
         count = queryset.filter(status=HostawayReservationOperation.Status.UNKNOWN).update(
             status=HostawayReservationOperation.Status.BLOCKED,
             error_code="admin_review_required",
             updated_at=timezone.now(),
         )
-        self.message_user(request, f"تم وضع {count} عملية للمراجعة دون إعادة إرسال.")
+        self.message_user(
+            request,
+            _("Marked %(count)d operation(s) for review without resending.")
+            % {"count": count},
+        )
 
 
 @admin.register(BookingModificationRequest)
@@ -453,7 +472,7 @@ class BookingModificationRequestAdmin(ModelAdmin):
     readonly_fields = fields
     exclude = ("quote_snapshot", "idempotency_key", "session_key_hash")
 
-    @admin.display(description="ملخص عرض السعر")
+    @admin.display(description=_("Quote summary"))
     def quote_summary(self, obj: BookingModificationRequest) -> str:
         components = obj.quote_snapshot.get("components", [])
         return f"priceDetails v2 — components: {len(components)}"
@@ -468,10 +487,14 @@ class BookingModificationRequestAdmin(ModelAdmin):
     ) -> bool:
         return False
 
-    @admin.action(description="موافقة محلية دون إرسال إلى Hostaway")
+    @admin.action(description=_("Approve locally without sending to Hostaway"))
     def approve_locally(self, request: HttpRequest, queryset: object) -> None:
         if not request.user.has_perm("reservations.approve_bookingmodificationrequest"):
-            self.message_user(request, "لا تملك صلاحية الموافقة.", messages.ERROR)
+            self.message_user(
+                request,
+                _("You do not have permission to approve."),
+                messages.ERROR,
+            )
             return
         now = timezone.now()
         count = queryset.filter(
@@ -489,12 +512,20 @@ class BookingModificationRequestAdmin(ModelAdmin):
             summary="Modification requests were approved locally without Hostaway writes.",
             metadata={"count": count, "status": "ready_for_hostaway"},
         )
-        self.message_user(request, f"تمت الموافقة المحلية على {count} طلب دون إرسال.")
+        self.message_user(
+            request,
+            _("Approved %(count)d request(s) locally without sending.")
+            % {"count": count},
+        )
 
-    @admin.action(description="رفض الطلب محليًا")
+    @admin.action(description=_("Reject the request locally"))
     def reject_locally(self, request: HttpRequest, queryset: object) -> None:
         if not request.user.has_perm("reservations.reject_bookingmodificationrequest"):
-            self.message_user(request, "لا تملك صلاحية الرفض.", messages.ERROR)
+            self.message_user(
+                request,
+                _("You do not have permission to reject."),
+                messages.ERROR,
+            )
             return
         now = timezone.now()
         count = queryset.exclude(
@@ -515,7 +546,10 @@ class BookingModificationRequestAdmin(ModelAdmin):
             summary="Modification requests were rejected locally.",
             metadata={"count": count, "status": "rejected"},
         )
-        self.message_user(request, f"تم رفض {count} طلب محليًا.")
+        self.message_user(
+            request,
+            _("Rejected %(count)d request(s) locally.") % {"count": count},
+        )
 
 
 @admin.register(HostawayModificationOperation)
@@ -549,7 +583,7 @@ class HostawayModificationOperationAdmin(ModelAdmin):
     readonly_fields = fields
     exclude = ("request_fingerprint",)
 
-    @admin.display(description="بصمة الطلب")
+    @admin.display(description=_("Request fingerprint"))
     def fingerprint_preview(self, obj: HostawayModificationOperation) -> str:
         return f"{obj.request_fingerprint[:8]}…"
 
@@ -563,14 +597,22 @@ class HostawayModificationOperationAdmin(ModelAdmin):
     ) -> bool:
         return False
 
-    @admin.action(description="وضع العمليات غير المؤكدة بانتظار مراجعة")
+    @admin.action(description=_("Mark unconfirmed operations as awaiting review"))
     def mark_unknown_for_review(self, request: HttpRequest, queryset: object) -> None:
         if not request.user.is_superuser:
-            self.message_user(request, "يتطلب الإجراء صلاحية عليا.", messages.ERROR)
+            self.message_user(
+                request,
+                _("This action requires elevated permissions."),
+                messages.ERROR,
+            )
             return
         count = queryset.filter(status=HostawayModificationOperation.Status.UNKNOWN).update(
             status=HostawayModificationOperation.Status.BLOCKED,
             error_code="admin_review_required",
             updated_at=timezone.now(),
         )
-        self.message_user(request, f"تم وضع {count} عملية للمراجعة دون إعادة إرسال.")
+        self.message_user(
+            request,
+            _("Marked %(count)d operation(s) for review without resending.")
+            % {"count": count},
+        )

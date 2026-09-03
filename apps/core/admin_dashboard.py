@@ -11,6 +11,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import ContactMessage, SitePage
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
@@ -93,7 +94,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
                 "guest": (
                     f"{intent.guest_first_name} {intent.guest_last_name}".strip()
                     if can_view_pii
-                    else "بيانات عميل محمية"
+                    else _("Protected customer data")
                 ),
                 "property": str(intent.property),
                 "date": intent.created_at,
@@ -105,7 +106,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
                     else intent.get_status_display()
                 ),
                 "status_key": reservation.normalized_status if reservation else intent.status,
-                "payment": payment.get_status_display() if payment else "لم يبدأ",
+                "payment": payment.get_status_display() if payment else _("Not started"),
                 "payment_key": payment.status if payment else "none",
                 "url": _url("admin:reservations_bookingintent_change", intent.pk),
             }
@@ -126,15 +127,17 @@ def dashboard_payload(request: object) -> dict[str, Any]:
     schedule_rows: list[dict[str, Any]] = []
     for reservation in upcoming_reservations:
         intent = reservation.booking_intent
-        guest = "بيانات عميل محمية"
+        guest = _("Protected customer data")
         if can_view_pii and intent:
             guest = f"{intent.guest_first_name} {intent.guest_last_name}".strip()
-        property_name = str(reservation.property) if reservation.property else "وحدة غير مرتبطة"
+        property_name = (
+            str(reservation.property) if reservation.property else _("Unlinked property")
+        )
         if today <= reservation.check_in <= week_end:
             schedule_rows.append(
                 {
                     "kind": "arrival",
-                    "kind_label": "وصول",
+                    "kind_label": _("Check-in"),
                     "date": reservation.check_in,
                     "guest": guest,
                     "property": property_name,
@@ -147,7 +150,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             schedule_rows.append(
                 {
                     "kind": "departure",
-                    "kind_label": "مغادرة",
+                    "kind_label": _("Check-out"),
                     "date": reservation.check_out,
                     "guest": guest,
                     "property": property_name,
@@ -211,64 +214,80 @@ def dashboard_payload(request: object) -> dict[str, Any]:
         {
             "severity": "critical",
             "count": reservations_attention,
-            "title": "حجوزات تحتاج تدخّلًا",
-            "description": "حالة إنشاء أو مزامنة غير مؤكدة وتحتاج قرارًا يدويًا.",
+            "title": _("Bookings needing attention"),
+            "description": _(
+                    "An unconfirmed creation or sync state that needs a manual decision."
+                ),
             "url": _url("admin:reservations_reservation_changelist"),
         },
         {
             "severity": "critical",
             "count": payment_attention,
-            "title": "مدفوعات تحتاج مراجعة",
-            "description": "عملية فاشلة أو قيد المراجعة خلال آخر 30 يومًا.",
+            "title": _("Payments needing review"),
+            "description": _(
+                    "A failed or under-review transaction in the last 30 days."
+                ),
             "url": _url("admin:payments_paymentattempt_changelist"),
         },
         {
             "severity": "critical",
             "count": failed_webhooks,
-            "title": "Webhooks فاشلة",
-            "description": "راجع الاستقبال قبل أن يؤثر على تحديث الحجوزات.",
+            "title": _("Failed webhooks"),
+            "description": _(
+                    "Check reception before it affects booking updates."
+                ),
             "url": _url("admin:integrations_hostawaywebhookevent_changelist"),
         },
         {
             "severity": "warning",
             "count": pending_modifications,
-            "title": "طلبات تعديل معلّقة",
-            "description": "تمديد أو تعديل يحتاج موافقة أو استكمال التنفيذ.",
+            "title": _("Pending modification requests"),
+            "description": _(
+                    "An extension or change awaiting approval or completion."
+                ),
             "url": _url("admin:reservations_bookingmodificationrequest_changelist"),
         },
         {
             "severity": "warning",
             "count": stale_pending_payments,
-            "title": "مدفوعات معلّقة منذ أكثر من 30 دقيقة",
-            "description": "تحقق من حالتها لدى المزود قبل التواصل مع العميل.",
+            "title": _("Payments pending for over 30 minutes"),
+            "description": _(
+                    "Check their state with the provider before contacting the customer."
+                ),
             "url": _url("admin:payments_paymentattempt_changelist"),
         },
         {
             "severity": "warning",
             "count": failed_emails,
-            "title": "رسائل بريد لم تُسلّم",
-            "description": "إشعارات عميل فشلت وتحتاج إعادة متابعة.",
+            "title": _("Undelivered emails"),
+            "description": _("Customer notifications that failed and need follow-up."),
             "url": _url("admin:notifications_emaildelivery_changelist"),
         },
         {
             "severity": "warning",
             "count": properties_need_attention,
-            "title": "وحدات غير جاهزة للنشر",
-            "description": "بيانات أو محتوى أو إعداد ظهور يحتاج إكمالًا.",
+            "title": _("Properties not ready to publish"),
+            "description": _(
+                    "Data, content, or visibility settings that need completing."
+                ),
             "url": _url("admin:properties_property_changelist"),
         },
         {
             "severity": "info",
             "count": new_contacts,
-            "title": "رسائل عملاء تنتظر الرد",
-            "description": "حوّل الرسالة إلى قيد المتابعة فور بدء معالجتها.",
+            "title": _("Customer messages awaiting a reply"),
+            "description": _(
+                    "Move a message to in-progress as soon as you start handling it."
+                ),
             "url": _url("admin:core_contactmessage_changelist"),
         },
         {
             "severity": "info",
             "count": unread_notifications,
-            "title": "تنبيهات غير مقروءة",
-            "description": "راجع مركز التنبيهات وأغلق ما تم التعامل معه.",
+            "title": _("Unread alerts"),
+            "description": _(
+                    "Review the alert centre and close what has been handled."
+                ),
             "url": _url("notifications:center"),
         },
     ]
@@ -277,12 +296,12 @@ def dashboard_payload(request: object) -> dict[str, Any]:
     funnel_counts = [
         {
             "key": "intent",
-            "label": "طلبات بدأت",
+            "label": _("Requests started"),
             "total": BookingIntent.objects.filter(created_at__gte=rolling_start).count(),
         },
         {
             "key": "payment",
-            "label": "وصلت للدفع",
+            "label": _("Reached payment"),
             "total": BookingIntent.objects.filter(
                 created_at__gte=rolling_start,
                 status__in=(
@@ -294,7 +313,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
         },
         {
             "key": "paid",
-            "label": "دفع ناجح",
+            "label": _("Payment succeeded"),
             "total": PaymentAttempt.objects.filter(
                 created_at__gte=rolling_start,
                 status=PaymentAttempt.Status.SUCCEEDED,
@@ -302,7 +321,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
         },
         {
             "key": "confirmed",
-            "label": "حجز مؤكد",
+            "label": _("Booking confirmed"),
             "total": Reservation.objects.filter(
                 created_at__gte=rolling_start,
                 normalized_status__in=active_reservation_statuses,

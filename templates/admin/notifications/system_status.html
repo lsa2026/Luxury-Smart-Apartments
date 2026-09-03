@@ -1,21 +1,22 @@
 {% extends "admin/base_site.html" %}
+{% load i18n %}
 {% block content_title %}{% endblock %}
 {% block bodyclass %}{{ block.super }} lsa-operations-page{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen">
   <section class="lsa-page-head lsa-page-head--operations">
-    <div><span class="lsa-kicker"><i></i> مراقبة المنصة</span><h1>حالة النظام</h1><p>فحص محلي آمن للبنية والتكاملات، دون إجراء أي كتابة على Hostaway.</p></div>
-    <nav class="lsa-section-nav" aria-label="شاشات العمليات">
-      <a href="{% url 'notifications:dashboard' %}">التقارير</a>
-      <a href="{% url 'notifications:center' %}">الإشعارات</a>
-      <a class="is-current" href="{% url 'notifications:system_status' %}">حالة النظام</a>
+    <div><span class="lsa-kicker"><i></i> {% trans "Platform monitoring" %}</span><h1>{% trans "System status" %}</h1><p>{% trans "A safe local check of infrastructure and integrations, with no writes to Hostaway." %}</p></div>
+    <nav class="lsa-section-nav" aria-label="{% trans "Operations screens" %}">
+      <a href="{% url 'notifications:dashboard' %}">{% trans "Reports" %}</a>
+      <a href="{% url 'notifications:center' %}">{% trans "Notifications" %}</a>
+      <a class="is-current" href="{% url 'notifications:system_status' %}">{% trans "System status" %}</a>
     </nav>
   </section>
 
   <section class="lsa-readiness {% if status.ready %}is-ready{% else %}is-attention{% endif %}">
     <span class="lsa-readiness__icon">{% if status.ready %}✓{% else %}!{% endif %}</span>
-    <div><span>الجاهزية العامة</span><h2>{% if status.ready %}الأنظمة الأساسية جاهزة{% else %}توجد نقاط تحتاج انتباهًا{% endif %}</h2><p>نتيجة فحص قاعدة البيانات والتخزين المؤقت وتوافق البنية.</p></div>
-    <a href="{% url 'notifications:system_status' %}" class="lsa-btn lsa-btn--subtle">إعادة الفحص</a>
+    <div><span>{% trans "Overall readiness" %}</span><h2>{% if status.ready %}{% trans "Core systems are ready" %}{% else %}{% trans "Some points need attention" %}{% endif %}</h2><p>{% trans "The result of checking the database, the cache and schema consistency." %}</p></div>
+    <a href="{% url 'notifications:system_status' %}" class="lsa-btn lsa-btn--subtle">{% trans "Re-run the check" %}</a>
   </section>
 
   <section class="lsa-status-grid">
@@ -28,20 +29,20 @@
 
   <section class="lsa-report-grid">
     <article class="lsa-panel">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">تحكم دقيق</span><h2>الخصائص والعمليات الحية</h2></div></header>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Fine-grained control" %}</span><h2>{% trans "Feature flags and live operations" %}</h2></div></header>
       <div class="lsa-feature-list">
         {% for feature in status.feature_rows %}
-          <div><span><i class="{% if feature.enabled %}is-ok{% else %}is-neutral{% endif %}"></i>{{ feature.label }}</span><b class="{% if feature.enabled %}is-enabled{% endif %}">{% if feature.enabled %}مفعّل{% else %}مغلق{% endif %}</b>{% if feature.is_write and feature.enabled %}<small>عملية كتابية على Hostaway</small>{% endif %}</div>
+          <div><span><i class="{% if feature.enabled %}is-ok{% else %}is-neutral{% endif %}"></i>{{ feature.label }}</span><b class="{% if feature.enabled %}is-enabled{% endif %}">{% if feature.enabled %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</b>{% if feature.is_write and feature.enabled %}<small>{% trans "A write operation on Hostaway" %}</small>{% endif %}</div>
         {% endfor %}
       </div>
-      <p class="lsa-safety-note">تعرض هذه الشاشة حالة المفاتيح فقط. لا تنفذ أي عملية حجز أو تعديل أو إلغاء.</p>
+      <p class="lsa-safety-note">{% trans "This screen shows switch states only. It performs no booking, modification or cancellation." %}</p>
     </article>
     <article class="lsa-panel">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">آخر نشاط</span><h2>المزامنة والاستقبال</h2></div><a href="{% url 'admin:integrations_integration_health' %}">إدارة التكامل ←</a></header>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Last activity" %}</span><h2>{% trans "Sync and reception" %}</h2></div><a href="{% url 'admin:integrations_integration_health' %}">{% trans "Manage the integration ←" %}</a></header>
       <dl class="lsa-activity-list">
-        <div><dt>آخر مزامنة</dt><dd>{% if status.latest_sync %}<strong>{{ status.latest_sync.get_sync_type_display }}</strong><small>{{ status.latest_sync.started_at|timesince }} مضت · {{ status.latest_sync.get_status_display }}</small>{% else %}<strong>لا توجد مزامنة بعد</strong>{% endif %}</dd></div>
-        <div><dt>آخر Webhook</dt><dd>{% if status.latest_webhook %}<strong>{{ status.latest_webhook.event_type }}</strong><small>{{ status.latest_webhook.received_at|timesince }} مضت · {{ status.latest_webhook.get_status_display }}</small>{% else %}<strong>لا توجد أحداث بعد</strong>{% endif %}</dd></div>
-        <div><dt>مهام البريد الفاشلة</dt><dd><strong>{{ status.failed_email_tasks }}</strong><small>راجع سجل تسليم البريد عند وجود فشل</small></dd></div>
+        <div><dt>{% trans "Last sync" %}</dt><dd>{% if status.latest_sync %}<strong>{{ status.latest_sync.get_sync_type_display }}</strong><small>{% blocktrans with elapsed=status.latest_sync.started_at|timesince state=status.latest_sync.get_status_display %}{{ elapsed }} ago · {{ state }}{% endblocktrans %}</small>{% else %}<strong>{% trans "No sync yet" %}</strong>{% endif %}</dd></div>
+        <div><dt>{% trans "Last webhook" %}</dt><dd>{% if status.latest_webhook %}<strong>{{ status.latest_webhook.event_type }}</strong><small>{% blocktrans with elapsed=status.latest_webhook.received_at|timesince state=status.latest_webhook.get_status_display %}{{ elapsed }} ago · {{ state }}{% endblocktrans %}</small>{% else %}<strong>{% trans "No events yet" %}</strong>{% endif %}</dd></div>
+        <div><dt>{% trans "Failed email tasks" %}</dt><dd><strong>{{ status.failed_email_tasks }}</strong><small>{% trans "Check the email delivery log when there are failures" %}</small></dd></div>
       </dl>
     </article>
   </section>

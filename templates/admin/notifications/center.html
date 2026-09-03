@@ -1,50 +1,51 @@
 {% extends "admin/base_site.html" %}
+{% load i18n %}
 {% block content_title %}{% endblock %}
 {% block bodyclass %}{{ block.super }} lsa-operations-page{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen">
   <section class="lsa-page-head lsa-page-head--operations">
-    <div><span class="lsa-kicker"><i></i> متابعة فورية</span><h1>مركز الإشعارات</h1><p>كل ما يحتاج قرارًا أو متابعة من فريق التشغيل في شاشة واحدة.</p></div>
-    <nav class="lsa-section-nav" aria-label="شاشات العمليات">
-      <a href="{% url 'notifications:dashboard' %}">التقارير</a>
-      <a class="is-current" href="{% url 'notifications:center' %}">الإشعارات <b>{{ unread_count }}</b></a>
-      <a href="{% url 'notifications:system_status' %}">حالة النظام</a>
+    <div><span class="lsa-kicker"><i></i> {% trans "Immediate follow-up" %}</span><h1>{% trans "Notification centre" %}</h1><p>{% trans "Everything needing a decision or follow-up from the operations team, on one screen." %}</p></div>
+    <nav class="lsa-section-nav" aria-label="{% trans "Operations screens" %}">
+      <a href="{% url 'notifications:dashboard' %}">{% trans "Reports" %}</a>
+      <a class="is-current" href="{% url 'notifications:center' %}">{% trans "Notifications" %} <b>{{ unread_count }}</b></a>
+      <a href="{% url 'notifications:system_status' %}">{% trans "System status" %}</a>
     </nav>
   </section>
 
   <form method="get" class="lsa-filter-bar">
-    <label class="lsa-search"><span>⌕</span><input type="search" name="q" value="{{ query }}" placeholder="ابحث في عنوان الإشعار أو مرجع العنصر"></label>
-    <select name="type" aria-label="نوع الإشعار"><option value="">كل الأنواع</option>{% for value,label in notification_types %}<option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-    <select name="severity" aria-label="درجة الأهمية"><option value="">كل درجات الأهمية</option>{% for value,label in severities %}<option value="{{ value }}" {% if selected_severity == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-    <button type="submit" class="lsa-btn lsa-btn--gold">تصفية</button>
-    {% if query or selected_type or selected_severity %}<a class="lsa-reset" href="{% url 'notifications:center' %}">مسح</a>{% endif %}
+    <label class="lsa-search"><span>⌕</span><input type="search" name="q" value="{{ query }}" placeholder="{% trans "Search the alert title or the item reference" %}"></label>
+    <select name="type" aria-label="{% trans "Alert type" %}"><option value="">{% trans "All types" %}</option>{% for value,label in notification_types %}<option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="severity" aria-label="{% trans "Severity" %}"><option value="">{% trans "All severities" %}</option>{% for value,label in severities %}<option value="{{ value }}" {% if selected_severity == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <button type="submit" class="lsa-btn lsa-btn--gold">{% trans "Filter" %}</button>
+    {% if query or selected_type or selected_severity %}<a class="lsa-reset" href="{% url 'notifications:center' %}">{% trans "Clear" %}</a>{% endif %}
   </form>
 
   <section class="lsa-panel lsa-notification-panel">
     <header class="lsa-panel__header">
-      <div><span class="lsa-panel__eyebrow">{{ page_obj.paginator.count }} إشعار</span><h2>{{ unread_count }} غير مقروء</h2></div>
-      {% if unread_count %}<form method="post" action="{% url 'notifications:mark_all_read' %}">{% csrf_token %}<button class="lsa-btn lsa-btn--subtle" type="submit">تحديد الكل كمقروء</button></form>{% endif %}
+      <div><span class="lsa-panel__eyebrow">{% blocktrans with total=page_obj.paginator.count %}{{ total }} alerts{% endblocktrans %}</span><h2>{% blocktrans with count=unread_count %}{{ count }} unread{% endblocktrans %}</h2></div>
+      {% if unread_count %}<form method="post" action="{% url 'notifications:mark_all_read' %}">{% csrf_token %}<button class="lsa-btn lsa-btn--subtle" type="submit">{% trans "Mark all as read" %}</button></form>{% endif %}
     </header>
     <div class="lsa-notification-list">
       {% for notification in page_obj %}
         <article class="lsa-notification {% if not notification.is_read %}is-unread{% endif %}">
           <span class="lsa-notification__signal lsa-notification__signal--{{ notification.severity }}"></span>
           <div class="lsa-notification__body">
-            <div><span class="lsa-badge lsa-badge--{{ notification.severity }}">{{ notification.get_severity_display }}</span><small>{{ notification.created_at|timesince }} مضت · {{ notification.get_notification_type_display }}</small></div>
+            <div><span class="lsa-badge lsa-badge--{{ notification.severity }}">{{ notification.get_severity_display }}</span><small>{% blocktrans with elapsed=notification.created_at|timesince kind=notification.get_notification_type_display %}{{ elapsed }} ago · {{ kind }}{% endblocktrans %}</small></div>
             <h3>{{ notification.title_ar }}</h3>
             <p>{{ notification.message_ar }}</p>
-            {% if notification.action_url %}<a href="{{ notification.action_url }}">فتح العنصر المرتبط ←</a>{% endif %}
+            {% if notification.action_url %}<a href="{{ notification.action_url }}">{% trans "Open the linked item ←" %}</a>{% endif %}
           </div>
           <div class="lsa-notification__action">
-            {% if not notification.is_read %}<form method="post" action="{% url 'notifications:mark_read' notification.pk %}">{% csrf_token %}<button type="submit" aria-label="تحديد كمقروء">✓</button></form>{% else %}<span title="مقروء">✓</span>{% endif %}
+            {% if not notification.is_read %}<form method="post" action="{% url 'notifications:mark_read' notification.pk %}">{% csrf_token %}<button type="submit" aria-label="{% trans "Mark as read" %}">✓</button></form>{% else %}<span title="{% trans "Read" %}">✓</span>{% endif %}
           </div>
         </article>
-      {% empty %}<div class="lsa-empty-card"><span>✓</span><h2>لا توجد إشعارات مطابقة</h2><p>كل شيء هادئ الآن، أو غيّر عوامل التصفية.</p></div>{% endfor %}
+      {% empty %}<div class="lsa-empty-card"><span>✓</span><h2>{% trans "No matching alerts" %}</h2><p>{% trans "All quiet for now — or adjust the filters." %}</p></div>{% endfor %}
     </div>
-    {% if page_obj.has_other_pages %}<nav class="lsa-pagination" aria-label="الصفحات">
-      {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&type={{ selected_type }}&severity={{ selected_severity }}&page={{ page_obj.previous_page_number }}">السابق</a>{% endif %}
-      <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
-      {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&type={{ selected_type }}&severity={{ selected_severity }}&page={{ page_obj.next_page_number }}">التالي</a>{% endif %}
+    {% if page_obj.has_other_pages %}<nav class="lsa-pagination" aria-label="{% trans "Pages" %}">
+      {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&type={{ selected_type }}&severity={{ selected_severity }}&page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
+      <span>{% blocktrans with current=page_obj.number total=page_obj.paginator.num_pages %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
+      {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&type={{ selected_type }}&severity={{ selected_severity }}&page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>{% endif %}
     </nav>{% endif %}
   </section>
 </main>

@@ -17,20 +17,20 @@
     <header class="availability-results__heading">
         <div>
             <p class="eyebrow">{% trans "Live availability" %}</p>
-            <h1>{% blocktrans with city=searched_city %}Available properties in {{ city }}{% endblocktrans %}</h1>
+            <h1>{% if searched_city %}{% blocktrans with city=searched_city %}Available properties in {{ city }}{% endblocktrans %}{% else %}{% trans "Available properties in every city" %}{% endif %}</h1>
             <p>{% trans "Only properties available for your selected dates and guest count are shown." %}</p>
         </div>
         <dl class="availability-results__search-summary" aria-label="{% trans 'Your search' %}">
-            <div><dt>{% trans "Check-in" %}</dt><dd><time datetime="{{ search.check_in|date:'Y-m-d' }}">{{ search.check_in|date:"j F Y" }}</time></dd></div>
-            <div><dt>{% trans "Check-out" %}</dt><dd><time datetime="{{ search.check_out|date:'Y-m-d' }}">{{ search.check_out|date:"j F Y" }}</time></dd></div>
-            <div><dt>{% trans "Guests" %}</dt><dd>{{ search.guests }}</dd></div>
+            <div><dt>{% trans "Check-in" %}</dt><dd><time datetime="{{ search.check_in|date:'Y-m-d' }}">{{ search.check_in|localized_date }}</time></dd></div>
+            <div><dt>{% trans "Check-out" %}</dt><dd><time datetime="{{ search.check_out|date:'Y-m-d' }}">{{ search.check_out|localized_date }}</time></dd></div>
+            <div><dt>{% trans "Guests" %}</dt><dd>{{ search.guests|localized_number }}</dd></div>
         </dl>
     </header>
 
     {% if availability_results %}
     <div class="availability-results__count" role="status">
         <span aria-hidden="true">◆</span>
-        {% blocktrans count counter=availability_results|length %}We found {{ counter }} available property{% plural %}We found {{ counter }} available properties{% endblocktrans %}
+        {% blocktrans count counter=availability_results|length|localized_count %}We found {{ counter }} available property{% plural %}We found {{ counter }} available properties{% endblocktrans %}
     </div>
     <div class="property-grid availability-results__grid" data-analytics-list="available_properties">
         {% for result in availability_results %}

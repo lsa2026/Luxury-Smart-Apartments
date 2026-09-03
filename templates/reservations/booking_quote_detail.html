@@ -69,7 +69,7 @@
                             </span>
                             <span>
                                 <small>{% trans "Check-in" %}</small>
-                                <time datetime="{{ quote.check_in|date:'Y-m-d' }}">{{ quote.check_in|date:"Y-m-d" }}</time>
+                                <time datetime="{{ quote.check_in|date:'Y-m-d' }}">{{ quote.check_in|localized_date }}</time>
                             </span>
                         </div>
                         <span class="quote-review__date-route" aria-hidden="true"><i></i><b></b><i></i></span>
@@ -81,7 +81,7 @@
                             </span>
                             <span>
                                 <small>{% trans "Check-out" %}</small>
-                                <time datetime="{{ quote.check_out|date:'Y-m-d' }}">{{ quote.check_out|date:"Y-m-d" }}</time>
+                                <time datetime="{{ quote.check_out|date:'Y-m-d' }}">{{ quote.check_out|localized_date }}</time>
                             </span>
                         </div>
                     </div>
@@ -89,11 +89,11 @@
                     <dl class="quote-review__facts">
                         <div>
                             <dt>{% trans "Nights" %}</dt>
-                            <dd>{{ quote.nights }}</dd>
+                            <dd>{{ quote.nights|localized_number }}</dd>
                         </div>
                         <div>
                             <dt>{% trans "Guests" %}</dt>
-                            <dd>{{ quote.guests }}</dd>
+                            <dd>{{ quote.guests|localized_number }}</dd>
                         </div>
                     </dl>
 
@@ -123,7 +123,7 @@
                                 <path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
                             </svg>
                         </span>
-                        <p>{% blocktrans with expires=quote.expires_at|date:"Y-m-d H:i" %}This quote expires at {{ expires }}.{% endblocktrans %}</p>
+                        <p>{% blocktrans with expires=quote.expires_at|localized_datetime %}This quote expires at {{ expires }}.{% endblocktrans %}</p>
                     </div>
                 </div>
             </article>

@@ -77,7 +77,7 @@ class PropertyCitySelect(forms.Select):
 
 
 class AvailabilitySearchForm(forms.Form):
-    city = forms.ChoiceField(label=_("City"), choices=(), required=True)
+    city = forms.ChoiceField(label=_("City (optional)"), choices=(), required=False)
     property = LocalizedPropertyChoiceField(
         label=_("Property (optional)"),
         queryset=Property.objects.none(),
@@ -131,7 +131,7 @@ class AvailabilitySearchForm(forms.Form):
             "hostaway_is_active",
         )
         language = (translation.get_language() or "ar").split("-")[0]
-        self.fields["city"].choices = [("", _("Choose a city"))] + supported_city_choices(
+        self.fields["city"].choices = [("", _("All cities"))] + supported_city_choices(
             language
         )
         self.fields["city"].widget.attrs["data-city-select"] = ""

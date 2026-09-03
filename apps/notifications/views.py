@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
@@ -55,7 +56,7 @@ def notification_center(request: HttpRequest) -> HttpResponse:
         request,
         "admin/notifications/center.html",
         {
-            "title": "مركز الإشعارات",
+            "title": _("Notification centre"),
             "page_obj": page,
             "notification_types": Notification.Type.choices,
             "severities": Notification.Severity.choices,
@@ -106,7 +107,7 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
         request,
         "admin/notifications/dashboard.html",
         {
-            "title": "لوحة التقارير التشغيلية",
+            "title": _("Operational reports dashboard"),
             "report": operations_report(start_date, end_date),
             "selected_period": selected_period,
         },
@@ -171,27 +172,59 @@ def system_status(request: HttpRequest) -> HttpResponse:
         },
     }
     state_labels = {
-        "ok": "يعمل بصورة طبيعية",
-        "configured": "مهيأ",
-        "enabled": "مفعّل",
-        "dispatch_enabled": "إرسال المهام مفعّل",
-        "schedule_enabled": "الجدولة مفعّلة",
-        "disabled": "غير مفعّل",
-        "not_enabled": "غير مفعّل",
-        "not_configured": "غير مهيأ",
-        "pending": "توجد تحديثات معلقة",
-        "unavailable": "غير متاح",
+        "ok": _("Operating normally"),
+        "configured": _("Configured"),
+        "enabled": _("Enabled"),
+        "dispatch_enabled": _("Task dispatch enabled"),
+        "schedule_enabled": _("Scheduling enabled"),
+        "disabled": _("Not enabled"),
+        "not_enabled": _("Not enabled"),
+        "not_configured": _("Not configured"),
+        "pending": _("Pending updates exist"),
+        "unavailable": _("Unavailable"),
     }
     raw_checks = (
-        ("قاعدة البيانات", checks.get("database", "unavailable"), "PostgreSQL واتصال التطبيق"),
-        ("التخزين المؤقت", checks.get("cache", "unavailable"), "Cache واستجابة القراءة والكتابة"),
-        ("بنية قاعدة البيانات", checks.get("migrations", "unavailable"), "توافق آخر migrations"),
-        ("إعداد التطبيق", checks.get("configuration", "unavailable"), "المفاتيح والرابط الأساسي"),
-        ("Redis", checks.get("redis", status["redis"]), "الطوابير والتخزين السريع"),
-        ("عامل المهام", status["celery_worker"], "إرسال مهام المزامنة الخلفية"),
-        ("جدولة المهام", status["celery_beat"], "المهام الدورية"),
-        ("تسليم البريد", status["email_provider"], "رسائل العملاء والنظام"),
-        ("مصادقة Hostaway", status["hostaway_auth"], "اكتمال بيانات الربط فقط"),
+        (
+            _("Database"),
+            checks.get("database", "unavailable"),
+            _("PostgreSQL and the application connection"),
+        ),
+        (
+            _("Cache"),
+            checks.get("cache", "unavailable"),
+            _("Cache and read/write responsiveness"),
+        ),
+        (
+            _("Database schema"),
+            checks.get("migrations", "unavailable"),
+            _("Consistency with the latest migrations"),
+        ),
+        (
+            _("Application configuration"),
+            checks.get("configuration", "unavailable"),
+            _("Keys and the base URL"),
+        ),
+        (
+            "Redis",
+            checks.get("redis", status["redis"]),
+            _("Queues and fast storage"),
+        ),
+        (
+            _("Task worker"),
+            status["celery_worker"],
+            _("Dispatching background sync tasks"),
+        ),
+        (_("Task scheduler"), status["celery_beat"], _("Recurring tasks")),
+        (
+            _("Email delivery"),
+            status["email_provider"],
+            _("Customer and system messages"),
+        ),
+        (
+            _("Hostaway authentication"),
+            status["hostaway_auth"],
+            _("Integration data completeness only"),
+        ),
     )
     status["checks"] = [
         {
@@ -210,11 +243,11 @@ def system_status(request: HttpRequest) -> HttpResponse:
         for label, value, detail in raw_checks
     ]
     feature_labels = {
-        "live_booking": "إنشاء الحجوزات الحية",
-        "live_modification": "تعديل الحجوزات الحية",
-        "live_cancellation": "إلغاء الحجوزات الحية",
-        "webhook_receiver": "استقبال Webhooks",
-        "email_delivery": "إرسال البريد",
+        "live_booking": _("Live booking creation"),
+        "live_modification": _("Live booking modification"),
+        "live_cancellation": _("Live booking cancellation"),
+        "webhook_receiver": _("Webhook reception"),
+        "email_delivery": _("Email delivery"),
     }
     status["feature_rows"] = [
         {"label": feature_labels[name], "enabled": enabled, "is_write": name.startswith("live_")}
@@ -224,5 +257,5 @@ def system_status(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "admin/notifications/system_status.html",
-        {"title": "حالة النظام", "status": status},
+        {"title": _("System status"), "status": status},
     )

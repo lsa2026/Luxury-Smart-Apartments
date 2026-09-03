@@ -1,5 +1,5 @@
-{% load admin_dashboard %}
+{% load i18n admin_dashboard %}
 <details data-filter-title="{{ title }}" open>
-  <summary>حسب {{ title|admin_label }}</summary>
+  <summary>{% blocktrans with label=title|admin_label %}By {{ label }}{% endblocktrans %}</summary>
   <ul>{% for choice in choices %}<li{% if choice.selected %} class="selected"{% endif %}><a href="{{ choice.query_string|iriencode }}">{{ choice.display }}</a></li>{% endfor %}</ul>
 </details>

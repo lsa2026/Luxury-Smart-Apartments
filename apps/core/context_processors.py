@@ -2,13 +2,14 @@
 
 import json
 from datetime import datetime
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import DatabaseError
 from django.http import HttpRequest
 from django.utils import timezone, translation
+from django.utils.translation import gettext as _
 
 from apps.properties.cities import supported_city_labels
 
@@ -41,6 +42,36 @@ def _consent_from_cookie(request: HttpRequest) -> dict[str, object] | None:
         "analytics": value["analytics"],
         "marketing": value["marketing"],
     }
+
+
+def _whatsapp_digits(raw: str) -> str:
+    """Normalise a dialled number to the digits-only form wa.me expects."""
+    digits = "".join(character for character in raw if character.isdigit())
+    if not digits:
+        return ""
+    country_code = settings.WHATSAPP_DEFAULT_COUNTRY_CODE
+    if digits.startswith("00"):
+        digits = digits[2:]
+    elif digits.startswith("0"):
+        digits = f"{country_code}{digits.lstrip('0')}"
+    elif not digits.startswith(country_code) and len(digits) <= 9:
+        digits = f"{country_code}{digits}"
+    return digits
+
+
+def _whatsapp_contact(site_setting: SiteSetting | None) -> dict[str, str]:
+    """Floating WhatsApp button target, admin-managed with a settings fallback."""
+    raw_number = ""
+    configured_url = ""
+    if site_setting is not None:
+        raw_number = site_setting.whatsapp_display_number or site_setting.contact_phone or ""
+        configured_url = site_setting.whatsapp_url or ""
+    digits = _whatsapp_digits(raw_number or settings.WHATSAPP_CONTACT_NUMBER)
+    if not configured_url and not digits:
+        return {"url": "", "display": ""}
+    greeting = _("Hello, I would like to ask about a stay with Luxury Smart Apartments.")
+    url = configured_url or f"https://wa.me/{digits}?text={quote(greeting)}"
+    return {"url": url, "display": f"+{digits}" if digits else ""}
 
 
 def site_context(request: HttpRequest) -> dict[str, object]:
@@ -147,4 +178,5 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         ),
         "pending_analytics_event": (pending_event if isinstance(pending_event, str) else ""),
         "payment_sandbox_enabled": settings.PAYMENT_SANDBOX_ENABLED,
+        "whatsapp_contact": _whatsapp_contact(site_setting),
     }

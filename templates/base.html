@@ -32,10 +32,10 @@
     <title>{% block title %}{% trans "Luxury Smart Apartments" %}{% endblock %}</title>
     <link rel="icon" type="image/jpeg" href="{% static 'images/logo.jpeg' %}">
     <link rel="preconnect" href="https://images.unsplash.com">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=28">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=29">
     <script src="{% static 'js/consent.js' %}?v=10" defer></script>
     <script src="{% static 'js/analytics.js' %}?v=10" defer></script>
-    <script src="{% static 'js/site.js' %}?v=20" defer></script>
+    <script src="{% static 'js/site.js' %}?v=21" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
     {% block extra_head %}{% endblock %}
@@ -94,6 +94,7 @@
     </main>
     {% include "includes/footer.html" %}
     {% if cookie_consent_enabled %}{% include "includes/cookie_consent.html" %}{% endif %}
+    {% include "includes/whatsapp_button.html" %}
     {% block dialogs %}{% endblock %}
 </body>
 </html>

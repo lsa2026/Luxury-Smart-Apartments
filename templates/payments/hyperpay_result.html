@@ -45,8 +45,8 @@
         {% if outcome.status == success and outcome.reservation and outcome.reservation.normalized_status != "confirmed" %}
         <ol class="payment-result__steps" aria-label="{% trans 'What happens next' %}">
             <li class="is-complete"><span aria-hidden="true">✓</span><strong>{% trans "Payment verified" %}</strong></li>
-            <li class="is-current"><span aria-hidden="true">2</span><strong>{% trans "Booking confirmation review" %}</strong></li>
-            <li><span aria-hidden="true">3</span><strong>{% trans "Confirmation and arrival details" %}</strong></li>
+            <li class="is-current"><span aria-hidden="true">{{ 2|localized_number }}</span><strong>{% trans "Booking confirmation review" %}</strong></li>
+            <li><span aria-hidden="true">{{ 3|localized_number }}</span><strong>{% trans "Confirmation and arrival details" %}</strong></li>
         </ol>
         {% endif %}
     </article>

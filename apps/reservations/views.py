@@ -138,16 +138,20 @@ class AvailabilitySearchView(View):
             )
 
         property_obj = form.cleaned_data.get("property")
-        city = str(form.cleaned_data["city"])
+        # City is optional: an empty value searches every published city.
+        city = str(form.cleaned_data.get("city") or "")
         check_in = form.cleaned_data["check_in"]
         check_out = form.cleaned_data["check_out"]
         guests = form.cleaned_data["guests"]
 
         if property_obj is None:
+            properties = Property.objects.public()
+            if city:
+                properties = properties.filter(city=city)
             properties = (
-                Property.objects.public()
-                .filter(city=city)
-                .filter(Q(person_capacity__gte=guests) | Q(person_capacity__isnull=True))
+                properties.filter(
+                    Q(person_capacity__gte=guests) | Q(person_capacity__isnull=True)
+                )
                 .prefetch_related(
                     Prefetch(
                         "images",
@@ -165,6 +169,10 @@ class AvailabilitySearchView(View):
             available_results: list[dict[str, object]] = []
             with self.service_class() as service:
                 for candidate in properties:
+                    # Browsing a city (or the whole portfolio) sweeps every candidate,
+                    # so it reads the shared calendar and price cache instead of
+                    # calling Hostaway per listing. Nothing binding is created here;
+                    # the quote, payment, and booking steps still verify live.
                     availability = service.check(
                         AvailabilityRequest(
                             property=candidate,
@@ -172,7 +180,7 @@ class AvailabilitySearchView(View):
                             check_out=check_out,
                             guests=guests,
                         ),
-                        bypass_cache=True,
+                        bypass_cache=False,
                     )
                     if availability.is_available and availability.quote is not None:
                         available_results.append(
@@ -193,7 +201,9 @@ class AvailabilitySearchView(View):
                             }
                         )
             language = translation.get_language() or "ar"
-            city_label = dict(supported_city_choices(language)).get(city, city)
+            city_label = (
+                dict(supported_city_choices(language)).get(city, city) if city else ""
+            )
             return render(
                 request,
                 "reservations/availability_result.html",
@@ -415,12 +425,19 @@ class BookingIntentDetailView(View):
         owns_account = request.user.is_authenticated and intent.customer_id == request.user.pk
         if not session_owns(request, intent.session_key_hash) and not owns_account:
             raise Http404
+        cover_image = (
+            PropertyImage.objects.public()
+            .filter(property=intent.property)
+            .order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
+            .first()
+        )
         return _private_response(
             render(
                 request,
                 "reservations/booking_intent_detail.html",
                 {
                     "intent": intent,
+                    "cover_image": cover_image,
                     "masked_email": mask_email(intent.guest_email),
                     "masked_phone": mask_phone(intent.guest_phone),
                     "hyperpay_enabled": settings.HYPERPAY_ENABLED,
@@ -444,8 +461,7 @@ def _owned_reservation(request: HttpRequest, public_reference: str) -> Reservati
         reservation.booking_intent.session_key_hash,
     )
     owns_account = (
-        request.user.is_authenticated
-        and reservation.booking_intent.customer_id == request.user.pk
+        request.user.is_authenticated and reservation.booking_intent.customer_id == request.user.pk
     )
     if (
         not owns_booking_session
@@ -605,8 +621,7 @@ class ReservationAccessView(View):
         if (
             request.user.is_authenticated
             and request.user.email
-            and request.user.email.casefold()
-            == reservation.booking_intent.guest_email.casefold()
+            and request.user.email.casefold() == reservation.booking_intent.guest_email.casefold()
             and reservation.booking_intent.customer_id != request.user.pk
         ):
             BookingIntent.objects.filter(pk=reservation.booking_intent_id).update(
@@ -734,10 +749,7 @@ class ModificationCreateView(View):
         else:
             raise Http404
         if outcome.request is not None:
-            if (
-                outcome.request.status
-                == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
-            ):
+            if outcome.request.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY:
                 execute_automatic_modification(outcome.request)
             return _private_response(
                 redirect(

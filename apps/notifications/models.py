@@ -7,6 +7,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 internal_path_validator = RegexValidator(
     regex=r"^/(?!/)[^\s]*$",
@@ -16,30 +18,30 @@ internal_path_validator = RegexValidator(
 
 class Notification(models.Model):
     class Type(models.TextChoices):
-        CONTACT_MESSAGE_RECEIVED = "contact_message_received", "رسالة تواصل"
-        BOOKING_INTENT_CREATED = "booking_intent_created", "طلب حجز"
-        BOOKING_PRICE_CHANGED = "booking_price_changed", "تغير السعر"
-        BOOKING_UNAVAILABLE = "booking_unavailable", "الوحدة غير متاحة"
-        MODIFICATION_REQUESTED = "modification_requested", "طلب تعديل"
-        CANCELLATION_REQUESTED = "cancellation_requested", "طلب إلغاء"
-        HOSTAWAY_SYNC_FAILED = "hostaway_sync_failed", "فشل مزامنة"
-        WEBHOOK_FAILED = "webhook_failed", "فشل Webhook"
-        RESERVATION_UNKNOWN = "reservation_unknown", "حجز غير مؤكد"
-        SYSTEM_WARNING = "system_warning", "تحذير نظام"
+        CONTACT_MESSAGE_RECEIVED = "contact_message_received", _("Contact message")
+        BOOKING_INTENT_CREATED = "booking_intent_created", _("Booking request")
+        BOOKING_PRICE_CHANGED = "booking_price_changed", _("Price changed")
+        BOOKING_UNAVAILABLE = "booking_unavailable", _("Property unavailable")
+        MODIFICATION_REQUESTED = "modification_requested", _("Modification request")
+        CANCELLATION_REQUESTED = "cancellation_requested", _("Cancellation request")
+        HOSTAWAY_SYNC_FAILED = "hostaway_sync_failed", _("Sync failure")
+        WEBHOOK_FAILED = "webhook_failed", _("Webhook failure")
+        RESERVATION_UNKNOWN = "reservation_unknown", _("Unconfirmed booking")
+        SYSTEM_WARNING = "system_warning", _("System warning")
 
     class Audience(models.TextChoices):
-        ADMIN = "admin", "الإدارة"
-        USER = "user", "مستخدم"
+        ADMIN = "admin", _("Administration")
+        USER = "user", _("Used")
 
     class Severity(models.TextChoices):
-        INFO = "info", "معلومة"
-        SUCCESS = "success", "نجاح"
-        WARNING = "warning", "تحذير"
-        ERROR = "error", "خطأ"
+        INFO = "info", _("Info")
+        SUCCESS = "success", _("Success")
+        WARNING = "warning", _("Warning")
+        ERROR = "error", _("Error")
 
     class Status(models.TextChoices):
-        ACTIVE = "active", "نشط"
-        ARCHIVED = "archived", "مؤرشف"
+        ACTIVE = "active", _("Active")
+        ARCHIVED = "archived", _("Archived")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     notification_type = models.CharField(max_length=50, choices=Type.choices)
@@ -89,8 +91,8 @@ class Notification(models.Model):
             )
         ]
         permissions = [("manage_notification_center", "Can manage notification center")]
-        verbose_name = "إشعار"
-        verbose_name_plural = "الإشعارات"
+        verbose_name = _("Notification")
+        verbose_name_plural = _("Notifications")
 
     def __str__(self) -> str:
         return self.title_ar or self.title_en
@@ -98,13 +100,13 @@ class Notification(models.Model):
 
 class EmailDelivery(models.Model):
     class Status(models.TextChoices):
-        QUEUED = "queued", "في الطابور"
-        SENDING = "sending", "قيد الإرسال"
-        SENT = "sent", "مرسل"
-        FAILED = "failed", "فشل"
-        CANCELLED = "cancelled", "ملغى"
-        SKIPPED = "skipped", "متجاوز"
-        DISABLED = "disabled", "معطل"
+        QUEUED = "queued", _("Queued")
+        SENDING = "sending", _("Sending")
+        SENT = "sent", pgettext_lazy("EmailDelivery", "Sent")
+        FAILED = "failed", _("Failure")
+        CANCELLED = "cancelled", pgettext_lazy("EmailDelivery", "Cancelled")
+        SKIPPED = "skipped", _("Superseded")
+        DISABLED = "disabled", _("Disabled")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     message_type = models.CharField(max_length=80)
@@ -137,8 +139,8 @@ class EmailDelivery(models.Model):
             models.Index(fields=["message_type", "-created_at"]),
             models.Index(fields=["recipient_hash", "-created_at"]),
         ]
-        verbose_name = "تسليم بريد"
-        verbose_name_plural = "تسليمات البريد"
+        verbose_name = _("Email delivery")
+        verbose_name_plural = _("Email deliveries")
 
     def __str__(self) -> str:
         return f"{self.message_type} — {self.status}"
@@ -170,8 +172,8 @@ class AuditLog(models.Model):
             models.Index(fields=["actor_user", "-created_at"]),
             models.Index(fields=["created_at"]),
         ]
-        verbose_name = "سجل تدقيق"
-        verbose_name_plural = "سجلات التدقيق"
+        verbose_name = _("Audit log entry")
+        verbose_name_plural = _("Audit log entries")
 
     def __str__(self) -> str:
         return f"{self.action} — {self.object_type}"

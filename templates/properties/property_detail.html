@@ -77,10 +77,10 @@
     </section>
     <div class="container property-facts-band">
         <ul class="key-facts" aria-label="{% trans 'Stay capacity' %}">
-            <li><span class="key-facts__icon" aria-hidden="true">♙</span><strong>{{ property.person_capacity|default:"—" }}</strong><span>{% trans "Guests" %}</span></li>
-            <li><span class="key-facts__icon" aria-hidden="true">▤</span><strong>{{ property.bedrooms_number|default:"—" }}</strong><span>{% trans "Bedrooms" %}</span></li>
-            <li><span class="key-facts__icon" aria-hidden="true">▰</span><strong>{{ property.beds_number|default:"—" }}</strong><span>{% trans "Beds" %}</span></li>
-            <li><span class="key-facts__icon" aria-hidden="true">◉</span><strong>{{ property.bathrooms_number|floatformat:"-1"|default:"—" }}</strong><span>{% trans "Bathrooms" %}</span></li>
+            <li><span class="key-facts__icon" aria-hidden="true">♙</span><strong>{{ property.person_capacity|localized_number|default:"—" }}</strong><span>{% trans "Guests" %}</span></li>
+            <li><span class="key-facts__icon" aria-hidden="true">▤</span><strong>{{ property.bedrooms_number|localized_number|default:"—" }}</strong><span>{% trans "Bedrooms" %}</span></li>
+            <li><span class="key-facts__icon" aria-hidden="true">▰</span><strong>{{ property.beds_number|localized_number|default:"—" }}</strong><span>{% trans "Beds" %}</span></li>
+            <li><span class="key-facts__icon" aria-hidden="true">◉</span><strong>{{ property.bathrooms_number|floatformat:"-1"|localized_number|default:"—" }}</strong><span>{% trans "Bathrooms" %}</span></li>
         </ul>
     </div>
     <div class="section container property-layout">
@@ -98,9 +98,9 @@
                 <h2>{% trans "Continue with this property" %}</h2>
                 <p>{% trans "Your dates and guest count have been kept. You do not need to search again." %}</p>
                 <dl class="booking-selection-summary" aria-label="{% trans 'Your selected stay' %}">
-                    <div><dt>{% trans "Check-in" %}</dt><dd>{{ preserved_search.check_in|date:"Y-m-d" }}</dd></div>
-                    <div><dt>{% trans "Check-out" %}</dt><dd>{{ preserved_search.check_out|date:"Y-m-d" }}</dd></div>
-                    <div><dt>{% trans "Guests" %}</dt><dd>{{ preserved_search.guests }}</dd></div>
+                    <div><dt>{% trans "Check-in" %}</dt><dd>{{ preserved_search.check_in|localized_date }}</dd></div>
+                    <div><dt>{% trans "Check-out" %}</dt><dd>{{ preserved_search.check_out|localized_date }}</dd></div>
+                    <div><dt>{% trans "Guests" %}</dt><dd>{{ preserved_search.guests|localized_number }}</dd></div>
                 </dl>
                 <form class="booking-selection-form" method="post" action="{% url 'reservations:quote_create' %}" data-submit-once>
                     {% csrf_token %}
@@ -136,7 +136,7 @@
     <button class="lightbox__close" type="button" data-lightbox-close aria-label="{% trans 'Close gallery' %}">×</button>
     <button class="lightbox__nav" type="button" data-lightbox-prev aria-label="{% trans 'Previous photo' %}">‹</button>
     <figure>
-        <img src="" alt="" width="1440" height="960" data-lightbox-image>
+        <img alt="" width="1440" height="960" decoding="async" data-lightbox-image>
         <figcaption data-lightbox-caption></figcaption>
     </figure>
     <button class="lightbox__nav" type="button" data-lightbox-next aria-label="{% trans 'Next photo' %}">›</button>

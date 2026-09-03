@@ -67,3 +67,25 @@
     });
   });
 })();
+
+/* Image alternative text editor: fill empty fields from the property name. */
+(function () {
+  "use strict";
+  const form = document.querySelector("form[data-name-ar]");
+  if (!form) return;
+
+  form.querySelectorAll("[data-alt-fill]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const lang = button.getAttribute("data-alt-fill");
+      const base = (form.getAttribute("data-name-" + lang) || "").trim();
+      if (!base) return;
+      const inputs = form.querySelectorAll('input[data-alt-lang="' + lang + '"]');
+      let index = 0;
+      inputs.forEach((input) => {
+        index += 1;
+        if (input.value.trim()) return;
+        input.value = index === 1 ? base : base + " — " + index;
+      });
+    });
+  });
+})();

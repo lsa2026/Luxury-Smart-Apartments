@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views import View
 
+from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
 
@@ -32,6 +33,16 @@ def _owns_intent(request: HttpRequest, intent: BookingIntent) -> bool:
 def _hyperpay_enabled() -> None:
     if not settings.HYPERPAY_ENABLED:
         raise Http404
+
+
+def _cover_image(property_obj: object) -> object:
+    """The listing photo shown beside the amount so the payer can confirm the stay."""
+    return (
+        PropertyImage.objects.public()
+        .filter(property=property_obj)
+        .order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
+        .first()
+    )
 
 
 class HyperPayBookingCheckoutView(View):
@@ -72,6 +83,7 @@ class HyperPayBookingCheckoutView(View):
             {
                 "attempt": checkout.attempt,
                 "intent": intent,
+                "cover_image": _cover_image(intent.property),
                 "checkout_id": checkout.checkout_id,
                 "widget_integrity": checkout.script_integrity,
                 "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
@@ -133,6 +145,7 @@ class HyperPayModificationCheckoutView(View):
                 "attempt": checkout.attempt,
                 "intent": intent,
                 "modification": modification,
+                "cover_image": _cover_image(modification.reservation.property),
                 "checkout_id": checkout.checkout_id,
                 "widget_integrity": checkout.script_integrity,
                 "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,

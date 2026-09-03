@@ -3,7 +3,8 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils.translation import gettext
+from django.utils.translation import gettext, pgettext_lazy
+from django.utils.translation import gettext_lazy as _
 
 from apps.properties.models import Property
 
@@ -28,14 +29,14 @@ class Review(models.Model):
     """A Hostaway-sourced review. Hostaway data is immutable in Django admin."""
 
     class Type(models.TextChoices):
-        GUEST_TO_HOST = "guest-to-host", "ضيف إلى مضيف"
-        HOST_TO_GUEST = "host-to-guest", "مضيف إلى ضيف"
+        GUEST_TO_HOST = "guest-to-host", _("Guest to host")
+        HOST_TO_GUEST = "host-to-guest", _("Host to guest")
 
     class Status(models.TextChoices):
-        PUBLISHED = "published", "منشورة"
-        AWAITING = "awaiting", "قيد الانتظار"
-        DECLINED = "declined", "مرفوضة"
-        OTHER = "other", "أخرى"
+        PUBLISHED = "published", _("Published")
+        AWAITING = "awaiting", _("Pending")
+        DECLINED = "declined", pgettext_lazy("Review", "Rejected")
+        OTHER = "other", _("Other")
 
     hostaway_review_id = models.PositiveBigIntegerField(unique=True)
     property = models.ForeignKey(
@@ -88,11 +89,11 @@ class Review(models.Model):
                 name="review_rating_between_0_and_10",
             ),
         ]
-        verbose_name = "مراجعة"
-        verbose_name_plural = "المراجعات"
+        verbose_name = _("Review")
+        verbose_name_plural = _("Reviews")
 
     def __str__(self) -> str:
-        return f"{self.guest_name or 'ضيف'} — {self.rating}"
+        return f"{self.guest_name or gettext('Guest')} — {self.rating}"
 
     @builtin_property
     def display_guest_name(self) -> str:

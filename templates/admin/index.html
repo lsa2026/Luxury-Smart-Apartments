@@ -12,35 +12,35 @@
 <main class="lsa-dashboard">
   <section class="lsa-hero">
     <div>
-      <span class="lsa-kicker"><i></i> غرفة العمليات</span>
-      <h1>أهلًا، {{ request.user.first_name|default:"فريق الإدارة" }}</h1>
-      <p>صورة تشغيلية موحّدة للإقامات، التحصيل، العملاء، وجودة المنصة — وما يحتاج قرارك الآن.</p>
-      <small class="lsa-live-time"><i></i><span data-lsa-clock>محدّث الآن</span></small>
+      <span class="lsa-kicker"><i></i> {% trans "Operations room" %}</span>
+      <h1>{% blocktrans with name=request.user.first_name|default:_("the administration team") %}Welcome, {{ name }}{% endblocktrans %}</h1>
+      <p>{% trans "A unified operational picture of stays, collection, customers and platform quality — and what needs your decision now." %}</p>
+      <small class="lsa-live-time"><i></i><span data-lsa-clock>{% trans "Updated just now" %}</span></small>
     </div>
     <div class="lsa-hero__actions">
-      <a href="{{ dashboard.urls.site }}" target="_blank" class="lsa-btn lsa-btn--ghost">عرض المنصة ↗</a>
-      <a href="?refresh=1" class="lsa-btn lsa-btn--ghost">تحديث العرض</a>
-      <a href="{{ dashboard.urls.properties }}" class="lsa-btn lsa-btn--gold">إدارة الوحدات</a>
+      <a href="{{ dashboard.urls.site }}" target="_blank" class="lsa-btn lsa-btn--ghost">{% trans "View the platform ↗" %}</a>
+      <a href="?refresh=1" class="lsa-btn lsa-btn--ghost">{% trans "Refresh the view" %}</a>
+      <a href="{{ dashboard.urls.properties }}" class="lsa-btn lsa-btn--gold">{% trans "Manage properties" %}</a>
     </div>
     <div class="lsa-hero__orb" aria-hidden="true"></div>
   </section>
 
-  <section class="lsa-operations-strip" aria-label="ملخص تشغيل اليوم">
-    <div><span>الإقامات الجارية</span><strong>{{ dashboard.active_stays }}</strong></div>
-    <div><span>وصول اليوم</span><strong>{{ dashboard.arrivals_today }}</strong></div>
-    <div><span>مغادرة اليوم</span><strong>{{ dashboard.departures_today }}</strong></div>
-    <a href="{{ dashboard.urls.modifications }}"{% if dashboard.pending_modifications %} class="is-attention"{% endif %}><span>طلبات تعديل تحتاج متابعة</span><strong>{{ dashboard.pending_modifications }}</strong><i>عرض ←</i></a>
-    <a href="{{ dashboard.urls.properties }}"><span>وحدات تحتاج انتباهًا</span><strong>{{ dashboard.properties_need_attention }}</strong><i>مراجعة ←</i></a>
+  <section class="lsa-operations-strip" aria-label="{% trans "Today’s operations summary" %}">
+    <div><span>{% trans "Stays in progress" %}</span><strong>{{ dashboard.active_stays }}</strong></div>
+    <div><span>{% trans "Arrivals today" %}</span><strong>{{ dashboard.arrivals_today }}</strong></div>
+    <div><span>{% trans "Departures today" %}</span><strong>{{ dashboard.departures_today }}</strong></div>
+    <a href="{{ dashboard.urls.modifications }}"{% if dashboard.pending_modifications %} class="is-attention"{% endif %}><span>{% trans "Modification requests needing follow-up" %}</span><strong>{{ dashboard.pending_modifications }}</strong><i>{% trans "View ←" %}</i></a>
+    <a href="{{ dashboard.urls.properties }}"><span>{% trans "Properties needing attention" %}</span><strong>{{ dashboard.properties_need_attention }}</strong><i>{% trans "Review ←" %}</i></a>
   </section>
 
-  <section class="lsa-command-grid" aria-label="مركز متابعة التشغيل">
+  <section class="lsa-command-grid" aria-label="{% trans "Operations monitoring centre" %}">
     <article class="lsa-panel lsa-priority-board">
       <header class="lsa-panel__header">
-        <div><span class="lsa-panel__eyebrow">ابدأ من هنا</span><h2>أولويات تحتاج قرارًا</h2></div>
+        <div><span class="lsa-panel__eyebrow">{% trans "Start here" %}</span><h2>{% trans "Priorities needing a decision" %}</h2></div>
         {% if dashboard.action_groups_count %}
-          <span class="lsa-panel-count">{{ dashboard.action_items_total }} إشارة · {{ dashboard.action_groups_count }} مسارات</span>
+          <span class="lsa-panel-count">{% blocktrans with signals=dashboard.action_items_total tracks=dashboard.action_groups_count %}{{ signals }} signals · {{ tracks }} tracks{% endblocktrans %}</span>
         {% else %}
-          <span class="lsa-panel-count is-clear">التشغيل مستقر</span>
+          <span class="lsa-panel-count is-clear">{% trans "Operations are stable" %}</span>
         {% endif %}
       </header>
       <div class="lsa-priority-list">
@@ -53,7 +53,7 @@
         {% empty %}
           <div class="lsa-priority-clear">
             <span>✓</span>
-            <div><b>لا توجد أولويات حرجة الآن</b><small>الحجوزات والمدفوعات والتكاملات تعمل دون إشارات تتطلب تدخّلًا.</small></div>
+            <div><b>{% trans "No critical priorities right now" %}</b><small>{% trans "Bookings, payments and integrations are running with no signals needing action." %}</small></div>
           </div>
         {% endfor %}
       </div>
@@ -61,8 +61,8 @@
 
     <article class="lsa-panel lsa-stay-plan">
       <header class="lsa-panel__header">
-        <div><span class="lsa-panel__eyebrow">اليوم + 7 أيام</span><h2>خطة الإقامات</h2></div>
-        <a href="{{ dashboard.urls.bookings }}">كل الحجوزات ←</a>
+        <div><span class="lsa-panel__eyebrow">{% trans "Today + 7 days" %}</span><h2>{% trans "Stay plan" %}</h2></div>
+        <a href="{{ dashboard.urls.bookings }}">{% trans "All bookings ←" %}</a>
       </header>
       <div class="lsa-stay-plan__list">
         {% for item in dashboard.schedule %}
@@ -70,50 +70,50 @@
             <time datetime="{{ item.date|date:'Y-m-d' }}"><b>{{ item.date|date:"d" }}</b><span>{{ item.date|date:"M" }}</span></time>
             <span class="lsa-stay-event__copy">
               <span><em>{{ item.kind_label }}</em><b>{{ item.property }}</b></span>
-              <small>{{ item.guest }} · {{ item.guests }} ضيوف · #{{ item.reference|slice:":8" }}</small>
+              <small>{% blocktrans with guest=item.guest guests=item.guests ref=item.reference|slice:":8" %}{{ guest }} · {{ guests }} guests · #{{ ref }}{% endblocktrans %}</small>
             </span>
             <i aria-hidden="true">←</i>
           </a>
         {% empty %}
-          <div class="lsa-stay-plan__empty"><span>◇</span><b>لا توجد حركة وصول أو مغادرة خلال الأيام السبعة القادمة.</b></div>
+          <div class="lsa-stay-plan__empty"><span>◇</span><b>{% trans "No arrivals or departures in the next seven days." %}</b></div>
         {% endfor %}
       </div>
-      {% if dashboard.schedule_total > 8 %}<a class="lsa-panel-more" href="{{ dashboard.urls.bookings }}">+ {{ dashboard.schedule_total|add:"-8" }} أحداث أخرى</a>{% endif %}
+      {% if dashboard.schedule_total > 8 %}<a class="lsa-panel-more" href="{{ dashboard.urls.bookings }}">{% blocktrans with extra=dashboard.schedule_total|add:"-8" %}+ {{ extra }} more events{% endblocktrans %}</a>{% endif %}
     </article>
   </section>
 
-  <section class="lsa-stat-grid" aria-label="المؤشرات الرئيسية">
+  <section class="lsa-stat-grid" aria-label="{% trans "Key indicators" %}">
     <a class="lsa-stat" href="{{ dashboard.urls.properties }}">
       <span class="lsa-stat__icon lsa-stat__icon--sand">⌂</span>
-      <span class="lsa-stat__meta">الوحدات المنشورة</span>
+      <span class="lsa-stat__meta">{% trans "Published properties" %}</span>
       <strong>{{ dashboard.properties_visible }}</strong>
-      <small>من أصل {{ dashboard.properties_total }} وحدة</small>
+      <small>{% blocktrans with total=dashboard.properties_total %}out of {{ total }} properties{% endblocktrans %}</small>
     </a>
     <a class="lsa-stat" href="{{ dashboard.urls.bookings }}">
       <span class="lsa-stat__icon lsa-stat__icon--green">✓</span>
-      <span class="lsa-stat__meta">حجوزات مؤكدة هذا الشهر</span>
+      <span class="lsa-stat__meta">{% trans "Bookings confirmed this month" %}</span>
       <strong>{{ dashboard.confirmed_month }}</strong>
-      <small>{{ dashboard.arrivals_today }} وصول اليوم</small>
+      <small>{% blocktrans with count=dashboard.arrivals_today %}{{ count }} arrivals today{% endblocktrans %}</small>
     </a>
     <a class="lsa-stat" href="{{ dashboard.urls.payments }}">
-      <span class="lsa-stat__icon lsa-stat__icon--blue">ر.س</span>
-      <span class="lsa-stat__meta">مدفوعات ناجحة هذا الشهر</span>
+      <span class="lsa-stat__icon lsa-stat__icon--blue">{% trans "SAR" %}</span>
+      <span class="lsa-stat__meta">{% trans "Successful payments this month" %}</span>
       <strong>{{ dashboard.revenue.total|floatformat:0 }}</strong>
-      <small>{{ dashboard.revenue.currency }} · {{ dashboard.pending_payments }} عملية قيد الانتظار</small>
+      <small>{{ dashboard.revenue.currency }} · {% blocktrans with count=dashboard.pending_payments %}{{ count }} pending transactions{% endblocktrans %}</small>
     </a>
     <a class="lsa-stat" href="{{ dashboard.urls.contacts }}">
       <span class="lsa-stat__icon lsa-stat__icon--rose">✦</span>
-      <span class="lsa-stat__meta">رسائل جديدة</span>
+      <span class="lsa-stat__meta">{% trans "New messages" %}</span>
       <strong>{{ dashboard.new_contacts }}</strong>
-      <small>{{ dashboard.unread_notifications }} تنبيه غير مقروء</small>
+      <small>{% blocktrans with count=dashboard.unread_notifications %}{{ count }} unread alerts{% endblocktrans %}</small>
     </a>
   </section>
 
-  <section class="lsa-flow-grid" aria-label="مسار الحجز والتحصيل">
+  <section class="lsa-flow-grid" aria-label="{% trans "Booking and collection funnel" %}">
     <article class="lsa-panel lsa-funnel-panel">
       <header class="lsa-panel__header">
-        <div><span class="lsa-panel__eyebrow">آخر 30 يومًا</span><h2>مسار الحجز</h2></div>
-        <span class="lsa-conversion"><b>{{ dashboard.conversion_rate }}%</b> تحويل إلى حجز مؤكد</span>
+        <div><span class="lsa-panel__eyebrow">{% trans "Last 30 days" %}</span><h2>{% trans "Booking funnel" %}</h2></div>
+        <span class="lsa-conversion"><b>{{ dashboard.conversion_rate }}%</b> {% trans "Conversion to a confirmed booking" %}</span>
       </header>
       <div class="lsa-funnel">
         {% for step in dashboard.funnel %}
@@ -123,13 +123,13 @@
           </div>
         {% endfor %}
       </div>
-      <p class="lsa-panel-note">يعرض انتقال الطلبات من البداية حتى التأكيد، لتحديد موضع التسرّب بسرعة دون خلطه بإشغالات القنوات الخارجية.</p>
+      <p class="lsa-panel-note">{% trans "Shows how requests move from start to confirmation, so you can spot where they drop off without mixing in external-channel occupancy." %}</p>
     </article>
 
     <article class="lsa-panel lsa-revenue-panel">
       <header class="lsa-panel__header">
-        <div><span class="lsa-panel__eyebrow">هذا الشهر</span><h2>التحصيل المالي</h2></div>
-        <a href="{{ dashboard.urls.payments }}">سجل الدفع ←</a>
+        <div><span class="lsa-panel__eyebrow">{% trans "This month" %}</span><h2>{% trans "Financial collection" %}</h2></div>
+        <a href="{{ dashboard.urls.payments }}">{% trans "Payment log ←" %}</a>
       </header>
       <div class="lsa-revenue-list">
         {% for item in dashboard.revenue_by_currency %}
@@ -139,9 +139,9 @@
         {% endfor %}
       </div>
       <div class="lsa-finance-alerts">
-        <a href="{{ dashboard.urls.payments }}"><span>قيد الانتظار</span><b>{{ dashboard.pending_payments }}</b></a>
-        <a href="{{ dashboard.urls.payments }}"{% if dashboard.payment_attention %} class="is-alert"{% endif %}><span>تحتاج مراجعة</span><b>{{ dashboard.payment_attention }}</b></a>
-        <a href="{{ dashboard.urls.payments }}"{% if dashboard.stale_pending_payments %} class="is-alert"{% endif %}><span>معلّقة +30د</span><b>{{ dashboard.stale_pending_payments }}</b></a>
+        <a href="{{ dashboard.urls.payments }}"><span>{% trans "Pending" %}</span><b>{{ dashboard.pending_payments }}</b></a>
+        <a href="{{ dashboard.urls.payments }}"{% if dashboard.payment_attention %} class="is-alert"{% endif %}><span>{% trans "Needs review" %}</span><b>{{ dashboard.payment_attention }}</b></a>
+        <a href="{{ dashboard.urls.payments }}"{% if dashboard.stale_pending_payments %} class="is-alert"{% endif %}><span>{% trans "Pending +30m" %}</span><b>{{ dashboard.stale_pending_payments }}</b></a>
       </div>
     </article>
   </section>
@@ -149,10 +149,10 @@
   <section class="lsa-dashboard-grid">
     <article class="lsa-panel lsa-panel--wide">
       <header class="lsa-panel__header">
-        <div><span class="lsa-panel__eyebrow">آخر 7 أيام</span><h2>نشاط طلبات الحجز</h2></div>
-        <a href="{{ dashboard.urls.customers }}">كل العملاء ←</a>
+        <div><span class="lsa-panel__eyebrow">{% trans "Last 7 days" %}</span><h2>{% trans "Booking request activity" %}</h2></div>
+        <a href="{{ dashboard.urls.customers }}">{% trans "All customers ←" %}</a>
       </header>
-      <div class="lsa-chart" aria-label="مخطط طلبات الحجز خلال سبعة أيام">
+      <div class="lsa-chart" aria-label="{% trans "Booking requests over seven days" %}">
         {% for day in dashboard.trend %}
           <div class="lsa-chart__item">
             <span class="lsa-chart__value">{{ day.total }}</span>
@@ -164,33 +164,33 @@
     </article>
 
     <article class="lsa-panel lsa-health">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">مباشر</span><h2>حالة المنصة</h2></div><a href="{{ dashboard.urls.system }}">التفاصيل</a></header>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Live" %}</span><h2>{% trans "Platform status" %}</h2></div><a href="{{ dashboard.urls.system }}">{% trans "Details" %}</a></header>
       <ul class="lsa-health__list">
-        <li><span><i class="{% if dashboard.hostaway_configured %}is-ok{% else %}is-warn{% endif %}"></i>إعداد Hostaway</span><b>{% if dashboard.hostaway_configured %}بيانات الربط مكتملة{% else %}بحاجة للإعداد{% endif %}</b></li>
-        <li><span><i class="{% if dashboard.google.enabled %}is-ok{% else %}is-warn{% endif %}"></i>Google Analytics</span><b>{% if dashboard.google.enabled and dashboard.google.ga4 %}يعمل{% else %}غير مكتمل{% endif %}</b></li>
-        <li><span><i class="{% if dashboard.google.search_console %}is-ok{% else %}is-warn{% endif %}"></i>Search Console</span><b>{% if dashboard.google.search_console %}موثّق{% else %}غير موثّق{% endif %}</b></li>
-        <li><span><i class="{% if dashboard.failed_webhooks %}is-danger{% else %}is-ok{% endif %}"></i>Webhooks</span><b>{{ dashboard.failed_webhooks }} فاشل</b></li>
-        <li><span><i class="{% if dashboard.failed_emails %}is-danger{% else %}is-ok{% endif %}"></i>تسليم البريد</span><b>{{ dashboard.failed_emails }} فاشل</b></li>
+        <li><span><i class="{% if dashboard.hostaway_configured %}is-ok{% else %}is-warn{% endif %}"></i>{% trans "Hostaway setup" %}</span><b>{% if dashboard.hostaway_configured %}{% trans "Integration data complete" %}{% else %}{% trans "Needs configuring" %}{% endif %}</b></li>
+        <li><span><i class="{% if dashboard.google.enabled %}is-ok{% else %}is-warn{% endif %}"></i>Google Analytics</span><b>{% if dashboard.google.enabled and dashboard.google.ga4 %}{% trans "Working" %}{% else %}{% trans "Incomplete" %}{% endif %}</b></li>
+        <li><span><i class="{% if dashboard.google.search_console %}is-ok{% else %}is-warn{% endif %}"></i>Search Console</span><b>{% if dashboard.google.search_console %}{% trans "Verified" %}{% else %}{% trans "Not verified" %}{% endif %}</b></li>
+        <li><span><i class="{% if dashboard.failed_webhooks %}is-danger{% else %}is-ok{% endif %}"></i>Webhooks</span><b>{% blocktrans with count=dashboard.failed_webhooks %}{{ count }} failed{% endblocktrans %}</b></li>
+        <li><span><i class="{% if dashboard.failed_emails %}is-danger{% else %}is-ok{% endif %}"></i>{% trans "Email delivery" %}</span><b>{% blocktrans with count=dashboard.failed_emails %}{{ count }} failed{% endblocktrans %}</b></li>
       </ul>
       <a class="lsa-safety-state {% if dashboard.hostaway_writes_enabled %}is-live{% else %}is-safe{% endif %}" href="{{ dashboard.urls.hostaway }}">
-        <span>عمليات Hostaway الكتابية</span>
-        <b>{% if dashboard.hostaway_writes_enabled %}بعضها مفعّل — راجع الإعدادات{% else %}مغلقة — وضع آمن{% endif %}</b>
+        <span>{% trans "Hostaway write operations" %}</span>
+        <b>{% if dashboard.hostaway_writes_enabled %}{% trans "Some are enabled — review the settings" %}{% else %}{% trans "Closed — safe mode" %}{% endif %}</b>
       </a>
       <div class="lsa-sync">
-        <span>آخر مزامنة</span>
-        {% if dashboard.latest_sync %}<strong>{{ dashboard.latest_sync.started_at|timesince }} مضت</strong>{% else %}<strong>لا توجد مزامنة بعد</strong>{% endif %}
+        <span>{% trans "Last sync" %}</span>
+        {% if dashboard.latest_sync %}<strong>{% blocktrans with elapsed=dashboard.latest_sync.started_at|timesince %}{{ elapsed }} ago{% endblocktrans %}</strong>{% else %}<strong>{% trans "No sync yet" %}</strong>{% endif %}
       </div>
     </article>
   </section>
 
   <section class="lsa-panel lsa-recent">
     <header class="lsa-panel__header">
-      <div><span class="lsa-panel__eyebrow">متابعة فورية</span><h2>أحدث العملاء والحجوزات</h2></div>
-      <a href="{{ dashboard.urls.customers }}">عرض السجل الكامل ←</a>
+      <div><span class="lsa-panel__eyebrow">{% trans "Immediate follow-up" %}</span><h2>{% trans "Latest customers and bookings" %}</h2></div>
+      <a href="{{ dashboard.urls.customers }}">{% trans "View the full log ←" %}</a>
     </header>
     <div class="lsa-table-wrap">
       <table class="lsa-table">
-        <thead><tr><th>العميل</th><th>الوحدة</th><th>الحجز</th><th>الدفع</th><th>القيمة</th><th></th></tr></thead>
+        <thead><tr><th>{% trans "Customer" %}</th><th>{% trans "The property" %}</th><th>{% trans "Booking" %}</th><th>{% trans "Payment" %}</th><th>{% trans "Value" %}</th><th></th></tr></thead>
         <tbody>
         {% for row in dashboard.recent %}
           <tr>
@@ -199,10 +199,10 @@
             <td><span class="lsa-badge lsa-badge--{{ row.status_key }}">{{ row.status }}</span></td>
             <td><span class="lsa-badge lsa-badge--{{ row.payment_key }}">{{ row.payment }}</span></td>
             <td><b>{{ row.total|floatformat:0 }}</b> {{ row.currency }}</td>
-            <td><a class="lsa-row-link" href="{{ row.url }}" aria-label="عرض التفاصيل">←</a></td>
+            <td><a class="lsa-row-link" href="{{ row.url }}" aria-label="{% trans "View details" %}">←</a></td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="lsa-empty">ستظهر أحدث الطلبات هنا فور وصولها.</td></tr>
+          <tr><td colspan="6" class="lsa-empty">{% trans "The newest requests will appear here as soon as they arrive." %}</td></tr>
         {% endfor %}
         </tbody>
       </table>
@@ -211,27 +211,28 @@
 
   <section class="lsa-quick-grid">
     <article class="lsa-panel">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">إدارة المحتوى</span><h2>الوحدات والتجربة</h2></div></header>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Content management" %}</span><h2>{% trans "Properties and experience" %}</h2></div></header>
       <div class="lsa-action-list">
-        <a href="{{ dashboard.urls.properties }}"><span>⌂</span><div><b>الوحدات ومحتواها</b><small>النصوص والصور والترتيب والظهور</small></div><i>←</i></a>
-        <a href="{{ dashboard.urls.content }}"><span>¶</span><div><b>السياسات والصفحات</b><small>الشروط والخصوصية وسياسة الإلغاء</small></div><i>←</i></a>
-        <a href="{{ dashboard.urls.settings }}"><span>◉</span><div><b>اتصل بنا والهوية</b><small>الهاتف والبريد والشبكات الاجتماعية</small></div><i>←</i></a>
-        <a href="{{ dashboard.urls.faq }}"><span>؟</span><div><b>الأسئلة الشائعة</b><small>الإجابات والترتيب واللغات الثلاث</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.properties }}"><span>⌂</span><div><b>{% trans "Properties and their content" %}</b><small>{% trans "Text, images, ordering and visibility" %}</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.content }}"><span>¶</span><div><b>{% trans "Policies and pages" %}</b><small>{% trans "Terms, privacy and the cancellation policy" %}</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.settings }}"><span>◉</span><div><b>{% trans "Contact details and identity" %}</b><small>{% trans "Phone, email and social networks" %}</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.faq }}"><span>?</span><div><b>{% trans "FAQ items" %}</b><small>{% trans "Answers, ordering and the three languages" %}</small></div><i>←</i></a>
       </div>
     </article>
     <article class="lsa-panel">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">النمو والظهور</span><h2>Google وSEO</h2></div></header>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Growth and visibility" %}</span><h2>{% trans "Google and SEO" %}</h2></div></header>
       <div class="lsa-action-list">
-        <a href="{{ dashboard.urls.marketing }}"><span>G</span><div><b>تكاملات Google</b><small>GA4 وGTM وAds وConsent Mode</small></div><i>←</i></a>
-        <a href="{{ dashboard.urls.seo }}"><span>⌁</span><div><b>صحة SEO</b><small>Sitemap والبيانات المنظمة والمحتوى الناقص</small></div><i>←</i></a>
-        <a href="{{ dashboard.urls.hostaway }}"><span>↻</span><div><b>مزامنة Hostaway</b><small>قراءة المصدر وسجل المزامنة الآمن</small></div><i>←</i></a>
-        <a href="{{ dashboard.urls.reviews }}"><span>★</span><div><b>التقييمات</b><small>الظهور والتمييز وجودة تجربة العميل</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.marketing }}"><span>G</span><div><b>{% trans "Google integrations" %}</b><small>{% trans "GA4, GTM, Ads and Consent Mode" %}</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.seo }}"><span>⌁</span><div><b>{% trans "SEO health" %}</b><small>{% trans "Sitemap, structured data and missing content" %}</small></div><i>←</i></a>
+        <a href="{% url 'properties_admin:image_alt_text' %}"><span>⌗</span><div><b>{% trans "Image alternative text" %}</b><small>{% trans "Bulk editing in three languages for accessibility and SEO" %}</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.hostaway }}"><span>↻</span><div><b>{% trans "Hostaway sync" %}</b><small>{% trans "Source reading and the safe sync log" %}</small></div><i>←</i></a>
+        <a href="{{ dashboard.urls.reviews }}"><span>★</span><div><b>{% trans "Reviews" %}</b><small>{% trans "Visibility, featuring and customer experience quality" %}</small></div><i>←</i></a>
       </div>
     </article>
   </section>
 
   <details class="lsa-all-tools">
-    <summary>جميع أدوات الإدارة</summary>
+    <summary>{% trans "All administration tools" %}</summary>
     <div class="lsa-app-list">{% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}</div>
   </details>
 </main>

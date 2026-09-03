@@ -39,7 +39,7 @@
     <footer class="review-card__footer">
         <span class="review-card__verified"><span aria-hidden="true">✓</span>{% trans "Verified stay" %}</span>
         {% if review.departure_date %}
-        <time datetime="{{ review.departure_date|date:'Y-m-d' }}">{{ review.departure_date|date:"F Y" }}</time>
+        <time datetime="{{ review.departure_date|date:'Y-m-d' }}">{{ review.departure_date|localized_month_year }}</time>
         {% endif %}
     </footer>
 </article>

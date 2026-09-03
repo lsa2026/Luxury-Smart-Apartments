@@ -125,6 +125,11 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# The property admin renders every image as an inline row (~13 fields each), so a
+# listing with 69 photos submits over 1,000 fields and Django rejects the save with
+# TooManyFieldsSent. Raise the cap so image-heavy listings stay editable.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
+
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -142,8 +147,9 @@ HOSTAWAY_BASE_URL = env(
 HOSTAWAY_CONNECT_TIMEOUT = 5.0
 HOSTAWAY_READ_TIMEOUT = 20.0
 HOSTAWAY_MAX_GET_ATTEMPTS = 3
-HOSTAWAY_CALENDAR_CACHE_TTL = 60
-HOSTAWAY_PRICE_CACHE_TTL = 60
+# Read by availability browsing only; every binding step bypasses the cache.
+HOSTAWAY_CALENDAR_CACHE_TTL = env.int("HOSTAWAY_CALENDAR_CACHE_TTL", default=60)
+HOSTAWAY_PRICE_CACHE_TTL = env.int("HOSTAWAY_PRICE_CACHE_TTL", default=60)
 HOSTAWAY_TOKEN_CACHE_ALIAS = "default"
 HOSTAWAY_TOKEN_CACHE_SAFETY_SECONDS = 300
 HOSTAWAY_REQUIRE_SHARED_TOKEN_CACHE = False
@@ -416,6 +422,10 @@ EMAIL_BRAND_NAME = env(
 SITE_BASE_URL = env("SITE_BASE_URL", default=SITE_CANONICAL_URL).rstrip("/")
 EMAIL_LOGO_URL = env("EMAIL_LOGO_URL", default="").strip()
 EMAIL_CONTACT_PHONE = env("EMAIL_CONTACT_PHONE", default="").strip()
+
+# Fallback used by the floating WhatsApp button when SiteSetting has no number.
+WHATSAPP_CONTACT_NUMBER = env("WHATSAPP_CONTACT_NUMBER", default="+966501205651").strip()
+WHATSAPP_DEFAULT_COUNTRY_CODE = env("WHATSAPP_DEFAULT_COUNTRY_CODE", default="966").strip()
 
 NOTIFICATIONS_ENABLED = strict_bool("NOTIFICATIONS_ENABLED", True)
 ADMIN_NOTIFICATION_EMAIL_ENABLED = strict_bool("ADMIN_NOTIFICATION_EMAIL_ENABLED")

@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 
 class IntegrationSyncRun(models.Model):
@@ -12,10 +14,10 @@ class IntegrationSyncRun(models.Model):
         HOSTAWAY_REVIEWS = "hostaway_reviews", "Hostaway reviews"
 
     class Status(models.TextChoices):
-        RUNNING = "running", "قيد التشغيل"
-        SUCCEEDED = "succeeded", "نجحت"
-        PARTIALLY_SUCCEEDED = "partially_succeeded", "نجحت جزئيًا"
-        FAILED = "failed", "فشلت"
+        RUNNING = "running", _("Running")
+        SUCCEEDED = "succeeded", _("Succeeded")
+        PARTIALLY_SUCCEEDED = "partially_succeeded", _("Partially succeeded")
+        FAILED = "failed", pgettext_lazy("IntegrationSyncRun", "Failed")
 
     sync_type = models.CharField(max_length=40, choices=SyncType.choices)
     status = models.CharField(max_length=30, choices=Status.choices)
@@ -50,8 +52,8 @@ class IntegrationSyncRun(models.Model):
                 name="one_running_sync_per_type",
             ),
         ]
-        verbose_name = "تشغيل مزامنة"
-        verbose_name_plural = "سجل المزامنة"
+        verbose_name = _("Sync run")
+        verbose_name_plural = _("Sync runs")
 
     def __str__(self) -> str:
         return f"{self.get_sync_type_display()} — {self.get_status_display()}"
@@ -61,12 +63,12 @@ class HostawayWebhookEvent(models.Model):
     """Sanitized, deduplicated Unified Webhook event queued for later processing."""
 
     class Status(models.TextChoices):
-        RECEIVED = "received", "مستلم"
-        PROCESSING = "processing", "قيد المعالجة"
-        PROCESSED = "processed", "معالج"
-        IGNORED = "ignored", "متجاهل"
-        RETRYABLE = "retryable", "قابل لإعادة المحاولة"
-        FAILED = "failed", "فشل دائم"
+        RECEIVED = "received", _("Received")
+        PROCESSING = "processing", _("Processing")
+        PROCESSED = "processed", _("Processed")
+        IGNORED = "ignored", _("Ignored")
+        RETRYABLE = "retryable", _("Retryable")
+        FAILED = "failed", _("Permanent failure")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     external_event_id = models.CharField(max_length=255, null=True, blank=True)
@@ -98,8 +100,8 @@ class HostawayWebhookEvent(models.Model):
             models.Index(fields=["hostaway_reservation_id"]),
             models.Index(fields=["received_at"]),
         ]
-        verbose_name = "حدث Hostaway Webhook"
-        verbose_name_plural = "أحداث Hostaway Webhook"
+        verbose_name = _("Hostaway webhook event")
+        verbose_name_plural = _("Hostaway webhook events")
 
     def __str__(self) -> str:
         return f"{self.event_type} — {self.status}"

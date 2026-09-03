@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.db.models import QuerySet
 from django.http import HttpRequest
+from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
 
@@ -49,7 +50,7 @@ class ReviewAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
-    @admin.action(description="إظهار المراجعات المحددة")
+    @admin.action(description=_("Show the selected reviews"))
     def make_visible(self, request: HttpRequest, queryset: QuerySet[Review]) -> None:
         updated = queryset.update(is_visible=True)
         record_audit(
@@ -60,9 +61,13 @@ class ReviewAdmin(admin.ModelAdmin):
             summary="Reviews were made visible.",
             metadata={"count": updated, "status": "visible"},
         )
-        self.message_user(request, f"تم إظهار {updated} مراجعة.", messages.SUCCESS)
+        self.message_user(
+            request,
+            _("Showed %(count)d review(s).") % {"count": updated},
+            messages.SUCCESS,
+        )
 
-    @admin.action(description="إخفاء المراجعات المحددة")
+    @admin.action(description=_("Hide the selected reviews"))
     def make_hidden(self, request: HttpRequest, queryset: QuerySet[Review]) -> None:
         updated = queryset.update(is_visible=False)
         record_audit(
@@ -73,9 +78,13 @@ class ReviewAdmin(admin.ModelAdmin):
             summary="Reviews were hidden.",
             metadata={"count": updated, "status": "hidden"},
         )
-        self.message_user(request, f"تم إخفاء {updated} مراجعة.", messages.SUCCESS)
+        self.message_user(
+            request,
+            _("Hid %(count)d review(s).") % {"count": updated},
+            messages.SUCCESS,
+        )
 
-    @admin.action(description="تمييز المراجعات المحددة")
+    @admin.action(description=_("Feature the selected reviews"))
     def make_featured(self, request: HttpRequest, queryset: QuerySet[Review]) -> None:
         updated = queryset.update(is_featured=True)
         record_audit(
@@ -86,7 +95,11 @@ class ReviewAdmin(admin.ModelAdmin):
             summary="Reviews were featured.",
             metadata={"count": updated, "status": "featured"},
         )
-        self.message_user(request, f"تم تمييز {updated} مراجعة.", messages.SUCCESS)
+        self.message_user(
+            request,
+            _("Featured %(count)d review(s).") % {"count": updated},
+            messages.SUCCESS,
+        )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

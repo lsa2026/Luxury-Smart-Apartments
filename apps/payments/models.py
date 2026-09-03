@@ -4,20 +4,22 @@ import uuid
 
 from django.db import models
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 
 class PaymentAttempt(models.Model):
     class Status(models.TextChoices):
-        CREATED = "created", "منشأة"
-        PENDING = "pending", "قيد المعالجة"
-        SUCCEEDED = "succeeded", "ناجحة"
-        FAILED = "failed", "فاشلة"
-        CANCELLED = "cancelled", "ملغاة"
-        EXPIRED = "expired", "منتهية"
-        REFUNDED = "refunded", "مستردة"
-        PARTIALLY_REFUNDED = "partially_refunded", "مستردة جزئيًا"
-        REVIEW = "review", "تحتاج مراجعة"
-        UNKNOWN = "unknown", "غير معروفة"
+        CREATED = "created", _("Created")
+        PENDING = "pending", _("Processing")
+        SUCCEEDED = "succeeded", _("Successful")
+        FAILED = "failed", pgettext_lazy("PaymentAttempt", "Failed")
+        CANCELLED = "cancelled", pgettext_lazy("PaymentAttempt", "Cancelled")
+        EXPIRED = "expired", pgettext_lazy("PaymentAttempt", "Expired")
+        REFUNDED = "refunded", _("Refunded")
+        PARTIALLY_REFUNDED = "partially_refunded", _("Partially refunded")
+        REVIEW = "review", _("Needs review")
+        UNKNOWN = "unknown", pgettext_lazy("PaymentAttempt", "Unknown")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking_intent = models.ForeignKey(
@@ -84,8 +86,8 @@ class PaymentAttempt(models.Model):
                 name="payment_attempt_amount_nonnegative",
             )
         ]
-        verbose_name = "محاولة دفع"
-        verbose_name_plural = "محاولات الدفع"
+        verbose_name = _("Payment attempt")
+        verbose_name_plural = _("Payment attempts")
 
     def __str__(self) -> str:
         return f"{self.provider} — {self.amount} {self.currency}"

@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django import template
-from django.utils import translation
+from django.utils import formats, translation
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_noop
@@ -30,9 +30,7 @@ _ZERO_DECIMAL_CURRENCIES = frozenset(
         "XPF",
     }
 )
-_THREE_DECIMAL_CURRENCIES = frozenset(
-    {"BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"}
-)
+_THREE_DECIMAL_CURRENCIES = frozenset({"BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"})
 _ARABIC_DIGITS = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
 
 
@@ -369,6 +367,77 @@ def money_amount(value: object) -> str:
     return format(amount, ",.2f")
 
 
+def _localized_temporal(value: object, format_string: str) -> str:
+    """Render a date/time in the active locale, matching the numerals used for money."""
+    if value in (None, ""):
+        return ""
+    try:
+        rendered = formats.date_format(value, format_string)
+    except (AttributeError, TypeError, ValueError):
+        return ""
+    if _language() == "ar":
+        return rendered.translate(_ARABIC_DIGITS)
+    return rendered
+
+
+@register.filter
+def localized_date(value: object) -> str:
+    """Long-form date such as ``25 November 2026`` or ``٢٥ نوفمبر ٢٠٢٦``."""
+    return _localized_temporal(value, "j F Y")
+
+
+@register.filter
+def localized_datetime(value: object) -> str:
+    """Long-form date and 24-hour time in the active locale."""
+    return _localized_temporal(value, "j F Y H:i")
+
+
+@register.filter
+def localized_month_year(value: object) -> str:
+    """Month and year only, used for review timestamps."""
+    return _localized_temporal(value, "F Y")
+
+
+class LocalizedCount(int):
+    """An int that renders with the active language's numerals.
+
+    ``{% blocktrans count %}`` needs a real number to pick the plural form, so a
+    plain localized string cannot be passed. Subclassing ``int`` keeps plural
+    selection intact while changing only how the value is printed, which leaves
+    every existing msgid — and its Arabic plural forms — untouched.
+    """
+
+    __slots__ = ()
+
+    def __str__(self) -> str:
+        if _language() == "ar":
+            return super().__str__().translate(_ARABIC_DIGITS)
+        return super().__str__()
+
+    def __format__(self, format_spec: str) -> str:
+        return self.__str__() if format_spec == "" else super().__format__(format_spec)
+
+
+@register.filter
+def localized_count(value: object) -> object:
+    """Wrap a count so ``blocktrans`` prints it in the active language's numerals."""
+    try:
+        return LocalizedCount(value)
+    except (TypeError, ValueError):
+        return value
+
+
+@register.filter
+def localized_number(value: object) -> str:
+    """Render a plain count with the same numerals used for money and dates."""
+    if value in (None, ""):
+        return ""
+    text = str(value)
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
 def _currency_precision(currency: str) -> int:
     if currency in _ZERO_DECIMAL_CURRENCIES:
         return 0
@@ -397,11 +466,7 @@ def _localized_money_number(amount: Decimal, language: str, precision: int) -> s
 def localized_money(value: object, currency: object) -> str:
     """Render a price with locale-aware separators and ISO-4217 precision."""
     currency_code = str(currency or "").strip().upper()
-    if (
-        len(currency_code) != 3
-        or not currency_code.isascii()
-        or not currency_code.isalpha()
-    ):
+    if len(currency_code) != 3 or not currency_code.isascii() or not currency_code.isalpha():
         currency_code = ""
 
     precision = _currency_precision(currency_code)
@@ -421,9 +486,7 @@ def localized_money(value: object, currency: object) -> str:
     number = _localized_money_number(amount, language, precision)
     if not currency_code:
         return format_html(
-            '<bdi class="money money--{}" dir="ltr">'
-            '<span class="money__amount">{}</span>'
-            "</bdi>",
+            '<bdi class="money money--{}" dir="ltr"><span class="money__amount">{}</span></bdi>',
             language,
             number,
         )
