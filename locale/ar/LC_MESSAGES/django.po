@@ -6004,3 +6004,47 @@ msgstr "اختر تواريخ إقامتك للمتابعة. المدينة وا
 #: .\templates\reservations\_availability_form.html:91
 msgid "Clear dates"
 msgstr "مسح التاريخين"
+
+#: templates/accounts/register.html
+msgid "A stay that remembers you"
+msgstr "إقامة تعرفك جيدًا"
+
+#: templates/accounts/register.html
+msgid "Create your account once, then move from search to confirmation in a few calm steps."
+msgstr "أنشئ حسابك مرة واحدة، ثم انتقل من البحث إلى التأكيد بخطوات هادئة."
+
+#: templates/accounts/register.html
+msgid "Every stay, quote, and change request in one place."
+msgstr "كل إقامة وعرض سعري وطلب تعديل في مكان واحد."
+
+#: templates/accounts/register.html
+msgid "No card details are needed to open your account."
+msgstr "لا نحتاج أي بيانات بطاقة لفتح حسابك."
+
+#: templates/accounts/register.html
+msgid "Open your bookings from anywhere, in your language."
+msgstr "افتح حجوزاتك من أي مكان وبلغتك."
+
+#: templates/accounts/register.html
+msgid "It takes a minute. Your details stay private and are used only to manage your stays."
+msgstr "لا يستغرق سوى دقيقة. بياناتك تبقى خاصة وتُستخدم لإدارة إقاماتك فقط."
+
+#: templates/accounts/register.html
+msgid "Who is staying"
+msgstr "بيانات النزيل"
+
+#: templates/accounts/register.html
+msgid "How we reach you"
+msgstr "وسيلة التواصل"
+
+#: templates/accounts/register.html
+msgid "Secure your account"
+msgstr "تأمين الحساب"
+
+#: templates/accounts/register.html
+msgid "Show password"
+msgstr "إظهار كلمة المرور"
+
+#: templates/accounts/register.html
+msgid "Hide password"
+msgstr "إخفاء كلمة المرور"

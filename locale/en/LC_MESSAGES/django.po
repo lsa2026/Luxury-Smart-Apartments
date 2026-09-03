@@ -5793,3 +5793,47 @@ msgstr ""
 #: .\templates\reservations\_availability_form.html:91
 msgid "Clear dates"
 msgstr ""
+
+#: templates/accounts/register.html
+msgid "A stay that remembers you"
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Create your account once, then move from search to confirmation in a few calm steps."
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Every stay, quote, and change request in one place."
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "No card details are needed to open your account."
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Open your bookings from anywhere, in your language."
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "It takes a minute. Your details stay private and are used only to manage your stays."
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Who is staying"
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "How we reach you"
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Secure your account"
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Show password"
+msgstr ""
+
+#: templates/accounts/register.html
+msgid "Hide password"
+msgstr ""

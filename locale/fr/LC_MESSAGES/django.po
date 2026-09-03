@@ -6139,3 +6139,47 @@ msgstr "Choisissez vos dates de séjour pour continuer. La ville et le logement 
 #: .\templates\reservations\_availability_form.html:91
 msgid "Clear dates"
 msgstr "Effacer les dates"
+
+#: templates/accounts/register.html
+msgid "A stay that remembers you"
+msgstr "Un séjour qui vous reconnaît"
+
+#: templates/accounts/register.html
+msgid "Create your account once, then move from search to confirmation in a few calm steps."
+msgstr "Créez votre compte une seule fois, puis passez de la recherche à la confirmation en quelques étapes sereines."
+
+#: templates/accounts/register.html
+msgid "Every stay, quote, and change request in one place."
+msgstr "Chaque séjour, devis et demande de modification au même endroit."
+
+#: templates/accounts/register.html
+msgid "No card details are needed to open your account."
+msgstr "Aucune donnée de carte n'est requise pour ouvrir votre compte."
+
+#: templates/accounts/register.html
+msgid "Open your bookings from anywhere, in your language."
+msgstr "Consultez vos réservations partout, dans votre langue."
+
+#: templates/accounts/register.html
+msgid "It takes a minute. Your details stay private and are used only to manage your stays."
+msgstr "Cela prend une minute. Vos informations restent privées et servent uniquement à gérer vos séjours."
+
+#: templates/accounts/register.html
+msgid "Who is staying"
+msgstr "Qui séjourne"
+
+#: templates/accounts/register.html
+msgid "How we reach you"
+msgstr "Comment vous joindre"
+
+#: templates/accounts/register.html
+msgid "Secure your account"
+msgstr "Sécurisez votre compte"
+
+#: templates/accounts/register.html
+msgid "Show password"
+msgstr "Afficher le mot de passe"
+
+#: templates/accounts/register.html
+msgid "Hide password"
+msgstr "Masquer le mot de passe"

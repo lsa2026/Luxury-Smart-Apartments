@@ -1450,3 +1450,22 @@ if (whatsappFab) {
         }
     }
 }
+
+// Password visibility toggles on the account forms. The button ships pressed=false
+// so a scripted reveal never leaves the field readable without the control saying so.
+document.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
+    const field = toggle.closest(".auth-password")?.querySelector("input");
+    if (!field) {
+        return;
+    }
+
+    toggle.addEventListener("click", () => {
+        const revealed = field.type === "text";
+        field.type = revealed ? "password" : "text";
+        toggle.setAttribute("aria-pressed", revealed ? "false" : "true");
+        const label = revealed ? toggle.dataset.showLabel : toggle.dataset.hideLabel;
+        if (label) {
+            toggle.setAttribute("aria-label", label);
+        }
+    });
+});
