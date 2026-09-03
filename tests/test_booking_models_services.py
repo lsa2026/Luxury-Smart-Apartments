@@ -369,6 +369,83 @@ def test_guest_phone_uses_selected_billing_country_not_property_country() -> Non
     assert form.fields["billing_country"].widget.attrs["data-country-select"] == ""
 
 
+@pytest.mark.parametrize(
+    ("raw_phone", "billing_country", "expected"),
+    [
+        # A local number written the way each country writes it.
+        ("01012345678", "EG", "+201012345678"),
+        ("07911123456", "GB", "+447911123456"),
+        ("(212) 555-1234", "US", "+12125551234"),
+        ("98765 43210", "IN", "+919876543210"),
+        ("0151 12345678", "DE", "+4915112345678"),
+        ("090-1234-5678", "JP", "+819012345678"),
+        # An explicit country code is authoritative wherever it is typed.
+        ("+33612345678", "GB", "+33612345678"),
+        ("0033612345678", "GB", "+33612345678"),
+        # A guest billing overseas may still carry a Saudi mobile: the number
+        # falls back to the site default rather than being rejected.
+        ("+966500000000", "GB", "+966500000000"),
+    ],
+)
+def test_guest_phone_accepts_numbers_from_any_country(
+    raw_phone: str,
+    billing_country: str,
+    expected: str,
+) -> None:
+    form = GuestDetailsForm(
+        {
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "test@example.invalid",
+            "guest_phone": raw_phone,
+            "billing_street1": "1 Example Street",
+            "billing_city": "Example City",
+            "billing_state": "Example Region",
+            "billing_country": billing_country,
+            "billing_postcode": "12345",
+            "special_requests": "",
+            "terms_accepted": "on",
+            "privacy_accepted": "on",
+            "idempotency_key": "x" * 32,
+        },
+    )
+
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["guest_phone"] == expected
+
+
+@pytest.mark.parametrize(
+    "raw_phone",
+    [
+        "12345",              # too short for any country
+        "+9999999999999999",  # no such country code, and over E.164 length
+        "0000000000",
+        "abcdefghij",
+    ],
+)
+def test_guest_phone_still_rejects_numbers_that_are_not_dialable(raw_phone: str) -> None:
+    form = GuestDetailsForm(
+        {
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "test@example.invalid",
+            "guest_phone": raw_phone,
+            "billing_street1": "King Fahd Road 10",
+            "billing_city": "Riyadh",
+            "billing_state": "Riyadh",
+            "billing_country": "SA",
+            "billing_postcode": "12345",
+            "special_requests": "",
+            "terms_accepted": "on",
+            "privacy_accepted": "on",
+            "idempotency_key": "x" * 32,
+        },
+    )
+
+    assert form.is_valid() is False
+    assert "guest_phone" in form.errors
+
+
 def test_guest_form_rejects_unknown_billing_country_choice() -> None:
     data = {
         "guest_first_name": "Test",

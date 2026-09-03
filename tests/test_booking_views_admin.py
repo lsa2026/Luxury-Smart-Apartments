@@ -84,7 +84,7 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     assert quote.session_key_hash not in content
     assert 'name="total_price"' not in content
     assert 'name="guest_country_code"' not in content
-    assert "05XXXXXXXX" in content
+    assert "+966 50 000 0000" in content
     assert 'inputmode="tel"' in content
     assert 'data-guest-journey' in content
     assert 'data-journey-panel="1"' in content
