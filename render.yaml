@@ -56,7 +56,7 @@ services:
       # RENDER_EXTERNAL_HOSTNAME, and production settings refuse an empty host
       # list. Append any custom domain here, comma separated.
       - key: DJANGO_ALLOWED_HOSTS
-        value: luxury-smart-apartments.onrender.com
+        value: luxury-smart-apartments.onrender.com,luxurysmartapartments.com,www.luxurysmartapartments.com
 
       - key: DATABASE_URL
         fromDatabase:
@@ -175,9 +175,9 @@ services:
       # and stays correct on every rebuild. Replace both when a custom domain
       # is attached, and add that domain to DJANGO_ALLOWED_HOSTS at the same time.
       - key: SITE_BASE_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: SITE_CANONICAL_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       # Lets the admin "sync now" actions hand work to the worker instead of
@@ -210,7 +210,7 @@ services:
       - key: DJANGO_DEBUG
         value: "False"
       - key: DJANGO_ALLOWED_HOSTS
-        value: luxury-smart-apartments.onrender.com
+        value: luxury-smart-apartments.onrender.com,luxurysmartapartments.com,www.luxurysmartapartments.com
       # Copied from the web service so all three processes share one signing key
       # and one set of provider credentials, with no second place to update.
       - key: DJANGO_SECRET_KEY
@@ -307,9 +307,9 @@ services:
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       - key: SITE_BASE_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: SITE_CANONICAL_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: CELERY_SYNC_DISPATCH_ENABLED
         value: "True"
 
