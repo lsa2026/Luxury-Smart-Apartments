@@ -357,6 +357,7 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
     const previousButton = calendar.querySelector("[data-calendar-previous]");
     const nextButton = calendar.querySelector("[data-calendar-next]");
     const confirmButton = calendar.querySelector("[data-calendar-confirm]");
+    const clearButton = calendar.querySelector("[data-calendar-clear]");
     const closeButton = calendar.querySelector("[data-calendar-close]");
     const mobileCalendar = window.matchMedia("(max-width: 42rem)");
 
@@ -480,6 +481,11 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
 
         if (confirmButton) {
             confirmButton.disabled = !(arrival && departure);
+        }
+        if (clearButton) {
+            // Offered as soon as anything is chosen, so a wrong arrival can be
+            // undone without first having to pick a departure.
+            clearButton.disabled = !(arrival || departure);
         }
     }
 
@@ -628,6 +634,21 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
         renderCalendar();
     });
     closeButton?.addEventListener("click", () => calendar.close());
+    clearButton?.addEventListener("click", () => {
+        arrivalInput.value = "";
+        departureInput.value = "";
+        // Restore the floor the form started with, otherwise the previous
+        // arrival keeps blocking earlier departure days after the reset.
+        departureInput.min = initialDepartureMinimum;
+        dispatchDateChange(arrivalInput);
+        dispatchDateChange(departureInput);
+        activeField = "check_in";
+        displayMonth = startOfMonth(today);
+        renderCalendar();
+        // The calendar stays open on the arrival step, which is the point of
+        // the button: start again here rather than close and reopen.
+        clearButton.blur();
+    });
     confirmButton?.addEventListener("click", () => {
         if (arrivalInput.value && departureInput.value) {
             calendar.close();
