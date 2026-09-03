@@ -1,5 +1,6 @@
 """Customer registration, sign-in, and booking dashboard."""
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
@@ -102,9 +103,14 @@ class RegisterView(View):
         user = form.save()
         login(request, user)
         _send_verification(request, user)
+        # Only promise an email the site can actually deliver. While delivery is
+        # off the row is still queued, so the audit trail is unbroken and the
+        # backlog sends once a provider is configured.
         messages.success(
             request,
-            _("Your account is ready. Check your inbox to confirm your email address."),
+            _("Your account is ready. Check your inbox to confirm your email address.")
+            if settings.EMAIL_DELIVERY_ENABLED
+            else _("Your account is ready."),
         )
         _claim_after_authentication(request, user)
         return redirect(_safe_next(request, "accounts:dashboard"))

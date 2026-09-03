@@ -163,3 +163,25 @@ def test_every_message_group_has_a_template_in_every_language(
     template = Path(settings.BASE_DIR) / "templates" / "emails" / language / f"{group}.html"
 
     assert template.is_file(), f"missing {template.relative_to(settings.BASE_DIR)}"
+
+
+# --- promises match capability ----------------------------------------------
+
+
+@override_settings(EMAIL_DELIVERY_ENABLED=False)
+def test_registration_does_not_promise_an_email_that_cannot_be_sent() -> None:
+    response = Client().post("/register/", REGISTRATION, follow=True)
+
+    body = response.content.decode()
+    assert "Check your inbox" not in body
+    assert "تحقق من بريدك" not in body
+
+
+@override_settings(EMAIL_DELIVERY_ENABLED=False)
+def test_the_delivery_row_is_still_recorded_while_sending_is_off() -> None:
+    """The queue keeps the audit trail, so nothing is lost before a provider."""
+    Client().post("/register/", REGISTRATION)
+
+    delivery = EmailDelivery.objects.get(message_type="account_verify_email")
+    assert delivery.status == EmailDelivery.Status.DISABLED
+    assert delivery.last_error_code == "email_delivery_disabled"
