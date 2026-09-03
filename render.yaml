@@ -74,14 +74,14 @@ services:
           property: connectionString
 
       # --- HyperPay -----------------------------------------------------
-      # Pointed at the production endpoint, but still switched off. Every
-      # payments check is skipped while HYPERPAY_ENABLED is False, so this
-      # staging step is inert. Enabling it and HOSTAWAY_LIVE_BOOKING_ENABLED
-      # is one deliberate change, made only after
-      # `manage.py verify_hyperpay_connectivity` proves the token is a
-      # production token: check payments.E107 rejects one without the other.
+      # LIVE. Enabled only after verify_hyperpay_connectivity returned
+      # 000.200.100 from eu-prod against the production entity, so the token is
+      # known to belong to this endpoint rather than the TEST one.
+      # HOSTAWAY_LIVE_BOOKING_ENABLED is paired with it deliberately: check
+      # payments.E107 refuses to boot on one without the other, because taking
+      # money without writing the reservation is the worse failure.
       - key: HYPERPAY_ENABLED
-        value: "False"
+        value: "True"
       - key: HYPERPAY_ENVIRONMENT
         value: production
       - key: HYPERPAY_BASE_URL
@@ -108,8 +108,12 @@ services:
         sync: false
       - key: HOSTAWAY_ACCESS_TOKEN
         sync: false
+      # Required by check payments.E107 while HyperPay runs in production: a
+      # verified payment must create the real reservation, never a local one.
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
-        value: "False"
+        value: "True"
+      # Modification, extension and cancellation stay manual. Automating them
+      # needs the negative-difference refund path, which does not exist yet.
       - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
         value: "False"
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
@@ -256,8 +260,10 @@ services:
         value: "1"
       - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
         value: "5"
+      # Must match the web service: the payments checks run in every process,
+      # so a mismatch would stop the worker from booting at all.
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
         value: "False"
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
@@ -270,7 +276,7 @@ services:
         value: "False"
 
       - key: HYPERPAY_ENABLED
-        value: "False"
+        value: "True"
       - key: HYPERPAY_ENVIRONMENT
         value: production
       - key: HYPERPAY_BASE_URL
