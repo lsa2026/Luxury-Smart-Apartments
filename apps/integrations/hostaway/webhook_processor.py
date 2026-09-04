@@ -23,6 +23,7 @@ from .exceptions import (
 )
 from .reservation_validators import (
     HostawayReservationSnapshot,
+    merge_hostaway_payment_status,
     normalize_hostaway_reservation_status,
     source_type_from_snapshot,
 )
@@ -115,7 +116,10 @@ def sync_reservation_snapshot(
             reservation.source_type = source_type_from_snapshot(snapshot)
         reservation.hostaway_status = snapshot.status
         reservation.normalized_status = normalize_hostaway_reservation_status(snapshot.status)
-        reservation.payment_status = snapshot.payment_status
+        reservation.payment_status = merge_hostaway_payment_status(
+            reservation.payment_status,
+            snapshot.payment_status,
+        )
         reservation.check_in = snapshot.check_in
         reservation.check_out = snapshot.check_out
         reservation.nights = (snapshot.check_out - snapshot.check_in).days

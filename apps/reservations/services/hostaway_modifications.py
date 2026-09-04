@@ -23,7 +23,10 @@ from apps.integrations.hostaway.modification_validators import (
     HostawayReservationCancellationRequest,
     HostawayReservationUpdateRequest,
 )
-from apps.integrations.hostaway.reservation_validators import ReservationFinanceField
+from apps.integrations.hostaway.reservation_validators import (
+    ReservationFinanceField,
+    merge_hostaway_payment_status,
+)
 
 from ..models import (
     BookingModificationRequest,
@@ -141,7 +144,10 @@ class HostawayModificationService:
             locked_reservation.total_price = snapshot.total_price
             locked_reservation.currency = snapshot.currency
             locked_reservation.hostaway_status = snapshot.status
-            locked_reservation.payment_status = snapshot.payment_status
+            locked_reservation.payment_status = merge_hostaway_payment_status(
+                locked_reservation.payment_status,
+                snapshot.payment_status,
+            )
             locked_reservation.source_updated_at = snapshot.updated_at
             locked_reservation.last_synced_at = now
             if snapshot.status.casefold() in {"cancelled", "canceled"}:

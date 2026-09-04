@@ -224,6 +224,16 @@ def source_type_from_snapshot(snapshot: HostawayReservationSnapshot) -> str:
     return "unknown"
 
 
+def merge_hostaway_payment_status(current: str, incoming: str) -> str:
+    """Do not let Hostaway's lack of gateway knowledge erase a known payment."""
+    if current.strip().casefold() == "paid" and incoming.strip().casefold() in {
+        "",
+        "unknown",
+    }:
+        return current
+    return incoming
+
+
 def _json_number(value: Decimal) -> int | float:
     if not value.is_finite():
         raise ValueError("financial_value_not_finite")

@@ -520,6 +520,31 @@ def test_success_confirms_once_and_network_is_outside_transaction() -> None:
     HOSTAWAY_LIVE_BOOKING_ENABLED=True,
     HOSTAWAY_DIRECT_CHANNEL_ID=2000,
 )
+def test_hostaway_unknown_does_not_downgrade_verified_local_payment() -> None:
+    intent = make_intent()
+    reservation = prepare_local_reservation(intent)
+    successful_payment(intent)
+    reservation.payment_status = "paid"
+    reservation.save(update_fields=["payment_status", "updated_at"])
+    result = create_result(reservation)
+    result = replace(
+        result,
+        snapshot=replace(result.snapshot, payment_status="Unknown"),
+    )
+
+    outcome = HostawayBookingService(
+        client=CreateClientStub(result),
+        availability_service=AvailabilityStub(complete_availability(intent)),
+    ).create_hostaway_reservation(reservation)
+
+    assert outcome.code == "confirmed"
+    assert outcome.reservation.payment_status == "paid"
+
+
+@override_settings(
+    HOSTAWAY_LIVE_BOOKING_ENABLED=True,
+    HOSTAWAY_DIRECT_CHANNEL_ID=2000,
+)
 def test_timeout_becomes_unknown_and_is_never_reposted(
     caplog: pytest.LogCaptureFixture,
 ) -> None:

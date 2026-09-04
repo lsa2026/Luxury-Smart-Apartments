@@ -21,6 +21,9 @@ from apps.integrations.hostaway.exceptions import (
     HostawayResponseError,
     HostawayServerError,
 )
+from apps.integrations.hostaway.reservation_validators import (
+    merge_hostaway_payment_status,
+)
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingIntent,
@@ -216,7 +219,10 @@ class HostawayBookingService:
             locked_reservation.hostaway_listing_map_id = snapshot.listing_map_id
             locked_reservation.channel_id = snapshot.channel_id or request.channel_id
             locked_reservation.hostaway_status = snapshot.status
-            locked_reservation.payment_status = snapshot.payment_status
+            locked_reservation.payment_status = merge_hostaway_payment_status(
+                locked_reservation.payment_status,
+                snapshot.payment_status,
+            )
             locked_reservation.normalized_status = Reservation.Status.CONFIRMED
             locked_reservation.confirmed_at = now
             locked_reservation.source_updated_at = snapshot.updated_at
