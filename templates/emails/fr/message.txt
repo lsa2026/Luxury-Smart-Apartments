@@ -4,7 +4,24 @@
 {{ message }}
 
 {% if property_name %}Logement : {{ property_name }}{% endif %}
-{% if check_in %}Arrivée : {{ check_in }}
+{% if is_completed_modification %}Type de modification : {{ modification_type }}
+
+Avant :
+Arrivée : {{ old_check_in }}
+Départ : {{ old_check_out }}
+Voyageurs : {{ old_guests }}
+Total : {{ old_total }} {{ currency }}
+
+Après :
+Arrivée : {{ check_in }}
+Départ : {{ check_out }}
+Voyageurs : {{ guests }}
+Total : {{ new_total }} {{ currency }}
+{% if amount_paid %}Montant payé pour cette modification : {{ amount_paid }} {{ currency }}
+Le paiement a été vérifié avant la confirmation de la modification.{% endif %}
+{% if refund_amount %}Différence de prix à traiter : {{ refund_amount }} {{ currency }}
+Le remboursement sera traité selon la politique applicable ; ce message ne confirme pas un virement bancaire.{% endif %}
+{% elif check_in %}Arrivée : {{ check_in }}
 Départ : {{ check_out }}
 Voyageurs : {{ guests }}{% endif %}
 {% if booking_reference %}Numéro de réservation : {{ booking_reference }}{% elif reference %}Référence : {{ reference }}{% endif %}

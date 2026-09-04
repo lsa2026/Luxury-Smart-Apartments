@@ -4,7 +4,24 @@
 {{ message }}
 
 {% if property_name %}Property: {{ property_name }}{% endif %}
-{% if check_in %}Check-in: {{ check_in }}
+{% if is_completed_modification %}Update type: {{ modification_type }}
+
+Before:
+Check-in: {{ old_check_in }}
+Check-out: {{ old_check_out }}
+Guests: {{ old_guests }}
+Total: {{ old_total }} {{ currency }}
+
+After:
+Check-in: {{ check_in }}
+Check-out: {{ check_out }}
+Guests: {{ guests }}
+Total: {{ new_total }} {{ currency }}
+{% if amount_paid %}Amount paid for this update: {{ amount_paid }} {{ currency }}
+Payment was verified before the update was confirmed.{% endif %}
+{% if refund_amount %}Price difference due for processing: {{ refund_amount }} {{ currency }}
+The refund will be handled under the refund policy; this message does not mean the bank transfer is complete.{% endif %}
+{% elif check_in %}Check-in: {{ check_in }}
 Check-out: {{ check_out }}
 Guests: {{ guests }}{% endif %}
 {% if booking_reference %}Booking number: {{ booking_reference }}{% elif reference %}Reference: {{ reference }}{% endif %}

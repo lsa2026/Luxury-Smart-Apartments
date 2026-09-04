@@ -3,11 +3,17 @@ from unittest.mock import patch
 import pytest
 from django.core import mail
 from django.test import override_settings
+from django.utils import timezone
 
 from apps.core.models import SiteSetting
 from apps.notifications.models import EmailDelivery
-from apps.notifications.services.email import DjangoEmailProvider, EmailMessageRequest
+from apps.notifications.services.email import (
+    DjangoEmailProvider,
+    EmailMessageRequest,
+    send_queued_email,
+)
 from apps.notifications.services.events import handle_modification_completed
+from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingModificationRequest
 from tests.test_booking_modifications_phase6 import confirmed_reservation, create_extension
 
@@ -147,6 +153,101 @@ def test_completed_modification_queues_one_final_customer_email() -> None:
     )
     assert delivery.message_type == "reservation_modified"
     assert delivery.recipient_source == "modification"
+    assert delivery.template_name == "modification"
+
+
+@override_settings(
+    MODIFICATION_NOTIFICATION_EMAIL_ENABLED=True,
+    EMAIL_DELIVERY_ENABLED=False,
+)
+def test_verified_payment_does_not_send_final_email_before_hostaway_completion() -> None:
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+    PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        modification_request=modification,
+        provider="hyperpay",
+        amount=modification.price_difference,
+        currency=modification.currency,
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key="modification-email-paid-not-complete-0000000000",
+    )
+
+    handle_modification_completed(modification.pk)
+
+    assert not EmailDelivery.objects.filter(
+        idempotency_key=f"modification-completed:{modification.public_reference}"
+    ).exists()
+
+
+@pytest.mark.parametrize(
+    ("language", "type_label", "payment_label"),
+    [
+        ("ar", "تمديد الإقامة", "المبلغ المدفوع للتعديل"),
+        ("en", "Stay extension", "Amount paid for this update"),
+        ("fr", "Prolongation du séjour", "Montant payé pour cette modification"),
+    ],
+)
+@override_settings(
+    MODIFICATION_NOTIFICATION_EMAIL_ENABLED=True,
+    EMAIL_DELIVERY_ENABLED=False,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="Luxury Smart Apartments <notifications@example.invalid>",
+    SUPPORT_EMAIL="care@example.invalid",
+    SITE_BASE_URL="https://stays.example.invalid",
+    EMAIL_LOGO_URL="",
+)
+def test_completed_paid_extension_email_contains_verified_before_and_after_details(
+    language: str,
+    type_label: str,
+    payment_label: str,
+) -> None:
+    reservation = confirmed_reservation()
+    intent = reservation.booking_intent
+    intent.language = language
+    intent.save(update_fields=["language", "updated_at"])
+    modification = create_extension(reservation).request
+    assert modification is not None
+    PaymentAttempt.objects.create(
+        booking_intent=intent,
+        modification_request=modification,
+        provider="hyperpay",
+        amount=modification.price_difference,
+        currency=modification.currency,
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key=f"modification-email-render-{language}-000000000000000",
+    )
+    modification.status = BookingModificationRequest.Status.COMPLETED
+    modification.completed_at = timezone.now()
+    modification.save(update_fields=["status", "completed_at", "updated_at"])
+    handle_modification_completed(modification.pk)
+    delivery = EmailDelivery.objects.get(
+        idempotency_key=f"modification-completed:{modification.public_reference}"
+    )
+    delivery.status = EmailDelivery.Status.QUEUED
+    delivery.save(update_fields=["status", "updated_at"])
+
+    with override_settings(EMAIL_DELIVERY_ENABLED=True):
+        result = send_queued_email(delivery.pk)
+
+    assert result.sent is True
+    html = mail.outbox[-1].alternatives[0].content
+    text = mail.outbox[-1].body
+    assert type_label in html
+    assert payment_label in html
+    assert modification.old_check_in.strftime("%d/%m/%Y") in html
+    assert modification.old_check_out.strftime("%d/%m/%Y") in html
+    assert modification.new_check_out.strftime("%d/%m/%Y") in html
+    assert f"{modification.old_total:,.2f}" in html
+    assert f"{modification.new_total:,.2f}" in html
+    assert f"{modification.price_difference:,.2f}" in html
+    assert modification.currency in html
+    assert reservation.public_reference in html
+    assert modification.public_reference in html
+    assert payment_label in text
 
 
 @override_settings(

@@ -4,7 +4,24 @@
 {{ message }}
 
 {% if property_name %}الوحدة: {{ property_name }}{% endif %}
-{% if check_in %}الوصول: {{ check_in }}
+{% if is_completed_modification %}نوع التعديل: {{ modification_type }}
+
+قبل التعديل:
+الوصول: {{ old_check_in }}
+المغادرة: {{ old_check_out }}
+الضيوف: {{ old_guests }}
+الإجمالي: {{ old_total }} {{ currency }}
+
+بعد التعديل:
+الوصول: {{ check_in }}
+المغادرة: {{ check_out }}
+الضيوف: {{ guests }}
+الإجمالي: {{ new_total }} {{ currency }}
+{% if amount_paid %}المبلغ المدفوع للتعديل: {{ amount_paid }} {{ currency }}
+تم التحقق من نجاح الدفع قبل اعتماد التعديل.{% endif %}
+{% if refund_amount %}فرق السعر المستحق للمعالجة: {{ refund_amount }} {{ currency }}
+سيُعالج الاسترداد وفق سياسة الاسترجاع، ولا تعني هذه الرسالة أن التحويل البنكي اكتمل.{% endif %}
+{% elif check_in %}الوصول: {{ check_in }}
 المغادرة: {{ check_out }}
 الضيوف: {{ guests }}{% endif %}
 {% if booking_reference %}رقم الحجز: {{ booking_reference }}{% elif reference %}المرجع: {{ reference }}{% endif %}

@@ -2,6 +2,7 @@
 
 import logging
 from dataclasses import dataclass, field
+from decimal import Decimal
 from smtplib import SMTPAuthenticationError, SMTPException, SMTPRecipientsRefused
 from typing import Any, Protocol
 from urllib.parse import quote, urljoin
@@ -329,7 +330,7 @@ TEMPLATE_GROUPS = {
     "reservation_creation_failed": "reservation",
     "reservation_unknown": "reservation",
     "reservation_cancelled": "reservation",
-    "reservation_modified": "reservation",
+    "reservation_modified": "modification",
     "daily_operations_summary": "operations",
     "account_verify_email": "account",
     "account_password_reset": "account",
@@ -600,6 +601,7 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             "currency": intent.currency,
         }
     if delivery.recipient_source == "modification":
+        from apps.payments.models import PaymentAttempt
         from apps.reservations.models import BookingModificationRequest
 
         modification = BookingModificationRequest.objects.select_related(
@@ -609,6 +611,44 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         intent = modification.reservation.booking_intent
         if intent is None:
             raise EmailProviderError("recipient_not_available", permanent=True)
+        is_completed_modification = delivery.message_type == "reservation_modified"
+        paid_amount = None
+        if is_completed_modification and modification.price_difference > 0:
+            paid_amount = (
+                PaymentAttempt.objects.filter(
+                    modification_request=modification,
+                    status=PaymentAttempt.Status.SUCCEEDED,
+                    amount=modification.price_difference,
+                    currency=modification.currency,
+                    verified_at__isnull=False,
+                )
+                .order_by("-verified_at")
+                .values_list("amount", flat=True)
+                .first()
+            )
+        request_type_labels = {
+            "ar": {
+                BookingModificationRequest.RequestType.EXTEND_STAY: "تمديد الإقامة",
+                BookingModificationRequest.RequestType.CHANGE_DATES: "تغيير التواريخ",
+                BookingModificationRequest.RequestType.CHANGE_GUESTS: "تغيير عدد الضيوف",
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION: "إلغاء الحجز",
+            },
+            "en": {
+                BookingModificationRequest.RequestType.EXTEND_STAY: "Stay extension",
+                BookingModificationRequest.RequestType.CHANGE_DATES: "Date change",
+                BookingModificationRequest.RequestType.CHANGE_GUESTS: "Guest-count change",
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION: "Booking cancellation",
+            },
+            "fr": {
+                BookingModificationRequest.RequestType.EXTEND_STAY: "Prolongation du séjour",
+                BookingModificationRequest.RequestType.CHANGE_DATES: "Changement de dates",
+                BookingModificationRequest.RequestType.CHANGE_GUESTS: "Modification des voyageurs",
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION: (
+                    "Annulation de la réservation"
+                ),
+            },
+        }
+        language = delivery.language if delivery.language in request_type_labels else "ar"
         return intent.guest_email, {
             "reference": modification.reservation.public_reference,
             "request_reference": modification.public_reference,
@@ -634,6 +674,23 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
                 else modification.reservation.total_price
             ),
             "currency": modification.currency,
+            "is_completed_modification": is_completed_modification,
+            "modification_type": request_type_labels[language][modification.request_type],
+            "old_check_in": modification.old_check_in.strftime("%d/%m/%Y"),
+            "old_check_out": modification.old_check_out.strftime("%d/%m/%Y"),
+            "old_guests": modification.old_guests,
+            "old_total": _format_money(modification.old_total),
+            "new_total": _format_money(
+                modification.new_total
+                if modification.new_total is not None
+                else modification.reservation.total_price
+            ),
+            "amount_paid": _format_money(paid_amount) if paid_amount is not None else "",
+            "refund_amount": (
+                _format_money(modification.refund_amount)
+                if is_completed_modification and modification.refund_amount > 0
+                else ""
+            ),
             "manage_url": f"{settings.SITE_BASE_URL}/reservations/manage/",
         }
     if delivery.recipient_source == "reservation":
@@ -669,6 +726,11 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             raise EmailProviderError("support_email_not_configured", permanent=True)
         return settings.SUPPORT_EMAIL, {}
     raise EmailProviderError("unsupported_recipient_source", permanent=True)
+
+
+def _format_money(value: Decimal) -> str:
+    """Render supported booking currencies with stable, human-readable precision."""
+    return f"{value.quantize(Decimal('0.01')):,.2f}"
 
 
 def _localized_property_name(property_obj: object, language: str) -> str:
