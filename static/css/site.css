@@ -5092,7 +5092,11 @@ h2 {
 .hero__image {
     filter: saturate(0.8) contrast(1.03);
     transform: scale(1.015);
-    animation: hero-image-arrive 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    /* forwards, not both: the resting state must be the visible one. With
+       `both` the element holds the first keyframe's opacity: 0 whenever the
+       animation has not run, so anything that suppresses it leaves content
+       loaded but unpainted. No delay is set, so there is no flash. */
+    animation: hero-image-arrive 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .hero__overlay,
@@ -5113,7 +5117,7 @@ h2 {
 }
 
 .hero__content > * {
-    animation: hero-copy-in 850ms both;
+    animation: hero-copy-in 850ms forwards;
 }
 
 .hero__content > :nth-child(2) {
@@ -5183,7 +5187,7 @@ h2 {
     border-bottom: 0;
     background: linear-gradient(180deg, rgb(215 173 98 / 13%), transparent);
     transform-origin: bottom;
-    animation: skyline-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: skyline-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .hero__architecture span:nth-child(1) {
@@ -9008,7 +9012,7 @@ h2 {
     object-fit: cover;
     object-position: center 56%;
     filter: saturate(0.9) contrast(1.05);
-    animation: travel-hero-image 1.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: travel-hero-image 1.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .travel-hero__veil {
@@ -9155,6 +9159,18 @@ h2 {
     background: var(--color-accent);
     border-radius: 50%;
     font-size: 0.65rem;
+}
+
+/* A third-party image that never arrives leaves a hole in the layout. The
+   parent keeps a branded gradient underneath, and the failed image is taken
+   out of the flow rather than showing a broken-image glyph. */
+[data-image-fallback] {
+    background:
+        linear-gradient(135deg, var(--color-primary-strong) 0%, var(--color-primary) 55%, var(--color-secondary) 100%);
+}
+
+[data-image-fallback] img.is-unavailable {
+    display: none;
 }
 
 .travel-hero__postcard {

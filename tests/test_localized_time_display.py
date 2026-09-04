@@ -7,6 +7,7 @@ conversion has to happen inside them.
 """
 
 import datetime as dt
+from pathlib import Path
 
 import pytest
 from django.conf import settings
@@ -99,3 +100,36 @@ def test_a_quote_page_shows_its_expiry_in_riyadh_time() -> None:
 def test_client_pages_still_render(client: Client) -> None:
     # Guards against an import-time mistake in the filter module.
     assert client.get("/").status_code == 200
+
+
+# --- hero imagery must not depend on an animation ---------------------------
+
+
+def _stylesheet() -> str:
+    return (Path(settings.BASE_DIR) / "static" / "css" / "site.css").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    "animation",
+    ["hero-image-arrive", "hero-copy-in", "skyline-rise", "travel-hero-image"],
+)
+def test_content_entrance_animations_do_not_hide_their_element_at_rest(
+    animation: str,
+) -> None:
+    """``both`` holds the first keyframe, so content stays at opacity 0 unless
+    the animation actually runs. The resting state must be the visible one."""
+    css = _stylesheet()
+
+    declaration = next(
+        line for line in css.splitlines() if f"animation: {animation} " in line
+    )
+    assert "both" not in declaration, declaration
+    assert "forwards" in declaration, declaration
+
+
+@pytest.mark.django_db
+def test_the_home_page_marks_its_third_party_images_for_fallback(client: Client) -> None:
+    content = client.get("/").content.decode()
+
+    # The Marrakech postcard and both destination cards.
+    assert content.count("data-image-fallback") >= 2

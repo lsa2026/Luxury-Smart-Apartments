@@ -35,7 +35,7 @@
             </div>
         </div>
 
-        <a class="travel-hero__postcard" href="{% url 'properties:list' %}?city=Marrakesh" aria-label="{% trans 'Explore stays in Marrakech' %}">
+        <a class="travel-hero__postcard" data-image-fallback href="{% url 'properties:list' %}?city=Marrakesh" aria-label="{% trans 'Explore stays in Marrakech' %}">
             <img
                 src="https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=900&amp;q=88"
                 alt="{% trans 'Traditional riad courtyard with a pool in Marrakech' %}"
@@ -89,7 +89,7 @@
         </div>
         <div class="destination-grid">
             {% for city in cities %}
-            <a class="destination-card destination-card--{% if city.city == 'Riyadh' %}riyadh{% else %}marrakech{% endif %}" href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
+            <a class="destination-card destination-card--{% if city.city == 'Riyadh' %}riyadh{% else %}marrakech{% endif %}" data-image-fallback href="{% url 'properties:list' %}?city={{ city.city|urlencode }}">
                 {% comment %}
                     A photograph of a real unit whenever one is nominated in the
                     admin; the stock image is only the fallback for a city that
