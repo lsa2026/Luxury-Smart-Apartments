@@ -1475,3 +1475,15 @@ document.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
         }
     });
 });
+
+// Third-party hero imagery is outside our control. When one fails the parent
+// keeps a branded gradient instead of a broken-image glyph, and the alt text
+// still reaches assistive technology through the parent's label.
+document.querySelectorAll("[data-image-fallback] img").forEach((image) => {
+    const markUnavailable = () => image.classList.add("is-unavailable");
+    if (image.complete && image.naturalWidth === 0) {
+        markUnavailable();
+        return;
+    }
+    image.addEventListener("error", markUnavailable, { once: true });
+});
