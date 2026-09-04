@@ -36,10 +36,18 @@ Connection and read timeouts are independent settings.
 
 One rate table serves every amount on a page. A fresh table is cached for
 `FX_RATE_CACHE_TTL_SECONDS` (one hour by default) and the same validated table
-is retained as Last Known Good. A provider timeout, HTTP error, invalid JSON, or
-malformed table falls back to LKG. Without a valid rate, foreign conversion
-fails safely; no code substitutes a rate of one. A pure SAR quote remains
-available through the mathematically exact identity path.
+is retained as Last Known Good. LKG fallback is accepted only while its
+`fetched_at` age is within `FX_LKG_MAX_AGE_SECONDS` (48 hours by default); an
+older LKG remains available for audit but is rejected for new conversions. A
+provider timeout, HTTP error, invalid JSON, or malformed table falls back to a
+valid in-age LKG. Without a valid rate, foreign conversion fails safely; no
+code substitutes a rate of one. A pure SAR quote remains available through the
+mathematically exact identity path.
+
+Cold-cache refreshes use a shared cache lock with a short expiry. One process
+fetches the provider table while peers briefly recheck the fresh cache. The
+owner releases only its own lock token, and a crashed owner cannot leave a
+permanent lock because Redis expires it after `FX_REFRESH_LOCK_TTL_SECONDS`.
 
 Production should set `CACHE_URL` to the shared Redis cache already used by the
 project so web workers share fresh and LKG rates.
@@ -98,6 +106,9 @@ FX_PROVIDER_NAME=open.er-api.com
 FX_BASE_CURRENCY=SAR
 FX_SUPPORTED_CURRENCIES=SAR,MAD,EUR,USD
 FX_RATE_CACHE_TTL_SECONDS=3600
+FX_LKG_MAX_AGE_SECONDS=172800
+FX_REFRESH_LOCK_TTL_SECONDS=15
+FX_REFRESH_LOCK_WAIT_SECONDS=10
 FX_REQUEST_CONNECT_TIMEOUT=3
 FX_REQUEST_READ_TIMEOUT=5
 ```

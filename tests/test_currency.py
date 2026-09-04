@@ -1,15 +1,21 @@
-from datetime import UTC, datetime
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import httpx
 import pytest
+from django.conf import settings
 from django.template import Context, Template
 from django.test import Client, RequestFactory
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.payments.currency import (
     FRESH_CACHE_KEY,
     LKG_CACHE_KEY,
+    REFRESH_LOCK_KEY,
     CurrencyError,
     CurrencyService,
     ExchangeRateProvider,
@@ -46,14 +52,46 @@ def fixed_rates() -> ExchangeRateSnapshot:
 class MemoryCache:
     def __init__(self) -> None:
         self.values: dict[str, object] = {}
+        self.expires_at: dict[str, float] = {}
         self.writes: list[tuple[str, int | None]] = []
+        self.lock = threading.Lock()
 
     def get(self, key: str, default: object = None) -> object:
-        return self.values.get(key, default)
+        with self.lock:
+            expires_at = self.expires_at.get(key)
+            if expires_at is not None and expires_at <= time.monotonic():
+                self.values.pop(key, None)
+                self.expires_at.pop(key, None)
+            return self.values.get(key, default)
 
     def set(self, key: str, value: object, timeout: int | None = None) -> None:
-        self.values[key] = value
-        self.writes.append((key, timeout))
+        with self.lock:
+            self.values[key] = value
+            if timeout is None:
+                self.expires_at.pop(key, None)
+            else:
+                self.expires_at[key] = time.monotonic() + timeout
+            self.writes.append((key, timeout))
+
+    def add(self, key: str, value: object, timeout: int | None = None) -> bool:
+        with self.lock:
+            expires_at = self.expires_at.get(key)
+            if expires_at is not None and expires_at <= time.monotonic():
+                self.values.pop(key, None)
+                self.expires_at.pop(key, None)
+            if key in self.values:
+                return False
+            self.values[key] = value
+            if timeout is not None:
+                self.expires_at[key] = time.monotonic() + timeout
+            return True
+
+    def delete(self, key: str) -> bool:
+        with self.lock:
+            existed = key in self.values
+            self.values.pop(key, None)
+            self.expires_at.pop(key, None)
+            return existed
 
 
 class ProviderStub:
@@ -202,6 +240,76 @@ def test_provider_failure_uses_last_known_good() -> None:
     service = CurrencyService(provider=provider, cache_backend=cache)
     assert service.get_rates().rate("USD") == Decimal("0.25")
     assert provider.calls == 1
+
+
+def test_provider_failure_rejects_last_known_good_older_than_max_age() -> None:
+    cache = MemoryCache()
+    stale = fixed_rates()
+    stale = ExchangeRateSnapshot(
+        provider=stale.provider,
+        base_currency=stale.base_currency,
+        rates=stale.rates,
+        rate_timestamp=stale.rate_timestamp,
+        fetched_at=timezone.now()
+        - timedelta(seconds=settings.FX_LKG_MAX_AGE_SECONDS + 1),
+    )
+    cache.values[LKG_CACHE_KEY] = stale.to_cache_value()
+    service = CurrencyService(
+        provider=ProviderStub(error=ExchangeRateUnavailableError("timeout")),
+        cache_backend=cache,
+    )
+    with pytest.raises(ExchangeRateUnavailableError, match="fx_rates_unavailable"):
+        service.get_rates()
+
+
+def test_sar_identity_quote_does_not_need_fresh_or_lkg_rates() -> None:
+    cache = MemoryCache()
+    cache.values[LKG_CACHE_KEY] = "expired-or-corrupt"
+    provider = ProviderStub(error=ExchangeRateUnavailableError("offline"))
+    service = CurrencyService(provider=provider, cache_backend=cache)
+    created_at = timezone.now()
+    quote = service.create_quote(
+        source_amount="1400",
+        source_currency="SAR",
+        display_currency="SAR",
+        quote_created_at=created_at,
+        quote_expires_at=created_at + timedelta(minutes=10),
+    )
+    assert quote.payment_amount_sar == Decimal("1400.00")
+    assert provider.calls == 0
+
+
+def test_concurrent_cold_cache_requests_fetch_provider_once() -> None:
+    cache = MemoryCache()
+    snapshot = fixed_rates()
+
+    class SlowProvider(ProviderStub):
+        def fetch(self) -> ExchangeRateSnapshot:
+            time.sleep(0.1)
+            return super().fetch()
+
+    provider = SlowProvider(snapshot=snapshot)
+
+    def fetch_rates(_index: int) -> ExchangeRateSnapshot:
+        return CurrencyService(provider=provider, cache_backend=cache).get_rates()
+
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(fetch_rates, range(10)))
+
+    assert provider.calls == 1
+    assert all(result == snapshot for result in results)
+    assert REFRESH_LOCK_KEY not in cache.values
+
+
+def test_expired_refresh_lock_is_recoverable() -> None:
+    cache = MemoryCache()
+    cache.values[REFRESH_LOCK_KEY] = "abandoned"
+    cache.expires_at[REFRESH_LOCK_KEY] = time.monotonic() + 0.05
+    provider = ProviderStub()
+    rates = CurrencyService(provider=provider, cache_backend=cache).get_rates()
+    assert rates.rate("USD") == Decimal("0.25")
+    assert provider.calls == 1
+    assert REFRESH_LOCK_KEY not in cache.values
 
 
 def test_provider_failure_without_lkg_never_fabricates_rate() -> None:

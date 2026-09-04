@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import logging
+import secrets
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from types import MappingProxyType
 from typing import Any, Protocol
@@ -21,8 +23,10 @@ logger = logging.getLogger(__name__)
 PAYMENT_CURRENCY = "SAR"
 FRESH_CACHE_KEY = "fx:rates:sar:v1:fresh"
 LKG_CACHE_KEY = "fx:rates:sar:v1:lkg"
+REFRESH_LOCK_KEY = "fx:rates:sar:v1:refresh-lock"
 SNAPSHOT_VERSION = 1
 DISPLAY_CURRENCY_SESSION_KEY = "display_currency"
+REFRESH_POLL_SECONDS = 0.05
 
 
 class CurrencyError(Exception):
@@ -45,6 +49,10 @@ class CacheBackend(Protocol):
     def get(self, key: str, default: Any = None) -> Any: ...
 
     def set(self, key: str, value: Any, timeout: int | None = None) -> None: ...
+
+    def add(self, key: str, value: Any, timeout: int | None = None) -> bool: ...
+
+    def delete(self, key: str) -> bool: ...
 
 
 def normalize_currency(value: object) -> str:
@@ -284,11 +292,66 @@ class CurrencyService:
                 logger.info("FX_CACHE_HIT base_currency=SAR")
                 return cached
         logger.info("FX_CACHE_MISS base_currency=SAR")
+        return self._refresh_with_lock(force_refresh=force_refresh)
+
+    def _refresh_with_lock(self, *, force_refresh: bool) -> ExchangeRateSnapshot:
+        deadline = time.monotonic() + settings.FX_REFRESH_LOCK_WAIT_SECONDS
+        waited = False
+        while True:
+            if waited or not force_refresh:
+                cached = self._read_cache(FRESH_CACHE_KEY)
+                if cached is not None:
+                    logger.info("FX_CACHE_HIT_AFTER_WAIT base_currency=SAR")
+                    return cached
+            if waited and self.cache.get(REFRESH_LOCK_KEY) is None:
+                lkg = self._read_lkg()
+                if lkg is not None:
+                    logger.warning(
+                        "FX_LKG_USED_AFTER_REFRESH_FAILURE provider=%s rate_timestamp=%s",
+                        lkg.provider,
+                        lkg.rate_timestamp.isoformat(),
+                    )
+                    return lkg
+
+            lock_token = secrets.token_urlsafe(16)
+            if self.cache.add(
+                REFRESH_LOCK_KEY,
+                lock_token,
+                timeout=settings.FX_REFRESH_LOCK_TTL_SECONDS,
+            ):
+                try:
+                    return self._fetch_or_lkg()
+                finally:
+                    self._release_refresh_lock(lock_token)
+
+            waited = True
+            if self.cache.get(REFRESH_LOCK_KEY) is None:
+                lkg = self._read_lkg()
+                if lkg is not None:
+                    logger.warning(
+                        "FX_LKG_USED_AFTER_REFRESH_FAILURE provider=%s rate_timestamp=%s",
+                        lkg.provider,
+                        lkg.rate_timestamp.isoformat(),
+                    )
+                    return lkg
+            if time.monotonic() >= deadline:
+                lkg = self._read_lkg()
+                if lkg is not None:
+                    logger.warning(
+                        "FX_LKG_USED_AFTER_REFRESH_WAIT provider=%s rate_timestamp=%s",
+                        lkg.provider,
+                        lkg.rate_timestamp.isoformat(),
+                    )
+                    return lkg
+                raise ExchangeRateUnavailableError("fx_refresh_wait_timeout")
+            time.sleep(REFRESH_POLL_SECONDS)
+
+    def _fetch_or_lkg(self) -> ExchangeRateSnapshot:
         try:
             snapshot = self.provider.fetch()
         except CurrencyError as exc:
             logger.warning("FX_PROVIDER_FAILURE code=%s", str(exc))
-            lkg = self._read_cache(LKG_CACHE_KEY)
+            lkg = self._read_lkg()
             if lkg is not None:
                 logger.warning(
                     "FX_LKG_USED provider=%s rate_timestamp=%s",
@@ -306,6 +369,28 @@ class CurrencyService:
             snapshot.rate_timestamp.isoformat(),
         )
         return snapshot
+
+    def _read_lkg(self) -> ExchangeRateSnapshot | None:
+        snapshot = self._read_cache(LKG_CACHE_KEY)
+        if snapshot is None:
+            return None
+        age = timezone.now() - snapshot.fetched_at
+        if age > timedelta(seconds=settings.FX_LKG_MAX_AGE_SECONDS):
+            logger.warning(
+                "FX_LKG_REJECTED_STALE provider=%s fetched_at=%s max_age_seconds=%s",
+                snapshot.provider,
+                snapshot.fetched_at.isoformat(),
+                settings.FX_LKG_MAX_AGE_SECONDS,
+            )
+            return None
+        return snapshot
+
+    def _release_refresh_lock(self, lock_token: str) -> None:
+        try:
+            if self.cache.get(REFRESH_LOCK_KEY) == lock_token:
+                self.cache.delete(REFRESH_LOCK_KEY)
+        except Exception:
+            logger.warning("FX_REFRESH_LOCK_RELEASE_FAILURE")
 
     def _read_cache(self, key: str) -> ExchangeRateSnapshot | None:
         value = self.cache.get(key)
