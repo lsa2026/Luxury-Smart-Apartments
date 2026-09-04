@@ -1,6 +1,8 @@
+from django import forms
 from django.contrib import admin
 from django.core.cache import cache
 from django.http import HttpRequest
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
@@ -100,9 +102,66 @@ class FAQItemAdmin(admin.ModelAdmin):
     list_editable = ("sort_order", "is_active")
 
 
+class SiteSettingAdminForm(forms.ModelForm):
+    class Meta:
+        model = SiteSetting
+        fields = (
+            "site_name",
+            "tagline_ar",
+            "tagline_en",
+            "tagline_fr",
+            "footer_text_ar",
+            "footer_text_en",
+            "footer_text_fr",
+            "contact_email",
+            "contact_phone",
+            "whatsapp_display_number",
+            "whatsapp_url",
+            "instagram_url",
+            "facebook_url",
+            "x_url",
+            "linkedin_url",
+            "office_hours_ar",
+            "office_hours_en",
+            "office_hours_fr",
+            "public_address_ar",
+            "public_address_en",
+            "public_address_fr",
+        )
+        labels = {
+            "site_name": _("Site name"),
+            "tagline_ar": _("Arabic tagline"),
+            "tagline_en": _("English tagline"),
+            "tagline_fr": _("French tagline"),
+            "footer_text_ar": _("Arabic footer text"),
+            "footer_text_en": _("English footer text"),
+            "footer_text_fr": _("French footer text"),
+            "contact_email": _("Contact email"),
+            "contact_phone": _("Contact phone"),
+            "whatsapp_display_number": _("WhatsApp display number"),
+            "whatsapp_url": _("WhatsApp link"),
+            "instagram_url": _("Instagram link"),
+            "facebook_url": _("Facebook link"),
+            "x_url": _("X link"),
+            "linkedin_url": _("LinkedIn link"),
+            "office_hours_ar": _("Arabic office hours"),
+            "office_hours_en": _("English office hours"),
+            "office_hours_fr": _("French office hours"),
+            "public_address_ar": _("Arabic public address"),
+            "public_address_en": _("English public address"),
+            "public_address_fr": _("French public address"),
+        }
+
+
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):
+    form = SiteSettingAdminForm
+    list_display = ("site_name", "contact_readiness", "updated_at")
     fieldsets = (
+        (
+            _("Configuration readiness"),
+            {"fields": ("configuration_readiness",)},
+        ),
         (
             _("Brand"),
             {
@@ -155,7 +214,30 @@ class SiteSettingAdmin(admin.ModelAdmin):
         ),
         (_("System"), {"fields": ("updated_at",)}),
     )
-    readonly_fields = ("site_name", "updated_at")
+    readonly_fields = ("site_name", "configuration_readiness", "updated_at")
+
+    @admin.display(boolean=True, description=_("Contact information complete"))
+    def contact_readiness(self, obj: SiteSetting) -> bool:
+        return bool(obj.contact_email and obj.contact_phone and obj.whatsapp_url)
+
+    @admin.display(description=_("Configuration status"))
+    def configuration_readiness(self, obj: SiteSetting) -> str:
+        required = (
+            ("contact_email", _("Contact email")),
+            ("contact_phone", _("Contact phone")),
+            ("whatsapp_url", _("WhatsApp link")),
+        )
+        missing = [str(label) for field, label in required if not getattr(obj, field)]
+        if not missing:
+            return format_html(
+                '<strong class="lsa-admin-ready">{}</strong>',
+                _("Essential public contact information is complete."),
+            )
+        return format_html(
+            '<div class="lsa-admin-warning"><strong>{}</strong><p>{}</p></div>',
+            _("Complete the essential contact information"),
+            _("Missing: %(fields)s") % {"fields": "، ".join(missing)},
+        )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return not SiteSetting.objects.exists() and super().has_add_permission(request)

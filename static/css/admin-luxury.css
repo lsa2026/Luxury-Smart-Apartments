@@ -363,6 +363,20 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-sync-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }.lsa-sync-form > div { display: flex; align-items: center; gap: 8px; padding: 11px; border: 1px solid var(--lsa-line); border-radius: 10px; }.lsa-sync-form > div > span { flex: 1; font-size: 10px; font-weight: 700; }
 .lsa-health__list--roomy li { min-height: 29px; }
 
+/* Focused admin workflows -------------------------------------------------- */
+.lsa-admin-money,.lsa-admin-stay { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lsa-admin-money { color: var(--lsa-ink); font-weight: 800; }
+.lsa-admin-action-hub { padding: 14px; border: 1px solid color-mix(in srgb,var(--lsa-gold) 35%,var(--lsa-line)); border-radius: 12px; background: color-mix(in srgb,var(--lsa-paper) 88%,#efe2c4); }
+.lsa-admin-action-hub p { margin: 0 0 12px; color: var(--lsa-muted); line-height: 1.7; }
+.lsa-admin-action-hub .button { margin: 0 0 5px 5px; padding: 8px 13px; border-radius: 99px; }
+.lsa-admin-technical { overflow-wrap: anywhere; color: var(--lsa-muted); font-family: ui-monospace,SFMono-Regular,Consolas,monospace; font-size: 10px; line-height: 1.8; }
+.lsa-admin-ready { color: #277054; }
+.lsa-admin-warning { padding: 12px 14px; color: #7d571b; border: 1px solid #ead3a4; border-radius: 11px; background: #f8efd9; }
+.lsa-admin-warning p { margin: 5px 0 0; }
+
+/* Keep secondary language and SEO sections compact until they are needed. */
+.change-form fieldset.collapse summary { cursor: pointer; }
+
 /* Standard Django administration screens */
 .breadcrumbs { font-size: 10px; }
 .content > #content { max-width: 1540px; margin-inline: auto; }
