@@ -7,6 +7,7 @@ from django.views.generic import DetailView, ListView
 
 from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
+from apps.reservations.services.stay_policy import stay_policy_for
 from apps.reviews.models import Review
 
 from .cities import canonical_city, supported_city_choices
@@ -168,6 +169,7 @@ class PropertyDetailView(DetailView):
                 "property_reviews": property_obj._public_reviews,
                 "availability_form": AvailabilitySearchForm(property_obj=property_obj),
                 "preserved_search": preserved_search,
+                "stay_policy": stay_policy_for(property_obj),
                 "similar_properties": similar,
                 "total_image_count": len(all_gallery_images),
                 "breadcrumb_items": [

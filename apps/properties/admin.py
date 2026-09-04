@@ -100,6 +100,9 @@ PROPERTY_LOCAL_FIELDS = {
     "is_visible",
     "is_featured",
     "sort_order",
+    "house_rules_ar",
+    "house_rules_en",
+    "house_rules_fr",
 }
 
 PROPERTY_FORM_FIELDS = (
@@ -126,6 +129,9 @@ PROPERTY_FORM_FIELDS = (
     "visibility_management",
     "is_featured",
     "sort_order",
+    "house_rules_ar",
+    "house_rules_en",
+    "house_rules_fr",
     "content_is_customized",
 )
 
@@ -273,16 +279,33 @@ class PropertyAdmin(admin.ModelAdmin):
                     "short_description_ar",
                     "description_ar",
                     "city_ar",
+                    "house_rules_ar",
                 )
             },
         ),
         (
             _("English content"),
-            {"fields": ("name_en", "short_description_en", "description_en", "city_en")},
+            {
+                "fields": (
+                    "name_en",
+                    "short_description_en",
+                    "description_en",
+                    "city_en",
+                    "house_rules_en",
+                )
+            },
         ),
         (
             _("French content"),
-            {"fields": ("name_fr", "short_description_fr", "description_fr", "city_fr")},
+            {
+                "fields": (
+                    "name_fr",
+                    "short_description_fr",
+                    "description_fr",
+                    "city_fr",
+                    "house_rules_fr",
+                )
+            },
         ),
         (
             _("SEO — Arabic"),

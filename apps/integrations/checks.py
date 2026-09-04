@@ -31,15 +31,8 @@ def hostaway_webhook_configuration_check(
                 id="integrations.E001",
             )
         )
-    if settings.HOSTAWAY_WEBHOOK_PROCESSING_ENABLED and not receiver_enabled:
-        problems.append(
-            Warning(
-                "Hostaway webhook processing is enabled while reception is off, "
-                "so no new event can ever arrive to process.",
-                hint="Enable HOSTAWAY_WEBHOOK_RECEIVER_ENABLED or turn processing off.",
-                id="integrations.W001",
-            )
-        )
+    # Processing without reception is not a fault: the worker and scheduler drain
+    # a queue the web service fills, and they serve no HTTP of their own.
     if receiver_enabled and not settings.HOSTAWAY_WEBHOOK_ALLOWED_EVENTS:
         problems.append(
             Warning(
