@@ -2,7 +2,7 @@ from dataclasses import replace
 from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import httpx
 import pytest
@@ -26,6 +26,7 @@ from apps.integrations.hostaway.reservation_validators import (
     ReservationFinanceField,
     normalize_hostaway_reservation_status,
 )
+from apps.integrations.tasks import reconcile_paid_hostaway_reservations_task
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingIntent,
@@ -100,6 +101,34 @@ def successful_payment(intent: BookingIntent) -> PaymentAttempt:
         status=PaymentAttempt.Status.SUCCEEDED,
         idempotency_key="phase5-payment-key-00000000000",
     )
+
+
+@override_settings(HOSTAWAY_LIVE_BOOKING_ENABLED=True)
+def test_recovery_task_replays_a_verified_paid_booking() -> None:
+    intent = make_intent()
+    reservation = prepare_local_reservation(intent)
+    successful_payment(intent)
+    reservation.normalized_status = Reservation.Status.READY_FOR_HOSTAWAY
+    reservation.payment_status = "paid"
+    reservation.save(update_fields=["normalized_status", "payment_status", "updated_at"])
+    service = Mock()
+    service.create_hostaway_reservation.return_value = Mock(code="confirmed")
+    manager = Mock()
+    manager.__enter__ = Mock(return_value=service)
+    manager.__exit__ = Mock(return_value=None)
+
+    with (
+        patch("apps.integrations.tasks.call_command"),
+        patch(
+            "apps.reservations.services.hostaway_booking.HostawayBookingService",
+            return_value=manager,
+        ),
+    ):
+        result = reconcile_paid_hostaway_reservations_task.run()
+
+    service.create_hostaway_reservation.assert_called_once_with(reservation)
+    assert result["processed"] == 1
+    assert result["confirmed"] == 1
 
 
 class AvailabilityStub:

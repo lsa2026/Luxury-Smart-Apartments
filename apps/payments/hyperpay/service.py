@@ -142,6 +142,14 @@ class HyperPayService:
         self.close()
 
     def create_checkout(self, intent: BookingIntent) -> CheckoutSession:
+        if (
+            settings.HOSTAWAY_LIVE_BOOKING_ENABLED
+            and intent.property.hostaway_listing_map_id is None
+        ):
+            # Never collect money for inventory that cannot yet be written to
+            # the channel manager. The periodic reconciliation task normally
+            # fills this verified identifier before a property is published.
+            raise HyperPayCheckoutError("listing_map_id_not_verified")
         if settings.HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED:
             self._revalidate_booking_intent(intent)
         with transaction.atomic():

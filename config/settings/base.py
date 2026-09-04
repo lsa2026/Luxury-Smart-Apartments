@@ -342,6 +342,10 @@ HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES = optional_positive_int(
     "HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES",
     1,
 )
+HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES = optional_positive_int(
+    "HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES",
+    1,
+)
 BOOKING_EXPIRATION_INTERVAL_MINUTES = optional_positive_int(
     "BOOKING_EXPIRATION_INTERVAL_MINUTES",
     5,
@@ -390,6 +394,10 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
         "hostaway-webhooks": {
             "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
             "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
+        },
+        "hostaway-paid-booking-reconciliation": {
+            "task": "apps.integrations.tasks.reconcile_paid_hostaway_reservations_task",
+            "schedule": HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES * 60,
         },
         "expire-booking-objects": {
             "task": "apps.integrations.tasks.expire_booking_objects_task",

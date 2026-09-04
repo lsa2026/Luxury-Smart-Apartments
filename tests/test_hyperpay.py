@@ -171,6 +171,22 @@ def test_checkout_creation_persists_unique_traceable_identifiers() -> None:
 
 
 @override_settings(
+    **(HYPERPAY_SETTINGS | {"HOSTAWAY_LIVE_BOOKING_ENABLED": True})
+)
+def test_checkout_refuses_to_charge_without_verified_listing_map_id() -> None:
+    intent = payable_intent()
+    intent.property.hostaway_listing_map_id = None
+    intent.property.save(update_fields=["hostaway_listing_map_id"])
+    client = HyperPayStub()
+
+    with pytest.raises(HyperPayCheckoutError, match="listing_map_id_not_verified"):
+        HyperPayService(client=client).create_checkout(intent)
+
+    assert client.checkout_calls == 0
+    assert PaymentAttempt.objects.count() == 0
+
+
+@override_settings(
     **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
 )
 def test_checkout_revalidates_live_inventory_immediately_before_payment() -> None:

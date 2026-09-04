@@ -154,6 +154,8 @@ services:
         value: "15"
       - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
         value: "1"
+      - key: HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES
+        value: "1"
       - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
         value: "5"
       # Reception and processing of Hostaway's unified webhook. The endpoint
@@ -283,6 +285,8 @@ services:
       - key: HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES
         value: "15"
       - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
+        value: "1"
+      - key: HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES
         value: "1"
       - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
         value: "5"
