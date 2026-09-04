@@ -6068,3 +6068,251 @@ msgstr "عروضك السعرية وإقاماتك جاهزة في لوحتك."
 #: templates/accounts/login.html
 msgid "Use your booking number and the email you booked with."
 msgstr "استخدم رقم الحجز والبريد الذي حجزت به."
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Pending confirmation"
+msgstr "بانتظار التأكيد"
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Inquiry"
+msgstr "استفسار"
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Declined"
+msgstr "مرفوض"
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Expired"
+msgstr "منتهٍ"
+
+#: apps/core/templatetags/presentation.py
+msgid "Awaiting confirmation"
+msgstr "بانتظار التأكيد"
+
+#: apps/core/templatetags/presentation.py
+msgid "Enquiry"
+msgstr "استفسار"
+
+#: apps/core/templatetags/presentation.py
+msgid "Not accepted"
+msgstr "لم يُقبل"
+
+#: apps/core/templatetags/presentation.py
+msgid "Offer expired"
+msgstr "انتهت صلاحية العرض"
+
+#: templates/reservations/manage_reservation.html
+msgid "This stay is closed"
+msgstr "هذه الإقامة مغلقة"
+
+#: templates/reservations/manage_reservation.html
+msgid "No further changes can be requested for it. Our team can help you plan a new stay whenever you are ready."
+msgstr "لا يمكن طلب أي تعديل عليها. فريقنا جاهز لمساعدتك في التخطيط لإقامة جديدة متى شئت."
+
+#: templates/reservations/manage_reservation.html
+msgid "Plan a new stay"
+msgstr "خطط لإقامة جديدة"
+
+#: templates/reservations/manage_reservation.html
+msgid "This stay is closed, so no further changes can be requested."
+msgstr "هذه الإقامة مغلقة، فلا يمكن طلب أي تعديل عليها."
+
+#: templates/reservations/manage_reservation.html
+msgid "A change has already been applied to this booking. Contact guest support for another change."
+msgstr "طُبِّق تعديل على هذا الحجز بالفعل. تواصل مع خدمة الضيوف لطلب تعديل آخر."
+
+#: apps/core/admin_dashboard.py
+msgid "Paid bookings not sent to Hostaway"
+msgstr "حجوزات مدفوعة لم تُرسل إلى Hostaway"
+
+#: apps/core/admin_dashboard.py
+msgid "Payment succeeded but creation was blocked; check the operation reason."
+msgstr "نجح الدفع لكن الإنشاء حُجب؛ راجع سبب العملية."
+
+#: apps/reservations/views.py
+msgid "The stay would be shorter than the minimum nights this property allows."
+msgstr "مدة الإقامة أقل من الحد الأدنى لليالي الذي تسمح به هذه الوحدة."
+
+#: apps/reservations/views.py
+msgid "The stay would be longer than the maximum nights this property allows."
+msgstr "مدة الإقامة تتجاوز الحد الأقصى لليالي الذي تسمح به هذه الوحدة."
+
+#: apps/reservations/views.py
+msgid "This property does not accept a stay that starts today."
+msgstr "هذه الوحدة لا تقبل إقامة تبدأ اليوم."
+
+#: apps/reservations/views.py
+msgid "This change is too close to the arrival time to be requested online."
+msgstr "هذا التعديل قريب جدًا من موعد الوصول ولا يمكن طلبه عبر الموقع."
+
+#: apps/reservations/views.py
+msgid "The property does not accept arrivals on that date."
+msgstr "الوحدة لا تقبل الوصول في هذا التاريخ."
+
+#: apps/reservations/views.py
+msgid "The property does not accept departures on that date."
+msgstr "الوحدة لا تقبل المغادرة في هذا التاريخ."
+
+#: apps/reservations/views.py
+msgid "The requested dates are no longer available."
+msgstr "التواريخ المطلوبة لم تعد متاحة."
+
+#: apps/reservations/views.py
+msgid "Check-in cannot be in the past."
+msgstr "لا يمكن أن يكون تاريخ الوصول في الماضي."
+
+#: apps/reservations/views.py
+msgid "The stay dates are invalid."
+msgstr "تواريخ الإقامة غير صالحة."
+
+#: apps/reservations/views.py
+msgid "An extension has to add at least one night."
+msgstr "التمديد يجب أن يضيف ليلة واحدة على الأقل."
+
+#: apps/reservations/views.py
+msgid "This extension is longer than we can take online."
+msgstr "مدة التمديد أطول مما يمكن قبوله عبر الموقع."
+
+#: apps/reservations/views.py
+msgid "Live availability could not be reached. Please try again shortly."
+msgstr "تعذّر الوصول إلى التوافر المباشر. حاول مرة أخرى بعد قليل."
+
+#: apps/reservations/views.py
+msgid "A price for these dates could not be prepared."
+msgstr "تعذّر تجهيز سعر لهذه التواريخ."
+
+#: apps/reservations/views.py
+msgid "Cancellation requests are unavailable right now. Please contact guest support."
+msgstr "طلبات الإلغاء غير متاحة حاليًا. تواصل مع خدمة الضيوف."
+
+#: apps/core/templatetags/presentation.py
+msgid "Flexible cancellation"
+msgstr "إلغاء مرن"
+
+#: apps/core/templatetags/presentation.py
+msgid "Moderate cancellation"
+msgstr "إلغاء متوسط"
+
+#: apps/core/templatetags/presentation.py
+msgid "Strict cancellation"
+msgstr "إلغاء صارم"
+
+#: apps/core/templatetags/presentation.py
+msgid "Firm cancellation"
+msgstr "إلغاء حازم"
+
+#: apps/core/templatetags/presentation.py
+msgid "Very strict cancellation"
+msgstr "إلغاء صارم جدًا"
+
+#: apps/core/templatetags/presentation.py
+msgid "Non-refundable"
+msgstr "غير قابل للاسترداد"
+
+#: apps/core/templatetags/presentation.py
+msgid "Host cancellation policy"
+msgstr "سياسة إلغاء المضيف"
+
+#: templates/reservations/manage_reservation.html
+msgid "Cancellation"
+msgstr "الإلغاء"
+
+#: templates/reservations/manage_reservation.html
+msgid "Host policy for this property: %(policy)s."
+msgstr "سياسة المضيف لهذه الوحدة: %(policy)s."
+
+#: templates/reservations/manage_reservation.html
+msgid "Cancelling releases your dates immediately and cannot be undone."
+msgstr "الإلغاء يحرّر تواريخك فورًا ولا يمكن التراجع عنه."
+
+#: templates/reservations/manage_reservation.html
+msgid "Any refund due is transferred to your bank account within %(days)s working days, after we contact you for the details."
+msgstr "أي مبلغ مستحق يُحوَّل إلى حسابك البنكي خلال %(days)s أيام عمل، بعد أن نتواصل معك للحصول على البيانات."
+
+#: templates/reservations/modification_detail.html
+msgid "Amount returned to you"
+msgstr "المبلغ المُعاد إليك"
+
+#: templates/reservations/modification_detail.html
+msgid "We will contact you for your bank details, then transfer the amount within %(days)s working days."
+msgstr "سنتواصل معك للحصول على بيانات حسابك البنكي، ثم نحوّل المبلغ خلال %(days)s أيام عمل."
+
+#: apps/core/admin_dashboard.py
+msgid "Refunds to transfer to guests"
+msgstr "مبالغ مستحقة للنزلاء"
+
+#: apps/core/admin_dashboard.py
+msgid "A change was applied automatically and left money owed. Contact the guest for bank details, transfer, then mark it."
+msgstr "طُبِّق تغيير تلقائيًا ونتج عنه مبلغ مستحق. تواصل مع النزيل لأخذ بياناته البنكية، حوّل المبلغ، ثم علّمه."
+
+#: apps/reservations/models.py
+msgid "Cancellation policy tier"
+msgstr "شريحة سياسة إلغاء"
+
+#: apps/reservations/models.py
+msgid "Cancellation policy tiers"
+msgstr "شرائح سياسة الإلغاء"
+
+#: apps/reservations/models.py
+msgid "Refund owed to a guest"
+msgstr "مبلغ مستحق لنزيل"
+
+#: apps/reservations/models.py
+msgid "Refunds owed to guests"
+msgstr "مبالغ مستحقة للنزلاء"
+
+#: apps/reservations/models.py
+msgid "Price decreased after a change"
+msgstr "انخفاض السعر بعد تعديل"
+
+#: apps/reservations/models.py
+msgid "Cancellation refund"
+msgstr "استرداد إلغاء"
+
+#: apps/reservations/models.py
+msgid "Due to the guest"
+msgstr "مستحق للنزيل"
+
+#: apps/reservations/models.py
+msgid "Transferred"
+msgstr "حُوِّل"
+
+#: apps/reservations/models.py
+msgid "Hostaway policy name, exactly as synced onto the property."
+msgstr "اسم السياسة في Hostaway كما زُومنت على الوحدة تمامًا."
+
+#: apps/reservations/models.py
+msgid "Applies when the cancellation happens at least this long before arrival."
+msgstr "تُطبَّق عندما يقع الإلغاء قبل الوصول بهذه المدة على الأقل."
+
+#: apps/reservations/models.py
+msgid "Percentage of the stay total returned to the guest."
+msgstr "النسبة من إجمالي الإقامة التي تُعاد للنزيل."
+
+#: apps/reservations/models.py
+msgid "Uncheck to keep the cleaning fee when this tier applies."
+msgstr "أزل التحديد للاحتفاظ برسوم التنظيف عند تطبيق هذه الشريحة."
+
+#: apps/reservations/admin.py
+msgid "Guest contact"
+msgstr "بيانات تواصل النزيل"
+
+#: apps/reservations/admin.py
+msgid "How the amount was calculated"
+msgstr "كيف حُسب المبلغ"
+
+#: apps/reservations/admin.py
+msgid "Mark as transferred to the guest"
+msgstr "تعليم كمُحوَّل للنزيل"
+
+#: apps/reservations/admin.py
+msgid "You do not have permission to settle refunds."
+msgstr "لا تملك صلاحية تسوية الاستردادات."
+
+#: apps/reservations/admin.py
+msgid "Marked %(count)d refund(s) as transferred."
+msgstr "تم تعليم %(count)d مبلغ كمُحوَّل."

@@ -6203,3 +6203,251 @@ msgstr "Vos devis et séjours restent prêts dans votre tableau de bord."
 #: templates/accounts/login.html
 msgid "Use your booking number and the email you booked with."
 msgstr "Utilisez votre numéro de réservation et l'e-mail associé."
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Pending confirmation"
+msgstr "En attente de confirmation"
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Inquiry"
+msgstr "Demande d'information"
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Declined"
+msgstr "Refusé"
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Expired"
+msgstr "Expiré"
+
+#: apps/core/templatetags/presentation.py
+msgid "Awaiting confirmation"
+msgstr "En attente de confirmation"
+
+#: apps/core/templatetags/presentation.py
+msgid "Enquiry"
+msgstr "Demande d'information"
+
+#: apps/core/templatetags/presentation.py
+msgid "Not accepted"
+msgstr "Non acceptée"
+
+#: apps/core/templatetags/presentation.py
+msgid "Offer expired"
+msgstr "Offre expirée"
+
+#: templates/reservations/manage_reservation.html
+msgid "This stay is closed"
+msgstr "Ce séjour est clos"
+
+#: templates/reservations/manage_reservation.html
+msgid "No further changes can be requested for it. Our team can help you plan a new stay whenever you are ready."
+msgstr "Aucune modification ne peut plus être demandée. Notre équipe peut vous aider à préparer un nouveau séjour quand vous le souhaitez."
+
+#: templates/reservations/manage_reservation.html
+msgid "Plan a new stay"
+msgstr "Préparer un nouveau séjour"
+
+#: templates/reservations/manage_reservation.html
+msgid "This stay is closed, so no further changes can be requested."
+msgstr "Ce séjour est clos ; aucune modification ne peut être demandée."
+
+#: templates/reservations/manage_reservation.html
+msgid "A change has already been applied to this booking. Contact guest support for another change."
+msgstr "Une modification a déjà été appliquée. Contactez le service client pour une autre modification."
+
+#: apps/core/admin_dashboard.py
+msgid "Paid bookings not sent to Hostaway"
+msgstr "Réservations payées non envoyées à Hostaway"
+
+#: apps/core/admin_dashboard.py
+msgid "Payment succeeded but creation was blocked; check the operation reason."
+msgstr "Le paiement a réussi mais la création a été bloquée ; vérifiez le motif."
+
+#: apps/reservations/views.py
+msgid "The stay would be shorter than the minimum nights this property allows."
+msgstr "Le séjour serait plus court que le minimum de nuits autorisé pour ce logement."
+
+#: apps/reservations/views.py
+msgid "The stay would be longer than the maximum nights this property allows."
+msgstr "Le séjour dépasserait le maximum de nuits autorisé pour ce logement."
+
+#: apps/reservations/views.py
+msgid "This property does not accept a stay that starts today."
+msgstr "Ce logement n'accepte pas un séjour qui commence aujourd'hui."
+
+#: apps/reservations/views.py
+msgid "This change is too close to the arrival time to be requested online."
+msgstr "Cette modification est trop proche de l'heure d'arrivée pour être demandée en ligne."
+
+#: apps/reservations/views.py
+msgid "The property does not accept arrivals on that date."
+msgstr "Le logement n'accepte pas d'arrivée à cette date."
+
+#: apps/reservations/views.py
+msgid "The property does not accept departures on that date."
+msgstr "Le logement n'accepte pas de départ à cette date."
+
+#: apps/reservations/views.py
+msgid "The requested dates are no longer available."
+msgstr "Les dates demandées ne sont plus disponibles."
+
+#: apps/reservations/views.py
+msgid "Check-in cannot be in the past."
+msgstr "La date d'arrivée ne peut pas être dans le passé."
+
+#: apps/reservations/views.py
+msgid "The stay dates are invalid."
+msgstr "Les dates du séjour sont invalides."
+
+#: apps/reservations/views.py
+msgid "An extension has to add at least one night."
+msgstr "Une prolongation doit ajouter au moins une nuit."
+
+#: apps/reservations/views.py
+msgid "This extension is longer than we can take online."
+msgstr "Cette prolongation dépasse ce que nous pouvons accepter en ligne."
+
+#: apps/reservations/views.py
+msgid "Live availability could not be reached. Please try again shortly."
+msgstr "La disponibilité en direct est injoignable. Merci de réessayer sous peu."
+
+#: apps/reservations/views.py
+msgid "A price for these dates could not be prepared."
+msgstr "Aucun prix n'a pu être préparé pour ces dates."
+
+#: apps/reservations/views.py
+msgid "Cancellation requests are unavailable right now. Please contact guest support."
+msgstr "Les demandes d'annulation sont indisponibles. Contactez le service client."
+
+#: apps/core/templatetags/presentation.py
+msgid "Flexible cancellation"
+msgstr "Annulation flexible"
+
+#: apps/core/templatetags/presentation.py
+msgid "Moderate cancellation"
+msgstr "Annulation modérée"
+
+#: apps/core/templatetags/presentation.py
+msgid "Strict cancellation"
+msgstr "Annulation stricte"
+
+#: apps/core/templatetags/presentation.py
+msgid "Firm cancellation"
+msgstr "Annulation ferme"
+
+#: apps/core/templatetags/presentation.py
+msgid "Very strict cancellation"
+msgstr "Annulation très stricte"
+
+#: apps/core/templatetags/presentation.py
+msgid "Non-refundable"
+msgstr "Non remboursable"
+
+#: apps/core/templatetags/presentation.py
+msgid "Host cancellation policy"
+msgstr "Politique d'annulation de l'hôte"
+
+#: templates/reservations/manage_reservation.html
+msgid "Cancellation"
+msgstr "Annulation"
+
+#: templates/reservations/manage_reservation.html
+msgid "Host policy for this property: %(policy)s."
+msgstr "Politique de l'hôte pour ce logement : %(policy)s."
+
+#: templates/reservations/manage_reservation.html
+msgid "Cancelling releases your dates immediately and cannot be undone."
+msgstr "L'annulation libère vos dates immédiatement et est irréversible."
+
+#: templates/reservations/manage_reservation.html
+msgid "Any refund due is transferred to your bank account within %(days)s working days, after we contact you for the details."
+msgstr "Tout remboursement dû est viré sur votre compte sous %(days)s jours ouvrés, après que nous vous ayons contacté pour les coordonnées."
+
+#: templates/reservations/modification_detail.html
+msgid "Amount returned to you"
+msgstr "Montant qui vous est restitué"
+
+#: templates/reservations/modification_detail.html
+msgid "We will contact you for your bank details, then transfer the amount within %(days)s working days."
+msgstr "Nous vous contacterons pour vos coordonnées bancaires, puis nous virerons le montant sous %(days)s jours ouvrés."
+
+#: apps/core/admin_dashboard.py
+msgid "Refunds to transfer to guests"
+msgstr "Remboursements à virer aux clients"
+
+#: apps/core/admin_dashboard.py
+msgid "A change was applied automatically and left money owed. Contact the guest for bank details, transfer, then mark it."
+msgstr "Une modification automatique a laissé un montant dû. Contactez le client pour ses coordonnées bancaires, virez, puis marquez-le."
+
+#: apps/reservations/models.py
+msgid "Cancellation policy tier"
+msgstr "Palier de politique d'annulation"
+
+#: apps/reservations/models.py
+msgid "Cancellation policy tiers"
+msgstr "Paliers de politique d'annulation"
+
+#: apps/reservations/models.py
+msgid "Refund owed to a guest"
+msgstr "Remboursement dû à un client"
+
+#: apps/reservations/models.py
+msgid "Refunds owed to guests"
+msgstr "Remboursements dus aux clients"
+
+#: apps/reservations/models.py
+msgid "Price decreased after a change"
+msgstr "Prix réduit après une modification"
+
+#: apps/reservations/models.py
+msgid "Cancellation refund"
+msgstr "Remboursement d'annulation"
+
+#: apps/reservations/models.py
+msgid "Due to the guest"
+msgstr "Dû au client"
+
+#: apps/reservations/models.py
+msgid "Transferred"
+msgstr "Viré"
+
+#: apps/reservations/models.py
+msgid "Hostaway policy name, exactly as synced onto the property."
+msgstr "Nom de la politique Hostaway, tel que synchronisé sur le logement."
+
+#: apps/reservations/models.py
+msgid "Applies when the cancellation happens at least this long before arrival."
+msgstr "S'applique lorsque l'annulation a lieu au moins ce délai avant l'arrivée."
+
+#: apps/reservations/models.py
+msgid "Percentage of the stay total returned to the guest."
+msgstr "Pourcentage du total du séjour restitué au client."
+
+#: apps/reservations/models.py
+msgid "Uncheck to keep the cleaning fee when this tier applies."
+msgstr "Décochez pour conserver les frais de ménage lorsque ce palier s'applique."
+
+#: apps/reservations/admin.py
+msgid "Guest contact"
+msgstr "Contact du client"
+
+#: apps/reservations/admin.py
+msgid "How the amount was calculated"
+msgstr "Comment le montant a été calculé"
+
+#: apps/reservations/admin.py
+msgid "Mark as transferred to the guest"
+msgstr "Marquer comme viré au client"
+
+#: apps/reservations/admin.py
+msgid "You do not have permission to settle refunds."
+msgstr "Vous n'avez pas la permission de régler les remboursements."
+
+#: apps/reservations/admin.py
+msgid "Marked %(count)d refund(s) as transferred."
+msgstr "%(count)d remboursement(s) marqué(s) comme virés."

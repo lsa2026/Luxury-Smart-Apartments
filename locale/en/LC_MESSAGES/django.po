@@ -5857,3 +5857,251 @@ msgstr ""
 #: templates/accounts/login.html
 msgid "Use your booking number and the email you booked with."
 msgstr ""
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Pending confirmation"
+msgstr ""
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Inquiry"
+msgstr ""
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Declined"
+msgstr ""
+
+#: apps/reservations/models.py
+msgctxt "Reservation"
+msgid "Expired"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Awaiting confirmation"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Enquiry"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Not accepted"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Offer expired"
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "This stay is closed"
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "No further changes can be requested for it. Our team can help you plan a new stay whenever you are ready."
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "Plan a new stay"
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "This stay is closed, so no further changes can be requested."
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "A change has already been applied to this booking. Contact guest support for another change."
+msgstr ""
+
+#: apps/core/admin_dashboard.py
+msgid "Paid bookings not sent to Hostaway"
+msgstr ""
+
+#: apps/core/admin_dashboard.py
+msgid "Payment succeeded but creation was blocked; check the operation reason."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "The stay would be shorter than the minimum nights this property allows."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "The stay would be longer than the maximum nights this property allows."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "This property does not accept a stay that starts today."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "This change is too close to the arrival time to be requested online."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "The property does not accept arrivals on that date."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "The property does not accept departures on that date."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "The requested dates are no longer available."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "Check-in cannot be in the past."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "The stay dates are invalid."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "An extension has to add at least one night."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "This extension is longer than we can take online."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "Live availability could not be reached. Please try again shortly."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "A price for these dates could not be prepared."
+msgstr ""
+
+#: apps/reservations/views.py
+msgid "Cancellation requests are unavailable right now. Please contact guest support."
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Flexible cancellation"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Moderate cancellation"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Strict cancellation"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Firm cancellation"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Very strict cancellation"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Non-refundable"
+msgstr ""
+
+#: apps/core/templatetags/presentation.py
+msgid "Host cancellation policy"
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "Cancellation"
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "Host policy for this property: %(policy)s."
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "Cancelling releases your dates immediately and cannot be undone."
+msgstr ""
+
+#: templates/reservations/manage_reservation.html
+msgid "Any refund due is transferred to your bank account within %(days)s working days, after we contact you for the details."
+msgstr ""
+
+#: templates/reservations/modification_detail.html
+msgid "Amount returned to you"
+msgstr ""
+
+#: templates/reservations/modification_detail.html
+msgid "We will contact you for your bank details, then transfer the amount within %(days)s working days."
+msgstr ""
+
+#: apps/core/admin_dashboard.py
+msgid "Refunds to transfer to guests"
+msgstr ""
+
+#: apps/core/admin_dashboard.py
+msgid "A change was applied automatically and left money owed. Contact the guest for bank details, transfer, then mark it."
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Cancellation policy tier"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Cancellation policy tiers"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Refund owed to a guest"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Refunds owed to guests"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Price decreased after a change"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Cancellation refund"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Due to the guest"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Transferred"
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Hostaway policy name, exactly as synced onto the property."
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Applies when the cancellation happens at least this long before arrival."
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Percentage of the stay total returned to the guest."
+msgstr ""
+
+#: apps/reservations/models.py
+msgid "Uncheck to keep the cleaning fee when this tier applies."
+msgstr ""
+
+#: apps/reservations/admin.py
+msgid "Guest contact"
+msgstr ""
+
+#: apps/reservations/admin.py
+msgid "How the amount was calculated"
+msgstr ""
+
+#: apps/reservations/admin.py
+msgid "Mark as transferred to the guest"
+msgstr ""
+
+#: apps/reservations/admin.py
+msgid "You do not have permission to settle refunds."
+msgstr ""
+
+#: apps/reservations/admin.py
+msgid "Marked %(count)d refund(s) as transferred."
+msgstr ""
