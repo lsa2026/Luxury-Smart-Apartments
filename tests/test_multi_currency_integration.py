@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.test import Client, override_settings
 from django.urls import reverse
 
+from apps.payments.currency import DISPLAY_CURRENCY_SESSION_KEY
 from apps.payments.hyperpay.service import HyperPayService
 from apps.payments.models import PaymentAttempt
 from apps.payments.views import HyperPayBookingCheckoutView
@@ -190,6 +191,7 @@ def test_browser_amount_and_currency_tampering_cannot_change_hyperpay(
     browser = Client()
     session = browser.session
     session[SESSION_MARKER_KEY] = marker
+    session[DISPLAY_CURRENCY_SESSION_KEY] = "USD"
     session.save()
     gateway = HyperPayStub()
     monkeypatch.setattr(
@@ -202,6 +204,11 @@ def test_browser_amount_and_currency_tampering_cannot_change_hyperpay(
         {"amount": "1", "currency": "USD"},
     )
     assert response.status_code == 200
+    content = response.content.decode()
+    visible_total = content.split("checkout__total--display", 1)[1].split("</div>", 1)[0]
+    assert "USD" in visible_total
+    assert "SAR" not in visible_total
+    assert "checkout__total--payment" not in content
     attempt = PaymentAttempt.objects.get()
     assert attempt.amount == Decimal("400.00")
     assert attempt.currency == "SAR"

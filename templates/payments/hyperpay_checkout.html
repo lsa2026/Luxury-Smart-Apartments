@@ -152,12 +152,8 @@ var wpwlOptions = {
             {% endif %}
 
             <div class="checkout__total checkout__total--display">
-                <span>{% trans "Display total" %}</span>
+                <span>{% trans "Total" %}</span>
                 <strong>{% if modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
-            </div>
-            <div class="checkout__total checkout__total--payment">
-                <span>{% trans "Final payment" %}</span>
-                <strong>{{ attempt.amount|localized_money:attempt.currency }}</strong>
             </div>
             <p class="checkout__fx-note">{% trans "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference." %}</p>
 

@@ -649,7 +649,9 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
     assert content.count('data-checkout-method="') == 2
     assert content.count('data-checkout-panel="') == 2
     assert intent.property.display_name in content or "checkout__summary" in content
-    assert "checkout__total" in content
+    assert content.count("checkout__total checkout__total--") == 1
+    assert "checkout__total--display" in content
+    assert "checkout__total--payment" not in content
     assert reverse("reservations:intent_detail", args=[intent.public_reference]) in content
     assert "font-src 'self' data: https://eu-test.oppwa.com" in csp
     assert "unsafe-eval" not in csp
