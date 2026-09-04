@@ -138,9 +138,19 @@
         </div>
         {% else %}
         <div class="property-card__footer">
+            {% comment %}
+                The anchor is the cheapest available night Hostaway reported in
+                the refresh window, shown as "from" so it is never read as the
+                price of a stay. With no anchor the original wording stands.
+            {% endcomment %}
             <span class="property-card__price-note">
+                {% if property.indicative_nightly_from %}
+                <small>{% trans "Final price depends on your dates" %}</small>
+                <strong>{% blocktrans with amount=property.indicative_nightly_from|localized_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
+                {% else %}
                 <small>{% trans "Price based on dates" %}</small>
                 <strong>{% trans "Live price checks" %}</strong>
+                {% endif %}
             </span>
             <a class="property-card__cta" href="{{ resolved_property_url }}">
                 {% trans "View details" %}

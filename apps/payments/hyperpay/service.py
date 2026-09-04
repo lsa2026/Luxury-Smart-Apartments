@@ -94,17 +94,25 @@ def build_checkout_payload(
         raise ValueError("payment_snapshot_missing")
     if checkout_currency != settings.HYPERPAY_CURRENCY:
         raise ValueError("currency_not_supported")
+    # /v1/checkouts itself needs only entityId, amount, currency and paymentType.
+    # These are the values this merchant always sends, because a card scheme uses
+    # them for 3-D Secure risk scoring and an empty one raises challenge rates.
     required = {
         "customer.email": intent.guest_email.strip(),
         "customer.givenName": intent.guest_first_name.strip(),
         "customer.surname": intent.guest_last_name.strip(),
-        "billing.street1": intent.billing_street1.strip(),
         "billing.city": intent.billing_city.strip(),
         "billing.state": intent.billing_state.strip(),
-        "billing.postcode": intent.billing_postcode.strip(),
     }
     if not all(required.values()):
         raise ValueError("required_billing_data_missing")
+    # Sent when the guest supplied them, omitted rather than sent empty: a blank
+    # value scores worse with the scheme than an absent field.
+    optional = {
+        "billing.street1": intent.billing_street1.strip(),
+        "billing.postcode": intent.billing_postcode.strip(),
+    }
+    optional = {key: value for key, value in optional.items() if value}
     payload = {
         "entityId": settings.HYPERPAY_ENTITY_ID,
         "amount": format_hyperpay_amount(checkout_amount),
@@ -114,6 +122,7 @@ def build_checkout_payload(
         "integrity": "true",
         "billing.country": country,
         **required,
+        **optional,
     }
     if settings.HYPERPAY_ENVIRONMENT == "test":
         payload.update(

@@ -12268,3 +12268,34 @@ body.splash-active .whatsapp-fab {
 .quote-review__policy li span {
     color: var(--color-muted);
 }
+
+/* The "from" anchor. Deliberately quieter than a live quote: it orients a
+   first-time visitor without competing with the real price for their dates. */
+.booking-sidebar__anchor {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0 0 0.6rem;
+}
+
+.booking-sidebar__anchor strong {
+    font-size: 1.45rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+
+.booking-sidebar__anchor small {
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+/* Marks a field the gateway does not need, without rewriting a translated
+   label. Quiet enough that it reads as guidance, not as a warning. */
+.form-optional {
+    margin-inline-start: 0.4rem;
+    padding: 0.1rem 0.42rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-soft);
+    color: var(--color-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+}

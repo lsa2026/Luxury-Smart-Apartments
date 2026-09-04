@@ -439,6 +439,12 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
             "task": "apps.integrations.tasks.sync_hostaway_properties_task",
             "schedule": HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES * 60,
         },
+        # Display-only anchor; daily is enough because the live quote decides
+        # every real price. Runs before the working day in Riyadh.
+        "indicative-rates": {
+            "task": "apps.integrations.tasks.refresh_indicative_rates_task",
+            "schedule": crontab(hour=5, minute=30),
+        },
         "hostaway-reviews": {
             "task": "apps.integrations.tasks.sync_hostaway_reviews_task",
             "schedule": HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES * 60,

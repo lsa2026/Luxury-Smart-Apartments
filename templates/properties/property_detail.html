@@ -117,6 +117,12 @@
                 {% else %}
                 <p class="eyebrow">{% trans "Live check" %}</p>
                 <h2>{% trans "Plan your stay" %}</h2>
+                {% if property.indicative_nightly_from %}
+                <p class="booking-sidebar__anchor">
+                    <strong>{% blocktrans with amount=property.indicative_nightly_from|localized_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
+                    <small>{% trans "Final price depends on your dates" %}</small>
+                </p>
+                {% endif %}
                 <p>{% trans "Enter your dates to receive a temporary live price." %}</p>
                 {% include "reservations/_availability_form.html" %}
                 <div class="booking-sidebar__trust"><span aria-hidden="true">✓</span>{% trans "Live price checks" %}</div>
