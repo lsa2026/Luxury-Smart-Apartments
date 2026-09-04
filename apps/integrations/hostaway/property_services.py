@@ -726,6 +726,8 @@ def _listing_publish_blockers(
     include_images: bool,
 ) -> tuple[str, ...]:
     blockers: list[str] = []
+    if settings.HOSTAWAY_LIVE_BOOKING_ENABLED and listing.listing_map_id is None:
+        blockers.append("missing_listing_map_id")
     if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_ACTIVE and not listing.is_active:
         blockers.append("inactive_or_archived")
     if not listing.name:

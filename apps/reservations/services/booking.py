@@ -11,6 +11,11 @@ from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 
 from apps.integrations.hostaway.availability_validators import PriceQuote
+from apps.payments.currency import (
+    CurrencyError,
+    CurrencyService,
+    normalize_currency,
+)
 
 from ..models import BookingIntent, BookingQuote
 from ..signing import quote_fingerprint, verify_quote_fingerprint
@@ -72,6 +77,8 @@ def create_quote_for_property(
     *,
     property_obj: Any,
     session_hash: str,
+    selected_display_currency: str = "SAR",
+    currency_service: CurrencyService | None = None,
 ) -> BookingQuote:
     price_quote = availability.quote
     if not availability.is_available or price_quote is None:
@@ -84,6 +91,29 @@ def create_quote_for_property(
     if len(components) > 100:
         raise ValueError("Price component count exceeds the safe limit.")
 
+    now = timezone.now()
+    expires_at = BookingQuote.default_expiry()
+    service = currency_service or CurrencyService()
+    try:
+        currency_quote = service.create_quote(
+            source_amount=price_quote.total_price,
+            source_currency=price_quote.currency,
+            display_currency=selected_display_currency,
+            quote_created_at=now,
+            quote_expires_at=expires_at,
+        )
+    except CurrencyError as exc:
+        logger.warning(
+            "FX quote creation failed: listing_id=%s source_currency=%s code=%s",
+            price_quote.listing_id,
+            price_quote.currency,
+            str(exc),
+        )
+        raise ValueError("currency_conversion_unavailable") from exc
+    finally:
+        if currency_service is None:
+            service.close()
+
     quote = BookingQuote(
         property=property_obj,
         hostaway_listing_id=property_obj.hostaway_listing_id,
@@ -93,10 +123,13 @@ def create_quote_for_property(
         guests=price_quote.guests,
         currency=price_quote.currency,
         total_price=price_quote.total_price,
+        payment_amount_sar=currency_quote.payment_amount_sar,
+        selected_display_currency=currency_quote.display_currency,
+        exchange_rate_snapshot=dict(currency_quote.snapshot),
         components=components,
         price_version=2,
         session_key_hash=session_hash,
-        expires_at=BookingQuote.default_expiry(),
+        expires_at=expires_at,
         calculated_at=price_quote.calculated_at,
     )
     quote.signature = quote_fingerprint(quote)
@@ -113,6 +146,7 @@ def consume_revalidated_quote(
     idempotency_key: str,
     guest_data: dict[str, Any],
     revalidated: AvailabilityResult,
+    selected_display_currency: str | None = None,
 ) -> IntentCreation:
     """Consume a quote after network revalidation has completed outside this function."""
     existing = (
@@ -212,7 +246,57 @@ def consume_revalidated_quote(
                 new_total=latest.total_price,
             )
 
+        if quote.payment_amount_sar is None or not quote.exchange_rate_snapshot:
+            quote.status = BookingQuote.Status.INVALIDATED
+            quote.invalidated_at = timezone.now()
+            quote.save(update_fields=["status", "invalidated_at", "updated_at"])
+            return IntentCreation("fx_snapshot_invalid")
+
         now = timezone.now()
+        intent_expires_at = BookingIntent.default_expiry()
+        display_currency = quote.selected_display_currency
+        if selected_display_currency:
+            try:
+                display_currency = normalize_currency(selected_display_currency)
+            except CurrencyError:
+                return IntentCreation("invalid_display_currency")
+        intent_snapshot = dict(quote.exchange_rate_snapshot)
+        try:
+            display_amount = CurrencyService.sar_to_display(
+                quote.payment_amount_sar,
+                display_currency,
+                quote.exchange_rate_snapshot,
+            )
+        except CurrencyError:
+            try:
+                with CurrencyService() as service:
+                    rates = service.get_rates()
+                display_amount = CurrencyService.sar_to_display(
+                    quote.payment_amount_sar,
+                    display_currency,
+                    rates,
+                )
+            except CurrencyError:
+                return IntentCreation("fx_snapshot_invalid")
+            intent_snapshot.update(
+                {
+                    "provider": rates.provider,
+                    "rate_timestamp": rates.rate_timestamp.isoformat(),
+                    "rates": {
+                        code: format(rate, "f") for code, rate in rates.rates.items()
+                    },
+                    "source_rate_per_sar": format(rates.rate(quote.currency), "f"),
+                    "display_rate_per_sar": format(rates.rate(display_currency), "f"),
+                }
+            )
+        intent_snapshot.update(
+            {
+                "selected_display_currency": display_currency,
+                "display_amount": format(display_amount, "f"),
+                "quote_created_at": now.isoformat(),
+                "quote_expires_at": intent_expires_at.isoformat(),
+            }
+        )
         intent = BookingIntent(
             quote=quote,
             property=quote.property,
@@ -222,6 +306,9 @@ def consume_revalidated_quote(
             guests=quote.guests,
             currency=quote.currency,
             total_price=quote.total_price,
+            payment_amount_sar=quote.payment_amount_sar,
+            selected_display_currency=display_currency,
+            exchange_rate_snapshot=intent_snapshot,
             guest_first_name=guest_data["guest_first_name"],
             guest_last_name=guest_data["guest_last_name"],
             guest_email=guest_data["guest_email"],
@@ -240,7 +327,7 @@ def consume_revalidated_quote(
             terms_accepted_at=now,
             privacy_accepted_at=now,
             marketing_consent=guest_data.get("marketing_consent", False),
-            expires_at=BookingIntent.default_expiry(),
+            expires_at=intent_expires_at,
         )
         intent.full_clean(validate_unique=False, validate_constraints=False)
         try:

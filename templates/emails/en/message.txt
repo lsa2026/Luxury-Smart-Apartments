@@ -4,7 +4,24 @@
 {{ message }}
 
 {% if property_name %}Property: {{ property_name }}{% endif %}
-{% if check_in %}Check-in: {{ check_in }}
+{% if is_completed_modification %}Update type: {{ modification_type }}
+
+Before:
+Check-in: {{ old_check_in }}
+Check-out: {{ old_check_out }}
+Guests: {{ old_guests }}
+Total: {{ old_total }} {{ currency }}
+
+After:
+Check-in: {{ check_in }}
+Check-out: {{ check_out }}
+Guests: {{ guests }}
+Total: {{ new_total }} {{ currency }}
+{% if amount_paid %}Amount paid for this update: {{ amount_paid }} {{ currency }}
+Payment was verified before the update was confirmed.{% endif %}
+{% if refund_amount %}Price difference due for processing: {{ refund_amount }} {{ currency }}
+The refund will be handled under the refund policy; this message does not mean the bank transfer is complete.{% endif %}
+{% elif check_in %}Check-in: {{ check_in }}
 Check-out: {{ check_out }}
 Guests: {{ guests }}{% endif %}
 {% if booking_reference %}Booking number: {{ booking_reference }}{% elif reference %}Reference: {{ reference }}{% endif %}
@@ -14,5 +31,13 @@ Guests: {{ guests }}{% endif %}
 
 Website: {{ site_url }}
 {% if contact_phone %}Contact number: {{ contact_phone }}{% endif %}
+{% if whatsapp_url %}WhatsApp: {{ whatsapp_display }} — {{ whatsapp_url }}{% endif %}
 {% if support_email %}Email: {{ support_email }}{% endif %}
-Privacy: {{ site_base_url }}/legal/privacy/
+Support: {{ contact_url }}
+{% if office_hours %}Support hours: {{ office_hours }}{% endif %}
+{% if public_address %}Address: {{ public_address }}{% endif %}
+{% if instagram_url %}Instagram: {{ instagram_url }}{% endif %}
+{% if facebook_url %}Facebook: {{ facebook_url }}{% endif %}
+{% if x_url %}X: {{ x_url }}{% endif %}
+{% if linkedin_url %}LinkedIn: {{ linkedin_url }}{% endif %}
+Privacy: {{ privacy_url }}

@@ -20,6 +20,7 @@
             {% if request.user.is_authenticated %}<a href="{% url 'accounts:dashboard' %}">{% trans "My bookings" %}</a>{% else %}<a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a>{% endif %}
         </nav>
         <div class="header-actions">
+            {% include "includes/currency_selector.html" %}
             {% include "includes/language_switcher.html" %}
             <a class="button button--small" href="{% url 'properties:list' %}#property-search">
                 {% trans "Book now" %}

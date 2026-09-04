@@ -6451,3 +6451,15 @@ msgstr "Vous n'avez pas la permission de régler les remboursements."
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr "%(count)d remboursement(s) marqué(s) comme virés."
+
+#: templates/accounts/login.html
+msgid "Forgot your password?"
+msgstr "Mot de passe oublié ?"
+
+#: templates/reservations/availability_result.html
+msgid "Price verification is temporarily unavailable"
+msgstr "La vérification du prix est temporairement indisponible"
+
+#: templates/reservations/availability_result.html
+msgid "We couldn't verify the price right now. Please try again shortly."
+msgstr "Nous n'avons pas pu vérifier le prix pour le moment. Veuillez réessayer dans quelques instants."

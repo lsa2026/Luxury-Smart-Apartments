@@ -1,13 +1,17 @@
 """Validated DTOs for Hostaway calendar and price details responses."""
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from django.conf import settings
 from django.utils import timezone
 
 from .exceptions import HostawayAvailabilityError, HostawayResponseError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,7 +176,7 @@ def validate_price_response(
     check_in: date,
     check_out: date,
     guests: int,
-    fallback_currency: str = "",
+    listing_response: Any = None,
 ) -> PriceQuote:
     """Validate priceDetails v2 and convert all monetary values to Decimal."""
     if not isinstance(payload, dict):
@@ -233,10 +237,11 @@ def validate_price_response(
             )
         )
 
-    response_currency = result.get("currency") or result.get("currencyCode")
-    currency = _currency(response_currency or fallback_currency)
-    if not currency:
-        raise HostawayResponseError("Hostaway price response does not identify a currency.")
+    currency = resolve_hostaway_price_currency(
+        listing_id,
+        payload,
+        listing_response,
+    )
 
     result_types: dict[str, set[str]] = {}
     _record_types(result_types, result)
@@ -254,6 +259,76 @@ def validate_price_response(
         result_field_types=_flatten_types(result_types),
         component_field_types=_flatten_types(component_types),
     )
+
+
+def resolve_hostaway_price_currency(
+    listing_id: int,
+    price_details_response: Any,
+    listing_response: Any,
+) -> str:
+    """Resolve Hostaway currency without any geographic or listing-name inference."""
+    if isinstance(listing_id, bool) or not isinstance(listing_id, int) or listing_id <= 0:
+        raise HostawayResponseError("Hostaway listing ID must be a positive integer.")
+    if not isinstance(price_details_response, dict):
+        raise HostawayResponseError("Hostaway price response must be an object.")
+    price_result = price_details_response.get("result")
+    if not isinstance(price_result, dict):
+        raise HostawayResponseError("Hostaway price result must be an object.")
+
+    price_currency = _supported_currency(
+        price_result.get("currency") or price_result.get("currencyCode"),
+        source="priceDetails",
+    )
+    listing_currency = ""
+    if listing_response is not None:
+        listing_record = (
+            listing_response.get("result") if isinstance(listing_response, dict) else None
+        )
+        if not isinstance(listing_record, dict):
+            listing_record = listing_response
+        if not isinstance(listing_record, dict):
+            raise HostawayResponseError("Hostaway listing response must be an object.")
+        response_listing_id = _listing_id(listing_record.get("id"))
+        if response_listing_id != listing_id:
+            raise HostawayResponseError(
+                "Hostaway listing currency is bound to a different listing ID."
+            )
+        listing_currency = _supported_currency(
+            listing_record.get("currencyCode"),
+            source="listing",
+        )
+
+    if price_currency and listing_currency and price_currency != listing_currency:
+        logger.error(
+            "HOSTAWAY_CURRENCY_CONFLICT listing_id=%s price_currency=%s listing_currency=%s",
+            listing_id,
+            price_currency,
+            listing_currency,
+        )
+        raise HostawayResponseError("Hostaway price and listing currencies conflict.")
+    currency = price_currency or listing_currency
+    if not currency:
+        raise HostawayResponseError("Hostaway price response does not identify a currency.")
+    return currency
+
+
+def _listing_id(value: Any) -> int:
+    if isinstance(value, bool):
+        raise HostawayResponseError("Hostaway listing response has an invalid listing ID.")
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise HostawayResponseError("Hostaway listing response has an invalid listing ID.") from exc
+    if str(parsed) != str(value).strip() or parsed <= 0:
+        raise HostawayResponseError("Hostaway listing response has an invalid listing ID.")
+    return parsed
+
+
+def _supported_currency(value: Any, *, source: str) -> str:
+    currency = _currency(value)
+    if currency and currency not in settings.FX_SUPPORTED_CURRENCIES:
+        raise HostawayResponseError(f"Hostaway {source} currency is unsupported.")
+    return currency
 
 
 def _record_types(target: dict[str, set[str]], payload: dict[str, Any]) -> None:

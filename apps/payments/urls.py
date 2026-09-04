@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    CurrencyPreferenceView,
     HyperPayBookingCheckoutView,
     HyperPayModificationCheckoutView,
     HyperPayResultView,
@@ -11,6 +12,7 @@ from .views import (
 app_name = "payments"
 
 urlpatterns = [
+    path("currency/", CurrencyPreferenceView.as_view(), name="set_currency"),
     path(
         "hyperpay/modification/<str:public_reference>/",
         HyperPayModificationCheckoutView.as_view(),

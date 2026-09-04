@@ -4,7 +4,24 @@
 {{ message }}
 
 {% if property_name %}Logement : {{ property_name }}{% endif %}
-{% if check_in %}Arrivée : {{ check_in }}
+{% if is_completed_modification %}Type de modification : {{ modification_type }}
+
+Avant :
+Arrivée : {{ old_check_in }}
+Départ : {{ old_check_out }}
+Voyageurs : {{ old_guests }}
+Total : {{ old_total }} {{ currency }}
+
+Après :
+Arrivée : {{ check_in }}
+Départ : {{ check_out }}
+Voyageurs : {{ guests }}
+Total : {{ new_total }} {{ currency }}
+{% if amount_paid %}Montant payé pour cette modification : {{ amount_paid }} {{ currency }}
+Le paiement a été vérifié avant la confirmation de la modification.{% endif %}
+{% if refund_amount %}Différence de prix à traiter : {{ refund_amount }} {{ currency }}
+Le remboursement sera traité selon la politique applicable ; ce message ne confirme pas un virement bancaire.{% endif %}
+{% elif check_in %}Arrivée : {{ check_in }}
 Départ : {{ check_out }}
 Voyageurs : {{ guests }}{% endif %}
 {% if booking_reference %}Numéro de réservation : {{ booking_reference }}{% elif reference %}Référence : {{ reference }}{% endif %}
@@ -14,5 +31,13 @@ Voyageurs : {{ guests }}{% endif %}
 
 Site : {{ site_url }}
 {% if contact_phone %}Téléphone : {{ contact_phone }}{% endif %}
+{% if whatsapp_url %}WhatsApp : {{ whatsapp_display }} — {{ whatsapp_url }}{% endif %}
 {% if support_email %}E-mail : {{ support_email }}{% endif %}
-Confidentialité : {{ site_base_url }}/legal/privacy/
+Assistance : {{ contact_url }}
+{% if office_hours %}Horaires d’assistance : {{ office_hours }}{% endif %}
+{% if public_address %}Adresse : {{ public_address }}{% endif %}
+{% if instagram_url %}Instagram : {{ instagram_url }}{% endif %}
+{% if facebook_url %}Facebook : {{ facebook_url }}{% endif %}
+{% if x_url %}X : {{ x_url }}{% endif %}
+{% if linkedin_url %}LinkedIn : {{ linkedin_url }}{% endif %}
+Confidentialité : {{ privacy_url }}

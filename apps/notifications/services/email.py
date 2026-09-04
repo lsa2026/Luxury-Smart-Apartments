@@ -2,9 +2,10 @@
 
 import logging
 from dataclasses import dataclass, field
-from smtplib import SMTPException, SMTPRecipientsRefused
+from decimal import Decimal
+from smtplib import SMTPAuthenticationError, SMTPException, SMTPRecipientsRefused
 from typing import Any, Protocol
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 from django.conf import settings
 from django.core.mail import BadHeaderError, EmailMultiAlternatives
@@ -74,9 +75,12 @@ class DjangoEmailProvider:
                 body=text_body,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=[request.recipient],
+                reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
             )
             message.attach_alternative(html_body, "text/html")
             sent_count = message.send(fail_silently=False)
+        except SMTPAuthenticationError as exc:
+            raise EmailProviderError("email_authentication_failed", permanent=True) from exc
         except (BadHeaderError, SMTPRecipientsRefused, ValueError) as exc:
             raise EmailProviderError("invalid_email_message", permanent=True) from exc
         except (TimeoutError, OSError, SMTPException) as exc:
@@ -88,7 +92,7 @@ class DjangoEmailProvider:
 
 def _email_brand_context(language: str) -> dict[str, str]:
     """Resolve public brand details at send time without storing them in queue rows."""
-    del language
+    language = language if language in {"ar", "en", "fr"} else "ar"
     site_setting = None
     try:
         from apps.core.branding import BRAND_NAME
@@ -100,22 +104,86 @@ def _email_brand_context(language: str) -> dict[str, str]:
 
     brand_name = BRAND_NAME
     contact_phone = settings.EMAIL_CONTACT_PHONE
+    whatsapp_display = settings.WHATSAPP_CONTACT_NUMBER
+    support_email = settings.SUPPORT_EMAIL
+    tagline_defaults = {
+        "ar": "إقامة ذكية بتفاصيل استثنائية",
+        "en": "Smart stays, exceptional details",
+        "fr": "Séjours intelligents, détails d’exception",
+    }
+    whatsapp_greetings = {
+        "ar": "مرحبًا، أحتاج إلى مساعدة من فريق Luxury Smart Apartments.",
+        "en": "Hello, I need help from the Luxury Smart Apartments team.",
+        "fr": "Bonjour, j’ai besoin de l’aide de l’équipe Luxury Smart Apartments.",
+    }
+    tagline = tagline_defaults[language]
+    office_hours = ""
+    public_address = ""
+    whatsapp_url = ""
+    instagram_url = ""
+    facebook_url = ""
+    x_url = ""
+    linkedin_url = ""
     if site_setting is not None:
         contact_phone = (
             site_setting.contact_phone
             or site_setting.whatsapp_display_number
             or contact_phone
         )
+        whatsapp_display = (
+            site_setting.whatsapp_display_number
+            or site_setting.contact_phone
+            or whatsapp_display
+        )
+        support_email = site_setting.contact_email or support_email
+        tagline = getattr(site_setting, f"tagline_{language}") or tagline
+        office_hours = getattr(site_setting, f"office_hours_{language}")
+        public_address = getattr(site_setting, f"public_address_{language}")
+        whatsapp_url = site_setting.whatsapp_url
+        instagram_url = site_setting.instagram_url
+        facebook_url = site_setting.facebook_url
+        x_url = site_setting.x_url
+        linkedin_url = site_setting.linkedin_url
+
+    whatsapp_digits = "".join(character for character in whatsapp_display if character.isdigit())
+    if whatsapp_digits.startswith("00"):
+        whatsapp_digits = whatsapp_digits[2:]
+    elif whatsapp_digits.startswith("0"):
+        whatsapp_digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{whatsapp_digits.lstrip('0')}"
+    elif (
+        whatsapp_digits
+        and not whatsapp_digits.startswith(settings.WHATSAPP_DEFAULT_COUNTRY_CODE)
+        and len(whatsapp_digits) <= 9
+    ):
+        whatsapp_digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{whatsapp_digits}"
+    if not whatsapp_url and whatsapp_digits:
+        whatsapp_url = (
+            f"https://wa.me/{whatsapp_digits}?text={quote(whatsapp_greetings[language])}"
+        )
+
     site_url = f"{settings.SITE_BASE_URL.rstrip('/')}/"
+    site_base_url = settings.SITE_BASE_URL.rstrip("/")
     configured_logo = settings.EMAIL_LOGO_URL.strip()
     logo_url = urljoin(site_url, configured_logo or "static/images/logo.jpeg")
     return {
         "brand_name": brand_name,
-        "site_base_url": settings.SITE_BASE_URL.rstrip("/"),
+        "tagline": tagline,
+        "site_base_url": site_base_url,
         "site_url": site_url,
         "logo_url": logo_url,
         "contact_phone": contact_phone,
-        "support_email": settings.SUPPORT_EMAIL,
+        "support_email": support_email,
+        "whatsapp_display": whatsapp_display,
+        "whatsapp_url": whatsapp_url,
+        "contact_url": f"{site_base_url}/contact/",
+        "privacy_url": f"{site_base_url}/legal/privacy/",
+        "terms_url": f"{site_base_url}/legal/terms/",
+        "office_hours": office_hours,
+        "public_address": public_address,
+        "instagram_url": instagram_url,
+        "facebook_url": facebook_url,
+        "x_url": x_url,
+        "linkedin_url": linkedin_url,
     }
 
 
@@ -262,7 +330,7 @@ TEMPLATE_GROUPS = {
     "reservation_creation_failed": "reservation",
     "reservation_unknown": "reservation",
     "reservation_cancelled": "reservation",
-    "reservation_modified": "reservation",
+    "reservation_modified": "modification",
     "daily_operations_summary": "operations",
     "account_verify_email": "account",
     "account_password_reset": "account",
@@ -420,6 +488,13 @@ def _provider_name() -> str:
     return DjangoEmailProvider.name
 
 
+def _dispatch_email_delivery(delivery_id: object) -> None:
+    """Dispatch immediately; the periodic queue remains the recovery path."""
+    from apps.notifications.tasks import send_email_delivery_task
+
+    send_email_delivery_task.delay(str(delivery_id))
+
+
 def queue_email(
     *,
     message_type: str,
@@ -436,7 +511,7 @@ def queue_email(
         if settings.EMAIL_DELIVERY_ENABLED
         else EmailDelivery.Status.DISABLED
     )
-    delivery, _ = EmailDelivery.objects.get_or_create(
+    delivery, created = EmailDelivery.objects.get_or_create(
         idempotency_key=idempotency_key,
         defaults={
             "message_type": message_type,
@@ -455,6 +530,11 @@ def queue_email(
             ),
         },
     )
+    if created and delivery.status == EmailDelivery.Status.QUEUED:
+        transaction.on_commit(
+            lambda: _dispatch_email_delivery(delivery.pk),
+            robust=True,
+        )
     return delivery
 
 
@@ -521,6 +601,7 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             "currency": intent.currency,
         }
     if delivery.recipient_source == "modification":
+        from apps.payments.models import PaymentAttempt
         from apps.reservations.models import BookingModificationRequest
 
         modification = BookingModificationRequest.objects.select_related(
@@ -530,6 +611,44 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         intent = modification.reservation.booking_intent
         if intent is None:
             raise EmailProviderError("recipient_not_available", permanent=True)
+        is_completed_modification = delivery.message_type == "reservation_modified"
+        paid_amount = None
+        if is_completed_modification and modification.price_difference > 0:
+            paid_amount = (
+                PaymentAttempt.objects.filter(
+                    modification_request=modification,
+                    status=PaymentAttempt.Status.SUCCEEDED,
+                    amount=modification.price_difference,
+                    currency=modification.currency,
+                    verified_at__isnull=False,
+                )
+                .order_by("-verified_at")
+                .values_list("amount", flat=True)
+                .first()
+            )
+        request_type_labels = {
+            "ar": {
+                BookingModificationRequest.RequestType.EXTEND_STAY: "تمديد الإقامة",
+                BookingModificationRequest.RequestType.CHANGE_DATES: "تغيير التواريخ",
+                BookingModificationRequest.RequestType.CHANGE_GUESTS: "تغيير عدد الضيوف",
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION: "إلغاء الحجز",
+            },
+            "en": {
+                BookingModificationRequest.RequestType.EXTEND_STAY: "Stay extension",
+                BookingModificationRequest.RequestType.CHANGE_DATES: "Date change",
+                BookingModificationRequest.RequestType.CHANGE_GUESTS: "Guest-count change",
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION: "Booking cancellation",
+            },
+            "fr": {
+                BookingModificationRequest.RequestType.EXTEND_STAY: "Prolongation du séjour",
+                BookingModificationRequest.RequestType.CHANGE_DATES: "Changement de dates",
+                BookingModificationRequest.RequestType.CHANGE_GUESTS: "Modification des voyageurs",
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION: (
+                    "Annulation de la réservation"
+                ),
+            },
+        }
+        language = delivery.language if delivery.language in request_type_labels else "ar"
         return intent.guest_email, {
             "reference": modification.reservation.public_reference,
             "request_reference": modification.public_reference,
@@ -555,6 +674,23 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
                 else modification.reservation.total_price
             ),
             "currency": modification.currency,
+            "is_completed_modification": is_completed_modification,
+            "modification_type": request_type_labels[language][modification.request_type],
+            "old_check_in": modification.old_check_in.strftime("%d/%m/%Y"),
+            "old_check_out": modification.old_check_out.strftime("%d/%m/%Y"),
+            "old_guests": modification.old_guests,
+            "old_total": _format_money(modification.old_total),
+            "new_total": _format_money(
+                modification.new_total
+                if modification.new_total is not None
+                else modification.reservation.total_price
+            ),
+            "amount_paid": _format_money(paid_amount) if paid_amount is not None else "",
+            "refund_amount": (
+                _format_money(modification.refund_amount)
+                if is_completed_modification and modification.refund_amount > 0
+                else ""
+            ),
             "manage_url": f"{settings.SITE_BASE_URL}/reservations/manage/",
         }
     if delivery.recipient_source == "reservation":
@@ -590,6 +726,11 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             raise EmailProviderError("support_email_not_configured", permanent=True)
         return settings.SUPPORT_EMAIL, {}
     raise EmailProviderError("unsupported_recipient_source", permanent=True)
+
+
+def _format_money(value: Decimal) -> str:
+    """Render supported booking currencies with stable, human-readable precision."""
+    return f"{value.quantize(Decimal('0.01')):,.2f}"
 
 
 def _localized_property_name(property_obj: object, language: str) -> str:

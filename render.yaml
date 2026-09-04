@@ -154,6 +154,8 @@ services:
         value: "15"
       - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
         value: "1"
+      - key: HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES
+        value: "1"
       - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
         value: "5"
       # Reception and processing of Hostaway's unified webhook. The endpoint
@@ -169,18 +171,18 @@ services:
         sync: false
 
       # --- Email --------------------------------------------------------
-      # Production settings reject the console backend once delivery is on,
-      # so delivery stays off until real SMTP credentials are entered.
+      # Google Workspace carries the transactional messages. The dedicated app
+      # password remains a dashboard secret and is shared with the worker below.
       - key: EMAIL_DELIVERY_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
-        sync: false
+        value: smtp.gmail.com
       - key: EMAIL_PORT
         value: "587"
       - key: EMAIL_HOST_USER
-        sync: false
+        value: saeed@luxurysmartapartments.com
       - key: EMAIL_HOST_PASSWORD
         sync: false
       - key: EMAIL_USE_TLS
@@ -188,13 +190,21 @@ services:
       - key: EMAIL_USE_SSL
         value: "False"
       - key: DEFAULT_FROM_EMAIL
-        sync: false
+        value: Luxury Smart Apartments <notifications@luxurysmartapartments.com>
+      - key: EMAIL_REPLY_TO
+        value: saeed@luxurysmartapartments.com
       - key: SUPPORT_EMAIL
-        sync: false
+        value: saeed@luxurysmartapartments.com
       - key: OPERATIONS_EMAIL
-        sync: false
+        value: saeed@luxurysmartapartments.com
+      - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
+      - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
-        value: "False"
+        value: "True"
 
       # --- Site ---------------------------------------------------------
       # Public origin of the service. Not a secret, so it lives in the blueprint
@@ -284,6 +294,8 @@ services:
         value: "15"
       - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
         value: "1"
+      - key: HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES
+        value: "1"
       - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
         value: "5"
       # Must match the web service: the payments checks run in every process,
@@ -343,9 +355,40 @@ services:
         value: "False"
 
       - key: EMAIL_DELIVERY_ENABLED
+        value: "True"
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_HOST_PASSWORD
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: EMAIL_HOST_PASSWORD
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_USE_SSL
         value: "False"
+      - key: DEFAULT_FROM_EMAIL
+        value: Luxury Smart Apartments <notifications@luxurysmartapartments.com>
+      - key: EMAIL_REPLY_TO
+        value: saeed@luxurysmartapartments.com
+      - key: SUPPORT_EMAIL
+        value: saeed@luxurysmartapartments.com
+      - key: OPERATIONS_EMAIL
+        value: saeed@luxurysmartapartments.com
+      - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
+      - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       - key: SITE_BASE_URL

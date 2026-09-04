@@ -11,10 +11,12 @@ from django.db import DatabaseError
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.views import View
 
+from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_choices
 from apps.properties.models import Property, PropertyImage
 
@@ -112,8 +114,119 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
 class AvailabilitySearchView(View):
     """Create a persisted, session-owned quote after live verification."""
 
-    http_method_names = ["post"]
+    http_method_names = ["get", "post"]
     service_class = AvailabilityService
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        """Re-render a read-only portfolio search after a preference change."""
+
+        if is_rate_limited(
+            request,
+            scope="quote-create",
+            requests=settings.AVAILABILITY_RATE_LIMIT_REQUESTS,
+            window=settings.AVAILABILITY_RATE_LIMIT_WINDOW,
+        ):
+            return render(
+                request,
+                "reservations/availability_result.html",
+                {
+                    "rate_limited": True,
+                    "user_message": _("Too many checks. Please wait and try again."),
+                },
+                status=429,
+            )
+        form = AvailabilitySearchForm(request.GET)
+        if not form.is_valid() or form.cleaned_data.get("property") is not None:
+            return redirect("properties:list")
+        return self._render_city_search(request, form)
+
+    def _render_city_search(
+        self,
+        request: HttpRequest,
+        form: AvailabilitySearchForm,
+    ) -> HttpResponse:
+        city = str(form.cleaned_data.get("city") or "")
+        check_in = form.cleaned_data["check_in"]
+        check_out = form.cleaned_data["check_out"]
+        guests = form.cleaned_data["guests"]
+        properties = Property.objects.public()
+        if city:
+            properties = properties.filter(city=city)
+        properties = (
+            properties.filter(Q(person_capacity__gte=guests) | Q(person_capacity__isnull=True))
+            .prefetch_related(
+                Prefetch(
+                    "images",
+                    queryset=PropertyImage.objects.public().order_by(
+                        "-is_cover",
+                        "sort_order",
+                        "hostaway_sort_order",
+                        "id",
+                    )[:5],
+                    to_attr="_public_images",
+                )
+            )
+            .order_by("-is_featured", "sort_order", "id")
+        )
+        available_results: list[dict[str, object]] = []
+        with self.service_class() as service:
+            for candidate in properties:
+                # Portfolio browsing reads the shared Hostaway cache. The binding
+                # quote and payment steps still revalidate independently.
+                availability = service.check(
+                    AvailabilityRequest(
+                        property=candidate,
+                        check_in=check_in,
+                        check_out=check_out,
+                        guests=guests,
+                    ),
+                    bypass_cache=False,
+                )
+                if availability.is_available and availability.quote is not None:
+                    available_results.append(
+                        {
+                            "property": candidate,
+                            "availability": availability,
+                            "detail_url": (
+                                f"{candidate.get_absolute_url()}?"
+                                + urlencode(
+                                    {
+                                        "source": "availability",
+                                        "check_in": check_in.isoformat(),
+                                        "check_out": check_out.isoformat(),
+                                        "guests": guests,
+                                    }
+                                )
+                            ),
+                        }
+                    )
+        language = translation.get_language() or "ar"
+        city_label = dict(supported_city_choices(language)).get(city, city) if city else ""
+        search = {
+            "city": city,
+            "check_in": check_in,
+            "check_out": check_out,
+            "guests": guests,
+        }
+        query = urlencode(
+            {
+                "city": city,
+                "check_in": check_in.isoformat(),
+                "check_out": check_out.isoformat(),
+                "guests": guests,
+            }
+        )
+        return render(
+            request,
+            "reservations/availability_result.html",
+            {
+                "city_search": True,
+                "availability_results": available_results,
+                "searched_city": city_label,
+                "search": search,
+                "currency_return_url": f"{reverse('reservations:quote_create')}?{query}",
+            },
+        )
 
     def post(self, request: HttpRequest) -> HttpResponse:
         if is_rate_limited(
@@ -142,87 +255,12 @@ class AvailabilitySearchView(View):
             )
 
         property_obj = form.cleaned_data.get("property")
-        # City is optional: an empty value searches every published city.
-        city = str(form.cleaned_data.get("city") or "")
         check_in = form.cleaned_data["check_in"]
         check_out = form.cleaned_data["check_out"]
         guests = form.cleaned_data["guests"]
 
         if property_obj is None:
-            properties = Property.objects.public()
-            if city:
-                properties = properties.filter(city=city)
-            properties = (
-                properties.filter(
-                    Q(person_capacity__gte=guests) | Q(person_capacity__isnull=True)
-                )
-                .prefetch_related(
-                    Prefetch(
-                        "images",
-                        queryset=PropertyImage.objects.public().order_by(
-                            "-is_cover",
-                            "sort_order",
-                            "hostaway_sort_order",
-                            "id",
-                        )[:5],
-                        to_attr="_public_images",
-                    )
-                )
-                .order_by("-is_featured", "sort_order", "id")
-            )
-            available_results: list[dict[str, object]] = []
-            with self.service_class() as service:
-                for candidate in properties:
-                    # Browsing a city (or the whole portfolio) sweeps every candidate,
-                    # so it reads the shared calendar and price cache instead of
-                    # calling Hostaway per listing. Nothing binding is created here;
-                    # the quote, payment, and booking steps still verify live.
-                    availability = service.check(
-                        AvailabilityRequest(
-                            property=candidate,
-                            check_in=check_in,
-                            check_out=check_out,
-                            guests=guests,
-                        ),
-                        bypass_cache=False,
-                    )
-                    if availability.is_available and availability.quote is not None:
-                        available_results.append(
-                            {
-                                "property": candidate,
-                                "availability": availability,
-                                "detail_url": (
-                                    f"{candidate.get_absolute_url()}?"
-                                    + urlencode(
-                                        {
-                                            "source": "availability",
-                                            "check_in": check_in.isoformat(),
-                                            "check_out": check_out.isoformat(),
-                                            "guests": guests,
-                                        }
-                                    )
-                                ),
-                            }
-                        )
-            language = translation.get_language() or "ar"
-            city_label = (
-                dict(supported_city_choices(language)).get(city, city) if city else ""
-            )
-            return render(
-                request,
-                "reservations/availability_result.html",
-                {
-                    "city_search": True,
-                    "availability_results": available_results,
-                    "searched_city": city_label,
-                    "search": {
-                        "city": city,
-                        "check_in": check_in,
-                        "check_out": check_out,
-                        "guests": guests,
-                    },
-                },
-            )
+            return self._render_city_search(request, form)
 
         assert isinstance(property_obj, Property)
         availability_request = AvailabilityRequest(
@@ -236,6 +274,7 @@ class AvailabilitySearchView(View):
                 creation = service.create_booking_quote(
                     availability_request,
                     session_hash=session_key_hash(request),
+                    selected_display_currency=selected_currency(request),
                     bypass_cache=True,
                 )
         except ValueError:
@@ -321,28 +360,52 @@ class GuestDetailsView(View):
                 _quote_context(quote, form),
                 status=400,
             )
-        if quote.is_expired and quote.status == BookingQuote.Status.ACTIVE:
-            BookingQuote.objects.filter(
-                pk=quote.pk,
-                status=BookingQuote.Status.ACTIVE,
-            ).update(status=BookingQuote.Status.EXPIRED)
-            quote.status = BookingQuote.Status.EXPIRED
         if not verify_quote_fingerprint(quote):
             BookingQuote.objects.filter(pk=quote.pk).update(
                 status=BookingQuote.Status.INVALIDATED,
                 invalidated_at=timezone.now(),
             )
             quote.status = BookingQuote.Status.INVALIDATED
-        if quote.status != BookingQuote.Status.ACTIVE:
-            messages.error(request, _("This quote is no longer valid. Please request a new one."))
-            return redirect("reservations:quote_detail", reference=reference)
-
         availability_request = AvailabilityRequest(
             property=quote.property,
             check_in=quote.check_in,
             check_out=quote.check_out,
             guests=quote.guests,
         )
+        if quote.is_expired and quote.status == BookingQuote.Status.ACTIVE:
+            BookingQuote.objects.filter(
+                pk=quote.pk,
+                status=BookingQuote.Status.ACTIVE,
+            ).update(status=BookingQuote.Status.EXPIRED)
+            quote.status = BookingQuote.Status.EXPIRED
+            logger.info(
+                "FX_QUOTE_EXPIRED quote_id=%s source_currency=%s",
+                quote.pk,
+                quote.currency,
+            )
+            try:
+                with self.service_class() as service:
+                    replacement = service.create_booking_quote(
+                        availability_request,
+                        session_hash=session_key_hash(request),
+                        selected_display_currency=selected_currency(request),
+                        bypass_cache=True,
+                    )
+            except ValueError:
+                replacement = None
+            if replacement and replacement.quote:
+                messages.warning(
+                    request,
+                    _("The previous quote expired. Please review the refreshed price."),
+                )
+                return redirect(
+                    "reservations:quote_detail",
+                    reference=quote_reference(replacement.quote),
+                )
+        if quote.status != BookingQuote.Status.ACTIVE:
+            messages.error(request, _("This quote is no longer valid. Please request a new one."))
+            return redirect("reservations:quote_detail", reference=reference)
+
         with self.service_class() as service:
             revalidated = service.check(availability_request, bypass_cache=True)
 
@@ -366,6 +429,7 @@ class GuestDetailsView(View):
                 "marketing_consent": form.cleaned_data["marketing_consent"],
             },
             revalidated=revalidated,
+            selected_display_currency=selected_currency(request),
         )
         if outcome.intent is not None:
             if (

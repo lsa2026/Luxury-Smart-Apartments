@@ -1,30 +1,38 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<body style="margin:0;padding:0;background:#f3f0e9;color:#17231f;font-family:Tahoma,Arial,sans-serif">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0">{{ message|striptags|truncatechars:120 }}</div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f0e9">
-    <tr><td align="center" style="padding:28px 12px">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:660px;border-radius:22px;overflow:hidden;background:#ffffff;box-shadow:0 14px 45px rgba(16,44,36,.10)">
-        <tr><td style="padding:28px 34px;background:#0c2d26;text-align:center">
-          <a href="{{ site_url }}" style="text-decoration:none;color:#ffffff">
-            <img src="{{ logo_url }}" width="76" height="76" alt="شعار {{ brand_name }}" style="display:block;margin:0 auto 12px;border:3px solid #d5bc84;border-radius:50%;object-fit:cover;background:#ffffff">
-            <strong style="display:block;font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:1.4;color:#ffffff">{{ brand_name }}</strong>
-            <span style="display:block;margin-top:5px;color:#d5bc84;font-size:11px;letter-spacing:.08em">إقامة ذكية بتفاصيل استثنائية</span>
+<body style="margin:0;padding:0;background:#f1eee7;color:#17231f;font-family:Tahoma,Arial,sans-serif">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">{{ message|striptags|truncatechars:120 }}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f1eee7" style="width:100%;background:#f1eee7">
+    <tr><td align="center" style="padding:34px 12px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:680px;overflow:hidden;border:1px solid #e5dfd3;border-radius:22px;background:#ffffff;box-shadow:0 16px 50px rgba(12,45,38,.12)">
+        <tr><td align="center" bgcolor="#0c2d26" style="padding:31px 34px 27px;background:#0c2d26;text-align:center">
+          <a href="{{ site_url }}" style="display:block;text-decoration:none;color:#ffffff">
+            <img src="{{ logo_url }}" width="82" height="82" alt="شعار {{ brand_name }}" style="display:block;width:82px;height:82px;margin:0 auto 13px;border:3px solid #d5bc84;border-radius:50%;object-fit:cover;background:#ffffff">
+            <strong style="display:block;font-family:Georgia,'Times New Roman',serif;font-size:23px;line-height:1.4;color:#ffffff;letter-spacing:.02em">{{ brand_name }}</strong>
+            <span style="display:block;margin-top:7px;color:#d9c18d;font-size:12px;line-height:1.8">{{ tagline }}</span>
           </a>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:16px auto 0"><tr><td width="58" height="2" bgcolor="#c8a96a" style="width:58px;height:2px;background:#c8a96a;font-size:0;line-height:0">&nbsp;</td></tr></table>
         </td></tr>
-        <tr><td style="padding:38px 38px 26px">{% block content %}{% endblock %}</td></tr>
-        <tr><td style="padding:25px 34px;border-top:1px solid #ece7dc;background:#faf8f3;text-align:center">
-          <p style="margin:0 0 13px;color:#263b35;font-size:13px;font-weight:700">نحن هنا لخدمتك</p>
-          <p style="margin:0 0 15px;color:#69756f;font-size:12px;line-height:1.9">
-            {% if contact_phone %}<a href="tel:{{ contact_phone }}" dir="ltr" style="color:#174f43;text-decoration:none">{{ contact_phone }}</a>{% endif %}
-            {% if contact_phone and support_email %}<span style="padding:0 7px;color:#c5b99f">•</span>{% endif %}
-            {% if support_email %}<a href="mailto:{{ support_email }}" style="color:#174f43;text-decoration:none">{{ support_email }}</a>{% endif %}
-          </p>
-          <p style="margin:0 0 15px"><a href="{{ site_url }}" style="color:#a17e42;font-size:12px;font-weight:700;text-decoration:none">زيارة موقع {{ brand_name }} ←</a></p>
-          <p style="margin:0;color:#8a948f;font-size:10px;line-height:1.8"><a href="{{ site_base_url }}/legal/privacy/" style="color:#69756f">سياسة الخصوصية</a> &nbsp;·&nbsp; <a href="{{ site_base_url }}/legal/terms/" style="color:#69756f">الشروط والأحكام</a> &nbsp;·&nbsp; <a href="{{ site_base_url }}/contact/" style="color:#69756f">اتصل بنا</a></p>
+        <tr><td dir="rtl" style="padding:40px 40px 30px;text-align:right">{% block content %}{% endblock %}</td></tr>
+        <tr><td dir="rtl" bgcolor="#f8f5ee" style="padding:30px 32px 25px;border-top:1px solid #e8e1d5;background:#f8f5ee;text-align:center">
+          <p style="margin:0;color:#a17e42;font-size:11px;font-weight:700;letter-spacing:.08em">العناية بالضيوف</p>
+          <h2 style="margin:7px 0 8px;color:#123d34;font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.6">نحن هنا لخدمتك</h2>
+          <p style="margin:0 0 20px;color:#68756f;font-size:12px;line-height:1.9">تواصل مع فريقنا بالطريقة الأنسب لك، وسنسعد بمساعدتك في الحجز والإقامة.</p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-bottom:12px"><tr>
+            {% if contact_phone %}<td width="50%" style="padding:4px"><a href="tel:{{ contact_phone }}" dir="ltr" style="display:block;padding:13px 8px;border:1px solid #d9d0be;border-radius:10px;color:#173e34;font-size:12px;font-weight:700;text-decoration:none">هاتف&nbsp; {{ contact_phone }}</a></td>{% endif %}
+            {% if support_email %}<td width="50%" style="padding:4px"><a href="mailto:{{ support_email }}" dir="ltr" style="display:block;padding:13px 8px;border:1px solid #d9d0be;border-radius:10px;color:#173e34;font-size:12px;font-weight:700;text-decoration:none">{{ support_email }}</a></td>{% endif %}
+          </tr></table>
+          {% if whatsapp_url %}<p style="margin:0 0 10px"><a href="{{ whatsapp_url }}" style="display:block;padding:14px 20px;border-radius:10px;background:#1f7a5a;color:#ffffff;font-size:13px;font-weight:700;text-decoration:none">محادثة فريق الدعم عبر واتساب{% if whatsapp_display %} &nbsp; {{ whatsapp_display }}{% endif %}</a></p>{% endif %}
+          <p style="margin:0 0 18px"><a href="{{ contact_url }}" style="display:inline-block;padding:12px 22px;border-radius:10px;background:#123d34;color:#ffffff;font-size:12px;font-weight:700;text-decoration:none">مركز التواصل والدعم</a></p>
+          {% if office_hours or public_address %}<p style="margin:0 0 17px;color:#68756f;font-size:11px;line-height:1.9">{% if office_hours %}<strong style="color:#354942">ساعات العمل:</strong> {{ office_hours }}{% endif %}{% if office_hours and public_address %}<br>{% endif %}{% if public_address %}<strong style="color:#354942">العنوان:</strong> {{ public_address }}{% endif %}</p>{% endif %}
+          {% if instagram_url or facebook_url or x_url or linkedin_url %}<p dir="ltr" style="margin:0 0 18px;color:#a17e42;font-size:12px;font-weight:700;line-height:2">
+            {% if instagram_url %}<a href="{{ instagram_url }}" style="color:#a17e42;text-decoration:none">Instagram</a>{% endif %}{% if instagram_url and facebook_url %}<span style="padding:0 7px;color:#c5b99f">•</span>{% endif %}{% if facebook_url %}<a href="{{ facebook_url }}" style="color:#a17e42;text-decoration:none">Facebook</a>{% endif %}{% if x_url %}<span style="padding:0 7px;color:#c5b99f">•</span><a href="{{ x_url }}" style="color:#a17e42;text-decoration:none">X</a>{% endif %}{% if linkedin_url %}<span style="padding:0 7px;color:#c5b99f">•</span><a href="{{ linkedin_url }}" style="color:#a17e42;text-decoration:none">LinkedIn</a>{% endif %}
+          </p>{% endif %}
+          <p style="margin:0 0 13px"><a href="{{ site_url }}" style="color:#174f43;font-size:12px;font-weight:700;text-decoration:none">زيارة موقع {{ brand_name }} ←</a></p>
+          <p style="margin:0;color:#89928e;font-size:10px;line-height:1.9"><a href="{{ privacy_url }}" style="color:#69756f">سياسة الخصوصية</a> &nbsp;·&nbsp; <a href="{{ terms_url }}" style="color:#69756f">الشروط والأحكام</a> &nbsp;·&nbsp; <a href="{{ contact_url }}" style="color:#69756f">اتصل بنا</a></p>
         </td></tr>
       </table>
-      <p style="margin:15px 0 0;color:#949c98;font-size:10px">رسالة آلية متعلقة بطلبك، يرجى عدم مشاركة بيانات الحجز.</p>
+      <p dir="rtl" style="margin:16px 0 0;color:#8b9490;font-size:10px;line-height:1.8">رسالة آلية آمنة من {{ brand_name }}. يمكنك الرد عليها مباشرة للتواصل مع فريق الدعم.</p>
     </td></tr>
   </table>
 </body>

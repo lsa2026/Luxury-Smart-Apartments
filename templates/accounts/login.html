@@ -110,6 +110,7 @@
                         </span>
                         {% if form.password.help_text %}<div class="auth-help" id="{{ form.password.auto_id }}_helptext">{{ form.password.help_text|safe }}</div>{% endif %}
                         {{ form.password.errors }}
+                        <a class="text-link" href="{% url 'accounts:password_reset' %}">{% trans "Forgot your password?" %}</a>
                     </div>
                 </div>
             </fieldset>

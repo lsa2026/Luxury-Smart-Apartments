@@ -2,6 +2,12 @@
 
 document.documentElement.classList.add("js");
 
+document.querySelectorAll("[data-currency-selector]").forEach((form) => {
+    form.querySelector("[data-currency-select]")?.addEventListener("change", () => {
+        form.requestSubmit();
+    });
+});
+
 const brandSplash = document.querySelector("[data-brand-splash]");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

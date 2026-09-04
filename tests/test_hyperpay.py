@@ -7,6 +7,7 @@ from django.test import Client, override_settings
 from django.urls import reverse
 
 from apps.payments.checks import hyperpay_configuration_check
+from apps.payments.currency import CurrencyService
 from apps.payments.hyperpay.client import HyperPayClient
 from apps.payments.hyperpay.exceptions import (
     HyperPayCheckoutError,
@@ -26,6 +27,7 @@ from apps.payments.views import (
     HyperPayBookingCheckoutView,
     HyperPayModificationCheckoutView,
     HyperPayResultView,
+    _hyperpay_return_token,
 )
 from apps.reservations.models import (
     BookingIntent,
@@ -92,6 +94,17 @@ class HyperPayStub:
 def payable_intent():
     intent = make_intent()
     intent.total_price = Decimal("1250.0000")
+    with CurrencyService() as service:
+        currency_quote = service.create_quote(
+            source_amount=intent.total_price,
+            source_currency="SAR",
+            display_currency="SAR",
+            quote_created_at=intent.created_at,
+            quote_expires_at=intent.expires_at,
+        )
+    intent.payment_amount_sar = currency_quote.payment_amount_sar
+    intent.selected_display_currency = "SAR"
+    intent.exchange_rate_snapshot = dict(currency_quote.snapshot)
     intent.billing_street1 = "King Fahd Road 10"
     intent.billing_city = "Riyadh"
     intent.billing_state = "Riyadh"
@@ -171,6 +184,22 @@ def test_checkout_creation_persists_unique_traceable_identifiers() -> None:
 
 
 @override_settings(
+    **(HYPERPAY_SETTINGS | {"HOSTAWAY_LIVE_BOOKING_ENABLED": True})
+)
+def test_checkout_refuses_to_charge_without_verified_listing_map_id() -> None:
+    intent = payable_intent()
+    intent.property.hostaway_listing_map_id = None
+    intent.property.save(update_fields=["hostaway_listing_map_id"])
+    client = HyperPayStub()
+
+    with pytest.raises(HyperPayCheckoutError, match="listing_map_id_not_verified"):
+        HyperPayService(client=client).create_checkout(intent)
+
+    assert client.checkout_calls == 0
+    assert PaymentAttempt.objects.count() == 0
+
+
+@override_settings(
     **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
 )
 def test_checkout_revalidates_live_inventory_immediately_before_payment() -> None:
@@ -218,6 +247,26 @@ def test_price_change_blocks_checkout_before_hyperpay() -> None:
     intent.refresh_from_db()
     assert intent.status == BookingIntent.Status.PRICE_CHANGED
     assert client.checkout_calls == 0
+
+
+@override_settings(
+    **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
+)
+def test_wrong_listing_binding_blocks_checkout_before_hyperpay() -> None:
+    intent = payable_intent()
+    current = complete_availability(intent)
+    wrong_listing = replace(current.quote, listing_id=intent.property.hostaway_listing_id + 1)
+    current = replace(current, quote=wrong_listing)
+    client = HyperPayStub()
+
+    with pytest.raises(HyperPayCheckoutError, match="prepayment_price_changed"):
+        HyperPayService(
+            client=client,
+            availability_service=AvailabilityStub(current),
+        ).create_checkout(intent)
+
+    assert client.checkout_calls == 0
+    assert PaymentAttempt.objects.count() == 0
 
 
 @override_settings(**HYPERPAY_SETTINGS)
@@ -600,10 +649,43 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
     assert content.count('data-checkout-method="') == 2
     assert content.count('data-checkout-panel="') == 2
     assert intent.property.display_name in content or "checkout__summary" in content
-    assert "checkout__total" in content
+    assert content.count("checkout__total checkout__total--") == 1
+    assert "checkout__total--display" in content
+    assert "checkout__total--payment" not in content
     assert reverse("reservations:intent_detail", args=[intent.public_reference]) in content
     assert "font-src 'self' data: https://eu-test.oppwa.com" in csp
     assert "unsafe-eval" not in csp
+    assert "return_token=" in content
+
+
+@override_settings(**HYPERPAY_SETTINGS)
+def test_currency_preference_can_return_to_an_existing_booking_checkout() -> None:
+    client = Client()
+    intent = payable_intent()
+    own_intent(client, intent)
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="currency_checkout_12345678",
+        merchant_transaction_id="LSA-currency-view-123456",
+        widget_integrity="sha384-YWJj",
+        amount=intent.payment_amount_sar,
+        currency="SAR",
+        status=PaymentAttempt.Status.PENDING,
+        idempotency_key="currency-view-idempotency-key-12345678",
+    )
+    checkout_url = reverse("payments:hyperpay_booking", args=[intent.public_reference])
+
+    response = client.post(
+        reverse("payments:set_currency"),
+        {"currency": "SAR", "next": checkout_url},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.redirect_chain == [(checkout_url, 302)]
+    assert attempt.provider_checkout_id in response.content.decode()
+    assert Client().get(checkout_url).status_code == 404
 
 
 @override_settings(**HYPERPAY_SETTINGS)
@@ -652,6 +734,11 @@ def test_modification_page_opens_real_hyperpay_difference_checkout(monkeypatch) 
         )
         in content
     )
+    resumed = client.get(
+        reverse("payments:hyperpay_modification", args=[modification.public_reference])
+    )
+    assert resumed.status_code == 200
+    assert attempt.provider_checkout_id in resumed.content.decode()
 
 
 @override_settings(**HYPERPAY_SETTINGS)
@@ -706,3 +793,32 @@ def test_tampered_resource_path_and_idor_are_rejected(monkeypatch) -> None:
     assert tampered.status_code == 404
     assert stranger.status_code == 404
     assert ResultViewServiceStub.calls == 0
+
+
+@override_settings(**HYPERPAY_SETTINGS)
+def test_signed_return_token_makes_duplicate_provider_return_idempotent(monkeypatch) -> None:
+    intent = payable_intent()
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="duplicate_return_checkout_12345678",
+        merchant_transaction_id="LSA-duplicate-return-123456",
+        amount=intent.payment_amount_sar,
+        currency="SAR",
+        status=PaymentAttempt.Status.PENDING,
+        idempotency_key="duplicate-return-idempotency-key-123456",
+    )
+    ResultViewServiceStub.calls = 0
+    ResultViewServiceStub.outcome = VerificationOutcome(attempt, HyperPayStatus.FAILED)
+    monkeypatch.setattr(HyperPayResultView, "service_class", ResultViewServiceStub)
+    query = {
+        "return_token": _hyperpay_return_token(attempt),
+        "resourcePath": f"/v1/checkouts/{attempt.provider_checkout_id}/payment",
+    }
+
+    first = Client().get(reverse("payments:hyperpay_result", args=[attempt.pk]), query)
+    second = Client().get(reverse("payments:hyperpay_result", args=[attempt.pk]), query)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert ResultViewServiceStub.calls == 2
