@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from apps.payments.currency import PAYMENT_CURRENCY
 from apps.payments.models import PaymentAttempt
 
 from ..models import BookingModificationRequest, RefundObligation
@@ -39,8 +40,8 @@ def execute_automatic_modification(
             paid = PaymentAttempt.objects.filter(
                 modification_request=modification,
                 status=PaymentAttempt.Status.SUCCEEDED,
-                amount=modification.price_difference,
-                currency=modification.currency,
+                amount=modification.payment_amount_sar,
+                currency=PAYMENT_CURRENCY,
                 verified_at__isnull=False,
             ).exists()
             if paid:
@@ -66,8 +67,8 @@ def execute_automatic_modification(
             paid = PaymentAttempt.objects.filter(
                 modification_request=locked,
                 status=PaymentAttempt.Status.SUCCEEDED,
-                amount=locked.price_difference,
-                currency=locked.currency,
+                amount=locked.payment_amount_sar,
+                currency=PAYMENT_CURRENCY,
                 verified_at__isnull=False,
             ).first()
             if paid is None:

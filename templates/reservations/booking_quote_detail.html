@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n presentation %}
+{% load i18n presentation currency %}
 
 {% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
@@ -99,7 +99,7 @@
 
                     <div class="quote-review__price">
                         <span>{% trans "Total price" %}</span>
-                        <strong>{{ quote.total_price|localized_money:quote.currency }}</strong>
+                        <strong>{% display_money quote.total_price quote.currency quote.exchange_rate_snapshot %}</strong>
                     </div>
 
                     {% if quote.components %}
@@ -109,7 +109,7 @@
                             {% for component in quote.components %}
                             <li>
                                 <span>{{ component.title|localized_price_component }}</span>
-                                <strong>{{ component|price_component_amount|localized_money:quote.currency }}</strong>
+                                <strong>{% display_money component|price_component_amount quote.currency quote.exchange_rate_snapshot %}</strong>
                             </li>
                             {% endfor %}
                         </ul>

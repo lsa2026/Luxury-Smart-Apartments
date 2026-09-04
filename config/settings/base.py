@@ -91,6 +91,52 @@ if CACHE_URL:
         "LOCATION": CACHE_URL,
     }
 
+# Display currencies are converted through SAR. SAR remains the sole payment
+# and accounting currency sent to HyperPay.
+FX_PROVIDER_URL = env(
+    "FX_PROVIDER_URL",
+    default="https://open.er-api.com/v6/latest/SAR",
+).strip()
+FX_PROVIDER_NAME = env("FX_PROVIDER_NAME", default="open.er-api.com").strip()
+FX_BASE_CURRENCY = env("FX_BASE_CURRENCY", default="SAR").strip().upper()
+FX_SUPPORTED_CURRENCIES = tuple(
+    code.strip().upper()
+    for code in env.list(
+        "FX_SUPPORTED_CURRENCIES",
+        default=["SAR", "MAD", "EUR", "USD"],
+    )
+    if code.strip()
+)
+FX_CURRENCY_MINOR_UNITS = {"SAR": 2, "MAD": 2, "EUR": 2, "USD": 2}
+FX_RATE_CACHE_TTL_SECONDS = env.int("FX_RATE_CACHE_TTL_SECONDS", default=3600)
+FX_LKG_MAX_AGE_SECONDS = env.int("FX_LKG_MAX_AGE_SECONDS", default=172800)
+FX_REFRESH_LOCK_TTL_SECONDS = env.int("FX_REFRESH_LOCK_TTL_SECONDS", default=15)
+FX_REFRESH_LOCK_WAIT_SECONDS = env.float("FX_REFRESH_LOCK_WAIT_SECONDS", default=10.0)
+FX_REQUEST_CONNECT_TIMEOUT = env.float("FX_REQUEST_CONNECT_TIMEOUT", default=3.0)
+FX_REQUEST_READ_TIMEOUT = env.float("FX_REQUEST_READ_TIMEOUT", default=5.0)
+FX_PREFERENCE_COOKIE = "lsa_display_currency"
+FX_PREFERENCE_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60
+
+parsed_fx_provider_url = urlparse(FX_PROVIDER_URL)
+if (
+    parsed_fx_provider_url.scheme != "https"
+    or not parsed_fx_provider_url.netloc
+    or FX_BASE_CURRENCY != "SAR"
+    or set(FX_SUPPORTED_CURRENCIES) != {"SAR", "MAD", "EUR", "USD"}
+    or FX_RATE_CACHE_TTL_SECONDS <= 0
+    or FX_LKG_MAX_AGE_SECONDS <= FX_RATE_CACHE_TTL_SECONDS
+    or FX_REFRESH_LOCK_TTL_SECONDS <= 0
+    or FX_REFRESH_LOCK_WAIT_SECONDS <= 0
+    or FX_REFRESH_LOCK_TTL_SECONDS
+    <= FX_REQUEST_CONNECT_TIMEOUT + FX_REQUEST_READ_TIMEOUT
+    or FX_REQUEST_CONNECT_TIMEOUT <= 0
+    or FX_REQUEST_READ_TIMEOUT <= 0
+    or not FX_PROVIDER_NAME
+):
+    raise ImproperlyConfigured(
+        "FX configuration requires HTTPS, SAR base, and SAR/MAD/EUR/USD support."
+    )
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": ("django.contrib.auth.password_validation.UserAttributeSimilarityValidator")},
     {
@@ -150,6 +196,9 @@ HOSTAWAY_MAX_GET_ATTEMPTS = 3
 # Read by availability browsing only; every binding step bypasses the cache.
 HOSTAWAY_CALENDAR_CACHE_TTL = env.int("HOSTAWAY_CALENDAR_CACHE_TTL", default=60)
 HOSTAWAY_PRICE_CACHE_TTL = env.int("HOSTAWAY_PRICE_CACHE_TTL", default=60)
+HOSTAWAY_LISTING_CURRENCY_CACHE_TTL = env.int(
+    "HOSTAWAY_LISTING_CURRENCY_CACHE_TTL", default=300
+)
 HOSTAWAY_TOKEN_CACHE_ALIAS = "default"
 HOSTAWAY_TOKEN_CACHE_SAFETY_SECONDS = 300
 HOSTAWAY_REQUIRE_SHARED_TOKEN_CACHE = False
@@ -243,6 +292,9 @@ HYPERPAY_PAYMENT_TYPE = env("HYPERPAY_PAYMENT_TYPE", default="DB").strip().upper
 HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED = strict_bool(
     "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED",
     True,
+)
+HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
+    "HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS", default=86400
 )
 HYPERPAY_CONNECT_TIMEOUT = 5.0
 HYPERPAY_READ_TIMEOUT = 20.0

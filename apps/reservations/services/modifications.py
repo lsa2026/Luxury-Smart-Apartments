@@ -13,6 +13,7 @@ from django.utils.html import strip_tags
 
 from apps.integrations.hostaway.availability_validators import PriceQuote
 from apps.integrations.hostaway.exceptions import HostawayError
+from apps.payments.currency import CurrencyError, CurrencyService
 
 from ..models import BookingModificationRequest, Reservation
 from .availability import (
@@ -40,13 +41,22 @@ class ModificationRevalidation:
 class ModificationService:
     """Creates local requests only; it has no Hostaway write methods."""
 
-    def __init__(self, *, availability_service: AvailabilityService | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        availability_service: AvailabilityService | None = None,
+        currency_service: CurrencyService | None = None,
+    ) -> None:
         self.availability_service = availability_service or AvailabilityService()
         self._owns_service = availability_service is None
+        self.currency_service = currency_service or CurrencyService()
+        self._owns_currency_service = currency_service is None
 
     def close(self) -> None:
         if self._owns_service:
             self.availability_service.close()
+        if self._owns_currency_service:
+            self.currency_service.close()
 
     def __enter__(self) -> "ModificationService":
         return self
@@ -97,7 +107,7 @@ class ModificationService:
                 check_in=reservation.check_in,
                 check_out=new_check_out,
                 guests=reservation.guests,
-                fallback_currency=reservation.currency,
+                bypass_currency_cache=True,
             )
         except (HostawayError, ValueError):
             return ModificationCreation("hostaway_temporarily_unavailable")
@@ -264,7 +274,7 @@ class ModificationService:
                     check_in=modification.new_check_in,
                     check_out=modification.new_check_out,
                     guests=modification.new_guests,
-                    fallback_currency=reservation.currency,
+                    bypass_currency_cache=True,
                 )
             else:
                 result = self.availability_service.check(
@@ -292,8 +302,8 @@ class ModificationService:
             return ModificationRevalidation("price_changed", quote)
         return ModificationRevalidation("ready", quote)
 
-    @staticmethod
     def _persist_priced_request(
+        self,
         reservation: Reservation,
         *,
         request_type: str,
@@ -335,6 +345,29 @@ class ModificationService:
             and arrival - timezone.now() <= cutoff
         ):
             status = BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
+        now = timezone.now()
+        expires_at = BookingModificationRequest.default_expiry()
+        payment_amount_sar = None
+        fx_snapshot: dict[str, object] = {}
+        if difference > 0:
+            display_currency = (
+                reservation.booking_intent.selected_display_currency
+                if reservation.booking_intent_id
+                and reservation.booking_intent.selected_display_currency
+                else "SAR"
+            )
+            try:
+                currency_quote = self.currency_service.create_quote(
+                    source_amount=difference,
+                    source_currency=quote.currency,
+                    display_currency=display_currency,
+                    quote_created_at=now,
+                    quote_expires_at=expires_at,
+                )
+            except CurrencyError:
+                return ModificationCreation("fx_unavailable")
+            payment_amount_sar = currency_quote.payment_amount_sar
+            fx_snapshot = dict(currency_quote.snapshot)
         snapshot = {
             "price_version": 2,
             "components": sanitized_components(quote),
@@ -355,6 +388,7 @@ class ModificationService:
                 for item in quote.components
             ],
             "calculated_at": quote.calculated_at.isoformat(),
+            "fx": fx_snapshot,
         }
         request = BookingModificationRequest(
             reservation=reservation,
@@ -369,12 +403,13 @@ class ModificationService:
             old_total=reservation.total_price,
             new_total=quote.total_price,
             price_difference=difference,
+            payment_amount_sar=payment_amount_sar,
             currency=quote.currency,
             reason=_clean_reason(reason),
             quote_snapshot=snapshot,
             idempotency_key=key,
             session_key_hash=session_hash,
-            expires_at=BookingModificationRequest.default_expiry(),
+            expires_at=expires_at,
         )
         request.full_clean()
         with transaction.atomic():

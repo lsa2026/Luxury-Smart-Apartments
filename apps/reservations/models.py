@@ -54,6 +54,15 @@ class BookingQuote(models.Model):
     guests = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     currency = models.CharField(max_length=3)
     total_price = models.DecimalField(max_digits=14, decimal_places=4)
+    payment_amount_sar = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    selected_display_currency = models.CharField(max_length=3, blank=True, editable=False)
+    exchange_rate_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     components = models.JSONField(default=list)
     price_version = models.PositiveSmallIntegerField(default=2, editable=False)
     signature = models.CharField(max_length=64, editable=False)
@@ -81,6 +90,11 @@ class BookingQuote(models.Model):
             models.CheckConstraint(
                 condition=Q(total_price__gte=0),
                 name="booking_quote_total_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(payment_amount_sar__isnull=True)
+                | Q(payment_amount_sar__gte=0),
+                name="booking_quote_payment_sar_nonnegative",
             ),
             models.CheckConstraint(
                 condition=Q(check_out__gt=F("check_in")),
@@ -115,6 +129,12 @@ class BookingQuote(models.Model):
             len(self.currency) != 3 or not self.currency.isascii() or not self.currency.isalpha()
         ):
             errors["currency"] = "Currency must be a three-letter code."
+        if self.selected_display_currency and (
+            self.selected_display_currency not in settings.FX_SUPPORTED_CURRENCIES
+        ):
+            errors["selected_display_currency"] = "Display currency is not supported."
+        if not isinstance(self.exchange_rate_snapshot, dict):
+            errors["exchange_rate_snapshot"] = "Exchange-rate snapshot must be an object."
         if self.price_version != 2:
             errors["price_version"] = "Only priceDetails version 2 is supported."
         if not isinstance(self.components, list):
@@ -169,6 +189,15 @@ class BookingIntent(models.Model):
     guests = models.PositiveSmallIntegerField()
     currency = models.CharField(max_length=3)
     total_price = models.DecimalField(max_digits=14, decimal_places=4)
+    payment_amount_sar = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    selected_display_currency = models.CharField(max_length=3, blank=True, editable=False)
+    exchange_rate_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     guest_first_name = models.CharField(max_length=100)
     guest_last_name = models.CharField(max_length=100)
     guest_email = models.EmailField(max_length=254)
@@ -212,6 +241,11 @@ class BookingIntent(models.Model):
                 name="booking_intent_total_nonnegative",
             ),
             models.CheckConstraint(
+                condition=Q(payment_amount_sar__isnull=True)
+                | Q(payment_amount_sar__gte=0),
+                name="booking_intent_payment_sar_nonnegative",
+            ),
+            models.CheckConstraint(
                 condition=Q(check_out__gt=F("check_in")),
                 name="booking_intent_checkout_after_checkin",
             ),
@@ -244,6 +278,12 @@ class BookingIntent(models.Model):
             len(self.currency) != 3 or not self.currency.isascii() or not self.currency.isalpha()
         ):
             errors["currency"] = "Currency must be a three-letter code."
+        if self.selected_display_currency and (
+            self.selected_display_currency not in settings.FX_SUPPORTED_CURRENCIES
+        ):
+            errors["selected_display_currency"] = "Display currency is not supported."
+        if not isinstance(self.exchange_rate_snapshot, dict):
+            errors["exchange_rate_snapshot"] = "Exchange-rate snapshot must be an object."
         from apps.payments.countries import normalize_country_code
 
         try:
@@ -539,6 +579,13 @@ class BookingModificationRequest(models.Model):
     old_total = models.DecimalField(max_digits=14, decimal_places=4)
     new_total = models.DecimalField(max_digits=14, decimal_places=4, null=True, blank=True)
     price_difference = models.DecimalField(max_digits=14, decimal_places=4, default=0)
+    payment_amount_sar = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        editable=False,
+    )
     currency = models.CharField(max_length=3)
     reason = models.CharField(max_length=1000, blank=True)
     quote_snapshot = models.JSONField(default=dict, blank=True, editable=False)
@@ -578,6 +625,11 @@ class BookingModificationRequest(models.Model):
             models.CheckConstraint(
                 condition=Q(new_total__isnull=True) | Q(new_total__gte=0),
                 name="modification_new_total_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(payment_amount_sar__isnull=True)
+                | Q(payment_amount_sar__gte=0),
+                name="modification_payment_sar_nonnegative",
             ),
         ]
         permissions = [
