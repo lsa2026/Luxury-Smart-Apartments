@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from smtplib import SMTPException, SMTPRecipientsRefused
+from smtplib import SMTPAuthenticationError, SMTPException, SMTPRecipientsRefused
 from typing import Any, Protocol
 from urllib.parse import quote, urljoin
 
@@ -78,6 +78,8 @@ class DjangoEmailProvider:
             )
             message.attach_alternative(html_body, "text/html")
             sent_count = message.send(fail_silently=False)
+        except SMTPAuthenticationError as exc:
+            raise EmailProviderError("email_authentication_failed", permanent=True) from exc
         except (BadHeaderError, SMTPRecipientsRefused, ValueError) as exc:
             raise EmailProviderError("invalid_email_message", permanent=True) from exc
         except (TimeoutError, OSError, SMTPException) as exc:

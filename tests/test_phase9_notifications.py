@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from io import StringIO
+from smtplib import SMTPAuthenticationError
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -510,6 +511,33 @@ def test_django_provider_html_escapes_and_has_plain_text() -> None:
     assert "<script>" not in message.alternatives[0].content
     assert "&lt;script&gt;" in message.alternatives[0].content
     assert "Synthetic" in message.body
+
+
+@override_settings(
+    EMAIL_DELIVERY_ENABLED=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="noreply@example.invalid",
+)
+def test_django_provider_classifies_smtp_authentication_failure_as_permanent() -> None:
+    with (
+        patch(
+            "apps.notifications.services.email.EmailMultiAlternatives.send",
+            side_effect=SMTPAuthenticationError(535, b"credentials rejected"),
+        ),
+        pytest.raises(EmailProviderError) as error,
+    ):
+        DjangoEmailProvider().send(
+            EmailMessageRequest(
+                recipient="guest@example.invalid",
+                subject="Synthetic",
+                template_name="contact",
+                language="en",
+                context={"heading": "Synthetic", "message": "Synthetic only"},
+            )
+        )
+
+    assert error.value.code == "email_authentication_failed"
+    assert error.value.permanent is True
 
 
 @override_settings(
