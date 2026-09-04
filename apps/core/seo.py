@@ -8,13 +8,13 @@ from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Avg, Count, Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Q
 from django.http import HttpRequest, HttpResponse
 from django.urls import Resolver404, resolve, reverse
 from django.utils import translation
 
 from apps.properties.models import Property, PropertyImage
-from apps.reviews.models import Review
+from apps.reviews.summary import rating_summary
 
 from .models import LegacyRedirect, SitePage
 
@@ -239,20 +239,15 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
             {"@type": "LocationFeatureSpecification", "name": name, "value": True}
             for name in amenities[:20]
         ]
-    rating = (
-        Review.objects.public()
-        .filter(property=property_obj)
-        .aggregate(
-            average=Avg("rating"),
-            count=Count("id"),
-        )
-    )
-    if rating["average"] is not None and rating["count"]:
+    # The same summary the page renders: aggregateRating must describe ratings
+    # a visitor can actually see, never a wider figure from other channels.
+    summary = rating_summary(property_obj)
+    if summary.has_published:
         data["aggregateRating"] = {
             "@type": "AggregateRating",
-            "ratingValue": round(float(rating["average"]) / 2, 1),
+            "ratingValue": float(summary.published_average_out_of_five),
             "bestRating": 5,
             "worstRating": 0,
-            "reviewCount": rating["count"],
+            "reviewCount": summary.published_count,
         }
     return data

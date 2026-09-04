@@ -20,7 +20,33 @@
         <b>{{ review.rating|rating_out_of_five }}<small>/5</small></b>
     </div>
     <blockquote class="review-card__quote">
-        <p id="review-copy-{{ review.pk }}" data-review-copy{% if review_text|length > 220 %} class="is-collapsible"{% endif %}>{{ review_text|linebreaksbr }}</p>
+        {% comment %}
+            Hostaway merges the channel's answers into one body with English
+            "Positive:" / "Negative:" markers. They are read at display time so
+            the headings are Arabic and a section holding only punctuation is
+            left out; the stored review is never edited.
+        {% endcomment %}
+        <div id="review-copy-{{ review.pk }}" data-review-copy{% if review_text|length > 220 %} class="is-collapsible"{% endif %}>
+            {% with body=review|review_body %}
+            {% if body.has_sections %}
+                {% if body.headline %}<p class="review-card__headline">{{ body.headline|linebreaksbr }}</p>{% endif %}
+                {% if body.positive %}
+                <div class="review-card__aspect review-card__aspect--positive">
+                    <b>{% trans "What they liked" %}</b>
+                    <p>{{ body.positive|linebreaksbr }}</p>
+                </div>
+                {% endif %}
+                {% if body.negative %}
+                <div class="review-card__aspect review-card__aspect--negative">
+                    <b>{% trans "What could be better" %}</b>
+                    <p>{{ body.negative|linebreaksbr }}</p>
+                </div>
+                {% endif %}
+            {% else %}
+                <p>{{ review_text|linebreaksbr }}</p>
+            {% endif %}
+            {% endwith %}
+        </div>
     </blockquote>
     {% if review_text|length > 220 %}
     <button

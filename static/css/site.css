@@ -12299,3 +12299,40 @@ body.splash-active .whatsapp-fab {
     font-size: 0.72rem;
     font-weight: 600;
 }
+
+/* The wider all-channel average, shown beside the page's own figure rather than
+   instead of it, so the two never read as a contradiction. */
+.property-heading__all-channels {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+/* Guest reviews arrive as two labelled halves; the negative half is only
+   rendered when it actually says something. */
+.review-card__aspect {
+    margin-block-start: 0.7rem;
+}
+
+.review-card__aspect b {
+    display: block;
+    margin-block-end: 0.15rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+}
+
+.review-card__aspect--positive b {
+    color: var(--color-success);
+}
+
+.review-card__aspect--negative b {
+    color: var(--color-warning);
+}
+
+.review-card__aspect p {
+    margin: 0;
+}
+
+.review-card__headline {
+    margin: 0 0 0.35rem;
+    font-weight: 700;
+}

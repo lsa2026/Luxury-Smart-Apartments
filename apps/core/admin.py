@@ -86,8 +86,9 @@ class SitePageAdmin(admin.ModelAdmin):
 
 @admin.register(FAQItem)
 class FAQItemAdmin(admin.ModelAdmin):
-    list_display = ("question_ar", "question_en", "question_fr", "sort_order", "is_active")
-    list_filter = ("is_active",)
+    list_display = ("question_ar", "category", "property", "sort_order", "is_active")
+    list_filter = ("is_active", "category", "property")
+    autocomplete_fields = ("property",)
     search_fields = (
         "question_ar",
         "question_en",

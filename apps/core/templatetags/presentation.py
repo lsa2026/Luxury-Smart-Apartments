@@ -2,6 +2,7 @@ import json
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from typing import Final
 
 from django import template
 from django.utils import formats, timezone, translation
@@ -224,6 +225,19 @@ def localized_review_text(review: object) -> str:
         "public_review",
         source_fields=("public_review",),
     )
+
+
+@register.filter
+def review_body(review: object) -> object:
+    """Split a review into headline, positives and negatives for display.
+
+    Hostaway merges the channel's structured answers into one string with
+    English markers. Reading them here keeps the stored row untouched while the
+    page shows Arabic headings and drops a section that says nothing.
+    """
+    from apps.reviews.presentation import parse_review_body
+
+    return parse_review_body(localized_review_text(review))
 
 
 @register.filter
@@ -501,6 +515,21 @@ def localized_count(value: object) -> object:
 
 
 @register.filter
+def localized_decimal(value: object) -> str:
+    """A one-place decimal such as 4.1, in the active language's numerals."""
+    if value in (None, ""):
+        return ""
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError):
+        return ""
+    text = f"{amount}"
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
+@register.filter
 def localized_number(value: object) -> str:
     """Render a plain count with the same numerals used for money and dates."""
     if value in (None, ""):
@@ -539,6 +568,31 @@ def localized_percentage(value: object) -> str:
     if _language() == "ar":
         return text.translate(_ARABIC_DIGITS)
     return text
+
+
+# An Arabic page showing "SAR" reads as untranslated, so the currencies this
+# site actually prices in carry their Arabic symbol. A currency absent here
+# keeps its ISO code, which is correct everywhere and wrong nowhere.
+_ARABIC_CURRENCY_SYMBOLS: Final = {
+    "SAR": "ر.س",
+    "MAD": "د.م",
+    "AED": "د.إ",
+    "KWD": "د.ك",
+    "BHD": "د.ب",
+    "QAR": "ر.ق",
+    "OMR": "ر.ع",
+    "EGP": "ج.م",
+    "USD": "$",
+    "EUR": "€",
+    "GBP": "£",
+}
+
+
+def _currency_label(currency_code: str, language: str) -> str:
+    """The currency as this language writes it."""
+    if language == "ar":
+        return _ARABIC_CURRENCY_SYMBOLS.get(currency_code, currency_code)
+    return currency_code
 
 
 def _currency_precision(currency: str) -> int:
@@ -600,7 +654,7 @@ def localized_money(value: object, currency: object) -> str:
             '<span class="money__currency">{}</span>'
             '<span class="money__amount">{}</span>'
             "</bdi>",
-            currency_code,
+            _currency_label(currency_code, language),
             number,
         )
 
@@ -611,7 +665,7 @@ def localized_money(value: object, currency: object) -> str:
         "</bdi>",
         language,
         number,
-        currency_code,
+        _currency_label(currency_code, language),
     )
 
 
