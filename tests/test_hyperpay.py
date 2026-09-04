@@ -7,6 +7,7 @@ from django.test import Client, override_settings
 from django.urls import reverse
 
 from apps.payments.checks import hyperpay_configuration_check
+from apps.payments.currency import CurrencyService
 from apps.payments.hyperpay.client import HyperPayClient
 from apps.payments.hyperpay.exceptions import (
     HyperPayCheckoutError,
@@ -92,6 +93,17 @@ class HyperPayStub:
 def payable_intent():
     intent = make_intent()
     intent.total_price = Decimal("1250.0000")
+    with CurrencyService() as service:
+        currency_quote = service.create_quote(
+            source_amount=intent.total_price,
+            source_currency="SAR",
+            display_currency="SAR",
+            quote_created_at=intent.created_at,
+            quote_expires_at=intent.expires_at,
+        )
+    intent.payment_amount_sar = currency_quote.payment_amount_sar
+    intent.selected_display_currency = "SAR"
+    intent.exchange_rate_snapshot = dict(currency_quote.snapshot)
     intent.billing_street1 = "King Fahd Road 10"
     intent.billing_city = "Riyadh"
     intent.billing_state = "Riyadh"
@@ -623,6 +635,36 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
 
 
 @override_settings(**HYPERPAY_SETTINGS)
+def test_currency_preference_can_return_to_an_existing_booking_checkout() -> None:
+    client = Client()
+    intent = payable_intent()
+    own_intent(client, intent)
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="currency_checkout_12345678",
+        merchant_transaction_id="LSA-currency-view-123456",
+        widget_integrity="sha384-YWJj",
+        amount=intent.payment_amount_sar,
+        currency="SAR",
+        status=PaymentAttempt.Status.PENDING,
+        idempotency_key="currency-view-idempotency-key-12345678",
+    )
+    checkout_url = reverse("payments:hyperpay_booking", args=[intent.public_reference])
+
+    response = client.post(
+        reverse("payments:set_currency"),
+        {"currency": "SAR", "next": checkout_url},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.redirect_chain == [(checkout_url, 302)]
+    assert attempt.provider_checkout_id in response.content.decode()
+    assert Client().get(checkout_url).status_code == 404
+
+
+@override_settings(**HYPERPAY_SETTINGS)
 def test_modification_page_opens_real_hyperpay_difference_checkout(monkeypatch) -> None:
     client = Client()
     reservation = confirmed_reservation()
@@ -668,6 +710,11 @@ def test_modification_page_opens_real_hyperpay_difference_checkout(monkeypatch) 
         )
         in content
     )
+    resumed = client.get(
+        reverse("payments:hyperpay_modification", args=[modification.public_reference])
+    )
+    assert resumed.status_code == 200
+    assert attempt.provider_checkout_id in resumed.content.decode()
 
 
 @override_settings(**HYPERPAY_SETTINGS)

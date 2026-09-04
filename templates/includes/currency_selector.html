@@ -1,0 +1,19 @@
+{% load i18n %}
+<form
+    class="currency-selector{% if mobile_currency_selector %} currency-selector--mobile{% endif %}"
+    method="post"
+    action="{% url 'payments:set_currency' %}"
+    data-currency-selector
+>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ currency_return_url }}">
+    <label>
+        <span class="sr-only">{% trans "Display currency" %}</span>
+        <select name="currency" aria-label="{% trans 'Display currency' %}" data-currency-select>
+            {% for option in display_currency_options %}
+            <option value="{{ option.code }}"{% if option.code == display_currency %} selected{% endif %}>{{ option.code }} · {{ option.symbol }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <button class="currency-selector__submit" type="submit" aria-label="{% trans 'Apply display currency' %}">↵</button>
+</form>

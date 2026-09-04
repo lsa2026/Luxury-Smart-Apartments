@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views import View
 
@@ -13,6 +14,11 @@ from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
 
+from .currency import (
+    DISPLAY_CURRENCY_SESSION_KEY,
+    UnsupportedCurrencyError,
+    normalize_currency,
+)
 from .hyperpay.exceptions import HyperPayError
 from .hyperpay.result_codes import HyperPayStatus
 from .hyperpay.service import HyperPayService
@@ -46,20 +52,118 @@ def _cover_image(property_obj: object) -> object:
     )
 
 
+def _render_hyperpay_checkout(
+    request: HttpRequest,
+    *,
+    attempt: PaymentAttempt,
+    intent: BookingIntent,
+    modification: BookingModificationRequest | None = None,
+) -> HttpResponse:
+    """Render public widget identifiers for an already-created checkout."""
+
+    result_url = request.build_absolute_uri(
+        reverse("payments:hyperpay_result", args=[attempt.pk])
+    )
+    property_obj = modification.reservation.property if modification else intent.property
+    response = render(
+        request,
+        "payments/hyperpay_checkout.html",
+        {
+            "attempt": attempt,
+            "intent": intent,
+            "modification": modification,
+            "cover_image": _cover_image(property_obj),
+            "checkout_id": attempt.provider_checkout_id,
+            "widget_integrity": attempt.widget_integrity,
+            "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
+            "widget_url": (
+                f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js"
+                f"?checkoutId={attempt.provider_checkout_id}"
+            ),
+            "result_url": result_url,
+        },
+    )
+    response["Cache-Control"] = "no-store, private"
+    return response
+
+
+def _existing_checkout(**filters: object) -> PaymentAttempt | None:
+    return (
+        PaymentAttempt.objects.filter(
+            provider="hyperpay",
+            status__in=[PaymentAttempt.Status.CREATED, PaymentAttempt.Status.PENDING],
+            provider_checkout_id__isnull=False,
+            **filters,
+        )
+        .exclude(provider_checkout_id="")
+        .exclude(widget_integrity="")
+        .order_by("-created_at")
+        .first()
+    )
+
+
+class CurrencyPreferenceView(View):
+    """Persist a display-only preference; payment currency is never read here."""
+
+    http_method_names = ["post"]
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        try:
+            currency = normalize_currency(request.POST.get("currency", ""))
+        except UnsupportedCurrencyError:
+            return HttpResponse(_("Unsupported display currency."), status=400)
+        request.session[DISPLAY_CURRENCY_SESSION_KEY] = currency
+        next_url = request.POST.get("next", "")
+        if not url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            next_url = reverse("properties:list")
+        response = redirect(next_url)
+        response.set_cookie(
+            settings.FX_PREFERENCE_COOKIE,
+            currency,
+            max_age=settings.FX_PREFERENCE_COOKIE_MAX_AGE_SECONDS,
+            secure=not settings.DEBUG,
+            httponly=True,
+            samesite="Lax",
+        )
+        return response
+
+
 class HyperPayBookingCheckoutView(View):
     """Create/reuse a checkout server-side, then render only its public widget data."""
 
-    http_method_names = ["post"]
+    http_method_names = ["get", "post"]
     service_class = HyperPayService
 
-    def post(self, request: HttpRequest, public_reference: str) -> HttpResponse:
-        _hyperpay_enabled()
+    @staticmethod
+    def _intent(request: HttpRequest, public_reference: str) -> BookingIntent:
         intent = get_object_or_404(
             BookingIntent.objects.select_related("property"),
             public_reference=public_reference,
         )
         if not _owns_intent(request, intent):
             raise Http404
+        return intent
+
+    def get(self, request: HttpRequest, public_reference: str) -> HttpResponse:
+        """Re-render an owned pending checkout after a display preference change."""
+
+        _hyperpay_enabled()
+        intent = self._intent(request, public_reference)
+        attempt = _existing_checkout(booking_intent=intent, modification_request__isnull=True)
+        if attempt is None:
+            return redirect(
+                "reservations:intent_detail",
+                public_reference=intent.public_reference,
+            )
+        return _render_hyperpay_checkout(request, attempt=attempt, intent=intent)
+
+    def post(self, request: HttpRequest, public_reference: str) -> HttpResponse:
+        _hyperpay_enabled()
+        intent = self._intent(request, public_reference)
         try:
             with self.service_class() as service:
                 checkout = service.create_checkout(intent)
@@ -75,38 +179,24 @@ class HyperPayBookingCheckoutView(View):
                 "reservations:intent_detail",
                 public_reference=intent.public_reference,
             )
-        result_url = request.build_absolute_uri(
-            reverse("payments:hyperpay_result", args=[checkout.attempt.pk])
-        )
-        response = render(
+        return _render_hyperpay_checkout(
             request,
-            "payments/hyperpay_checkout.html",
-            {
-                "attempt": checkout.attempt,
-                "intent": intent,
-                "cover_image": _cover_image(intent.property),
-                "checkout_id": checkout.checkout_id,
-                "widget_integrity": checkout.script_integrity,
-                "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
-                "widget_url": (
-                    f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js"
-                    f"?checkoutId={checkout.checkout_id}"
-                ),
-                "result_url": result_url,
-            },
+            attempt=checkout.attempt,
+            intent=intent,
         )
-        response["Cache-Control"] = "no-store, private"
-        return response
 
 
 class HyperPayModificationCheckoutView(View):
     """Create a checkout for a positive, freshly revalidated price difference."""
 
-    http_method_names = ["post"]
+    http_method_names = ["get", "post"]
     service_class = HyperPayService
 
-    def post(self, request: HttpRequest, public_reference: str) -> HttpResponse:
-        _hyperpay_enabled()
+    @staticmethod
+    def _modification(
+        request: HttpRequest,
+        public_reference: str,
+    ) -> tuple[BookingModificationRequest, BookingIntent]:
         modification = get_object_or_404(
             BookingModificationRequest.objects.select_related(
                 "reservation__booking_intent",
@@ -119,8 +209,29 @@ class HyperPayModificationCheckoutView(View):
             request,
             modification.reservation.public_reference,
         )
-        if not owns:
+        if not owns or intent is None:
             raise Http404
+        return modification, intent
+
+    def get(self, request: HttpRequest, public_reference: str) -> HttpResponse:
+        _hyperpay_enabled()
+        modification, intent = self._modification(request, public_reference)
+        attempt = _existing_checkout(modification_request=modification)
+        if attempt is None:
+            return redirect(
+                "reservations:modification_detail",
+                public_reference=modification.public_reference,
+            )
+        return _render_hyperpay_checkout(
+            request,
+            attempt=attempt,
+            intent=intent,
+            modification=modification,
+        )
+
+    def post(self, request: HttpRequest, public_reference: str) -> HttpResponse:
+        _hyperpay_enabled()
+        modification, intent = self._modification(request, public_reference)
         try:
             with self.service_class() as service:
                 checkout = service.create_modification_checkout(modification)
@@ -136,29 +247,12 @@ class HyperPayModificationCheckoutView(View):
                 "reservations:modification_detail",
                 public_reference=modification.public_reference,
             )
-        result_url = request.build_absolute_uri(
-            reverse("payments:hyperpay_result", args=[checkout.attempt.pk])
-        )
-        response = render(
+        return _render_hyperpay_checkout(
             request,
-            "payments/hyperpay_checkout.html",
-            {
-                "attempt": checkout.attempt,
-                "intent": intent,
-                "modification": modification,
-                "cover_image": _cover_image(modification.reservation.property),
-                "checkout_id": checkout.checkout_id,
-                "widget_integrity": checkout.script_integrity,
-                "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
-                "widget_url": (
-                    f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js"
-                    f"?checkoutId={checkout.checkout_id}"
-                ),
-                "result_url": result_url,
-            },
+            attempt=checkout.attempt,
+            intent=intent,
+            modification=modification,
         )
-        response["Cache-Control"] = "no-store, private"
-        return response
 
 
 class HyperPayResultView(View):

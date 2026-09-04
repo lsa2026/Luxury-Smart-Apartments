@@ -284,7 +284,6 @@ class HostawayClient:
         check_in: date,
         check_out: date,
         guests: int,
-        fallback_currency: str = "",
     ) -> PriceQuote:
         """Calculate a price with priceDetails v2; this never creates a reservation."""
         self._validate_stay_range(
@@ -309,7 +308,6 @@ class HostawayClient:
             check_in=check_in,
             check_out=check_out,
             guests=guests,
-            fallback_currency=fallback_currency,
         )
 
     def create_reservation_with_price_details(

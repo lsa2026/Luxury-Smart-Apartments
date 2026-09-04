@@ -1,5 +1,4 @@
 from datetime import date
-from decimal import Decimal
 
 import pytest
 
@@ -29,20 +28,18 @@ def test_invalid_calendar_boolean_is_rejected() -> None:
         )
 
 
-def test_price_currency_uses_valid_fallback_when_response_omits_it() -> None:
-    quote = validate_price_response(
-        {
-            "status": "success",
-            "result": {"totalPrice": 200, "components": []},
-        },
-        listing_id=1,
-        check_in=date(2030, 2, 1),
-        check_out=date(2030, 2, 3),
-        guests=2,
-        fallback_currency="sar",
-    )
-    assert quote.currency == "SAR"
-    assert quote.total_price == Decimal("200")
+def test_price_currency_must_be_explicit_in_current_response() -> None:
+    with pytest.raises(HostawayResponseError, match="does not identify"):
+        validate_price_response(
+            {
+                "status": "success",
+                "result": {"totalPrice": 200, "components": []},
+            },
+            listing_id=1,
+            check_in=date(2030, 2, 1),
+            check_out=date(2030, 2, 3),
+            guests=2,
+        )
 
 
 def test_invalid_currency_is_rejected() -> None:

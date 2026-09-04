@@ -1,4 +1,4 @@
-{% load i18n presentation %}
+{% load i18n presentation currency %}
 {% firstof property_detail_url property.get_absolute_url as resolved_property_url %}
 {% with property_name=property|localized_property_name images=property.preview_images %}
 <article
@@ -124,7 +124,7 @@
         <div class="property-card__footer property-card__footer--available">
             <span class="property-card__price-note">
                 <small>{% trans "Total for your stay" %}</small>
-                <strong>{{ availability_result.quote.total_price|localized_money:availability_result.quote.currency }}</strong>
+                <strong>{% display_money availability_result.quote.total_price availability_result.quote.currency %}</strong>
             </span>
             <form method="post" action="{% url 'reservations:quote_create' %}" data-submit-once>
                 {% csrf_token %}

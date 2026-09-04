@@ -11,6 +11,7 @@ from django.http import HttpRequest
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 
+from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_labels
 
 from .branding import BRAND_NAME
@@ -179,5 +180,13 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         "pending_analytics_event": (pending_event if isinstance(pending_event, str) else ""),
         "payment_sandbox_enabled": settings.PAYMENT_SANDBOX_ENABLED,
         "refund_working_days": settings.BOOKING_REFUND_WORKING_DAYS,
+        "display_currency": selected_currency(request),
+        "display_currency_options": (
+            {"code": "SAR", "symbol": "ر.س"},
+            {"code": "MAD", "symbol": "د.م."},
+            {"code": "USD", "symbol": "$"},
+            {"code": "EUR", "symbol": "€"},
+        ),
+        "currency_return_url": request.get_full_path(),
         "whatsapp_contact": _whatsapp_contact(site_setting),
     }

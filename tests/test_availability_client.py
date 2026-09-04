@@ -189,7 +189,6 @@ def test_price_post_is_not_retried_on_500() -> None:
                 check_in=date(2030, 1, 1),
                 check_out=date(2030, 1, 3),
                 guests=2,
-                fallback_currency="SAR",
             )
     assert attempts == 1
 
@@ -213,7 +212,6 @@ def test_price_post_is_not_retried_on_429() -> None:
                 check_in=date(2030, 1, 1),
                 check_out=date(2030, 1, 3),
                 guests=2,
-                fallback_currency="SAR",
             )
     assert attempts == 1
 
@@ -306,7 +304,6 @@ def test_price_timeout_is_structured() -> None:
                 check_in=date(2030, 1, 1),
                 check_out=date(2030, 1, 3),
                 guests=2,
-                fallback_currency="SAR",
             )
 
 
@@ -346,7 +343,6 @@ def test_price_403_refreshes_once_without_loop() -> None:
                 check_in=date(2030, 1, 1),
                 check_out=date(2030, 1, 3),
                 guests=2,
-                fallback_currency="SAR",
             )
     assert attempts == 2
     assert provider.invalidations == 1

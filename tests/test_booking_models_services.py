@@ -150,6 +150,13 @@ def test_create_booking_quote_is_valid_sanitized_and_decimal() -> None:
     assert "internal" not in str(quote.components)
 
 
+def test_fx_payment_fields_are_covered_by_quote_hmac() -> None:
+    quote = make_quote(make_property())
+    assert verify_quote_fingerprint(quote) is True
+    quote.payment_amount_sar = Decimal("0.01")
+    assert verify_quote_fingerprint(quote) is False
+
+
 def test_quote_breakdown_uses_component_total_not_unit_value() -> None:
     property_obj = make_property()
     availability = make_availability(property_obj, total=Decimal("30.00"))

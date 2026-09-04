@@ -99,6 +99,7 @@ class DummyService:
         request: object,
         *,
         session_hash: str,
+        selected_display_currency: str = "SAR",
         bypass_cache: bool = False,
     ) -> QuoteCreation:
         type(self).calls += 1
@@ -107,6 +108,7 @@ class DummyService:
             type(self).result,
             property_obj=request.property,
             session_hash=session_hash,
+            selected_display_currency=selected_display_currency,
         )
         return QuoteCreation(type(self).result, quote)
 
@@ -162,6 +164,30 @@ def test_city_only_search_lists_available_properties_without_creating_quote(
     assert BookingQuote.objects.count() == 0
     assert mocked_service.calls == 1
     assert mocked_service.last_bypass_cache is False
+
+
+def test_currency_preference_can_return_to_read_only_search_results(
+    mocked_service: type[DummyService],
+) -> None:
+    property_obj = make_property()
+    DummyService.result = available_result(property_obj)
+    data = form_data(property_obj)
+    data["property"] = ""
+    client = Client()
+    initial = client.post("/reservations/quotes/", data)
+    return_url = initial.context["currency_return_url"]
+
+    switched = client.post(
+        "/payments/currency/",
+        {"currency": "SAR", "next": return_url},
+        follow=True,
+    )
+
+    assert switched.status_code == 200
+    assert switched.redirect_chain == [(return_url, 302)]
+    assert property_obj.name_ar in switched.content.decode()
+    assert BookingQuote.objects.count() == 0
+    assert mocked_service.calls == 2
 
 
 def test_search_without_city_or_property_covers_every_city(
@@ -264,8 +290,10 @@ def test_home_and_property_forms_are_rtl_and_do_not_call_hostaway() -> None:
     assert b"/reservations/quotes/" in detail.content
 
 
-def test_availability_endpoint_rejects_get() -> None:
-    assert Client().get("/properties/search-availability/").status_code == 405
+def test_availability_get_without_a_valid_read_only_search_redirects_safely() -> None:
+    response = Client().get("/properties/search-availability/")
+    assert response.status_code == 302
+    assert response.url == "/properties/"
 
 
 def test_availability_post_requires_csrf() -> None:

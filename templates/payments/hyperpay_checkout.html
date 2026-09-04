@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n presentation %}
+{% load i18n presentation currency %}
 {% block title %}{% trans "Secure payment" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
@@ -144,17 +144,22 @@ var wpwlOptions = {
                     {% for component in intent.quote.components %}
                     <li>
                         <span>{{ component.title|localized_price_component }}</span>
-                        <strong>{{ component|price_component_amount|localized_money:attempt.currency }}</strong>
+                        <strong>{% display_money component|price_component_amount intent.currency intent.exchange_rate_snapshot %}</strong>
                     </li>
                     {% endfor %}
                 </ul>
             </div>
             {% endif %}
 
-            <div class="checkout__total">
-                <span>{% if modification %}{% trans "Price difference due now" %}{% else %}{% trans "Amount due now" %}{% endif %}</span>
+            <div class="checkout__total checkout__total--display">
+                <span>{% trans "Display total" %}</span>
+                <strong>{% if modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
+            </div>
+            <div class="checkout__total checkout__total--payment">
+                <span>{% trans "Final payment" %}</span>
                 <strong>{{ attempt.amount|localized_money:attempt.currency }}</strong>
             </div>
+            <p class="checkout__fx-note">{% trans "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference." %}</p>
 
             {% if modification %}
             <a class="checkout__back text-link" href="{% url 'reservations:modification_detail' modification.public_reference %}">

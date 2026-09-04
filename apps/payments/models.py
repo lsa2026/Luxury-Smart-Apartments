@@ -84,7 +84,11 @@ class PaymentAttempt(models.Model):
             models.CheckConstraint(
                 condition=Q(amount__gte=0),
                 name="payment_attempt_amount_nonnegative",
-            )
+            ),
+            models.CheckConstraint(
+                condition=~Q(provider="hyperpay") | Q(currency="SAR"),
+                name="hyperpay_payment_currency_sar",
+            ),
         ]
         verbose_name = _("Payment attempt")
         verbose_name_plural = _("Payment attempts")

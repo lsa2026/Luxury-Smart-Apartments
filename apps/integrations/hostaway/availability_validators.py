@@ -172,7 +172,6 @@ def validate_price_response(
     check_in: date,
     check_out: date,
     guests: int,
-    fallback_currency: str = "",
 ) -> PriceQuote:
     """Validate priceDetails v2 and convert all monetary values to Decimal."""
     if not isinstance(payload, dict):
@@ -234,7 +233,7 @@ def validate_price_response(
         )
 
     response_currency = result.get("currency") or result.get("currencyCode")
-    currency = _currency(response_currency or fallback_currency)
+    currency = _currency(response_currency)
     if not currency:
         raise HostawayResponseError("Hostaway price response does not identify a currency.")
 
