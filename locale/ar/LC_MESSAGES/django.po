@@ -6316,3 +6316,7 @@ msgstr "لا تملك صلاحية تسوية الاستردادات."
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr "تم تعليم %(count)d مبلغ كمُحوَّل."
+
+#: templates/accounts/login.html
+msgid "Forgot your password?"
+msgstr "نسيت كلمة المرور؟"

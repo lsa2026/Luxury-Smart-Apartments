@@ -6451,3 +6451,7 @@ msgstr "Vous n'avez pas la permission de régler les remboursements."
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr "%(count)d remboursement(s) marqué(s) comme virés."
+
+#: templates/accounts/login.html
+msgid "Forgot your password?"
+msgstr "Mot de passe oublié ?"
