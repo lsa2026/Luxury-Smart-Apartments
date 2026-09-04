@@ -74,6 +74,7 @@ class DjangoEmailProvider:
                 body=text_body,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=[request.recipient],
+                reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
             )
             message.attach_alternative(html_body, "text/html")
             sent_count = message.send(fail_silently=False)

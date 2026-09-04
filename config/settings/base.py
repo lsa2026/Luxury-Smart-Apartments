@@ -415,6 +415,7 @@ EMAIL_BACKEND = env(
     default="django.core.mail.backends.console.EmailBackend",
 ).strip()
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="").strip()
+EMAIL_REPLY_TO = env("EMAIL_REPLY_TO", default="").strip()
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", default="").strip()
 OPERATIONS_EMAIL = env("OPERATIONS_EMAIL", default="").strip()
 EMAIL_HOST = env("EMAIL_HOST", default="").strip()

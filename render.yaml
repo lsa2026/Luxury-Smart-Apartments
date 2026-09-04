@@ -190,7 +190,9 @@ services:
       - key: EMAIL_USE_SSL
         value: "False"
       - key: DEFAULT_FROM_EMAIL
-        value: Luxury Smart Apartments <saeed@luxurysmartapartments.com>
+        value: Luxury Smart Apartments <notifications@luxurysmartapartments.com>
+      - key: EMAIL_REPLY_TO
+        value: saeed@luxurysmartapartments.com
       - key: SUPPORT_EMAIL
         value: saeed@luxurysmartapartments.com
       - key: OPERATIONS_EMAIL
@@ -367,7 +369,9 @@ services:
       - key: EMAIL_USE_SSL
         value: "False"
       - key: DEFAULT_FROM_EMAIL
-        value: Luxury Smart Apartments <saeed@luxurysmartapartments.com>
+        value: Luxury Smart Apartments <notifications@luxurysmartapartments.com>
+      - key: EMAIL_REPLY_TO
+        value: saeed@luxurysmartapartments.com
       - key: SUPPORT_EMAIL
         value: saeed@luxurysmartapartments.com
       - key: OPERATIONS_EMAIL

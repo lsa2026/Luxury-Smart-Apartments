@@ -486,6 +486,7 @@ def test_email_retry_limit() -> None:
     EMAIL_DELIVERY_ENABLED=True,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="noreply@example.invalid",
+    EMAIL_REPLY_TO="care@example.invalid",
 )
 def test_django_provider_html_escapes_and_has_plain_text() -> None:
     provider = DjangoEmailProvider()
@@ -504,6 +505,8 @@ def test_django_provider_html_escapes_and_has_plain_text() -> None:
         )
     )
     message = mail.outbox[0]
+    assert message.from_email == "noreply@example.invalid"
+    assert message.reply_to == ["care@example.invalid"]
     assert "<script>" not in message.alternatives[0].content
     assert "&lt;script&gt;" in message.alternatives[0].content
     assert "Synthetic" in message.body
