@@ -351,7 +351,10 @@ def _ensure_blocked_operation(
                 "error_code": code,
             },
         )
-        if operation.status == HostawayReservationOperation.Status.PREPARED:
+        if operation.status in {
+            HostawayReservationOperation.Status.PREPARED,
+            HostawayReservationOperation.Status.BLOCKED,
+        } and operation.attempt_count == 0:
             operation.status = HostawayReservationOperation.Status.BLOCKED
             operation.error_code = code
             operation.save(update_fields=["status", "error_code", "updated_at"])

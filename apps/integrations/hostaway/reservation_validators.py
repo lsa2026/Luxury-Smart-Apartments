@@ -24,7 +24,7 @@ class ReservationFinanceField:
     total: Decimal
     is_included_in_total_price: bool
     is_overridden_by_user: bool
-    is_mandatory: bool
+    is_mandatory: bool | None
     is_deleted: bool
 
     @classmethod
@@ -33,7 +33,6 @@ class ReservationFinanceField:
             raise ValueError("price_component_total_missing")
         required_flags = (
             component.is_included_in_total,
-            component.is_mandatory,
             component.is_deleted,
         )
         if any(value is None for value in required_flags):
@@ -49,7 +48,10 @@ class ReservationFinanceField:
             total=component.total,
             is_included_in_total_price=bool(component.is_included_in_total),
             is_overridden_by_user=False,
-            is_mandatory=bool(component.is_mandatory),
+            # Hostaway's own price calculator legitimately returns null for
+            # this field (including baseRate). Preserve that value verbatim;
+            # inventing either true or false would change the quoted component.
+            is_mandatory=component.is_mandatory,
             is_deleted=bool(component.is_deleted),
         )
 
@@ -63,7 +65,9 @@ class ReservationFinanceField:
             "total": _json_number(self.total),
             "isIncludedInTotalPrice": int(self.is_included_in_total_price),
             "isOverriddenByUser": int(self.is_overridden_by_user),
-            "isMandatory": int(self.is_mandatory),
+            "isMandatory": (
+                int(self.is_mandatory) if self.is_mandatory is not None else None
+            ),
             "isDeleted": int(self.is_deleted),
         }
         if self.listing_fee_setting_id is not None:

@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.db.models import Q
 
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.property_services import sync_properties
@@ -155,16 +156,27 @@ def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int 
                 type(exc).__name__,
             )
 
-        from apps.reservations.models import Reservation
+        from apps.reservations.models import HostawayReservationOperation, Reservation
         from apps.reservations.services.hostaway_booking import HostawayBookingService
 
         reservations = list(
             Reservation.objects.filter(
-                normalized_status=Reservation.Status.READY_FOR_HOSTAWAY,
+                Q(normalized_status=Reservation.Status.READY_FOR_HOSTAWAY)
+                | Q(
+                    normalized_status=Reservation.Status.CREATE_FAILED,
+                    hostaway_operations__operation_type=(
+                        HostawayReservationOperation.OperationType.CREATE_RESERVATION
+                    ),
+                    hostaway_operations__status=(
+                        HostawayReservationOperation.Status.BLOCKED
+                    ),
+                    hostaway_operations__attempt_count=0,
+                ),
                 payment_status="paid",
                 hostaway_reservation_id__isnull=True,
                 booking_intent__isnull=False,
             )
+            .distinct()
             .select_related("booking_intent", "property")
             .order_by("created_at")[:safe_limit]
         )
