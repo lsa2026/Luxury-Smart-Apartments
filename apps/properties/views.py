@@ -5,9 +5,11 @@ from django.utils import translation
 from django.utils.translation import gettext as _
 from django.views.generic import DetailView, ListView
 
+from apps.core.models import FAQItem
 from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
 from apps.reviews.models import Review
+from apps.reviews.summary import rating_summary
 
 from .cities import canonical_city, supported_city_choices
 from .models import Property, PropertyAmenity, PropertyImage
@@ -168,6 +170,12 @@ class PropertyDetailView(DetailView):
                 "property_reviews": property_obj._public_reviews,
                 "availability_form": AvailabilitySearchForm(property_obj=property_obj),
                 "preserved_search": preserved_search,
+                # One figure for the page and its structured data alike.
+                "rating_summary": rating_summary(property_obj),
+                "property_faq_items": FAQItem.objects.filter(
+                    is_active=True,
+                    property=property_obj,
+                ),
                 "similar_properties": similar,
                 "total_image_count": len(all_gallery_images),
                 "breadcrumb_items": [
