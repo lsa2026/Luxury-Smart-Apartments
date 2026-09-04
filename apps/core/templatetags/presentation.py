@@ -511,6 +511,36 @@ def localized_number(value: object) -> str:
     return text
 
 
+@register.filter
+def localized_hour(value: object) -> str:
+    """Render an hour-of-day as ``HH:00``; 24 is the midnight that ends the day."""
+    if not isinstance(value, int) or isinstance(value, bool):
+        return ""
+    if not 0 <= value <= 24:
+        return ""
+    text = f"{value % 24:02d}:00"
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
+@register.filter
+def localized_percentage(value: object) -> str:
+    """Render a refund share without trailing zeros: 100, 50, 12.5."""
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return ""
+    normalized = amount.quantize(Decimal("0.01")).normalize()
+    if normalized == normalized.to_integral_value():
+        text = f"{int(normalized)}%"
+    else:
+        text = f"{normalized}%"
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
 def _currency_precision(currency: str) -> int:
     if currency in _ZERO_DECIMAL_CURRENCIES:
         return 0

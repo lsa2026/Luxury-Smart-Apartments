@@ -1,0 +1,53 @@
+{% load i18n presentation %}
+{% comment %}
+    Times, refund ladder and house rules. Every value is either synced from the
+    channel manager or entered by the administration; nothing is written here,
+    so an unconfigured policy shows the honest "contact us" line rather than a
+    promise nobody made.
+{% endcomment %}
+{% if not stay_policy.is_empty %}
+<section class="content-section stay-policy" aria-labelledby="stay-policy-title">
+    <p class="eyebrow">{% trans "Before you book" %}</p>
+    <h2 id="stay-policy-title">{% trans "Times, cancellation and house rules" %}</h2>
+
+    {% if stay_policy.has_times %}
+    <dl class="stay-policy__times">
+        {% if stay_policy.check_in_hour is not None %}
+        <div>
+            <dt>{% trans "Check-in from" %}</dt>
+            <dd>{{ stay_policy.check_in_hour|localized_hour }}</dd>
+        </div>
+        {% endif %}
+        {% if stay_policy.check_out_hour is not None %}
+        <div>
+            <dt>{% trans "Check-out by" %}</dt>
+            <dd>{{ stay_policy.check_out_hour|localized_hour }}</dd>
+        </div>
+        {% endif %}
+    </dl>
+    {% endif %}
+
+    <h3 class="stay-policy__subtitle">{% trans "Cancellation" %}</h3>
+    {% if stay_policy.has_refund_ladder %}
+    <ul class="stay-policy__ladder">
+        {% for tier in stay_policy.refund_tiers %}
+        <li>
+            <strong>{{ tier.percentage|localized_percentage }}</strong>
+            <span>
+                {% blocktrans with hours=tier.hours_before|localized_number %}when you cancel at least {{ hours }} hours before arrival{% endblocktrans %}
+                {% if not tier.refunds_cleaning_fee %}<em>{% trans "cleaning fee not refunded" %}</em>{% endif %}
+            </span>
+            {% if tier.note %}<small>{{ tier.note }}</small>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="stay-policy__pending">{% trans "Cancellation terms for this stay are confirmed with our team before payment." %}</p>
+    {% endif %}
+
+    {% if stay_policy.house_rules %}
+    <h3 class="stay-policy__subtitle">{% trans "House rules" %}</h3>
+    <div class="rich-copy stay-policy__rules">{{ stay_policy.house_rules|linebreaks }}</div>
+    {% endif %}
+</section>
+{% endif %}

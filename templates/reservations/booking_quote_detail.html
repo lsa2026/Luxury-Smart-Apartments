@@ -278,6 +278,18 @@
                             </div>
                         </div>
 
+                        {% if not stay_policy.is_empty %}
+                        <div class="quote-review__policy">
+                            <p class="eyebrow">{% trans "What you are agreeing to" %}</p>
+                            <ul>
+                                {% if stay_policy.check_in_hour is not None %}<li><span>{% trans "Check-in from" %}</span><strong>{{ stay_policy.check_in_hour|localized_hour }}</strong></li>{% endif %}
+                                {% if stay_policy.check_out_hour is not None %}<li><span>{% trans "Check-out by" %}</span><strong>{{ stay_policy.check_out_hour|localized_hour }}</strong></li>{% endif %}
+                                {% if stay_policy.has_refund_ladder %}{% with best=stay_policy.refund_tiers.0 %}<li><span>{% trans "Cancellation" %}</span><strong>{% blocktrans with share=best.percentage|localized_percentage hours=best.hours_before|localized_number %}{{ share }} back up to {{ hours }} hours before arrival{% endblocktrans %}</strong></li>{% endwith %}{% endif %}
+                            </ul>
+                            <a class="text-link" href="{{ property.get_absolute_url }}#stay-policy-title" target="_blank">{% trans "Read the full terms for this stay" %}</a>
+                        </div>
+                        {% endif %}
+
                         {% url 'core:terms' as terms_url %}
                         {% url 'core:privacy' as privacy_url %}
                         <div class="guest-journey__legal" aria-label="{% trans 'Required agreements' %}">

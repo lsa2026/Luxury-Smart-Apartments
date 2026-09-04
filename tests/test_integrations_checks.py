@@ -56,8 +56,10 @@ def test_a_fully_configured_receiver_is_clean() -> None:
     HOSTAWAY_WEBHOOK_RECEIVER_ENABLED=False,
     HOSTAWAY_WEBHOOK_PROCESSING_ENABLED=True,
 )
-def test_processing_without_reception_warns() -> None:
-    assert "integrations.W001" in ids(hostaway_webhook_configuration_check())
+def test_a_worker_that_only_processes_is_not_a_fault() -> None:
+    """The worker and scheduler drain a queue the web service fills, and they
+    serve no HTTP, so reception is legitimately off in those processes."""
+    assert hostaway_webhook_configuration_check() == []
 
 
 @override_settings(

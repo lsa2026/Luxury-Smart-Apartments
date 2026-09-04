@@ -308,11 +308,12 @@ services:
       # Working days quoted to the guest for the bank transfer.
       - key: BOOKING_REFUND_WORKING_DAYS
         value: "5"
-      # Reception and processing of Hostaway's unified webhook. The endpoint
-      # refuses every call until the basic-auth secrets below are set, and
-      # integrations.E001 stops a deploy that enables it without them.
+      # These processes serve no HTTP, so they never receive the webhook: only
+      # the web service does. Keeping reception off here is what it is, and it
+      # keeps the basic-auth secret in the one service that actually checks it.
+      # They still drain the queue the web service fills.
       - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
-        value: "True"
+        value: "False"
       - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
         value: "True"
 

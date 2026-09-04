@@ -4,7 +4,7 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxLengthValidator
+from django.core.validators import MaxLengthValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -86,6 +86,25 @@ class SiteSetting(models.Model):
     footer_text_ar = models.CharField(max_length=320, blank=True)
     footer_text_en = models.CharField(max_length=320, blank=True)
     footer_text_fr = models.CharField(max_length=320, blank=True)
+    # Shown only when Hostaway reports no hour for a listing. Null keeps the
+    # display honest: an unknown time says so rather than inventing 15:00.
+    default_check_in_hour = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(24)],
+        verbose_name=_("Default check-in hour"),
+        help_text=_("Used when Hostaway reports no check-in time for a property."),
+    )
+    default_check_out_hour = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(24)],
+        verbose_name=_("Default check-out hour"),
+        help_text=_("Used when Hostaway reports no check-out time for a property."),
+    )
+    default_house_rules_ar = models.TextField(blank=True, verbose_name=_("Default house rules"))
+    default_house_rules_en = models.TextField(blank=True, verbose_name=_("Default house rules"))
+    default_house_rules_fr = models.TextField(blank=True, verbose_name=_("Default house rules"))
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

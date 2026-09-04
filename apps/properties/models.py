@@ -105,6 +105,12 @@ class Property(models.Model):
     seo_description_ar = models.CharField(max_length=320, blank=True)
     seo_description_en = models.CharField(max_length=320, blank=True)
     seo_description_fr = models.CharField(max_length=320, blank=True)
+    # House rules are written by the administration, not synced. Hostaway carries
+    # a `houseRules` string, but it is the host's English free text and this site
+    # never machine-translates source content into Arabic.
+    house_rules_ar = models.TextField(blank=True, verbose_name=_("House rules"))
+    house_rules_en = models.TextField(blank=True, verbose_name=_("House rules"))
+    house_rules_fr = models.TextField(blank=True, verbose_name=_("House rules"))
     is_visible = models.BooleanField(default=True)
     visibility_management = models.CharField(
         max_length=12,

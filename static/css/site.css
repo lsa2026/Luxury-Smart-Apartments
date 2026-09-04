@@ -12080,3 +12080,108 @@ body.splash-active .whatsapp-fab {
     color: #9d3333;
     background: #fff6f5;
 }
+
+/* Times, refund ladder and house rules. Nothing here is decorative: a guest who
+   cannot find these three answers does not reach the payment step. */
+.stay-policy__times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin: 1.1rem 0 0;
+}
+
+.stay-policy__times > div {
+    flex: 1 1 12rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-soft);
+}
+
+.stay-policy__times dt {
+    margin: 0 0 0.2rem;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+.stay-policy__times dd {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.stay-policy__subtitle {
+    margin: 1.6rem 0 0.6rem;
+    font-size: 1.05rem;
+}
+
+.stay-policy__ladder {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.stay-policy__ladder li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    border-inline-start: 3px solid var(--color-accent);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-soft);
+}
+
+.stay-policy__ladder strong {
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.stay-policy__ladder em {
+    color: var(--color-warning);
+    font-size: 0.82rem;
+    font-style: normal;
+}
+
+.stay-policy__ladder small {
+    flex-basis: 100%;
+    color: var(--color-muted);
+    font-size: 0.8rem;
+}
+
+.stay-policy__pending {
+    margin: 0;
+    color: var(--color-muted);
+}
+
+/* The same three answers, restated where the guest ticks the box. */
+.quote-review__policy {
+    margin-block-end: 1.1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-soft);
+}
+
+.quote-review__policy ul {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0.5rem 0 0.8rem;
+    padding: 0;
+    list-style: none;
+}
+
+.quote-review__policy li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+}
+
+.quote-review__policy li span {
+    color: var(--color-muted);
+}
