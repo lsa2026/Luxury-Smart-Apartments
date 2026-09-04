@@ -30,6 +30,11 @@ services:
     region: frankfurt
     branch: main
     autoDeploy: true
+    # Custom domain served by this service. The apex is primary; Render
+    # redirects the www host to it once both DNS records resolve.
+    domains:
+      - luxurysmartapartments.com
+      - www.luxurysmartapartments.com
     healthCheckPath: /health/live/
     buildCommand: ./build.sh
     startCommand: >-
@@ -54,9 +59,10 @@ services:
         generateValue: true
       # Explicit rather than blank: worker and beat never receive
       # RENDER_EXTERNAL_HOSTNAME, and production settings refuse an empty host
-      # list. Append any custom domain here, comma separated.
+      # list. The generated *.onrender.com host is appended at runtime from
+      # RENDER_EXTERNAL_HOSTNAME, so only custom domains belong here.
       - key: DJANGO_ALLOWED_HOSTS
-        value: luxury-smart-apartments.onrender.com
+        value: luxurysmartapartments.com,www.luxurysmartapartments.com
 
       - key: DATABASE_URL
         fromDatabase:
@@ -112,14 +118,31 @@ services:
       # verified payment must create the real reservation, never a local one.
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
         value: "True"
-      # Modification, extension and cancellation stay manual. Automating them
-      # needs the negative-difference refund path, which does not exist yet.
+      # Channel a website booking is filed under. Verified against this account:
+      # every reservation the public API creates carries channelId 2000 "direct".
+      # Creation is refused outright when this is missing.
+      - key: HOSTAWAY_DIRECT_CHANNEL_ID
+        value: "2000"
+      # Extensions and date/guest changes apply themselves once the guest has
+      # paid any difference. payments.E108 refuses to boot unless all three of
+      # these agree, so they move together.
+      - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+        value: "True"
       - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
-        value: "False"
+        value: "True"
+      # Cancellations apply themselves too. What the guest is owed comes from the
+      # CancellationPolicyTier table the administration maintains, is written down
+      # as a RefundObligation, and is deducted from reported income until someone
+      # transfers it. An empty tier table refunds nothing automatically.
+      - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        value: "True"
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
-        value: "False"
+        value: "True"
+      # Working days quoted to the guest for the bank transfer.
+      - key: BOOKING_REFUND_WORKING_DAYS
+        value: "5"
       # Scheduled synchronisation. These intervals populate CELERY_BEAT_SCHEDULE;
       # the lsa-beat service dispatches them and lsa-worker runs them. Each task
       # takes a Redis lock, so a slow run is skipped rather than overlapped.
@@ -133,10 +156,13 @@ services:
         value: "1"
       - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
         value: "5"
+      # Reception and processing of Hostaway's unified webhook. The endpoint
+      # refuses every call until the basic-auth secrets below are set, and
+      # integrations.E001 stops a deploy that enables it without them.
       - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_WEBHOOK_BASIC_AUTH_USERNAME
         sync: false
       - key: HOSTAWAY_WEBHOOK_BASIC_AUTH_PASSWORD
@@ -172,12 +198,12 @@ services:
 
       # --- Site ---------------------------------------------------------
       # Public origin of the service. Not a secret, so it lives in the blueprint
-      # and stays correct on every rebuild. Replace both when a custom domain
-      # is attached, and add that domain to DJANGO_ALLOWED_HOSTS at the same time.
+      # and stays correct on every rebuild. Canonical links, sitemaps, and email
+      # links all read this, so it must match the primary custom domain.
       - key: SITE_BASE_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: SITE_CANONICAL_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       # Lets the admin "sync now" actions hand work to the worker instead of
@@ -210,7 +236,7 @@ services:
       - key: DJANGO_DEBUG
         value: "False"
       - key: DJANGO_ALLOWED_HOSTS
-        value: luxury-smart-apartments.onrender.com
+        value: luxurysmartapartments.com,www.luxurysmartapartments.com
       # Copied from the web service so all three processes share one signing key
       # and one set of provider credentials, with no second place to update.
       - key: DJANGO_SECRET_KEY
@@ -264,16 +290,31 @@ services:
       # so a mismatch would stop the worker from booting at all.
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
         value: "True"
+      # Channel a website booking is filed under. Verified against this account:
+      # every reservation the public API creates carries channelId 2000 "direct".
+      # Creation is refused outright when this is missing.
+      - key: HOSTAWAY_DIRECT_CHANNEL_ID
+        value: "2000"
+      - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+        value: "True"
       - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
-        value: "False"
+        value: "True"
+      - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        value: "True"
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
-        value: "False"
+        value: "True"
+      # Working days quoted to the guest for the bank transfer.
+      - key: BOOKING_REFUND_WORKING_DAYS
+        value: "5"
+      # Reception and processing of Hostaway's unified webhook. The endpoint
+      # refuses every call until the basic-auth secrets below are set, and
+      # integrations.E001 stops a deploy that enables it without them.
       - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
-        value: "False"
+        value: "True"
 
       - key: HYPERPAY_ENABLED
         value: "True"
@@ -307,9 +348,9 @@ services:
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       - key: SITE_BASE_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: SITE_CANONICAL_URL
-        value: https://luxury-smart-apartments.onrender.com
+        value: https://luxurysmartapartments.com
       - key: CELERY_SYNC_DISPATCH_ENABLED
         value: "True"
 
