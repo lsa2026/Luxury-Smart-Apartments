@@ -25,7 +25,17 @@ pytestmark = pytest.mark.django_db
 def test_customer_email_uses_live_brand_logo_site_and_contact() -> None:
     setting = SiteSetting.objects.first() or SiteSetting(site_name="Luxury Smart Apartments")
     setting.brand_name_ar = "اسم عربي يجب تجاهله"
+    setting.tagline_ar = "ضيافة فاخرة في كل إقامة"
+    setting.contact_email = ""
     setting.contact_phone = "+966500000000"
+    setting.whatsapp_display_number = "+966501234567"
+    setting.whatsapp_url = ""
+    setting.instagram_url = "https://instagram.com/luxury-stays"
+    setting.facebook_url = "https://facebook.com/luxury-stays"
+    setting.x_url = "https://x.com/luxury-stays"
+    setting.linkedin_url = "https://linkedin.com/company/luxury-stays"
+    setting.office_hours_ar = "يوميًا من 9 صباحًا إلى 11 مساءً"
+    setting.public_address_ar = "الرياض، المملكة العربية السعودية"
     setting.save()
 
     DjangoEmailProvider().send(
@@ -49,9 +59,73 @@ def test_customer_email_uses_live_brand_logo_site_and_contact() -> None:
     assert "اسم عربي يجب تجاهله" not in html
     assert 'src="https://stays.example.invalid/static/images/logo.jpeg"' in html
     assert "+966500000000" in html
+    assert 'dir="rtl"' in html
+    assert "ضيافة فاخرة في كل إقامة" in html
+    assert "محادثة فريق الدعم عبر واتساب" in html
+    assert "https://wa.me/966501234567?text=" in html
+    assert "https://instagram.com/luxury-stays" in html
+    assert "https://facebook.com/luxury-stays" in html
+    assert "https://x.com/luxury-stays" in html
+    assert "https://linkedin.com/company/luxury-stays" in html
+    assert "يوميًا من 9 صباحًا إلى 11 مساءً" in html
+    assert "الرياض، المملكة العربية السعودية" in html
     assert "https://stays.example.invalid/" in html
     assert "care@example.invalid" in html
     assert "+966500000000" in text
+    assert "https://wa.me/966501234567?text=" in text
+    assert "https://instagram.com/luxury-stays" in text
+    assert "https://stays.example.invalid/contact/" in text
+
+
+@pytest.mark.parametrize(
+    ("language", "direction", "tagline", "support_heading"),
+    [
+        ("ar", "rtl", "إقامة عربية راقية", "نحن هنا لخدمتك"),
+        ("en", "ltr", "An exceptional English stay", "We are here to help"),
+        ("fr", "ltr", "Un séjour français exceptionnel", "Nous sommes à votre écoute"),
+    ],
+)
+@override_settings(
+    EMAIL_DELIVERY_ENABLED=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="Luxury Smart Apartments <notifications@example.invalid>",
+    EMAIL_REPLY_TO="care@example.invalid",
+    SUPPORT_EMAIL="care@example.invalid",
+    SITE_BASE_URL="https://stays.example.invalid",
+    EMAIL_LOGO_URL="",
+)
+def test_customer_email_localizes_template_direction_and_support(
+    language: str,
+    direction: str,
+    tagline: str,
+    support_heading: str,
+) -> None:
+    setting = SiteSetting.objects.first() or SiteSetting(site_name="Luxury Smart Apartments")
+    setting.tagline_ar = "إقامة عربية راقية"
+    setting.tagline_en = "An exceptional English stay"
+    setting.tagline_fr = "Un séjour français exceptionnel"
+    setting.contact_email = "guestcare@example.invalid"
+    setting.whatsapp_display_number = "+966501234567"
+    setting.instagram_url = "https://instagram.com/luxury-stays"
+    setting.save()
+
+    DjangoEmailProvider().send(
+        EmailMessageRequest(
+            recipient="guest@example.invalid",
+            subject="Luxury Smart Apartments",
+            template_name="contact",
+            language=language,
+            context={"heading": "Luxury Smart Apartments", "message": "Test message"},
+        )
+    )
+
+    html = mail.outbox[0].alternatives[0].content
+    assert f'<html lang="{language}" dir="{direction}">' in html
+    assert tagline in html
+    assert support_heading in html
+    assert "guestcare@example.invalid" in html
+    assert "https://wa.me/966501234567?text=" in html
+    assert "https://instagram.com/luxury-stays" in html
 
 
 @override_settings(

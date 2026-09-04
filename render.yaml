@@ -199,6 +199,8 @@ services:
         value: saeed@luxurysmartapartments.com
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
         value: "True"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
         value: "True"
 
@@ -377,6 +379,8 @@ services:
       - key: OPERATIONS_EMAIL
         value: saeed@luxurysmartapartments.com
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
+        value: "True"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
         value: "True"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
         value: "True"

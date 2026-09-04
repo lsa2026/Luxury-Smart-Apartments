@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass, field
 from smtplib import SMTPException, SMTPRecipientsRefused
 from typing import Any, Protocol
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 from django.conf import settings
 from django.core.mail import BadHeaderError, EmailMultiAlternatives
@@ -89,7 +89,7 @@ class DjangoEmailProvider:
 
 def _email_brand_context(language: str) -> dict[str, str]:
     """Resolve public brand details at send time without storing them in queue rows."""
-    del language
+    language = language if language in {"ar", "en", "fr"} else "ar"
     site_setting = None
     try:
         from apps.core.branding import BRAND_NAME
@@ -101,22 +101,86 @@ def _email_brand_context(language: str) -> dict[str, str]:
 
     brand_name = BRAND_NAME
     contact_phone = settings.EMAIL_CONTACT_PHONE
+    whatsapp_display = settings.WHATSAPP_CONTACT_NUMBER
+    support_email = settings.SUPPORT_EMAIL
+    tagline_defaults = {
+        "ar": "إقامة ذكية بتفاصيل استثنائية",
+        "en": "Smart stays, exceptional details",
+        "fr": "Séjours intelligents, détails d’exception",
+    }
+    whatsapp_greetings = {
+        "ar": "مرحبًا، أحتاج إلى مساعدة من فريق Luxury Smart Apartments.",
+        "en": "Hello, I need help from the Luxury Smart Apartments team.",
+        "fr": "Bonjour, j’ai besoin de l’aide de l’équipe Luxury Smart Apartments.",
+    }
+    tagline = tagline_defaults[language]
+    office_hours = ""
+    public_address = ""
+    whatsapp_url = ""
+    instagram_url = ""
+    facebook_url = ""
+    x_url = ""
+    linkedin_url = ""
     if site_setting is not None:
         contact_phone = (
             site_setting.contact_phone
             or site_setting.whatsapp_display_number
             or contact_phone
         )
+        whatsapp_display = (
+            site_setting.whatsapp_display_number
+            or site_setting.contact_phone
+            or whatsapp_display
+        )
+        support_email = site_setting.contact_email or support_email
+        tagline = getattr(site_setting, f"tagline_{language}") or tagline
+        office_hours = getattr(site_setting, f"office_hours_{language}")
+        public_address = getattr(site_setting, f"public_address_{language}")
+        whatsapp_url = site_setting.whatsapp_url
+        instagram_url = site_setting.instagram_url
+        facebook_url = site_setting.facebook_url
+        x_url = site_setting.x_url
+        linkedin_url = site_setting.linkedin_url
+
+    whatsapp_digits = "".join(character for character in whatsapp_display if character.isdigit())
+    if whatsapp_digits.startswith("00"):
+        whatsapp_digits = whatsapp_digits[2:]
+    elif whatsapp_digits.startswith("0"):
+        whatsapp_digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{whatsapp_digits.lstrip('0')}"
+    elif (
+        whatsapp_digits
+        and not whatsapp_digits.startswith(settings.WHATSAPP_DEFAULT_COUNTRY_CODE)
+        and len(whatsapp_digits) <= 9
+    ):
+        whatsapp_digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{whatsapp_digits}"
+    if not whatsapp_url and whatsapp_digits:
+        whatsapp_url = (
+            f"https://wa.me/{whatsapp_digits}?text={quote(whatsapp_greetings[language])}"
+        )
+
     site_url = f"{settings.SITE_BASE_URL.rstrip('/')}/"
+    site_base_url = settings.SITE_BASE_URL.rstrip("/")
     configured_logo = settings.EMAIL_LOGO_URL.strip()
     logo_url = urljoin(site_url, configured_logo or "static/images/logo.jpeg")
     return {
         "brand_name": brand_name,
-        "site_base_url": settings.SITE_BASE_URL.rstrip("/"),
+        "tagline": tagline,
+        "site_base_url": site_base_url,
         "site_url": site_url,
         "logo_url": logo_url,
         "contact_phone": contact_phone,
-        "support_email": settings.SUPPORT_EMAIL,
+        "support_email": support_email,
+        "whatsapp_display": whatsapp_display,
+        "whatsapp_url": whatsapp_url,
+        "contact_url": f"{site_base_url}/contact/",
+        "privacy_url": f"{site_base_url}/legal/privacy/",
+        "terms_url": f"{site_base_url}/legal/terms/",
+        "office_hours": office_hours,
+        "public_address": public_address,
+        "instagram_url": instagram_url,
+        "facebook_url": facebook_url,
+        "x_url": x_url,
+        "linkedin_url": linkedin_url,
     }
 
 
