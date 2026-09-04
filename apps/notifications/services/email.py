@@ -420,6 +420,13 @@ def _provider_name() -> str:
     return DjangoEmailProvider.name
 
 
+def _dispatch_email_delivery(delivery_id: object) -> None:
+    """Dispatch immediately; the periodic queue remains the recovery path."""
+    from apps.notifications.tasks import send_email_delivery_task
+
+    send_email_delivery_task.delay(str(delivery_id))
+
+
 def queue_email(
     *,
     message_type: str,
@@ -436,7 +443,7 @@ def queue_email(
         if settings.EMAIL_DELIVERY_ENABLED
         else EmailDelivery.Status.DISABLED
     )
-    delivery, _ = EmailDelivery.objects.get_or_create(
+    delivery, created = EmailDelivery.objects.get_or_create(
         idempotency_key=idempotency_key,
         defaults={
             "message_type": message_type,
@@ -455,6 +462,11 @@ def queue_email(
             ),
         },
     )
+    if created and delivery.status == EmailDelivery.Status.QUEUED:
+        transaction.on_commit(
+            lambda: _dispatch_email_delivery(delivery.pk),
+            robust=True,
+        )
     return delivery
 
 

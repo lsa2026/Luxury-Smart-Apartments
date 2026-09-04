@@ -307,6 +307,27 @@ def test_email_delivery_idempotency() -> None:
     assert EmailDelivery.objects.count() == 1
 
 
+@override_settings(EMAIL_DELIVERY_ENABLED=True)
+def test_new_email_is_dispatched_immediately_after_commit() -> None:
+    contact = make_contact()
+    with (
+        patch("apps.notifications.services.email.transaction.on_commit") as on_commit,
+        patch("apps.notifications.tasks.send_email_delivery_task.delay") as delay,
+    ):
+        on_commit.side_effect = lambda callback, **_kwargs: callback()
+        delivery = queue_email(
+            message_type="contact_confirmation",
+            recipient=contact.email,
+            recipient_source="contact",
+            recipient_reference=str(contact.pk),
+            language="ar",
+            idempotency_key="immediate-email",
+        )
+
+    on_commit.assert_called_once()
+    delay.assert_called_once_with(str(delivery.pk))
+
+
 def test_recipient_is_masked_and_hmaced() -> None:
     contact = make_contact()
     delivery = queue_email(
