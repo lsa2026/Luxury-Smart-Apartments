@@ -1,9 +1,10 @@
 import json
 from collections.abc import Mapping
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django import template
-from django.utils import formats, translation
+from django.utils import formats, timezone, translation
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_noop
@@ -420,12 +421,31 @@ def money_amount(value: object) -> str:
     return format(amount, ",.2f")
 
 
+def _as_local(value: object) -> object:
+    """Move an aware datetime into the site's timezone before it is formatted.
+
+    Django converts aware datetimes when the template prints them itself, but a
+    filter is handed the raw value and ``formats.date_format`` does no
+    conversion at all. Without this every timestamp rendered through these
+    filters is printed in UTC, three hours behind Riyadh, which also drags the
+    date back a day for anything after 21:00 local.
+
+    ``date`` objects carry no time and must be left alone; ``localtime`` also
+    refuses naive datetimes, so both fall through unchanged.
+    """
+    if not isinstance(value, datetime):
+        return value
+    if timezone.is_naive(value):
+        return value
+    return timezone.localtime(value)
+
+
 def _localized_temporal(value: object, format_string: str) -> str:
     """Render a date/time in the active locale, matching the numerals used for money."""
     if value in (None, ""):
         return ""
     try:
-        rendered = formats.date_format(value, format_string)
+        rendered = formats.date_format(_as_local(value), format_string)
     except (AttributeError, TypeError, ValueError):
         return ""
     if _language() == "ar":
