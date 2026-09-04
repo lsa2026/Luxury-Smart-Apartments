@@ -4256,18 +4256,12 @@ input[data-iso-date] {
     box-shadow: 0 0 0 0.22rem rgb(34 94 67 / 12%);
 }
 
-.status-pill--awaiting_payment,
-.status-pill--create_pending,
-.status-pill--creating,
-.status-pill--create_unknown,
-.status-pill--sync_pending,
-.status-pill--unknown {
+.status-pill--progress {
     color: #8a5a00;
     background: #fff3d9;
 }
 
-.status-pill--cancelled,
-.status-pill--create_failed {
+.status-pill--closed {
     color: #9d3333;
     background: #ffeded;
 }
@@ -8085,19 +8079,13 @@ h2 {
     backdrop-filter: blur(12px);
 }
 
-.booking-dashboard-hero__topline .status-pill--awaiting_payment,
-.booking-dashboard-hero__topline .status-pill--create_pending,
-.booking-dashboard-hero__topline .status-pill--creating,
-.booking-dashboard-hero__topline .status-pill--create_unknown,
-.booking-dashboard-hero__topline .status-pill--sync_pending,
-.booking-dashboard-hero__topline .status-pill--unknown {
+.booking-dashboard-hero__topline .status-pill--progress {
     border-color: rgb(231 200 135 / 28%);
     color: #f0d995;
     background: rgb(163 106 29 / 22%);
 }
 
-.booking-dashboard-hero__topline .status-pill--cancelled,
-.booking-dashboard-hero__topline .status-pill--create_failed {
+.booking-dashboard-hero__topline .status-pill--closed {
     border-color: rgb(255 173 173 / 24%);
     color: #ffb7b7;
     background: rgb(163 60 54 / 20%);
@@ -11997,4 +11985,82 @@ body.splash-active .whatsapp-fab {
     .auth-stage--compact {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+/* Shown in place of the progress bar once a stay can no longer move forward. */
+.booking-journey-closed {
+    display: flex;
+    gap: 1.1rem;
+    align-items: center;
+    max-width: 58rem;
+    padding: 1.15rem 1.35rem;
+    margin: 0 auto var(--space-7);
+    border: 1px solid rgb(163 60 54 / 22%);
+    background: #fff6f5;
+    border-radius: var(--radius-md);
+}
+
+.booking-journey-closed__mark {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    flex: none;
+    place-items: center;
+    color: #9d3333;
+    background: #ffeded;
+    border-radius: 50%;
+}
+
+.booking-journey-closed strong {
+    display: block;
+    color: var(--color-primary-strong);
+    font-size: 1.02rem;
+    font-weight: 750;
+}
+
+.booking-journey-closed p {
+    max-width: 52ch;
+    margin: 0.2rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+}
+
+.booking-journey-closed .button {
+    flex: none;
+    margin-inline-start: auto;
+}
+
+@media (width <= 48rem) {
+    .booking-journey-closed {
+        flex-wrap: wrap;
+    }
+
+    .booking-journey-closed .button {
+        width: 100%;
+        margin-inline-start: 0;
+    }
+}
+
+/* The host's own policy, shown where the guest commits to a change. */
+.booking-policy-note {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.7rem 0.9rem;
+    margin-block-end: 0.9rem;
+    border: 1px dashed rgb(212 169 93 / 45%);
+    color: var(--color-secondary);
+    background: rgb(212 169 93 / 9%);
+    border-radius: 0.65rem;
+    font-size: 0.84rem;
+    font-weight: 650;
+    line-height: 1.6;
+}
+
+/* An irreversible step reads differently from an informational one. */
+.booking-policy-note--warning {
+    border-color: rgb(163 60 54 / 40%);
+    color: #9d3333;
+    background: #fff6f5;
 }

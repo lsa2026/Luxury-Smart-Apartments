@@ -177,17 +177,36 @@ def validate_reservation_response(payload: Any) -> HostawayReservationSnapshot:
     )
 
 
+# Every status the Hostaway reservation filter can emit, keyed by its casefolded
+# API value. Anything absent stays "unknown" so a status Hostaway adds later is
+# surfaced for review instead of being silently treated as a booking.
+HOSTAWAY_RESERVATION_STATUS_MAP = {
+    # Active stays.
+    "new": "confirmed",
+    "confirmed": "confirmed",
+    "ownerstay": "confirmed",
+    "modified": "modified",
+    # Booked but not yet settled.
+    "awaitingpayment": "awaiting_payment",
+    "pending": "pending",
+    "unconfirmed": "pending",
+    # Leads that were never a booking.
+    "inquiry": "inquiry",
+    "inquirypreapproved": "inquiry",
+    # Closed without a stay.
+    "cancelled": "cancelled",
+    "canceled": "cancelled",
+    "declined": "declined",
+    "inquirydenied": "declined",
+    "inquirynotpossible": "declined",
+    "expired": "expired",
+    "inquirytimeout": "expired",
+}
+
+
 def normalize_hostaway_reservation_status(status: str) -> str:
     normalized = status.strip().casefold()
-    mapping = {
-        "new": "confirmed",
-        "confirmed": "confirmed",
-        "modified": "modified",
-        "cancelled": "cancelled",
-        "canceled": "cancelled",
-        "ownerstay": "confirmed",
-    }
-    return mapping.get(normalized, "unknown")
+    return HOSTAWAY_RESERVATION_STATUS_MAP.get(normalized, "unknown")
 
 
 def source_type_from_snapshot(snapshot: HostawayReservationSnapshot) -> str:

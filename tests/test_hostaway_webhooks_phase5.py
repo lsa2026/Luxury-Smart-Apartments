@@ -226,6 +226,15 @@ class ReservationClientStub:
         assert self.snapshot is not None
         return self.snapshot
 
+    def create_reservation_with_price_details(self, *args: object, **kwargs: object) -> None:
+        raise AssertionError("The webhook path must never create a Hostaway reservation.")
+
+    def update_reservation(self, *args: object, **kwargs: object) -> None:
+        raise AssertionError("The webhook path must never update a Hostaway reservation.")
+
+    def cancel_reservation(self, *args: object, **kwargs: object) -> None:
+        raise AssertionError("The webhook path must never cancel a Hostaway reservation.")
+
 
 def snapshot(
     *,
@@ -235,6 +244,7 @@ def snapshot(
     updated_at=None,
     total: Decimal = Decimal("500.25"),
     payment_status: str = "paid",
+    source: str = "airbnb",
 ) -> HostawayReservationSnapshot:
     return HostawayReservationSnapshot(
         reservation_id=reservation_id,
@@ -247,7 +257,7 @@ def snapshot(
         currency="SAR",
         total_price=total,
         payment_status=payment_status,
-        source="airbnb",
+        source=source,
         updated_at=updated_at or timezone.now(),
     )
 
@@ -396,6 +406,108 @@ def test_cancellation_and_financial_changes_are_synced() -> None:
     assert reservation.cancelled_at is not None
     assert reservation.total_price == Decimal("450.0000")
     assert reservation.payment_status == "refunded"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("inquiry", Reservation.Status.INQUIRY),
+        ("inquiryPreapproved", Reservation.Status.INQUIRY),
+        ("declined", Reservation.Status.DECLINED),
+        ("inquiryNotPossible", Reservation.Status.DECLINED),
+        ("expired", Reservation.Status.EXPIRED),
+        ("inquiryTimeout", Reservation.Status.EXPIRED),
+        ("pending", Reservation.Status.PENDING),
+        ("awaitingPayment", Reservation.Status.AWAITING_PAYMENT),
+    ],
+)
+def test_lead_statuses_are_recorded_instead_of_unknown(
+    raw: str,
+    expected: str,
+) -> None:
+    """These reach real accounts constantly; UNKNOWN would flood admin attention."""
+    mapped_property()
+    event = received_event()
+
+    process_webhook_event(event.pk, client=ReservationClientStub(snapshot(status=raw)))
+
+    reservation = Reservation.objects.get()
+    assert reservation.normalized_status == expected
+    assert reservation.hostaway_status == raw
+
+
+@pytest.mark.parametrize("raw", ["declined", "expired", "inquiryTimeout"])
+def test_closed_statuses_end_the_stay_like_a_cancellation(raw: str) -> None:
+    mapped_property()
+
+    process_webhook_event(
+        received_event().pk,
+        client=ReservationClientStub(snapshot(status=raw)),
+    )
+
+    reservation = Reservation.objects.get()
+    assert reservation.cancelled_at is not None
+    assert reservation.confirmed_at is None
+
+
+def test_a_modified_stay_stays_active() -> None:
+    mapped_property()
+
+    process_webhook_event(
+        received_event().pk,
+        client=ReservationClientStub(snapshot(status="modified")),
+    )
+
+    reservation = Reservation.objects.get()
+    assert reservation.normalized_status == Reservation.Status.MODIFIED
+    assert reservation.confirmed_at is not None
+    assert reservation.cancelled_at is None
+
+
+@pytest.mark.parametrize("source", ["airbnb", "bookingcom"])
+def test_other_channels_are_recorded_as_external(source: str) -> None:
+    """This Hostaway account also serves other sites. Their bookings are ours to
+    observe, never to touch."""
+    mapped_property()
+
+    process_webhook_event(
+        received_event().pk,
+        client=ReservationClientStub(snapshot(status="new", source=source)),
+    )
+
+    reservation = Reservation.objects.get()
+    assert reservation.source_type == Reservation.SourceType.EXTERNAL_CHANNEL
+    assert reservation.booking_intent is None
+
+
+@pytest.mark.parametrize("source", ["airbnb", "bookingcom", "bookingengine", "manual"])
+def test_a_booking_made_elsewhere_cannot_be_opened_by_a_guest_here(source: str) -> None:
+    """The booking engine reports as a direct source, so ownership — not the
+    source label — has to be what keeps another site's booking out of reach."""
+    mapped_property()
+    process_webhook_event(
+        received_event().pk,
+        client=ReservationClientStub(snapshot(status="new", source=source)),
+    )
+    reservation = Reservation.objects.get()
+    assert reservation.booking_intent is None
+
+    response = Client().post(
+        "/reservations/manage/",
+        {"booking_reference": reservation.public_reference, "email": "guest@example.invalid"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_processing_reads_hostaway_and_never_writes_to_it() -> None:
+    """A write from this path would reach the account the other sites share."""
+    mapped_property()
+    client = ReservationClientStub(snapshot())
+
+    process_webhook_event(received_event().pk, client=client)
+
+    assert client.calls == 1
 
 
 def test_direct_local_reservation_keeps_booking_intent_link() -> None:

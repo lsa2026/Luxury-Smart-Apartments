@@ -11,7 +11,7 @@
         <div class="booking-dashboard-hero__content">
             <div class="booking-dashboard-hero__topline">
                 <p class="eyebrow">{% trans "Your booking space" %}</p>
-                <span class="status-pill status-pill--{{ reservation.normalized_status }}">
+                <span class="status-pill status-pill--{{ reservation.normalized_status|reservation_status_tone }}">
                     <i aria-hidden="true"></i>{{ reservation.normalized_status|localized_reservation_status }}
                 </span>
             </div>
@@ -121,6 +121,20 @@
                 {{ reservation.payment_status|localized_payment_status }}
             </p>
         </div>
+        {% if stay_is_closed %}
+        <div class="booking-journey-closed" role="status">
+            <span class="booking-journey-closed__mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="26" height="26">
+                    <path d="M12 3.6a8.4 8.4 0 1 1 0 16.8 8.4 8.4 0 0 1 0-16.8Zm-3 5.4 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+                </svg>
+            </span>
+            <div>
+                <strong>{% trans "This stay is closed" %}</strong>
+                <p>{% trans "No further changes can be requested for it. Our team can help you plan a new stay whenever you are ready." %}</p>
+            </div>
+            <a class="button button--secondary" href="{% url 'properties:list' %}#property-search">{% trans "Plan a new stay" %}</a>
+        </div>
+        {% else %}
         <ol class="booking-journey">
             <li class="is-complete">
                 <span aria-hidden="true">✓</span>
@@ -130,15 +144,16 @@
                 <span aria-hidden="true">{% if reservation.normalized_status != 'awaiting_payment' %}✓{% else %}2{% endif %}</span>
                 <strong>{% trans "Payment" %}</strong>
             </li>
-            <li class="{% if reservation.normalized_status == 'confirmed' or reservation.normalized_status == 'modified' or reservation.normalized_status == 'cancelled' %}is-complete{% else %}is-current{% endif %}">
-                <span aria-hidden="true">{% if reservation.normalized_status == 'confirmed' or reservation.normalized_status == 'modified' or reservation.normalized_status == 'cancelled' %}✓{% else %}3{% endif %}</span>
+            <li class="{% if stay_is_active %}is-complete{% else %}is-current{% endif %}">
+                <span aria-hidden="true">{% if stay_is_active %}✓{% else %}3{% endif %}</span>
                 <strong>{% trans "Booking confirmed" %}</strong>
             </li>
-            <li class="{% if reservation.normalized_status == 'confirmed' or reservation.normalized_status == 'modified' %}is-current{% endif %}">
+            <li class="{% if stay_is_active %}is-current{% endif %}">
                 <span aria-hidden="true">4</span>
                 <strong>{% trans "Manage stay" %}</strong>
             </li>
         </ol>
+        {% endif %}
     </section>
 
     <div class="booking-manage-layout">
@@ -184,6 +199,9 @@
             <dl class="stay-summary-card__facts">
                 <div><dt>{% trans "Nights" %}</dt><dd>{{ reservation.nights|localized_number }}</dd></div>
                 <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests|localized_number }}</dd></div>
+                {% if reservation.property.cancellation_policy %}
+                <div><dt>{% trans "Cancellation" %}</dt><dd>{{ reservation.property.cancellation_policy|localized_cancellation_policy }}</dd></div>
+                {% endif %}
                 <div class="stay-summary-card__total">
                     <dt>{% trans "Current total" %}</dt>
                     <dd>{{ reservation.total_price|localized_money:reservation.currency }}</dd>
@@ -191,6 +209,10 @@
             </dl>
             {% if reservation.source_type == "external_channel" %}
             <p class="quote-notice">{% trans "Please complete changes through the booking platform or contact management." %}</p>
+            {% elif stay_is_closed %}
+            <p class="quote-notice">{% trans "This stay is closed, so no further changes can be requested." %}</p>
+            {% elif stay_is_active and not can_request_changes %}
+            <p class="quote-notice">{% trans "A change has already been applied to this booking. Contact guest support for another change." %}</p>
             {% elif not can_request_changes %}
             <p class="quote-notice">{% trans "Changes will become available when the booking is confirmed." %}</p>
             {% else %}
@@ -369,6 +391,17 @@
                     </i>
                 </summary>
                 <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}" data-submit-once>
+                    {% if reservation.property.cancellation_policy %}
+                    <p class="booking-policy-note">
+                        <span aria-hidden="true">◆</span>
+                        {% blocktrans with policy=reservation.property.cancellation_policy|localized_cancellation_policy %}Host policy for this property: {{ policy }}.{% endblocktrans %}
+                    </p>
+                    {% endif %}
+                    <p class="booking-policy-note booking-policy-note--warning">
+                        <span aria-hidden="true">!</span>
+                        {% trans "Cancelling releases your dates immediately and cannot be undone." %}
+                        {% blocktrans with days=refund_working_days %}Any refund due is transferred to your bank account within {{ days }} working days, after we contact you for the details.{% endblocktrans %}
+                    </p>
                     {% csrf_token %}{{ cancellation_form.as_p }}
                     <button class="button button--secondary" type="submit">{% trans "Send for review" %}</button>
                 </form>
@@ -397,7 +430,7 @@
                     <strong>{{ item.request_type|localized_modification_type }}</strong>
                     <small><time datetime="{{ item.requested_at|date:'c' }}">{{ item.requested_at|localized_datetime }}</time></small>
                 </span>
-                <span class="status-pill status-pill--{{ item.status }}">{{ item.status|localized_modification_status }}</span>
+                <span class="status-pill status-pill--{{ item.status|modification_status_tone }}">{{ item.status|localized_modification_status }}</span>
                 <svg class="request-history-list__arrow" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
                     <path d="m7.5 5 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
                 </svg>

@@ -524,6 +524,8 @@ def _management_context(
             reservation.normalized_status == Reservation.Status.CONFIRMED
             and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
         ),
+        "stay_is_active": reservation.normalized_status in Reservation.ACTIVE_STATUSES,
+        "stay_is_closed": reservation.normalized_status in Reservation.CLOSED_STATUSES,
         "extension_form": ExtensionRequestForm(),
         "date_form": DateChangeRequestForm(
             initial={
@@ -674,6 +676,43 @@ class ReservationManageView(View):
         )
 
 
+# What the guest is told when a change request is refused. Anything absent falls
+# back to the neutral sentence below, so a new internal code never leaks out.
+MODIFICATION_REFUSAL_MESSAGES = {
+    "minimum_stay_not_met": _(
+        "The stay would be shorter than the minimum nights this property allows."
+    ),
+    "maximum_stay_exceeded": _(
+        "The stay would be longer than the maximum nights this property allows."
+    ),
+    "same_day_change_not_allowed": _(
+        "This property does not accept a stay that starts today."
+    ),
+    "arrival_lead_time_not_met": _(
+        "This change is too close to the arrival time to be requested online."
+    ),
+    "closed_on_arrival": _("The property does not accept arrivals on that date."),
+    "closed_on_departure": _("The property does not accept departures on that date."),
+    "capacity_exceeded": _("The guest count exceeds this property's capacity."),
+    "unavailable_dates": _("The requested dates are no longer available."),
+    "inventory_conflict": _("The requested dates are no longer available."),
+    "past_check_in": _("Check-in cannot be in the past."),
+    "invalid_dates": _("The stay dates are invalid."),
+    "extension_must_add_nights": _("An extension has to add at least one night."),
+    "extension_limit_exceeded": _("This extension is longer than we can take online."),
+    "hostaway_temporarily_unavailable": _(
+        "Live availability could not be reached. Please try again shortly."
+    ),
+    "pricing_unavailable": _("A price for these dates could not be prepared."),
+    "cancellation_requests_disabled": _(
+        "Cancellation requests are unavailable right now. Please contact guest support."
+    ),
+    "external_channel_requires_admin": _(
+        "Please complete changes through the booking platform or contact management."
+    ),
+}
+
+
 class ModificationCreateView(View):
     http_method_names = ["post"]
     service_class = ModificationService
@@ -759,7 +798,10 @@ class ModificationCreateView(View):
             )
         messages.error(
             request,
-            _("The change request could not be created. The booking was not changed."),
+            MODIFICATION_REFUSAL_MESSAGES.get(
+                outcome.code,
+                _("The change request could not be created. The booking was not changed."),
+            ),
         )
         return _private_response(
             redirect(

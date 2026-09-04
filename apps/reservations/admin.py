@@ -15,8 +15,10 @@ from .models import (
     BookingIntent,
     BookingModificationRequest,
     BookingQuote,
+    CancellationPolicyTier,
     HostawayModificationOperation,
     HostawayReservationOperation,
+    RefundObligation,
     Reservation,
 )
 
@@ -615,4 +617,123 @@ class HostawayModificationOperationAdmin(ModelAdmin):
             request,
             _("Marked %(count)d operation(s) for review without resending.")
             % {"count": count},
+        )
+
+
+@admin.register(CancellationPolicyTier)
+class CancellationPolicyTierAdmin(ModelAdmin):
+    """Hostaway names the policy; these rows decide what it actually returns."""
+
+    list_display = (
+        "policy_code",
+        "min_hours_before_check_in",
+        "refund_percentage",
+        "refunds_cleaning_fee",
+        "is_active",
+        "note",
+    )
+    list_filter = ("policy_code", "is_active", "refunds_cleaning_fee")
+    list_editable = ("refund_percentage", "refunds_cleaning_fee", "is_active")
+    search_fields = ("policy_code", "note")
+    ordering = ("policy_code", "-min_hours_before_check_in")
+
+    def get_readonly_fields(
+        self,
+        request: HttpRequest,
+        obj: CancellationPolicyTier | None = None,
+    ) -> tuple[str, ...]:
+        return ("created_at", "updated_at")
+
+
+@admin.register(RefundObligation)
+class RefundObligationAdmin(ModelAdmin):
+    """Money owed to a guest. The transfer happens in the bank, not here."""
+
+    list_display = (
+        "public_reference",
+        "amount",
+        "currency",
+        "reason",
+        "status",
+        "guest_contact",
+        "created_at",
+    )
+    list_filter = ("status", "reason", "currency")
+    search_fields = (
+        "public_reference",
+        "reservation__public_reference",
+        "transfer_reference",
+    )
+    ordering = ("-created_at",)
+    actions = ("mark_transferred",)
+    readonly_fields = (
+        "public_reference",
+        "reservation",
+        "modification_request",
+        "reason",
+        "amount",
+        "currency",
+        "calculation_display",
+        "guest_contact",
+        "transferred_at",
+        "transferred_by",
+        "created_at",
+        "updated_at",
+    )
+    fields = readonly_fields + ("status", "transfer_reference", "note")
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: RefundObligation | None = None,
+    ) -> bool:
+        return False
+
+    @admin.display(description=_("Guest contact"))
+    def guest_contact(self, obj: RefundObligation) -> str:
+        """Shown in full: the administration has to reach this guest to pay them."""
+        parts = [obj.guest_name, obj.guest_email, obj.guest_phone]
+        return " · ".join(part for part in parts if part) or "—"
+
+    @admin.display(description=_("How the amount was calculated"))
+    def calculation_display(self, obj: RefundObligation) -> str:
+        if not obj.calculation:
+            return "—"
+        return format_html(
+            "<pre style='white-space:pre-wrap;margin:0'>{}</pre>",
+            json.dumps(obj.calculation, ensure_ascii=False, indent=2),
+        )
+
+    @admin.action(description=_("Mark as transferred to the guest"))
+    def mark_transferred(self, request: HttpRequest, queryset: object) -> None:
+        if not request.user.has_perm("reservations.change_refundobligation"):
+            self.message_user(
+                request,
+                _("You do not have permission to settle refunds."),
+                messages.ERROR,
+            )
+            return
+        now = timezone.now()
+        pending = list(queryset.filter(status=RefundObligation.Status.DUE))
+        for obligation in pending:
+            obligation.status = RefundObligation.Status.TRANSFERRED
+            obligation.transferred_at = now
+            obligation.transferred_by = request.user
+            obligation.save(
+                update_fields=["status", "transferred_at", "transferred_by", "updated_at"]
+            )
+        record_audit(
+            request=request,
+            action="refund.marked_transferred",
+            object_type="RefundObligation",
+            object_reference="bulk",
+            summary="Refund obligations were marked as transferred to guests.",
+            metadata={"count": len(pending)},
+        )
+        self.message_user(
+            request,
+            _("Marked %(count)d refund(s) as transferred.") % {"count": len(pending)},
         )

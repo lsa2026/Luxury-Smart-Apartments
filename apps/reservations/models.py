@@ -4,10 +4,11 @@ import secrets
 import uuid
 from builtins import property as builtin_property
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
@@ -24,6 +25,10 @@ def reservation_reference() -> str:
 
 
 def modification_request_reference() -> str:
+    return secrets.token_urlsafe(18)
+
+
+def refund_obligation_reference() -> str:
     return secrets.token_urlsafe(18)
 
 
@@ -281,7 +286,17 @@ class Reservation(models.Model):
         SYNC_PENDING = "sync_pending", _("Sync pending")
         MODIFIED = "modified", _("Modified")
         CANCELLED = "cancelled", pgettext_lazy("Reservation", "Cancelled")
+        # Hostaway also reports stays that never became a booking. Keeping them
+        # apart from UNKNOWN leaves that value meaning "a status we do not know".
+        PENDING = "pending", pgettext_lazy("Reservation", "Pending confirmation")
+        INQUIRY = "inquiry", pgettext_lazy("Reservation", "Inquiry")
+        DECLINED = "declined", pgettext_lazy("Reservation", "Declined")
+        EXPIRED = "expired", pgettext_lazy("Reservation", "Expired")
         UNKNOWN = "unknown", pgettext_lazy("Reservation", "Unknown")
+
+    # Grouped once so every consumer agrees on what "still counts as a stay" means.
+    ACTIVE_STATUSES = frozenset({Status.CONFIRMED, Status.MODIFIED})
+    CLOSED_STATUSES = frozenset({Status.CANCELLED, Status.DECLINED, Status.EXPIRED})
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_reference = models.CharField(
@@ -579,6 +594,13 @@ class BookingModificationRequest(models.Model):
     def is_expired(self) -> bool:
         return self.expires_at <= timezone.now()
 
+    @builtin_property
+    def refund_amount(self) -> Decimal:
+        """The decrease as money owed, so no template has to negate a number."""
+        if self.price_difference >= 0:
+            return Decimal("0")
+        return -self.price_difference
+
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
@@ -665,3 +687,150 @@ class HostawayModificationOperation(models.Model):
 
     def __str__(self) -> str:
         return f"{self.operation_type} — {self.status}"
+
+
+class CancellationPolicyTier(models.Model):
+    """What the host returns to a guest who cancels, by how early they cancel.
+
+    Hostaway names the policy ("flexible") but publishes no percentages, so the
+    numbers live here and are owned by the administration. A policy with no tier
+    refunds nothing automatically: an unconfigured table must never be read as
+    "refund everything".
+    """
+
+    policy_code = models.CharField(
+        max_length=60,
+        help_text=_("Hostaway policy name, exactly as synced onto the property."),
+    )
+    min_hours_before_check_in = models.PositiveIntegerField(
+        help_text=_("Applies when the cancellation happens at least this long before arrival."),
+    )
+    refund_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+        help_text=_("Percentage of the stay total returned to the guest."),
+    )
+    refunds_cleaning_fee = models.BooleanField(
+        default=True,
+        help_text=_("Uncheck to keep the cleaning fee when this tier applies."),
+    )
+    is_active = models.BooleanField(default=True)
+    note = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        # Widest window first: the first tier a cancellation reaches is the one.
+        ordering = ["policy_code", "-min_hours_before_check_in"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["policy_code", "min_hours_before_check_in"],
+                name="one_tier_per_policy_window",
+            ),
+        ]
+        verbose_name = _("Cancellation policy tier")
+        verbose_name_plural = _("Cancellation policy tiers")
+
+    def __str__(self) -> str:
+        return f"{self.policy_code} ≥ {self.min_hours_before_check_in}h → {self.refund_percentage}%"
+
+
+class RefundObligation(models.Model):
+    """Money the platform owes a guest after an automatic change or cancellation.
+
+    The transfer itself happens in the bank, outside this system. This record is
+    what makes the debt visible, deducts it from reported income until it is
+    settled, and keeps the audit trail of who settled it.
+    """
+
+    class Reason(models.TextChoices):
+        MODIFICATION_DECREASE = "modification_decrease", _("Price decreased after a change")
+        CANCELLATION = "cancellation", _("Cancellation refund")
+
+    class Status(models.TextChoices):
+        DUE = "due", _("Due to the guest")
+        TRANSFERRED = "transferred", _("Transferred")
+        CANCELLED = "cancelled", pgettext_lazy("RefundObligation", "Cancelled")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_reference = models.CharField(
+        max_length=32,
+        unique=True,
+        default=refund_obligation_reference,
+        editable=False,
+    )
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.PROTECT,
+        related_name="refund_obligations",
+    )
+    modification_request = models.ForeignKey(
+        "BookingModificationRequest",
+        on_delete=models.PROTECT,
+        related_name="refund_obligations",
+        null=True,
+        blank=True,
+    )
+    reason = models.CharField(max_length=30, choices=Reason.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DUE)
+    amount = models.DecimalField(
+        max_digits=14,
+        decimal_places=4,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    currency = models.CharField(max_length=3)
+    # How the amount was reached, so a later dispute can be answered without
+    # recomputing against a policy table that may have changed since.
+    calculation = models.JSONField(default=dict, blank=True, editable=False)
+    transfer_reference = models.CharField(max_length=100, blank=True)
+    transferred_at = models.DateTimeField(null=True, blank=True)
+    transferred_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="settled_refund_obligations",
+        null=True,
+        blank=True,
+    )
+    note = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["reservation", "status"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount__gte=0),
+                name="refund_obligation_amount_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=~Q(status="transferred") | Q(transferred_at__isnull=False),
+                name="transferred_refund_records_when",
+            ),
+        ]
+        verbose_name = _("Refund owed to a guest")
+        verbose_name_plural = _("Refunds owed to guests")
+
+    def __str__(self) -> str:
+        return f"{self.public_reference} — {self.amount} {self.currency}"
+
+    @builtin_property
+    def guest_email(self) -> str:
+        intent = self.reservation.booking_intent
+        return intent.guest_email if intent else ""
+
+    @builtin_property
+    def guest_phone(self) -> str:
+        intent = self.reservation.booking_intent
+        return intent.guest_phone if intent else ""
+
+    @builtin_property
+    def guest_name(self) -> str:
+        intent = self.reservation.booking_intent
+        if intent is None:
+            return ""
+        return f"{intent.guest_first_name} {intent.guest_last_name}".strip()

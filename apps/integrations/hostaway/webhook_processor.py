@@ -124,10 +124,12 @@ def sync_reservation_snapshot(
         reservation.total_price = snapshot.total_price
         reservation.source_updated_at = snapshot.updated_at
         reservation.last_synced_at = timezone.now()
-        if reservation.normalized_status == Reservation.Status.CONFIRMED:
+        # A modified stay is still an active stay, and every closed status ends it,
+        # so both timestamps follow the groups rather than two single values.
+        if reservation.normalized_status in Reservation.ACTIVE_STATUSES:
             reservation.confirmed_at = reservation.confirmed_at or timezone.now()
             reservation.cancelled_at = None
-        elif reservation.normalized_status == Reservation.Status.CANCELLED:
+        elif reservation.normalized_status in Reservation.CLOSED_STATUSES:
             reservation.cancelled_at = reservation.cancelled_at or timezone.now()
             reservation.confirmed_at = None
         reservation.full_clean()

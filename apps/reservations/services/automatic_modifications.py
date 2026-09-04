@@ -1,6 +1,7 @@
 """Automatic happy-path orchestration for direct Hostaway modifications."""
 
 from dataclasses import dataclass
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
@@ -8,8 +9,9 @@ from django.utils import timezone
 
 from apps.payments.models import PaymentAttempt
 
-from ..models import BookingModificationRequest
+from ..models import BookingModificationRequest, RefundObligation
 from .hostaway_modifications import HostawayModificationService, ModificationExecution
+from .refunds import RefundComputation, cancellation_refund, record_obligation
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,8 +62,6 @@ def execute_automatic_modification(
         if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
             if not settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED:
                 return AutomaticModificationOutcome("automatic_cancellation_disabled", locked)
-        elif locked.price_difference < 0:
-            return AutomaticModificationOutcome("automatic_refund_required", locked)
         elif locked.price_difference > 0:
             paid = PaymentAttempt.objects.filter(
                 modification_request=locked,
@@ -99,4 +99,37 @@ def execute_automatic_modification(
     else:
         with HostawayModificationService() as owned_service:
             execution = owned_service.execute(locked)
+    if execution.code == "completed":
+        _record_refund_if_owed(execution.request)
     return AutomaticModificationOutcome(execution.code, execution.request, execution)
+
+
+def _record_refund_if_owed(modification: BookingModificationRequest) -> None:
+    """Write down what the guest is owed, only after Hostaway accepted the change.
+
+    Recording first would risk a debt for a change that never happened; recording
+    only on success means the money owed always matches a real booking state.
+    """
+    reservation = modification.reservation
+    if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
+        computation = cancellation_refund(reservation)
+        reason = RefundObligation.Reason.CANCELLATION
+    elif modification.price_difference < 0:
+        computation = RefundComputation(
+            amount=abs(modification.price_difference),
+            currency=modification.currency,
+            detail={
+                "old_total": format(modification.old_total, "f"),
+                "new_total": format(modification.new_total or Decimal("0"), "f"),
+                "source": "modification_price_difference",
+            },
+        )
+        reason = RefundObligation.Reason.MODIFICATION_DECREASE
+    else:
+        return
+    record_obligation(
+        reservation,
+        reason=reason,
+        computation=computation,
+        modification=modification,
+    )

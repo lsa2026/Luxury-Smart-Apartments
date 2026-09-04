@@ -7,6 +7,7 @@ from typing import Any
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DatabaseError
+from django.urls import reverse
 
 from apps.notifications.models import Notification
 from apps.notifications.services.email import queue_email
@@ -72,6 +73,14 @@ EVENTS = {
         "Cancellation requested",
         "وصل طلب إلغاء محلي ولم يُلغ الحجز بعد.",
         "A local cancellation request was received; the reservation is unchanged.",
+    ),
+    "refund.due": EventDefinition(
+        Notification.Type.REFUND_DUE,
+        Notification.Severity.WARNING,
+        "مبلغ مستحق للنزيل",
+        "Refund owed to a guest",
+        "طُبِّق تغيير على الحجز ونتج عنه مبلغ يجب تحويله للنزيل.",
+        "A booking change was applied and left an amount to transfer to the guest.",
     ),
     "hostaway_sync.failed": EventDefinition(
         Notification.Type.HOSTAWAY_SYNC_FAILED,
@@ -249,6 +258,29 @@ def handle_modification_created(modification_id: object) -> None:
             )
     except (DatabaseError, KeyError, ValueError) as exc:
         logger.error("Modification event failed code=%s", type(exc).__name__)
+
+
+def handle_refund_due(obligation_id: object) -> None:
+    """Announce a debt to a guest. Contact details stay in the admin record."""
+    from apps.reservations.models import RefundObligation
+
+    obligation = (
+        RefundObligation.objects.filter(pk=obligation_id)
+        .select_related("reservation")
+        .first()
+    )
+    if obligation is None:
+        return
+    dispatch_event(
+        "refund.due",
+        event_key=f"refund.due:{obligation.public_reference}",
+        related_object_type="RefundObligation",
+        related_object_reference=obligation.public_reference,
+        action_url=reverse(
+            "admin:reservations_refundobligation_change",
+            args=[obligation.pk],
+        ),
+    )
 
 
 def handle_reservation_confirmed(reservation_id: object) -> None:

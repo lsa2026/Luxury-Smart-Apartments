@@ -18,7 +18,13 @@ from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
 from apps.notifications.models import EmailDelivery, Notification
 from apps.payments.models import PaymentAttempt
 from apps.properties.models import Property
-from apps.reservations.models import BookingIntent, BookingModificationRequest, Reservation
+from apps.reservations.models import (
+    BookingIntent,
+    BookingModificationRequest,
+    RefundObligation,
+    Reservation,
+)
+from apps.reservations.services.refunds import outstanding_total
 
 
 def _url(name: str, *args: object) -> str:
@@ -66,12 +72,19 @@ def dashboard_payload(request: object) -> dict[str, Any]:
         .annotate(total=Sum("amount"))
         .order_by("-total")
     )
+    # Refunds owed are money already collected that has to leave again, so the
+    # headline figure reports income net of them rather than flattering it.
+    for row in revenue_by_currency:
+        owed = outstanding_total(row["currency"])
+        row["refunds_due"] = owed
+        row["total"] = row["total"] - owed
     revenue = (
         revenue_by_currency[0]
         if revenue_by_currency
         else {
             "total": Decimal("0"),
             "currency": "SAR",
+            "refunds_due": Decimal("0"),
         }
     )
     latest_sync = IntegrationSyncRun.objects.order_by("-started_at").first()
@@ -112,10 +125,8 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             }
         )
 
-    active_reservation_statuses = (
-        Reservation.Status.CONFIRMED,
-        Reservation.Status.MODIFIED,
-    )
+    # Sorted so the generated SQL is stable; the model owns which statuses count.
+    active_reservation_statuses = tuple(sorted(Reservation.ACTIVE_STATUSES))
     upcoming_reservations = list(
         Reservation.objects.filter(
             Q(check_in__range=(today, week_end)) | Q(check_out__range=(today, week_end)),
@@ -195,6 +206,16 @@ def dashboard_payload(request: object) -> dict[str, Any]:
     reservations_attention = Reservation.objects.filter(
         normalized_status__in=reservation_attention_statuses
     ).count()
+    refunds_due = RefundObligation.objects.filter(
+        status=RefundObligation.Status.DUE
+    ).count()
+    # A paid booking normally leaves ready_for_hostaway within the same request.
+    # One that lingers was refused before any call was made — a blocked Hostaway
+    # operation carries the reason — and nothing else would surface it.
+    stale_unsent_reservations = Reservation.objects.filter(
+        normalized_status=Reservation.Status.READY_FOR_HOSTAWAY,
+        updated_at__lt=now - timedelta(minutes=15),
+    ).count()
     pending_modifications = BookingModificationRequest.objects.filter(
         status__in=pending_modification_statuses
     ).count()
@@ -219,6 +240,25 @@ def dashboard_payload(request: object) -> dict[str, Any]:
                     "An unconfirmed creation or sync state that needs a manual decision."
                 ),
             "url": _url("admin:reservations_reservation_changelist"),
+        },
+        {
+            "severity": "warning",
+            "count": refunds_due,
+            "title": _("Refunds to transfer to guests"),
+            "description": _(
+                    "A change was applied automatically and left money owed. "
+                    "Contact the guest for bank details, transfer, then mark it."
+                ),
+            "url": _url("admin:reservations_refundobligation_changelist"),
+        },
+        {
+            "severity": "critical",
+            "count": stale_unsent_reservations,
+            "title": _("Paid bookings not sent to Hostaway"),
+            "description": _(
+                    "Payment succeeded but creation was blocked; check the operation reason."
+                ),
+            "url": _url("admin:reservations_hostawayreservationoperation_changelist"),
         },
         {
             "severity": "critical",
@@ -370,6 +410,8 @@ def dashboard_payload(request: object) -> dict[str, Any]:
         "stale_pending_payments": stale_pending_payments,
         "payment_attention": payment_attention,
         "reservations_attention": reservations_attention,
+        "stale_unsent_reservations": stale_unsent_reservations,
+        "refunds_due": refunds_due,
         "revenue": revenue,
         "revenue_by_currency": revenue_by_currency,
         "pending_modifications": pending_modifications,

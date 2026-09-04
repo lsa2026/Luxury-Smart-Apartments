@@ -17,7 +17,7 @@
         <article class="booking-list-card">
             <div class="booking-list-card__heading">
                 <div><p class="eyebrow">{% trans "Booking" %}</p><h2>{{ reservation.property|localized_property_name }}</h2></div>
-                <span class="status-pill">{{ reservation.normalized_status|localized_reservation_status }}</span>
+                <span class="status-pill status-pill--{{ reservation.normalized_status|reservation_status_tone }}">{{ reservation.normalized_status|localized_reservation_status }}</span>
             </div>
             {% if reservation.is_test %}<p class="sandbox-chip">{% trans "Test booking — no Hostaway booking" %}</p>{% endif %}
             <p class="payment-state{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %} payment-state--paid{% endif %}">

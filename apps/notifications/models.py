@@ -27,6 +27,7 @@ class Notification(models.Model):
         HOSTAWAY_SYNC_FAILED = "hostaway_sync_failed", _("Sync failure")
         WEBHOOK_FAILED = "webhook_failed", _("Webhook failure")
         RESERVATION_UNKNOWN = "reservation_unknown", _("Unconfirmed booking")
+        REFUND_DUE = "refund_due", _("Refund owed to a guest")
         SYSTEM_WARNING = "system_warning", _("System warning")
 
     class Audience(models.TextChoices):

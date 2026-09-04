@@ -567,6 +567,84 @@ def owned_web_reservation() -> tuple[Client, Reservation]:
     return client, reservation
 
 
+def test_an_extension_past_the_hosts_maximum_stay_is_refused() -> None:
+    reservation = confirmed_reservation()
+    reservation.property.max_nights = 3
+    reservation.property.save()
+    stub = ModificationAvailabilityStub(reservation)
+
+    outcome = create_extension(reservation, stub=stub, added_nights=5)
+
+    assert outcome.code == "maximum_stay_exceeded"
+    assert outcome.request is None
+    # Refused on the host's own terms, without spending a Hostaway call.
+    assert stub.calendar_calls == 0
+
+
+def test_a_change_shorter_than_the_hosts_minimum_stay_is_refused() -> None:
+    reservation = confirmed_reservation()
+    reservation.property.min_nights = 4
+    reservation.property.save()
+    service = ModificationService(availability_service=ModificationAvailabilityStub(reservation))
+
+    outcome = service.create_change_quote(
+        reservation,
+        new_check_in=reservation.check_in,
+        new_check_out=reservation.check_in + timedelta(days=1),
+        new_guests=reservation.guests,
+        session_hash=reservation.booking_intent.session_key_hash,
+    )
+
+    assert outcome.code == "minimum_stay_not_met"
+
+
+def test_a_move_to_today_is_refused_when_the_host_forbids_same_day() -> None:
+    reservation = confirmed_reservation()
+    reservation.property.allow_same_day_booking = False
+    reservation.property.time_zone_name = "Asia/Riyadh"
+    reservation.property.save()
+    service = ModificationService(availability_service=ModificationAvailabilityStub(reservation))
+    today = timezone.localdate()
+
+    outcome = service.create_change_quote(
+        reservation,
+        new_check_in=today,
+        new_check_out=today + timedelta(days=2),
+        new_guests=reservation.guests,
+        session_hash=reservation.booking_intent.session_key_hash,
+    )
+
+    assert outcome.code == "same_day_change_not_allowed"
+
+
+def test_the_guest_is_told_which_policy_refused_the_change() -> None:
+    """A single generic sentence would leave the guest with nothing to act on."""
+    client, reservation = owned_web_reservation()
+    reservation.property.max_nights = 3
+    reservation.property.save()
+
+    response = client.post(
+        f"/reservations/manage/{reservation.public_reference}/extend/",
+        {"new_check_out": (reservation.check_out + timedelta(days=9)).isoformat()},
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert "الحد الأقصى" in content
+
+
+def test_the_manage_page_shows_the_hosts_cancellation_policy() -> None:
+    client, reservation = owned_web_reservation()
+    reservation.property.cancellation_policy = "flexible"
+    reservation.property.save()
+
+    content = client.get(
+        f"/reservations/manage/{reservation.public_reference}/"
+    ).content.decode()
+
+    assert "إلغاء مرن" in content
+
+
 def test_manage_page_is_rtl_session_owned_and_hides_hostaway_ids() -> None:
     client, reservation = owned_web_reservation()
     response = client.get(f"/reservations/manage/{reservation.public_reference}/")
@@ -576,6 +654,60 @@ def test_manage_page_is_rtl_session_owned_and_hides_hostaway_ids() -> None:
     assert "يبقى حجزك المؤكد دون تغيير حتى تتم الموافقة على الطلب." in content
     assert str(reservation.hostaway_reservation_id) not in content
     assert Client().get(f"/reservations/manage/{reservation.public_reference}/").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        Reservation.Status.CANCELLED,
+        Reservation.Status.DECLINED,
+        Reservation.Status.EXPIRED,
+    ],
+)
+def test_closed_stay_replaces_the_progress_bar_with_a_closing_statement(
+    status: str,
+) -> None:
+    client, reservation = owned_web_reservation()
+    reservation.normalized_status = status
+    reservation.confirmed_at = None
+    reservation.save()
+
+    content = client.get(
+        f"/reservations/manage/{reservation.public_reference}/"
+    ).content.decode()
+
+    assert "booking-journey-closed" in content
+    assert 'class="booking-journey"' not in content
+    assert "status-pill--closed" in content
+    # A closed stay must not offer change forms the service would reject anyway.
+    assert "booking-actions" not in content
+
+
+def test_active_stay_keeps_the_progress_bar_and_a_positive_pill() -> None:
+    client, reservation = owned_web_reservation()
+
+    content = client.get(
+        f"/reservations/manage/{reservation.public_reference}/"
+    ).content.decode()
+
+    assert 'class="booking-journey"' in content
+    assert "booking-journey-closed" not in content
+    assert "status-pill--positive" in content
+
+
+def test_a_lead_status_never_reads_as_a_confirmed_stay() -> None:
+    """inquiry/pending arrive from channels; the guest must not see success wording."""
+    client, reservation = owned_web_reservation()
+    reservation.normalized_status = Reservation.Status.INQUIRY
+    reservation.confirmed_at = None
+    reservation.save()
+
+    content = client.get(
+        f"/reservations/manage/{reservation.public_reference}/"
+    ).content.decode()
+
+    assert "status-pill--progress" in content
+    assert "status-pill--positive" not in content
 
 
 def test_manage_page_uses_calendar_pickers_and_capacity_guest_steppers() -> None:

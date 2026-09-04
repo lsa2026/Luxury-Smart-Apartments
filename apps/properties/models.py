@@ -71,6 +71,17 @@ class Property(models.Model):
     )
     hostaway_special_status = models.CharField(max_length=100, blank=True)
     hostaway_is_active = models.BooleanField(default=True)
+    # Booking policy owned by the host in Hostaway. Null means Hostaway did not
+    # report it, which must never be read as "no restriction".
+    min_nights = models.PositiveSmallIntegerField(null=True, blank=True)
+    max_nights = models.PositiveIntegerField(null=True, blank=True)
+    cancellation_policy = models.CharField(max_length=60, blank=True)
+    allow_same_day_booking = models.BooleanField(null=True, blank=True)
+    same_day_booking_lead_time_hours = models.PositiveSmallIntegerField(null=True, blank=True)
+    check_in_time_start = models.PositiveSmallIntegerField(null=True, blank=True)
+    check_out_time = models.PositiveSmallIntegerField(null=True, blank=True)
+    instant_bookable = models.BooleanField(null=True, blank=True)
+    time_zone_name = models.CharField(max_length=64, blank=True)
     imported_at = models.DateTimeField(default=timezone.now, editable=False)
     last_synced_at = models.DateTimeField(null=True, blank=True)
     source_updated_at = models.DateTimeField(null=True, blank=True)

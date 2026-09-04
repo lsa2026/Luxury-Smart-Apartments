@@ -282,6 +282,53 @@ def localized_room_type(value: object) -> str:
     return translation.gettext(labels.get(source, source.replace("_", " ").title()))
 
 
+RESERVATION_STATUS_TONES = {
+    "confirmed": "positive",
+    "modified": "positive",
+    "cancelled": "closed",
+    "declined": "closed",
+    "expired": "closed",
+    "create_failed": "closed",
+}
+
+MODIFICATION_STATUS_TONES = {
+    "completed": "positive",
+    "rejected": "closed",
+    "expired": "closed",
+    "unavailable": "closed",
+    "failed": "closed",
+}
+
+
+@register.filter
+def localized_cancellation_policy(value: object) -> str:
+    """Hostaway's policy identifier in words the guest can act on."""
+    labels = {
+        "flexible": gettext_noop("Flexible cancellation"),
+        "moderate": gettext_noop("Moderate cancellation"),
+        "strict": gettext_noop("Strict cancellation"),
+        "firm": gettext_noop("Firm cancellation"),
+        "super_strict": gettext_noop("Very strict cancellation"),
+        "non_refundable": gettext_noop("Non-refundable"),
+    }
+    source = str(value or "").strip().casefold()
+    if not source:
+        return ""
+    return translation.gettext(labels.get(source, gettext_noop("Host cancellation policy")))
+
+
+@register.filter
+def reservation_status_tone(value: object) -> str:
+    """Colour family for a reservation pill: positive, closed, or in progress."""
+    return RESERVATION_STATUS_TONES.get(str(value or ""), "progress")
+
+
+@register.filter
+def modification_status_tone(value: object) -> str:
+    """Colour family for a change-request pill."""
+    return MODIFICATION_STATUS_TONES.get(str(value or ""), "progress")
+
+
 @register.filter
 def localized_reservation_status(value: object) -> str:
     labels = {
@@ -295,6 +342,12 @@ def localized_reservation_status(value: object) -> str:
         "sync_pending": gettext_noop("Updating"),
         "modified": gettext_noop("Updated"),
         "cancelled": gettext_noop("Cancelled"),
+        # Statuses a channel can report for a stay that never completed. Without
+        # their own wording a declined guest would read "Under review" forever.
+        "pending": gettext_noop("Awaiting confirmation"),
+        "inquiry": gettext_noop("Enquiry"),
+        "declined": gettext_noop("Not accepted"),
+        "expired": gettext_noop("Offer expired"),
         "unknown": gettext_noop("Under review"),
     }
     source = str(value or "")

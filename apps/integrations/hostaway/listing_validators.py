@@ -94,6 +94,18 @@ class HostawayListing:
     currency_code: str
     average_review_rating: Decimal | None
     special_status: str
+    # Booking policy the host maintains in Hostaway. Stay rules also arrive per
+    # day through the calendar; these listing-level values are the fallback and
+    # the only source for the cancellation policy.
+    min_nights: int | None
+    max_nights: int | None
+    cancellation_policy: str
+    allow_same_day_booking: bool | None
+    same_day_booking_lead_time_hours: int | None
+    check_in_time_start: int | None
+    check_out_time: int | None
+    instant_bookable: bool | None
+    time_zone_name: str
     source_updated_at: datetime | None
     images: tuple[HostawayListingImage, ...]
     amenities: tuple[HostawayListingAmenity, ...]
@@ -280,6 +292,53 @@ def normalize_listing(payload: dict[str, Any]) -> HostawayListing:
             "averageReviewRating",
         ),
         special_status=special_status,
+        min_nights=_safe_optional(
+            lambda: _optional_nonnegative_integer(payload.get("minNights"), "minNights"),
+            None,
+            errors,
+            "minNights",
+        ),
+        max_nights=_safe_optional(
+            lambda: _optional_nonnegative_integer(payload.get("maxNights"), "maxNights"),
+            None,
+            errors,
+            "maxNights",
+        ),
+        cancellation_policy=_string(payload.get("cancellationPolicy")).strip()[:60],
+        allow_same_day_booking=_safe_optional(
+            lambda: _optional_flag(payload.get("allowSameDayBooking"), "allowSameDayBooking"),
+            None,
+            errors,
+            "allowSameDayBooking",
+        ),
+        same_day_booking_lead_time_hours=_safe_optional(
+            lambda: _optional_hour(
+                payload.get("sameDayBookingLeadTime"),
+                "sameDayBookingLeadTime",
+            ),
+            None,
+            errors,
+            "sameDayBookingLeadTime",
+        ),
+        check_in_time_start=_safe_optional(
+            lambda: _optional_hour(payload.get("checkInTimeStart"), "checkInTimeStart"),
+            None,
+            errors,
+            "checkInTimeStart",
+        ),
+        check_out_time=_safe_optional(
+            lambda: _optional_hour(payload.get("checkOutTime"), "checkOutTime"),
+            None,
+            errors,
+            "checkOutTime",
+        ),
+        instant_bookable=_safe_optional(
+            lambda: _optional_flag(payload.get("instantBookable"), "instantBookable"),
+            None,
+            errors,
+            "instantBookable",
+        ),
+        time_zone_name=_string(payload.get("timeZoneName")).strip()[:64],
         # latestActivityOn is the best available source timestamp, but Hostaway
         # activity does not necessarily mean the listing content was edited.
         source_updated_at=_safe_optional(
@@ -408,6 +467,27 @@ def _optional_positive_integer(value: Any, field_name: str) -> int | None:
     if value in (None, ""):
         return None
     return _positive_integer(value, field_name)
+
+
+def _optional_flag(value: Any, field_name: str) -> bool | None:
+    """Hostaway reports listing switches as 0/1 rather than JSON booleans."""
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return value
+    parsed = _integer(value, field_name)
+    if parsed not in (0, 1):
+        raise HostawayResponseError(f"{field_name} must be 0 or 1")
+    return bool(parsed)
+
+
+def _optional_hour(value: Any, field_name: str) -> int | None:
+    if value in (None, ""):
+        return None
+    parsed = _integer(value, field_name)
+    if not 0 <= parsed <= 24:
+        raise HostawayResponseError(f"{field_name} must be an hour of the day")
+    return parsed
 
 
 def _optional_nonnegative_integer(value: Any, field_name: str) -> int | None:

@@ -19,6 +19,7 @@ from apps.integrations.hostaway.exceptions import (
     HostawayTimeoutError,
 )
 from apps.integrations.hostaway.reservation_validators import (
+    HOSTAWAY_RESERVATION_STATUS_MAP,
     HostawayReservationCreateRequest,
     HostawayReservationCreateResult,
     HostawayReservationSnapshot,
@@ -582,16 +583,70 @@ def test_client_get_reservation_is_sanitized_get_only() -> None:
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
+        # Active stays.
         ("new", "confirmed"),
         ("confirmed", "confirmed"),
-        ("modified", "modified"),
-        ("cancelled", "cancelled"),
         ("ownerStay", "confirmed"),
+        ("modified", "modified"),
+        # Booked, not settled.
+        ("awaitingPayment", "awaiting_payment"),
+        ("pending", "pending"),
+        ("unconfirmed", "pending"),
+        # Leads.
+        ("inquiry", "inquiry"),
+        ("inquiryPreapproved", "inquiry"),
+        # Closed without a stay.
+        ("cancelled", "cancelled"),
+        ("canceled", "cancelled"),
+        ("declined", "declined"),
+        ("inquiryDenied", "declined"),
+        ("inquiryNotPossible", "declined"),
+        ("expired", "expired"),
+        ("inquiryTimeout", "expired"),
+        # Casing and padding must not change the outcome.
+        ("  INQUIRYNOTPOSSIBLE  ", "declined"),
+        # Only a status Hostaway has not published yet stays unknown.
         ("futureStatus", "unknown"),
     ],
 )
 def test_status_mapping(raw: str, expected: str) -> None:
     assert normalize_hostaway_reservation_status(raw) == expected
+
+
+def test_every_mapped_status_is_a_declared_reservation_status() -> None:
+    """A typo in the map would otherwise fail only later, at full_clean time."""
+    declared = {choice.value for choice in Reservation.Status}
+
+    assert set(HOSTAWAY_RESERVATION_STATUS_MAP.values()) <= declared
+
+
+def test_status_filter_from_the_hostaway_dashboard_is_fully_covered() -> None:
+    """Every status the Hostaway reservation filter offers, in its API spelling."""
+    dashboard_statuses = {
+        "confirmed",
+        "new",
+        "ownerStay",
+        "modified",
+        "cancelled",
+        "pending",
+        "unconfirmed",
+        "awaitingPayment",
+        "declined",
+        "expired",
+        "inquiry",
+        "inquiryPreapproved",
+        "inquiryDenied",
+        "inquiryTimeout",
+        "inquiryNotPossible",
+    }
+
+    unmapped = {
+        status
+        for status in dashboard_statuses
+        if normalize_hostaway_reservation_status(status) == "unknown"
+    }
+
+    assert not unmapped
 
 
 def test_verify_prerequisites_is_read_only(monkeypatch: pytest.MonkeyPatch) -> None:

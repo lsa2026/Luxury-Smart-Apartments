@@ -22,6 +22,7 @@ from .availability import (
     evaluate_calendar,
 )
 from .booking import sanitized_components
+from .host_policy import check_in_datetime, policy_blocker
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +71,13 @@ class ModificationService:
         if added_nights > settings.BOOKING_EXTENSION_MAX_NIGHTS:
             return ModificationCreation("extension_limit_exceeded")
         assert reservation.property is not None
+        refusal = policy_blocker(
+            reservation.property,
+            check_in=reservation.check_in,
+            check_out=new_check_out,
+        )
+        if refusal:
+            return ModificationCreation(refusal)
         try:
             calendar = self.availability_service.fetch_calendar(
                 property_obj=reservation.property,
@@ -122,6 +130,13 @@ class ModificationService:
         if new_guests <= 0:
             return ModificationCreation("invalid_guests")
         assert reservation.property is not None
+        refusal = policy_blocker(
+            reservation.property,
+            check_in=new_check_in,
+            check_out=new_check_out,
+        )
+        if refusal:
+            return ModificationCreation(refusal)
         capacity = reservation.property.person_capacity
         if capacity and new_guests > capacity:
             return ModificationCreation("capacity_exceeded")
@@ -305,14 +320,19 @@ class ModificationService:
             return ModificationCreation("idempotent", existing)
         if difference > 0:
             status = BookingModificationRequest.Status.AWAITING_PAYMENT
-        elif difference == 0 and settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL:
+        elif settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL:
+            # A decrease owes the guest money rather than collecting any, so it
+            # applies straight away and leaves a refund obligation behind.
             status = BookingModificationRequest.Status.READY_FOR_HOSTAWAY
         else:
             status = BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
-        cutoff = timezone.now() + timedelta(hours=settings.BOOKING_MODIFICATION_CUTOFF_HOURS)
+        # Measured to the hour the guest actually arrives, in the listing's own
+        # timezone, so the window does not close a day early or late.
+        arrival = check_in_datetime(reservation.property, reservation.check_in)
+        cutoff = timedelta(hours=settings.BOOKING_MODIFICATION_CUTOFF_HOURS)
         if (
             not settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
-            and reservation.check_in <= timezone.localtime(cutoff).date()
+            and arrival - timezone.now() <= cutoff
         ):
             status = BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
         snapshot = {

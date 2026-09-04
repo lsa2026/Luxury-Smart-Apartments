@@ -417,6 +417,47 @@ def test_missing_credentials_fail_safely() -> None:
         HyperPayClient()
 
 
+PRODUCTION_AUTOMATION = {
+    "HYPERPAY_ENABLED": True,
+    "HYPERPAY_ENVIRONMENT": "production",
+    "HYPERPAY_BASE_URL": "https://eu-prod.oppwa.com/",
+    "HYPERPAY_ENTITY_ID": "production-like-entity",
+    "HYPERPAY_ACCESS_TOKEN": "production-like-token",
+    "HYPERPAY_CURRENCY": "SAR",
+    "HYPERPAY_PAYMENT_TYPE": "DB",
+    "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True,
+    "HOSTAWAY_LIVE_BOOKING_ENABLED": True,
+    "BOOKING_AUTOMATIC_MODIFICATION_APPROVAL": True,
+    "HOSTAWAY_LIVE_MODIFICATION_ENABLED": True,
+    "HOSTAWAY_LIVE_EXTENSION_ENABLED": True,
+    "BOOKING_AUTOMATIC_CANCELLATION_ENABLED": False,
+    "HOSTAWAY_LIVE_CANCELLATION_ENABLED": False,
+}
+
+
+@override_settings(**PRODUCTION_AUTOMATION)
+def test_the_shipped_automation_combination_boots() -> None:
+    """These are the values render.yaml now carries for every service."""
+    assert hyperpay_configuration_check() == []
+
+
+@override_settings(**{**PRODUCTION_AUTOMATION, "HOSTAWAY_LIVE_EXTENSION_ENABLED": False})
+def test_automatic_approval_without_live_extension_is_refused() -> None:
+    """The three flags have to move together or a request would stall unapplied."""
+    errors = hyperpay_configuration_check()
+
+    assert {error.id for error in errors} >= {"payments.E108"}
+
+
+@override_settings(
+    **{**PRODUCTION_AUTOMATION, "BOOKING_AUTOMATIC_CANCELLATION_ENABLED": True}
+)
+def test_automatic_cancellation_without_live_cancellation_is_refused() -> None:
+    errors = hyperpay_configuration_check()
+
+    assert {error.id for error in errors} >= {"payments.E109"}
+
+
 @override_settings(
     HYPERPAY_ENABLED=True,
     HYPERPAY_ENVIRONMENT="production",

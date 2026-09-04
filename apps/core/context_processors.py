@@ -178,5 +178,6 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         ),
         "pending_analytics_event": (pending_event if isinstance(pending_event, str) else ""),
         "payment_sandbox_enabled": settings.PAYMENT_SANDBOX_ENABLED,
+        "refund_working_days": settings.BOOKING_REFUND_WORKING_DAYS,
         "whatsapp_contact": _whatsapp_contact(site_setting),
     }
