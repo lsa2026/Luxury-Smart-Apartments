@@ -108,6 +108,19 @@ class Property(models.Model):
     # House rules are written by the administration, not synced. Hostaway carries
     # a `houseRules` string, but it is the host's English free text and this site
     # never machine-translates source content into Arabic.
+    # The cheapest available night in the coming window, refreshed by a command
+    # rather than read at page load: a card must never call the channel manager.
+    # It anchors expectations only; the booked price always comes from a live
+    # quote for the guest's own dates.
+    indicative_nightly_from = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name=_("Indicative nightly rate"),
+    )
+    indicative_currency = models.CharField(max_length=3, blank=True)
+    indicative_priced_at = models.DateTimeField(null=True, blank=True)
     house_rules_ar = models.TextField(blank=True, verbose_name=_("House rules"))
     house_rules_en = models.TextField(blank=True, verbose_name=_("House rules"))
     house_rules_fr = models.TextField(blank=True, verbose_name=_("House rules"))

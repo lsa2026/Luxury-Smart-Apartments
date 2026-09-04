@@ -113,3 +113,23 @@ def expire_booking_objects_task() -> dict[str, Any]:
         "intents": result.intents,
         "modifications": result.modifications,
     }
+
+
+@shared_task(
+    name="apps.integrations.tasks.refresh_indicative_rates_task",
+    soft_time_limit=9 * 60,
+    time_limit=10 * 60,
+)
+def refresh_indicative_rates_task() -> dict[str, str]:
+    """Refresh the display-only "from" price on every active property.
+
+    Daily is deliberate: the figure only has to orient a first-time visitor, and
+    the live quote remains the authority for any real booking.
+    """
+    from django.core.management import call_command
+
+    with distributed_task_lock("indicative-rates") as acquired:
+        if not acquired:
+            return {"status": "already_running"}
+        call_command("refresh_indicative_rates")
+    return {"status": "completed"}

@@ -152,6 +152,7 @@
                     method="post"
                     action="{% url 'reservations:guest_details' quote_reference %}"
                     data-guest-journey
+                    data-draft-form="guest-details"
                     data-initial-step="{{ guest_form_initial_step }}"
                     data-submit-once
                     data-analytics-event="begin_checkout"
@@ -252,7 +253,7 @@
 
                         <div class="quote-review__form-grid guest-journey__billing-grid">
                             <div class="form-field guest-journey__field--street{% if guest_form.billing_street1.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}</label>
+                                <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}<span class="form-optional">{% trans "optional" %}</span></label>
                                 {{ guest_form.billing_street1 }}
                                 {% for error in guest_form.billing_street1.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
@@ -266,13 +267,24 @@
                                 {{ guest_form.billing_city }}
                                 {% for error in guest_form.billing_city.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
-                            <div class="form-field guest-journey__field--state{% if guest_form.billing_state.errors %} form-field--error{% endif %}" data-journey-field>
+                            {% comment %}
+                                Two controls, one value. The script shows the
+                                Saudi list or the free-text field depending on
+                                the chosen country; without JavaScript both stay
+                                visible and either one is accepted.
+                            {% endcomment %}
+                            <div class="form-field guest-journey__field--state{% if guest_form.billing_region_sa.errors %} form-field--error{% endif %}" data-journey-field data-region-group="SA">
+                                <label for="{{ guest_form.billing_region_sa.id_for_label }}">{{ guest_form.billing_region_sa.label }}</label>
+                                {{ guest_form.billing_region_sa }}
+                                {% for error in guest_form.billing_region_sa.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="form-field guest-journey__field--state{% if guest_form.billing_state.errors %} form-field--error{% endif %}" data-journey-field data-region-group="other">
                                 <label for="{{ guest_form.billing_state.id_for_label }}">{{ guest_form.billing_state.label }}</label>
                                 {{ guest_form.billing_state }}
                                 {% for error in guest_form.billing_state.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
                             <div class="form-field guest-journey__field--postcode{% if guest_form.billing_postcode.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_postcode.id_for_label }}">{{ guest_form.billing_postcode.label }}</label>
+                                <label for="{{ guest_form.billing_postcode.id_for_label }}">{{ guest_form.billing_postcode.label }}<span class="form-optional">{% trans "optional" %}</span></label>
                                 {{ guest_form.billing_postcode }}
                                 {% for error in guest_form.billing_postcode.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
