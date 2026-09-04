@@ -21,6 +21,7 @@ from apps.integrations.hostaway.exceptions import (
     HostawayResponseError,
     HostawayServerError,
 )
+from apps.payments.currency import PAYMENT_CURRENCY
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingIntent,
@@ -118,8 +119,8 @@ class HostawayBookingService:
             PaymentAttempt.objects.filter(
                 booking_intent=intent,
                 status=PaymentAttempt.Status.SUCCEEDED,
-                amount=reservation.total_price,
-                currency=reservation.currency,
+                amount=intent.payment_amount_sar,
+                currency=PAYMENT_CURRENCY,
             )
             .order_by("-created_at")
             .first()

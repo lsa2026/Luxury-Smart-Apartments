@@ -12101,3 +12101,87 @@ body.splash-active .whatsapp-fab {
     margin: 0 0 0.35rem;
     font-weight: 700;
 }
+
+/* Display-currency controls never submit an amount; they only persist an ISO code. */
+.currency-selector {
+    display: inline-flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.currency-selector select {
+    min-height: 2.65rem;
+    padding: 0.45rem 1.85rem 0.45rem 0.65rem;
+    border: 1px solid rgb(255 255 255 / 16%);
+    color: #fff;
+    background: rgb(255 255 255 / 7%);
+    border-radius: 0.75rem;
+    font: 700 0.76rem/1 var(--font-body);
+    direction: ltr;
+}
+
+.currency-selector select option {
+    color: var(--color-text);
+    background: #fff;
+}
+
+.currency-selector__submit {
+    width: 2.65rem;
+    min-height: 2.65rem;
+    border: 1px solid rgb(255 255 255 / 16%);
+    color: var(--color-accent);
+    background: rgb(255 255 255 / 7%);
+    border-radius: 0.75rem;
+}
+
+.js .currency-selector__submit {
+    display: none;
+}
+
+.currency-selector--mobile {
+    display: flex;
+    width: 100%;
+    margin-block: 0.6rem;
+}
+
+.currency-selector--mobile label,
+.currency-selector--mobile select {
+    width: 100%;
+}
+
+.checkout__total--display {
+    border: 1px solid rgb(215 173 98 / 35%);
+    color: var(--color-text);
+    background: #fffaf1;
+    box-shadow: none;
+}
+
+.checkout__total--display > span {
+    color: var(--color-primary);
+}
+
+.checkout__total--display > strong {
+    color: var(--color-primary-strong);
+}
+
+.checkout__total--payment {
+    margin-block-start: 0.55rem;
+}
+
+.checkout__fx-note {
+    margin: 0.75rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    line-height: 1.7;
+}
+
+.money-conversion-unavailable {
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2em;
+}
+
+@media (max-width: 48rem) {
+    .header-actions > .currency-selector {
+        display: none;
+    }
+}

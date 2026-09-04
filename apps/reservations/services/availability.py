@@ -252,6 +252,7 @@ class AvailabilityService:
         request: AvailabilityRequest,
         *,
         session_hash: str,
+        selected_display_currency: str = "SAR",
         bypass_cache: bool = False,
     ) -> object:
         """Verify Hostaway outside a transaction, then persist a short-lived quote."""
@@ -264,6 +265,7 @@ class AvailabilityService:
             availability,
             property_obj=request.property,
             session_hash=session_hash,
+            selected_display_currency=selected_display_currency,
         )
         return QuoteCreation(availability=availability, quote=quote)
 
@@ -437,7 +439,6 @@ class AvailabilityService:
             check_in=request.check_in,
             check_out=request.check_out,
             guests=request.guests,
-            fallback_currency=request.property.currency_code,
         )
         duration_ms = max(0, round((self.timer() - started) * 1000))
         self.cache.set(

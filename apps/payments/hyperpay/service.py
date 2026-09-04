@@ -11,6 +11,11 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from apps.payments.currency import (
+    PAYMENT_CURRENCY,
+    CurrencyError,
+    validate_payment_snapshot,
+)
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingIntent, BookingModificationRequest, Reservation
 from apps.reservations.services.automatic_modifications import (
@@ -83,8 +88,10 @@ def build_checkout_payload(
     currency: str | None = None,
 ) -> dict[str, str]:
     country = normalize_country_code(intent.billing_country)
-    checkout_amount = intent.total_price if amount is None else amount
-    checkout_currency = intent.currency.upper() if currency is None else currency.upper()
+    checkout_amount = intent.payment_amount_sar if amount is None else amount
+    checkout_currency = PAYMENT_CURRENCY if currency is None else currency.upper()
+    if checkout_amount is None:
+        raise ValueError("payment_snapshot_missing")
     if checkout_currency != settings.HYPERPAY_CURRENCY:
         raise ValueError("currency_not_supported")
     required = {
@@ -151,6 +158,15 @@ class HyperPayService:
                 or locked.expires_at <= timezone.now()
             ):
                 raise HyperPayCheckoutError("booking_intent_not_payable")
+            try:
+                validate_payment_snapshot(
+                    source_amount=locked.total_price,
+                    source_currency=locked.currency,
+                    payment_amount_sar=locked.payment_amount_sar,
+                    snapshot=locked.exchange_rate_snapshot,
+                )
+            except CurrencyError as exc:
+                raise HyperPayCheckoutError("payment_snapshot_invalid") from exc
             existing = (
                 PaymentAttempt.objects.select_for_update()
                 .filter(
@@ -163,6 +179,11 @@ class HyperPayService:
                 .first()
             )
             if existing and existing.provider_checkout_id and existing.widget_integrity:
+                if (
+                    existing.amount != locked.payment_amount_sar
+                    or existing.currency != PAYMENT_CURRENCY
+                ):
+                    raise HyperPayCheckoutError("existing_payment_snapshot_mismatch")
                 return CheckoutSession(
                     existing,
                     existing.provider_checkout_id,
@@ -174,8 +195,8 @@ class HyperPayService:
                 booking_intent=locked,
                 provider=HYPERPAY_PROVIDER,
                 merchant_transaction_id=merchant_id,
-                amount=locked.total_price,
-                currency=locked.currency.upper(),
+                amount=locked.payment_amount_sar,
+                currency=PAYMENT_CURRENCY,
                 status=PaymentAttempt.Status.CREATED,
                 idempotency_key=secrets.token_urlsafe(32),
             )
@@ -245,8 +266,18 @@ class HyperPayService:
                 or locked.expires_at <= timezone.now()
                 or locked.price_difference <= 0
                 or intent is None
+                or locked.payment_amount_sar is None
             ):
                 raise HyperPayCheckoutError("modification_not_payable")
+            try:
+                validate_payment_snapshot(
+                    source_amount=locked.price_difference,
+                    source_currency=locked.currency,
+                    payment_amount_sar=locked.payment_amount_sar,
+                    snapshot=locked.quote_snapshot.get("fx"),
+                )
+            except CurrencyError as exc:
+                raise HyperPayCheckoutError("payment_snapshot_invalid") from exc
             existing = (
                 PaymentAttempt.objects.select_for_update()
                 .filter(
@@ -259,6 +290,11 @@ class HyperPayService:
                 .first()
             )
             if existing and existing.provider_checkout_id and existing.widget_integrity:
+                if (
+                    existing.amount != locked.payment_amount_sar
+                    or existing.currency != PAYMENT_CURRENCY
+                ):
+                    raise HyperPayCheckoutError("existing_payment_snapshot_mismatch")
                 return CheckoutSession(
                     existing,
                     existing.provider_checkout_id,
@@ -271,8 +307,8 @@ class HyperPayService:
                 modification_request=locked,
                 provider=HYPERPAY_PROVIDER,
                 merchant_transaction_id=merchant_id,
-                amount=locked.price_difference,
-                currency=locked.currency.upper(),
+                amount=locked.payment_amount_sar,
+                currency=PAYMENT_CURRENCY,
                 status=PaymentAttempt.Status.CREATED,
                 idempotency_key=secrets.token_urlsafe(32),
             )
@@ -280,8 +316,8 @@ class HyperPayService:
                 payload = build_checkout_payload(
                     intent,
                     merchant_id,
-                    amount=locked.price_difference,
-                    currency=locked.currency,
+                    amount=locked.payment_amount_sar,
+                    currency=PAYMENT_CURRENCY,
                 )
             except ValueError as exc:
                 raise HyperPayCheckoutError(str(exc)) from exc

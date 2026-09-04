@@ -786,3 +786,9 @@ Production أو Apple Pay في هذه المرحلة.
 قانونيًا، مطابقة روابط الوحدات القديمة، ضبط النطاق الرسمي HTTPS، والتحقق
 اليدوي في Search Console. بوابة الدفع الحالية TEST/UAT فقط، ولم يبدأ Staging
 أو النشر الإنتاجي.
+## دعم عرض العملات
+
+Hostaway's explicit current quote currency remains the source of truth while
+HyperPay is pinned to SAR. Architecture, resilience, audit snapshots,
+configuration, and verification are documented in
+[`docs/multi-currency.md`](docs/multi-currency.md).
