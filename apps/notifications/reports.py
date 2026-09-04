@@ -1,6 +1,7 @@
 """PostgreSQL-only aggregate reports for operations."""
 
 from datetime import date, timedelta
+from decimal import Decimal
 from typing import Any
 
 from django.core.cache import cache
@@ -18,6 +19,15 @@ from apps.reservations.models import (
     Reservation,
 )
 from apps.reviews.models import Review
+
+
+def _average_rating_out_of_five() -> Decimal | None:
+    """Return the Hostaway ten-point review average on the UI's five-point scale."""
+
+    average = Review.objects.aggregate(value=Avg("rating"))["value"]
+    if average is None:
+        return None
+    return (Decimal(average) / Decimal("2")).quantize(Decimal("0.1"))
 
 
 def report_period(period: str, start: str = "", end: str = "") -> tuple[date, date]:
@@ -54,7 +64,7 @@ def operations_report(start_date: date, end_date: date) -> dict[str, Any]:
         ).count(),
         "images_total": PropertyImage.objects.count(),
         "reviews_total": Review.objects.count(),
-        "average_rating": Review.objects.aggregate(value=Avg("rating"))["value"],
+        "average_rating": _average_rating_out_of_five(),
         "new_contacts": ContactMessage.objects.filter(
             status=ContactMessage.Status.NEW,
             created_at__date__range=date_range,

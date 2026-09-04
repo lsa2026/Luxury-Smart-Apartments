@@ -4,6 +4,7 @@ from django.contrib import admin, messages
 from django.core.cache import cache
 from django.db import models, transaction
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -249,9 +250,12 @@ class PropertyAdmin(admin.ModelAdmin):
         "=hostaway_listing_id",
         "=hostaway_listing_map_id",
     )
-    readonly_fields = PROPERTY_SOURCE_FIELDS
+    readonly_fields = PROPERTY_SOURCE_FIELDS + ("asset_management",)
     actions = ("queue_selected_property_sync",)
-    inlines = (PropertyImageInline, PropertyAmenityInline)
+    # Large Hostaway listings can contain dozens of images and amenities. They
+    # stay fully manageable on their dedicated screens instead of making the
+    # main property form several pages long.
+    inlines = ()
     list_per_page = 25
     fieldsets = (
         (
@@ -278,23 +282,47 @@ class PropertyAdmin(admin.ModelAdmin):
         ),
         (
             _("English content"),
-            {"fields": ("name_en", "short_description_en", "description_en", "city_en")},
+            {
+                "classes": ("collapse",),
+                "fields": ("name_en", "short_description_en", "description_en", "city_en"),
+            },
         ),
         (
             _("French content"),
-            {"fields": ("name_fr", "short_description_fr", "description_fr", "city_fr")},
+            {
+                "classes": ("collapse",),
+                "fields": ("name_fr", "short_description_fr", "description_fr", "city_fr"),
+            },
         ),
         (
             _("SEO — Arabic"),
-            {"fields": ("seo_title_ar", "seo_description_ar")},
+            {
+                "classes": ("collapse",),
+                "fields": ("seo_title_ar", "seo_description_ar"),
+            },
         ),
         (
             _("SEO — English"),
-            {"fields": ("seo_title_en", "seo_description_en")},
+            {
+                "classes": ("collapse",),
+                "fields": ("seo_title_en", "seo_description_en"),
+            },
         ),
         (
             _("SEO — French"),
-            {"fields": ("seo_title_fr", "seo_description_fr")},
+            {
+                "classes": ("collapse",),
+                "fields": ("seo_title_fr", "seo_description_fr"),
+            },
+        ),
+        (
+            _("Images and amenities"),
+            {
+                "fields": ("asset_management",),
+                "description": _(
+                    "Manage large image and amenity collections on focused screens."
+                ),
+            },
         ),
         (
             _("Hostaway operational data"),
@@ -306,7 +334,41 @@ class PropertyAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Property]:
-        return super().get_queryset(request).annotate(_image_count=models.Count("images"))
+        return super().get_queryset(request).annotate(
+            _image_count=models.Count("images", distinct=True),
+            _amenity_count=models.Count("property_amenities", distinct=True),
+        )
+
+    @admin.display(description=_("Media and amenities management"))
+    def asset_management(self, obj: Property) -> str:
+        if not obj.pk:
+            return str(_("Save the property first, then manage images and amenities."))
+        images_url = reverse("admin:properties_propertyimage_changelist")
+        images_url = f"{images_url}?property__id__exact={obj.pk}"
+        amenities_url = reverse("admin:properties_propertyamenity_changelist")
+        amenities_url = f"{amenities_url}?property__id__exact={obj.pk}"
+        alt_text_url = reverse("properties_admin:image_alt_text")
+        alt_text_url = f"{alt_text_url}?property={obj.pk}"
+        image_count = getattr(obj, "_image_count", None)
+        if image_count is None:
+            image_count = obj.images.count()
+        amenity_count = getattr(obj, "_amenity_count", None)
+        if amenity_count is None:
+            amenity_count = obj.property_amenities.count()
+        return format_html(
+            '<div class="lsa-admin-action-hub">'
+            '<p>{}</p><a class="button" href="{}">{}</a> '
+            '<a class="button" href="{}">{}</a> '
+            '<a class="button" href="{}">{}</a></div>',
+            _("%(images)d images · %(amenities)d amenities")
+            % {"images": image_count, "amenities": amenity_count},
+            images_url,
+            _("Manage images"),
+            alt_text_url,
+            _("Edit alternative text"),
+            amenities_url,
+            _("Manage amenities"),
+        )
 
     @admin.display(description=_("Local name"), ordering="name_ar")
     def local_name(self, obj: Property) -> str:

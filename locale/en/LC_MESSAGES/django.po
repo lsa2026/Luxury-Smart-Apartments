@@ -6105,3 +6105,33 @@ msgstr ""
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr ""
+
+msgid "Display currency"
+msgstr ""
+
+msgid "Apply display currency"
+msgstr ""
+
+msgid "Unsupported display currency."
+msgstr ""
+
+msgid "Display total"
+msgstr ""
+
+msgid "Final payment"
+msgstr ""
+
+msgid "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference."
+msgstr ""
+
+msgid "Currency conversion is temporarily unavailable; the original price is shown."
+msgstr ""
+
+msgid "The previous quote expired. Please review the refreshed price."
+msgstr ""
+
+msgid "Exchange-rate snapshot"
+msgstr ""
+
+msgid "HyperPay amount"
+msgstr ""

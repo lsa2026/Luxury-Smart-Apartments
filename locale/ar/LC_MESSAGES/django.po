@@ -4033,7 +4033,7 @@ msgstr "اختر وحدة لبدء التحرير."
 #: .\templates\base.html:9 .\templates\base.html:22 .\templates\base.html:31
 #: .\templates\includes\footer.html:11
 msgid "Luxury smart stays in Riyadh and Marrakech."
-msgstr "إقامات ذكية فاخرة في الرياض ومراكش."
+msgstr "إقامات ذكية فاخرة  ومراكش."
 
 #: .\templates\base.html:21 .\templates\base.html:30 .\templates\base.html:32
 #: .\templates\core\content_page.html:8
@@ -6316,3 +6316,275 @@ msgstr "لا تملك صلاحية تسوية الاستردادات."
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr "تم تعليم %(count)d مبلغ كمُحوَّل."
+msgid "New in Hostaway"
+msgstr "جديد في Hostaway"
+
+msgid "Modified in Hostaway"
+msgstr "معدّل في Hostaway"
+
+msgid "Cancelled in Hostaway"
+msgstr "ملغى في Hostaway"
+
+msgid "Pending in Hostaway"
+msgstr "قيد الانتظار في Hostaway"
+
+msgid "Confirmed in Hostaway"
+msgstr "مؤكد في Hostaway"
+
+msgid "Test booking — not sent"
+msgstr "حجز اختباري — لم يُرسل"
+
+msgid "Paid"
+msgstr "مدفوع"
+
+msgid "Unpaid"
+msgstr "غير مدفوع"
+
+msgid "Not linked"
+msgstr "غير مرتبط"
+
+msgid "Safe booking management"
+msgstr "إدارة الحجز بأمان"
+
+msgid "Use the approved modification workflow so Hostaway, payment and the audit log stay consistent."
+msgstr "استخدم مسار التعديل المعتمد حتى تبقى بيانات Hostaway والدفع وسجل التدقيق متطابقة."
+
+msgid "Manage the booking"
+msgstr "إدارة الحجز"
+
+msgid "Changes and cancellations are handled as audited requests; the confirmed reservation remains read-only."
+msgstr "تُدار التعديلات والإلغاءات كطلبات موثقة، ويبقى الحجز المؤكد للقراءة فقط."
+
+msgid "View modification and cancellation requests"
+msgstr "عرض طلبات التعديل والإلغاء"
+
+msgid "View Hostaway execution log"
+msgstr "عرض سجل تنفيذ Hostaway"
+
+msgid "Booking request summary"
+msgstr "ملخص طلب الحجز"
+
+msgid "Protected guest information"
+msgstr "بيانات الضيف المحمية"
+
+msgid "Linked records"
+msgstr "السجلات المرتبطة"
+
+msgid "Consent and timeline"
+msgstr "الموافقات والخط الزمني"
+
+msgid "View booking request"
+msgstr "عرض طلب الحجز"
+
+msgid "Contact details"
+msgstr "بيانات التواصل"
+
+msgid "Billing address"
+msgstr "عنوان الفوترة"
+
+msgid "Linked booking records"
+msgstr "سجلات الحجز المرتبطة"
+
+msgid "View price quote"
+msgstr "فتح عرض السعر"
+
+msgid "Guest name"
+msgstr "اسم الضيف"
+
+msgid "Sandbox payment completed"
+msgstr "اكتمل الدفع التجريبي"
+
+msgid "View confirmed booking"
+msgstr "عرض الحجز المؤكد"
+
+msgid "Customer consent"
+msgstr "موافقات العميل"
+
+msgid "Terms accepted"
+msgstr "الموافقة على الشروط"
+
+msgid "Privacy accepted"
+msgstr "الموافقة على الخصوصية"
+
+msgid "Expires"
+msgstr "ينتهي"
+
+msgid "Images and amenities"
+msgstr "الصور والمرافق"
+
+msgid "Media and amenities management"
+msgstr "إدارة الصور والمرافق"
+
+msgid "Manage large image and amenity collections on focused screens."
+msgstr "أدر مجموعات الصور والمرافق الكبيرة في شاشات مخصصة وواضحة."
+
+msgid "Save the property first, then manage images and amenities."
+msgstr "احفظ الوحدة أولًا، ثم أدر الصور والمرافق."
+
+#, python-format
+msgid "%(images)d images · %(amenities)d amenities"
+msgstr "%(images)d صورة · %(amenities)d مرفق"
+
+msgid "Manage images"
+msgstr "إدارة الصور"
+
+msgid "Edit alternative text"
+msgstr "تحرير النص البديل"
+
+msgid "Manage amenities"
+msgstr "إدارة المرافق"
+
+msgid "Payment summary"
+msgstr "ملخص الدفع"
+
+msgid "Payment for"
+msgstr "الغرض من الدفع"
+
+msgid "Booking modification"
+msgstr "تعديل الحجز"
+
+msgid "Original booking"
+msgstr "الحجز الأصلي"
+
+msgid "Provider response"
+msgstr "استجابة بوابة الدفع"
+
+msgid "Technical references"
+msgstr "المراجع التقنية"
+
+msgid "Use these references only when investigating the payment provider."
+msgstr "استخدم هذه المراجع فقط عند التحقق من بوابة الدفع."
+
+msgid "Verification timeline"
+msgstr "الخط الزمني للتحقق"
+
+msgid "Payment provider"
+msgstr "بوابة الدفع"
+
+msgid "Provider result"
+msgstr "نتيجة بوابة الدفع"
+
+msgid "Failure reason"
+msgstr "سبب الفشل"
+
+msgid "Provider technical references"
+msgstr "المراجع التقنية لبوابة الدفع"
+
+msgid "Configuration readiness"
+msgstr "اكتمال الإعدادات"
+
+msgid "Contact information complete"
+msgstr "بيانات التواصل مكتملة"
+
+msgid "Configuration status"
+msgstr "حالة الإعداد"
+
+msgid "Arabic tagline"
+msgstr "الشعار النصي بالعربية"
+
+msgid "English tagline"
+msgstr "الشعار النصي بالإنجليزية"
+
+msgid "French tagline"
+msgstr "الشعار النصي بالفرنسية"
+
+msgid "Arabic footer text"
+msgstr "نص التذييل بالعربية"
+
+msgid "English footer text"
+msgstr "نص التذييل بالإنجليزية"
+
+msgid "French footer text"
+msgstr "نص التذييل بالفرنسية"
+
+msgid "WhatsApp display number"
+msgstr "رقم واتساب الظاهر"
+
+msgid "WhatsApp link"
+msgstr "رابط واتساب"
+
+msgid "Instagram link"
+msgstr "رابط إنستغرام"
+
+msgid "Facebook link"
+msgstr "رابط فيسبوك"
+
+msgid "X link"
+msgstr "رابط منصة X"
+
+msgid "LinkedIn link"
+msgstr "رابط لينكدإن"
+
+msgid "Arabic office hours"
+msgstr "ساعات العمل بالعربية"
+
+msgid "English office hours"
+msgstr "ساعات العمل بالإنجليزية"
+
+msgid "French office hours"
+msgstr "ساعات العمل بالفرنسية"
+
+msgid "Arabic public address"
+msgstr "العنوان العام بالعربية"
+
+msgid "English public address"
+msgstr "العنوان العام بالإنجليزية"
+
+msgid "French public address"
+msgstr "العنوان العام بالفرنسية"
+
+msgid "Essential public contact information is complete."
+msgstr "بيانات التواصل العامة الأساسية مكتملة."
+
+msgid "Complete the essential contact information"
+msgstr "أكمل بيانات التواصل الأساسية"
+
+#, python-format
+msgid "Missing: %(fields)s"
+msgstr "البيانات الناقصة: %(fields)s"
+
+msgid "Site name"
+msgstr "اسم الموقع"
+
+msgid "Contact email"
+msgstr "البريد الإلكتروني للتواصل"
+
+msgid "Contact phone"
+msgstr "رقم هاتف التواصل"
+
+msgid "Updated at"
+msgstr "آخر تحديث"
+
+msgctxt "admin field label"
+msgid "Property"
+msgstr "الوحدة"
+
+msgid "Display currency"
+msgstr "عملة العرض"
+
+msgid "Apply display currency"
+msgstr "تطبيق عملة العرض"
+
+msgid "Unsupported display currency."
+msgstr "عملة العرض غير مدعومة."
+
+msgid "Display total"
+msgstr "الإجمالي المعروض"
+
+msgid "Final payment"
+msgstr "المبلغ النهائي للدفع"
+
+msgid "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference."
+msgstr "سيتم تنفيذ عملية الدفع بالريال السعودي (SAR). المبلغ بالعملة المختارة معروض للتوضيح."
+
+msgid "Currency conversion is temporarily unavailable; the original price is shown."
+msgstr "تحويل العملة غير متاح مؤقتًا؛ يظهر السعر الأصلي."
+
+msgid "The previous quote expired. Please review the refreshed price."
+msgstr "انتهت صلاحية عرض السعر السابق. يرجى مراجعة السعر المحدّث."
+
+msgid "Exchange-rate snapshot"
+msgstr "لقطة سعر الصرف"
+
+msgid "HyperPay amount"
+msgstr "مبلغ HyperPay"

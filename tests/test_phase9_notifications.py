@@ -1,6 +1,7 @@
 """Synthetic tests for notifications, email, audit, reports, health, and retention."""
 
 from datetime import timedelta
+from decimal import Decimal
 from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -43,6 +44,7 @@ from apps.notifications.tasks import (
     send_daily_operations_summary_task,
 )
 from apps.payments.models import PaymentAttempt
+from apps.properties.models import Property
 from apps.reservations.models import Reservation
 from apps.reviews.admin import ReviewAdmin
 from apps.reviews.models import Review
@@ -706,6 +708,31 @@ def test_dashboard_aggregate_values() -> None:
     assert report["new_contacts"] == 1
     assert report["notification_unread"] == 1
     assert report["properties_total"] == 0
+
+
+def test_dashboard_converts_hostaway_review_average_to_five_point_scale() -> None:
+    cache.clear()
+    property_obj = Property.objects.create(
+        hostaway_listing_id=98001,
+        slug="operations-rating",
+        name_ar="وحدة تقييم",
+    )
+    for review_id, rating in ((98001, "10.0"), (98002, "8.0")):
+        Review.objects.create(
+            hostaway_review_id=review_id,
+            property=property_obj,
+            hostaway_listing_map_id=98001,
+            review_type=Review.Type.GUEST_TO_HOST,
+            status=Review.Status.PUBLISHED,
+            rating=Decimal(rating),
+            public_review="Synthetic review",
+            synced_at=timezone.now(),
+        )
+
+    today = timezone.localdate()
+    report = operations_report(today, today)
+
+    assert report["average_rating"] == Decimal("4.5")
 
 
 @pytest.mark.parametrize(

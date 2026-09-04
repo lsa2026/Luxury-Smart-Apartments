@@ -6451,3 +6451,33 @@ msgstr "Vous n'avez pas la permission de régler les remboursements."
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr "%(count)d remboursement(s) marqué(s) comme virés."
+
+msgid "Display currency"
+msgstr "Devise d’affichage"
+
+msgid "Apply display currency"
+msgstr "Appliquer la devise d’affichage"
+
+msgid "Unsupported display currency."
+msgstr "Devise d’affichage non prise en charge."
+
+msgid "Display total"
+msgstr "Total affiché"
+
+msgid "Final payment"
+msgstr "Paiement final"
+
+msgid "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference."
+msgstr "Le paiement est traité en riyals saoudiens (SAR). La devise sélectionnée est affichée à titre indicatif."
+
+msgid "Currency conversion is temporarily unavailable; the original price is shown."
+msgstr "La conversion de devise est temporairement indisponible ; le prix d’origine est affiché."
+
+msgid "The previous quote expired. Please review the refreshed price."
+msgstr "Le devis précédent a expiré. Veuillez vérifier le prix actualisé."
+
+msgid "Exchange-rate snapshot"
+msgstr "Instantané du taux de change"
+
+msgid "HyperPay amount"
+msgstr "Montant HyperPay"
