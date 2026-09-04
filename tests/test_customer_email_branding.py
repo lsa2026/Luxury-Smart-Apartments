@@ -12,7 +12,10 @@ from apps.notifications.services.email import (
     EmailMessageRequest,
     send_queued_email,
 )
-from apps.notifications.services.events import handle_modification_completed
+from apps.notifications.services.events import (
+    handle_modification_completed,
+    handle_modification_created,
+)
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingModificationRequest
 from tests.test_booking_modifications_phase6 import confirmed_reservation, create_extension
@@ -154,6 +157,22 @@ def test_completed_modification_queues_one_final_customer_email() -> None:
     assert delivery.message_type == "reservation_modified"
     assert delivery.recipient_source == "modification"
     assert delivery.template_name == "modification"
+
+
+@override_settings(
+    MODIFICATION_NOTIFICATION_EMAIL_ENABLED=True,
+    EMAIL_DELIVERY_ENABLED=True,
+)
+def test_created_modification_records_no_customer_receipt_email() -> None:
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+
+    handle_modification_created(modification.pk)
+
+    assert not EmailDelivery.objects.filter(
+        idempotency_key=f"modification-created:{modification.public_reference}"
+    ).exists()
 
 
 @override_settings(
