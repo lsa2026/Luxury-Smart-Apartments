@@ -6105,3 +6105,11 @@ msgstr ""
 #: apps/reservations/admin.py
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr ""
+
+#: templates/reservations/availability_result.html
+msgid "Price verification is temporarily unavailable"
+msgstr ""
+
+#: templates/reservations/availability_result.html
+msgid "We couldn't verify the price right now. Please try again shortly."
+msgstr ""

@@ -27,6 +27,7 @@ from apps.payments.views import (
     HyperPayBookingCheckoutView,
     HyperPayModificationCheckoutView,
     HyperPayResultView,
+    _hyperpay_return_token,
 )
 from apps.reservations.models import (
     BookingIntent,
@@ -246,6 +247,26 @@ def test_price_change_blocks_checkout_before_hyperpay() -> None:
     intent.refresh_from_db()
     assert intent.status == BookingIntent.Status.PRICE_CHANGED
     assert client.checkout_calls == 0
+
+
+@override_settings(
+    **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
+)
+def test_wrong_listing_binding_blocks_checkout_before_hyperpay() -> None:
+    intent = payable_intent()
+    current = complete_availability(intent)
+    wrong_listing = replace(current.quote, listing_id=intent.property.hostaway_listing_id + 1)
+    current = replace(current, quote=wrong_listing)
+    client = HyperPayStub()
+
+    with pytest.raises(HyperPayCheckoutError, match="prepayment_price_changed"):
+        HyperPayService(
+            client=client,
+            availability_service=AvailabilityStub(current),
+        ).create_checkout(intent)
+
+    assert client.checkout_calls == 0
+    assert PaymentAttempt.objects.count() == 0
 
 
 @override_settings(**HYPERPAY_SETTINGS)
@@ -632,6 +653,7 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
     assert reverse("reservations:intent_detail", args=[intent.public_reference]) in content
     assert "font-src 'self' data: https://eu-test.oppwa.com" in csp
     assert "unsafe-eval" not in csp
+    assert "return_token=" in content
 
 
 @override_settings(**HYPERPAY_SETTINGS)
@@ -769,3 +791,32 @@ def test_tampered_resource_path_and_idor_are_rejected(monkeypatch) -> None:
     assert tampered.status_code == 404
     assert stranger.status_code == 404
     assert ResultViewServiceStub.calls == 0
+
+
+@override_settings(**HYPERPAY_SETTINGS)
+def test_signed_return_token_makes_duplicate_provider_return_idempotent(monkeypatch) -> None:
+    intent = payable_intent()
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="duplicate_return_checkout_12345678",
+        merchant_transaction_id="LSA-duplicate-return-123456",
+        amount=intent.payment_amount_sar,
+        currency="SAR",
+        status=PaymentAttempt.Status.PENDING,
+        idempotency_key="duplicate-return-idempotency-key-123456",
+    )
+    ResultViewServiceStub.calls = 0
+    ResultViewServiceStub.outcome = VerificationOutcome(attempt, HyperPayStatus.FAILED)
+    monkeypatch.setattr(HyperPayResultView, "service_class", ResultViewServiceStub)
+    query = {
+        "return_token": _hyperpay_return_token(attempt),
+        "resourcePath": f"/v1/checkouts/{attempt.provider_checkout_id}/payment",
+    }
+
+    first = Client().get(reverse("payments:hyperpay_result", args=[attempt.pk]), query)
+    second = Client().get(reverse("payments:hyperpay_result", args=[attempt.pk]), query)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert ResultViewServiceStub.calls == 2

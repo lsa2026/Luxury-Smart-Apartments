@@ -6320,3 +6320,11 @@ msgstr "تم تعليم %(count)d مبلغ كمُحوَّل."
 #: templates/accounts/login.html
 msgid "Forgot your password?"
 msgstr "نسيت كلمة المرور؟"
+
+#: templates/reservations/availability_result.html
+msgid "Price verification is temporarily unavailable"
+msgstr "تعذر التحقق من السعر مؤقتاً"
+
+#: templates/reservations/availability_result.html
+msgid "We couldn't verify the price right now. Please try again shortly."
+msgstr "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل."

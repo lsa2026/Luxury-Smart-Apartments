@@ -498,7 +498,11 @@ class HyperPayService:
             ).update(status=BookingIntent.Status.UNAVAILABLE, updated_at=timezone.now())
             raise HyperPayCheckoutError("prepayment_unavailable")
         quote = result.quote
-        if quote.currency != intent.currency or quote.total_price != intent.total_price:
+        if (
+            quote.listing_id != intent.property.hostaway_listing_id
+            or quote.currency != intent.currency
+            or quote.total_price != intent.total_price
+        ):
             BookingIntent.objects.filter(
                 pk=intent.pk,
                 status=BookingIntent.Status.AWAITING_PAYMENT,

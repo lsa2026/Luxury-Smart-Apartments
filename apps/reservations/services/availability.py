@@ -82,12 +82,12 @@ MESSAGES = {
         "The stay exceeds the maximum stay.",
     ),
     PRICING_UNAVAILABLE: (
-        "تعذر حساب السعر لهذه الفترة.",
-        "A price could not be calculated for this stay.",
+        "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل.",
+        "We couldn't verify the price right now. Please try again shortly.",
     ),
     HOSTAWAY_TEMPORARILY_UNAVAILABLE: (
-        "تعذر التحقق الآن. يرجى المحاولة لاحقًا.",
-        "Availability cannot be checked right now. Please try again later.",
+        "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل.",
+        "We couldn't verify the price right now. Please try again shortly.",
     ),
 }
 
@@ -439,6 +439,7 @@ class AvailabilityService:
             check_in=request.check_in,
             check_out=request.check_out,
             guests=request.guests,
+            bypass_currency_cache=bypass_cache,
         )
         duration_ms = max(0, round((self.timer() - started) * 1000))
         self.cache.set(

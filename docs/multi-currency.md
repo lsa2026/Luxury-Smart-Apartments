@@ -2,9 +2,10 @@
 
 The booking platform has three deliberately separate monetary concepts:
 
-- **Source price:** the current amount and explicit currency returned by Hostaway
-  `priceDetails` v2. The application never derives this currency from a city,
-  country, property, or cached listing currency.
+- **Source price:** the current amount returned by Hostaway `priceDetails` v2,
+  paired with its explicit currency when present or the current
+  `Listing.currencyCode` for the exact same listing ID. The application never
+  derives currency from city, country, geography, listing name, or category.
 - **Payment price:** the server-calculated amount in SAR. HyperPay receives this
   amount and `currency=SAR` only.
 - **Display price:** a presentation-only conversion in SAR, MAD, USD, or EUR.
@@ -42,6 +43,23 @@ available through the mathematically exact identity path.
 
 Production should set `CACHE_URL` to the shared Redis cache already used by the
 project so web workers share fresh and LKG rates.
+
+## Hostaway currency contract and freshness
+
+`resolve_hostaway_price_currency()` is the sole precedence boundary. An
+explicit supported `priceDetails` currency wins; otherwise the supported
+`Listing.currencyCode` is the authoritative fallback. When both are present
+they must match. A mismatch logs `HOSTAWAY_CURRENCY_CONFLICT` and fails closed.
+Missing, unsupported, malformed, or differently bound listing metadata also
+fails closed, before any financial quote or HyperPay checkout exists.
+
+The existing `GET /listings/{listingId}` client path is reused. Only the
+sanitized listing ID and currency code are cached, for 300 seconds by default,
+to avoid another listing call for every browsed price. Any operation using
+`bypass_cache=True`—including quote creation, expired-quote replacement, final
+checkout revalidation, and modification payment revalidation—also bypasses
+that metadata cache. Thus the final amount and currency are fetched afresh and
+bound to the same listing before the FX snapshot is locked.
 
 ## Immutable checkout snapshot
 

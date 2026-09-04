@@ -89,6 +89,14 @@ def test_source_currency_to_sar(amount: str, currency: str, expected: Decimal) -
     assert CurrencyService.source_to_sar(amount, currency, fixed_rates()) == expected
 
 
+def test_sar_source_amount_is_not_double_converted() -> None:
+    assert CurrencyService.source_to_sar("1400", "SAR", fixed_rates()) == Decimal("1400.00")
+
+
+def test_mad_source_amount_is_divided_by_the_sar_base_rate() -> None:
+    assert CurrencyService.source_to_sar("1400", "MAD", fixed_rates()) == Decimal("560.00")
+
+
 @pytest.mark.parametrize(
     ("currency", "expected"),
     [
@@ -270,7 +278,7 @@ def test_one_rate_fetch_supports_multiple_money_values_on_one_page(
         )
     )
     assert calls == 1
-    assert output.count("$") == 2
+    assert output.count("USD") == 2
     assert "<script" not in output
 
 

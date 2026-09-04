@@ -1,8 +1,10 @@
 from datetime import date
+from unittest.mock import patch
 
 import pytest
 
 from apps.integrations.hostaway.availability_validators import (
+    resolve_hostaway_price_currency,
     validate_calendar_response,
     validate_price_response,
 )
@@ -57,6 +59,82 @@ def test_invalid_currency_is_rejected() -> None:
             check_in=date(2030, 2, 1),
             check_out=date(2030, 2, 3),
             guests=2,
+        )
+
+
+def _price_currency_payload(currency: str | None) -> dict:
+    result = {"totalPrice": "200.00", "components": []}
+    if currency is not None:
+        result["currency"] = currency
+    return {"status": "success", "result": result}
+
+
+@pytest.mark.parametrize(
+    ("price_currency", "listing_currency", "expected"),
+    [
+        ("MAD", "MAD", "MAD"),
+        (None, "MAD", "MAD"),
+        (None, "SAR", "SAR"),
+        ("SAR", "SAR", "SAR"),
+    ],
+)
+def test_hostaway_currency_precedence_accepts_matching_authoritative_sources(
+    price_currency: str | None,
+    listing_currency: str,
+    expected: str,
+) -> None:
+    assert (
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload(price_currency),
+            {"id": 511786, "currencyCode": listing_currency},
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("price_currency", "listing_currency"),
+    [("MAD", "SAR"), ("SAR", "MAD")],
+)
+def test_hostaway_currency_conflict_fails_closed_and_is_logged(
+    price_currency: str,
+    listing_currency: str,
+) -> None:
+    with patch("apps.integrations.hostaway.availability_validators.logger.error") as log_error:
+        with pytest.raises(HostawayResponseError, match="conflict"):
+            resolve_hostaway_price_currency(
+                511786,
+                _price_currency_payload(price_currency),
+                {"id": 511786, "currencyCode": listing_currency},
+            )
+    assert log_error.call_args.args[0].startswith("HOSTAWAY_CURRENCY_CONFLICT")
+
+
+def test_hostaway_currency_missing_from_both_sources_is_rejected() -> None:
+    with pytest.raises(HostawayResponseError, match="does not identify"):
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload(None),
+            {"id": 511786, "currencyCode": None},
+        )
+
+
+def test_hostaway_currency_rejects_wrong_listing_binding() -> None:
+    with pytest.raises(HostawayResponseError, match="different listing ID"):
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload(None),
+            {"id": 315814, "currencyCode": "SAR"},
+        )
+
+
+def test_hostaway_currency_rejects_unsupported_listing_currency() -> None:
+    with pytest.raises(HostawayResponseError, match="unsupported"):
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload(None),
+            {"id": 511786, "currencyCode": "GBP"},
         )
 
 

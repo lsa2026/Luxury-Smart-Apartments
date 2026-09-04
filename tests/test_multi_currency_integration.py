@@ -2,6 +2,7 @@ from decimal import Decimal
 from functools import partial
 
 import pytest
+from django.db import IntegrityError, transaction
 from django.test import Client, override_settings
 from django.urls import reverse
 
@@ -9,7 +10,7 @@ from apps.payments.hyperpay.service import HyperPayService
 from apps.payments.models import PaymentAttempt
 from apps.payments.views import HyperPayBookingCheckoutView
 from apps.properties.models import Property
-from apps.reservations.models import BookingIntent
+from apps.reservations.models import BookingIntent, BookingQuote
 from apps.reservations.security import SESSION_MARKER_KEY, hash_session_marker
 from apps.reservations.services.booking import (
     consume_revalidated_quote,
@@ -206,3 +207,21 @@ def test_browser_amount_and_currency_tampering_cannot_change_hyperpay(
     assert attempt.currency == "SAR"
     assert gateway.payload["amount"] == "400.00"
     assert gateway.payload["currency"] == "SAR"
+
+
+def test_database_constraints_reject_negative_sar_and_non_sar_hyperpay() -> None:
+    _property, quote, intent, _provider = create_flow(
+        source_amount=Decimal("1000"),
+        source_currency="SAR",
+        display_currency="USD",
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        BookingQuote.objects.filter(pk=quote.pk).update(payment_amount_sar=Decimal("-0.01"))
+    with pytest.raises(IntegrityError), transaction.atomic():
+        PaymentAttempt.objects.create(
+            booking_intent=intent,
+            provider="hyperpay",
+            amount=Decimal("1000"),
+            currency="MAD",
+            idempotency_key="db-constraint-non-sar-hyperpay-0000000001",
+        )
