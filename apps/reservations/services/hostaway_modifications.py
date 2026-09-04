@@ -303,7 +303,6 @@ def _finance_field(item: object) -> ReservationFinanceField:
         raise ValueError("price_component_invalid") from exc
     required = (
         item.get("is_included_in_total"),
-        item.get("is_mandatory"),
         item.get("is_deleted"),
     )
     if any(value is None for value in required):
@@ -319,7 +318,10 @@ def _finance_field(item: object) -> ReservationFinanceField:
         total=total,
         is_included_in_total_price=bool(item["is_included_in_total"]),
         is_overridden_by_user=False,
-        is_mandatory=bool(item["is_mandatory"]),
+        # The price calculator returns null for this documented field on
+        # components such as baseRate. Keep the authoritative value instead of
+        # blocking a paid modification before the Hostaway request is sent.
+        is_mandatory=item.get("is_mandatory"),
         is_deleted=bool(item["is_deleted"]),
     )
 
