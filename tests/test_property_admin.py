@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import RequestFactory
 
-from apps.properties.admin import PropertyAdmin, PropertyImageAdmin
+from apps.properties.admin import PropertyAdmin, PropertyAdminForm, PropertyImageAdmin
 from apps.properties.models import Property, PropertyImage
 
 pytestmark = pytest.mark.django_db
@@ -52,6 +52,14 @@ def test_property_editor_uses_focused_asset_screens_and_collapsed_secondary_cont
     assert "المحتوى الإنجليزي" in collapsed_sections
     assert "المحتوى الفرنسي" in collapsed_sections
     assert "SEO — العربية" in collapsed_sections
+
+
+def test_property_editor_explains_visible_and_seo_title_ownership() -> None:
+    form = PropertyAdminForm()
+
+    assert "عنوان رئيسي" in str(form.fields["name_ar"].help_text)
+    assert "تبويب المتصفح" in str(form.fields["seo_title_ar"].help_text)
+    assert "اتركه فارغاً" in str(form.fields["seo_title_ar"].help_text)
 
 
 def test_only_local_images_can_be_deleted_in_admin() -> None:

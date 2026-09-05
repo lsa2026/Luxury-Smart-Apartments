@@ -755,7 +755,7 @@ h2 {
 
 .filter-bar {
     display: grid;
-    grid-template-columns: repeat(5, minmax(8rem, 1fr)) auto;
+    grid-template-columns: repeat(4, minmax(8rem, 1fr));
     align-items: end;
     gap: 0.8rem;
     padding: var(--space-5);
@@ -764,6 +764,19 @@ h2 {
     background: var(--color-surface);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
+}
+
+.filter-bar__date-note {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+}
+
+.filter-bar input[type="date"] {
+    direction: ltr;
+    text-align: start;
+    unicode-bidi: isolate;
 }
 
 .form-field {
@@ -3397,6 +3410,9 @@ input[data-iso-date] {
 }
 
 .property-card__counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     padding: 0.25rem 0.55rem;
     color: #fff;
     background: rgb(9 7 28 / 52%);

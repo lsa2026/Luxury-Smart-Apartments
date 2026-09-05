@@ -1,5 +1,5 @@
 {% load i18n presentation currency %}
-{% firstof property_detail_url property.get_absolute_url as resolved_property_url %}
+{% firstof property_detail_url property.browse_detail_url property.get_absolute_url as resolved_property_url %}
 {% with property_name=property|localized_property_name images=property.preview_images %}
 <article
     class="property-card"
@@ -76,7 +76,9 @@
                 {% endfor %}
             </div>
             <span class="property-card__counter" aria-hidden="true">
-                <b data-card-current>1</b> / {{ images|length }}
+                <b data-card-current>{{ 1|localized_number }}</b>
+                <span>{% trans "of" %}</span>
+                <span data-card-total>{{ images|length|localized_number }}</span>
             </span>
         </div>
         {% endif %}

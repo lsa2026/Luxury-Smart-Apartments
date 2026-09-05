@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 03:00+0300\n"
+"POT-Creation-Date: 2026-09-05 15:17+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -334,8 +334,8 @@ msgstr "Non démarré"
 msgid "Unlinked property"
 msgstr "Logement non lié"
 
-#: .\apps\core\admin_dashboard.py:151 .\apps\reservations\forms.py:89
-#: .\templates\accounts\dashboard.html:28
+#: .\apps\core\admin_dashboard.py:151 .\apps\properties\forms.py:14
+#: .\apps\reservations\forms.py:89 .\templates\accounts\dashboard.html:28
 #: .\templates\payments\hyperpay_checkout.html:133
 #: .\templates\properties\property_detail.html:122
 #: .\templates\reservations\availability_result.html:24
@@ -346,8 +346,8 @@ msgstr "Logement non lié"
 msgid "Check-in"
 msgstr "Arrivée"
 
-#: .\apps\core\admin_dashboard.py:164 .\apps\reservations\forms.py:96
-#: .\templates\accounts\dashboard.html:29
+#: .\apps\core\admin_dashboard.py:164 .\apps\properties\forms.py:27
+#: .\apps\reservations\forms.py:96 .\templates\accounts\dashboard.html:29
 #: .\templates\payments\hyperpay_checkout.html:134
 #: .\templates\properties\property_detail.html:123
 #: .\templates\reservations\availability_result.html:25
@@ -1426,7 +1426,7 @@ msgstr "Données expurgées"
 msgid "Requeue failed or retryable events"
 msgstr "Remettre en file les événements échoués ou réessayables"
 
-#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:497
+#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:529
 #: .\apps\reservations\admin.py:720 .\apps\reservations\admin.py:917
 msgid "This action requires elevated permissions."
 msgstr "Cette action requiert des droits élevés."
@@ -2005,149 +2005,178 @@ msgstr "Le refus du paiement de la différence a été simulé sans aucun débit
 msgid "The simulation was cancelled; the original booking remains unchanged."
 msgstr "La simulation a été annulée ; la réservation initiale reste inchangée."
 
-#: .\apps\properties\admin.py:147
+#: .\apps\properties\admin.py:148
 msgid "Short link"
 msgstr "Lien court"
 
-#: .\apps\properties\admin.py:148 .\apps\properties\admin.py:152
-#: .\apps\properties\admin.py:156
+#: .\apps\properties\admin.py:149 .\apps\properties\admin.py:153
+#: .\apps\properties\admin.py:157
 msgid "Property name"
 msgstr "Nom du logement"
 
-#: .\apps\properties\admin.py:149 .\apps\properties\admin.py:153
-#: .\apps\properties\admin.py:157
+#: .\apps\properties\admin.py:150 .\apps\properties\admin.py:154
+#: .\apps\properties\admin.py:158
 msgid "Short description"
 msgstr "Description courte"
 
-#: .\apps\properties\admin.py:150 .\apps\properties\admin.py:154
-#: .\apps\properties\admin.py:158
+#: .\apps\properties\admin.py:151 .\apps\properties\admin.py:155
+#: .\apps\properties\admin.py:159
 msgid "Full description"
 msgstr "Description complète"
 
-#: .\apps\properties\admin.py:151 .\apps\properties\admin.py:155
-#: .\apps\properties\admin.py:159 .\apps\properties\admin.py:396
+#: .\apps\properties\admin.py:152 .\apps\properties\admin.py:156
+#: .\apps\properties\admin.py:160 .\apps\properties\admin.py:428
 #: .\apps\reservations\booking_forms.py:99
 #: .\templates\properties\property_list.html:9
 msgid "City"
 msgstr "Ville"
 
-#: .\apps\properties\admin.py:160 .\apps\properties\admin.py:162
-#: .\apps\properties\admin.py:164
+#: .\apps\properties\admin.py:161 .\apps\properties\admin.py:163
+#: .\apps\properties\admin.py:165
 msgid "SEO title"
 msgstr "Titre SEO"
 
-#: .\apps\properties\admin.py:161 .\apps\properties\admin.py:163
-#: .\apps\properties\admin.py:165
+#: .\apps\properties\admin.py:162 .\apps\properties\admin.py:164
+#: .\apps\properties\admin.py:166
 msgid "SEO description"
 msgstr "Description SEO"
 
-#: .\apps\properties\admin.py:166 .\apps\properties\admin.py:412
+#: .\apps\properties\admin.py:167 .\apps\properties\admin.py:444
 msgid "Visible on the platform"
 msgstr "Visible sur la plateforme"
 
-#: .\apps\properties\admin.py:167
+#: .\apps\properties\admin.py:168
 msgid "Visibility management"
 msgstr "Gestion de la visibilité"
 
-#: .\apps\properties\admin.py:168
+#: .\apps\properties\admin.py:169
 msgid "Featured property"
 msgstr "Logement mis en avant"
 
-#: .\apps\properties\admin.py:169
+#: .\apps\properties\admin.py:170
 msgid "Display order"
 msgstr "Ordre d’affichage"
 
-#: .\apps\properties\admin.py:170
+#: .\apps\properties\admin.py:171
 msgid "Local content is customised"
 msgstr "Contenu local personnalisé"
 
-#: .\apps\properties\admin.py:207 .\apps\properties\admin.py:587
+#: .\apps\properties\admin.py:174
+msgid "Shown as the main heading on the Arabic property page."
+msgstr "Affiché comme titre principal sur la page du logement en arabe."
+
+#: .\apps\properties\admin.py:175
+msgid "Shown as the main heading on the English property page."
+msgstr "Affiché comme titre principal sur la page du logement en anglais."
+
+#: .\apps\properties\admin.py:176
+msgid "Shown as the main heading on the French property page."
+msgstr "Affiché comme titre principal sur la page du logement en français."
+
+#: .\apps\properties\admin.py:178
+msgid "Used in the Arabic browser tab and search results. Leave blank to reuse the visible property name."
+msgstr "Utilisé dans l'onglet du navigateur et les résultats de recherche en arabe. Laissez vide pour reprendre le nom visible du logement."
+
+#: .\apps\properties\admin.py:182
+msgid "Used in the English browser tab and search results. Leave blank to reuse the visible property name."
+msgstr "Utilisé dans l'onglet du navigateur et les résultats de recherche en anglais. Laissez vide pour reprendre le nom visible du logement."
+
+#: .\apps\properties\admin.py:186
+msgid "Used in the French browser tab and search results. Leave blank to reuse the visible property name."
+msgstr "Utilisé dans l'onglet du navigateur et les résultats de recherche en français. Laissez vide pour reprendre le nom visible du logement."
+
+#: .\apps\properties\admin.py:225 .\apps\properties\admin.py:618
 msgid "Preview"
 msgstr "Aperçu"
 
-#: .\apps\properties\admin.py:268
+#: .\apps\properties\admin.py:286
 msgid "Publishing and display"
 msgstr "Publication et affichage"
 
-#: .\apps\properties\admin.py:279 .\apps\properties\admin.py:437
+#: .\apps\properties\admin.py:297 .\apps\properties\admin.py:469
 msgid "Arabic content"
 msgstr "Contenu arabe"
 
-#: .\apps\properties\admin.py:291
+#: .\apps\properties\admin.py:309
 msgid "English content"
 msgstr "Contenu anglais"
 
-#: .\apps\properties\admin.py:304
+#: .\apps\properties\admin.py:322
 msgid "French content"
 msgstr "Contenu français"
 
-#: .\apps\properties\admin.py:317
+#: .\apps\properties\admin.py:335
 msgid "SEO — Arabic"
 msgstr "SEO — arabe"
 
-#: .\apps\properties\admin.py:324
+#: .\apps\properties\admin.py:340 .\apps\properties\admin.py:351
+#: .\apps\properties\admin.py:362
+msgid "The SEO title may intentionally differ from the visible page heading; leave it blank to keep both identical."
+msgstr "Le titre SEO peut intentionnellement différer du titre visible de la page ; laissez-le vide pour les garder identiques."
+
+#: .\apps\properties\admin.py:346
 msgid "SEO — English"
 msgstr "SEO — anglais"
 
-#: .\apps\properties\admin.py:331
+#: .\apps\properties\admin.py:357
 msgid "SEO — French"
 msgstr "SEO — français"
 
-#: .\apps\properties\admin.py:338
+#: .\apps\properties\admin.py:368
 msgid "Images and amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:342
+#: .\apps\properties\admin.py:371
 msgid "Manage large image and amenity collections on focused screens."
 msgstr ""
 
-#: .\apps\properties\admin.py:347
+#: .\apps\properties\admin.py:375
 msgid "Hostaway operational data"
 msgstr "Données opérationnelles Hostaway"
 
-#: .\apps\properties\admin.py:361
+#: .\apps\properties\admin.py:393
 #, fuzzy
 #| msgid "Content management"
 msgid "Media and amenities management"
 msgstr "Gestion du contenu"
 
-#: .\apps\properties\admin.py:364
+#: .\apps\properties\admin.py:396
 msgid "Save the property first, then manage images and amenities."
 msgstr ""
 
-#: .\apps\properties\admin.py:382
+#: .\apps\properties\admin.py:414
 #, python-format
 msgid "%(images)d images · %(amenities)d amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:385
+#: .\apps\properties\admin.py:417
 #, fuzzy
 #| msgid "Manage booking"
 msgid "Manage images"
 msgstr "Gérer la réservation"
 
-#: .\apps\properties\admin.py:387
+#: .\apps\properties\admin.py:419
 #, fuzzy
 #| msgid "Save alternative text"
 msgid "Edit alternative text"
 msgstr "Enregistrer le texte alternatif"
 
-#: .\apps\properties\admin.py:389
+#: .\apps\properties\admin.py:421
 #, fuzzy
 #| msgid "Manage properties"
 msgid "Manage amenities"
 msgstr "Gérer les logements"
 
-#: .\apps\properties\admin.py:392
+#: .\apps\properties\admin.py:424
 msgid "Local name"
 msgstr "Nom local"
 
-#: .\apps\properties\admin.py:400 .\apps\reservations\forms.py:103
+#: .\apps\properties\admin.py:432 .\apps\reservations\forms.py:103
 #: .\templates\accounts\dashboard.html:30
 #: .\templates\payments\hyperpay_checkout.html:136
 #: .\templates\properties\property_detail.html:93
 #: .\templates\properties\property_detail.html:124
-#: .\templates\properties\property_list.html:10
+#: .\templates\properties\property_list.html:20
 #: .\templates\reservations\availability_result.html:26
 #: .\templates\reservations\booking_intent_detail.html:33
 #: .\templates\reservations\booking_quote_detail.html:95
@@ -2158,45 +2187,45 @@ msgstr "Nom local"
 msgid "Guests"
 msgstr "Voyageurs"
 
-#: .\apps\properties\admin.py:404
+#: .\apps\properties\admin.py:436
 #: .\templates\properties\property_detail.html:94
-#: .\templates\properties\property_list.html:11
+#: .\templates\properties\property_list.html:21
 msgid "Bedrooms"
 msgstr "Chambres"
 
-#: .\apps\properties\admin.py:408
+#: .\apps\properties\admin.py:440
 #: .\templates\admin\integrations\integration_health.html:14
 msgid "Active in Hostaway"
 msgstr "Actif dans Hostaway"
 
-#: .\apps\properties\admin.py:416 .\templates\includes\property_card.html:50
+#: .\apps\properties\admin.py:448 .\templates\includes\property_card.html:50
 #: .\templates\includes\review_card.html:14
 msgid "Featured"
 msgstr "À la une"
 
-#: .\apps\properties\admin.py:420
+#: .\apps\properties\admin.py:452
 msgid "Images"
 msgstr "Images"
 
-#: .\apps\properties\admin.py:424
+#: .\apps\properties\admin.py:456
 msgid "Language completeness"
 msgstr "Complétude des langues"
 
-#: .\apps\properties\admin.py:433 .\templates\admin\index.html:180
+#: .\apps\properties\admin.py:465 .\templates\admin\index.html:180
 #: .\templates\admin\notifications\system_status.html:43
 msgid "Last sync"
 msgstr "Dernière synchronisation"
 
-#: .\apps\properties\admin.py:488
+#: .\apps\properties\admin.py:520
 msgid "Sync the selected Hostaway properties"
 msgstr "Synchroniser les logements Hostaway sélectionnés"
 
-#: .\apps\properties\admin.py:509
+#: .\apps\properties\admin.py:541
 #, python-format
 msgid "The task worker is not running. Start it with: %(commands)s"
 msgstr "Le worker de tâches n’est pas actif. Démarrez-le avec : %(commands)s"
 
-#: .\apps\properties\admin.py:520
+#: .\apps\properties\admin.py:552
 #, python-format
 msgid "Added %(count)d property to the sync queue."
 msgstr "%(count)d logement(s) ajouté(s) à la file de synchronisation."
@@ -2252,7 +2281,7 @@ msgid "Outdoor and parking"
 msgstr "Clients et réservations"
 
 #: .\apps\properties\apps.py:8 .\apps\properties\models.py:187
-#: .\apps\properties\views.py:184 .\apps\properties\views.py:201
+#: .\apps\properties\views.py:222 .\apps\properties\views.py:239
 #: .\templates\admin\base_site.html:32
 #: .\templates\admin\integrations\integration_health.html:32
 #: .\templates\admin\integrations\integration_health.html:47
@@ -2263,6 +2292,23 @@ msgstr "Clients et réservations"
 #: .\templates\properties\property_list.html:3
 msgid "Properties"
 msgstr "Logements"
+
+#: .\apps\properties\forms.py:53
+msgid "Choose both check-in and check-out dates."
+msgstr "Choisissez les dates d'arrivée et de départ ensemble."
+
+#: .\apps\properties\forms.py:58 .\apps\reservations\views.py:767
+msgid "Check-in cannot be in the past."
+msgstr "La date d'arrivée ne peut pas être dans le passé."
+
+#: .\apps\properties\forms.py:60 .\apps\reservations\forms.py:159
+#: .\apps\reservations\modification_forms.py:71
+msgid "Check-out must be after check-in."
+msgstr "Le départ doit être postérieur à l’arrivée."
+
+#: .\apps\properties\forms.py:62 .\apps\reservations\forms.py:161
+msgid "The maximum stay is 366 nights."
+msgstr "La durée maximale du séjour est de 366 nuits."
 
 #: .\apps\properties\models.py:23
 msgid "Automatic"
@@ -2331,7 +2377,7 @@ msgstr "Équipement du logement"
 msgid "Property amenities"
 msgstr "Équipements du logement"
 
-#: .\apps\properties\views.py:195 .\templates\admin\base_site.html:29
+#: .\apps\properties\views.py:233 .\templates\admin\base_site.html:29
 #: .\templates\includes\breadcrumb.html:4 .\templates\includes\header.html:14
 #: .\templates\includes\mobile_navigation.html:9
 msgid "Home"
@@ -2843,15 +2889,6 @@ msgstr "Tous les logements disponibles"
 msgid "All cities"
 msgstr "Toutes les villes"
 
-#: .\apps\reservations\forms.py:159
-#: .\apps\reservations\modification_forms.py:71
-msgid "Check-out must be after check-in."
-msgstr "Le départ doit être postérieur à l’arrivée."
-
-#: .\apps\reservations\forms.py:161
-msgid "The maximum stay is 366 nights."
-msgstr "La durée maximale du séjour est de 366 nuits."
-
 #: .\apps\reservations\forms.py:168
 msgid "Guest count exceeds this property's capacity."
 msgstr "Le nombre de voyageurs dépasse la capacité de ce logement."
@@ -3264,10 +3301,6 @@ msgstr "Le nombre de voyageurs dépasse la capacité de ce logement."
 #: .\apps\reservations\views.py:765 .\apps\reservations\views.py:766
 msgid "The requested dates are no longer available."
 msgstr "Les dates demandées ne sont plus disponibles."
-
-#: .\apps\reservations\views.py:767
-msgid "Check-in cannot be in the past."
-msgstr "La date d'arrivée ne peut pas être dans le passé."
 
 #: .\apps\reservations\views.py:768
 msgid "The stay dates are invalid."
@@ -4091,14 +4124,15 @@ msgstr "Pages"
 #: .\templates\admin\core\customers.html:43
 #: .\templates\admin\notifications\center.html:46
 #: .\templates\properties\gallery.html:55
-#: .\templates\properties\property_list.html:17
+#: .\templates\properties\property_list.html:28
 #: .\templates\reviews\review_list.html:7
 msgid "Previous"
 msgstr "Précédent"
 
 #: .\templates\admin\core\customers.html:44
 #: .\templates\admin\notifications\center.html:47
-#: .\templates\properties\property_list.html:17
+#: .\templates\properties\gallery.html:56
+#: .\templates\properties\property_list.html:28
 #: .\templates\reviews\review_list.html:7
 #, python-format
 msgid "Page %(current)s of %(total)s"
@@ -4107,7 +4141,7 @@ msgstr "Page %(current)s sur %(total)s"
 #: .\templates\admin\core\customers.html:45
 #: .\templates\admin\notifications\center.html:48
 #: .\templates\properties\gallery.html:57
-#: .\templates\properties\property_list.html:17
+#: .\templates\properties\property_list.html:28
 #: .\templates\reviews\review_list.html:7
 msgid "Next"
 msgstr "Suivant"
@@ -4540,7 +4574,7 @@ msgstr "Le logement"
 msgid "Value"
 msgstr "Valeur"
 
-#: .\templates\admin\index.html:202 .\templates\includes\property_card.html:157
+#: .\templates\admin\index.html:202 .\templates\includes\property_card.html:159
 #: .\templates\properties\gallery.html:14
 msgid "View details"
 msgstr "Voir les détails"
@@ -4749,7 +4783,7 @@ msgid "Alert type"
 msgstr "Type d’alerte"
 
 #: .\templates\admin\notifications\center.html:18
-#: .\templates\properties\property_list.html:12
+#: .\templates\properties\property_list.html:22
 msgid "All types"
 msgstr "Tous les types"
 
@@ -5199,7 +5233,7 @@ msgstr "Luxury Smart Apartments | Séjours intelligents à Riyad et Marrakech"
 msgid "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability."
 msgstr "Découvrez des appartements intelligents et des séjours familiaux à Riyad et Marrakech, puis vérifiez le prix et les disponibilités en direct."
 
-#: .\templates\core\home.html:13
+#: .\templates\core\home.html:13 .\templates\core\home.html:157
 msgid "Riyadh skyline and palm trees"
 msgstr "La skyline de Riyad et ses palmiers"
 
@@ -5251,7 +5285,7 @@ msgstr "Destinations d’exception"
 msgid "Guest support"
 msgstr "Assistance voyageurs"
 
-#: .\templates\core\home.html:67 .\templates\includes\property_card.html:153
+#: .\templates\core\home.html:67 .\templates\includes\property_card.html:155
 #: .\templates\properties\property_detail.html:148
 msgid "Live price checks"
 msgstr "Vérification des prix en direct"
@@ -5663,62 +5697,67 @@ msgstr "Photo précédente"
 msgid "Next photo"
 msgstr "Photo suivante"
 
-#: .\templates\includes\property_card.html:95
+#: .\templates\includes\property_card.html:80
+#: .\templates\properties\property_detail.html:174
+msgid "of"
+msgstr "sur"
+
+#: .\templates\includes\property_card.html:97
 #: .\templates\includes\review_card.html:17
 #: .\templates\properties\property_detail.html:35
 #, python-format
 msgid "Rated %(rating)s out of 5"
 msgstr "Noté %(rating)s sur 5"
 
-#: .\templates\includes\property_card.html:102
+#: .\templates\includes\property_card.html:104
 #: .\templates\properties\property_detail.html:25
 msgid "Property details"
 msgstr "Détails du logement"
 
-#: .\templates\includes\property_card.html:106
+#: .\templates\includes\property_card.html:108
 #, python-format
 msgid "%(counter)s guest"
 msgid_plural "%(counter)s guests"
 msgstr[0] "%(counter)s voyageur"
 msgstr[1] "%(counter)s voyageurs"
 
-#: .\templates\includes\property_card.html:112
+#: .\templates\includes\property_card.html:114
 #, python-format
 msgid "%(counter)s bedroom"
 msgid_plural "%(counter)s bedrooms"
 msgstr[0] "%(counter)s chambre"
 msgstr[1] "%(counter)s chambres"
 
-#: .\templates\includes\property_card.html:118
+#: .\templates\includes\property_card.html:120
 #, python-format
 msgid "%(counter)s bed"
 msgid_plural "%(counter)s beds"
 msgstr[0] "%(counter)s lit"
 msgstr[1] "%(counter)s lits"
 
-#: .\templates\includes\property_card.html:126
+#: .\templates\includes\property_card.html:128
 msgid "Total for your stay"
 msgstr "Total de votre séjour"
 
-#: .\templates\includes\property_card.html:136
+#: .\templates\includes\property_card.html:138
 msgid "Choose this property"
 msgstr "Choisir ce logement"
 
-#: .\templates\includes\property_card.html:149
+#: .\templates\includes\property_card.html:151
 #: .\templates\properties\property_detail.html:143
 #, fuzzy
 #| msgid "Price based on dates"
 msgid "Final price depends on your dates"
 msgstr "Prix selon les dates"
 
-#: .\templates\includes\property_card.html:150
+#: .\templates\includes\property_card.html:152
 #: .\templates\properties\property_detail.html:142
 #, fuzzy, python-format
 #| msgid "%(count)d nights"
 msgid "From %(amount)s / night"
 msgstr "%(count)d nuits"
 
-#: .\templates\includes\property_card.html:152
+#: .\templates\includes\property_card.html:154
 msgid "Price based on dates"
 msgstr "Prix selon les dates"
 
@@ -6312,31 +6351,35 @@ msgstr "logements"
 msgid "Filter properties"
 msgstr "Filtrer les logements"
 
-#: .\templates\properties\property_list.html:12
+#: .\templates\properties\property_list.html:22
 msgid "Property type"
 msgstr "Type de logement"
 
-#: .\templates\properties\property_list.html:13
+#: .\templates\properties\property_list.html:23
 msgid "Sort by"
 msgstr "Trier par"
 
-#: .\templates\properties\property_list.html:13
+#: .\templates\properties\property_list.html:23
 msgid "Featured first"
 msgstr "À la une en premier"
 
-#: .\templates\properties\property_list.html:13
+#: .\templates\properties\property_list.html:23
 msgid "Highest rated"
 msgstr "Mieux notés"
 
-#: .\templates\properties\property_list.html:13
+#: .\templates\properties\property_list.html:23
 msgid "Highest capacity"
 msgstr "Plus grande capacité"
 
-#: .\templates\properties\property_list.html:14
+#: .\templates\properties\property_list.html:24
 msgid "Apply filters"
 msgstr "Appliquer les filtres"
 
-#: .\templates\properties\property_list.html:17
+#: .\templates\properties\property_list.html:25
+msgid "Your dates are carried to the property page. Availability and final price are checked only when you submit them."
+msgstr "Vos dates sont reportées sur la page du logement. La disponibilité et le prix final ne sont vérifiés qu'après leur envoi."
+
+#: .\templates\properties\property_list.html:28
 msgid "Property pages"
 msgstr "Pages des logements"
 

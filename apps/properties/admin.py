@@ -31,6 +31,7 @@ def _demote_other_city_heroes(image: PropertyImage) -> None:
         is_city_hero=True,
     ).exclude(pk=image.pk).update(is_city_hero=False)
 
+
 PROPERTY_SOURCE_FIELDS = (
     "hostaway_listing_id",
     "hostaway_listing_map_id",
@@ -169,6 +170,23 @@ class PropertyAdminForm(forms.ModelForm):
             "sort_order": _("Display order"),
             "content_is_customized": _("Local content is customised"),
         }
+        help_texts = {
+            "name_ar": _("Shown as the main heading on the Arabic property page."),
+            "name_en": _("Shown as the main heading on the English property page."),
+            "name_fr": _("Shown as the main heading on the French property page."),
+            "seo_title_ar": _(
+                "Used in the Arabic browser tab and search results. "
+                "Leave blank to reuse the visible property name."
+            ),
+            "seo_title_en": _(
+                "Used in the English browser tab and search results. "
+                "Leave blank to reuse the visible property name."
+            ),
+            "seo_title_fr": _(
+                "Used in the French browser tab and search results. "
+                "Leave blank to reuse the visible property name."
+            ),
+        }
 
 
 class PropertyImageInline(admin.TabularInline):
@@ -297,7 +315,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "description_en",
                     "city_en",
                     "house_rules_en",
-                )
+                ),
             },
         ),
         (
@@ -310,7 +328,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "description_fr",
                     "city_fr",
                     "house_rules_fr",
-                )
+                ),
             },
         ),
         (
@@ -318,6 +336,10 @@ class PropertyAdmin(admin.ModelAdmin):
             {
                 "classes": ("collapse",),
                 "fields": ("seo_title_ar", "seo_description_ar"),
+                "description": _(
+                    "The SEO title may intentionally differ from the visible page heading; "
+                    "leave it blank to keep both identical."
+                ),
             },
         ),
         (
@@ -325,6 +347,10 @@ class PropertyAdmin(admin.ModelAdmin):
             {
                 "classes": ("collapse",),
                 "fields": ("seo_title_en", "seo_description_en"),
+                "description": _(
+                    "The SEO title may intentionally differ from the visible page heading; "
+                    "leave it blank to keep both identical."
+                ),
             },
         ),
         (
@@ -332,15 +358,17 @@ class PropertyAdmin(admin.ModelAdmin):
             {
                 "classes": ("collapse",),
                 "fields": ("seo_title_fr", "seo_description_fr"),
+                "description": _(
+                    "The SEO title may intentionally differ from the visible page heading; "
+                    "leave it blank to keep both identical."
+                ),
             },
         ),
         (
             _("Images and amenities"),
             {
                 "fields": ("asset_management",),
-                "description": _(
-                    "Manage large image and amenity collections on focused screens."
-                ),
+                "description": _("Manage large image and amenity collections on focused screens."),
             },
         ),
         (
@@ -353,9 +381,13 @@ class PropertyAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Property]:
-        return super().get_queryset(request).annotate(
-            _image_count=models.Count("images", distinct=True),
-            _amenity_count=models.Count("property_amenities", distinct=True),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _image_count=models.Count("images", distinct=True),
+                _amenity_count=models.Count("property_amenities", distinct=True),
+            )
         )
 
     @admin.display(description=_("Media and amenities management"))
@@ -517,8 +549,7 @@ class PropertyAdmin(admin.ModelAdmin):
             sync_hostaway_properties_task.delay(listing_id=listing_id)
         self.message_user(
             request,
-            _("Added %(count)d property to the sync queue.")
-            % {"count": len(listing_ids)},
+            _("Added %(count)d property to the sync queue.") % {"count": len(listing_ids)},
         )
 
     def save_formset(

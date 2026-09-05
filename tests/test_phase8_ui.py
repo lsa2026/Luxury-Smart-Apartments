@@ -298,7 +298,9 @@ def test_property_card_gallery_exposes_prefetched_slides_and_controls() -> None:
     assert "data-card-previous" in content
     assert "data-card-next" in content
     assert content.count("data-card-dot") == 5
-    assert "data-card-current>1</b> / 5" in content
+    assert "data-card-current>١</b>" in content
+    assert "<span>من</span>" in content
+    assert "data-card-total>٥</span>" in content
 
 
 def test_property_filters_use_local_database() -> None:
@@ -328,10 +330,24 @@ def test_property_detail_gallery_opens_all_images_without_leaving_page() -> None
     assert "<dialog" in content
     assert "data-lightbox-close" in content
     assert "data-lightbox-progress" in content
-    assert "data-lightbox-total>12</span>" in content
+    assert "data-lightbox-total>١٢</span>" in content
     assert "85012.jpg" in content
     assert f'href="{reverse("properties:gallery", args=[property_obj.slug])}"' not in content
     assert 'aria-label="إغلاق المعرض"' in content
+
+
+def test_property_lightbox_and_gallery_pagination_are_rtl_safe() -> None:
+    property_obj = property_factory(851)
+    for image_id in range(85101, 85114):
+        image_factory(property_obj, image_id)
+
+    detail = Client().get(property_obj.get_absolute_url()).content.decode()
+    gallery = Client().get(reverse("properties:gallery", args=[property_obj.slug])).content.decode()
+
+    assert "data-lightbox-current>١</b>" in detail
+    assert "<span>من</span>" in detail
+    assert "data-lightbox-total>١٣</span>" in detail
+    assert "صفحة ١ من ٢" in gallery
 
 
 def test_hidden_image_and_private_address_are_not_rendered() -> None:

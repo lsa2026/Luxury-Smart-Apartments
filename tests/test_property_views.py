@@ -1,5 +1,10 @@
+from datetime import timedelta
+from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 from django.test import Client
+from django.utils import timezone
 
 from apps.properties.models import Property, PropertyImage
 
@@ -89,6 +94,67 @@ def test_property_list_avoids_n_plus_one(django_assert_num_queries: object) -> N
         assert response.status_code == 200
 
 
+def test_browse_dates_are_local_only_and_prefill_the_property_page() -> None:
+    property_obj = make_property(50)
+    property_obj.person_capacity = 4
+    property_obj.save(update_fields=["person_capacity"])
+    check_in = timezone.localdate() + timedelta(days=10)
+    check_out = check_in + timedelta(days=3)
+
+    with patch(
+        "apps.integrations.hostaway.client.HostawayClient",
+        side_effect=AssertionError("Browsing must not call Hostaway"),
+    ):
+        response = Client().get(
+            "/properties/",
+            {
+                "city": "Riyadh",
+                "guests": "3",
+                "check_in": check_in.isoformat(),
+                "check_out": check_out.isoformat(),
+            },
+        )
+        detail_url = response.context["properties"][0].browse_detail_url
+        detail_response = Client().get(detail_url)
+
+    assert response.status_code == 200
+    assert detail_response.status_code == 200
+    assert response.context["browse_dates_form"].is_valid()
+    assert parse_qs(urlparse(detail_url).query) == {
+        "source": ["browse"],
+        "check_in": [check_in.isoformat()],
+        "check_out": [check_out.isoformat()],
+        "guests": ["3"],
+    }
+    assert urlparse(detail_url).path == property_obj.get_absolute_url()
+    availability_form = detail_response.context["availability_form"]
+    assert availability_form.initial["check_in"] == check_in
+    assert availability_form.initial["check_out"] == check_out
+    assert availability_form.initial["guests"] == 3
+
+
+def test_incomplete_or_reversed_browse_dates_are_not_carried_to_cards() -> None:
+    make_property(51)
+    check_in = timezone.localdate() + timedelta(days=10)
+
+    incomplete = Client().get(
+        "/properties/",
+        {"check_in": check_in.isoformat()},
+    )
+    reversed_dates = Client().get(
+        "/properties/",
+        {
+            "check_in": check_in.isoformat(),
+            "check_out": (check_in - timedelta(days=1)).isoformat(),
+        },
+    )
+
+    assert not hasattr(incomplete.context["properties"][0], "browse_detail_url")
+    assert not hasattr(reversed_dates.context["properties"][0], "browse_detail_url")
+    assert "اختر تاريخَي الوصول والمغادرة معاً" in incomplete.content.decode()
+    assert "يجب أن تكون المغادرة بعد الوصول" in reversed_dates.content.decode()
+
+
 # The same photograph also appears in the featured-property cards further down
 # the page, so every assertion below is scoped to the destinations grid.
 RIYADH_STOCK_PHOTO = "photo-1674386491555"
@@ -147,9 +213,9 @@ def test_home_page_falls_back_to_stock_for_a_city_without_a_nominated_photo() ->
 @pytest.mark.parametrize(
     ("is_city_hero", "is_visible", "property_visible"),
     [
-        (False, True, True),   # not nominated
-        (True, False, True),   # nominated but hidden
-        (True, True, False),   # nominated on an unpublished property
+        (False, True, True),  # not nominated
+        (True, False, True),  # nominated but hidden
+        (True, True, False),  # nominated on an unpublished property
     ],
 )
 def test_only_a_public_nominated_photo_reaches_the_home_page(
