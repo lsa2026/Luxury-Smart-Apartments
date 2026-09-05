@@ -23,6 +23,7 @@ GOOGLE_EXCLUDED_PREFIXES = (
     "/integrations/",
 )
 
+
 def _consent_from_cookie(request: HttpRequest) -> dict[str, object] | None:
     raw_value = request.COOKIES.get("lsa_cookie_consent", "")
     if not raw_value:

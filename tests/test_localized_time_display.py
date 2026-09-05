@@ -120,9 +120,7 @@ def test_content_entrance_animations_do_not_hide_their_element_at_rest(
     the animation actually runs. The resting state must be the visible one."""
     css = _stylesheet()
 
-    declaration = next(
-        line for line in css.splitlines() if f"animation: {animation} " in line
-    )
+    declaration = next(line for line in css.splitlines() if f"animation: {animation} " in line)
     assert "both" not in declaration, declaration
     assert "forwards" in declaration, declaration
 

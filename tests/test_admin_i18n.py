@@ -30,9 +30,7 @@ def staff_client(client, db):
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
 def test_admin_index_renders_in_each_language(staff_client, language):
     with translation.override(language):
-        response = staff_client.get(
-            reverse("admin:index"), headers={"accept-language": language}
-        )
+        response = staff_client.get(reverse("admin:index"), headers={"accept-language": language})
     assert response.status_code == 200
 
 

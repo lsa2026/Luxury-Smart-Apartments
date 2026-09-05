@@ -252,10 +252,7 @@ class ModificationService:
         ):
             return ModificationRevalidation("modification_not_payable")
         try:
-            if (
-                modification.request_type
-                == BookingModificationRequest.RequestType.EXTEND_STAY
-            ):
+            if modification.request_type == BookingModificationRequest.RequestType.EXTEND_STAY:
                 calendar = self.availability_service.fetch_calendar(
                     property_obj=reservation.property,
                     start_date=reservation.check_out,
@@ -296,8 +293,7 @@ class ModificationService:
             return ModificationRevalidation("currency_changed", quote)
         if (
             quote.total_price != modification.new_total
-            or quote.total_price - reservation.total_price
-            != modification.price_difference
+            or quote.total_price - reservation.total_price != modification.price_difference
         ):
             return ModificationRevalidation("price_changed", quote)
         return ModificationRevalidation("ready", quote)

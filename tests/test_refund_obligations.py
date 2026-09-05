@@ -67,12 +67,8 @@ def test_the_widest_matching_tier_wins() -> None:
     reservation.nights = 2
     reservation.save()
 
-    early = refunds.cancellation_refund(
-        reservation, at=datetime(2026, 12, 1, 12, 0, tzinfo=RIYADH)
-    )
-    late = refunds.cancellation_refund(
-        reservation, at=datetime(2026, 12, 19, 12, 0, tzinfo=RIYADH)
-    )
+    early = refunds.cancellation_refund(reservation, at=datetime(2026, 12, 1, 12, 0, tzinfo=RIYADH))
+    late = refunds.cancellation_refund(reservation, at=datetime(2026, 12, 19, 12, 0, tzinfo=RIYADH))
 
     assert early.amount == Decimal("1000.0000")
     assert late.amount == Decimal("500.0000")
@@ -143,9 +139,7 @@ def test_a_zero_refund_creates_no_task_for_anyone() -> None:
 
     assert obligation is None
     assert not RefundObligation.objects.exists()
-    assert not Notification.objects.filter(
-        notification_type=Notification.Type.REFUND_DUE
-    ).exists()
+    assert not Notification.objects.filter(notification_type=Notification.Type.REFUND_DUE).exists()
 
 
 def test_outstanding_refunds_are_deducted_from_reported_income() -> None:

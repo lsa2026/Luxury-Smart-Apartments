@@ -119,10 +119,7 @@ def simulate_modification(
     modification: BookingModificationRequest,
     action: str,
 ) -> SandboxResult:
-    modification = (
-        BookingModificationRequest.objects.select_for_update()
-        .get(pk=modification.pk)
-    )
+    modification = BookingModificationRequest.objects.select_for_update().get(pk=modification.pk)
     intent = modification.reservation.booking_intent
     if intent is None:
         raise ValueError("A sandbox modification requires a local booking intent.")

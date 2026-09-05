@@ -32,9 +32,7 @@ class Command(BaseCommand):
         token = settings.HYPERPAY_ACCESS_TOKEN
 
         if not entity_id or not token:
-            raise CommandError(
-                "HYPERPAY_ENTITY_ID and HYPERPAY_ACCESS_TOKEN must both be set."
-            )
+            raise CommandError("HYPERPAY_ENTITY_ID and HYPERPAY_ACCESS_TOKEN must both be set.")
 
         self.stdout.write(f"Endpoint    : {base_url}")
         self.stdout.write(f"Environment : {environment}")
@@ -83,9 +81,7 @@ class Command(BaseCommand):
 
         if code.startswith("000.200."):
             self.stdout.write(
-                self.style.SUCCESS(
-                    f"OK - credentials are valid for the {environment} endpoint."
-                )
+                self.style.SUCCESS(f"OK - credentials are valid for the {environment} endpoint.")
             )
             return
         raise CommandError(f"HyperPay rejected the probe: {code} {description}")
