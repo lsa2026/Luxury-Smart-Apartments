@@ -5,6 +5,7 @@ import json
 from django.contrib import admin, messages
 from django.contrib.admin import ModelAdmin
 from django.http import HttpRequest
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
@@ -22,6 +23,32 @@ from .models import (
     Reservation,
 )
 
+HOSTAWAY_STATUS_LABELS = {
+    "new": _("New in Hostaway"),
+    "modified": _("Modified in Hostaway"),
+    "cancelled": _("Cancelled in Hostaway"),
+    "pending": _("Pending in Hostaway"),
+    "confirmed": _("Confirmed in Hostaway"),
+    "test_only_not_sent": _("Test booking — not sent"),
+}
+
+PAYMENT_STATUS_LABELS = {
+    "paid": _("Paid"),
+    "sandbox_paid": _("Sandbox payment completed"),
+    "pending": _("Payment pending"),
+    "unpaid": _("Unpaid"),
+    "refunded": _("Refunded"),
+    "partially_refunded": _("Partially refunded"),
+}
+
+
+def _hostaway_status_label(value: str) -> object:
+    return HOSTAWAY_STATUS_LABELS.get((value or "").casefold(), value or _("Not linked"))
+
+
+def _payment_status_label(value: str) -> object:
+    return PAYMENT_STATUS_LABELS.get((value or "").casefold(), value or _("No payment status"))
+
 
 @admin.register(BookingQuote)
 class BookingQuoteAdmin(ModelAdmin):
@@ -32,6 +59,7 @@ class BookingQuoteAdmin(ModelAdmin):
         "guests",
         "total_price",
         "currency",
+        "payment_amount_sar",
         "status",
         "expires_at",
     )
@@ -47,6 +75,9 @@ class BookingQuoteAdmin(ModelAdmin):
         "guests",
         "currency",
         "total_price",
+        "payment_amount_sar",
+        "selected_display_currency",
+        "exchange_rate_summary",
         "components_display",
         "price_version",
         "status",
@@ -62,6 +93,10 @@ class BookingQuoteAdmin(ModelAdmin):
     @admin.display(description=_("Price components"))
     def components_display(self, obj: BookingQuote) -> str:
         return json.dumps(obj.components, ensure_ascii=False, indent=2)
+
+    @admin.display(description=_("Exchange-rate snapshot"))
+    def exchange_rate_summary(self, obj: BookingQuote) -> str:
+        return json.dumps(obj.exchange_rate_snapshot, ensure_ascii=False, indent=2)
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
@@ -79,12 +114,9 @@ class BookingIntentAdmin(ModelAdmin):
     list_display = (
         "public_reference",
         "property",
-        "customer",
-        "check_in",
-        "check_out",
+        "stay_dates_list",
         "guests",
-        "total_price",
-        "currency",
+        "amount_list",
         "status",
         "expires_at",
     )
@@ -129,16 +161,78 @@ class BookingIntentAdmin(ModelAdmin):
         "special_requests",
     )
 
+    def get_list_display(self, request: HttpRequest) -> tuple[str, ...]:
+        display = list(self.list_display)
+        if request.user.is_superuser or request.user.has_perm(
+            "reservations.view_bookingintent_pii"
+        ):
+            display.insert(2, "guest_name_list")
+        return tuple(display)
+
+    def get_fieldsets(
+        self,
+        request: HttpRequest,
+        obj: BookingIntent | None = None,
+    ) -> tuple[tuple[object, dict[str, object]], ...]:
+        fieldsets: list[tuple[object, dict[str, object]]] = [
+            (
+                _("Booking request summary"),
+                {
+                    "fields": (
+                        "reference_display",
+                        "property_display",
+                        "stay_dates_display",
+                        "occupancy_display",
+                        "amount_display",
+                        "payment_amount_display",
+                        "intent_status_display",
+                    )
+                },
+            )
+        ]
+        if request.user.is_superuser or request.user.has_perm(
+            "reservations.view_bookingintent_pii"
+        ):
+            fieldsets.append(
+                (
+                    _("Protected guest information"),
+                    {
+                        "fields": (
+                            "guest_name_display",
+                            "guest_contact_display",
+                            "billing_display",
+                            "requests_display",
+                        )
+                    },
+                )
+            )
+        fieldsets.extend(
+            [
+                (
+                    _("Linked records"),
+                    {"fields": ("linkage_display",)},
+                ),
+                (
+                    _("Consent and timeline"),
+                    {
+                        "classes": ("collapse",),
+                        "fields": ("consent_display", "intent_timeline_display"),
+                    },
+                ),
+            ]
+        )
+        return tuple(fieldsets)
+
     def get_fields(
         self,
         request: HttpRequest,
         obj: BookingIntent | None = None,
     ) -> tuple[str, ...]:
-        if request.user.is_superuser or request.user.has_perm(
-            "reservations.view_bookingintent_pii"
-        ):
-            return self.base_fields[:11] + self.pii_fields + self.base_fields[11:]
-        return self.base_fields
+        return tuple(
+            field
+            for _name, options in self.get_fieldsets(request, obj)
+            for field in options["fields"]
+        )
 
     def get_readonly_fields(
         self,
@@ -155,7 +249,162 @@ class BookingIntentAdmin(ModelAdmin):
         request: HttpRequest,
         obj: BookingIntent | None = None,
     ) -> bool:
-        return request.user.is_superuser
+        return False
+
+    def changeform_view(
+        self,
+        request: HttpRequest,
+        object_id: str | None = None,
+        form_url: str = "",
+        extra_context: dict[str, object] | None = None,
+    ) -> object:
+        context = {
+            "title": _("View booking request"),
+            "show_save": False,
+            "show_save_and_continue": False,
+            "show_save_and_add_another": False,
+        }
+        if extra_context:
+            context.update(extra_context)
+        return super().changeform_view(request, object_id, form_url, context)
+
+    @admin.display(description=_("Stay period"), ordering="check_in")
+    def stay_dates_list(self, obj: BookingIntent) -> str:
+        return format_html(
+            '<span dir="ltr">{} → {}</span>',
+            obj.check_in.strftime("%Y-%m-%d"),
+            obj.check_out.strftime("%Y-%m-%d"),
+        )
+
+    @admin.display(description=_("Guest"))
+    def guest_name_list(self, obj: BookingIntent) -> str:
+        return f"{obj.guest_first_name} {obj.guest_last_name}".strip() or "—"
+
+    @admin.display(description=_("Booking value"), ordering="total_price")
+    def amount_list(self, obj: BookingIntent) -> str:
+        return format_html(
+            '<span class="lsa-admin-money" dir="ltr">{} {}</span>',
+            f"{obj.total_price:,.2f}",
+            obj.currency,
+        )
+
+    @admin.display(description=_("Booking reference"))
+    def reference_display(self, obj: BookingIntent) -> str:
+        return format_html('<strong dir="ltr">{}</strong>', obj.public_reference)
+
+    @admin.display(description=_("Property"))
+    def property_display(self, obj: BookingIntent) -> object:
+        return obj.property
+
+    @admin.display(description=_("Stay period"))
+    def stay_dates_display(self, obj: BookingIntent) -> str:
+        return format_html(
+            '<span dir="ltr">{} → {}</span> · {}',
+            obj.check_in.strftime("%Y-%m-%d"),
+            obj.check_out.strftime("%Y-%m-%d"),
+            _("%(count)d nights") % {"count": obj.nights},
+        )
+
+    @admin.display(description=_("Occupancy"))
+    def occupancy_display(self, obj: BookingIntent) -> str:
+        return _("%(count)d guests") % {"count": obj.guests}
+
+    @admin.display(description=_("Booking value"))
+    def amount_display(self, obj: BookingIntent) -> str:
+        return self.amount_list(obj)
+
+    @admin.display(description=_("HyperPay amount"))
+    def payment_amount_display(self, obj: BookingIntent) -> str:
+        if obj.payment_amount_sar is None:
+            return "—"
+        snapshot = obj.exchange_rate_snapshot
+        return format_html(
+            '<span class="lsa-admin-money" dir="ltr">{} SAR</span><br>'
+            '<small>{} · {}</small>',
+            f"{obj.payment_amount_sar:,.2f}",
+            snapshot.get("provider", "—"),
+            snapshot.get("rate_timestamp", "—"),
+        )
+
+    @admin.display(description=_("Request status"))
+    def intent_status_display(self, obj: BookingIntent) -> object:
+        return obj.get_status_display()
+
+    @admin.display(description=_("Guest name"))
+    def guest_name_display(self, obj: BookingIntent) -> str:
+        return self.guest_name_list(obj)
+
+    @admin.display(description=_("Contact details"))
+    def guest_contact_display(self, obj: BookingIntent) -> str:
+        return format_html(
+            '<span dir="ltr">{} · {}</span>',
+            obj.guest_email or "—",
+            obj.guest_phone or "—",
+        )
+
+    @admin.display(description=_("Billing address"))
+    def billing_display(self, obj: BookingIntent) -> str:
+        parts = filter(
+            None,
+            (
+                obj.billing_street1,
+                obj.billing_city,
+                obj.billing_state,
+                obj.billing_postcode,
+                obj.billing_country,
+            ),
+        )
+        return "، ".join(parts) or "—"
+
+    @admin.display(description=_("Special requests"))
+    def requests_display(self, obj: BookingIntent) -> str:
+        return obj.special_requests or "—"
+
+    @admin.display(description=_("Linked booking records"))
+    def linkage_display(self, obj: BookingIntent) -> str:
+        quote_url = reverse("admin:reservations_bookingquote_change", args=(obj.quote_id,))
+        links = format_html('<a href="{}">{}</a>', quote_url, _("View price quote"))
+        try:
+            reservation = obj.reservation
+        except Reservation.DoesNotExist:
+            reservation = None
+        if reservation is not None:
+            reservation_url = reverse(
+                "admin:reservations_reservation_change", args=(reservation.pk,)
+            )
+            links = format_html(
+                '{} · <a href="{}">{}</a>',
+                links,
+                reservation_url,
+                _("View confirmed booking"),
+            )
+        return links
+
+    @admin.display(description=_("Customer consent"))
+    def consent_display(self, obj: BookingIntent) -> str:
+        marketing = _("Yes") if obj.marketing_consent else _("No")
+        return format_html(
+            '{}: <span dir="ltr">{}</span> · {}: <span dir="ltr">{}</span> · {}: {}',
+            _("Terms accepted"),
+            obj.terms_accepted_at,
+            _("Privacy accepted"),
+            obj.privacy_accepted_at,
+            _("Marketing consent"),
+            marketing,
+        )
+
+    @admin.display(description=_("Timeline"))
+    def intent_timeline_display(self, obj: BookingIntent) -> str:
+        return format_html(
+            '{}: <span dir="ltr">{}</span> · {}: <span dir="ltr">{}</span> · {}: '
+            '<span dir="ltr">{}</span>',
+            _("Created"),
+            obj.created_at,
+            _("Updated"),
+            obj.updated_at,
+            _("Expires"),
+            obj.expires_at,
+        )
 
     @admin.action(description=_("Cancel the selected booking requests"))
     def cancel_selected(
@@ -197,16 +446,11 @@ class ReservationAdmin(ModelAdmin):
     list_display = (
         "public_reference",
         "property",
-        "is_test",
-        "source_type",
-        "normalized_status",
-        "hostaway_status",
-        "hostaway_reservation_id",
-        "check_in",
-        "check_out",
+        "stay_window",
         "guests",
-        "currency",
-        "total_price",
+        "booking_state",
+        "booking_value",
+        "hostaway_state",
         "last_synced_at",
     )
     list_filter = ("source_type", "normalized_status", "hostaway_status", "check_in")
@@ -231,6 +475,16 @@ class ReservationAdmin(ModelAdmin):
         (
             _("Status and collection"),
             {"fields": ("status_display", "amount_display", "source_display")},
+        ),
+        (
+            _("Safe booking management"),
+            {
+                "fields": ("management_display",),
+                "description": _(
+                    "Use the approved modification workflow so Hostaway, payment and "
+                    "the audit log stay consistent."
+                ),
+            },
         ),
         (
             _("Hostaway technical integration"),
@@ -259,12 +513,37 @@ class ReservationAdmin(ModelAdmin):
         "status_display",
         "amount_display",
         "source_display",
+        "management_display",
         "hostaway_display",
         "technical_display",
         "sync_display",
         "timeline_display",
     )
     empty_value_display = "—"
+
+    @admin.display(description=_("Stay period"), ordering="check_in")
+    def stay_window(self, obj: Reservation) -> str:
+        return format_html(
+            '<span class="lsa-admin-stay" dir="ltr">{} → {}</span>',
+            obj.check_in.strftime("%Y-%m-%d"),
+            obj.check_out.strftime("%Y-%m-%d"),
+        )
+
+    @admin.display(description=_("Booking status"), ordering="normalized_status")
+    def booking_state(self, obj: Reservation) -> object:
+        return obj.get_normalized_status_display()
+
+    @admin.display(description=_("Booking value"), ordering="total_price")
+    def booking_value(self, obj: Reservation) -> str:
+        return format_html(
+            '<span class="lsa-admin-money" dir="ltr">{} {}</span>',
+            f"{obj.total_price:,.2f}",
+            obj.currency,
+        )
+
+    @admin.display(description=_("Hostaway status"), ordering="hostaway_status")
+    def hostaway_state(self, obj: Reservation) -> object:
+        return _hostaway_status_label(obj.hostaway_status)
 
     @admin.display(description=_("Booking reference"))
     def reference_display(self, obj: Reservation) -> str:
@@ -289,7 +568,7 @@ class ReservationAdmin(ModelAdmin):
 
     @admin.display(description=_("Booking and payment status"))
     def status_display(self, obj: Reservation) -> str:
-        payment_status = obj.payment_status or _("No payment status")
+        payment_status = _payment_status_label(obj.payment_status)
         return f"{obj.get_normalized_status_display()} · {payment_status}"
 
     @admin.display(description=_("Booking value"))
@@ -303,8 +582,36 @@ class ReservationAdmin(ModelAdmin):
     @admin.display(description=_("Booking source"))
     def source_display(self, obj: Reservation) -> str:
         test_label = f" · {_('test data')}" if obj.is_test else ""
-        hostaway_status = f" · Hostaway: {obj.hostaway_status}" if obj.hostaway_status else ""
+        hostaway_status = (
+            f" · Hostaway: {_hostaway_status_label(obj.hostaway_status)}"
+            if obj.hostaway_status
+            else ""
+        )
         return f"{obj.get_source_type_display()}{test_label}{hostaway_status}"
+
+    @admin.display(description=_("Manage the booking"))
+    def management_display(self, obj: Reservation) -> str:
+        modifications_url = reverse(
+            "admin:reservations_bookingmodificationrequest_changelist"
+        )
+        modifications_url = f"{modifications_url}?reservation__id__exact={obj.pk}"
+        operations_url = reverse(
+            "admin:reservations_hostawayreservationoperation_changelist"
+        )
+        operations_url = f"{operations_url}?reservation__id__exact={obj.pk}"
+        return format_html(
+            '<div class="lsa-admin-action-hub">'
+            '<p>{}</p><a class="button" href="{}">{}</a> '
+            '<a class="button" href="{}">{}</a></div>',
+            _(
+                "Changes and cancellations are handled as audited requests; "
+                "the confirmed reservation remains read-only."
+            ),
+            modifications_url,
+            _("View modification and cancellation requests"),
+            operations_url,
+            _("View Hostaway execution log"),
+        )
 
     @admin.display(description=_("Hostaway identifiers"))
     def hostaway_display(self, obj: Reservation) -> str:
@@ -438,6 +745,7 @@ class BookingModificationRequestAdmin(ModelAdmin):
         "new_check_in",
         "new_check_out",
         "price_difference",
+        "payment_amount_sar",
         "currency",
         "requested_at",
         "completed_at",
@@ -477,7 +785,9 @@ class BookingModificationRequestAdmin(ModelAdmin):
     @admin.display(description=_("Quote summary"))
     def quote_summary(self, obj: BookingModificationRequest) -> str:
         components = obj.quote_snapshot.get("components", [])
-        return f"priceDetails v2 — components: {len(components)}"
+        fx = obj.quote_snapshot.get("fx", {})
+        provider = fx.get("provider", "—") if isinstance(fx, dict) else "—"
+        return f"priceDetails v2 — components: {len(components)} — FX: {provider}"
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

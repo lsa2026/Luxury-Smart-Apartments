@@ -33,6 +33,27 @@ def test_property_source_fields_are_read_only_in_admin() -> None:
     assert "is_visible" not in readonly
 
 
+def test_property_editor_uses_focused_asset_screens_and_collapsed_secondary_content() -> None:
+    model_admin = PropertyAdmin(Property, AdminSite())
+    property_obj = Property.objects.create(
+        hostaway_listing_id=550,
+        slug="focused-property-editor",
+        name_ar="وحدة مرتبة",
+    )
+
+    assert model_admin.inlines == ()
+    assert "asset_management" in model_admin.readonly_fields
+    assert "إدارة الصور" in str(model_admin.asset_management(property_obj))
+    collapsed_sections = {
+        str(name)
+        for name, options in model_admin.fieldsets
+        if "collapse" in options.get("classes", ())
+    }
+    assert "المحتوى الإنجليزي" in collapsed_sections
+    assert "المحتوى الفرنسي" in collapsed_sections
+    assert "SEO — العربية" in collapsed_sections
+
+
 def test_only_local_images_can_be_deleted_in_admin() -> None:
     user = get_user_model().objects.create_user(
         username="image-editor",

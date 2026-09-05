@@ -177,7 +177,6 @@ def test_a_supplied_optional_field_is_sent() -> None:
         amount=Decimal("500.00"),
         currency="SAR",
     )
-
     assert payload["billing.street1"] == "King Fahd Road 10"
     assert payload["billing.postcode"] == "12345"
 

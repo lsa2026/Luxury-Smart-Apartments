@@ -1,3 +1,5 @@
+from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import Mock
 
 import pytest
@@ -8,6 +10,7 @@ from django.core.cache import cache
 from django.db import connection
 from django.test import Client, RequestFactory, override_settings
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.reservations.admin import BookingIntentAdmin, BookingQuoteAdmin
 from apps.reservations.models import BookingIntent, BookingQuote
@@ -15,7 +18,11 @@ from apps.reservations.security import (
     SESSION_MARKER_KEY,
     hash_session_marker,
 )
-from apps.reservations.services.booking import consume_revalidated_quote
+from apps.reservations.services.booking import (
+    QuoteCreation,
+    consume_revalidated_quote,
+    create_quote_for_property,
+)
 from apps.reservations.signing import quote_reference
 from apps.reservations.views import GuestDetailsView
 from tests.test_booking_models_services import (
@@ -42,6 +49,24 @@ class RevalidationService:
         assert bypass_cache is True
         type(self).calls += 1
         return type(self).result
+
+    def create_booking_quote(
+        self,
+        request: object,
+        *,
+        session_hash: str,
+        selected_display_currency: str = "SAR",
+        bypass_cache: bool = False,
+    ) -> QuoteCreation:
+        assert bypass_cache is True
+        type(self).calls += 1
+        quote = create_quote_for_property(
+            type(self).result,
+            property_obj=request.property,
+            session_hash=session_hash,
+            selected_display_currency=selected_display_currency,
+        )
+        return QuoteCreation(type(self).result, quote)
 
 
 def owned_client_quote() -> tuple[Client, BookingQuote, str]:
@@ -209,6 +234,32 @@ def test_guest_submit_revalidates_and_creates_local_intent(
     assert "/reservations/requests/" in response.url
 
 
+def test_expired_quote_is_revalidated_and_replaced_with_new_fx_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, quote, reference = owned_client_quote()
+    BookingQuote.objects.filter(pk=quote.pk).update(
+        expires_at=timezone.now() - timedelta(seconds=1)
+    )
+    RevalidationService.result = make_availability(quote.property)
+    RevalidationService.calls = 0
+    monkeypatch.setattr(GuestDetailsView, "service_class", RevalidationService)
+
+    response = client.post(
+        f"/reservations/quotes/{reference}/guest-details/",
+        form_data(),
+    )
+
+    assert response.status_code == 302
+    quote.refresh_from_db()
+    replacement = BookingQuote.objects.exclude(pk=quote.pk).get()
+    assert quote.status == BookingQuote.Status.EXPIRED
+    assert replacement.status == BookingQuote.Status.ACTIVE
+    assert replacement.payment_amount_sar == Decimal("500.25")
+    assert replacement.exchange_rate_snapshot["payment_currency"] == "SAR"
+    assert BookingIntent.objects.count() == 0
+
+
 def test_invalid_guest_form_never_revalidates(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -324,6 +375,7 @@ def test_admin_records_are_read_only_and_manual_add_is_blocked() -> None:
     intent_admin = BookingIntentAdmin(BookingIntent, admin.site)
     assert quote_admin.has_add_permission(request) is False
     assert intent_admin.has_add_permission(request) is False
+    assert intent_admin.has_delete_permission(request) is False
     assert set(quote_admin.fields) == set(quote_admin.readonly_fields)
     intent_fields = intent_admin.get_fields(request)
     assert set(intent_fields) == set(intent_admin.get_readonly_fields(request))

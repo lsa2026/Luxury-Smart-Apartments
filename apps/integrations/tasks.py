@@ -120,26 +120,6 @@ def expire_booking_objects_task() -> dict[str, Any]:
 
 
 @shared_task(
-    name="apps.integrations.tasks.refresh_indicative_rates_task",
-    soft_time_limit=9 * 60,
-    time_limit=10 * 60,
-)
-def refresh_indicative_rates_task() -> dict[str, str]:
-    """Refresh the display-only "from" price on every active property.
-
-    Daily is deliberate: the figure only has to orient a first-time visitor, and
-    the live quote remains the authority for any real booking.
-    """
-    from django.core.management import call_command
-
-    with distributed_task_lock("indicative-rates") as acquired:
-        if not acquired:
-            return {"status": "already_running"}
-        call_command("refresh_indicative_rates")
-    return {"status": "completed"}
-
-
-@shared_task(
     name="apps.integrations.tasks.reconcile_paid_hostaway_reservations_task",
     soft_time_limit=9 * 60,
     time_limit=10 * 60,
@@ -187,9 +167,7 @@ def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int 
                     hostaway_operations__operation_type=(
                         HostawayReservationOperation.OperationType.CREATE_RESERVATION
                     ),
-                    hostaway_operations__status=(
-                        HostawayReservationOperation.Status.BLOCKED
-                    ),
+                    hostaway_operations__status=(HostawayReservationOperation.Status.BLOCKED),
                     hostaway_operations__attempt_count=0,
                 ),
                 payment_status="paid",
@@ -219,8 +197,7 @@ def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int 
                 else:
                     deferred += 1
                     logger.warning(
-                        "Paid Hostaway reservation recovery deferred: "
-                        "reservation_ref=%s code=%s",
+                        "Paid Hostaway reservation recovery deferred: reservation_ref=%s code=%s",
                         reservation.public_reference[:8],
                         outcome.code,
                     )
@@ -232,3 +209,23 @@ def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int 
             "deferred": deferred,
             "failed": failed,
         }
+
+
+@shared_task(
+    name="apps.integrations.tasks.refresh_indicative_rates_task",
+    soft_time_limit=9 * 60,
+    time_limit=10 * 60,
+)
+def refresh_indicative_rates_task() -> dict[str, str]:
+    """Refresh the display-only "from" price on every active property.
+
+    Daily is deliberate: the figure only has to orient a first-time visitor, and
+    the live quote remains the authority for any real booking.
+    """
+    from django.core.management import call_command
+
+    with distributed_task_lock("indicative-rates") as acquired:
+        if not acquired:
+            return {"status": "already_running"}
+        call_command("refresh_indicative_rates")
+    return {"status": "completed"}

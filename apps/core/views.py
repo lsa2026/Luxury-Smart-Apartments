@@ -115,7 +115,18 @@ class FAQView(TemplateView):
 
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)
-        context["faq_items"] = FAQItem.objects.filter(is_active=True)
+        # Site-wide questions only: one tied to a property belongs on that
+        # property's page, where it has the context that makes it answerable.
+        items = FAQItem.objects.filter(is_active=True, property__isnull=True)
+        groups: dict[str, dict[str, object]] = {}
+        for item in items:
+            group = groups.setdefault(
+                item.category,
+                {"label": item.get_category_display(), "items": []},
+            )
+            group["items"].append(item)
+        context["faq_items"] = items
+        context["faq_groups"] = list(groups.values())
         return context
 
 

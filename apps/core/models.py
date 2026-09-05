@@ -40,6 +40,29 @@ class SitePage(models.Model):
 
 
 class FAQItem(models.Model):
+    class Category(models.TextChoices):
+        BOOKING = "booking", _("Booking and payment")
+        STAY = "stay", _("During your stay")
+        POLICY = "policy", _("Policies and cancellation")
+        PROPERTY = "property", _("About the property")
+
+    # A question tied to one property appears on that property's page as well as
+    # in the general list; a question with no property is site-wide.
+    property = models.ForeignKey(
+        "properties.Property",
+        on_delete=models.CASCADE,
+        related_name="faq_items",
+        null=True,
+        blank=True,
+        verbose_name=_("Specific property"),
+        help_text=_("Leave empty for a question that applies to every stay."),
+    )
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.BOOKING,
+        verbose_name=_("Category"),
+    )
     question_ar = models.CharField(max_length=300)
     question_en = models.CharField(max_length=300)
     question_fr = models.CharField(max_length=300, blank=True)
@@ -52,8 +75,12 @@ class FAQItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["sort_order", "id"]
-        indexes = [models.Index(fields=["is_active", "sort_order"])]
+        ordering = ["category", "sort_order", "id"]
+        indexes = [
+            models.Index(fields=["is_active", "sort_order"]),
+            models.Index(fields=["property", "is_active"]),
+            models.Index(fields=["category", "sort_order"]),
+        ]
         verbose_name = _("FAQ item")
         verbose_name_plural = _("FAQ items")
 

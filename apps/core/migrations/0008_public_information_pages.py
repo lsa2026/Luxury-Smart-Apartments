@@ -469,7 +469,7 @@ SITE_SETTINGS = {
     "brand_name_ar": "Luxury Smart Apartments",
     "brand_name_en": "Luxury Smart Apartments",
     "brand_name_fr": "Luxury Smart Apartments",
-    "tagline_ar": "إقامات ذكية فاخرة في الرياض",
+    "tagline_ar": "إقامات ذكية فاخرة ",
     "tagline_en": "Luxury smart stays in Riyadh",
     "tagline_fr": "Séjours intelligents haut de gamme à Riyad",
     "contact_email": "saeed@luxurysmartapartments.com",

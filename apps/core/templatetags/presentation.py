@@ -227,6 +227,19 @@ def localized_review_text(review: object) -> str:
 
 
 @register.filter
+def review_body(review: object) -> object:
+    """Split a review into headline, positives and negatives for display.
+
+    Hostaway merges the channel's structured answers into one string with
+    English markers. Reading them here keeps the stored row untouched while the
+    page shows Arabic headings and drops a section that says nothing.
+    """
+    from apps.reviews.presentation import parse_review_body
+
+    return parse_review_body(localized_review_text(review))
+
+
+@register.filter
 def localized_price_component(title: object) -> str:
     labels = {
         "سعر الإقامة": gettext_noop("Accommodation price"),
@@ -501,6 +514,21 @@ def localized_count(value: object) -> object:
 
 
 @register.filter
+def localized_decimal(value: object) -> str:
+    """A one-place decimal such as 4.1, in the active language's numerals."""
+    if value in (None, ""):
+        return ""
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError, ValueError):
+        return ""
+    text = f"{amount}"
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
+@register.filter
 def localized_number(value: object) -> str:
     """Render a plain count with the same numerals used for money and dates."""
     if value in (None, ""):
@@ -539,6 +567,13 @@ def localized_percentage(value: object) -> str:
     if _language() == "ar":
         return text.translate(_ARABIC_DIGITS)
     return text
+
+
+def _currency_label(currency_code: str, language: str) -> str:
+    """Use catalogue-owned labels on Arabic pages and ISO codes elsewhere."""
+    if language == "ar":
+        return translation.gettext(currency_code)
+    return currency_code
 
 
 def _currency_precision(currency: str) -> int:
@@ -594,27 +629,25 @@ def localized_money(value: object, currency: object) -> str:
             number,
         )
 
-    currency_label = (
-        translation.pgettext("currency code", currency_code) if language == "ar" else currency_code
-    )
     if language == "en":
         return format_html(
             '<bdi class="money money--en" dir="ltr">'
             '<span class="money__currency">{}</span>'
             '<span class="money__amount">{}</span>'
             "</bdi>",
-            currency_label,
+            _currency_label(currency_code, language),
             number,
         )
 
     return format_html(
         '<bdi class="money money--{}" dir="ltr">'
         '<span class="money__amount">{}</span>'
-        '<span class="money__currency">{}</span>'
+        '<span class="money__currency" aria-label="{}">{}</span>'
         "</bdi>",
         language,
         number,
-        currency_label,
+        currency_code,
+        _currency_label(currency_code, language),
     )
 
 

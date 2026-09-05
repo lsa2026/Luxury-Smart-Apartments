@@ -454,7 +454,10 @@ def test_money_amount_is_customer_friendly() -> None:
 
 
 @pytest.mark.parametrize(
-    ("language", "expected_number", "currency_label", "currency_before_amount"),
+    # Arabic writes the currency as a symbol. An ISO code on an otherwise
+    # Arabic page is the untranslated string this batch corrects, so the
+    # expected currency is part of the case rather than assumed to be "SAR".
+    ("language", "expected_number", "expected_currency", "currency_before_amount"),
     [
         ("ar", "٢٬٤٥٠٫٠٠", "ر.س", False),
         ("en", "2,450.00", "SAR", True),
@@ -464,7 +467,7 @@ def test_money_amount_is_customer_friendly() -> None:
 def test_localized_money_follows_language_conventions(
     language: str,
     expected_number: str,
-    currency_label: str,
+    expected_currency: str,
     currency_before_amount: bool,
 ) -> None:
     with translation.override(language):
@@ -472,9 +475,9 @@ def test_localized_money_follows_language_conventions(
 
     assert expected_number in rendered
     assert 'dir="ltr"' in rendered
-    assert currency_label in rendered
+    assert expected_currency in rendered
     assert (
-        rendered.index(currency_label) < rendered.index(expected_number)
+        rendered.index(expected_currency) < rendered.index(expected_number)
     ) is currency_before_amount
 
 

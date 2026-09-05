@@ -24,9 +24,21 @@
                 <h1>{{ property|localized_property_name }}</h1>
                 <div class="property-heading__meta" aria-label="{% trans 'Property details' %}">
                     <span><i aria-hidden="true">⌖</i>{{ property|localized_city }}</span>
-                    {% if property.average_review_rating %}
-                    <span aria-label="{% blocktrans with rating=property.average_review_rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
-                        <i aria-hidden="true">★</i>{{ property.average_review_rating|rating_out_of_five }}
+                    {% comment %}
+                        The average of the reviews shown on this page, so a
+                        visitor can count them, and so the aggregateRating in the
+                        structured data describes what is actually visible. The
+                        wider all-channel figure follows under its own label.
+                    {% endcomment %}
+                    {% if rating_summary.has_published %}
+                    <span aria-label="{% blocktrans with rating=rating_summary.published_average_out_of_five|localized_decimal %}Rated {{ rating }} out of 5{% endblocktrans %}">
+                        <i aria-hidden="true">★</i>{{ rating_summary.published_average_out_of_five|localized_decimal }}
+                        <small>({% blocktrans count counter=rating_summary.published_count %}{{ counter }} review{% plural %}{{ counter }} reviews{% endblocktrans %})</small>
+                    </span>
+                    {% endif %}
+                    {% if rating_summary.differs_from_all_channels %}
+                    <span class="property-heading__all-channels">
+                        <i aria-hidden="true">◈</i>{% blocktrans with rating=rating_summary.all_channel_average_out_of_five|localized_decimal %}{{ rating }} across all booking channels{% endblocktrans %}
                     </span>
                     {% endif %}
                     {% if property.room_type %}
@@ -88,6 +100,13 @@
             <section class="content-section" aria-labelledby="about-property-title"><p class="eyebrow">{% trans "The property" %}</p><h2 id="about-property-title">{% trans "About this stay" %}</h2>{% with description=property|localized_property_description %}{% if description %}<div class="rich-copy">{{ description|linebreaks }}</div>{% else %}<p>{% trans "A detailed description is being prepared." %}</p>{% endif %}{% endwith %}</section>
             <section class="content-section" aria-labelledby="amenities-title"><p class="eyebrow">{% trans "Included" %}</p><h2 id="amenities-title">{% trans "Amenities" %}</h2>{% if visible_amenities %}<ul class="amenity-list">{% for link in visible_amenities %}{% with amenity_name=link.amenity|localized_amenity %}{% if amenity_name %}<li><span aria-hidden="true">✓</span> {{ amenity_name }}</li>{% endif %}{% endwith %}{% endfor %}</ul>{% else %}<div class="empty-state"><h3>{% trans "Amenities are being reviewed" %}</h3><p>{% trans "Please contact us if you need a specific amenity." %}</p></div>{% endif %}</section>
             {% include "properties/_stay_policy.html" %}
+            {% if property_faq_items %}
+            <section class="content-section" aria-labelledby="property-faq-title">
+                <p class="eyebrow">{% trans "Good to know" %}</p>
+                <h2 id="property-faq-title">{% trans "Questions about this stay" %}</h2>
+                <div class="faq-list">{% for item in property_faq_items %}<details class="faq-item"><summary>{{ item|localized_faq_question }}</summary><div class="rich-copy">{{ item|localized_faq_answer|linebreaks }}</div></details>{% endfor %}</div>
+            </section>
+            {% endif %}
             <section class="content-section location-panel" aria-labelledby="location-title"><p class="eyebrow">{% trans "Location" %}</p><h2 id="location-title">{{ property|localized_city }}</h2><p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p></section>
             <section class="content-section property-reviews" aria-labelledby="property-reviews-title"><div class="section-heading section-heading--split"><div><p class="eyebrow">{% trans "Guest experiences" %}</p><h2 id="property-reviews-title">{% trans "Reviews" %}</h2></div><a class="text-link" href="{% url 'reviews:list' %}">{% trans "All reviews" %}</a></div>{% include "reviews/_review_cards.html" with reviews=property_reviews initial_review_count=4 review_batch_size=2 %}</section>
         </div>

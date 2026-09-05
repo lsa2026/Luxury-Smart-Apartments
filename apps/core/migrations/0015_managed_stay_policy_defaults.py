@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0013_stay_policy_display"),
+        ("core", "0014_merge_20260905_0300"),
     ]
 
     operations = [
