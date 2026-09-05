@@ -111,8 +111,10 @@ def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
     populated_property()
     content = Client().get("/").content.decode()
     assert 'lang="ar" dir="rtl"' in content
-    assert "إقامات ذكية فاخرة" in content
-    assert "إقامات ذكية فاخرة  ومراكش." not in content
+    assert "إقامة ذكية فاخرة" in content
+    assert "إقامات ذكية فاخرة" not in content
+    footer = content[content.index('<footer class="site-footer"') :]
+    assert "<h2>إقامة ذكية فاخرة</h2>" in footer
     assert 'class="skip-link"' in content
     assert '<main id="main-content"' in content
     assert "<header" in content and "<footer" in content
