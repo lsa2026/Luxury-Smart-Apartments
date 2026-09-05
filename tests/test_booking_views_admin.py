@@ -84,7 +84,7 @@ def form_data() -> dict[str, str]:
         "guest_first_name": "Test",
         "guest_last_name": "Guest",
         "guest_email": "test@example.invalid",
-        "guest_phone": "0500000000",
+        "guest_phone": "+966500000000",
         "billing_street1": "King Fahd Road 10",
         "billing_city": "Riyadh",
         "billing_state": "Riyadh",

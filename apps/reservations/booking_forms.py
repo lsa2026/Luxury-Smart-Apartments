@@ -39,8 +39,8 @@ class GuestDetailsForm(forms.Form):
         # brackets or dashes; the value is normalised to E.164 on clean.
         max_length=32,
         help_text=_(
-            "Any country is accepted. Write it with a country code, such as "
-            "+966500000000, or as a local number for the country you select below."
+            "Enter an international number, starting with + and its country code, "
+            "for example +966500000000."
         ),
         widget=forms.TextInput(
             attrs={
@@ -167,19 +167,14 @@ class GuestDetailsForm(forms.Form):
         self._resolve_region(cleaned)
         phone = cleaned.get("guest_phone")
         if isinstance(phone, str):
-            country = cleaned.get("billing_country")
-            country_code = country if isinstance(country, str) else self.default_country_code
             try:
-                cleaned["guest_phone"] = normalize_phone_number(
-                    phone,
-                    default_region=country_code,
-                )
+                cleaned["guest_phone"] = normalize_phone_number(phone)
             except InvalidPhoneNumber:
                 self.add_error(
                     "guest_phone",
                     _(
-                        "Enter a valid mobile number, with its country code "
-                        "if it is not a local number."
+                        "Enter a valid mobile number in international format, starting "
+                        "with +, for example +966500000000."
                     ),
                 )
         return cleaned

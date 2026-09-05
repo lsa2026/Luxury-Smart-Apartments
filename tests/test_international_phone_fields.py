@@ -1,4 +1,5 @@
 import pytest
+from django.utils.translation import override
 
 from apps.core.admin import SiteSettingAdminForm
 from apps.core.forms import ContactForm
@@ -9,12 +10,19 @@ pytestmark = pytest.mark.django_db
 
 def test_every_phone_input_prompts_for_an_international_country_code() -> None:
     expected_placeholder = "+<country code> <number>"
-
-    assert ContactForm().fields["phone"].widget.attrs["placeholder"] == expected_placeholder
-    assert (
-        GuestDetailsForm().fields["guest_phone"].widget.attrs["placeholder"]
-        == expected_placeholder
+    expected_help = (
+        "Enter an international number, starting with + and its country code, "
+        "for example +966500000000."
     )
+
+    with override("en"):
+        assert ContactForm().fields["phone"].widget.attrs["placeholder"] == expected_placeholder
+        assert str(ContactForm().fields["phone"].help_text) == expected_help
+        assert (
+            GuestDetailsForm().fields["guest_phone"].widget.attrs["placeholder"]
+            == expected_placeholder
+        )
+        assert str(GuestDetailsForm().fields["guest_phone"].help_text) == expected_help
     assert (
         SiteSettingAdminForm().fields["contact_phone"].widget.attrs["placeholder"]
         == expected_placeholder
@@ -29,7 +37,6 @@ def test_every_phone_input_prompts_for_an_international_country_code() -> None:
     ("value", "expected"),
     [
         ("+44 7911 123456", "+447911123456"),
-        ("0033 6 12 34 56 78", "+33612345678"),
         ("+1 (212) 555-1234", "+12125551234"),
     ],
 )
@@ -52,7 +59,9 @@ def test_contact_form_accepts_and_normalizes_international_numbers(
     assert form.cleaned_data["phone"] == expected
 
 
-@pytest.mark.parametrize("value", ["0500000000", "12345", "+9999999999999999"])
+@pytest.mark.parametrize(
+    "value", ["0500000000", "0033 6 12 34 56 78", "12345", "+9999999999999999"]
+)
 def test_contact_form_rejects_ambiguous_or_invalid_numbers(value: str) -> None:
     form = ContactForm(
         {
@@ -90,7 +99,7 @@ def test_site_settings_phone_fields_use_the_same_international_format() -> None:
         data={
             "site_name": "Luxury Smart Apartments",
             "contact_phone": "+44 7911 123456",
-            "whatsapp_display_number": "0033 6 12 34 56 78",
+            "whatsapp_display_number": "+33 6 12 34 56 78",
         }
     )
 
@@ -104,7 +113,7 @@ def test_site_settings_reject_phone_numbers_without_an_international_country_cod
         data={
             "site_name": "Luxury Smart Apartments",
             "contact_phone": "0500000000",
-            "whatsapp_display_number": "12345",
+            "whatsapp_display_number": "0033 6 12 34 56 78",
         }
     )
 

@@ -179,7 +179,10 @@ class SiteSettingAdminForm(forms.ModelForm):
             return normalize_phone_number(value)
         except InvalidPhoneNumber:
             raise forms.ValidationError(
-                _("Enter a valid mobile number, with its country code if it is not a local number.")
+                _(
+                    "Enter a valid mobile number in international format, starting "
+                    "with +, for example +966500000000."
+                )
             ) from None
 
     def clean_contact_phone(self) -> str:

@@ -11,7 +11,7 @@ BASE = {
     "guest_first_name": "Guest",
     "guest_last_name": "Example",
     "guest_email": "guest@example.invalid",
-    "guest_phone": "0500000000",
+    "guest_phone": "+966500000000",
     "billing_city": "Riyadh",
     "billing_country": "SA",
     "special_requests": "",

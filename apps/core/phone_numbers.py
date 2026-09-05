@@ -9,29 +9,22 @@ class InvalidPhoneNumber(ValueError):
     """Raised when a value cannot be parsed as a dialable phone number."""
 
 
-def normalize_phone_number(value: str, *, default_region: str | None = None) -> str:
+def normalize_phone_number(value: str) -> str:
     """Return a valid number in E.164 format.
 
-    Explicit international prefixes (``+`` or ``00``) are always interpreted
-    independently of a country selection.  A local number is supported only
-    when its form supplies an unambiguous ISO country region.
+    Phone numbers entered in the platform must be in international form.  The
+    leading ``+`` and country calling code make the number unambiguous and
+    prevent a local number from being silently interpreted using another field.
     """
     compact = re.sub(r"[^\d+]", "", value)
-    if compact.startswith("00"):
-        compact = f"+{compact[2:]}"
+    if not compact.startswith("+"):
+        raise InvalidPhoneNumber
 
-    regions: list[str | None] = [None] if compact.startswith("+") else []
-    if default_region:
-        normalized_region = default_region.upper()
-        if normalized_region not in regions:
-            regions.append(normalized_region)
-
-    for region in regions:
-        try:
-            parsed = phonenumbers.parse(compact, region)
-        except phonenumbers.NumberParseException:
-            continue
-        if phonenumbers.is_valid_number(parsed):
-            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+    try:
+        parsed = phonenumbers.parse(compact, None)
+    except phonenumbers.NumberParseException:
+        raise InvalidPhoneNumber from None
+    if phonenumbers.is_valid_number(parsed):
+        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
 
     raise InvalidPhoneNumber

@@ -26,6 +26,10 @@ class ContactForm(forms.Form):
         label=_("Phone (optional)"),
         max_length=30,
         required=False,
+        help_text=_(
+            "Enter an international number, starting with + and its country code, "
+            "for example +966500000000."
+        ),
         widget=forms.TextInput(
             attrs={
                 "autocomplete": "tel",
@@ -78,7 +82,10 @@ class ContactForm(forms.Form):
             return normalize_phone_number(value)
         except InvalidPhoneNumber:
             raise forms.ValidationError(
-                _("Enter a valid mobile number, with its country code if it is not a local number.")
+                _(
+                    "Enter a valid mobile number in international format, starting "
+                    "with +, for example +966500000000."
+                )
             ) from None
 
     def clean_subject(self) -> str:

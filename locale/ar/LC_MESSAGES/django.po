@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 04:02+0300\n"
+"POT-Creation-Date: 2026-09-05 20:35+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,17 +15,18 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #: .\apps\accounts\apps.py:8
 msgid "Accounts"
 msgstr "الحسابات"
 
-#: .\apps\accounts\forms.py:13 .\apps\reservations\booking_forms.py:57
+#: .\apps\accounts\forms.py:13 .\apps\reservations\booking_forms.py:22
 msgid "First name"
 msgstr "الاسم الأول"
 
-#: .\apps\accounts\forms.py:18 .\apps\reservations\booking_forms.py:62
+#: .\apps\accounts\forms.py:18 .\apps\reservations\booking_forms.py:27
 msgid "Last name"
 msgstr "اسم العائلة"
 
@@ -132,153 +133,160 @@ msgid "A new confirmation email is on its way."
 msgstr ""
 
 # Booking management journey
-#: .\apps\core\admin.py:20
+#: .\apps\core\admin.py:21
 msgid "Platform administration"
 msgstr "إدارة المنصة"
 
-#: .\apps\core\admin.py:21
+#: .\apps\core\admin.py:22
 msgid "Command centre"
 msgstr "مركز القيادة"
 
-#: .\apps\core\admin.py:41
+#: .\apps\core\admin.py:42
 msgid "Publishing"
 msgstr "النشر"
 
-#: .\apps\core\admin.py:45 .\templates\admin\properties\image_alt_text.html:65
+#: .\apps\core\admin.py:46 .\templates\admin\properties\image_alt_text.html:65
 #: .\templates\admin\properties\image_alt_text.html:76
 msgid "Arabic"
 msgstr "العربية"
 
-#: .\apps\core\admin.py:132
+#: .\apps\core\admin.py:133
 msgid "Site name"
 msgstr "اسم الموقع"
 
-#: .\apps\core\admin.py:133
+#: .\apps\core\admin.py:134
 msgid "Arabic tagline"
 msgstr "الشعار النصي بالعربية"
 
-#: .\apps\core\admin.py:134
+#: .\apps\core\admin.py:135
 msgid "English tagline"
 msgstr "الشعار النصي بالإنجليزية"
 
-#: .\apps\core\admin.py:135
+#: .\apps\core\admin.py:136
 msgid "French tagline"
 msgstr "الشعار النصي بالفرنسية"
 
-#: .\apps\core\admin.py:136
+#: .\apps\core\admin.py:137
 msgid "Arabic footer text"
 msgstr "نص التذييل بالعربية"
 
-#: .\apps\core\admin.py:137
+#: .\apps\core\admin.py:138
 msgid "English footer text"
 msgstr "نص التذييل بالإنجليزية"
 
-#: .\apps\core\admin.py:138
+#: .\apps\core\admin.py:139
 msgid "French footer text"
 msgstr "نص التذييل بالفرنسية"
 
-#: .\apps\core\admin.py:139 .\apps\core\admin.py:226
+#: .\apps\core\admin.py:140 .\apps\core\admin.py:265
 msgid "Contact email"
 msgstr "البريد الإلكتروني للتواصل"
 
-#: .\apps\core\admin.py:140 .\apps\core\admin.py:227
+#: .\apps\core\admin.py:141 .\apps\core\admin.py:266
 msgid "Contact phone"
 msgstr "رقم هاتف التواصل"
 
-#: .\apps\core\admin.py:141
+#: .\apps\core\admin.py:142
 msgid "WhatsApp display number"
 msgstr "رقم واتساب الظاهر"
 
-#: .\apps\core\admin.py:142 .\apps\core\admin.py:228
+#: .\apps\core\admin.py:143 .\apps\core\admin.py:267
 msgid "WhatsApp link"
 msgstr "رابط واتساب"
 
-#: .\apps\core\admin.py:143
+#: .\apps\core\admin.py:144
 msgid "Instagram link"
 msgstr "رابط إنستغرام"
 
-#: .\apps\core\admin.py:144
+#: .\apps\core\admin.py:145
 msgid "Facebook link"
 msgstr "رابط فيسبوك"
 
-#: .\apps\core\admin.py:145
+#: .\apps\core\admin.py:146
 msgid "X link"
 msgstr "رابط منصة X"
 
-#: .\apps\core\admin.py:146
+#: .\apps\core\admin.py:147
 msgid "LinkedIn link"
 msgstr "رابط لينكدإن"
 
-#: .\apps\core\admin.py:147
+#: .\apps\core\admin.py:148
 msgid "Arabic office hours"
 msgstr "ساعات العمل بالعربية"
 
-#: .\apps\core\admin.py:148
+#: .\apps\core\admin.py:149
 msgid "English office hours"
 msgstr "ساعات العمل بالإنجليزية"
 
-#: .\apps\core\admin.py:149
+#: .\apps\core\admin.py:150
 msgid "French office hours"
 msgstr "ساعات العمل بالفرنسية"
 
-#: .\apps\core\admin.py:150
+#: .\apps\core\admin.py:151
 msgid "Arabic public address"
 msgstr "العنوان العام بالعربية"
 
-#: .\apps\core\admin.py:151
+#: .\apps\core\admin.py:152
 msgid "English public address"
 msgstr "العنوان العام بالإنجليزية"
 
-#: .\apps\core\admin.py:152
+#: .\apps\core\admin.py:153
 msgid "French public address"
 msgstr "العنوان العام بالفرنسية"
 
-#: .\apps\core\admin.py:162
+#: .\apps\core\admin.py:183 .\apps\core\forms.py:86
+#: .\apps\reservations\booking_forms.py:176
+msgid ""
+"Enter a valid mobile number in international format, starting with +, for "
+"example +966500000000."
+msgstr "أدخل رقم جوال صحيحًا بالصيغة الدولية، يبدأ بعلامة +، مثل +966500000000."
+
+#: .\apps\core\admin.py:201
 msgid "Configuration readiness"
 msgstr "اكتمال الإعدادات"
 
-#: .\apps\core\admin.py:166
+#: .\apps\core\admin.py:205
 msgid "Brand"
 msgstr "العلامة"
 
-#: .\apps\core\admin.py:180
+#: .\apps\core\admin.py:219
 #, fuzzy
 #| msgid "Stay details"
 msgid "Stay defaults"
 msgstr "تفاصيل الإقامة"
 
-#: .\apps\core\admin.py:183
+#: .\apps\core\admin.py:222
 msgid "Used only when the channel manager reports nothing for a property."
 msgstr ""
 
-#: .\apps\core\admin.py:195 .\templates\admin\notifications\dashboard.html:61
+#: .\apps\core\admin.py:234 .\templates\admin\notifications\dashboard.html:61
 #: .\templates\includes\footer.html:22 .\templates\includes\footer.html:50
 #: .\templates\includes\header.html:18
 #: .\templates\includes\mobile_navigation.html:13
 msgid "Contact"
 msgstr "اتصل بنا"
 
-#: .\apps\core\admin.py:215
+#: .\apps\core\admin.py:254
 msgid "System"
 msgstr "النظام"
 
-#: .\apps\core\admin.py:219
+#: .\apps\core\admin.py:258
 msgid "Contact information complete"
 msgstr "بيانات التواصل مكتملة"
 
-#: .\apps\core\admin.py:223
+#: .\apps\core\admin.py:262
 msgid "Configuration status"
 msgstr "حالة الإعداد"
 
-#: .\apps\core\admin.py:234
+#: .\apps\core\admin.py:273
 msgid "Essential public contact information is complete."
 msgstr "بيانات التواصل العامة الأساسية مكتملة."
 
-#: .\apps\core\admin.py:238
+#: .\apps\core\admin.py:277
 msgid "Complete the essential contact information"
 msgstr "أكمل بيانات التواصل الأساسية"
 
-#: .\apps\core\admin.py:239
+#: .\apps\core\admin.py:278
 #, python-format
 msgid "Missing: %(fields)s"
 msgstr "البيانات الناقصة: %(fields)s"
@@ -332,8 +340,12 @@ msgid "Refunds to transfer to guests"
 msgstr "مبالغ مستحقة للنزلاء"
 
 #: .\apps\core\admin_dashboard.py:249
-msgid "A change was applied automatically and left money owed. Contact the guest for bank details, transfer, then mark it."
-msgstr "طُبِّق تغيير تلقائيًا ونتج عنه مبلغ مستحق. تواصل مع النزيل لأخذ بياناته البنكية، حوّل المبلغ، ثم علّمه."
+msgid ""
+"A change was applied automatically and left money owed. Contact the guest "
+"for bank details, transfer, then mark it."
+msgstr ""
+"طُبِّق تغيير تلقائيًا ونتج عنه مبلغ مستحق. تواصل مع النزيل لأخذ بياناته البنكية، "
+"حوّل المبلغ، ثم علّمه."
 
 #: .\apps\core\admin_dashboard.py:257
 msgid "Paid bookings not sent to Hostaway"
@@ -442,35 +454,41 @@ msgstr "الأساس"
 msgid "Hello, I would like to ask about a stay with Luxury Smart Apartments."
 msgstr "مرحبًا، أود الاستفسار عن الإقامة لدى Luxury Smart Apartments."
 
-#: .\apps\core\forms.py:14
+#: .\apps\core\forms.py:16
 msgid "Name"
 msgstr "الاسم"
 
-#: .\apps\core\forms.py:19 .\apps\reservations\booking_forms.py:67
+#: .\apps\core\forms.py:21 .\apps\reservations\booking_forms.py:32
 msgid "Email address"
 msgstr "البريد الإلكتروني"
 
-#: .\apps\core\forms.py:24
+#: .\apps\core\forms.py:26
 msgid "Phone (optional)"
 msgstr "الهاتف (اختياري)"
 
-#: .\apps\core\forms.py:32
+#: .\apps\core\forms.py:30 .\apps\reservations\booking_forms.py:42
+msgid ""
+"Enter an international number, starting with + and its country code, for "
+"example +966500000000."
+msgstr "اكتب رقمًا دوليًا يبدأ بعلامة + ورمز الدولة، مثل +966500000000."
+
+#: .\apps\core\forms.py:43
 msgid "Subject"
 msgstr "الموضوع"
 
-#: .\apps\core\forms.py:37
+#: .\apps\core\forms.py:48
 msgid "Message"
 msgstr "الرسالة"
 
-#: .\apps\core\forms.py:42
+#: .\apps\core\forms.py:53
 msgid "Include your booking number if your message is about a stay."
 msgstr "أضف رقم الحجز إذا كانت رسالتك متعلقة بإقامة."
 
-#: .\apps\core\forms.py:60
+#: .\apps\core\forms.py:71
 msgid "Unable to send this message."
 msgstr "تعذر إرسال هذه الرسالة."
 
-#: .\apps\core\forms.py:75
+#: .\apps\core\forms.py:97
 msgid "Please provide a little more detail."
 msgstr "يرجى إضافة مزيد من التفاصيل."
 
@@ -1060,294 +1078,294 @@ msgctxt "admin field label"
 msgid "Webhook processing"
 msgstr "معالجة Webhooks"
 
-#: .\apps\core\templatetags\presentation.py:246
-#: .\apps\core\templatetags\presentation.py:247
+#: .\apps\core\templatetags\presentation.py:260
+#: .\apps\core\templatetags\presentation.py:261
 msgid "Accommodation price"
 msgstr "سعر الإقامة"
 
-#: .\apps\core\templatetags\presentation.py:248
+#: .\apps\core\templatetags\presentation.py:262
 msgid "Base rate"
 msgstr "السعر الأساسي"
 
-#: .\apps\core\templatetags\presentation.py:249
-#: .\apps\core\templatetags\presentation.py:250
+#: .\apps\core\templatetags\presentation.py:263
+#: .\apps\core\templatetags\presentation.py:264
 msgid "Cleaning fee"
 msgstr "رسوم التنظيف"
 
-#: .\apps\core\templatetags\presentation.py:251
+#: .\apps\core\templatetags\presentation.py:265
 msgid "Service fee"
 msgstr "رسوم الخدمة"
 
-#: .\apps\core\templatetags\presentation.py:252
-#: .\apps\core\templatetags\presentation.py:253
+#: .\apps\core\templatetags\presentation.py:266
+#: .\apps\core\templatetags\presentation.py:267
 msgid "VAT"
 msgstr "ضريبة القيمة المضافة"
 
-#: .\apps\core\templatetags\presentation.py:254
-#: .\apps\core\templatetags\presentation.py:255
+#: .\apps\core\templatetags\presentation.py:268
+#: .\apps\core\templatetags\presentation.py:269
 msgid "Tax"
 msgstr "الضريبة"
 
-#: .\apps\core\templatetags\presentation.py:256
-#: .\apps\core\templatetags\presentation.py:257
+#: .\apps\core\templatetags\presentation.py:270
+#: .\apps\core\templatetags\presentation.py:271
 msgid "City tax"
 msgstr "ضريبة المدينة"
 
-#: .\apps\core\templatetags\presentation.py:258
-#: .\apps\core\templatetags\presentation.py:259
+#: .\apps\core\templatetags\presentation.py:272
+#: .\apps\core\templatetags\presentation.py:273
 msgid "Damage deposit"
 msgstr "تأمين الأضرار"
 
-#: .\apps\core\templatetags\presentation.py:260
-#: .\apps\core\templatetags\presentation.py:261
+#: .\apps\core\templatetags\presentation.py:274
+#: .\apps\core\templatetags\presentation.py:275
 msgid "Extra guest fee"
 msgstr "رسوم ضيف إضافي"
 
-#: .\apps\core\templatetags\presentation.py:262
+#: .\apps\core\templatetags\presentation.py:276
 msgid "Pet fee"
 msgstr "رسوم الحيوانات الأليفة"
 
-#: .\apps\core\templatetags\presentation.py:263
+#: .\apps\core\templatetags\presentation.py:277
 msgid "Resort fee"
 msgstr "رسوم المنتجع"
 
-#: .\apps\core\templatetags\presentation.py:264
+#: .\apps\core\templatetags\presentation.py:278
 msgid "Weekly discount"
 msgstr "خصم أسبوعي"
 
-#: .\apps\core\templatetags\presentation.py:265
+#: .\apps\core\templatetags\presentation.py:279
 msgid "Monthly discount"
 msgstr "خصم شهري"
 
-#: .\apps\core\templatetags\presentation.py:266
+#: .\apps\core\templatetags\presentation.py:280
 msgid "Coupon discount"
 msgstr "خصم القسيمة"
 
-#: .\apps\core\templatetags\presentation.py:267
+#: .\apps\core\templatetags\presentation.py:281
 msgid "Discount"
 msgstr "خصم"
 
-#: .\apps\core\templatetags\presentation.py:268
-#: .\apps\core\templatetags\presentation.py:269
+#: .\apps\core\templatetags\presentation.py:282
+#: .\apps\core\templatetags\presentation.py:283
 msgid "Price item"
 msgstr "بند سعر"
 
-#: .\apps\core\templatetags\presentation.py:291
+#: .\apps\core\templatetags\presentation.py:305
 msgid "Entire home"
 msgstr "وحدة كاملة"
 
-#: .\apps\core\templatetags\presentation.py:292
+#: .\apps\core\templatetags\presentation.py:306
 msgid "Private room"
 msgstr "غرفة خاصة"
 
-#: .\apps\core\templatetags\presentation.py:293
+#: .\apps\core\templatetags\presentation.py:307
 msgid "Shared room"
 msgstr "غرفة مشتركة"
 
-#: .\apps\core\templatetags\presentation.py:294
+#: .\apps\core\templatetags\presentation.py:308
 msgid "Hotel room"
 msgstr "غرفة فندقية"
 
-#: .\apps\core\templatetags\presentation.py:322
+#: .\apps\core\templatetags\presentation.py:336
 msgid "Flexible cancellation"
 msgstr "إلغاء مرن"
 
-#: .\apps\core\templatetags\presentation.py:323
+#: .\apps\core\templatetags\presentation.py:337
 msgid "Moderate cancellation"
 msgstr "إلغاء متوسط"
 
-#: .\apps\core\templatetags\presentation.py:324
+#: .\apps\core\templatetags\presentation.py:338
 msgid "Strict cancellation"
 msgstr "إلغاء صارم"
 
-#: .\apps\core\templatetags\presentation.py:325
+#: .\apps\core\templatetags\presentation.py:339
 msgid "Firm cancellation"
 msgstr "إلغاء حازم"
 
-#: .\apps\core\templatetags\presentation.py:326
+#: .\apps\core\templatetags\presentation.py:340
 msgid "Very strict cancellation"
 msgstr "إلغاء صارم جدًا"
 
-#: .\apps\core\templatetags\presentation.py:327
+#: .\apps\core\templatetags\presentation.py:341
 msgid "Non-refundable"
 msgstr "غير قابل للاسترداد"
 
-#: .\apps\core\templatetags\presentation.py:332
+#: .\apps\core\templatetags\presentation.py:346
 msgid "Host cancellation policy"
 msgstr "سياسة إلغاء المضيف"
 
 # Booking management journey
-#: .\apps\core\templatetags\presentation.py:350
-#: .\apps\core\templatetags\presentation.py:398
+#: .\apps\core\templatetags\presentation.py:364
+#: .\apps\core\templatetags\presentation.py:412
 #: .\apps\reservations\models.py:319 .\apps\reservations\models.py:543
 msgid "Awaiting payment"
 msgstr "بانتظار الدفع"
 
-#: .\apps\core\templatetags\presentation.py:351
-#: .\apps\core\templatetags\presentation.py:352
+#: .\apps\core\templatetags\presentation.py:365
+#: .\apps\core\templatetags\presentation.py:366
 msgid "Preparing confirmation"
 msgstr "جارٍ تجهيز التأكيد"
 
-#: .\apps\core\templatetags\presentation.py:353
+#: .\apps\core\templatetags\presentation.py:367
 msgid "Confirming booking"
 msgstr "جارٍ تأكيد الحجز"
 
-#: .\apps\core\templatetags\presentation.py:354
+#: .\apps\core\templatetags\presentation.py:368
 #: .\apps\reservations\models.py:323
 msgid "Confirmed"
 msgstr "مؤكد"
 
-#: .\apps\core\templatetags\presentation.py:355
-#: .\apps\core\templatetags\presentation.py:407
+#: .\apps\core\templatetags\presentation.py:369
+#: .\apps\core\templatetags\presentation.py:421
 msgid "Needs assistance"
 msgstr "يحتاج إلى مساعدة"
 
-#: .\apps\core\templatetags\presentation.py:356
-#: .\apps\core\templatetags\presentation.py:366
-#: .\apps\core\templatetags\presentation.py:369
-#: .\apps\core\templatetags\presentation.py:389
-#: .\apps\core\templatetags\presentation.py:399
-#: .\apps\core\templatetags\presentation.py:408
-#: .\apps\core\templatetags\presentation.py:411
+#: .\apps\core\templatetags\presentation.py:370
+#: .\apps\core\templatetags\presentation.py:380
+#: .\apps\core\templatetags\presentation.py:383
+#: .\apps\core\templatetags\presentation.py:403
+#: .\apps\core\templatetags\presentation.py:413
+#: .\apps\core\templatetags\presentation.py:422
+#: .\apps\core\templatetags\presentation.py:425
 msgid "Under review"
 msgstr "قيد المراجعة"
 
-#: .\apps\core\templatetags\presentation.py:357
-#: .\apps\core\templatetags\presentation.py:401
+#: .\apps\core\templatetags\presentation.py:371
+#: .\apps\core\templatetags\presentation.py:415
 msgid "Updating"
 msgstr "جارٍ التحديث"
 
-#: .\apps\core\templatetags\presentation.py:358 .\apps\payments\admin.py:167
+#: .\apps\core\templatetags\presentation.py:372 .\apps\payments\admin.py:167
 #: .\apps\reservations\admin.py:403
 msgid "Updated"
 msgstr "تم التحديث"
 
-#: .\apps\core\templatetags\presentation.py:359
+#: .\apps\core\templatetags\presentation.py:373
 msgid "Cancelled"
 msgstr "ملغى"
 
-#: .\apps\core\templatetags\presentation.py:362
+#: .\apps\core\templatetags\presentation.py:376
 msgid "Awaiting confirmation"
 msgstr "بانتظار التأكيد"
 
-#: .\apps\core\templatetags\presentation.py:363
+#: .\apps\core\templatetags\presentation.py:377
 msgid "Enquiry"
 msgstr "استفسار"
 
-#: .\apps\core\templatetags\presentation.py:364
+#: .\apps\core\templatetags\presentation.py:378
 msgid "Not accepted"
 msgstr "لم يُقبل"
 
-#: .\apps\core\templatetags\presentation.py:365
+#: .\apps\core\templatetags\presentation.py:379
 msgid "Offer expired"
 msgstr "انتهت صلاحية العرض"
 
-#: .\apps\core\templatetags\presentation.py:375
+#: .\apps\core\templatetags\presentation.py:389
 msgid "Not paid"
 msgstr "غير مدفوع"
 
-#: .\apps\core\templatetags\presentation.py:376
-#: .\apps\core\templatetags\presentation.py:377 .\apps\reservations\admin.py:38
+#: .\apps\core\templatetags\presentation.py:390
+#: .\apps\core\templatetags\presentation.py:391 .\apps\reservations\admin.py:38
 msgid "Payment pending"
 msgstr "الدفع قيد الانتظار"
 
-#: .\apps\core\templatetags\presentation.py:378
-#: .\apps\core\templatetags\presentation.py:379
+#: .\apps\core\templatetags\presentation.py:392
+#: .\apps\core\templatetags\presentation.py:393
 #: .\apps\reservations\models.py:155
 #: .\templates\payments\hyperpay_result.html:47
 msgid "Payment verified"
 msgstr "تم التحقق من الدفع"
 
-#: .\apps\core\templatetags\presentation.py:380
+#: .\apps\core\templatetags\presentation.py:394
 msgid "Test payment completed"
 msgstr "اكتمل الدفع التجريبي"
 
-#: .\apps\core\templatetags\presentation.py:381
+#: .\apps\core\templatetags\presentation.py:395
 #: .\templates\payments\hyperpay_result.html:35
 msgid "Payment was not successful"
 msgstr "لم تنجح عملية الدفع"
 
-#: .\apps\core\templatetags\presentation.py:382
+#: .\apps\core\templatetags\presentation.py:396
 #: .\templates\payments\hyperpay_result.html:31
 msgid "Payment was cancelled"
 msgstr "تم إلغاء الدفع"
 
-#: .\apps\core\templatetags\presentation.py:383 .\apps\payments\models.py:19
+#: .\apps\core\templatetags\presentation.py:397 .\apps\payments\models.py:19
 #: .\apps\reservations\admin.py:40
 msgid "Refunded"
 msgstr "مستردة"
 
-#: .\apps\core\templatetags\presentation.py:384 .\apps\payments\models.py:20
+#: .\apps\core\templatetags\presentation.py:398 .\apps\payments\models.py:20
 #: .\apps\reservations\admin.py:41
 msgid "Partially refunded"
 msgstr "مستردة جزئيًا"
 
-#: .\apps\core\templatetags\presentation.py:385
-#: .\apps\core\templatetags\presentation.py:386
+#: .\apps\core\templatetags\presentation.py:399
+#: .\apps\core\templatetags\presentation.py:400
 #: .\templates\payments\hyperpay_result.html:33
 msgid "Payment needs review"
 msgstr "الدفع يحتاج إلى مراجعة"
 
-#: .\apps\core\templatetags\presentation.py:395
+#: .\apps\core\templatetags\presentation.py:409
 #: .\apps\reservations\models.py:152 .\apps\reservations\models.py:537
 msgid "Draft"
 msgstr "مسودة"
 
-#: .\apps\core\templatetags\presentation.py:396
+#: .\apps\core\templatetags\presentation.py:410
 msgid "Checking availability"
 msgstr "جارٍ التحقق من التوافر"
 
-#: .\apps\core\templatetags\presentation.py:397
+#: .\apps\core\templatetags\presentation.py:411
 msgid "Awaiting your approval"
 msgstr "بانتظار موافقتك"
 
-#: .\apps\core\templatetags\presentation.py:400
+#: .\apps\core\templatetags\presentation.py:414
 msgid "Ready to update"
 msgstr "جاهز للتحديث"
 
-#: .\apps\core\templatetags\presentation.py:402
+#: .\apps\core\templatetags\presentation.py:416
 #: .\apps\reservations\models.py:160 .\apps\reservations\models.py:547
 msgid "Completed"
 msgstr "مكتمل"
 
-#: .\apps\core\templatetags\presentation.py:403
+#: .\apps\core\templatetags\presentation.py:417
 msgid "Declined"
 msgstr "مرفوض"
 
-#: .\apps\core\templatetags\presentation.py:404
+#: .\apps\core\templatetags\presentation.py:418
 msgid "Expired"
 msgstr "منتهي"
 
-#: .\apps\core\templatetags\presentation.py:405
+#: .\apps\core\templatetags\presentation.py:419
 #: .\apps\notifications\models.py:23 .\apps\reservations\models.py:41
 #: .\apps\reservations\models.py:156 .\apps\reservations\models.py:550
 msgid "Price changed"
 msgstr "تغير السعر"
 
-#: .\apps\core\templatetags\presentation.py:406
+#: .\apps\core\templatetags\presentation.py:420
 #: .\apps\notifications\views.py:184 .\apps\reservations\models.py:42
 #: .\apps\reservations\models.py:157 .\apps\reservations\models.py:551
 msgid "Unavailable"
 msgstr "غير متاح"
 
-#: .\apps\core\templatetags\presentation.py:417
+#: .\apps\core\templatetags\presentation.py:431
 #: .\apps\reservations\models.py:531 .\apps\reservations\models.py:694
 #: .\templates\reservations\manage_reservation.html:259
 msgid "Extend stay"
 msgstr "تمديد الإقامة"
 
-#: .\apps\core\templatetags\presentation.py:418
+#: .\apps\core\templatetags\presentation.py:432
 #: .\apps\reservations\models.py:532
 #: .\templates\reservations\manage_reservation.html:295
 msgid "Change dates"
 msgstr "تغيير التواريخ"
 
-#: .\apps\core\templatetags\presentation.py:419
+#: .\apps\core\templatetags\presentation.py:433
 #: .\templates\reservations\manage_reservation.html:355
 msgid "Change guests"
 msgstr "تغيير عدد الضيوف"
 
-#: .\apps\core\templatetags\presentation.py:420
+#: .\apps\core\templatetags\presentation.py:434
 #: .\apps\notifications\models.py:26 .\apps\reservations\models.py:534
 msgid "Cancellation request"
 msgstr "طلب إلغاء"
@@ -1385,7 +1403,7 @@ msgstr "البيانات المنقحة"
 msgid "Requeue failed or retryable events"
 msgstr "إعادة الأحداث الفاشلة أو القابلة للمحاولة إلى الطابور"
 
-#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:597
+#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:593
 #: .\apps\reservations\admin.py:720 .\apps\reservations\admin.py:917
 msgid "This action requires elevated permissions."
 msgstr "يتطلب الإجراء صلاحية عليا."
@@ -1905,7 +1923,8 @@ msgid "Choose your region"
 msgstr "اختر دولتك"
 
 #: .\apps\payments\templatetags\currency.py:51
-msgid "Currency conversion is temporarily unavailable; the original price is shown."
+msgid ""
+"Currency conversion is temporarily unavailable; the original price is shown."
 msgstr "تحويل العملة غير متاح مؤقتًا؛ يظهر السعر الأصلي."
 
 #: .\apps\payments\views.py:145
@@ -1913,19 +1932,26 @@ msgid "Unsupported display currency."
 msgstr "عملة العرض غير مدعومة."
 
 #: .\apps\payments\views.py:205
-msgid "Secure payment could not be started. Nothing was charged; please try again."
+msgid ""
+"Secure payment could not be started. Nothing was charged; please try again."
 msgstr "تعذر بدء الدفع الآمن. لم يتم خصم أي مبلغ؛ يرجى المحاولة مجددًا."
 
 #: .\apps\payments\views.py:273
-msgid "The price-difference payment could not be started. Nothing was charged, and availability was checked again."
+msgid ""
+"The price-difference payment could not be started. Nothing was charged, and "
+"availability was checked again."
 msgstr "تعذر بدء دفع فرق السعر. لم يتم خصم أي مبلغ، وأُعيد التحقق من التوافر."
 
 #: .\apps\payments\views.py:380
-msgid "The local payment test completed. No financial transaction or Hostaway operation was performed."
+msgid ""
+"The local payment test completed. No financial transaction or Hostaway "
+"operation was performed."
 msgstr "اكتمل اختبار الدفع المحلي. لم تُنفذ أي حركة مالية أو عملية في Hostaway."
 
 #: .\apps\payments\views.py:392
-msgid "Payment rejection was simulated. You can test again without any financial charge."
+msgid ""
+"Payment rejection was simulated. You can test again without any financial "
+"charge."
 msgstr "تمت محاكاة رفض الدفع. يمكنك إعادة الاختبار دون أي خصم مالي."
 
 #: .\apps\payments\views.py:399
@@ -1933,8 +1959,12 @@ msgid "Payment cancellation was simulated; the booking request did not change."
 msgstr "تمت محاكاة إلغاء الدفع؛ ولم يتغير طلب الحجز."
 
 #: .\apps\payments\views.py:452
-msgid "The local price-difference payment test completed. The original booking did not change, and nothing was sent to Hostaway."
-msgstr "اكتمل اختبار دفع الفرق محليًا. لم يتغير الحجز الأصلي ولم يُرسل شيء إلى Hostaway."
+msgid ""
+"The local price-difference payment test completed. The original booking did "
+"not change, and nothing was sent to Hostaway."
+msgstr ""
+"اكتمل اختبار دفع الفرق محليًا. لم يتغير الحجز الأصلي ولم يُرسل شيء إلى "
+"Hostaway."
 
 #: .\apps\payments\views.py:459
 msgid "Price-difference payment rejection was simulated without any charge."
@@ -1964,8 +1994,8 @@ msgid "Full description"
 msgstr "الوصف الكامل"
 
 #: .\apps\properties\admin.py:157 .\apps\properties\admin.py:161
-#: .\apps\properties\admin.py:165 .\apps\properties\admin.py:496
-#: .\apps\reservations\booking_forms.py:99
+#: .\apps\properties\admin.py:165 .\apps\properties\admin.py:492
+#: .\apps\reservations\booking_forms.py:64
 #: .\templates\properties\property_list.html:9
 msgid "City"
 msgstr "المدينة"
@@ -1984,7 +2014,7 @@ msgstr "عنوان SEO"
 msgid "SEO description"
 msgstr "وصف SEO"
 
-#: .\apps\properties\admin.py:173 .\apps\properties\admin.py:512
+#: .\apps\properties\admin.py:173 .\apps\properties\admin.py:508
 msgid "Visible on the platform"
 msgstr "ظاهرة في المنصة"
 
@@ -2004,120 +2034,125 @@ msgstr "ترتيب الظهور"
 msgid "Local content is customised"
 msgstr "المحتوى المحلي مخصّص"
 
-#: .\apps\properties\admin.py:203
+#: .\apps\properties\admin.py:192
 msgid "Choose a complete location from the map or clear it."
 msgstr "اختر موقعًا كاملًا من الخريطة أو امسح الموقع."
 
-#: .\apps\properties\admin.py:208
+#: .\apps\properties\admin.py:197
 msgid "Choose the property location on the map before showing it to guests."
 msgstr "اختر موقع الوحدة على الخريطة قبل عرضه للضيوف."
 
-#: .\apps\properties\admin.py:246 .\apps\properties\admin.py:687
+#: .\apps\properties\admin.py:235 .\apps\properties\admin.py:683
 msgid "Preview"
 msgstr "معاينة"
 
-#: .\apps\properties\admin.py:307
+#: .\apps\properties\admin.py:296
 msgid "Publishing and display"
 msgstr "النشر والعرض"
 
-#: .\apps\properties\admin.py:318 .\apps\properties\admin.py:537
+#: .\apps\properties\admin.py:307 .\apps\properties\admin.py:533
 msgid "Arabic content"
 msgstr "المحتوى العربي"
 
-#: .\apps\properties\admin.py:330
+#: .\apps\properties\admin.py:319
 msgid "English content"
 msgstr "المحتوى الإنجليزي"
 
-#: .\apps\properties\admin.py:343
+#: .\apps\properties\admin.py:332
 msgid "Guest location map"
 msgstr "خريطة موقع الوحدة للضيوف"
 
-#: .\apps\properties\admin.py:352
-msgid "Click the map or drag the marker to choose the location shown to guests. Coordinates are saved automatically and Hostaway sync will not overwrite this selection."
-msgstr "انقر على الخريطة أو اسحب العلامة لاختيار الموقع الظاهر للضيوف. تُحفظ الإحداثيات تلقائيًا ولن تستبدل مزامنة Hostaway هذا الاختيار."
+#: .\apps\properties\admin.py:341
+msgid ""
+"Click the map or drag the marker to choose the location shown to guests. "
+"Coordinates are saved automatically and Hostaway sync will not overwrite "
+"this selection."
+msgstr ""
+"انقر على الخريطة أو اسحب العلامة لاختيار الموقع الظاهر للضيوف. تُحفظ "
+"الإحداثيات تلقائيًا ولن تستبدل مزامنة Hostaway هذا الاختيار."
 
-#: .\apps\properties\admin.py:359
+#: .\apps\properties\admin.py:348
 msgid "French content"
 msgstr "المحتوى الفرنسي"
 
-#: .\apps\properties\admin.py:372
+#: .\apps\properties\admin.py:361
 msgid "SEO — Arabic"
 msgstr "SEO — العربية"
 
-#: .\apps\properties\admin.py:379
+#: .\apps\properties\admin.py:368
 msgid "SEO — English"
 msgstr "SEO — الإنجليزية"
 
-#: .\apps\properties\admin.py:386
+#: .\apps\properties\admin.py:375
 msgid "SEO — French"
 msgstr "SEO — الفرنسية"
 
-#: .\apps\properties\admin.py:393
+#: .\apps\properties\admin.py:382
 msgid "Images and amenities"
 msgstr "الصور والمرافق"
 
-#: .\apps\properties\admin.py:397
+#: .\apps\properties\admin.py:386
 msgid "Manage large image and amenity collections on focused screens."
 msgstr "أدر مجموعات الصور والمرافق الكبيرة في شاشات مخصصة وواضحة."
 
-#: .\apps\properties\admin.py:402
+#: .\apps\properties\admin.py:391
 msgid "Hostaway operational data"
 msgstr "بيانات Hostaway التشغيلية"
 
-#: .\apps\properties\admin.py:416
+#: .\apps\properties\admin.py:405
 msgid "Media and amenities management"
 msgstr "إدارة الصور والمرافق"
 
-#: .\apps\properties\admin.py:419
+#: .\apps\properties\admin.py:408
 msgid "Save the property first, then manage images and amenities."
 msgstr "احفظ الوحدة أولًا، ثم أدر الصور والمرافق."
 
-#: .\apps\properties\admin.py:437
+#: .\apps\properties\admin.py:426
 #, python-format
 msgid "%(images)d images · %(amenities)d amenities"
 msgstr "%(images)d صورة · %(amenities)d مرفق"
 
-#: .\apps\properties\admin.py:440
+#: .\apps\properties\admin.py:429
 msgid "Manage images"
 msgstr "إدارة الصور"
 
-#: .\apps\properties\admin.py:442
+#: .\apps\properties\admin.py:431
 msgid "Edit alternative text"
 msgstr "تحرير النص البديل"
 
-#: .\apps\properties\admin.py:444
+#: .\apps\properties\admin.py:433
 msgid "Manage amenities"
 msgstr "إدارة المرافق"
 
-#: .\apps\properties\admin.py:447
+#: .\apps\properties\admin.py:436
 msgid "Choose the location on the map"
 msgstr "اختر الموقع على الخريطة"
 
-#: .\apps\properties\admin.py:473
+#: .\apps\properties\admin.py:469
 msgid "Location selected. Drag the marker to refine it."
 msgstr "تم اختيار الموقع. اسحب العلامة لضبطه بدقة."
 
-#: .\apps\properties\admin.py:474
+#: .\apps\properties\admin.py:470
 msgid "No public location selected yet."
 msgstr "لم يتم اختيار موقع عام بعد."
 
-#: .\apps\properties\admin.py:475
+#: .\apps\properties\admin.py:471
 msgid "Map for choosing the property location"
 msgstr "خريطة لاختيار موقع الوحدة"
 
-#: .\apps\properties\admin.py:476
+#: .\apps\properties\admin.py:472
 msgid "Click the map or drag the marker to set the location."
 msgstr "انقر على الخريطة أو اسحب العلامة لتحديد الموقع."
 
-#: .\apps\properties\admin.py:477
+#: .\apps\properties\admin.py:473
 msgid "Clear location"
 msgstr "مسح الموقع"
 
-#: .\apps\properties\admin.py:492
+#: .\apps\properties\admin.py:488
 msgid "Local name"
 msgstr "الاسم المحلي"
 
-#: .\apps\properties\admin.py:500 .\apps\reservations\forms.py:103
+#: .\apps\properties\admin.py:496 .\apps\reservations\forms.py:103
 #: .\templates\accounts\dashboard.html:30
 #: .\templates\payments\hyperpay_checkout.html:136
 #: .\templates\properties\property_detail.html:100
@@ -2133,45 +2168,45 @@ msgstr "الاسم المحلي"
 msgid "Guests"
 msgstr "الضيوف"
 
-#: .\apps\properties\admin.py:504
+#: .\apps\properties\admin.py:500
 #: .\templates\properties\property_detail.html:101
 #: .\templates\properties\property_list.html:11
 msgid "Bedrooms"
 msgstr "غرف النوم"
 
-#: .\apps\properties\admin.py:508
+#: .\apps\properties\admin.py:504
 #: .\templates\admin\integrations\integration_health.html:14
 msgid "Active in Hostaway"
 msgstr "نشط في Hostaway"
 
-#: .\apps\properties\admin.py:516 .\templates\includes\property_card.html:50
+#: .\apps\properties\admin.py:512 .\templates\includes\property_card.html:50
 #: .\templates\includes\review_card.html:14
 msgid "Featured"
 msgstr "مميزة"
 
-#: .\apps\properties\admin.py:520
+#: .\apps\properties\admin.py:516
 msgid "Images"
 msgstr "الصور"
 
-#: .\apps\properties\admin.py:524
+#: .\apps\properties\admin.py:520
 msgid "Language completeness"
 msgstr "اكتمال اللغات"
 
-#: .\apps\properties\admin.py:533 .\templates\admin\index.html:180
+#: .\apps\properties\admin.py:529 .\templates\admin\index.html:180
 #: .\templates\admin\notifications\system_status.html:43
 msgid "Last sync"
 msgstr "آخر مزامنة"
 
-#: .\apps\properties\admin.py:588
+#: .\apps\properties\admin.py:584
 msgid "Sync the selected Hostaway properties"
 msgstr "مزامنة وحدات Hostaway المحددة"
 
-#: .\apps\properties\admin.py:609
+#: .\apps\properties\admin.py:605
 #, python-format
 msgid "The task worker is not running. Start it with: %(commands)s"
 msgstr "عامل المهام غير مفعّل. شغّل: %(commands)s"
 
-#: .\apps\properties\admin.py:620
+#: .\apps\properties\admin.py:616
 #, python-format
 msgid "Added %(count)d property to the sync queue."
 msgstr "أضيفت %(count)d وحدة إلى طابور المزامنة."
@@ -2273,48 +2308,48 @@ msgstr ""
 msgid "Property"
 msgstr "وحدة"
 
-#: .\apps\properties\models.py:346
+#: .\apps\properties\models.py:354
 msgctxt "PropertyImage"
 msgid "Local"
 msgstr "محلية"
 
-#: .\apps\properties\models.py:376
+#: .\apps\properties\models.py:384
 msgid "Represents its city on the home page"
 msgstr ""
 
-#: .\apps\properties\models.py:419
+#: .\apps\properties\models.py:427
 msgid "Property image"
 msgstr "صورة وحدة"
 
-#: .\apps\properties\models.py:420
+#: .\apps\properties\models.py:428
 #: .\templates\admin\notifications\dashboard.html:31
 msgid "Property images"
 msgstr "صور الوحدات"
 
-#: .\apps\properties\models.py:428
+#: .\apps\properties\models.py:436
 #, python-format
 msgid "Image %(pk)s"
 msgstr "صورة %(pk)s"
 
-#: .\apps\properties\models.py:503
+#: .\apps\properties\models.py:511
 msgid "Amenity"
 msgstr "مرفق"
 
-#: .\apps\properties\models.py:504
+#: .\apps\properties\models.py:512
 #: .\templates\properties\property_detail.html:109
 msgid "Amenities"
 msgstr "المرافق"
 
-#: .\apps\properties\models.py:529
+#: .\apps\properties\models.py:537
 msgctxt "PropertyAmenity"
 msgid "Local"
 msgstr "محلي"
 
-#: .\apps\properties\models.py:557
+#: .\apps\properties\models.py:565
 msgid "Property amenity"
 msgstr "مرفق الوحدة"
 
-#: .\apps\properties\models.py:558
+#: .\apps\properties\models.py:566
 msgid "Property amenities"
 msgstr "مرافق الوحدات"
 
@@ -2451,7 +2486,7 @@ msgstr "بيانات التواصل"
 msgid "Billing address"
 msgstr "عنوان الفوترة"
 
-#: .\apps\reservations\admin.py:359 .\apps\reservations\booking_forms.py:137
+#: .\apps\reservations\admin.py:359 .\apps\reservations\booking_forms.py:102
 msgid "Special requests"
 msgstr "طلبات خاصة"
 
@@ -2527,15 +2562,21 @@ msgid "Safe booking management"
 msgstr "إدارة الحجز بأمان"
 
 #: .\apps\reservations\admin.py:484
-msgid "Use the approved modification workflow so Hostaway, payment and the audit log stay consistent."
-msgstr "استخدم مسار التعديل المعتمد حتى تبقى بيانات Hostaway والدفع وسجل التدقيق متطابقة."
+msgid ""
+"Use the approved modification workflow so Hostaway, payment and the audit "
+"log stay consistent."
+msgstr ""
+"استخدم مسار التعديل المعتمد حتى تبقى بيانات Hostaway والدفع وسجل التدقيق "
+"متطابقة."
 
 #: .\apps\reservations\admin.py:490
 msgid "Hostaway technical integration"
 msgstr "الربط التقني مع Hostaway"
 
 #: .\apps\reservations\admin.py:495
-msgid "Reference identifiers for search and diagnostics only; do not edit the booking from this screen."
+msgid ""
+"Reference identifiers for search and diagnostics only; do not edit the "
+"booking from this screen."
 msgstr "معرّفات مرجعية للبحث والتشخيص فقط؛ لا تُعدّل الحجز من هذه الشاشة."
 
 #: .\apps\reservations\admin.py:501
@@ -2573,8 +2614,11 @@ msgid "Manage the booking"
 msgstr "إدارة الحجز"
 
 #: .\apps\reservations\admin.py:607
-msgid "Changes and cancellations are handled as audited requests; the confirmed reservation remains read-only."
-msgstr "تُدار التعديلات والإلغاءات كطلبات موثقة، ويبقى الحجز المؤكد للقراءة فقط."
+msgid ""
+"Changes and cancellations are handled as audited requests; the confirmed "
+"reservation remains read-only."
+msgstr ""
+"تُدار التعديلات والإلغاءات كطلبات موثقة، ويبقى الحجز المؤكد للقراءة فقط."
 
 #: .\apps\reservations\admin.py:611
 msgid "View modification and cancellation requests"
@@ -2666,80 +2710,72 @@ msgstr "تم تعليم %(count)d مبلغ كمُحوَّل."
 msgid "Bookings"
 msgstr "الحجوزات"
 
-#: .\apps\reservations\booking_forms.py:51
-msgid "Enter a valid mobile number, with its country code if it is not a local number."
-msgstr "أدخل رقم جوال صحيحًا، مع رمز الدولة إن لم يكن رقمًا محليًا."
-
-#: .\apps\reservations\booking_forms.py:72
+#: .\apps\reservations\booking_forms.py:37
 msgid "Phone number"
 msgstr "رقم الجوال"
 
-#: .\apps\reservations\booking_forms.py:77
-msgid "Any country is accepted. Write it with a country code, such as +966500000000, or as a local number for the country you select below."
-msgstr "من أي دولة. اكتبه مع رمز الدولة، مثل +966500000000، أو كرقم محلي للدولة التي تختارها أدناه."
-
-#: .\apps\reservations\booking_forms.py:93
+#: .\apps\reservations\booking_forms.py:58
 msgid "Street address"
 msgstr "عنوان الشارع"
 
-#: .\apps\reservations\booking_forms.py:105
-#: .\apps\reservations\booking_forms.py:110
+#: .\apps\reservations\booking_forms.py:70
+#: .\apps\reservations\booking_forms.py:75
 msgid "State or region"
 msgstr "المنطقة أو المحافظة"
 
-#: .\apps\reservations\booking_forms.py:118
+#: .\apps\reservations\booking_forms.py:83
 msgid "Country"
 msgstr "الدولة"
 
-#: .\apps\reservations\booking_forms.py:128
+#: .\apps\reservations\booking_forms.py:93
 msgid "Postal code"
 msgstr "الرمز البريدي"
 
-#: .\apps\reservations\booking_forms.py:143
+#: .\apps\reservations\booking_forms.py:108
 msgid "Optional: arrival time, accessibility, or stay preferences"
 msgstr "اختياري: وقت الوصول أو احتياجات سهولة الوصول أو تفضيلات الإقامة"
 
-#: .\apps\reservations\booking_forms.py:147
+#: .\apps\reservations\booking_forms.py:112
 msgid "I accept the terms"
 msgstr "أوافق على الشروط"
 
-#: .\apps\reservations\booking_forms.py:148
+#: .\apps\reservations\booking_forms.py:113
 msgid "I accept the privacy policy"
 msgstr "أوافق على سياسة الخصوصية"
 
-#: .\apps\reservations\booking_forms.py:150
+#: .\apps\reservations\booking_forms.py:115
 msgid "I would like to receive marketing offers"
 msgstr "أرغب باستلام العروض التسويقية"
 
-#: .\apps\reservations\booking_forms.py:164
+#: .\apps\reservations\booking_forms.py:129
 msgid "Choose your country"
 msgstr "اختر دولتك"
 
-#: .\apps\reservations\booking_forms.py:175
+#: .\apps\reservations\booking_forms.py:140
 msgid "First name is required."
 msgstr "الاسم الأول مطلوب."
 
-#: .\apps\reservations\booking_forms.py:181
+#: .\apps\reservations\booking_forms.py:146
 msgid "Last name is required."
 msgstr "اسم العائلة مطلوب."
 
-#: .\apps\reservations\booking_forms.py:191
+#: .\apps\reservations\booking_forms.py:156
 msgid "Enter a valid ISO two-letter country code."
 msgstr "أدخل رمز دولة ISO صحيحًا من حرفين."
 
-#: .\apps\reservations\booking_forms.py:201
-#: .\apps\reservations\booking_forms.py:235
+#: .\apps\reservations\booking_forms.py:166
+#: .\apps\reservations\booking_forms.py:204
 #: .\templates\reservations\_availability_form.html:9
 msgid "This field is required."
 msgstr "هذا الحقل مطلوب."
 
-#: .\apps\reservations\booking_forms.py:231
+#: .\apps\reservations\booking_forms.py:200
 #, fuzzy
 #| msgid "Choose your country"
 msgid "Choose your region."
 msgstr "اختر دولتك"
 
-#: .\apps\reservations\booking_forms.py:243
+#: .\apps\reservations\booking_forms.py:212
 msgid "The request identifier is invalid."
 msgstr "معرف الطلب غير صالح."
 
@@ -3039,7 +3075,8 @@ msgid "Hostaway policy name, exactly as synced onto the property."
 msgstr "اسم السياسة في Hostaway كما زُومنت على الوحدة تمامًا."
 
 #: .\apps\reservations\models.py:758
-msgid "Applies when the cancellation happens at least this long before arrival."
+msgid ""
+"Applies when the cancellation happens at least this long before arrival."
 msgstr "تُطبَّق عندما يقع الإلغاء قبل الوصول بهذه المدة على الأقل."
 
 #: .\apps\reservations\models.py:764
@@ -3111,7 +3148,9 @@ msgid "New number of guests"
 msgstr "عدد الضيوف الجديد"
 
 #: .\apps\reservations\modification_forms.py:88
-msgid "I understand this is a review request and does not cancel the booking or issue a refund."
+msgid ""
+"I understand this is a review request and does not cancel the booking or "
+"issue a refund."
 msgstr "أفهم أن هذا طلب مراجعة ولا يلغي الحجز أو يصدر استردادًا."
 
 #: .\apps\reservations\views.py:134 .\apps\reservations\views.py:243
@@ -3138,8 +3177,12 @@ msgstr "عرض السعر لم يعد صالحًا. يرجى طلب عرض جد�
 
 #: .\apps\reservations\views.py:450
 #, python-format
-msgid "The price changed from %(old)s to %(new)s %(currency)s. Please review and approve it again."
-msgstr "تغير السعر من %(old)s إلى %(new)s %(currency)s. يرجى مراجعته والموافقة عليه مجددًا."
+msgid ""
+"The price changed from %(old)s to %(new)s %(currency)s. Please review and "
+"approve it again."
+msgstr ""
+"تغير السعر من %(old)s إلى %(new)s %(currency)s. يرجى مراجعته والموافقة عليه "
+"مجددًا."
 
 #: .\apps\reservations\views.py:466
 msgid "This property is unavailable for the selected dates. Try other dates."
@@ -3154,8 +3197,12 @@ msgid "Too many attempts. Please wait a few minutes and try again."
 msgstr "محاولات كثيرة. انتظر بضع دقائق ثم حاول مجددًا."
 
 #: .\apps\reservations\views.py:677
-msgid "We could not match these details. Check the booking number and the email used for booking."
-msgstr "لم نتمكن من مطابقة هذه البيانات. تحقق من رقم الحجز والبريد المستخدم عند الحجز."
+msgid ""
+"We could not match these details. Check the booking number and the email "
+"used for booking."
+msgstr ""
+"لم نتمكن من مطابقة هذه البيانات. تحقق من رقم الحجز والبريد المستخدم عند "
+"الحجز."
 
 #: .\apps\reservations\views.py:713
 msgid "Welcome back. Your booking is ready to manage."
@@ -3224,12 +3271,15 @@ msgid "A price for these dates could not be prepared."
 msgstr "تعذّر تجهيز سعر لهذه التواريخ."
 
 #: .\apps\reservations\views.py:776
-msgid "Cancellation requests are unavailable right now. Please contact guest support."
+msgid ""
+"Cancellation requests are unavailable right now. Please contact guest "
+"support."
 msgstr "طلبات الإلغاء غير متاحة حاليًا. تواصل مع خدمة الضيوف."
 
 #: .\apps\reservations\views.py:779
 #: .\templates\reservations\manage_reservation.html:211
-msgid "Please complete changes through the booking platform or contact management."
+msgid ""
+"Please complete changes through the booking platform or contact management."
 msgstr "يرجى إكمال التعديل من خلال منصة الحجز أو التواصل مع الإدارة."
 
 #: .\apps\reservations\views.py:871
@@ -3513,7 +3563,9 @@ msgid "Back to your bookings"
 msgstr "العودة إلى حجزي"
 
 #: .\templates\accounts\password_reset.html:6
-msgid "Give us the email you booked with and we will send a link to set a new password."
+msgid ""
+"Give us the email you booked with and we will send a link to set a new "
+"password."
 msgstr ""
 
 #: .\templates\accounts\password_reset.html:7
@@ -3586,7 +3638,8 @@ msgid "Choose a new password"
 msgstr "تغيير كلمة المرور"
 
 #: .\templates\accounts\password_reset_confirm.html:6
-msgid "Pick something long and unique. A password manager remembers it for you."
+msgid ""
+"Pick something long and unique. A password manager remembers it for you."
 msgstr ""
 
 #: .\templates\accounts\password_reset_confirm.html:8
@@ -3602,7 +3655,9 @@ msgid "Choose a new password for your account."
 msgstr "اختر يوم المغادرة الجديد لتمديد إقامتك"
 
 #: .\templates\accounts\password_reset_confirm.html:9
-msgid "For your safety a reset link can be used only once, and only for a short time."
+msgid ""
+"For your safety a reset link can be used only once, and only for a short "
+"time."
 msgstr ""
 
 #: .\templates\accounts\password_reset_confirm.html:59
@@ -3636,7 +3691,9 @@ msgid "Open it from any device; it works wherever you read your email."
 msgstr ""
 
 #: .\templates\accounts\password_reset_done.html:9
-msgid "If an account exists for that address, a link to set a new password is on its way."
+msgid ""
+"If an account exists for that address, a link to set a new password is on "
+"its way."
 msgstr ""
 
 #: .\templates\accounts\password_reset_done.html:12
@@ -3652,7 +3709,9 @@ msgid "A stay that remembers you"
 msgstr "إقامة تعرفك جيدًا"
 
 #: .\templates\accounts\register.html:35
-msgid "Create your account once, then move from search to confirmation in a few calm steps."
+msgid ""
+"Create your account once, then move from search to confirmation in a few "
+"calm steps."
 msgstr "أنشئ حسابك مرة واحدة، ثم انتقل من البحث إلى التأكيد بخطوات هادئة."
 
 #: .\templates\accounts\register.html:44
@@ -3668,7 +3727,9 @@ msgid "Create your account"
 msgstr "أنشئ حسابك"
 
 #: .\templates\accounts\register.html:76
-msgid "It takes a minute. Your details stay private and are used only to manage your stays."
+msgid ""
+"It takes a minute. Your details stay private and are used only to manage "
+"your stays."
 msgstr "لا يستغرق سوى دقيقة. بياناتك تبقى خاصة وتُستخدم لإدارة إقاماتك فقط."
 
 #: .\templates\accounts\register.html:87
@@ -3696,7 +3757,9 @@ msgid "Confirm your email address"
 msgstr "البريد الإلكتروني"
 
 #: .\templates\accounts\verify_pending.html:6
-msgid "A confirmed address is how we send your booking details and how you recover your account."
+msgid ""
+"A confirmed address is how we send your booking details and how you recover "
+"your account."
 msgstr ""
 
 #: .\templates\accounts\verify_pending.html:7
@@ -3706,11 +3769,13 @@ msgstr "التأكيد"
 
 #: .\templates\accounts\verify_pending.html:9
 #, python-format
-msgid "We sent a confirmation link to %(email)s. It stays valid for three days."
+msgid ""
+"We sent a confirmation link to %(email)s. It stays valid for three days."
 msgstr ""
 
 #: .\templates\accounts\verify_pending.html:12
-msgid "Nothing arrived? Look in the spam folder before asking for another link."
+msgid ""
+"Nothing arrived? Look in the spam folder before asking for another link."
 msgstr ""
 
 #: .\templates\accounts\verify_pending.html:18
@@ -3944,7 +4009,9 @@ msgid "Customer centre"
 msgstr "مركز العملاء"
 
 #: .\templates\admin\core\customers.html:9
-msgid "A unified view of the customer journey from booking request to Hostaway confirmation and payment."
+msgid ""
+"A unified view of the customer journey from booking request to Hostaway "
+"confirmation and payment."
 msgstr "صورة موحّدة لمسار العميل من طلب الحجز حتى تأكيد Hostaway والدفع."
 
 #: .\templates\admin\core\customers.html:10
@@ -4161,7 +4228,8 @@ msgid "Missing language content"
 msgstr "محتوى لغوي ناقص"
 
 #: .\templates\admin\core\seo_dashboard.html:21
-msgid "This dashboard reads PostgreSQL only and never contacts Google or Hostaway."
+msgid ""
+"This dashboard reads PostgreSQL only and never contacts Google or Hostaway."
 msgstr "تقرأ هذه اللوحة PostgreSQL فقط، ولا تتصل بـGoogle أو Hostaway."
 
 #: .\templates\admin\filter.html:3
@@ -4183,8 +4251,12 @@ msgid "Welcome, %(name)s"
 msgstr "أهلًا، %(name)s"
 
 #: .\templates\admin\index.html:17
-msgid "A unified operational picture of stays, collection, customers and platform quality — and what needs your decision now."
-msgstr "صورة تشغيلية موحّدة للإقامات، التحصيل، العملاء، وجودة المنصة — وما يحتاج قرارك الآن."
+msgid ""
+"A unified operational picture of stays, collection, customers and platform "
+"quality — and what needs your decision now."
+msgstr ""
+"صورة تشغيلية موحّدة للإقامات، التحصيل، العملاء، وجودة المنصة — وما يحتاج "
+"قرارك الآن."
 
 #: .\templates\admin\index.html:18
 msgid "Updated just now"
@@ -4260,7 +4332,9 @@ msgid "No critical priorities right now"
 msgstr "لا توجد أولويات حرجة الآن"
 
 #: .\templates\admin\index.html:56
-msgid "Bookings, payments and integrations are running with no signals needing action."
+msgid ""
+"Bookings, payments and integrations are running with no signals needing "
+"action."
 msgstr "الحجوزات والمدفوعات والتكاملات تعمل دون إشارات تتطلب تدخّلًا."
 
 #: .\templates\admin\index.html:64
@@ -4353,8 +4427,12 @@ msgid "Conversion to a confirmed booking"
 msgstr "تحويل إلى حجز مؤكد"
 
 #: .\templates\admin\index.html:126
-msgid "Shows how requests move from start to confirmation, so you can spot where they drop off without mixing in external-channel occupancy."
-msgstr "يعرض انتقال الطلبات من البداية حتى التأكيد، لتحديد موضع التسرّب بسرعة دون خلطه بإشغالات القنوات الخارجية."
+msgid ""
+"Shows how requests move from start to confirmation, so you can spot where "
+"they drop off without mixing in external-channel occupancy."
+msgstr ""
+"يعرض انتقال الطلبات من البداية حتى التأكيد، لتحديد موضع التسرّب بسرعة دون "
+"خلطه بإشغالات القنوات الخارجية."
 
 #: .\templates\admin\index.html:131
 msgid "This month"
@@ -4632,8 +4710,10 @@ msgid "Hostaway write switches"
 msgstr "مفاتيح Hostaway الكتابية"
 
 #: .\templates\admin\integrations\integration_health.html:39
-msgid "Enabling any live switch lets the application affect real Hostaway data."
-msgstr "تشغيل أي مفتاح حي يعني السماح للتطبيق بالتأثير على بيانات Hostaway الفعلية."
+msgid ""
+"Enabling any live switch lets the application affect real Hostaway data."
+msgstr ""
+"تشغيل أي مفتاح حي يعني السماح للتطبيق بالتأثير على بيانات Hostaway الفعلية."
 
 #: .\templates\admin\integrations\integration_health.html:44
 msgid "Manual run"
@@ -4652,7 +4732,9 @@ msgid "The task worker is not running"
 msgstr "عامل المهام غير مفعّل"
 
 #: .\templates\admin\integrations\integration_health.html:45
-msgid "The buttons will not run a sync now; a message will show the local command to run."
+msgid ""
+"The buttons will not run a sync now; a message will show the local command "
+"to run."
 msgstr "لن تنفذ الأزرار مزامنة الآن؛ ستظهر رسالة بأمر التشغيل المحلي."
 
 #: .\templates\admin\integrations\integration_health.html:47
@@ -4665,7 +4747,9 @@ msgid "Integration and sync status"
 msgstr "حالة التكامل والمزامنة"
 
 #: .\templates\admin\notifications\center.html:8
-msgid "Everything needing a decision or follow-up from the operations team, on one screen."
+msgid ""
+"Everything needing a decision or follow-up from the operations team, on one "
+"screen."
 msgstr "كل ما يحتاج قرارًا أو متابعة من فريق التشغيل في شاشة واحدة."
 
 #: .\templates\admin\notifications\center.html:9
@@ -4743,7 +4827,9 @@ msgid "Operational performance"
 msgstr "الأداء التشغيلي"
 
 #: .\templates\admin\notifications\dashboard.html:8
-msgid "A unified read of content, bookings and contact activity over the selected period."
+msgid ""
+"A unified read of content, bookings and contact activity over the selected "
+"period."
 msgstr "قراءة موحّدة لحالة المحتوى والحجوزات والتواصل خلال الفترة المحددة."
 
 #: .\templates\admin\notifications\dashboard.html:17
@@ -4815,7 +4901,9 @@ msgid "Value of booking requests"
 msgstr "قيمة طلبات الحجز"
 
 #: .\templates\admin\notifications\dashboard.html:41
-msgid "An indicator of expected demand, not confirmed revenue until payment succeeds."
+msgid ""
+"An indicator of expected demand, not confirmed revenue until payment "
+"succeeds."
 msgstr "مؤشر للطلب المتوقع وليست إيرادات مؤكدة حتى نجاح الدفع."
 
 #: .\templates\admin\notifications\dashboard.html:43
@@ -4881,7 +4969,9 @@ msgid "Platform monitoring"
 msgstr "مراقبة المنصة"
 
 #: .\templates\admin\notifications\system_status.html:8
-msgid "A safe local check of infrastructure and integrations, with no writes to Hostaway."
+msgid ""
+"A safe local check of infrastructure and integrations, with no writes to "
+"Hostaway."
 msgstr "فحص محلي آمن للبنية والتكاملات، دون إجراء أي كتابة على Hostaway."
 
 #: .\templates\admin\notifications\system_status.html:18
@@ -4917,8 +5007,11 @@ msgid "A write operation on Hostaway"
 msgstr "عملية كتابية على Hostaway"
 
 #: .\templates\admin\notifications\system_status.html:38
-msgid "This screen shows switch states only. It performs no booking, modification or cancellation."
-msgstr "تعرض هذه الشاشة حالة المفاتيح فقط. لا تنفذ أي عملية حجز أو تعديل أو إلغاء."
+msgid ""
+"This screen shows switch states only. It performs no booking, modification "
+"or cancellation."
+msgstr ""
+"تعرض هذه الشاشة حالة المفاتيح فقط. لا تنفذ أي عملية حجز أو تعديل أو إلغاء."
 
 #: .\templates\admin\notifications\system_status.html:41
 msgid "Last activity"
@@ -4959,8 +5052,13 @@ msgid "Accessibility and SEO"
 msgstr "الوصول وتحسين محركات البحث"
 
 #: .\templates\admin\properties\image_alt_text.html:11
-msgid "Alternative text describes each photo for screen readers and search engines. Where it is empty the public site falls back to the property name, so filling it in adds detail rather than fixing a broken page."
-msgstr "يصف النص البديل كل صورة لقارئات الشاشة ومحركات البحث. وعند تركه فارغًا يرجع الموقع العام إلى اسم الوحدة، لذا فتعبئته تضيف تفصيلًا ولا تُصلح صفحة معطوبة."
+msgid ""
+"Alternative text describes each photo for screen readers and search engines. "
+"Where it is empty the public site falls back to the property name, so "
+"filling it in adds detail rather than fixing a broken page."
+msgstr ""
+"يصف النص البديل كل صورة لقارئات الشاشة ومحركات البحث. وعند تركه فارغًا يرجع "
+"الموقع العام إلى اسم الوحدة، لذا فتعبئته تضيف تفصيلًا ولا تُصلح صفحة معطوبة."
 
 #: .\templates\admin\properties\image_alt_text.html:15
 msgid "images still incomplete"
@@ -5031,7 +5129,8 @@ msgstr[4] "%(counter)s صفًا معروضًا"
 msgstr[5] "%(counter)s صف معروض"
 
 #: .\templates\admin\properties\image_alt_text.html:105
-msgid "Every image for this property has alternative text in all three languages."
+msgid ""
+"Every image for this property has alternative text in all three languages."
 msgstr "كل صور هذه الوحدة لديها نص بديل باللغات الثلاث."
 
 #: .\templates\admin\properties\image_alt_text.html:108
@@ -5069,7 +5168,8 @@ msgid "We are here to help"
 msgstr "نحن هنا للمساعدة"
 
 #: .\templates\core\contact.html:10
-msgid "Tell us how we can help. Messages are stored securely for our team to review."
+msgid ""
+"Tell us how we can help. Messages are stored securely for our team to review."
 msgstr "أخبرنا كيف يمكننا مساعدتك. تُحفظ الرسائل بأمان ليراجعها فريقنا."
 
 #: .\templates\core\contact.html:30 .\templates\includes\footer.html:89
@@ -5086,7 +5186,8 @@ msgid "Before you send"
 msgstr "قبل الإرسال"
 
 #: .\templates\core\contact.html:55
-msgid "Please do not include payment card details, passwords, or identity documents."
+msgid ""
+"Please do not include payment card details, passwords, or identity documents."
 msgstr "يرجى عدم تضمين بيانات بطاقات الدفع أو كلمات المرور أو وثائق الهوية."
 
 #: .\templates\core\contact.html:56
@@ -5114,7 +5215,8 @@ msgid "Frequently asked questions"
 msgstr "الأسئلة الشائعة"
 
 #: .\templates\core\faq.html:4
-msgid "Answers about stays, pricing, booking requests, and property information."
+msgid ""
+"Answers about stays, pricing, booking requests, and property information."
 msgstr "إجابات عن الإقامة والأسعار وطلبات الحجز ومعلومات الوحدات."
 
 #: .\templates\core\faq.html:6
@@ -5138,8 +5240,12 @@ msgid "Luxury Smart Apartments | Smart stays in Riyadh and Marrakech"
 msgstr "Luxury Smart Apartments | إقامات ذكية في الرياض ومراكش"
 
 #: .\templates\core\home.html:5
-msgid "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability."
-msgstr "استكشف الشقق الذكية والإقامات العائلية في الرياض ومراكش، ثم تحقق مباشرة من السعر والتوافر."
+msgid ""
+"Explore smart apartments and family stays in Riyadh and Marrakech, then "
+"check live price and availability."
+msgstr ""
+"استكشف الشقق الذكية والإقامات العائلية في الرياض ومراكش، ثم تحقق مباشرة من "
+"السعر والتوافر."
 
 #: .\templates\core\home.html:13
 msgid "Riyadh skyline and palm trees"
@@ -5150,8 +5256,11 @@ msgid "Your stay should feel like part of the journey."
 msgstr "إقامتك يجب أن تكون جزءًا من الحكاية."
 
 #: .\templates\core\home.html:31
-msgid "Handpicked homes in Riyadh and Marrakech, made for slow mornings, memorable nights, and effortless booking."
-msgstr "وحدات فاخـرة في الرياض ومراكش، لصباحات هادئة وليالٍ لا تُنسى وحجز بلا عناء."
+msgid ""
+"Handpicked homes in Riyadh and Marrakech, made for slow mornings, memorable "
+"nights, and effortless booking."
+msgstr ""
+"وحدات فاخـرة في الرياض ومراكش، لصباحات هادئة وليالٍ لا تُنسى وحجز بلا عناء."
 
 #: .\templates\core\home.html:33
 msgid "Find your stay"
@@ -5211,8 +5320,10 @@ msgid "Spaces worth travelling for"
 msgstr "أماكن تستحق أن تسافر من أجلها"
 
 #: .\templates\core\home.html:77
-msgid "A considered collection for weekends away, family holidays, and longer stays."
-msgstr "مجموعة مدروسة لعطلات نهاية الأسبوع والإجازات العائلية والإقامات الطويلة."
+msgid ""
+"A considered collection for weekends away, family holidays, and longer stays."
+msgstr ""
+"مجموعة مدروسة لعطلات نهاية الأسبوع والإجازات العائلية والإقامات الطويلة."
 
 #: .\templates\core\home.html:79
 msgid "View all properties"
@@ -5271,7 +5382,9 @@ msgid "More than a place to sleep"
 msgstr "أكثر من مجرد مكان للنوم"
 
 #: .\templates\core\home.html:129
-msgid "Every detail is considered so you can spend less time planning and more time living the trip."
+msgid ""
+"Every detail is considered so you can spend less time planning and more time "
+"living the trip."
 msgstr "كل تفصيل مدروس لتقضي وقتًا أقل في التخطيط ووقتًا أطول في عيش الرحلة."
 
 #: .\templates\core\home.html:131
@@ -5279,7 +5392,9 @@ msgid "A home with a sense of place"
 msgstr "منزل بروح المكان"
 
 #: .\templates\core\home.html:131
-msgid "Modern Riyadh living or the warm character of Marrakech—your stay belongs to its city."
+msgid ""
+"Modern Riyadh living or the warm character of Marrakech—your stay belongs to "
+"its city."
 msgstr "عصرية الرياض أو دفء مراكش—إقامتك تحمل روح مدينتها."
 
 #: .\templates\core\home.html:132
@@ -5341,7 +5456,9 @@ msgid "Manage an existing booking"
 msgstr "إدارة حجز قائم"
 
 #: .\templates\core\home.html:170
-msgid "Use your booking number and booking email to view your stay and send change requests."
+msgid ""
+"Use your booking number and booking email to view your stay and send change "
+"requests."
 msgstr "استخدم رقم الحجز وبريد الحجز لعرض إقامتك وإرسال طلبات التعديل."
 
 #: .\templates\errors\400.html:1
@@ -5401,7 +5518,8 @@ msgid "Service temporarily unavailable"
 msgstr "الخدمة غير متاحة مؤقتًا"
 
 #: .\templates\errors\503.html:1
-msgid "Live availability could not be checked right now. Please try again shortly."
+msgid ""
+"Live availability could not be checked right now. Please try again shortly."
 msgstr "تعذر التحقق من التوافر الآن. حاول مجددًا بعد قليل."
 
 #: .\templates\errors\base_error.html:6
@@ -5417,8 +5535,12 @@ msgid "Your privacy choices"
 msgstr "خيارات الخصوصية"
 
 #: .\templates\includes\cookie_consent.html:5
-msgid "Essential cookies keep the site working. Analytics and marketing remain off unless you choose otherwise."
-msgstr "تحافظ ملفات تعريف الارتباط الضرورية على عمل الموقع، وتبقى التحليلات والتسويق متوقفة ما لم تختر غير ذلك."
+msgid ""
+"Essential cookies keep the site working. Analytics and marketing remain off "
+"unless you choose otherwise."
+msgstr ""
+"تحافظ ملفات تعريف الارتباط الضرورية على عمل الموقع، وتبقى التحليلات والتسويق "
+"متوقفة ما لم تختر غير ذلك."
 
 #: .\templates\includes\cookie_consent.html:6
 #: .\templates\includes\footer.html:67
@@ -5665,6 +5787,7 @@ msgstr "يتحدد السعر النهائي حسب تواريخك"
 
 #: .\templates\includes\property_card.html:150
 #: .\templates\properties\property_detail.html:169
+#: .\tests\test_property_translation_regressions.py:39
 #, python-format
 msgid "From %(amount)s / night"
 msgstr "ابتداءً من %(amount)s لليلة"
@@ -5724,8 +5847,11 @@ msgid "Step four"
 msgstr "الخطوة الرابعة"
 
 #: .\templates\payments\hyperpay_checkout.html:28
-msgid "Card details are entered directly in HyperPay's hosted form and never reach our server."
-msgstr "تُدخل بيانات البطاقة مباشرة في نموذج HyperPay المستضاف، ولا تصل إلى خادمنا."
+msgid ""
+"Card details are entered directly in HyperPay's hosted form and never reach "
+"our server."
+msgstr ""
+"تُدخل بيانات البطاقة مباشرة في نموذج HyperPay المستضاف، ولا تصل إلى خادمنا."
 
 #: .\templates\payments\hyperpay_checkout.html:34
 msgid "Test environment — no real amount will be charged."
@@ -5795,8 +5921,12 @@ msgid "Price breakdown"
 msgstr "تفاصيل السعر"
 
 #: .\templates\payments\hyperpay_checkout.html:158
-msgid "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference."
-msgstr "سيتم تنفيذ عملية الدفع بالريال السعودي (SAR). المبلغ بالعملة المختارة معروض للتوضيح."
+msgid ""
+"Payment is processed in Saudi riyals (SAR). The selected currency is shown "
+"for reference."
+msgstr ""
+"سيتم تنفيذ عملية الدفع بالريال السعودي (SAR). المبلغ بالعملة المختارة معروض "
+"للتوضيح."
 
 #: .\templates\payments\hyperpay_checkout.html:162
 msgid "Back to your change request"
@@ -5820,8 +5950,12 @@ msgid "Verification is temporarily unavailable"
 msgstr "التحقق غير متاح مؤقتًا"
 
 #: .\templates\payments\hyperpay_result.html:15
-msgid "We could not verify the payment with HyperPay. No booking has been confirmed. Please contact support before trying again."
-msgstr "تعذر التحقق من الدفع لدى HyperPay. لم يتم تأكيد أي حجز. تواصل مع الدعم قبل المحاولة مجددًا."
+msgid ""
+"We could not verify the payment with HyperPay. No booking has been "
+"confirmed. Please contact support before trying again."
+msgstr ""
+"تعذر التحقق من الدفع لدى HyperPay. لم يتم تأكيد أي حجز. تواصل مع الدعم قبل "
+"المحاولة مجددًا."
 
 #: .\templates\payments\hyperpay_result.html:18
 msgid "Payment verified and change completed"
@@ -5836,8 +5970,11 @@ msgid "Payment verified; change pending"
 msgstr "تم التحقق من الدفع؛ والتعديل قيد الانتظار"
 
 #: .\templates\payments\hyperpay_result.html:20
-msgid "Do not pay again. The payment is recorded and the reservation change needs operational follow-up."
-msgstr "لا تدفع مرة أخرى. تم تسجيل الدفع ويحتاج تعديل الحجز إلى متابعة تشغيلية."
+msgid ""
+"Do not pay again. The payment is recorded and the reservation change needs "
+"operational follow-up."
+msgstr ""
+"لا تدفع مرة أخرى. تم تسجيل الدفع ويحتاج تعديل الحجز إلى متابعة تشغيلية."
 
 #: .\templates\payments\hyperpay_result.html:24
 msgid "Payment verified and booking confirmed"
@@ -5852,8 +5989,12 @@ msgid "Payment verified; booking pending"
 msgstr "تم التحقق من الدفع؛ والحجز قيد التأكيد"
 
 #: .\templates\payments\hyperpay_result.html:26
-msgid "Your payment was verified, but booking confirmation still requires operational review. Do not pay again."
-msgstr "تم التحقق من دفعك، لكن تأكيد الحجز لا يزال يحتاج إلى مراجعة تشغيلية. لا تدفع مرة أخرى."
+msgid ""
+"Your payment was verified, but booking confirmation still requires "
+"operational review. Do not pay again."
+msgstr ""
+"تم التحقق من دفعك، لكن تأكيد الحجز لا يزال يحتاج إلى مراجعة تشغيلية. لا تدفع "
+"مرة أخرى."
 
 #: .\templates\payments\hyperpay_result.html:29
 msgid "Payment is still pending"
@@ -5868,7 +6009,9 @@ msgid "No booking was confirmed."
 msgstr "لم يتم تأكيد أي حجز."
 
 #: .\templates\payments\hyperpay_result.html:33
-msgid "No booking has been confirmed automatically. Please contact support and do not pay again."
+msgid ""
+"No booking has been confirmed automatically. Please contact support and do "
+"not pay again."
 msgstr "لم يتم تأكيد أي حجز تلقائيًا. تواصل مع الدعم ولا تدفع مرة أخرى."
 
 #: .\templates\payments\hyperpay_result.html:35
@@ -5904,7 +6047,9 @@ msgid "Save it to your account"
 msgstr "سجّل الدخول إلى حسابك"
 
 #: .\templates\payments\hyperpay_result.html:57
-msgid "Change your dates, see your arrival details, and book faster next time. It takes a moment."
+msgid ""
+"Change your dates, see your arrival details, and book faster next time. It "
+"takes a moment."
 msgstr ""
 
 #: .\templates\payments\hyperpay_result.html:60
@@ -5941,8 +6086,12 @@ msgid "Test payment environment"
 msgstr "بيئة دفع تجريبية"
 
 #: .\templates\payments\sandbox_checkout.html:10
-msgid "No real money is charged, no card details are collected, and nothing is sent to Hostaway."
-msgstr "لا يتم خصم أي مبلغ حقيقي، ولا نجمع بيانات بطاقات، ولا نرسل أي شيء إلى Hostaway."
+msgid ""
+"No real money is charged, no card details are collected, and nothing is sent "
+"to Hostaway."
+msgstr ""
+"لا يتم خصم أي مبلغ حقيقي، ولا نجمع بيانات بطاقات، ولا نرسل أي شيء إلى "
+"Hostaway."
 
 #: .\templates\payments\sandbox_checkout.html:14
 msgid "Booking payment test"
@@ -5957,8 +6106,11 @@ msgid "Choose a test result"
 msgstr "اختر نتيجة الاختبار"
 
 #: .\templates\payments\sandbox_checkout.html:16
-msgid "Use the controls below to verify how the customer experience behaves. These controls never contact a bank."
-msgstr "استخدم الخيارات أدناه للتحقق من تجربة العميل. هذه الخيارات لا تتصل بأي بنك."
+msgid ""
+"Use the controls below to verify how the customer experience behaves. These "
+"controls never contact a bank."
+msgstr ""
+"استخدم الخيارات أدناه للتحقق من تجربة العميل. هذه الخيارات لا تتصل بأي بنك."
 
 #: .\templates\payments\sandbox_checkout.html:17
 msgid "Test amount"
@@ -6009,6 +6161,7 @@ msgid "Try changing the city, capacity, or room filters."
 msgstr "جرّب تغيير المدينة أو السعة أو فلاتر الغرف."
 
 #: .\templates\properties\_stay_policy.html:10
+#: .\tests\test_property_translation_regressions.py:44
 msgid "Before you book"
 msgstr "قبل الحجز"
 
@@ -6034,7 +6187,8 @@ msgstr "الإلغاء"
 
 #: .\templates\properties\_stay_policy.html:37
 #, fuzzy, python-format
-#| msgid "Applies when the cancellation happens at least this long before arrival."
+#| msgid ""
+#| "Applies when the cancellation happens at least this long before arrival."
 msgid "when you cancel at least %(hours)s hours before arrival"
 msgstr "تُطبَّق عندما يقع الإلغاء قبل الوصول بهذه المدة على الأقل."
 
@@ -6043,7 +6197,8 @@ msgid "cleaning fee not refunded"
 msgstr "رسوم التنظيف غير مستردة"
 
 #: .\templates\properties\_stay_policy.html:45
-msgid "Cancellation terms for this stay are confirmed with our team before payment."
+msgid ""
+"Cancellation terms for this stay are confirmed with our team before payment."
 msgstr "تُؤكَّد شروط الإلغاء لهذه الإقامة مع فريقنا قبل الدفع."
 
 #: .\templates\properties\gallery.html:3
@@ -6094,6 +6249,7 @@ msgid "Daily and monthly stays"
 msgstr "إقامات يومية وشهرية"
 
 #: .\templates\properties\property_detail.html:44
+#: .\tests\test_property_translation_regressions.py:37
 #, python-format
 msgid "%(counter)s review"
 msgid_plural "%(counter)s reviews"
@@ -6105,6 +6261,7 @@ msgstr[4] "%(counter)s مراجعة"
 msgstr[5] "%(counter)s مراجعة"
 
 #: .\templates\properties\property_detail.html:49
+#: .\tests\test_property_translation_regressions.py:35
 #, python-format
 msgid "%(rating)s across all booking channels"
 msgstr "%(rating)s عبر جميع قنوات الحجز"
@@ -6202,8 +6359,12 @@ msgid "Open in OpenStreetMap"
 msgstr "فتح في OpenStreetMap"
 
 #: .\templates\properties\property_detail.html:136
-msgid "For guest privacy and property security, the exact address is provided only through the confirmed booking process."
-msgstr "حفاظًا على خصوصية الضيف وأمان الوحدة، لا يُقدّم العنوان الدقيق إلا عبر مسار الحجز المؤكد."
+msgid ""
+"For guest privacy and property security, the exact address is provided only "
+"through the confirmed booking process."
+msgstr ""
+"حفاظًا على خصوصية الضيف وأمان الوحدة، لا يُقدّم العنوان الدقيق إلا عبر مسار "
+"الحجز المؤكد."
 
 #: .\templates\properties\property_detail.html:139
 msgid "Guest experiences"
@@ -6222,7 +6383,8 @@ msgid "Continue with this property"
 msgstr "المتابعة بهذه الوحدة"
 
 #: .\templates\properties\property_detail.html:147
-msgid "Your dates and guest count have been kept. You do not need to search again."
+msgid ""
+"Your dates and guest count have been kept. You do not need to search again."
 msgstr "احتفظنا بتواريخك وعدد الضيوف، ولا تحتاج إلى البحث مرة أخرى."
 
 #: .\templates\properties\property_detail.html:162
@@ -6251,16 +6413,23 @@ msgid "Similar stays"
 msgstr "إقامات مشابهة"
 
 #: .\templates\properties\property_list.html:4
-msgid "Browse visible smart apartments in Riyadh and Marrakech by city, capacity, bedrooms, and type."
-msgstr "تصفح الشقق الذكية الظاهرة في الرياض ومراكش حسب المدينة والسعة والغرف والنوع."
+msgid ""
+"Browse visible smart apartments in Riyadh and Marrakech by city, capacity, "
+"bedrooms, and type."
+msgstr ""
+"تصفح الشقق الذكية الظاهرة في الرياض ومراكش حسب المدينة والسعة والغرف والنوع."
 
 #: .\templates\properties\property_list.html:6
 msgid "A home for the way you travel"
 msgstr "منزل يناسب طريقتك في السفر"
 
 #: .\templates\properties\property_list.html:6
-msgid "Browse locally synchronized property information. Live price and availability are checked only when you submit dates."
-msgstr "تصفح معلومات الوحدات المتزامنة محليًا. لا يُتحقق مباشرة من السعر والتوافر إلا عند إرسال التواريخ."
+msgid ""
+"Browse locally synchronized property information. Live price and "
+"availability are checked only when you submit dates."
+msgstr ""
+"تصفح معلومات الوحدات المتزامنة محليًا. لا يُتحقق مباشرة من السعر والتوافر إلا "
+"عند إرسال التواريخ."
 
 #: .\templates\properties\property_list.html:6
 msgid "properties"
@@ -6307,7 +6476,8 @@ msgid "Complete the required search fields"
 msgstr "أكمل حقول البحث المطلوبة"
 
 #: .\templates\reservations\_availability_form.html:17
-msgid "Choose your stay dates before continuing. City and property are optional."
+msgid ""
+"Choose your stay dates before continuing. City and property are optional."
 msgstr "اختر تواريخ إقامتك للمتابعة. المدينة والوحدة اختياريان."
 
 #: .\templates\reservations\_availability_form.html:30
@@ -6440,7 +6610,8 @@ msgid "New departure"
 msgstr "المغادرة الجديدة"
 
 #: .\templates\reservations\_management_calendar.html:51
-msgid "Live availability and price will be checked before the change is confirmed."
+msgid ""
+"Live availability and price will be checked before the change is confirmed."
 msgstr "سيتم التحقق المباشر من التوافر والسعر قبل تأكيد التعديل."
 
 #: .\templates\reservations\_management_calendar.html:52
@@ -6475,7 +6646,8 @@ msgid "Available properties in every city"
 msgstr "الوحدات المتاحة في جميع المدن"
 
 #: .\templates\reservations\availability_result.html:21
-msgid "Only properties available for your selected dates and guest count are shown."
+msgid ""
+"Only properties available for your selected dates and guest count are shown."
 msgstr "نعرض فقط الوحدات المتاحة للتواريخ وعدد الضيوف المحددين."
 
 #: .\templates\reservations\availability_result.html:23
@@ -6536,7 +6708,8 @@ msgid "These dates are not available"
 msgstr "هذه التواريخ غير متاحة"
 
 #: .\templates\reservations\availability_result.html:55
-msgid "This property is not available for the selected dates. Try different dates."
+msgid ""
+"This property is not available for the selected dates. Try different dates."
 msgstr "لا تتوفر هذه الوحدة في التواريخ المحددة. جرّب تواريخ أخرى."
 
 #: .\templates\reservations\availability_result.html:56
@@ -6561,7 +6734,9 @@ msgid "Not a confirmed booking"
 msgstr "هذا الطلب غير مؤكد"
 
 #: .\templates\reservations\booking_intent_detail.html:50
-msgid "This request is not confirmed until payment is completed and the booking is created."
+msgid ""
+"This request is not confirmed until payment is completed and the booking is "
+"created."
 msgstr "هذا الطلب غير مؤكد حتى اكتمال الدفع وإنشاء الحجز."
 
 #: .\templates\reservations\booking_intent_detail.html:50
@@ -6574,7 +6749,8 @@ msgid "Testing mode"
 msgstr "وضع الاختبار"
 
 #: .\templates\reservations\booking_intent_detail.html:50
-msgid "The next screen is a local simulation with no financial or Hostaway activity."
+msgid ""
+"The next screen is a local simulation with no financial or Hostaway activity."
 msgstr "الشاشة التالية محاكاة محلية بلا أي حركة مالية أو نشاط في Hostaway."
 
 #: .\templates\reservations\booking_intent_detail.html:50
@@ -6599,7 +6775,9 @@ msgid "Review your stay"
 msgstr "راجع إقامتك"
 
 #: .\templates\reservations\booking_quote_detail.html:25
-msgid "Price and availability are temporary and will be checked again before the local booking request is created."
+msgid ""
+"Price and availability are temporary and will be checked again before the "
+"local booking request is created."
 msgstr "السعر والتوافر مؤقتان وسيعاد التحقق منهما قبل إنشاء طلب الحجز المحلي."
 
 #: .\templates\reservations\booking_quote_detail.html:33
@@ -6683,7 +6861,9 @@ msgid "Back"
 msgstr "رجوع"
 
 #: .\templates\reservations\booking_quote_detail.html:251
-msgid "This address is required by the secure payment provider and may differ from the apartment address."
+msgid ""
+"This address is required by the secure payment provider and may differ from "
+"the apartment address."
 msgstr "هذا العنوان مطلوب من مزود الدفع الآمن، وقد يختلف عن عنوان الشقة."
 
 #: .\templates\reservations\booking_quote_detail.html:256
@@ -6714,7 +6894,8 @@ msgstr "الموافقات المطلوبة"
 
 #: .\templates\reservations\booking_quote_detail.html:310
 #, python-format
-msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>."
+msgid ""
+"I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>."
 msgstr "أوافق على <a href=\"%(url)s\" target=\"_blank\">الشروط والأحكام</a>."
 
 #: .\templates\reservations\booking_quote_detail.html:314
@@ -6736,8 +6917,11 @@ msgstr "مساحة حجزك"
 
 #: .\templates\reservations\manage_reservation.html:21
 #: .\templates\reservations\reservation_access.html:24
-msgid "View your stay details and request an extension, date change, guest update, or cancellation."
-msgstr "اعرض تفاصيل إقامتك واطلب التمديد أو تغيير التواريخ أو الضيوف أو الإلغاء."
+msgid ""
+"View your stay details and request an extension, date change, guest update, "
+"or cancellation."
+msgstr ""
+"اعرض تفاصيل إقامتك واطلب التمديد أو تغيير التواريخ أو الضيوف أو الإلغاء."
 
 #: .\templates\reservations\manage_reservation.html:50
 msgid "Securely leave"
@@ -6748,7 +6932,9 @@ msgid "Test booking"
 msgstr "حجز تجريبي"
 
 #: .\templates\reservations\manage_reservation.html:83
-msgid "This is a local test record. No reservation or change has been sent to Hostaway."
+msgid ""
+"This is a local test record. No reservation or change has been sent to "
+"Hostaway."
 msgstr "هذا سجل اختبار محلي. لم يتم إرسال أي حجز أو تعديل إلى Hostaway."
 
 #: .\templates\reservations\manage_reservation.html:117
@@ -6760,8 +6946,12 @@ msgid "This stay is closed"
 msgstr "هذه الإقامة مغلقة"
 
 #: .\templates\reservations\manage_reservation.html:133
-msgid "No further changes can be requested for it. Our team can help you plan a new stay whenever you are ready."
-msgstr "لا يمكن طلب أي تعديل عليها. فريقنا جاهز لمساعدتك في التخطيط لإقامة جديدة متى شئت."
+msgid ""
+"No further changes can be requested for it. Our team can help you plan a new "
+"stay whenever you are ready."
+msgstr ""
+"لا يمكن طلب أي تعديل عليها. فريقنا جاهز لمساعدتك في التخطيط لإقامة جديدة متى "
+"شئت."
 
 #: .\templates\reservations\manage_reservation.html:135
 msgid "Plan a new stay"
@@ -6793,7 +6983,9 @@ msgid "This stay is closed, so no further changes can be requested."
 msgstr "هذه الإقامة مغلقة، فلا يمكن طلب أي تعديل عليها."
 
 #: .\templates\reservations\manage_reservation.html:215
-msgid "A change has already been applied to this booking. Contact guest support for another change."
+msgid ""
+"A change has already been applied to this booking. Contact guest support for "
+"another change."
 msgstr "طُبِّق تعديل على هذا الحجز بالفعل. تواصل مع خدمة الضيوف لطلب تعديل آخر."
 
 #: .\templates\reservations\manage_reservation.html:217
@@ -6814,7 +7006,8 @@ msgid "We are here for your stay"
 msgstr "نحن هنا لخدمتك أثناء إقامتك"
 
 #: .\templates\reservations\manage_reservation.html:233
-msgid "Send us a message if your request is urgent or you need help with arrival."
+msgid ""
+"Send us a message if your request is urgent or you need help with arrival."
 msgstr "أرسل لنا رسالة إذا كان طلبك عاجلًا أو احتجت إلى مساعدة في الوصول."
 
 #: .\templates\reservations\manage_reservation.html:236
@@ -6904,8 +7097,12 @@ msgstr "الإلغاء يحرّر تواريخك فورًا ولا يمكن ال
 
 #: .\templates\reservations\manage_reservation.html:403
 #, python-format
-msgid "Any refund due is transferred to your bank account within %(days)s working days, after we contact you for the details."
-msgstr "أي مبلغ مستحق يُحوَّل إلى حسابك البنكي خلال %(days)s أيام عمل، بعد أن نتواصل معك للحصول على البيانات."
+msgid ""
+"Any refund due is transferred to your bank account within %(days)s working "
+"days, after we contact you for the details."
+msgstr ""
+"أي مبلغ مستحق يُحوَّل إلى حسابك البنكي خلال %(days)s أيام عمل، بعد أن نتواصل "
+"معك للحصول على البيانات."
 
 #: .\templates\reservations\manage_reservation.html:406
 msgid "Send for review"
@@ -6928,7 +7125,9 @@ msgid "Stay update"
 msgstr "تحديث الإقامة"
 
 #: .\templates\reservations\modification_detail.html:11
-msgid "Follow your request here. Your original booking remains active until the change is completed."
+msgid ""
+"Follow your request here. Your original booking remains active until the "
+"change is completed."
 msgstr "تابع طلبك هنا. يبقى حجزك الأصلي ساريًا حتى يكتمل التعديل."
 
 #: .\templates\reservations\modification_detail.html:19
@@ -6968,7 +7167,9 @@ msgid "Change is being applied"
 msgstr "جارٍ تطبيق التعديل"
 
 #: .\templates\reservations\modification_detail.html:47
-msgid "Payment and checks are complete. Do not pay again while the reservation update is processed."
+msgid ""
+"Payment and checks are complete. Do not pay again while the reservation "
+"update is processed."
 msgstr "اكتمل الدفع والتحقق. لا تدفع مرة أخرى أثناء معالجة تحديث الحجز."
 
 #: .\templates\reservations\modification_detail.html:49
@@ -6977,8 +7178,12 @@ msgstr "يبقى حجزك الأصلي ساريًا حتى يكتمل التعد
 
 #: .\templates\reservations\modification_detail.html:54
 #, python-format
-msgid "We will contact you for your bank details, then transfer the amount within %(days)s working days."
-msgstr "سنتواصل معك للحصول على بيانات حسابك البنكي، ثم نحوّل المبلغ خلال %(days)s أيام عمل."
+msgid ""
+"We will contact you for your bank details, then transfer the amount within "
+"%(days)s working days."
+msgstr ""
+"سنتواصل معك للحصول على بيانات حسابك البنكي، ثم نحوّل المبلغ خلال %(days)s "
+"أيام عمل."
 
 #: .\templates\reservations\modification_detail.html:61
 msgid "Pay the difference securely"
@@ -6997,7 +7202,9 @@ msgid "Difference payment required"
 msgstr "مطلوب دفع فرق السعر"
 
 #: .\templates\reservations\modification_detail.html:67
-msgid "A secure payment button will appear here once the payment gateway is connected."
+msgid ""
+"A secure payment button will appear here once the payment gateway is "
+"connected."
 msgstr "سيظهر زر دفع آمن هنا بعد ربط بوابة الدفع."
 
 #: .\templates\reservations\modification_detail.html:70
@@ -7005,7 +7212,9 @@ msgid "Payment recorded"
 msgstr "تم تسجيل الدفع"
 
 #: .\templates\reservations\modification_detail.html:70
-msgid "Do not pay again. The reservation update is continuing from the verified payment."
+msgid ""
+"Do not pay again. The reservation update is continuing from the verified "
+"payment."
 msgstr "لا تدفع مرة أخرى. يستمر تحديث الحجز اعتمادًا على الدفع المتحقق منه."
 
 #: .\templates\reservations\modification_detail.html:72
@@ -7013,7 +7222,8 @@ msgid "Return to booking"
 msgstr "العودة إلى الحجز"
 
 #: .\templates\reservations\reservation_access.html:5
-msgid "Open your secure booking management area using your booking number and email."
+msgid ""
+"Open your secure booking management area using your booking number and email."
 msgstr "افتح مساحة إدارة حجزك الآمنة باستخدام رقم الحجز والبريد الإلكتروني."
 
 #: .\templates\reservations\reservation_access.html:12
@@ -7025,7 +7235,9 @@ msgid "Manage your booking easily"
 msgstr "أدر حجزك بكل سهولة"
 
 #: .\templates\reservations\reservation_access.html:14
-msgid "Enter the booking number from your confirmation and the email used when booking."
+msgid ""
+"Enter the booking number from your confirmation and the email used when "
+"booking."
 msgstr "أدخل رقم الحجز الموجود في رسالة التأكيد والبريد المستخدم عند الحجز."
 
 #: .\templates\reservations\reservation_access.html:30
@@ -7065,7 +7277,8 @@ msgid "Verified guest reviews will appear here after publication."
 msgstr "ستظهر هنا مراجعات الضيوف الموثقة بعد نشرها."
 
 #: .\templates\reviews\review_list.html:4
-msgid "Published guest-to-host reviews, shown with privacy-conscious guest names."
+msgid ""
+"Published guest-to-host reviews, shown with privacy-conscious guest names."
 msgstr "مراجعات منشورة من الضيف إلى المضيف مع عرض أسماء تراعي الخصوصية."
 
 #: .\templates\reviews\review_list.html:6
@@ -7083,3 +7296,15 @@ msgstr "كل مراجعات الضيوف"
 #: .\templates\reviews\review_list.html:7
 msgid "Review pages"
 msgstr "صفحات المراجعات"
+
+#~ msgid ""
+#~ "Enter a valid mobile number, with its country code if it is not a local "
+#~ "number."
+#~ msgstr "أدخل رقم جوال صحيحًا، مع رمز الدولة إن لم يكن رقمًا محليًا."
+
+#~ msgid ""
+#~ "Any country is accepted. Write it with a country code, such as "
+#~ "+966500000000, or as a local number for the country you select below."
+#~ msgstr ""
+#~ "من أي دولة. اكتبه مع رمز الدولة، مثل +966500000000، أو كرقم محلي للدولة "
+#~ "التي تختارها أدناه."
