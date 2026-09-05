@@ -14,10 +14,10 @@
         {% if review.is_featured %}<span class="badge">{% trans "Featured" %}</span>{% endif %}
     </header>
     <div class="review-card__rating">
-        <div class="stars" role="img" aria-label="{% blocktrans with rating=review.rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
+        <div class="stars" role="img" aria-label="{% blocktrans with rating=review.rating|rating_out_of_five|localized_decimal %}Rated {{ rating }} out of 5{% endblocktrans %}">
             <span aria-hidden="true">{{ review.star_display }}</span>
         </div>
-        <b>{{ review.rating|rating_out_of_five }}<small>/5</small></b>
+        <b>{{ review.rating|rating_out_of_five|localized_decimal }}<small>/5</small></b>
     </div>
     <blockquote class="review-card__quote">
         {% comment %}
@@ -42,8 +42,8 @@
                     <p>{{ body.negative|linebreaksbr }}</p>
                 </div>
                 {% endif %}
-            {% else %}
-                <p>{{ review_text|linebreaksbr }}</p>
+            {% elif body.headline %}
+                <p>{{ body.headline|linebreaksbr }}</p>
             {% endif %}
             {% endwith %}
         </div>

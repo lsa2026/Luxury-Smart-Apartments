@@ -36,7 +36,7 @@
     {% endif %}
 
         <dl class="quote-summary payment-result__summary">
-            <div><dt>{% trans "Amount" %}</dt><dd>{{ attempt.amount|localized_money:attempt.currency }}</dd></div>
+            <div><dt>{% trans "Amount" %}</dt><dd>{{ attempt.amount|format_money:attempt.currency }}</dd></div>
             <div><dt>{% trans "Payment status" %}</dt><dd>{{ attempt.status|localized_payment_status }}</dd></div>
             {% if outcome.reservation %}<div><dt>{% trans "Booking number" %}</dt><dd dir="ltr">{{ outcome.reservation.public_reference }}</dd></div>{% endif %}
             {% if outcome.modification %}<div><dt>{% trans "Change request" %}</dt><dd dir="ltr">{{ outcome.modification.public_reference }}</dd></div>{% endif %}

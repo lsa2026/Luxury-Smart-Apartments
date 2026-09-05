@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n static admin_dashboard %}
+{% load i18n static admin_dashboard presentation %}
 
 {% block extrastyle %}<link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">{{ block.super }}{% endblock %}
 {% block bodyclass %}{{ block.super }} dashboard lsa-dashboard-page{% endblock %}
@@ -98,8 +98,8 @@
     <a class="lsa-stat" href="{{ dashboard.urls.payments }}">
       <span class="lsa-stat__icon lsa-stat__icon--blue">{% trans "SAR" %}</span>
       <span class="lsa-stat__meta">{% trans "Successful payments this month" %}</span>
-      <strong>{{ dashboard.revenue.total|floatformat:0 }}</strong>
-      <small>{{ dashboard.revenue.currency }} · {% blocktrans with count=dashboard.pending_payments %}{{ count }} pending transactions{% endblocktrans %}</small>
+      <strong>{{ dashboard.revenue.total|format_money:dashboard.revenue.currency }}</strong>
+      <small>{% blocktrans with count=dashboard.pending_payments %}{{ count }} pending transactions{% endblocktrans %}</small>
     </a>
     <a class="lsa-stat" href="{{ dashboard.urls.contacts }}">
       <span class="lsa-stat__icon lsa-stat__icon--rose">✦</span>
@@ -133,9 +133,9 @@
       </header>
       <div class="lsa-revenue-list">
         {% for item in dashboard.revenue_by_currency %}
-          <div><span>{{ item.currency }}</span><strong>{{ item.total|floatformat:0 }}</strong></div>
+          <div><strong>{{ item.total|format_money:item.currency }}</strong></div>
         {% empty %}
-          <div><span>SAR</span><strong>0</strong></div>
+          <div><strong>{{ 0|format_money:"SAR" }}</strong></div>
         {% endfor %}
       </div>
       <div class="lsa-finance-alerts">
@@ -198,7 +198,7 @@
             <td>{{ row.property }}</td>
             <td><span class="lsa-badge lsa-badge--{{ row.status_key }}">{{ row.status }}</span></td>
             <td><span class="lsa-badge lsa-badge--{{ row.payment_key }}">{{ row.payment }}</span></td>
-            <td><b>{{ row.total|floatformat:0 }}</b> {{ row.currency }}</td>
+            <td><b>{{ row.total|format_money:row.currency }}</b></td>
             <td><a class="lsa-row-link" href="{{ row.url }}" aria-label="{% trans "View details" %}">←</a></td>
           </tr>
         {% empty %}

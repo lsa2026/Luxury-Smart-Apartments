@@ -2,7 +2,6 @@ import json
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import Final
 
 from django import template
 from django.utils import formats, timezone, translation
@@ -570,28 +569,10 @@ def localized_percentage(value: object) -> str:
     return text
 
 
-# An Arabic page showing "SAR" reads as untranslated, so the currencies this
-# site actually prices in carry their Arabic symbol. A currency absent here
-# keeps its ISO code, which is correct everywhere and wrong nowhere.
-_ARABIC_CURRENCY_SYMBOLS: Final = {
-    "SAR": "ر.س",
-    "MAD": "د.م",
-    "AED": "د.إ",
-    "KWD": "د.ك",
-    "BHD": "د.ب",
-    "QAR": "ر.ق",
-    "OMR": "ر.ع",
-    "EGP": "ج.م",
-    "USD": "$",
-    "EUR": "€",
-    "GBP": "£",
-}
-
-
 def _currency_label(currency_code: str, language: str) -> str:
-    """The currency as this language writes it."""
+    """Resolve currency copy through the locale catalogue, never Python literals."""
     if language == "ar":
-        return _ARABIC_CURRENCY_SYMBOLS.get(currency_code, currency_code)
+        return translation.gettext(currency_code)
     return currency_code
 
 
@@ -619,9 +600,9 @@ def _localized_money_number(amount: Decimal, language: str, precision: int) -> s
     return number
 
 
-@register.filter
-def localized_money(value: object, currency: object) -> str:
-    """Render a price with locale-aware separators and ISO-4217 precision."""
+@register.filter(name="format_money")
+def format_money(value: object, currency: object) -> str:
+    """The single locale-aware presentation path for every monetary value."""
     currency_code = str(currency or "").strip().upper()
     if len(currency_code) != 3 or not currency_code.isascii() or not currency_code.isalpha():
         currency_code = ""
@@ -668,6 +649,12 @@ def localized_money(value: object, currency: object) -> str:
         currency_code,
         _currency_label(currency_code, language),
     )
+
+
+# Python callers from earlier releases keep working while templates converge on
+# the public ``format_money`` contract above. The alias is intentionally not a
+# second registered template filter.
+localized_money = format_money
 
 
 @register.filter

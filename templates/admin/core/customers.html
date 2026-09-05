@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n presentation %}
 
 {% block bodyclass %}{{ block.super }} lsa-customers-page{% endblock %}
 {% block content_title %}{% endblock %}
@@ -31,7 +31,7 @@
             <td><span class="lsa-badge lsa-badge--{{ row.intent.status }}">{{ row.intent.get_status_display }}</span><small>#{{ row.intent.public_reference|slice:":10" }}</small></td>
             <td>{% if row.reservation %}<span class="lsa-badge lsa-badge--{{ row.reservation.normalized_status }}">{{ row.reservation.get_normalized_status_display }}</span>{% if row.reservation.hostaway_reservation_id %}<small>HA-{{ row.reservation.hostaway_reservation_id }}</small>{% endif %}{% else %}<span class="lsa-badge lsa-badge--none">{% trans "Not created" %}</span>{% endif %}</td>
             <td>{% if row.payment %}<span class="lsa-badge lsa-badge--{{ row.payment.status }}">{{ row.payment.get_status_display }}</span><small>{{ row.payment.provider }}</small>{% else %}<span class="lsa-badge lsa-badge--none">{% trans "Not started" %}</span>{% endif %}</td>
-            <td><strong>{{ row.intent.total_price|floatformat:0 }}</strong> {{ row.intent.currency }}</td>
+            <td><strong>{{ row.intent.total_price|format_money:row.intent.currency }}</strong></td>
             <td><a class="lsa-row-link" href="{% url 'admin:reservations_bookingintent_change' row.intent.pk %}">←</a></td>
           </tr>
         {% empty %}<tr><td colspan="7" class="lsa-empty">{% trans "No matching results." %}</td></tr>{% endfor %}

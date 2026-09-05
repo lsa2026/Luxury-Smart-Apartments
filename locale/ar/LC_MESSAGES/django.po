@@ -5604,17 +5604,14 @@ msgstr "اختيار هذه الوحدة"
 
 #: .\templates\includes\property_card.html:149
 #: .\templates\properties\property_detail.html:143
-#, fuzzy
-#| msgid "Price based on dates"
 msgid "Final price depends on your dates"
-msgstr "السعر حسب التواريخ"
+msgstr "السعر النهائي يتحدد بتواريخك"
 
 #: .\templates\includes\property_card.html:150
 #: .\templates\properties\property_detail.html:142
-#, fuzzy, python-format
-#| msgid "%(count)d nights"
+#, python-format
 msgid "From %(amount)s / night"
-msgstr "%(count)d ليالٍ"
+msgstr "تبدأ من %(amount)s / ليلة"
 
 #: .\templates\includes\property_card.html:152
 msgid "Price based on dates"
@@ -5626,11 +5623,97 @@ msgstr "إحدى وحداتنا"
 
 #: .\templates\includes\review_card.html:36
 msgid "What they liked"
-msgstr ""
+msgstr "الإيجابيات"
 
 #: .\templates\includes\review_card.html:42
 msgid "What could be better"
-msgstr ""
+msgstr "السلبيات"
+
+#: apps/core/templatetags/presentation.py
+msgid "MAD"
+msgstr "د.م"
+
+#: apps/core/templatetags/presentation.py
+msgid "AED"
+msgstr "د.إ"
+
+#: apps/core/templatetags/presentation.py
+msgid "KWD"
+msgstr "د.ك"
+
+#: apps/core/templatetags/presentation.py
+msgid "BHD"
+msgstr "د.ب"
+
+#: apps/core/templatetags/presentation.py
+msgid "QAR"
+msgstr "ر.ق"
+
+#: apps/core/templatetags/presentation.py
+msgid "OMR"
+msgstr "ر.ع"
+
+#: apps/core/templatetags/presentation.py
+msgid "EGP"
+msgstr "ج.م"
+
+#: apps/core/templatetags/presentation.py
+msgid "USD"
+msgstr "$"
+
+#: apps/core/templatetags/presentation.py
+msgid "EUR"
+msgstr "€"
+
+#: apps/core/templatetags/presentation.py
+msgid "GBP"
+msgstr "£"
+
+#: templates/core/faq.html
+msgid "What are the usual check-in and check-out times?"
+msgstr "ما أوقات تسجيل الوصول والمغادرة المعتادة؟"
+
+#: templates/core/faq.html
+#, python-format
+msgid "The usual check-in time is %(check_in)s, and check-out is by %(check_out)s. The property page shows any property-specific time before booking."
+msgstr "وقت تسجيل الوصول المعتاد هو %(check_in)s، والمغادرة قبل %(check_out)s. تعرض صفحة الوحدة أي وقت خاص بها قبل الحجز."
+
+#: templates/core/faq.html
+#, python-format
+msgid "The usual check-in time is %(check_in)s. The property page shows the available departure time before booking."
+msgstr "وقت تسجيل الوصول المعتاد هو %(check_in)s. تعرض صفحة الوحدة وقت المغادرة المتاح قبل الحجز."
+
+#: templates/core/faq.html
+#, python-format
+msgid "The usual check-out time is %(check_out)s. The property page shows the available arrival time before booking."
+msgstr "وقت تسجيل المغادرة المعتاد هو %(check_out)s. تعرض صفحة الوحدة وقت الوصول المتاح قبل الحجز."
+
+#: templates/properties/property_detail.html
+msgid "What are this property's check-in and check-out times?"
+msgstr "ما أوقات تسجيل الوصول والمغادرة لهذه الوحدة؟"
+
+#: templates/properties/property_detail.html
+#, python-format
+msgid "Check-in is at %(check_in)s, and check-out is by %(check_out)s."
+msgstr "تسجيل الوصول الساعة %(check_in)s، والمغادرة قبل %(check_out)s."
+
+#: templates/properties/property_detail.html
+#, python-format
+msgid "Check-in is at %(check_in)s. Contact us if you need the departure time before booking."
+msgstr "تسجيل الوصول الساعة %(check_in)s. تواصل معنا إذا احتجت إلى وقت المغادرة قبل الحجز."
+
+#: templates/properties/property_detail.html
+#, python-format
+msgid "Check-out is by %(check_out)s. Contact us if you need the arrival time before booking."
+msgstr "تسجيل المغادرة قبل %(check_out)s. تواصل معنا إذا احتجت إلى وقت الوصول قبل الحجز."
+
+#: templates/properties/property_detail.html
+msgid "Is parking available at this property?"
+msgstr "هل يتوفر موقف للسيارة في هذه الوحدة؟"
+
+#: templates/properties/property_detail.html
+msgid "Parking is listed among this property's amenities. Contact us if you need details about vehicle size or access."
+msgstr "الموقف مدرج ضمن مرافق هذه الوحدة. تواصل معنا إذا احتجت إلى تفاصيل عن حجم المركبة أو طريقة الدخول."
 
 #: .\templates\includes\review_card.html:61
 msgid "Read more"
@@ -6049,22 +6132,20 @@ msgid "Daily and monthly stays"
 msgstr "إقامات يومية وشهرية"
 
 #: .\templates\properties\property_detail.html:37
-#, fuzzy, python-format
-#| msgid "%(counter)s image"
-#| msgid_plural "%(counter)s images"
+#, python-format
 msgid "%(counter)s review"
 msgid_plural "%(counter)s reviews"
-msgstr[0] "لا صور"
-msgstr[1] "صورة واحدة"
-msgstr[2] "صورتان"
-msgstr[3] "%(counter)s صور"
-msgstr[4] "%(counter)s صورة"
-msgstr[5] "%(counter)s صورة"
+msgstr[0] "لا مراجعات"
+msgstr[1] "مراجعة واحدة"
+msgstr[2] "مراجعتان"
+msgstr[3] "%(counter)s مراجعات"
+msgstr[4] "%(counter)s مراجعة"
+msgstr[5] "%(counter)s مراجعة"
 
 #: .\templates\properties\property_detail.html:42
 #, python-format
 msgid "%(rating)s across all booking channels"
-msgstr ""
+msgstr "%(rating)s من جميع قنوات الحجز"
 
 #: .\templates\properties\property_detail.html:51
 #: .\templates\properties\property_detail.html:121
@@ -6134,13 +6215,11 @@ msgstr "تواصل معنا إذا كنت تحتاج إلى مرفق معين."
 
 #: .\templates\properties\property_detail.html:106
 msgid "Good to know"
-msgstr ""
+msgstr "معلومات مهمة"
 
 #: .\templates\properties\property_detail.html:107
-#, fuzzy
-#| msgid "About this stay"
 msgid "Questions about this stay"
-msgstr "عن هذه الإقامة"
+msgstr "أسئلة عن هذه الإقامة"
 
 #: .\templates\properties\property_detail.html:111
 msgid "Location"

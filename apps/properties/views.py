@@ -10,7 +10,7 @@ from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
 from apps.reservations.services.stay_policy import stay_policy_for
 from apps.reviews.models import Review
-from apps.reviews.summary import rating_summary
+from apps.reviews.summary import rating_summary, with_published_rating
 
 from .cities import canonical_city, supported_city_choices
 from .models import Property, PropertyAmenity, PropertyImage
@@ -31,7 +31,7 @@ class PropertyListView(ListView):
     paginate_by = 9
 
     def get_queryset(self) -> QuerySet[Property]:
-        queryset = Property.objects.public().prefetch_related(
+        queryset = with_published_rating(Property.objects.public()).prefetch_related(
             Prefetch(
                 "images",
                 queryset=_card_images()[:5],
@@ -58,7 +58,7 @@ class PropertyListView(ListView):
             queryset = queryset.filter(room_type=room_type)
         ordering_map = {
             "featured": ("-is_featured", "sort_order", "id"),
-            "rating": ("-average_review_rating", "-is_featured", "id"),
+            "rating": ("-published_review_rating", "-is_featured", "id"),
             "capacity": ("-person_capacity", "-is_featured", "id"),
         }
         return queryset.order_by(*ordering_map.get(ordering, ordering_map["featured"]))
@@ -72,9 +72,7 @@ class PropertyListView(ListView):
             context["page_obj"].object_list = page_properties
         context["filter_cities"] = [
             {"value": value, "label": label}
-            for value, label in supported_city_choices(
-                translation.get_language() or "ar"
-            )
+            for value, label in supported_city_choices(translation.get_language() or "ar")
         ]
         context["filter_room_types"] = sorted(
             {item.room_type for item in page_properties if item.room_type}
@@ -139,7 +137,7 @@ class PropertyDetailView(DetailView):
                 }
         all_gallery_images = property_obj._public_images
         similar = list(
-            Property.objects.public()
+            with_published_rating(Property.objects.public())
             .filter(city=property_obj.city)
             .exclude(pk=property_obj.pk)
             .prefetch_related(
@@ -153,7 +151,7 @@ class PropertyDetailView(DetailView):
         if len(similar) < 3:
             excluded = [property_obj.pk, *(item.pk for item in similar)]
             similar.extend(
-                Property.objects.public()
+                with_published_rating(Property.objects.public())
                 .exclude(pk__in=excluded)
                 .prefetch_related(
                     Prefetch(
@@ -177,6 +175,17 @@ class PropertyDetailView(DetailView):
                 "property_faq_items": FAQItem.objects.filter(
                     is_active=True,
                     property=property_obj,
+                ),
+                "has_visible_parking": any(
+                    link.amenity.icon_key == "parking"
+                    or "parking"
+                    in " ".join(
+                        (
+                            link.amenity.name,
+                            link.amenity.name_en,
+                        )
+                    ).casefold()
+                    for link in property_obj._public_amenities
                 ),
                 "similar_properties": similar,
                 "total_image_count": len(all_gallery_images),

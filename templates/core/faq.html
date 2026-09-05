@@ -5,12 +5,31 @@
 {% block content %}
 <header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Helpful information" %}</p><h1>{% trans "Frequently asked questions" %}</h1><p>{% trans "Clear answers before you choose your stay." %}</p></div></header>
 <section class="section container narrow">
+    {% if default_check_in_hour != None or default_check_out_hour != None %}
+    <section class="faq-group" aria-labelledby="faq-group-stay-times">
+        <h2 class="faq-group__title" id="faq-group-stay-times">{% trans "During your stay" %}</h2>
+        <div class="faq-list">
+            <details class="faq-item">
+                <summary>{% trans "What are the usual check-in and check-out times?" %}</summary>
+                <div class="rich-copy"><p>
+                    {% if default_check_in_hour != None and default_check_out_hour != None %}
+                        {% blocktrans with check_in=default_check_in_hour|localized_hour check_out=default_check_out_hour|localized_hour %}The usual check-in time is {{ check_in }}, and check-out is by {{ check_out }}. The property page shows any property-specific time before booking.{% endblocktrans %}
+                    {% elif default_check_in_hour != None %}
+                        {% blocktrans with check_in=default_check_in_hour|localized_hour %}The usual check-in time is {{ check_in }}. The property page shows the available departure time before booking.{% endblocktrans %}
+                    {% else %}
+                        {% blocktrans with check_out=default_check_out_hour|localized_hour %}The usual check-out time is {{ check_out }}. The property page shows the available arrival time before booking.{% endblocktrans %}
+                    {% endif %}
+                </p></div>
+            </details>
+        </div>
+    </section>
+    {% endif %}
     {% if faq_groups %}{% for group in faq_groups %}
     <section class="faq-group" aria-labelledby="faq-group-{{ forloop.counter }}">
         <h2 class="faq-group__title" id="faq-group-{{ forloop.counter }}">{{ group.label }}</h2>
         <div class="faq-list">{% for item in group.items %}<details class="faq-item"><summary>{{ item|localized_faq_question }}</summary><div class="rich-copy">{{ item|localized_faq_answer|linebreaks }}</div></details>{% endfor %}</div>
     </section>
     {% endfor %}
-    {% else %}<div class="empty-state"><h2>{% trans "Questions are being prepared" %}</h2><p>{% trans "Please contact us if you need help in the meantime." %}</p></div>{% endif %}
+    {% elif default_check_in_hour == None and default_check_out_hour == None %}<div class="empty-state"><h2>{% trans "Questions are being prepared" %}</h2><p>{% trans "Please contact us if you need help in the meantime." %}</p></div>{% endif %}
 </section>
 {% endblock %}

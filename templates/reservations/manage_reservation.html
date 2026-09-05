@@ -204,7 +204,7 @@
                 {% endif %}
                 <div class="stay-summary-card__total">
                     <dt>{% trans "Current total" %}</dt>
-                    <dd>{{ reservation.total_price|localized_money:reservation.currency }}</dd>
+                    <dd>{{ reservation.total_price|format_money:reservation.currency }}</dd>
                 </div>
             </dl>
             {% if reservation.source_type == "external_channel" %}

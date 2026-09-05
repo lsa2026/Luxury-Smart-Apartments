@@ -9,10 +9,10 @@ from django.test import Client
 from django.utils import timezone, translation
 from django.utils.html import strip_tags
 
-from apps.core.models import FAQItem
-from apps.core.templatetags.presentation import localized_money
+from apps.core.models import FAQItem, SiteSetting
+from apps.core.templatetags.presentation import format_money
 from apps.properties.amenity_translations import AMENITY_COPY, copy_for
-from apps.properties.models import Amenity, Property
+from apps.properties.models import Amenity, Property, PropertyAmenity
 from apps.reviews.models import Review
 from apps.reviews.presentation import is_meaningful, parse_review_body
 from apps.reviews.summary import rating_summary
@@ -54,6 +54,7 @@ def make_review(property_obj: Property, rating: str, review_id: int) -> Review:
 
 
 def test_every_amenity_in_the_map_carries_all_four_values() -> None:
+    assert len(AMENITY_COPY) == 33
     for key, entry in AMENITY_COPY.items():
         assert entry.name_ar.strip(), key
         assert entry.name_fr.strip(), key
@@ -152,12 +153,27 @@ def test_meaningfulness_threshold(text: str, expected: bool) -> None:
 
 def test_the_page_shows_arabic_headings_not_the_raw_markers() -> None:
     property_obj = make_property()
-    make_review(property_obj, "9.0", 5001)
+    review = make_review(property_obj, "9.0", 5001)
+    review.public_review += "\nNegative: الموقع بعيد"
+    review.save(update_fields=["public_review"])
 
     content = Client().get(property_obj.get_absolute_url()).content.decode()
 
     assert "Positive:" not in content
     assert "Negative:" not in content
+    assert "الإيجابيات" in content
+    assert "السلبيات" in content
+
+
+def test_a_wholly_meaningless_review_body_is_not_echoed_back() -> None:
+    property_obj = make_property()
+    review = make_review(property_obj, "9.0", 5010)
+    review.public_review = "....."
+    review.save(update_fields=["public_review"])
+
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+
+    assert "....." not in content
 
 
 def test_the_stored_review_is_never_edited() -> None:
@@ -195,9 +211,7 @@ def test_structured_data_matches_what_a_person_reads() -> None:
     data = property_structured_data(property_obj)
     summary = rating_summary(property_obj)
 
-    assert data["aggregateRating"]["ratingValue"] == float(
-        summary.published_average_out_of_five
-    )
+    assert data["aggregateRating"]["ratingValue"] == float(summary.published_average_out_of_five)
     assert data["aggregateRating"]["reviewCount"] == summary.published_count
 
 
@@ -207,6 +221,29 @@ def test_no_rating_is_published_without_reviews() -> None:
     property_obj = make_property(average_review_rating=Decimal("9.8"))
 
     assert "aggregateRating" not in property_structured_data(property_obj)
+
+
+def test_property_cards_use_the_same_published_review_average() -> None:
+    property_obj = make_property(average_review_rating=Decimal("9.8"))
+    make_review(property_obj, "10.0", 5007)
+    make_review(property_obj, "6.0", 5008)
+
+    with translation.override("en"):
+        content = Client().get("/properties/").content.decode()
+
+    assert "4.0" in content
+    assert "4.9" not in content
+
+
+def test_property_rating_explains_the_all_channel_figure_in_arabic() -> None:
+    property_obj = make_property(average_review_rating=Decimal("9.8"))
+    make_review(property_obj, "10.0", 5011)
+    make_review(property_obj, "6.0", 5012)
+
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+
+    assert "٤.٩ من جميع قنوات الحجز" in content
+    assert "مراجعتان" in content
 
 
 # --- 10. Money ---------------------------------------------------------------
@@ -226,17 +263,36 @@ def test_arabic_money_uses_arabic_numerals_separators_and_symbol(
     expected: str,
 ) -> None:
     with translation.override("ar"):
-        assert strip_tags(localized_money(amount, "SAR")) == expected
+        assert strip_tags(format_money(amount, "SAR")) == expected
 
 
 def test_english_keeps_the_iso_code() -> None:
     with translation.override("en"):
-        assert strip_tags(localized_money("1525", "SAR")) == "SAR1,525.00"
+        assert strip_tags(format_money("1525", "SAR")) == "SAR1,525.00"
 
 
 def test_an_unmapped_currency_keeps_its_iso_code_in_arabic() -> None:
     with translation.override("ar"):
-        assert "JPY" in strip_tags(localized_money("1525", "JPY"))
+        assert "JPY" in strip_tags(format_money("1525", "JPY"))
+
+
+def test_format_money_is_the_only_registered_direct_money_filter() -> None:
+    from apps.core.templatetags import presentation
+
+    assert presentation.register.filters["format_money"] is format_money
+    assert "localized_money" not in presentation.register.filters
+
+
+def test_indicative_price_copy_uses_the_reviewed_arabic_wording() -> None:
+    property_obj = make_property(
+        indicative_nightly_from=Decimal("590"),
+        indicative_currency="SAR",
+    )
+
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+
+    assert "تبدأ من" in content
+    assert "السعر النهائي يتحدد بتواريخك" in content
 
 
 # --- 11. FAQ -----------------------------------------------------------------
@@ -258,9 +314,7 @@ def test_the_faq_page_groups_questions_by_category() -> None:
     response = Client().get("/faq/")
 
     assert response.status_code == 200
-    assert any(
-        group["items"] for group in response.context["faq_groups"]
-    )
+    assert any(group["items"] for group in response.context["faq_groups"])
 
 
 def test_a_property_question_stays_off_the_general_page() -> None:
@@ -289,3 +343,42 @@ def test_another_property_never_shows_a_foreign_question() -> None:
     content = Client().get(second.get_absolute_url()).content.decode()
 
     assert "سؤال الوحدة الأولى" not in content
+
+
+def test_faq_uses_admin_managed_default_stay_times() -> None:
+    setting = SiteSetting.objects.order_by("pk").first() or SiteSetting()
+    setting.default_check_in_hour = 15
+    setting.default_check_out_hour = 12
+    setting.save()
+
+    content = Client().get("/faq/").content.decode()
+
+    assert "ما أوقات تسجيل الوصول والمغادرة المعتادة؟" in content
+    assert "١٥:٠٠" in content
+    assert "١٢:٠٠" in content
+
+
+def test_property_faq_uses_its_actual_times_and_visible_parking() -> None:
+    property_obj = make_property(check_in_time_start=16, check_out_time=11)
+    parking = Amenity.objects.create(
+        name="Free parking",
+        name_ar="موقف مجاني",
+        icon_key="parking",
+        hostaway_amenity_id=701,
+    )
+    PropertyAmenity.objects.create(property=property_obj, amenity=parking)
+
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+
+    assert "ما أوقات تسجيل الوصول والمغادرة لهذه الوحدة؟" in content
+    assert "هل يتوفر موقف للسيارة في هذه الوحدة؟" in content
+    assert "١٦:٠٠" in content
+    assert "١١:٠٠" in content
+
+
+def test_property_faq_never_claims_parking_without_source_data() -> None:
+    property_obj = make_property(check_in_time_start=16)
+
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+
+    assert "هل يتوفر موقف للسيارة في هذه الوحدة؟" not in content
