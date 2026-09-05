@@ -1,7 +1,7 @@
 import pytest
 from django.urls import reverse
 
-from apps.core.models import ContactMessage
+from apps.core.models import ContactMessage, SiteSetting
 from apps.payments.models import PaymentAttempt
 from tests.test_booking_modifications_phase6 import confirmed_reservation
 
@@ -25,6 +25,38 @@ def test_luxury_dashboard_renders_for_superuser(client, django_user_model):
     assert "خطة الإقامات" in response.content.decode()
     assert "مسار الحجز" in response.content.decode()
     assert "التحصيل المالي" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_dashboard_opens_the_owner_managed_stay_defaults(client, django_user_model):
+    user = django_user_model.objects.create_superuser(
+        username="policy-owner",
+        email="policy-owner@example.com",
+        password="strong-password",
+    )
+    site_setting = SiteSetting.objects.order_by("pk").first()
+    if site_setting is None:
+        site_setting = SiteSetting.objects.create(site_name="Luxury Smart Apartments")
+    client.force_login(user)
+
+    dashboard_response = client.get(reverse("admin:index"))
+    change_url = reverse("admin:core_sitesetting_change", args=(site_setting.pk,))
+    body = dashboard_response.content.decode()
+
+    assert dashboard_response.status_code == 200
+    assert change_url in body
+    assert "افتراضيات الإقامة" in body
+
+    settings_response = client.get(change_url)
+    settings_body = settings_response.content.decode()
+    assert settings_response.status_code == 200
+    for field_name in (
+        "default_check_in_hour",
+        "default_check_out_hour",
+        "default_cancellation_policy_ar",
+        "default_house_rules_ar",
+    ):
+        assert f'name="{field_name}"' in settings_body
 
 
 @pytest.mark.django_db

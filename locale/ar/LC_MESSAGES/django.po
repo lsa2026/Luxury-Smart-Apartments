@@ -242,10 +242,8 @@ msgid "Brand"
 msgstr "العلامة"
 
 #: .\apps\core\admin.py:180
-#, fuzzy
-#| msgid "Stay details"
 msgid "Stay defaults"
-msgstr "تفاصيل الإقامة"
+msgstr "افتراضيات الإقامة"
 
 #: .\apps\core\admin.py:183
 msgid "Used only when the channel manager reports nothing for a property."
@@ -542,29 +540,25 @@ msgid "FAQ items"
 msgstr "الأسئلة الشائعة"
 
 #: .\apps\core\models.py:122
-#, fuzzy
-#| msgid "Requested check-in"
 msgid "Default check-in hour"
-msgstr "الوصول المطلوب"
+msgstr "ساعة الدخول الافتراضية"
 
 #: .\apps\core\models.py:123
 msgid "Used when Hostaway reports no check-in time for a property."
-msgstr ""
+msgstr "تُستخدم عندما لا يرسل Hostaway وقت دخول للوحدة."
 
 #: .\apps\core\models.py:129
-#, fuzzy
-#| msgid "Requested check-out"
 msgid "Default check-out hour"
-msgstr "المغادرة المطلوبة"
+msgstr "ساعة الخروج الافتراضية"
 
 #: .\apps\core\models.py:130
 msgid "Used when Hostaway reports no check-out time for a property."
-msgstr ""
+msgstr "تُستخدم عندما لا يرسل Hostaway وقت خروج للوحدة."
 
 #: .\apps\core\models.py:132 .\apps\core\models.py:133
 #: .\apps\core\models.py:134
 msgid "Default house rules"
-msgstr ""
+msgstr "قواعد المنزل الافتراضية"
 
 #: .\apps\core\models.py:138
 msgid "Site setting"
@@ -7061,3 +7055,23 @@ msgstr "كل مراجعات الضيوف"
 #: .\templates\reviews\review_list.html:7
 msgid "Review pages"
 msgstr "صفحات المراجعات"
+
+#: .\apps\core\admin.py
+msgid "Default stay times"
+msgstr "أوقات الإقامة الافتراضية"
+
+#: .\apps\core\admin.py
+msgid "Used only when neither a property override nor a channel-manager time exists."
+msgstr "تُستخدم فقط عندما لا يوجد تجاوز خاص بالوحدة ولا وقت وارد من مدير القنوات."
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no cancellation-policy text."
+msgstr "محتوى مُدار يظهر عندما لا تحتوي الوحدة على نص لسياسة الإلغاء."
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no local house rules."
+msgstr "محتوى مُدار يظهر عندما لا تحتوي الوحدة على قواعد منزل محلية."
+
+#: .\templates\admin\index.html
+msgid "Check-in, check-out, cancellation and house rules"
+msgstr "الدخول والخروج والإلغاء وقواعد المنزل"

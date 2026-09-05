@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.models import ContactMessage, SitePage
+from apps.core.models import ContactMessage, SitePage, SiteSetting
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
 from apps.notifications.models import EmailDelivery, Notification
 from apps.payments.models import PaymentAttempt
@@ -63,6 +63,12 @@ def dashboard_payload(request: object) -> dict[str, Any]:
     month_start = today.replace(day=1)
     rolling_start = now - timedelta(days=30)
     week_end = today + timedelta(days=6)
+    site_setting_pk = SiteSetting.objects.order_by("pk").values_list("pk", flat=True).first()
+    stay_defaults_url = (
+        _url("admin:core_sitesetting_change", site_setting_pk)
+        if site_setting_pk is not None
+        else _url("admin:core_sitesetting_add")
+    )
     revenue_by_currency = list(
         PaymentAttempt.objects.filter(
             status=PaymentAttempt.Status.SUCCEEDED,
@@ -444,6 +450,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             "faq": _url("admin:core_faqitem_changelist"),
             "reviews": _url("admin:reviews_review_changelist"),
             "settings": _url("admin:core_sitesetting_changelist"),
+            "stay_defaults": stay_defaults_url,
             "operations": _url("notifications:dashboard"),
             "notifications": _url("notifications:center"),
             "system": _url("notifications:system_status"),

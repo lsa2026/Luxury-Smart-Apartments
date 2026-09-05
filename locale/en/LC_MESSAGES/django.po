@@ -6904,3 +6904,23 @@ msgstr ""
 #: .\templates\reviews\review_list.html:7
 msgid "Review pages"
 msgstr ""
+
+#: .\apps\core\admin.py
+msgid "Default stay times"
+msgstr ""
+
+#: .\apps\core\admin.py
+msgid "Used only when neither a property override nor a channel-manager time exists."
+msgstr ""
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no cancellation-policy text."
+msgstr ""
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no local house rules."
+msgstr ""
+
+#: .\templates\admin\index.html
+msgid "Check-in, check-out, cancellation and house rules"
+msgstr ""
