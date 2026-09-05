@@ -1,10 +1,11 @@
 import json
 from collections.abc import Mapping
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Final
 
 from django import template
-from django.utils import formats, translation
+from django.utils import formats, timezone, translation
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_noop
@@ -434,12 +435,31 @@ def money_amount(value: object) -> str:
     return format(amount, ",.2f")
 
 
+def _as_local(value: object) -> object:
+    """Move an aware datetime into the site's timezone before it is formatted.
+
+    Django converts aware datetimes when the template prints them itself, but a
+    filter is handed the raw value and ``formats.date_format`` does no
+    conversion at all. Without this every timestamp rendered through these
+    filters is printed in UTC, three hours behind Riyadh, which also drags the
+    date back a day for anything after 21:00 local.
+
+    ``date`` objects carry no time and must be left alone; ``localtime`` also
+    refuses naive datetimes, so both fall through unchanged.
+    """
+    if not isinstance(value, datetime):
+        return value
+    if timezone.is_naive(value):
+        return value
+    return timezone.localtime(value)
+
+
 def _localized_temporal(value: object, format_string: str) -> str:
     """Render a date/time in the active locale, matching the numerals used for money."""
     if value in (None, ""):
         return ""
     try:
-        rendered = formats.date_format(value, format_string)
+        rendered = formats.date_format(_as_local(value), format_string)
     except (AttributeError, TypeError, ValueError):
         return ""
     if _language() == "ar":
@@ -515,6 +535,36 @@ def localized_number(value: object) -> str:
     if value in (None, ""):
         return ""
     text = str(value)
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
+@register.filter
+def localized_hour(value: object) -> str:
+    """Render an hour-of-day as ``HH:00``; 24 is the midnight that ends the day."""
+    if not isinstance(value, int) or isinstance(value, bool):
+        return ""
+    if not 0 <= value <= 24:
+        return ""
+    text = f"{value % 24:02d}:00"
+    if _language() == "ar":
+        return text.translate(_ARABIC_DIGITS)
+    return text
+
+
+@register.filter
+def localized_percentage(value: object) -> str:
+    """Render a refund share without trailing zeros: 100, 50, 12.5."""
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return ""
+    normalized = amount.quantize(Decimal("0.01")).normalize()
+    if normalized == normalized.to_integral_value():
+        text = f"{int(normalized)}%"
+    else:
+        text = f"{normalized}%"
     if _language() == "ar":
         return text.translate(_ARABIC_DIGITS)
     return text
@@ -611,10 +661,11 @@ def localized_money(value: object, currency: object) -> str:
     return format_html(
         '<bdi class="money money--{}" dir="ltr">'
         '<span class="money__amount">{}</span>'
-        '<span class="money__currency">{}</span>'
+        '<span class="money__currency" aria-label="{}">{}</span>'
         "</bdi>",
         language,
         number,
+        currency_code,
         _currency_label(currency_code, language),
     )
 

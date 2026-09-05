@@ -230,6 +230,13 @@ HOSTAWAY_RESERVATION_REQUEST_TIMEOUT_SECONDS=20
 5xx بعد محاولة POST تصبح العملية `unknown` ولا يعاد POST تلقائيًا؛ يجب إجراء
 مصالحة آمنة أو مراجعة إدارية أولًا.
 
+قبل إنشاء Checkout حي يرفض النظام تحصيل المبلغ إذا لم يكن `listingMapId`
+موثقًا. وتستكمل مهمة المصالحة هذا المعرّف من حجوزات Hostaway المنقحة التي
+تتفق كلها على قيمة واحدة، ثم تعيد الحجوزات المدفوعة العالقة في
+`ready_for_hostaway` عبر سجل idempotency نفسه؛ لا تعيد تلقائيًا أي عملية
+`unknown` ربما وصلت إلى Hostaway. يمكن تغيير فترة المهمة عبر
+`HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES`.
+
 لفحص المتطلبات المسبقة عبر GET فقط:
 
 ```powershell
@@ -584,6 +591,8 @@ celery -A config beat --loglevel=INFO
 - المراجعات كل 15 دقيقة.
 - معالجة أحداث Webhook المحلية كل دقيقة، وتظل غير فعالة ما دام
   `HOSTAWAY_WEBHOOK_PROCESSING_ENABLED=False`.
+- استكمال معرفات Hostaway وإرسال الحجوزات المدفوعة العالقة كل دقيقة، ولا تعمل
+  كتابة الحجز ما دام `HOSTAWAY_LIVE_BOOKING_ENABLED=False`.
 - انتهاء عروض السعر والطلبات كل 5 دقائق.
 
 كل فترة قابلة للضبط من البيئة. تستخدم المهام قفلًا عبر Django Cache؛ لذلك

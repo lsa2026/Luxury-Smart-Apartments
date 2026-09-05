@@ -144,6 +144,15 @@ def test_calculate_price_uses_exact_version_two_body_and_decimal() -> None:
     captured: dict[str, Any] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "status": "success",
+                    "result": {"id": 100, "currencyCode": "SAR"},
+                },
+                request=request,
+            )
         captured["method"] = request.method
         captured["body"] = request.read().decode()
         captured["content_type"] = request.headers["content-type"]
@@ -168,6 +177,52 @@ def test_calculate_price_uses_exact_version_two_body_and_decimal() -> None:
     )
     assert quote.total_price == Decimal("450.25")
     assert quote.components[0].value == Decimal("400.20")
+
+
+class MemoryCache:
+    def __init__(self) -> None:
+        self.values: dict[str, Any] = {}
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self.values.get(key, default)
+
+    def set(self, key: str, value: Any, timeout: int | None = None) -> None:
+        self.values[key] = value
+
+
+def test_listing_currency_metadata_is_cached_but_checkout_can_bypass_it() -> None:
+    methods: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        methods.append(request.method)
+        if request.method == "POST":
+            return httpx.Response(200, json=price_payload(), request=request)
+        return httpx.Response(
+            200,
+            json={"status": "success", "result": {"id": 101, "currencyCode": "SAR"}},
+            request=request,
+        )
+
+    with httpx.Client(
+        transport=httpx.MockTransport(handler),
+        base_url="https://api.hostaway.com/v1",
+    ) as http:
+        client = HostawayClient(
+            access_token="test",
+            client=http,
+            cache_backend=MemoryCache(),
+        )
+        for bypass in (False, False, True):
+            client.calculate_price(
+                101,
+                check_in=date(2030, 1, 1),
+                check_out=date(2030, 1, 3),
+                guests=2,
+                bypass_currency_cache=bypass,
+            )
+
+    assert methods.count("POST") == 3
+    assert methods.count("GET") == 2
 
 
 def test_price_post_is_not_retried_on_500() -> None:

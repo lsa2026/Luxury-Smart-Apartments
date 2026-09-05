@@ -104,6 +104,8 @@ class DummyService:
     ) -> QuoteCreation:
         type(self).calls += 1
         type(self).last_bypass_cache = bypass_cache
+        if not type(self).result.is_available or type(self).result.quote is None:
+            return QuoteCreation(type(self).result, None)
         quote = create_quote_for_property(
             type(self).result,
             property_obj=request.property,
@@ -377,6 +379,28 @@ def test_invalid_form_never_calls_service(
     response = Client().post("/properties/search-availability/", data)
     assert response.status_code == 400
     assert mocked_service.calls == 0
+
+
+@override_settings(LANGUAGE_CODE="en")
+def test_price_verification_failure_is_not_presented_as_unavailable_dates(
+    mocked_service: type[DummyService],
+) -> None:
+    property_obj = make_property()
+    DummyService.result = AvailabilityResult(
+        is_available=False,
+        reason_code="hostaway_temporarily_unavailable",
+        user_message_ar="تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل.",
+        user_message_en="We couldn't verify the price right now. Please try again shortly.",
+        nights=2,
+    )
+
+    response = Client().post("/properties/search-availability/", form_data(property_obj))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "We couldn't verify the price right now. Please try again shortly." in content
+    assert "These dates are not available" not in content
+    assert BookingQuote.objects.count() == 0
 
 
 def test_search_query_count_is_bounded(

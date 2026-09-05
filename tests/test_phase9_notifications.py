@@ -3,6 +3,7 @@
 from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
+from smtplib import SMTPAuthenticationError
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -309,6 +310,27 @@ def test_email_delivery_idempotency() -> None:
     assert EmailDelivery.objects.count() == 1
 
 
+@override_settings(EMAIL_DELIVERY_ENABLED=True)
+def test_new_email_is_dispatched_immediately_after_commit() -> None:
+    contact = make_contact()
+    with (
+        patch("apps.notifications.services.email.transaction.on_commit") as on_commit,
+        patch("apps.notifications.tasks.send_email_delivery_task.delay") as delay,
+    ):
+        on_commit.side_effect = lambda callback, **_kwargs: callback()
+        delivery = queue_email(
+            message_type="contact_confirmation",
+            recipient=contact.email,
+            recipient_source="contact",
+            recipient_reference=str(contact.pk),
+            language="ar",
+            idempotency_key="immediate-email",
+        )
+
+    on_commit.assert_called_once()
+    delay.assert_called_once_with(str(delivery.pk))
+
+
 def test_recipient_is_masked_and_hmaced() -> None:
     contact = make_contact()
     delivery = queue_email(
@@ -467,6 +489,7 @@ def test_email_retry_limit() -> None:
     EMAIL_DELIVERY_ENABLED=True,
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="noreply@example.invalid",
+    EMAIL_REPLY_TO="care@example.invalid",
 )
 def test_django_provider_html_escapes_and_has_plain_text() -> None:
     provider = DjangoEmailProvider()
@@ -485,9 +508,38 @@ def test_django_provider_html_escapes_and_has_plain_text() -> None:
         )
     )
     message = mail.outbox[0]
+    assert message.from_email == "noreply@example.invalid"
+    assert message.reply_to == ["care@example.invalid"]
     assert "<script>" not in message.alternatives[0].content
     assert "&lt;script&gt;" in message.alternatives[0].content
     assert "Synthetic" in message.body
+
+
+@override_settings(
+    EMAIL_DELIVERY_ENABLED=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="noreply@example.invalid",
+)
+def test_django_provider_classifies_smtp_authentication_failure_as_permanent() -> None:
+    with (
+        patch(
+            "apps.notifications.services.email.EmailMultiAlternatives.send",
+            side_effect=SMTPAuthenticationError(535, b"credentials rejected"),
+        ),
+        pytest.raises(EmailProviderError) as error,
+    ):
+        DjangoEmailProvider().send(
+            EmailMessageRequest(
+                recipient="guest@example.invalid",
+                subject="Synthetic",
+                template_name="contact",
+                language="en",
+                context={"heading": "Synthetic", "message": "Synthetic only"},
+            )
+        )
+
+    assert error.value.code == "email_authentication_failed"
+    assert error.value.permanent is True
 
 
 @override_settings(

@@ -13,6 +13,7 @@ from apps.integrations.models import IntegrationSyncRun
 from apps.integrations.tasks import (
     distributed_task_lock,
     expire_booking_objects_task,
+    reconcile_paid_hostaway_reservations_task,
     sync_hostaway_properties_task,
     sync_hostaway_reviews_task,
 )
@@ -69,6 +70,16 @@ def test_complete_new_listing_is_automatically_published() -> None:
     assert property_obj.visibility_management == Property.VisibilityManagement.AUTOMATIC
     assert property_obj.publish_blockers == []
     assert report.properties_auto_published == 1
+
+
+@override_settings(HOSTAWAY_LIVE_BOOKING_ENABLED=True)
+def test_live_listing_without_map_id_is_not_automatically_published() -> None:
+    report = run_full_sync(listing_payload())
+    property_obj = Property.objects.get()
+
+    assert property_obj.is_visible is False
+    assert "missing_listing_map_id" in property_obj.publish_blockers
+    assert report.properties_pending_review == 1
 
 
 @pytest.mark.parametrize(
@@ -243,6 +254,36 @@ def test_expiration_task_never_creates_reservation_or_payment() -> None:
     expire_booking_objects_task.run()
     assert Reservation.objects.count() == 0
     assert PaymentAttempt.objects.count() == 0
+
+
+@override_settings(HOSTAWAY_LIVE_BOOKING_ENABLED=True)
+def test_paid_booking_recovery_backfills_identifiers_before_scanning() -> None:
+    manager = Mock()
+    manager.__enter__ = Mock(return_value=Mock())
+    manager.__exit__ = Mock(return_value=None)
+    with (
+        patch("apps.integrations.tasks.call_command") as command,
+        patch(
+            "apps.reservations.services.hostaway_booking.HostawayBookingService",
+            return_value=manager,
+        ),
+    ):
+        result = reconcile_paid_hostaway_reservations_task.run()
+
+    command.assert_called_once_with(
+        "backfill_hostaway_listing_map_ids",
+        sample=100,
+        stdout=command.call_args.kwargs["stdout"],
+        stderr=command.call_args.kwargs["stderr"],
+    )
+    assert result == {
+        "status": "completed",
+        "backfill": "completed",
+        "processed": 0,
+        "confirmed": 0,
+        "deferred": 0,
+        "failed": 0,
+    }
 
 
 def test_beat_schedule_is_disabled_by_default(settings: object) -> None:

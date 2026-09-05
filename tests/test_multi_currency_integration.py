@@ -2,14 +2,16 @@ from decimal import Decimal
 from functools import partial
 
 import pytest
+from django.db import IntegrityError, transaction
 from django.test import Client, override_settings
 from django.urls import reverse
 
+from apps.payments.currency import DISPLAY_CURRENCY_SESSION_KEY
 from apps.payments.hyperpay.service import HyperPayService
 from apps.payments.models import PaymentAttempt
 from apps.payments.views import HyperPayBookingCheckoutView
 from apps.properties.models import Property
-from apps.reservations.models import BookingIntent
+from apps.reservations.models import BookingIntent, BookingQuote
 from apps.reservations.security import SESSION_MARKER_KEY, hash_session_marker
 from apps.reservations.services.booking import (
     consume_revalidated_quote,
@@ -189,6 +191,7 @@ def test_browser_amount_and_currency_tampering_cannot_change_hyperpay(
     browser = Client()
     session = browser.session
     session[SESSION_MARKER_KEY] = marker
+    session[DISPLAY_CURRENCY_SESSION_KEY] = "USD"
     session.save()
     gateway = HyperPayStub()
     monkeypatch.setattr(
@@ -201,8 +204,31 @@ def test_browser_amount_and_currency_tampering_cannot_change_hyperpay(
         {"amount": "1", "currency": "USD"},
     )
     assert response.status_code == 200
+    content = response.content.decode()
+    visible_total = content.split("checkout__total--display", 1)[1].split("</div>", 1)[0]
+    assert "USD" in visible_total
+    assert "SAR" not in visible_total
+    assert "checkout__total--payment" not in content
     attempt = PaymentAttempt.objects.get()
     assert attempt.amount == Decimal("400.00")
     assert attempt.currency == "SAR"
     assert gateway.payload["amount"] == "400.00"
     assert gateway.payload["currency"] == "SAR"
+
+
+def test_database_constraints_reject_negative_sar_and_non_sar_hyperpay() -> None:
+    _property, quote, intent, _provider = create_flow(
+        source_amount=Decimal("1000"),
+        source_currency="SAR",
+        display_currency="USD",
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        BookingQuote.objects.filter(pk=quote.pk).update(payment_amount_sar=Decimal("-0.01"))
+    with pytest.raises(IntegrityError), transaction.atomic():
+        PaymentAttempt.objects.create(
+            booking_intent=intent,
+            provider="hyperpay",
+            amount=Decimal("1000"),
+            currency="MAD",
+            idempotency_key="db-constraint-non-sar-hyperpay-0000000001",
+        )

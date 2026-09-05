@@ -49,6 +49,7 @@ from .services.automatic_modifications import execute_automatic_modification
 from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.booking import consume_revalidated_quote
 from .services.modifications import ModificationService
+from .services.stay_policy import stay_policy_for
 from .signing import (
     quote_id_from_reference,
     quote_reference,
@@ -81,6 +82,9 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
         "property": quote.property,
         "cover_image": cover_image,
         "guest_form": form,
+        # Shared by every path that renders the review page, so the terms the
+        # guest accepts are the ones shown directly above the checkbox.
+        "stay_policy": stay_policy_for(quote.property),
         "quote_reference": quote_reference(quote),
         "quote_is_usable": (
             quote.status == BookingQuote.Status.ACTIVE

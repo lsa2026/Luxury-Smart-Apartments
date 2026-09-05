@@ -99,6 +99,7 @@
         <div class="property-content">
             <section class="content-section" aria-labelledby="about-property-title"><p class="eyebrow">{% trans "The property" %}</p><h2 id="about-property-title">{% trans "About this stay" %}</h2>{% with description=property|localized_property_description %}{% if description %}<div class="rich-copy">{{ description|linebreaks }}</div>{% else %}<p>{% trans "A detailed description is being prepared." %}</p>{% endif %}{% endwith %}</section>
             <section class="content-section" aria-labelledby="amenities-title"><p class="eyebrow">{% trans "Included" %}</p><h2 id="amenities-title">{% trans "Amenities" %}</h2>{% if visible_amenities %}<ul class="amenity-list">{% for link in visible_amenities %}{% with amenity_name=link.amenity|localized_amenity %}{% if amenity_name %}<li><span aria-hidden="true">✓</span> {{ amenity_name }}</li>{% endif %}{% endwith %}{% endfor %}</ul>{% else %}<div class="empty-state"><h3>{% trans "Amenities are being reviewed" %}</h3><p>{% trans "Please contact us if you need a specific amenity." %}</p></div>{% endif %}</section>
+            {% include "properties/_stay_policy.html" %}
             {% if property_faq_items %}
             <section class="content-section" aria-labelledby="property-faq-title">
                 <p class="eyebrow">{% trans "Good to know" %}</p>
@@ -135,6 +136,12 @@
                 {% else %}
                 <p class="eyebrow">{% trans "Live check" %}</p>
                 <h2>{% trans "Plan your stay" %}</h2>
+                {% if property.indicative_nightly_from %}
+                <p class="booking-sidebar__anchor">
+                    <strong>{% blocktrans with amount=property.indicative_nightly_from|localized_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
+                    <small>{% trans "Final price depends on your dates" %}</small>
+                </p>
+                {% endif %}
                 <p>{% trans "Enter your dates to receive a temporary live price." %}</p>
                 {% include "reservations/_availability_form.html" %}
                 <div class="booking-sidebar__trust"><span aria-hidden="true">✓</span>{% trans "Live price checks" %}</div>

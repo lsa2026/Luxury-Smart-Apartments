@@ -461,6 +461,27 @@ def test_success_reconciles_once() -> None:
 
 
 @override_settings(
+    HOSTAWAY_LIVE_MODIFICATION_ENABLED=True,
+    HOSTAWAY_LIVE_EXTENSION_ENABLED=True,
+)
+def test_extension_accepts_nullable_mandatory_flag_from_live_price_quote() -> None:
+    reservation = confirmed_reservation()
+    modification = ready_extension(reservation)
+    components = modification.quote_snapshot["operational_components"]
+    components[0]["is_mandatory"] = None
+    modification.save(update_fields=["quote_snapshot", "updated_at"])
+    client = WriteClientStub(snapshot=updated_snapshot(modification))
+
+    outcome = HostawayModificationService(client=client).execute(modification)
+
+    reservation.refresh_from_db()
+    assert outcome.code == "completed"
+    assert outcome.request.status == BookingModificationRequest.Status.COMPLETED
+    assert reservation.check_out == modification.new_check_out
+    assert client.calls == 1
+
+
+@override_settings(
     BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=True,
     HOSTAWAY_LIVE_MODIFICATION_ENABLED=True,
     HOSTAWAY_LIVE_EXTENSION_ENABLED=True,
@@ -470,6 +491,9 @@ def test_paid_difference_executes_automatically_in_hostaway() -> None:
     reservation = confirmed_reservation()
     modification = create_extension(reservation).request
     assert modification is not None
+    # Mirrors the live Hostaway priceDetails response for baseRate.
+    modification.quote_snapshot["operational_components"][0]["is_mandatory"] = None
+    modification.save(update_fields=["quote_snapshot", "updated_at"])
     PaymentAttempt.objects.create(
         booking_intent=reservation.booking_intent,
         modification_request=modification,
@@ -490,6 +514,24 @@ def test_paid_difference_executes_automatically_in_hostaway() -> None:
     assert outcome.request.status == BookingModificationRequest.Status.COMPLETED
     assert reservation.check_out == modification.new_check_out
     assert client.calls == 1
+
+
+@override_settings(HYPERPAY_ENABLED=True)
+def test_extension_page_shows_new_total_difference_and_payment_action() -> None:
+    client, reservation = owned_web_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+
+    response = client.get(
+        f"/reservations/modifications/{modification.public_reference}/"
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert response.context["modification"].price_difference == Decimal("150.0000")
+    assert "السعر الجديد" in content
+    assert "فرق السعر" in content
+    assert "دفع فرق السعر بأمان" in content
 
 
 @override_settings(

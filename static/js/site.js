@@ -1475,3 +1475,85 @@ document.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
         }
     });
 });
+
+// Third-party hero imagery is outside our control. When one fails the parent
+// keeps a branded gradient instead of a broken-image glyph, and the alt text
+// still reaches assistive technology through the parent's label.
+document.querySelectorAll("[data-image-fallback] img").forEach((image) => {
+    const markUnavailable = () => image.classList.add("is-unavailable");
+    if (image.complete && image.naturalWidth === 0) {
+        markUnavailable();
+        return;
+    }
+    image.addEventListener("error", markUnavailable, { once: true });
+});
+
+// Billing region: Saudi Arabia has a closed list of thirteen, every other
+// country a free-text field. Both are in the DOM so the form still works
+// without JavaScript; this only hides the one that does not apply.
+document.querySelectorAll("form").forEach((form) => {
+    const country = form.querySelector("[data-country-select]");
+    const saudiGroup = form.querySelector('[data-region-group="SA"]');
+    const otherGroup = form.querySelector('[data-region-group="other"]');
+    if (!country || !saudiGroup || !otherGroup) {
+        return;
+    }
+
+    function applyCountry() {
+        const isSaudi = country.value === "SA";
+        saudiGroup.hidden = !isSaudi;
+        otherGroup.hidden = isSaudi;
+    }
+
+    country.addEventListener("change", applyCountry);
+    applyCountry();
+});
+
+// Draft autosave for the guest details step. Kept in sessionStorage so a guest
+// who steps back, or reloads after a validation error, does not retype the
+// address. Nothing is written to the server, and the draft is dropped as soon
+// as the form is submitted.
+document.querySelectorAll("[data-draft-form]").forEach((form) => {
+    const key = `lsa-draft:${form.dataset.draftForm}`;
+    const fields = Array.from(
+        form.querySelectorAll("input[name], select[name], textarea[name]")
+    ).filter((field) => !["hidden", "password", "checkbox", "radio"].includes(field.type));
+
+    function read() {
+        try {
+            return JSON.parse(window.sessionStorage.getItem(key) || "{}");
+        } catch {
+            return {};
+        }
+    }
+
+    const saved = read();
+    fields.forEach((field) => {
+        if (!field.value && typeof saved[field.name] === "string") {
+            field.value = saved[field.name];
+            field.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    });
+
+    form.addEventListener("input", () => {
+        const draft = {};
+        fields.forEach((field) => {
+            if (field.value) {
+                draft[field.name] = field.value;
+            }
+        });
+        try {
+            window.sessionStorage.setItem(key, JSON.stringify(draft));
+        } catch {
+            // A full or disabled store simply means no draft is kept.
+        }
+    });
+
+    form.addEventListener("submit", () => {
+        try {
+            window.sessionStorage.removeItem(key);
+        } catch {
+            // Nothing to clean up when storage is unavailable.
+        }
+    });
+});

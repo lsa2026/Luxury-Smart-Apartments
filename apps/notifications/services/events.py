@@ -213,6 +213,7 @@ def handle_booking_intent_created(intent_id: object) -> None:
 
 
 def handle_modification_created(modification_id: object) -> None:
+    """Record the internal event without emailing an unconfirmed customer request."""
     from apps.reservations.models import BookingModificationRequest
 
     try:
@@ -225,7 +226,7 @@ def handle_modification_created(modification_id: object) -> None:
         event_name = (
             "cancellation_request.created" if is_cancellation else "modification_request.created"
         )
-        notification = dispatch_event(
+        dispatch_event(
             event_name,
             event_key=f"modification:{modification.public_reference}",
             related_object_type="BookingModificationRequest",
@@ -234,28 +235,6 @@ def handle_modification_created(modification_id: object) -> None:
                 f"/admin/reservations/bookingmodificationrequest/{modification.pk}/change/"
             ),
         )
-        intent = modification.reservation.booking_intent
-        if (
-            notification is not None
-            and intent is not None
-            and settings.MODIFICATION_NOTIFICATION_EMAIL_ENABLED
-        ):
-            message_types = {
-                BookingModificationRequest.RequestType.EXTEND_STAY: "extension_received",
-                BookingModificationRequest.RequestType.CHANGE_DATES: "date_change_received",
-                BookingModificationRequest.RequestType.CHANGE_GUESTS: "guest_change_received",
-                BookingModificationRequest.RequestType.CANCEL_RESERVATION: (
-                    "cancellation_received"
-                ),
-            }
-            queue_email(
-                message_type=message_types[modification.request_type],
-                recipient=intent.guest_email,
-                recipient_source="modification",
-                recipient_reference=modification.public_reference,
-                language=intent.language,
-                idempotency_key=f"modification-created:{modification.public_reference}",
-            )
     except (DatabaseError, KeyError, ValueError) as exc:
         logger.error("Modification event failed code=%s", type(exc).__name__)
 

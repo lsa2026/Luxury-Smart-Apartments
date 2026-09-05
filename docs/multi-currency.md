@@ -2,9 +2,10 @@
 
 The booking platform has three deliberately separate monetary concepts:
 
-- **Source price:** the current amount and explicit currency returned by Hostaway
-  `priceDetails` v2. The application never derives this currency from a city,
-  country, property, or cached listing currency.
+- **Source price:** the current amount returned by Hostaway `priceDetails` v2,
+  paired with its explicit currency when present or the current
+  `Listing.currencyCode` for the exact same listing ID. The application never
+  derives currency from city, country, geography, listing name, or category.
 - **Payment price:** the server-calculated amount in SAR. HyperPay receives this
   amount and `currency=SAR` only.
 - **Display price:** a presentation-only conversion in SAR, MAD, USD, or EUR.
@@ -35,13 +36,38 @@ Connection and read timeouts are independent settings.
 
 One rate table serves every amount on a page. A fresh table is cached for
 `FX_RATE_CACHE_TTL_SECONDS` (one hour by default) and the same validated table
-is retained as Last Known Good. A provider timeout, HTTP error, invalid JSON, or
-malformed table falls back to LKG. Without a valid rate, foreign conversion
-fails safely; no code substitutes a rate of one. A pure SAR quote remains
-available through the mathematically exact identity path.
+is retained as Last Known Good. LKG fallback is accepted only while its
+`fetched_at` age is within `FX_LKG_MAX_AGE_SECONDS` (48 hours by default); an
+older LKG remains available for audit but is rejected for new conversions. A
+provider timeout, HTTP error, invalid JSON, or malformed table falls back to a
+valid in-age LKG. Without a valid rate, foreign conversion fails safely; no
+code substitutes a rate of one. A pure SAR quote remains available through the
+mathematically exact identity path.
+
+Cold-cache refreshes use a shared cache lock with a short expiry. One process
+fetches the provider table while peers briefly recheck the fresh cache. The
+owner releases only its own lock token, and a crashed owner cannot leave a
+permanent lock because Redis expires it after `FX_REFRESH_LOCK_TTL_SECONDS`.
 
 Production should set `CACHE_URL` to the shared Redis cache already used by the
 project so web workers share fresh and LKG rates.
+
+## Hostaway currency contract and freshness
+
+`resolve_hostaway_price_currency()` is the sole precedence boundary. An
+explicit supported `priceDetails` currency wins; otherwise the supported
+`Listing.currencyCode` is the authoritative fallback. When both are present
+they must match. A mismatch logs `HOSTAWAY_CURRENCY_CONFLICT` and fails closed.
+Missing, unsupported, malformed, or differently bound listing metadata also
+fails closed, before any financial quote or HyperPay checkout exists.
+
+The existing `GET /listings/{listingId}` client path is reused. Only the
+sanitized listing ID and currency code are cached, for 300 seconds by default,
+to avoid another listing call for every browsed price. Any operation using
+`bypass_cache=True`—including quote creation, expired-quote replacement, final
+checkout revalidation, and modification payment revalidation—also bypasses
+that metadata cache. Thus the final amount and currency are fetched afresh and
+bound to the same listing before the FX snapshot is locked.
 
 ## Immutable checkout snapshot
 
@@ -80,6 +106,9 @@ FX_PROVIDER_NAME=open.er-api.com
 FX_BASE_CURRENCY=SAR
 FX_SUPPORTED_CURRENCIES=SAR,MAD,EUR,USD
 FX_RATE_CACHE_TTL_SECONDS=3600
+FX_LKG_MAX_AGE_SECONDS=172800
+FX_REFRESH_LOCK_TTL_SECONDS=15
+FX_REFRESH_LOCK_WAIT_SECONDS=10
 FX_REQUEST_CONNECT_TIMEOUT=3
 FX_REQUEST_READ_TIMEOUT=5
 ```

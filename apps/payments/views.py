@@ -1,7 +1,10 @@
 """Owned payment pages for HyperPay TEST and the local development sandbox."""
 
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib import messages
+from django.core import signing
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -52,6 +55,35 @@ def _cover_image(property_obj: object) -> object:
     )
 
 
+def _hyperpay_return_token(attempt: PaymentAttempt) -> str:
+    return signing.dumps(
+        {
+            "payment_id": str(attempt.pk),
+            "checkout_id": attempt.provider_checkout_id,
+        },
+        salt="payments.hyperpay-return.v1",
+        compress=True,
+    )
+
+
+def _valid_hyperpay_return_token(request: HttpRequest, attempt: PaymentAttempt) -> bool:
+    token = request.GET.get("return_token", "")
+    if not token:
+        return False
+    try:
+        payload = signing.loads(
+            token,
+            salt="payments.hyperpay-return.v1",
+            max_age=settings.HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS,
+        )
+    except signing.BadSignature:
+        return False
+    return payload == {
+        "payment_id": str(attempt.pk),
+        "checkout_id": attempt.provider_checkout_id,
+    }
+
+
 def _render_hyperpay_checkout(
     request: HttpRequest,
     *,
@@ -61,9 +93,8 @@ def _render_hyperpay_checkout(
 ) -> HttpResponse:
     """Render public widget identifiers for an already-created checkout."""
 
-    result_url = request.build_absolute_uri(
-        reverse("payments:hyperpay_result", args=[attempt.pk])
-    )
+    result_url = request.build_absolute_uri(reverse("payments:hyperpay_result", args=[attempt.pk]))
+    result_url = f"{result_url}?{urlencode({'return_token': _hyperpay_return_token(attempt)})}"
     property_obj = modification.reservation.property if modification else intent.property
     response = render(
         request,
@@ -271,7 +302,10 @@ class HyperPayResultView(View):
             pk=payment_id,
             provider="hyperpay",
         )
-        if not _owns_intent(request, attempt.booking_intent):
+        if not (
+            _owns_intent(request, attempt.booking_intent)
+            or _valid_hyperpay_return_token(request, attempt)
+        ):
             raise Http404
         resource_path = request.GET.get("resourcePath", "")
         expected_path = f"/v1/checkouts/{attempt.provider_checkout_id}/payment"

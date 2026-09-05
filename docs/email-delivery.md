@@ -11,6 +11,7 @@
 EMAIL_DELIVERY_ENABLED=True
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 DEFAULT_FROM_EMAIL=Luxury Smart Apartments <bookings@your-domain.example>
+EMAIL_REPLY_TO=care@your-domain.example
 SUPPORT_EMAIL=care@your-domain.example
 EMAIL_HOST=smtp.your-provider.example
 EMAIL_PORT=587
@@ -49,12 +50,12 @@ EMAIL_CONTACT_PHONE=+966500000000
 
 - إنشاء طلب حجز مبدئي.
 - تأكيد الحجز بعد استلام رقم Hostaway.
-- استلام طلب تمديد أو تغيير تواريخ أو ضيوف أو إلغاء.
 - نجاح التعديل النهائي بعد مطابقته مع Hostaway.
 - نجاح الإلغاء النهائي بعد مطابقته مع Hostaway.
 
-رسالة استلام طلب التعديل لا تدّعي أن الحجز تغير. رسالة النجاح النهائية لا تُنشأ
-إلا بعد وصول الحالة المتطابقة من Hostaway، سواء عبر التنفيذ المباشر أو Webhook.
+إنشاء طلب التعديل يسجل إشعارًا داخليًا للإدارة فقط ولا يرسل رسالة استلام للعميل.
+رسالة النجاح النهائية لا تُنشأ إلا بعد وصول الحالة المتطابقة من Hostaway، سواء عبر
+التنفيذ المباشر أو Webhook.
 
 ## استئناف مرحلة البريد
 
@@ -81,8 +82,10 @@ EMAIL_CONTACT_PHONE=+966500000000
 ### التفعيل
 
 اضبطي متغيرات `EMAIL_*` على الخادم ثم `EMAIL_DELIVERY_ENABLED=True`.
-`DEFAULT_FROM_EMAIL` يجب أن يطابق `EMAIL_HOST_USER`، وإلا أعاد المزوّد كتابة المُرسِل
-وكسر محاذاة DMARC.
+يمكن أن يكون `DEFAULT_FROM_EMAIL` اسمًا مستعارًا موثّقًا للحساب الموجود في
+`EMAIL_HOST_USER`، بشرط أن يكون مضافًا إلى الحساب ومصرّحًا له بالإرسال في Gmail.
+اجعل `EMAIL_REPLY_TO` عنوان فريق الدعم الذي يستقبل ردود الضيوف، وتأكد أن نطاق المرسل
+يمر عبر SPF وDKIM وDMARC.
 
 ### بعد التفعيل
 

@@ -23,7 +23,10 @@ from apps.integrations.hostaway.modification_validators import (
     HostawayReservationCancellationRequest,
     HostawayReservationUpdateRequest,
 )
-from apps.integrations.hostaway.reservation_validators import ReservationFinanceField
+from apps.integrations.hostaway.reservation_validators import (
+    ReservationFinanceField,
+    merge_hostaway_payment_status,
+)
 
 from ..models import (
     BookingModificationRequest,
@@ -141,7 +144,10 @@ class HostawayModificationService:
             locked_reservation.total_price = snapshot.total_price
             locked_reservation.currency = snapshot.currency
             locked_reservation.hostaway_status = snapshot.status
-            locked_reservation.payment_status = snapshot.payment_status
+            locked_reservation.payment_status = merge_hostaway_payment_status(
+                locked_reservation.payment_status,
+                snapshot.payment_status,
+            )
             locked_reservation.source_updated_at = snapshot.updated_at
             locked_reservation.last_synced_at = now
             if snapshot.status.casefold() in {"cancelled", "canceled"}:
@@ -297,7 +303,6 @@ def _finance_field(item: object) -> ReservationFinanceField:
         raise ValueError("price_component_invalid") from exc
     required = (
         item.get("is_included_in_total"),
-        item.get("is_mandatory"),
         item.get("is_deleted"),
     )
     if any(value is None for value in required):
@@ -313,7 +318,10 @@ def _finance_field(item: object) -> ReservationFinanceField:
         total=total,
         is_included_in_total_price=bool(item["is_included_in_total"]),
         is_overridden_by_user=False,
-        is_mandatory=bool(item["is_mandatory"]),
+        # The price calculator returns null for this documented field on
+        # components such as baseRate. Keep the authoritative value instead of
+        # blocking a paid modification before the Hostaway request is sent.
+        is_mandatory=item.get("is_mandatory"),
         is_deleted=bool(item["is_deleted"]),
     )
 

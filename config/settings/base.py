@@ -109,6 +109,9 @@ FX_SUPPORTED_CURRENCIES = tuple(
 )
 FX_CURRENCY_MINOR_UNITS = {"SAR": 2, "MAD": 2, "EUR": 2, "USD": 2}
 FX_RATE_CACHE_TTL_SECONDS = env.int("FX_RATE_CACHE_TTL_SECONDS", default=3600)
+FX_LKG_MAX_AGE_SECONDS = env.int("FX_LKG_MAX_AGE_SECONDS", default=172800)
+FX_REFRESH_LOCK_TTL_SECONDS = env.int("FX_REFRESH_LOCK_TTL_SECONDS", default=15)
+FX_REFRESH_LOCK_WAIT_SECONDS = env.float("FX_REFRESH_LOCK_WAIT_SECONDS", default=10.0)
 FX_REQUEST_CONNECT_TIMEOUT = env.float("FX_REQUEST_CONNECT_TIMEOUT", default=3.0)
 FX_REQUEST_READ_TIMEOUT = env.float("FX_REQUEST_READ_TIMEOUT", default=5.0)
 FX_PREFERENCE_COOKIE = "lsa_display_currency"
@@ -121,6 +124,11 @@ if (
     or FX_BASE_CURRENCY != "SAR"
     or set(FX_SUPPORTED_CURRENCIES) != {"SAR", "MAD", "EUR", "USD"}
     or FX_RATE_CACHE_TTL_SECONDS <= 0
+    or FX_LKG_MAX_AGE_SECONDS <= FX_RATE_CACHE_TTL_SECONDS
+    or FX_REFRESH_LOCK_TTL_SECONDS <= 0
+    or FX_REFRESH_LOCK_WAIT_SECONDS <= 0
+    or FX_REFRESH_LOCK_TTL_SECONDS
+    <= FX_REQUEST_CONNECT_TIMEOUT + FX_REQUEST_READ_TIMEOUT
     or FX_REQUEST_CONNECT_TIMEOUT <= 0
     or FX_REQUEST_READ_TIMEOUT <= 0
     or not FX_PROVIDER_NAME
@@ -188,6 +196,9 @@ HOSTAWAY_MAX_GET_ATTEMPTS = 3
 # Read by availability browsing only; every binding step bypasses the cache.
 HOSTAWAY_CALENDAR_CACHE_TTL = env.int("HOSTAWAY_CALENDAR_CACHE_TTL", default=60)
 HOSTAWAY_PRICE_CACHE_TTL = env.int("HOSTAWAY_PRICE_CACHE_TTL", default=60)
+HOSTAWAY_LISTING_CURRENCY_CACHE_TTL = env.int(
+    "HOSTAWAY_LISTING_CURRENCY_CACHE_TTL", default=300
+)
 HOSTAWAY_TOKEN_CACHE_ALIAS = "default"
 HOSTAWAY_TOKEN_CACHE_SAFETY_SECONDS = 300
 HOSTAWAY_REQUIRE_SHARED_TOKEN_CACHE = False
@@ -281,6 +292,9 @@ HYPERPAY_PAYMENT_TYPE = env("HYPERPAY_PAYMENT_TYPE", default="DB").strip().upper
 HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED = strict_bool(
     "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED",
     True,
+)
+HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
+    "HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS", default=86400
 )
 HYPERPAY_CONNECT_TIMEOUT = 5.0
 HYPERPAY_READ_TIMEOUT = 20.0
@@ -380,6 +394,10 @@ HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES = optional_positive_int(
     "HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES",
     1,
 )
+HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES = optional_positive_int(
+    "HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES",
+    1,
+)
 BOOKING_EXPIRATION_INTERVAL_MINUTES = optional_positive_int(
     "BOOKING_EXPIRATION_INTERVAL_MINUTES",
     5,
@@ -421,6 +439,12 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
             "task": "apps.integrations.tasks.sync_hostaway_properties_task",
             "schedule": HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES * 60,
         },
+        # Display-only anchor; daily is enough because the live quote decides
+        # every real price. Runs before the working day in Riyadh.
+        "indicative-rates": {
+            "task": "apps.integrations.tasks.refresh_indicative_rates_task",
+            "schedule": crontab(hour=5, minute=30),
+        },
         "hostaway-reviews": {
             "task": "apps.integrations.tasks.sync_hostaway_reviews_task",
             "schedule": HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES * 60,
@@ -428,6 +452,10 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
         "hostaway-webhooks": {
             "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
             "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
+        },
+        "hostaway-paid-booking-reconciliation": {
+            "task": "apps.integrations.tasks.reconcile_paid_hostaway_reservations_task",
+            "schedule": HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES * 60,
         },
         "expire-booking-objects": {
             "task": "apps.integrations.tasks.expire_booking_objects_task",
@@ -445,6 +473,7 @@ EMAIL_BACKEND = env(
     default="django.core.mail.backends.console.EmailBackend",
 ).strip()
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="").strip()
+EMAIL_REPLY_TO = env("EMAIL_REPLY_TO", default="").strip()
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", default="").strip()
 OPERATIONS_EMAIL = env("OPERATIONS_EMAIL", default="").strip()
 EMAIL_HOST = env("EMAIL_HOST", default="").strip()

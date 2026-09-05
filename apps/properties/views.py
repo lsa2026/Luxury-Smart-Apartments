@@ -8,6 +8,7 @@ from django.views.generic import DetailView, ListView
 from apps.core.models import FAQItem
 from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
+from apps.reservations.services.stay_policy import stay_policy_for
 from apps.reviews.models import Review
 from apps.reviews.summary import rating_summary
 
@@ -170,6 +171,7 @@ class PropertyDetailView(DetailView):
                 "property_reviews": property_obj._public_reviews,
                 "availability_form": AvailabilitySearchForm(property_obj=property_obj),
                 "preserved_search": preserved_search,
+                "stay_policy": stay_policy_for(property_obj),
                 # One figure for the page and its structured data alike.
                 "rating_summary": rating_summary(property_obj),
                 "property_faq_items": FAQItem.objects.filter(

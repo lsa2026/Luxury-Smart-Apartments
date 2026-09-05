@@ -150,6 +150,13 @@ def test_the_reset_pages_are_reachable() -> None:
     assert client.get("/account/reset/done/").status_code == 200
 
 
+def test_login_page_links_to_password_reset() -> None:
+    response = Client().get("/login/")
+
+    assert response.status_code == 200
+    assert 'href="/account/reset/"' in response.content.decode()
+
+
 # --- template coverage ------------------------------------------------------
 
 

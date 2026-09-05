@@ -4,11 +4,15 @@ import logging
 import secrets
 from collections.abc import Iterator
 from contextlib import contextmanager
+from io import StringIO
 from typing import Any
 
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.db.models import Q
 
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.property_services import sync_properties
@@ -113,3 +117,118 @@ def expire_booking_objects_task() -> dict[str, Any]:
         "intents": result.intents,
         "modifications": result.modifications,
     }
+
+
+@shared_task(
+    name="apps.integrations.tasks.reconcile_paid_hostaway_reservations_task",
+    soft_time_limit=9 * 60,
+    time_limit=10 * 60,
+)
+def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int | str]:
+    """Recover verified payments that have not yet reached Hostaway.
+
+    Missing Listing Map IDs are first learned from Hostaway's own reservation
+    records. The booking service then supplies the existing row-level locking
+    and operation ledger, so overlapping result-page requests or task runs can
+    never issue a second reservation POST.
+    """
+    if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
+        return {"status": "disabled", "processed": 0, "confirmed": 0}
+    safe_limit = max(1, min(int(limit), 100))
+    with distributed_task_lock("paid-hostaway-reservations", timeout=10 * 60) as acquired:
+        if not acquired:
+            return {"status": "already_running", "processed": 0, "confirmed": 0}
+
+        backfill_status = "completed"
+        try:
+            # The command is deliberately PII-free and only accepts an ID when
+            # every sampled reservation for the listing agrees on it.
+            call_command(
+                "backfill_hostaway_listing_map_ids",
+                sample=100,
+                stdout=StringIO(),
+                stderr=StringIO(),
+            )
+        except CommandError as exc:
+            backfill_status = "failed"
+            logger.warning(
+                "Hostaway Listing Map ID recovery failed: code=%s",
+                type(exc).__name__,
+            )
+
+        from apps.reservations.models import HostawayReservationOperation, Reservation
+        from apps.reservations.services.hostaway_booking import HostawayBookingService
+
+        reservations = list(
+            Reservation.objects.filter(
+                Q(normalized_status=Reservation.Status.READY_FOR_HOSTAWAY)
+                | Q(
+                    normalized_status=Reservation.Status.CREATE_FAILED,
+                    hostaway_operations__operation_type=(
+                        HostawayReservationOperation.OperationType.CREATE_RESERVATION
+                    ),
+                    hostaway_operations__status=(
+                        HostawayReservationOperation.Status.BLOCKED
+                    ),
+                    hostaway_operations__attempt_count=0,
+                ),
+                payment_status="paid",
+                hostaway_reservation_id__isnull=True,
+                booking_intent__isnull=False,
+            )
+            .distinct()
+            .select_related("booking_intent", "property")
+            .order_by("created_at")[:safe_limit]
+        )
+        confirmed = 0
+        deferred = 0
+        failed = 0
+        with HostawayBookingService() as service:
+            for reservation in reservations:
+                try:
+                    outcome = service.create_hostaway_reservation(reservation)
+                except Exception:  # pragma: no cover - defensive task boundary
+                    failed += 1
+                    logger.exception(
+                        "Paid Hostaway reservation recovery crashed: reservation_ref=%s",
+                        reservation.public_reference[:8],
+                    )
+                    continue
+                if outcome.code in {"confirmed", "already_confirmed"}:
+                    confirmed += 1
+                else:
+                    deferred += 1
+                    logger.warning(
+                        "Paid Hostaway reservation recovery deferred: "
+                        "reservation_ref=%s code=%s",
+                        reservation.public_reference[:8],
+                        outcome.code,
+                    )
+        return {
+            "status": "completed" if failed == 0 else "partially_completed",
+            "backfill": backfill_status,
+            "processed": len(reservations),
+            "confirmed": confirmed,
+            "deferred": deferred,
+            "failed": failed,
+        }
+
+
+@shared_task(
+    name="apps.integrations.tasks.refresh_indicative_rates_task",
+    soft_time_limit=9 * 60,
+    time_limit=10 * 60,
+)
+def refresh_indicative_rates_task() -> dict[str, str]:
+    """Refresh the display-only "from" price on every active property.
+
+    Daily is deliberate: the figure only has to orient a first-time visitor, and
+    the live quote remains the authority for any real booking.
+    """
+    from django.core.management import call_command
+
+    with distributed_task_lock("indicative-rates") as acquired:
+        if not acquired:
+            return {"status": "already_running"}
+        call_command("refresh_indicative_rates")
+    return {"status": "completed"}

@@ -4,11 +4,12 @@ import logging
 import time
 from collections.abc import Callable, Sequence
 from datetime import date
-from typing import Any
+from typing import Any, Protocol
 from urllib.parse import urlparse
 
 import httpx
 from django.conf import settings
+from django.core.cache import cache as default_cache
 
 from .availability_validators import (
     CalendarDocument,
@@ -52,6 +53,12 @@ from .validators import validate_reviews_page
 logger = logging.getLogger(__name__)
 
 
+class CacheBackend(Protocol):
+    def get(self, key: str, default: Any = None) -> Any: ...
+
+    def set(self, key: str, value: Any, timeout: int | None = None) -> None: ...
+
+
 class HostawayClient:
     """Authenticated, retry-bounded Hostaway API client."""
 
@@ -65,6 +72,7 @@ class HostawayClient:
         sleeper: Callable[[float], None] = time.sleep,
         max_get_attempts: int | None = None,
         timeout: float | None = None,
+        cache_backend: CacheBackend | None = None,
     ) -> None:
         self.base_url = (base_url if base_url is not None else settings.HOSTAWAY_BASE_URL).rstrip(
             "/"
@@ -75,6 +83,7 @@ class HostawayClient:
         )
         self._owns_client = client is None
         self._owns_token_provider = token_provider is None
+        self.cache = cache_backend or default_cache
 
         if urlparse(self.base_url).scheme.lower() != "https":
             raise HostawayConfigurationError("Hostaway base URL must use HTTPS.")
@@ -244,6 +253,32 @@ class HostawayClient:
         )
         return inspect_object_response(payload)
 
+    def get_listing_currency_record(
+        self,
+        listing_id: int,
+        *,
+        bypass_cache: bool = False,
+    ) -> dict[str, Any]:
+        """Return only same-listing currency metadata, cached without the raw listing."""
+        if isinstance(listing_id, bool) or not isinstance(listing_id, int) or listing_id <= 0:
+            raise ValueError("listing_id must be positive.")
+        cache_key = f"hostaway:listing-currency:v1:{listing_id}"
+        if not bypass_cache:
+            cached = self.cache.get(cache_key)
+            if isinstance(cached, dict):
+                return cached
+        listing = self.get_listing(listing_id, include_resources=False)
+        record = {
+            "id": listing.get("id") if isinstance(listing, dict) else None,
+            "currencyCode": listing.get("currencyCode") if isinstance(listing, dict) else None,
+        }
+        self.cache.set(
+            cache_key,
+            record,
+            timeout=settings.HOSTAWAY_LISTING_CURRENCY_CACHE_TTL,
+        )
+        return record
+
     def get_amenities(self) -> list[dict[str, Any]]:
         """Fetch the documented global Hostaway amenity definitions."""
         return list(self.get_amenities_page().records)
@@ -284,6 +319,7 @@ class HostawayClient:
         check_in: date,
         check_out: date,
         guests: int,
+        bypass_currency_cache: bool = False,
     ) -> PriceQuote:
         """Calculate a price with priceDetails v2; this never creates a reservation."""
         self._validate_stay_range(
@@ -302,12 +338,17 @@ class HostawayClient:
                 "version": 2,
             },
         )
+        listing_currency_record = self.get_listing_currency_record(
+            listing_id,
+            bypass_cache=bypass_currency_cache,
+        )
         return validate_price_response(
             payload,
             listing_id=listing_id,
             check_in=check_in,
             check_out=check_out,
             guests=guests,
+            listing_response=listing_currency_record,
         )
 
     def create_reservation_with_price_details(

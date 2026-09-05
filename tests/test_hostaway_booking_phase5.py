@@ -2,7 +2,7 @@ from dataclasses import replace
 from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import httpx
 import pytest
@@ -26,6 +26,7 @@ from apps.integrations.hostaway.reservation_validators import (
     ReservationFinanceField,
     normalize_hostaway_reservation_status,
 )
+from apps.integrations.tasks import reconcile_paid_hostaway_reservations_task
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingIntent,
@@ -100,6 +101,94 @@ def successful_payment(intent: BookingIntent) -> PaymentAttempt:
         status=PaymentAttempt.Status.SUCCEEDED,
         idempotency_key="phase5-payment-key-00000000000",
     )
+
+
+@override_settings(HOSTAWAY_LIVE_BOOKING_ENABLED=True)
+def test_recovery_task_replays_a_verified_paid_booking() -> None:
+    intent = make_intent()
+    reservation = prepare_local_reservation(intent)
+    successful_payment(intent)
+    reservation.normalized_status = Reservation.Status.READY_FOR_HOSTAWAY
+    reservation.payment_status = "paid"
+    reservation.save(update_fields=["normalized_status", "payment_status", "updated_at"])
+    service = Mock()
+    service.create_hostaway_reservation.return_value = Mock(code="confirmed")
+    manager = Mock()
+    manager.__enter__ = Mock(return_value=service)
+    manager.__exit__ = Mock(return_value=None)
+
+    with (
+        patch("apps.integrations.tasks.call_command"),
+        patch(
+            "apps.reservations.services.hostaway_booking.HostawayBookingService",
+            return_value=manager,
+        ),
+    ):
+        result = reconcile_paid_hostaway_reservations_task.run()
+
+    service.create_hostaway_reservation.assert_called_once_with(reservation)
+    assert result["processed"] == 1
+    assert result["confirmed"] == 1
+
+
+@override_settings(HOSTAWAY_LIVE_BOOKING_ENABLED=True)
+def test_recovery_task_replays_pre_post_failure_but_not_a_sent_failure() -> None:
+    replay_intent = make_intent()
+    replay = prepare_local_reservation(replay_intent)
+    successful_payment(replay_intent)
+    replay.normalized_status = Reservation.Status.CREATE_FAILED
+    replay.payment_status = "paid"
+    replay.save(update_fields=["normalized_status", "payment_status", "updated_at"])
+    HostawayReservationOperation.objects.create(
+        reservation=replay,
+        operation_type=HostawayReservationOperation.OperationType.CREATE_RESERVATION,
+        idempotency_key="phase5-replay-blocked-operation",
+        request_fingerprint="a" * 64,
+        status=HostawayReservationOperation.Status.BLOCKED,
+        attempt_count=0,
+        error_code="price_component_flags_missing",
+    )
+
+    no_replay_intent = make_intent(property_obj=replay.property)
+    no_replay = prepare_local_reservation(no_replay_intent)
+    PaymentAttempt.objects.create(
+        booking_intent=no_replay_intent,
+        provider="synthetic",
+        amount=no_replay_intent.total_price,
+        currency=no_replay_intent.currency,
+        status=PaymentAttempt.Status.SUCCEEDED,
+        idempotency_key="phase5-no-replay-payment-key",
+    )
+    no_replay.normalized_status = Reservation.Status.CREATE_FAILED
+    no_replay.payment_status = "paid"
+    no_replay.save(update_fields=["normalized_status", "payment_status", "updated_at"])
+    HostawayReservationOperation.objects.create(
+        reservation=no_replay,
+        operation_type=HostawayReservationOperation.OperationType.CREATE_RESERVATION,
+        idempotency_key="phase5-no-replay-failed-operation",
+        request_fingerprint="b" * 64,
+        status=HostawayReservationOperation.Status.FAILED,
+        attempt_count=1,
+        error_code="hostaway_create_rejected",
+    )
+
+    service = Mock()
+    service.create_hostaway_reservation.return_value = Mock(code="confirmed")
+    manager = Mock()
+    manager.__enter__ = Mock(return_value=service)
+    manager.__exit__ = Mock(return_value=None)
+    with (
+        patch("apps.integrations.tasks.call_command"),
+        patch(
+            "apps.reservations.services.hostaway_booking.HostawayBookingService",
+            return_value=manager,
+        ),
+    ):
+        result = reconcile_paid_hostaway_reservations_task.run()
+
+    service.create_hostaway_reservation.assert_called_once_with(replay)
+    assert result["processed"] == 1
+    assert result["confirmed"] == 1
 
 
 class AvailabilityStub:
@@ -301,6 +390,55 @@ def test_payload_is_documented_allowlist_and_uses_map_id() -> None:
     assert payload["financeField"][0]["isMandatory"] == 1
 
 
+@override_settings(HOSTAWAY_DIRECT_CHANNEL_ID=2000)
+def test_payload_preserves_null_is_mandatory_from_hostaway_quote() -> None:
+    intent = make_intent(listing_map_id=9001)
+    reservation = prepare_local_reservation(intent)
+    availability = complete_availability(intent)
+    assert availability.quote is not None
+    component = replace(availability.quote.components[0], is_mandatory=None)
+
+    request = build_hostaway_reservation_request(
+        reservation,
+        current_quote=replace(availability.quote, components=(component,)),
+    )
+
+    assert request.to_payload()["financeField"][0]["isMandatory"] is None
+
+
+@override_settings(
+    HOSTAWAY_LIVE_BOOKING_ENABLED=True,
+    HOSTAWAY_DIRECT_CHANNEL_ID=2000,
+)
+def test_repeated_pre_post_blocker_updates_operation_error() -> None:
+    intent = make_intent(listing_map_id=None)
+    reservation = prepare_local_reservation(intent)
+    successful_payment(intent)
+    service = HostawayBookingService(
+        client=CreateClientStub(),
+        availability_service=AvailabilityStub(complete_availability(intent)),
+    )
+    first = service.create_hostaway_reservation(reservation)
+    assert first.operation is not None
+    assert first.operation.error_code == "listing_map_id_not_verified"
+
+    reservation.property.hostaway_listing_map_id = 9001
+    reservation.property.save(update_fields=["hostaway_listing_map_id"])
+    missing_total = complete_availability(intent)
+    assert missing_total.quote is not None
+    component = replace(missing_total.quote.components[0], total=None)
+    service.availability_service = AvailabilityStub(
+        replace(missing_total, quote=replace(missing_total.quote, components=(component,)))
+    )
+    second = service.create_hostaway_reservation(reservation)
+
+    assert second.code == "price_component_total_missing"
+    assert second.operation is not None
+    assert second.operation.pk == first.operation.pk
+    assert second.operation.error_code == "price_component_total_missing"
+    assert second.operation.attempt_count == 0
+
+
 @pytest.mark.parametrize(
     ("total", "currency", "code"),
     [
@@ -376,6 +514,31 @@ def test_success_confirms_once_and_network_is_outside_transaction() -> None:
     assert first.reservation.normalized_status == Reservation.Status.CONFIRMED
     assert intent.status == BookingIntent.Status.COMPLETED
     assert HostawayReservationOperation.objects.count() == 1
+
+
+@override_settings(
+    HOSTAWAY_LIVE_BOOKING_ENABLED=True,
+    HOSTAWAY_DIRECT_CHANNEL_ID=2000,
+)
+def test_hostaway_unknown_does_not_downgrade_verified_local_payment() -> None:
+    intent = make_intent()
+    reservation = prepare_local_reservation(intent)
+    successful_payment(intent)
+    reservation.payment_status = "paid"
+    reservation.save(update_fields=["payment_status", "updated_at"])
+    result = create_result(reservation)
+    result = replace(
+        result,
+        snapshot=replace(result.snapshot, payment_status="Unknown"),
+    )
+
+    outcome = HostawayBookingService(
+        client=CreateClientStub(result),
+        availability_service=AvailabilityStub(complete_availability(intent)),
+    ).create_hostaway_reservation(reservation)
+
+    assert outcome.code == "confirmed"
+    assert outcome.reservation.payment_status == "paid"
 
 
 @override_settings(
