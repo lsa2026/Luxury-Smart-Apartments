@@ -639,6 +639,18 @@ def localized_money(value: object, currency: object) -> str:
             number,
         )
 
+    currency_label = _currency_label(currency_code, language)
+    if currency_label == currency_code:
+        return format_html(
+            '<bdi class="money money--{}" dir="ltr">'
+            '<span class="money__amount">{}</span>'
+            '<span class="money__currency">{}</span>'
+            "</bdi>",
+            language,
+            number,
+            currency_label,
+        )
+
     return format_html(
         '<bdi class="money money--{}" dir="ltr">'
         '<span class="money__amount">{}</span>'
@@ -647,7 +659,7 @@ def localized_money(value: object, currency: object) -> str:
         language,
         number,
         currency_code,
-        _currency_label(currency_code, language),
+        currency_label,
     )
 
 

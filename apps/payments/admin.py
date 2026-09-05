@@ -94,9 +94,7 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
 
     @admin.display(description=_("Booking request"))
     def booking_display(self, obj: PaymentAttempt) -> str:
-        url = reverse(
-            "admin:reservations_bookingintent_change", args=(obj.booking_intent_id,)
-        )
+        url = reverse("admin:reservations_bookingintent_change", args=(obj.booking_intent_id,))
         return format_html(
             '<a href="{}" dir="ltr">{}</a>',
             url,

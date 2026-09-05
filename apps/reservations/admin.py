@@ -319,8 +319,7 @@ class BookingIntentAdmin(ModelAdmin):
             return "—"
         snapshot = obj.exchange_rate_snapshot
         return format_html(
-            '<span class="lsa-admin-money" dir="ltr">{} SAR</span><br>'
-            '<small>{} · {}</small>',
+            '<span class="lsa-admin-money" dir="ltr">{} SAR</span><br><small>{} · {}</small>',
             f"{obj.payment_amount_sar:,.2f}",
             snapshot.get("provider", "—"),
             snapshot.get("rate_timestamp", "—"),
@@ -591,13 +590,9 @@ class ReservationAdmin(ModelAdmin):
 
     @admin.display(description=_("Manage the booking"))
     def management_display(self, obj: Reservation) -> str:
-        modifications_url = reverse(
-            "admin:reservations_bookingmodificationrequest_changelist"
-        )
+        modifications_url = reverse("admin:reservations_bookingmodificationrequest_changelist")
         modifications_url = f"{modifications_url}?reservation__id__exact={obj.pk}"
-        operations_url = reverse(
-            "admin:reservations_hostawayreservationoperation_changelist"
-        )
+        operations_url = reverse("admin:reservations_hostawayreservationoperation_changelist")
         operations_url = f"{operations_url}?reservation__id__exact={obj.pk}"
         return format_html(
             '<div class="lsa-admin-action-hub">'
@@ -728,8 +723,7 @@ class HostawayReservationOperationAdmin(ModelAdmin):
         )
         self.message_user(
             request,
-            _("Marked %(count)d operation(s) for review without resending.")
-            % {"count": count},
+            _("Marked %(count)d operation(s) for review without resending.") % {"count": count},
         )
 
 
@@ -826,8 +820,7 @@ class BookingModificationRequestAdmin(ModelAdmin):
         )
         self.message_user(
             request,
-            _("Approved %(count)d request(s) locally without sending.")
-            % {"count": count},
+            _("Approved %(count)d request(s) locally without sending.") % {"count": count},
         )
 
     @admin.action(description=_("Reject the request locally"))
@@ -925,8 +918,7 @@ class HostawayModificationOperationAdmin(ModelAdmin):
         )
         self.message_user(
             request,
-            _("Marked %(count)d operation(s) for review without resending.")
-            % {"count": count},
+            _("Marked %(count)d operation(s) for review without resending.") % {"count": count},
         )
 
 

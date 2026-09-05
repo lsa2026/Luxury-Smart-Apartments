@@ -183,9 +183,7 @@ def test_checkout_creation_persists_unique_traceable_identifiers() -> None:
     assert client.payload["amount"] == "1250.00"
 
 
-@override_settings(
-    **(HYPERPAY_SETTINGS | {"HOSTAWAY_LIVE_BOOKING_ENABLED": True})
-)
+@override_settings(**(HYPERPAY_SETTINGS | {"HOSTAWAY_LIVE_BOOKING_ENABLED": True}))
 def test_checkout_refuses_to_charge_without_verified_listing_map_id() -> None:
     intent = payable_intent()
     intent.property.hostaway_listing_map_id = None
@@ -199,9 +197,7 @@ def test_checkout_refuses_to_charge_without_verified_listing_map_id() -> None:
     assert PaymentAttempt.objects.count() == 0
 
 
-@override_settings(
-    **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
-)
+@override_settings(**(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True}))
 def test_checkout_revalidates_live_inventory_immediately_before_payment() -> None:
     intent = payable_intent()
     availability = AvailabilityStub(complete_availability(intent))
@@ -211,9 +207,7 @@ def test_checkout_revalidates_live_inventory_immediately_before_payment() -> Non
     assert client.checkout_calls == 1
 
 
-@override_settings(
-    **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
-)
+@override_settings(**(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True}))
 def test_unavailable_inventory_blocks_checkout_before_hyperpay() -> None:
     intent = payable_intent()
     unavailable = replace(
@@ -232,9 +226,7 @@ def test_unavailable_inventory_blocks_checkout_before_hyperpay() -> None:
     assert PaymentAttempt.objects.count() == 0
 
 
-@override_settings(
-    **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
-)
+@override_settings(**(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True}))
 def test_price_change_blocks_checkout_before_hyperpay() -> None:
     intent = payable_intent()
     changed = complete_availability(intent, total=Decimal("1300"))
@@ -249,9 +241,7 @@ def test_price_change_blocks_checkout_before_hyperpay() -> None:
     assert client.checkout_calls == 0
 
 
-@override_settings(
-    **(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True})
-)
+@override_settings(**(HYPERPAY_SETTINGS | {"HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True}))
 def test_wrong_listing_binding_blocks_checkout_before_hyperpay() -> None:
     intent = payable_intent()
     current = complete_availability(intent)
@@ -498,9 +488,7 @@ def test_automatic_approval_without_live_extension_is_refused() -> None:
     assert {error.id for error in errors} >= {"payments.E108"}
 
 
-@override_settings(
-    **{**PRODUCTION_AUTOMATION, "BOOKING_AUTOMATIC_CANCELLATION_ENABLED": True}
-)
+@override_settings(**{**PRODUCTION_AUTOMATION, "BOOKING_AUTOMATIC_CANCELLATION_ENABLED": True})
 def test_automatic_cancellation_without_live_cancellation_is_refused() -> None:
     errors = hyperpay_configuration_check()
 

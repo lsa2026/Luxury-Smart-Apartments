@@ -244,9 +244,7 @@ def handle_refund_due(obligation_id: object) -> None:
     from apps.reservations.models import RefundObligation
 
     obligation = (
-        RefundObligation.objects.filter(pk=obligation_id)
-        .select_related("reservation")
-        .first()
+        RefundObligation.objects.filter(pk=obligation_id).select_related("reservation").first()
     )
     if obligation is None:
         return
@@ -266,9 +264,7 @@ def handle_reservation_confirmed(reservation_id: object) -> None:
     from apps.reservations.models import Reservation
 
     try:
-        reservation = Reservation.objects.select_related("booking_intent").get(
-            pk=reservation_id
-        )
+        reservation = Reservation.objects.select_related("booking_intent").get(pk=reservation_id)
         intent = reservation.booking_intent
         if (
             intent is None
@@ -304,8 +300,7 @@ def handle_modification_completed(modification_id: object) -> None:
         ):
             return
         is_cancellation = (
-            modification.request_type
-            == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+            modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION
         )
         queue_email(
             message_type=("reservation_cancelled" if is_cancellation else "reservation_modified"),

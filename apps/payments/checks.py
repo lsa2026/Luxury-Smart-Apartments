@@ -27,14 +27,11 @@ def hyperpay_configuration_check(
         errors.append(Error("HyperPay requires SAR/DB in this phase.", id="payments.E103"))
     if not settings.HYPERPAY_ENTITY_ID or not settings.HYPERPAY_ACCESS_TOKEN:
         errors.append(Error("HyperPay credentials are missing.", id="payments.E104"))
-    if (
-        settings.HYPERPAY_ENVIRONMENT == "test"
-        and (
-            settings.HOSTAWAY_LIVE_BOOKING_ENABLED
-            or settings.HOSTAWAY_LIVE_MODIFICATION_ENABLED
-            or settings.HOSTAWAY_LIVE_EXTENSION_ENABLED
-            or settings.HOSTAWAY_LIVE_CANCELLATION_ENABLED
-        )
+    if settings.HYPERPAY_ENVIRONMENT == "test" and (
+        settings.HOSTAWAY_LIVE_BOOKING_ENABLED
+        or settings.HOSTAWAY_LIVE_MODIFICATION_ENABLED
+        or settings.HOSTAWAY_LIVE_EXTENSION_ENABLED
+        or settings.HOSTAWAY_LIVE_CANCELLATION_ENABLED
     ):
         errors.append(
             Error(
@@ -52,10 +49,7 @@ def hyperpay_configuration_check(
                 id="payments.E106",
             )
         )
-    if (
-        settings.HYPERPAY_ENVIRONMENT == "production"
-        and not settings.HOSTAWAY_LIVE_BOOKING_ENABLED
-    ):
+    if settings.HYPERPAY_ENVIRONMENT == "production" and not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
         errors.append(
             Error(
                 "Production payment requires automatic live Hostaway booking writes.",
@@ -63,8 +57,7 @@ def hyperpay_configuration_check(
             )
         )
     if settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL and not (
-        settings.HOSTAWAY_LIVE_MODIFICATION_ENABLED
-        and settings.HOSTAWAY_LIVE_EXTENSION_ENABLED
+        settings.HOSTAWAY_LIVE_MODIFICATION_ENABLED and settings.HOSTAWAY_LIVE_EXTENSION_ENABLED
     ):
         errors.append(
             Error(

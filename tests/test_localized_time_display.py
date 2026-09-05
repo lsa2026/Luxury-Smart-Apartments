@@ -13,7 +13,7 @@ import pytest
 from django.conf import settings
 from django.test import Client
 from django.urls import reverse
-from django.utils import timezone, translation
+from django.utils import translation
 
 from apps.core.templatetags.presentation import (
     localized_date,
@@ -122,9 +122,7 @@ def test_content_entrance_animations_do_not_hide_their_element_at_rest(
     the animation actually runs. The resting state must be the visible one."""
     css = _stylesheet()
 
-    declaration = next(
-        line for line in css.splitlines() if f"animation: {animation} " in line
-    )
+    declaration = next(line for line in css.splitlines() if f"animation: {animation} " in line)
     assert "both" not in declaration, declaration
     assert "forwards" in declaration, declaration
 

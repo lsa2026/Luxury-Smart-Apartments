@@ -201,10 +201,7 @@ class HyperPayBookingCheckoutView(View):
         except HyperPayError:
             messages.error(
                 request,
-                _(
-                    "Secure payment could not be started. Nothing was charged; "
-                    "please try again."
-                ),
+                _("Secure payment could not be started. Nothing was charged; please try again."),
             )
             return redirect(
                 "reservations:intent_detail",

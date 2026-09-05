@@ -59,8 +59,6 @@ def test_clear_is_reachable_on_a_property_page_too() -> None:
         is_visible=True,
     )
 
-    dialog = calendar_dialog(
-        Client().get(property_obj.get_absolute_url()).content.decode()
-    )
+    dialog = calendar_dialog(Client().get(property_obj.get_absolute_url()).content.decode())
 
     assert "data-calendar-clear" in dialog

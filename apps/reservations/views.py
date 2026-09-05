@@ -753,9 +753,7 @@ MODIFICATION_REFUSAL_MESSAGES = {
     "maximum_stay_exceeded": _(
         "The stay would be longer than the maximum nights this property allows."
     ),
-    "same_day_change_not_allowed": _(
-        "This property does not accept a stay that starts today."
-    ),
+    "same_day_change_not_allowed": _("This property does not accept a stay that starts today."),
     "arrival_lead_time_not_met": _(
         "This change is too close to the arrival time to be requested online."
     ),

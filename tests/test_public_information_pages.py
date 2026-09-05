@@ -10,10 +10,13 @@ pytestmark = pytest.mark.django_db
 
 
 def test_reference_contact_details_and_public_pages_are_seeded() -> None:
-    assert SitePage.objects.filter(
-        slug__in=("about", "contact", "terms", "privacy", "cancellation"),
-        is_published=True,
-    ).count() == 5
+    assert (
+        SitePage.objects.filter(
+            slug__in=("about", "contact", "terms", "privacy", "cancellation"),
+            is_published=True,
+        ).count()
+        == 5
+    )
 
     setting = SiteSetting.objects.get()
     assert setting.brand_name_ar == "Luxury Smart Apartments"
@@ -61,9 +64,7 @@ def test_structured_text_escapes_editor_input() -> None:
 def test_page_content_has_grouped_admin_controls() -> None:
     model_admin = SitePageAdmin(SitePage, admin.site)
     flattened_fields = {
-        field
-        for _, options in model_admin.fieldsets
-        for field in options["fields"]
+        field for _, options in model_admin.fieldsets for field in options["fields"]
     }
     assert {
         "body_ar",

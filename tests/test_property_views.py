@@ -147,9 +147,9 @@ def test_home_page_falls_back_to_stock_for_a_city_without_a_nominated_photo() ->
 @pytest.mark.parametrize(
     ("is_city_hero", "is_visible", "property_visible"),
     [
-        (False, True, True),   # not nominated
-        (True, False, True),   # nominated but hidden
-        (True, True, False),   # nominated on an unpublished property
+        (False, True, True),  # not nominated
+        (True, False, True),  # nominated but hidden
+        (True, True, False),  # nominated on an unpublished property
     ],
 )
 def test_only_a_public_nominated_photo_reaches_the_home_page(
