@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.utils.html import strip_tags
 
+from apps.core.templatetags.presentation import localized_money_text
 from apps.notifications.models import EmailDelivery
 from apps.reservations.security import mask_email
 
@@ -679,15 +680,25 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             "old_check_in": modification.old_check_in.strftime("%d/%m/%Y"),
             "old_check_out": modification.old_check_out.strftime("%d/%m/%Y"),
             "old_guests": modification.old_guests,
-            "old_total": _format_money(modification.old_total),
+            "old_total": _format_money(
+                modification.old_total,
+                modification.currency,
+                language,
+            ),
             "new_total": _format_money(
                 modification.new_total
                 if modification.new_total is not None
-                else modification.reservation.total_price
+                else modification.reservation.total_price,
+                modification.currency,
+                language,
             ),
-            "amount_paid": _format_money(paid_amount) if paid_amount is not None else "",
+            "amount_paid": (
+                _format_money(paid_amount, modification.currency, language)
+                if paid_amount is not None
+                else ""
+            ),
             "refund_amount": (
-                _format_money(modification.refund_amount)
+                _format_money(modification.refund_amount, modification.currency, language)
                 if is_completed_modification and modification.refund_amount > 0
                 else ""
             ),
@@ -728,9 +739,9 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
     raise EmailProviderError("unsupported_recipient_source", permanent=True)
 
 
-def _format_money(value: Decimal) -> str:
+def _format_money(value: Decimal, currency: str, language: str) -> str:
     """Render supported booking currencies with stable, human-readable precision."""
-    return f"{value.quantize(Decimal('0.01')):,.2f}"
+    return localized_money_text(value, currency, language=language)
 
 
 def _localized_property_name(property_obj: object, language: str) -> str:

@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.templatetags.presentation import localized_money
 from apps.notifications.services.audit import record_audit
 
 from .models import (
@@ -282,11 +283,7 @@ class BookingIntentAdmin(ModelAdmin):
 
     @admin.display(description=_("Booking value"), ordering="total_price")
     def amount_list(self, obj: BookingIntent) -> str:
-        return format_html(
-            '<span class="lsa-admin-money" dir="ltr">{} {}</span>',
-            f"{obj.total_price:,.2f}",
-            obj.currency,
-        )
+        return localized_money(obj.total_price, obj.currency)
 
     @admin.display(description=_("Booking reference"))
     def reference_display(self, obj: BookingIntent) -> str:
@@ -319,9 +316,8 @@ class BookingIntentAdmin(ModelAdmin):
             return "—"
         snapshot = obj.exchange_rate_snapshot
         return format_html(
-            '<span class="lsa-admin-money" dir="ltr">{} SAR</span><br>'
-            '<small>{} · {}</small>',
-            f"{obj.payment_amount_sar:,.2f}",
+            "{}<br><small>{} · {}</small>",
+            localized_money(obj.payment_amount_sar, "SAR"),
             snapshot.get("provider", "—"),
             snapshot.get("rate_timestamp", "—"),
         )
@@ -535,11 +531,7 @@ class ReservationAdmin(ModelAdmin):
 
     @admin.display(description=_("Booking value"), ordering="total_price")
     def booking_value(self, obj: Reservation) -> str:
-        return format_html(
-            '<span class="lsa-admin-money" dir="ltr">{} {}</span>',
-            f"{obj.total_price:,.2f}",
-            obj.currency,
-        )
+        return localized_money(obj.total_price, obj.currency)
 
     @admin.display(description=_("Hostaway status"), ordering="hostaway_status")
     def hostaway_state(self, obj: Reservation) -> object:
@@ -573,11 +565,7 @@ class ReservationAdmin(ModelAdmin):
 
     @admin.display(description=_("Booking value"))
     def amount_display(self, obj: Reservation) -> str:
-        return format_html(
-            '<strong dir="ltr">{} {}</strong>',
-            f"{obj.total_price:,.2f}",
-            obj.currency,
-        )
+        return format_html("<strong>{}</strong>", localized_money(obj.total_price, obj.currency))
 
     @admin.display(description=_("Booking source"))
     def source_display(self, obj: Reservation) -> str:

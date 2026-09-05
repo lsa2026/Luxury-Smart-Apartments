@@ -12,6 +12,7 @@ from apps.notifications.services.email import (
     EmailMessageRequest,
     send_queued_email,
 )
+from apps.core.templatetags.presentation import localized_money_text
 from apps.notifications.services.events import (
     handle_modification_completed,
     handle_modification_created,
@@ -260,10 +261,21 @@ def test_completed_paid_extension_email_contains_verified_before_and_after_detai
     assert modification.old_check_in.strftime("%d/%m/%Y") in html
     assert modification.old_check_out.strftime("%d/%m/%Y") in html
     assert modification.new_check_out.strftime("%d/%m/%Y") in html
-    assert f"{modification.old_total:,.2f}" in html
-    assert f"{modification.new_total:,.2f}" in html
-    assert f"{modification.price_difference:,.2f}" in html
-    assert modification.currency in html
+    assert localized_money_text(
+        modification.old_total,
+        modification.currency,
+        language=language,
+    ) in html
+    assert localized_money_text(
+        modification.new_total,
+        modification.currency,
+        language=language,
+    ) in html
+    assert localized_money_text(
+        modification.price_difference,
+        modification.currency,
+        language=language,
+    ) in html
     assert reservation.public_reference in html
     assert modification.public_reference in html
     assert payment_label in text

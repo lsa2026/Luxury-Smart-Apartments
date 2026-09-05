@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.templatetags.presentation import localized_money
 from .models import PaymentAttempt
 
 
@@ -86,11 +87,7 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
 
     @admin.display(description=_("Amount"), ordering="amount")
     def amount_list(self, obj: PaymentAttempt) -> str:
-        return format_html(
-            '<span class="lsa-admin-money" dir="ltr">{} {}</span>',
-            f"{obj.amount:,.2f}",
-            obj.currency,
-        )
+        return localized_money(obj.amount, obj.currency)
 
     @admin.display(description=_("Booking request"))
     def booking_display(self, obj: PaymentAttempt) -> str:

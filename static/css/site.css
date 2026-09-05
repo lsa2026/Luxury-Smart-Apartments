@@ -1171,7 +1171,7 @@ h2 {
 .money {
     display: inline-flex;
     align-items: baseline;
-    gap: 0.38em;
+    gap: 0;
     max-width: 100%;
     white-space: nowrap;
     unicode-bidi: isolate;
@@ -1180,6 +1180,11 @@ h2 {
 
 .money__amount {
     letter-spacing: -0.02em;
+}
+
+.money__separator {
+    flex: 0 0 0.42em;
+    width: 0.42em;
 }
 
 .money__currency {

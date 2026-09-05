@@ -2,6 +2,7 @@ import pytest
 from django.urls import reverse
 
 from apps.core.models import ContactMessage
+from apps.core.templatetags.presentation import localized_money_text
 from apps.payments.models import PaymentAttempt
 from tests.test_booking_modifications_phase6 import confirmed_reservation
 
@@ -178,7 +179,15 @@ def test_payment_list_hides_provider_noise_and_formats_money(client, django_user
     assert response.status_code == 200
     assert "synthetic-provider-reference" not in body
     assert "synthetic-merchant-reference" not in body
-    assert f"{reservation.total_price:,.2f}" in body
+    expected_money = localized_money_text(
+        reservation.total_price,
+        reservation.currency,
+        language="ar",
+    )
+    assert expected_money.split("\u00a0") == ["٥٠٠٫٢٥", "ر.س"]
+    assert "٥٠٠٫٢٥" in body
+    assert "ر.س" in body
+    assert "money__separator" in body
 
 
 @pytest.mark.django_db

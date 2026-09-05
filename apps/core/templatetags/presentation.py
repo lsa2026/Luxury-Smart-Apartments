@@ -633,9 +633,12 @@ def _localized_money_number(amount: Decimal, language: str, precision: int) -> s
     return number
 
 
-@register.filter
-def localized_money(value: object, currency: object) -> str:
-    """Render a price with locale-aware separators and ISO-4217 precision."""
+def _localized_money_parts(
+    value: object,
+    currency: object,
+    *,
+    language: str | None = None,
+) -> tuple[str, str, str, str] | None:
     currency_code = str(currency or "").strip().upper()
     if len(currency_code) != 3 or not currency_code.isascii() or not currency_code.isalpha():
         currency_code = ""
@@ -645,16 +648,51 @@ def localized_money(value: object, currency: object) -> str:
         amount = Decimal(str(value))
         if not amount.is_finite():
             raise InvalidOperation
-        quantum = Decimal(1).scaleb(-precision)
-        amount = amount.quantize(quantum, rounding=ROUND_HALF_UP)
+        amount = amount.quantize(Decimal(1).scaleb(-precision), rounding=ROUND_HALF_UP)
     except (InvalidOperation, TypeError, ValueError):
+        return None
+
+    active_language = (language or _language()).split("-")[0].lower()
+    number = _localized_money_number(amount, active_language, precision)
+    return active_language, currency_code, number, _currency_label(currency_code, active_language)
+
+
+def localized_money_text(
+    value: object,
+    currency: object,
+    *,
+    language: str | None = None,
+) -> str:
+    """Return a copyable, locale-aware monetary value for text-only surfaces.
+
+    The non-breaking space keeps an amount and its currency together in emails,
+    exports, and narrow cards.  It also makes the decimal separator unambiguous:
+    Arabic uses ``٫`` (not a comma), French uses ``,`` and English uses ``.``.
+    """
+    parts = _localized_money_parts(value, currency, language=language)
+    if parts is None:
+        return "—"
+
+    active_language, currency_code, number, currency_label = parts
+    if not currency_code:
+        return number
+    separator = "\u00a0"
+    if active_language == "en":
+        return f"{currency_label}{separator}{number}"
+    return f"{number}{separator}{currency_label}"
+
+
+@register.filter
+def localized_money(value: object, currency: object) -> str:
+    """Render a price with locale-aware separators and ISO-4217 precision."""
+    parts = _localized_money_parts(value, currency)
+    if parts is None:
         return format_html(
             '<bdi class="money money--unavailable" dir="ltr">{}</bdi>',
             "—",
         )
 
-    language = _language()
-    number = _localized_money_number(amount, language, precision)
+    language, currency_code, number, currency_label = parts
     if not currency_code:
         return format_html(
             '<bdi class="money money--{}" dir="ltr"><span class="money__amount">{}</span></bdi>',
@@ -666,21 +704,25 @@ def localized_money(value: object, currency: object) -> str:
         return format_html(
             '<bdi class="money money--en" dir="ltr">'
             '<span class="money__currency">{}</span>'
+            '<span class="money__separator">{}</span>'
             '<span class="money__amount">{}</span>'
             "</bdi>",
-            _currency_label(currency_code, language),
+            currency_label,
+            "\u00a0",
             number,
         )
 
     return format_html(
         '<bdi class="money money--{}" dir="ltr">'
         '<span class="money__amount">{}</span>'
+        '<span class="money__separator">{}</span>'
         '<span class="money__currency" aria-label="{}">{}</span>'
         "</bdi>",
         language,
         number,
+        "\u00a0",
         currency_code,
-        _currency_label(currency_code, language),
+        currency_label,
     )
 
 

@@ -10,7 +10,11 @@ from django.utils import timezone, translation
 from django.utils.html import strip_tags
 
 from apps.core.models import FAQItem
-from apps.core.templatetags.presentation import localized_amenity, localized_money
+from apps.core.templatetags.presentation import (
+    localized_amenity,
+    localized_money,
+    localized_money_text,
+)
 from apps.properties.amenity_translations import AMENITY_COPY, copy_for
 from apps.properties.models import Amenity, Property
 from apps.reviews.models import Review
@@ -230,10 +234,10 @@ def test_no_rating_is_published_without_reviews() -> None:
 @pytest.mark.parametrize(
     ("amount", "expected"),
     [
-        ("0", "٠٫٠٠ر.س"),
-        ("999.5", "٩٩٩٫٥٠ر.س"),
-        ("1525", "١٬٥٢٥٫٠٠ر.س"),
-        ("1234567.89", "١٬٢٣٤٬٥٦٧٫٨٩ر.س"),
+        ("0", "٠٫٠٠\u00a0ر.س"),
+        ("999.5", "٩٩٩٫٥٠\u00a0ر.س"),
+        ("1525", "١٬٥٢٥٫٠٠\u00a0ر.س"),
+        ("1234567.89", "١٬٢٣٤٬٥٦٧٫٨٩\u00a0ر.س"),
     ],
 )
 def test_arabic_money_uses_arabic_numerals_separators_and_symbol(
@@ -246,7 +250,34 @@ def test_arabic_money_uses_arabic_numerals_separators_and_symbol(
 
 def test_english_keeps_the_iso_code() -> None:
     with translation.override("en"):
-        assert strip_tags(localized_money("1525", "SAR")) == "SAR1,525.00"
+        assert strip_tags(localized_money("1525", "SAR")) == "SAR\u00a01,525.00"
+
+
+@pytest.mark.parametrize(
+    ("language", "currency", "expected"),
+    [
+        ("ar", "SAR", "٥٬٢٣٥٫٣٠\u00a0ر.س"),
+        ("ar", "MAD", "٥٬٢٣٥٫٣٠\u00a0د.م"),
+        ("ar", "USD", "٥٬٢٣٥٫٣٠\u00a0$"),
+        ("ar", "EUR", "٥٬٢٣٥٫٣٠\u00a0€"),
+        ("en", "SAR", "SAR\u00a05,235.30"),
+        ("en", "MAD", "MAD\u00a05,235.30"),
+        ("en", "USD", "USD\u00a05,235.30"),
+        ("en", "EUR", "EUR\u00a05,235.30"),
+        ("fr", "SAR", "5\u202f235,30\u00a0SAR"),
+        ("fr", "MAD", "5\u202f235,30\u00a0MAD"),
+        ("fr", "USD", "5\u202f235,30\u00a0USD"),
+        ("fr", "EUR", "5\u202f235,30\u00a0EUR"),
+    ],
+)
+def test_money_text_is_unambiguous_for_each_display_currency_and_language(
+    language: str,
+    currency: str,
+    expected: str,
+) -> None:
+    with translation.override(language):
+        assert localized_money_text("5235.3", currency) == expected
+        assert strip_tags(localized_money("5235.3", currency)) == expected
 
 
 def test_an_unmapped_currency_keeps_its_iso_code_in_arabic() -> None:
