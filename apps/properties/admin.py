@@ -31,6 +31,7 @@ def _demote_other_city_heroes(image: PropertyImage) -> None:
         is_city_hero=True,
     ).exclude(pk=image.pk).update(is_city_hero=False)
 
+
 PROPERTY_SOURCE_FIELDS = (
     "hostaway_listing_id",
     "hostaway_listing_map_id",
@@ -297,7 +298,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "description_en",
                     "city_en",
                     "house_rules_en",
-                )
+                ),
             },
         ),
         (
@@ -310,7 +311,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "description_fr",
                     "city_fr",
                     "house_rules_fr",
-                )
+                ),
             },
         ),
         (
@@ -338,9 +339,7 @@ class PropertyAdmin(admin.ModelAdmin):
             _("Images and amenities"),
             {
                 "fields": ("asset_management",),
-                "description": _(
-                    "Manage large image and amenity collections on focused screens."
-                ),
+                "description": _("Manage large image and amenity collections on focused screens."),
             },
         ),
         (
@@ -353,9 +352,13 @@ class PropertyAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Property]:
-        return super().get_queryset(request).annotate(
-            _image_count=models.Count("images", distinct=True),
-            _amenity_count=models.Count("property_amenities", distinct=True),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _image_count=models.Count("images", distinct=True),
+                _amenity_count=models.Count("property_amenities", distinct=True),
+            )
         )
 
     @admin.display(description=_("Media and amenities management"))
@@ -517,8 +520,7 @@ class PropertyAdmin(admin.ModelAdmin):
             sync_hostaway_properties_task.delay(listing_id=listing_id)
         self.message_user(
             request,
-            _("Added %(count)d property to the sync queue.")
-            % {"count": len(listing_ids)},
+            _("Added %(count)d property to the sync queue.") % {"count": len(listing_ids)},
         )
 
     def save_formset(

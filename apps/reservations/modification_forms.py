@@ -58,9 +58,7 @@ class DateChangeRequestForm(ReasonMixin):
     new_guests = forms.IntegerField(
         label=_("Number of guests"),
         min_value=1,
-        widget=forms.NumberInput(
-            attrs={"inputmode": "numeric", "data-guest-stepper-input": ""}
-        ),
+        widget=forms.NumberInput(attrs={"inputmode": "numeric", "data-guest-stepper-input": ""}),
     )
 
     def clean(self) -> dict[str, object]:
@@ -76,9 +74,7 @@ class GuestChangeRequestForm(ReasonMixin):
     new_guests = forms.IntegerField(
         label=_("New number of guests"),
         min_value=1,
-        widget=forms.NumberInput(
-            attrs={"inputmode": "numeric", "data-guest-stepper-input": ""}
-        ),
+        widget=forms.NumberInput(attrs={"inputmode": "numeric", "data-guest-stepper-input": ""}),
     )
 
 

@@ -92,8 +92,7 @@ class BookingQuote(models.Model):
                 name="booking_quote_total_nonnegative",
             ),
             models.CheckConstraint(
-                condition=Q(payment_amount_sar__isnull=True)
-                | Q(payment_amount_sar__gte=0),
+                condition=Q(payment_amount_sar__isnull=True) | Q(payment_amount_sar__gte=0),
                 name="booking_quote_payment_sar_nonnegative",
             ),
             models.CheckConstraint(
@@ -241,8 +240,7 @@ class BookingIntent(models.Model):
                 name="booking_intent_total_nonnegative",
             ),
             models.CheckConstraint(
-                condition=Q(payment_amount_sar__isnull=True)
-                | Q(payment_amount_sar__gte=0),
+                condition=Q(payment_amount_sar__isnull=True) | Q(payment_amount_sar__gte=0),
                 name="booking_intent_payment_sar_nonnegative",
             ),
             models.CheckConstraint(
@@ -627,8 +625,7 @@ class BookingModificationRequest(models.Model):
                 name="modification_new_total_nonnegative",
             ),
             models.CheckConstraint(
-                condition=Q(payment_amount_sar__isnull=True)
-                | Q(payment_amount_sar__gte=0),
+                condition=Q(payment_amount_sar__isnull=True) | Q(payment_amount_sar__gte=0),
                 name="modification_payment_sar_nonnegative",
             ),
         ]

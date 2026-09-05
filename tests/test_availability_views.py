@@ -159,7 +159,7 @@ def test_city_only_search_lists_available_properties_without_creating_quote(
     assert "الوحدات المتاحة في الرياض" in content
     assert property_obj.name_ar in content
     assert "اختيار هذه الوحدة" in content
-    assert f'{property_obj.get_absolute_url()}?source=availability&amp;' in content
+    assert f"{property_obj.get_absolute_url()}?source=availability&amp;" in content
     assert "check_in=" in content
     assert "check_out=" in content
     assert "guests=2" in content

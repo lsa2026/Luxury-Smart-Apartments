@@ -24,9 +24,7 @@ class ContactForm(forms.Form):
         label=_("Phone (optional)"),
         max_length=30,
         required=False,
-        widget=forms.TextInput(
-            attrs={"autocomplete": "tel", "inputmode": "tel", "dir": "ltr"}
-        ),
+        widget=forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "dir": "ltr"}),
     )
     subject = forms.CharField(
         label=_("Subject"),

@@ -167,9 +167,7 @@ def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int 
                     hostaway_operations__operation_type=(
                         HostawayReservationOperation.OperationType.CREATE_RESERVATION
                     ),
-                    hostaway_operations__status=(
-                        HostawayReservationOperation.Status.BLOCKED
-                    ),
+                    hostaway_operations__status=(HostawayReservationOperation.Status.BLOCKED),
                     hostaway_operations__attempt_count=0,
                 ),
                 payment_status="paid",
@@ -199,8 +197,7 @@ def reconcile_paid_hostaway_reservations_task(limit: int = 20) -> dict[str, int 
                 else:
                     deferred += 1
                     logger.warning(
-                        "Paid Hostaway reservation recovery deferred: "
-                        "reservation_ref=%s code=%s",
+                        "Paid Hostaway reservation recovery deferred: reservation_ref=%s code=%s",
                         reservation.public_reference[:8],
                         outcome.code,
                     )
