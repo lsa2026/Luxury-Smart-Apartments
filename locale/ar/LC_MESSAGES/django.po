@@ -6328,3 +6328,7 @@ msgstr "تعذر التحقق من السعر مؤقتاً"
 #: templates/reservations/availability_result.html
 msgid "We couldn't verify the price right now. Please try again shortly."
 msgstr "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل."
+
+#: templates/includes/currency_selector.html
+msgid "Display currency"
+msgstr "عملة العرض"

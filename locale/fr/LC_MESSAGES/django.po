@@ -6463,3 +6463,7 @@ msgstr "La vérification du prix est temporairement indisponible"
 #: templates/reservations/availability_result.html
 msgid "We couldn't verify the price right now. Please try again shortly."
 msgstr "Nous n'avons pas pu vérifier le prix pour le moment. Veuillez réessayer dans quelques instants."
+
+#: templates/includes/currency_selector.html
+msgid "Display currency"
+msgstr "Devise d'affichage"

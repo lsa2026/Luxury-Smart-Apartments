@@ -2,9 +2,68 @@
 
 document.documentElement.classList.add("js");
 
-document.querySelectorAll("[data-currency-selector]").forEach((form) => {
-    form.querySelector("[data-currency-select]")?.addEventListener("change", () => {
-        form.requestSubmit();
+const currencyMenus = [...document.querySelectorAll("[data-currency-menu]")];
+
+currencyMenus.forEach((menu) => {
+    const trigger = menu.querySelector("[data-currency-trigger]");
+    const options = [...menu.querySelectorAll("[data-currency-option]")];
+
+    menu.addEventListener("toggle", () => {
+        trigger?.setAttribute("aria-expanded", String(menu.open));
+
+        if (menu.open) {
+            currencyMenus.forEach((otherMenu) => {
+                if (otherMenu !== menu) {
+                    otherMenu.removeAttribute("open");
+                }
+            });
+        }
+    });
+
+    menu.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && menu.open) {
+            event.preventDefault();
+            menu.removeAttribute("open");
+            trigger?.focus();
+            return;
+        }
+
+        const isArrowKey = event.key === "ArrowDown" || event.key === "ArrowUp";
+        const isEdgeKey = event.key === "Home" || event.key === "End";
+
+        if ((!isArrowKey && !isEdgeKey) || options.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+        menu.setAttribute("open", "");
+
+        const activeIndex = options.indexOf(document.activeElement);
+        let nextIndex;
+
+        if (event.key === "Home") {
+            nextIndex = 0;
+        } else if (event.key === "End") {
+            nextIndex = options.length - 1;
+        } else if (activeIndex === -1) {
+            nextIndex = options.findIndex((option) => option.getAttribute("aria-checked") === "true");
+            if (nextIndex === -1) {
+                nextIndex = 0;
+            }
+        } else {
+            const offset = event.key === "ArrowDown" ? 1 : -1;
+            nextIndex = (activeIndex + offset + options.length) % options.length;
+        }
+
+        options[nextIndex].focus();
+    });
+});
+
+document.addEventListener("click", (event) => {
+    currencyMenus.forEach((menu) => {
+        if (menu.open && !menu.contains(event.target)) {
+            menu.removeAttribute("open");
+        }
     });
 });
 

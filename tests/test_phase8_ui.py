@@ -181,6 +181,54 @@ def test_language_switcher_has_all_three_languages() -> None:
 
 
 @pytest.mark.parametrize(
+    ("language", "direction"),
+    (("ar", "rtl"), ("en", "ltr"), ("fr", "ltr")),
+)
+def test_currency_selector_is_custom_accessible_and_bidi_safe(
+    language: str,
+    direction: str,
+) -> None:
+    client = Client()
+    client.post("/i18n/setlang/", {"language": language, "next": "/"})
+
+    content = client.get("/").content.decode()
+
+    assert f'lang="{language}" dir="{direction}"' in content
+    assert content.count("data-currency-menu") == 2
+    assert content.count('class="currency-selector__trigger"\n            role="button"') == 2
+    assert content.count('role="menu"') == 2
+    assert content.count('role="menuitemradio"') == 8
+    assert content.count('name="currency"') == 8
+    assert content.count('value="SAR"') >= 2
+    assert content.count('value="MAD"') >= 2
+    assert content.count('value="USD"') >= 2
+    assert content.count('value="EUR"') >= 2
+    assert content.count('aria-checked="true"') == 2
+    assert content.count('class="currency-selector__identity" dir="ltr"') == 8
+    assert "<select name=\"currency\"" not in content
+
+
+def test_currency_selector_marks_the_persisted_currency_as_current() -> None:
+    client = Client()
+    client.post("/i18n/setlang/", {"language": "en", "next": "/"})
+    selected = client.post(
+        reverse("payments:set_currency"),
+        {"currency": "USD", "next": "/"},
+    )
+
+    assert selected.status_code == 302
+    content = client.get("/").content.decode()
+    selected_option = (
+        'class="currency-selector__option is-selected"\n'
+        '                type="submit"\n'
+        '                name="currency"\n'
+        '                value="USD"'
+    )
+    assert content.count(selected_option) == 2
+    assert content.count('aria-label="Display currency: USD"') == 2
+
+
+@pytest.mark.parametrize(
     ("language", "expected"),
     [
         ("ar", [("", "كل المدن"), ("Riyadh", "الرياض"), ("Marrakesh", "مراكش")]),
