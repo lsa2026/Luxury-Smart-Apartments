@@ -661,10 +661,11 @@ def localized_money(value: object, currency: object) -> str:
     return format_html(
         '<bdi class="money money--{}" dir="ltr">'
         '<span class="money__amount">{}</span>'
-        '<span class="money__currency">{}</span>'
+        '<span class="money__currency" aria-label="{}">{}</span>'
         "</bdi>",
         language,
         number,
+        currency_code,
         _currency_label(currency_code, language),
     )
 

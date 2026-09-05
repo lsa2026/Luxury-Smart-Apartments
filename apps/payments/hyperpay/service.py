@@ -88,7 +88,17 @@ def build_checkout_payload(
     currency: str | None = None,
 ) -> dict[str, str]:
     country = normalize_country_code(intent.billing_country)
-    checkout_amount = intent.payment_amount_sar if amount is None else amount
+    if amount is None:
+        # Real booking intents must use their immutable SAR payment snapshot.
+        # The fallback keeps this low-level payload helper compatible with
+        # lightweight/legacy intent-like objects that predate that field.
+        checkout_amount = (
+            intent.payment_amount_sar
+            if hasattr(intent, "payment_amount_sar")
+            else intent.total_price
+        )
+    else:
+        checkout_amount = amount
     checkout_currency = PAYMENT_CURRENCY if currency is None else currency.upper()
     if checkout_amount is None:
         raise ValueError("payment_snapshot_missing")
