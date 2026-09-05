@@ -267,18 +267,7 @@
                                 {{ guest_form.billing_city }}
                                 {% for error in guest_form.billing_city.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
-                            {% comment %}
-                                Two controls, one value. The script shows the
-                                Saudi list or the free-text field depending on
-                                the chosen country; without JavaScript both stay
-                                visible and either one is accepted.
-                            {% endcomment %}
-                            <div class="form-field guest-journey__field--state{% if guest_form.billing_region_sa.errors %} form-field--error{% endif %}" data-journey-field data-region-group="SA">
-                                <label for="{{ guest_form.billing_region_sa.id_for_label }}">{{ guest_form.billing_region_sa.label }}</label>
-                                {{ guest_form.billing_region_sa }}
-                                {% for error in guest_form.billing_region_sa.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="form-field guest-journey__field--state{% if guest_form.billing_state.errors %} form-field--error{% endif %}" data-journey-field data-region-group="other">
+                            <div class="form-field guest-journey__field--state{% if guest_form.billing_state.errors %} form-field--error{% endif %}" data-journey-field>
                                 <label for="{{ guest_form.billing_state.id_for_label }}">{{ guest_form.billing_state.label }}</label>
                                 {{ guest_form.billing_state }}
                                 {% for error in guest_form.billing_state.errors %}<p class="form-error">{{ error }}</p>{% endfor %}

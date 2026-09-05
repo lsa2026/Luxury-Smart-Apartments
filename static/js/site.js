@@ -1488,27 +1488,6 @@ document.querySelectorAll("[data-image-fallback] img").forEach((image) => {
     image.addEventListener("error", markUnavailable, { once: true });
 });
 
-// Billing region: Saudi Arabia has a closed list of thirteen, every other
-// country a free-text field. Both are in the DOM so the form still works
-// without JavaScript; this only hides the one that does not apply.
-document.querySelectorAll("form").forEach((form) => {
-    const country = form.querySelector("[data-country-select]");
-    const saudiGroup = form.querySelector('[data-region-group="SA"]');
-    const otherGroup = form.querySelector('[data-region-group="other"]');
-    if (!country || !saudiGroup || !otherGroup) {
-        return;
-    }
-
-    function applyCountry() {
-        const isSaudi = country.value === "SA";
-        saudiGroup.hidden = !isSaudi;
-        otherGroup.hidden = isSaudi;
-    }
-
-    country.addEventListener("change", applyCountry);
-    applyCountry();
-});
-
 // Draft autosave for the guest details step. Kept in sessionStorage so a guest
 // who steps back, or reloads after a validation error, does not retype the
 // address. Nothing is written to the server. It remains for this browser tab's

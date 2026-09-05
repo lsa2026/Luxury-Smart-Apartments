@@ -373,6 +373,7 @@ def test_guest_phone_uses_selected_billing_country_not_property_country() -> Non
     )
     assert form.is_valid(), form.errors
     assert form.cleaned_data["guest_phone"] == "+966500000000"
+    assert form.fields["billing_country"].widget.input_type == "select"
     assert form.fields["billing_country"].widget.attrs["data-country-select"] == ""
 
 
