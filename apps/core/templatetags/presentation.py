@@ -119,6 +119,20 @@ def localized_city(property_obj: object) -> str:
 
 @register.filter
 def localized_amenity(amenity: object) -> str:
+    """Render a known Hostaway amenity in the active guest language.
+
+    A sync can legitimately create a new amenity before its translated database
+    fields have been seeded.  The curated map is therefore the safe immediate
+    fallback; it prevents an otherwise Arabic or French property page from
+    flashing an English provider label during that gap.
+    """
+    language = _language()
+    if language in {"ar", "fr"} and not _read(amenity, f"name_{language}"):
+        from apps.properties.amenity_translations import copy_for
+
+        entry = copy_for(str(_read(amenity, "name") or _read(amenity, "name_en")))
+        if entry is not None:
+            return entry.name_ar if language == "ar" else entry.name_fr
     return _localized_value(amenity, "name", source_fields=("name",))
 
 

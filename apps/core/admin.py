@@ -15,6 +15,7 @@ from .models import (
     SitePage,
     SiteSetting,
 )
+from .phone_numbers import InvalidPhoneNumber, normalize_phone_number
 
 admin.site.site_header = "Luxury Smart Apartments"
 admin.site.site_title = _("Platform administration")
@@ -151,6 +152,41 @@ class SiteSettingAdminForm(forms.ModelForm):
             "public_address_en": _("English public address"),
             "public_address_fr": _("French public address"),
         }
+        widgets = {
+            "contact_phone": forms.TextInput(
+                attrs={
+                    "autocomplete": "tel",
+                    "inputmode": "tel",
+                    "dir": "ltr",
+                    "placeholder": "+<country code> <number>",
+                }
+            ),
+            "whatsapp_display_number": forms.TextInput(
+                attrs={
+                    "autocomplete": "tel",
+                    "inputmode": "tel",
+                    "dir": "ltr",
+                    "placeholder": "+<country code> <number>",
+                }
+            ),
+        }
+
+    def _clean_phone_field(self, field_name: str) -> str:
+        value = self.cleaned_data[field_name].strip()
+        if not value:
+            return ""
+        try:
+            return normalize_phone_number(value)
+        except InvalidPhoneNumber:
+            raise forms.ValidationError(
+                _("Enter a valid mobile number, with its country code if it is not a local number.")
+            ) from None
+
+    def clean_contact_phone(self) -> str:
+        return self._clean_phone_field("contact_phone")
+
+    def clean_whatsapp_display_number(self) -> str:
+        return self._clean_phone_field("whatsapp_display_number")
 
 
 @admin.register(SiteSetting)

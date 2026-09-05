@@ -99,6 +99,24 @@ class Property(models.Model):
     city_ar = models.CharField(max_length=120, blank=True)
     city_en = models.CharField(max_length=120, blank=True)
     city_fr = models.CharField(max_length=120, blank=True)
+    public_location_enabled = models.BooleanField(
+        default=False,
+        verbose_name=_("Show the location map"),
+    )
+    public_location_latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name=_("Public map latitude"),
+    )
+    public_location_longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name=_("Public map longitude"),
+    )
     seo_title_ar = models.CharField(max_length=255, blank=True)
     seo_title_en = models.CharField(max_length=255, blank=True)
     seo_title_fr = models.CharField(max_length=255, blank=True)
@@ -176,6 +194,43 @@ class Property(models.Model):
             models.CheckConstraint(
                 condition=Q(longitude__isnull=True) | Q(longitude__gte=-180, longitude__lte=180),
                 name="property_valid_longitude",
+            ),
+            models.CheckConstraint(
+                condition=Q(public_location_latitude__isnull=True)
+                | Q(
+                    public_location_latitude__gte=-90,
+                    public_location_latitude__lte=90,
+                ),
+                name="property_valid_public_latitude",
+            ),
+            models.CheckConstraint(
+                condition=Q(public_location_longitude__isnull=True)
+                | Q(
+                    public_location_longitude__gte=-180,
+                    public_location_longitude__lte=180,
+                ),
+                name="property_valid_public_longitude",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        public_location_latitude__isnull=True,
+                        public_location_longitude__isnull=True,
+                    )
+                    | Q(
+                        public_location_latitude__isnull=False,
+                        public_location_longitude__isnull=False,
+                    )
+                ),
+                name="property_public_location_coordinate_pair",
+            ),
+            models.CheckConstraint(
+                condition=Q(public_location_enabled=False)
+                | Q(
+                    public_location_latitude__isnull=False,
+                    public_location_longitude__isnull=False,
+                ),
+                name="property_enabled_public_location_has_coordinates",
             ),
             models.CheckConstraint(
                 condition=Q(average_review_rating__isnull=True)
@@ -257,7 +312,15 @@ class Property(models.Model):
 
 class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):
     def public(self) -> "PropertyImageQuerySet":
-        return self.filter(is_visible=True).filter(
+        # Hostaway occasionally returns a stale Airbnb CDN asset alongside its
+        # own listing media.  Those URLs can complete without image bytes,
+        # producing a broken tile in the guest gallery.  Keep only the normal
+        # public records and exclude this known non-Hostaway CDN until the next
+        # Hostaway sync deactivates the stale record.
+        return self.filter(is_visible=True).exclude(
+            source=PropertyImage.Source.HOSTAWAY,
+            hostaway_url__icontains=".muscache.com/",
+        ).filter(
             Q(source=PropertyImage.Source.LOCAL)
             | Q(source=PropertyImage.Source.HOSTAWAY, is_active_at_source=True)
         )

@@ -235,6 +235,23 @@ def test_invalid_child_image_does_not_abort_property(
     assert PropertyImage.objects.count() == 1
 
 
+def test_external_marketplace_image_is_skipped_without_aborting_property(
+    listing_payload: dict[str, Any],
+) -> None:
+    listing_payload["listingImages"].append(
+        {
+            "id": 999,
+            "url": "https://a0.muscache.com/im/pictures/stale-image.jpg",
+        }
+    )
+
+    report = sync_one(listing_payload)
+
+    assert report.properties_created == 1
+    assert report.skipped == 1
+    assert PropertyImage.objects.count() == 1
+
+
 def test_only_one_visible_cover_per_property(
     listing_payload: dict[str, Any],
 ) -> None:

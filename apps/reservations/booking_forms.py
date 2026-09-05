@@ -3,53 +3,18 @@
 import re
 import secrets
 
-import phonenumbers
 from django import forms
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES, normalize_country_code
 from apps.payments.regions import SAUDI_COUNTRY_CODE, region_choices
-
-# Used when the guest has not chosen a billing country yet, and as the last
-# reading of a bare national number.
-_FALLBACK_REGION = "SA"
 
 
 def _clean_text(value: str) -> str:
     without_markup = strip_tags(value)
     return "".join(character for character in without_markup if character.isprintable()).strip()
-
-
-def _normalize_phone_number(raw: str, default_country_code: str) -> str:
-    """Return the number in E.164, accepting any country's local format.
-
-    The number is read against several candidate regions in turn. An explicit
-    international prefix is authoritative and needs no region. Otherwise the
-    country the guest selected is tried first, then the site default, so a
-    guest with an overseas billing address and a Saudi mobile is still accepted
-    rather than rejected for the mismatch.
-    """
-    stripped = re.sub(r"[^\d+]", "", _clean_text(raw))
-    if stripped.startswith("00"):
-        stripped = f"+{stripped[2:]}"
-
-    regions: list[str | None] = [None] if stripped.startswith("+") else []
-    for candidate in (default_country_code.upper(), _FALLBACK_REGION):
-        if candidate in ISO_ALPHA2_COUNTRY_CODES and candidate not in regions:
-            regions.append(candidate)
-
-    for region in regions:
-        try:
-            parsed = phonenumbers.parse(stripped, region)
-        except phonenumbers.NumberParseException:
-            continue
-        if phonenumbers.is_valid_number(parsed):
-            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
-
-    raise forms.ValidationError(
-        _("Enter a valid mobile number, with its country code if it is not a local number.")
-    )
 
 
 class GuestDetailsForm(forms.Form):
@@ -82,7 +47,7 @@ class GuestDetailsForm(forms.Form):
                 "autocomplete": "tel",
                 "dir": "ltr",
                 "inputmode": "tel",
-                "placeholder": "+966 50 000 0000",
+                "placeholder": "+<country code> <number>",
             }
         ),
     )
@@ -205,9 +170,18 @@ class GuestDetailsForm(forms.Form):
             country = cleaned.get("billing_country")
             country_code = country if isinstance(country, str) else self.default_country_code
             try:
-                cleaned["guest_phone"] = _normalize_phone_number(phone, country_code)
-            except forms.ValidationError as exc:
-                self.add_error("guest_phone", exc)
+                cleaned["guest_phone"] = normalize_phone_number(
+                    phone,
+                    default_region=country_code,
+                )
+            except InvalidPhoneNumber:
+                self.add_error(
+                    "guest_phone",
+                    _(
+                        "Enter a valid mobile number, with its country code "
+                        "if it is not a local number."
+                    ),
+                )
         return cleaned
 
     def _resolve_region(self, cleaned: dict[str, object]) -> None:

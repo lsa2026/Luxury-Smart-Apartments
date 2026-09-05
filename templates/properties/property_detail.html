@@ -1,11 +1,18 @@
 {% extends "base.html" %}
-{% load i18n presentation %}
+{% load i18n static presentation %}
 {% block title %}{{ property|localized_property_seo_title }} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{{ property|localized_property_meta_description|truncatechars:155 }}{% endblock %}
 {% block og_title %}{{ property|localized_property_seo_title }}{% endblock %}
 {% block twitter_title %}{{ property|localized_property_seo_title }}{% endblock %}
 {% block og_image %}{% if gallery_images %}<meta property="og:image" content="{{ gallery_images.0.display_url }}"><meta property="og:image:width" content="960"><meta property="og:image:height" content="640"><meta name="twitter:image" content="{{ gallery_images.0.display_url }}">{% endif %}{% endblock %}
 {% block structured_data %}{% json_ld property_structured_data csp_nonce %}{% json_ld breadcrumb_structured_data csp_nonce %}{% endblock %}
+{% block extra_head %}
+{% if public_location_map %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}?v=1.9.4">
+<script src="{% static 'vendor/leaflet/leaflet.js' %}?v=1.9.4" defer></script>
+<script src="{% static 'js/property-map.js' %}?v=1" defer></script>
+{% endif %}
+{% endblock %}
 {% block content %}
 <article
     data-analytics-view-item
@@ -107,7 +114,27 @@
                 <div class="faq-list">{% for item in property_faq_items %}<details class="faq-item"><summary>{{ item|localized_faq_question }}</summary><div class="rich-copy">{{ item|localized_faq_answer|linebreaks }}</div></details>{% endfor %}</div>
             </section>
             {% endif %}
-            <section class="content-section location-panel" aria-labelledby="location-title"><p class="eyebrow">{% trans "Location" %}</p><h2 id="location-title">{{ property|localized_city }}</h2><p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p></section>
+            <section class="content-section location-panel" aria-labelledby="location-title">
+                <p class="eyebrow">{% trans "Location" %}</p>
+                <h2 id="location-title">{{ property|localized_city }}</h2>
+                {% if public_location_map %}
+                <p>{% trans "Explore the property's location and nearby area on the interactive map." %}</p>
+                <div
+                    class="property-map"
+                    data-property-map
+                    data-latitude="{{ public_location_map.latitude }}"
+                    data-longitude="{{ public_location_map.longitude }}"
+                    role="region"
+                    aria-label="{% trans 'Interactive map showing the property location' %}"
+                ></div>
+                <a class="button button--outline location-panel__map-link" href="{{ public_location_map.external_url }}" target="_blank" rel="noopener noreferrer">
+                    {% trans "Open in OpenStreetMap" %}
+                    <span aria-hidden="true">↗</span>
+                </a>
+                {% else %}
+                <p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p>
+                {% endif %}
+            </section>
             <section class="content-section property-reviews" aria-labelledby="property-reviews-title"><div class="section-heading section-heading--split"><div><p class="eyebrow">{% trans "Guest experiences" %}</p><h2 id="property-reviews-title">{% trans "Reviews" %}</h2></div><a class="text-link" href="{% url 'reviews:list' %}">{% trans "All reviews" %}</a></div>{% include "reviews/_review_cards.html" with reviews=property_reviews initial_review_count=4 review_batch_size=2 %}</section>
         </div>
         <aside class="booking-sidebar" id="availability">

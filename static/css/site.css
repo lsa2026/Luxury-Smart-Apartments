@@ -6462,6 +6462,48 @@ h2 {
     color: #fff;
 }
 
+.property-map {
+    width: 100%;
+    height: clamp(20rem, 46vw, 30rem);
+    margin-block: 1.25rem 1rem;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 18%);
+    background: #e9e4d8;
+    border-radius: 1rem;
+    box-shadow: 0 18px 45px rgb(0 0 0 / 22%);
+}
+
+.location-panel__map-link {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.55rem;
+    color: #fff;
+    border-color: rgb(255 255 255 / 42%);
+}
+
+.location-panel__map-link:hover,
+.location-panel__map-link:focus-visible {
+    color: #0b0725;
+    background: #fff;
+}
+
+.lsa-map-marker-shell {
+    border: 0;
+    background: transparent;
+}
+
+.lsa-map-marker {
+    display: block;
+    width: 1.8rem;
+    height: 1.8rem;
+    border: 0.22rem solid #fff;
+    background: #a8782c;
+    border-radius: 50% 50% 50% 0;
+    box-shadow: 0 5px 16px rgb(11 7 37 / 35%);
+    transform: rotate(-45deg);
+}
+
 .property-reviews .section-heading {
     margin-block-end: 1.6rem;
 }

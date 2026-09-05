@@ -10,7 +10,7 @@ from django.utils import timezone, translation
 from django.utils.html import strip_tags
 
 from apps.core.models import FAQItem
-from apps.core.templatetags.presentation import localized_money
+from apps.core.templatetags.presentation import localized_amenity, localized_money
 from apps.properties.amenity_translations import AMENITY_COPY, copy_for
 from apps.properties.models import Amenity, Property
 from apps.reviews.models import Review
@@ -106,6 +106,21 @@ def test_dry_run_writes_nothing() -> None:
 
     amenity.refresh_from_db()
     assert amenity.name_ar == ""
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [("ar", "غسالة ملابس"), ("fr", "Lave-linge")],
+)
+def test_known_amenity_is_localized_before_the_seed_command_runs(
+    language: str,
+    expected: str,
+) -> None:
+    """A guest never sees a Hostaway English label during the seed window."""
+    amenity = Amenity.objects.create(name="Washing Machine", hostaway_amenity_id=5)
+
+    with translation.override(language):
+        assert localized_amenity(amenity) == expected
 
 
 # --- 7 and 8. Review body ----------------------------------------------------

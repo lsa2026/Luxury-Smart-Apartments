@@ -387,7 +387,7 @@ def _normalize_images(
                 raise HostawayResponseError("must be an object")
             image = HostawayListingImage(
                 image_id=_optional_positive_integer(payload.get("id"), "id"),
-                url=_https_url(payload.get("url")),
+                url=_hostaway_image_url(payload.get("url")),
                 caption=_string(payload.get("caption")),
                 sort_order=_optional_nonnegative_integer(
                     payload.get("sortOrder"),
@@ -407,6 +407,15 @@ def _normalize_images(
         except HostawayResponseError as exc:
             errors.append(f"image {index}: {exc}")
     return images
+
+
+def _hostaway_image_url(value: Any) -> str:
+    """Accept secure source media, but reject stale external marketplace URLs."""
+    url = _https_url(value)
+    hostname = (urlparse(url).hostname or "").casefold()
+    if hostname == "muscache.com" or hostname.endswith(".muscache.com"):
+        raise HostawayResponseError("url must not use an external marketplace CDN")
+    return url
 
 
 def _normalize_listing_amenities(
