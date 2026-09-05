@@ -5041,7 +5041,7 @@ msgstr "اختر وحدة لبدء التحرير."
 #: .\templates\base.html:9 .\templates\base.html:22 .\templates\base.html:31
 #: .\templates\includes\footer.html:11
 msgid "Luxury smart stays in Riyadh and Marrakech."
-msgstr "إقامات ذكية فاخرة  ومراكش."
+msgstr "إقامات ذكية فاخرة"
 
 #: .\templates\base.html:21 .\templates\base.html:30 .\templates\base.html:32
 #: .\templates\core\content_page.html:8
