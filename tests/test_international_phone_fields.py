@@ -1,4 +1,5 @@
 import pytest
+from django.test import Client
 from django.utils.translation import override
 
 from apps.core.admin import SiteSettingAdminForm
@@ -92,6 +93,13 @@ def test_contact_form_keeps_phone_optional() -> None:
 
     assert form.is_valid(), form.errors
     assert form.cleaned_data["phone"] == ""
+
+
+def test_contact_page_displays_the_international_phone_format_help() -> None:
+    with override("ar"):
+        content = Client().get("/contact/").content.decode()
+
+    assert "اكتب رقمًا دوليًا يبدأ بعلامة + ورمز الدولة" in content
 
 
 def test_site_settings_phone_fields_use_the_same_international_format() -> None:
