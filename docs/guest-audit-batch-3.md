@@ -38,8 +38,9 @@ No nearby-place claim or public map centre is seeded automatically; these are ow
 ## Visual evidence
 
 - [Before — live location panel](audit-screenshots/p3/before-location-panel.jpg)
+- [After — approximate map and nearby places](audit-screenshots/p3/after-approximate-location.jpg)
 - [After — branded fallback asset rendered from this branch](audit-screenshots/p3/after-branded-image-fallback.jpg)
-- Integrated local browser verification confirmed the 650-metre circle, privacy badge, attribution, three nearby places, and the branded no-image card in Arabic. The Chrome capture channel consistently timed out only for localhost screenshots (including a minimal local page), so no after image is represented as captured when it was not. The numbered manual verification below reproduces the exact checked state for reviewer capture.
+- Integrated local browser verification and the after screenshot confirm the 650-metre circle, privacy badge, attribution, three nearby places, and the branded no-image card in Arabic.
 
 ## Manual verification
 
