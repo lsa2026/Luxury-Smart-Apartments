@@ -8,6 +8,7 @@
 - A locally managed approximate location is separate from the exact source coordinates. The public centre must be 100 metres or more from the exact point, the exact point must remain inside the selected 500–800 metre radius, and unsafe configurations render no map.
 - Nearby-place names and distance descriptions are managed per property in Arabic, English, and French from the property editor.
 - Properties with no public image render a branded LSA fallback. The property list in administration shows a public-image readiness indicator, and the editor displays a warning for a published property with no visible image.
+- GitHub Actions now runs the same six-command quality gate for every pull request, because the repository previously had no CI workflow.
 
 ## Missing-image diagnosis
 
