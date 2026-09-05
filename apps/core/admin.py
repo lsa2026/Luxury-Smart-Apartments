@@ -120,11 +120,15 @@ class SiteSettingAdmin(admin.ModelAdmin):
             _("Stay defaults"),
             {
                 "description": _(
-                    "Used only when the channel manager reports nothing for a property."
+                    "Used when a property has no local value; times also fall back to "
+                    "the channel manager before these defaults."
                 ),
                 "fields": (
                     "default_check_in_hour",
                     "default_check_out_hour",
+                    "default_cancellation_policy_ar",
+                    "default_cancellation_policy_en",
+                    "default_cancellation_policy_fr",
                     "default_house_rules_ar",
                     "default_house_rules_en",
                     "default_house_rules_fr",

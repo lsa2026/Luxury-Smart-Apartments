@@ -594,13 +594,16 @@ def localized_money(value: object, currency: object) -> str:
             number,
         )
 
+    currency_label = (
+        translation.pgettext("currency code", currency_code) if language == "ar" else currency_code
+    )
     if language == "en":
         return format_html(
             '<bdi class="money money--en" dir="ltr">'
             '<span class="money__currency">{}</span>'
             '<span class="money__amount">{}</span>'
             "</bdi>",
-            currency_code,
+            currency_label,
             number,
         )
 
@@ -611,7 +614,7 @@ def localized_money(value: object, currency: object) -> str:
         "</bdi>",
         language,
         number,
-        currency_code,
+        currency_label,
     )
 
 

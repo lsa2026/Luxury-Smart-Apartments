@@ -1511,8 +1511,9 @@ document.querySelectorAll("form").forEach((form) => {
 
 // Draft autosave for the guest details step. Kept in sessionStorage so a guest
 // who steps back, or reloads after a validation error, does not retype the
-// address. Nothing is written to the server, and the draft is dropped as soon
-// as the form is submitted.
+// address. Nothing is written to the server. It remains for this browser tab's
+// session so a server-side validation response or Back navigation cannot erase
+// it; the quote-specific key prevents it leaking into a different request.
 document.querySelectorAll("[data-draft-form]").forEach((form) => {
     const key = `lsa-draft:${form.dataset.draftForm}`;
     const fields = Array.from(
@@ -1549,11 +1550,4 @@ document.querySelectorAll("[data-draft-form]").forEach((form) => {
         }
     });
 
-    form.addEventListener("submit", () => {
-        try {
-            window.sessionStorage.removeItem(key);
-        } catch {
-            // Nothing to clean up when storage is unavailable.
-        }
-    });
 });

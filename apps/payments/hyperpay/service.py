@@ -94,13 +94,13 @@ def build_checkout_payload(
         raise ValueError("payment_snapshot_missing")
     if checkout_currency != settings.HYPERPAY_CURRENCY:
         raise ValueError("currency_not_supported")
-    # /v1/checkouts itself needs only entityId, amount, currency and paymentType.
-    # These are the values this merchant always sends, because a card scheme uses
-    # them for 3-D Secure risk scoring and an empty one raises challenge rates.
+    # /v1/checkouts itself accepts the core payment fields, but street and city
+    # are mandatory inputs to the provider's 3-D Secure 2 authentication flow.
     required = {
         "customer.email": intent.guest_email.strip(),
         "customer.givenName": intent.guest_first_name.strip(),
         "customer.surname": intent.guest_last_name.strip(),
+        "billing.street1": intent.billing_street1.strip(),
         "billing.city": intent.billing_city.strip(),
         "billing.state": intent.billing_state.strip(),
     }
@@ -109,7 +109,6 @@ def build_checkout_payload(
     # Sent when the guest supplied them, omitted rather than sent empty: a blank
     # value scores worse with the scheme than an absent field.
     optional = {
-        "billing.street1": intent.billing_street1.strip(),
         "billing.postcode": intent.billing_postcode.strip(),
     }
     optional = {key: value for key, value in optional.items() if value}
@@ -411,9 +410,9 @@ class HyperPayService:
 
     def _complete_success(self, attempt: PaymentAttempt) -> VerificationOutcome:
         if attempt.modification_request_id:
-            modification = BookingModificationRequest.objects.select_related(
-                "reservation"
-            ).get(pk=attempt.modification_request_id)
+            modification = BookingModificationRequest.objects.select_related("reservation").get(
+                pk=attempt.modification_request_id
+            )
             if modification.status == BookingModificationRequest.Status.AWAITING_PAYMENT:
                 try:
                     # The checkout was revalidated before payment; repeat the
@@ -421,17 +420,12 @@ class HyperPayService:
                     self._revalidate_modification(modification)
                 except HyperPayCheckoutError:
                     modification.refresh_from_db()
-                    if (
-                        modification.status
-                        == BookingModificationRequest.Status.AWAITING_PAYMENT
-                    ):
+                    if modification.status == BookingModificationRequest.Status.AWAITING_PAYMENT:
                         BookingModificationRequest.objects.filter(
                             pk=modification.pk,
                             status=BookingModificationRequest.Status.AWAITING_PAYMENT,
                         ).update(
-                            status=(
-                                BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
-                            ),
+                            status=(BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL),
                             updated_at=timezone.now(),
                         )
                         modification.refresh_from_db()
@@ -562,9 +556,7 @@ class HyperPayService:
         ):
             attempt.status = PaymentAttempt.Status.FAILED
             attempt.failure_code = "checkout_response_invalid"
-            attempt.provider_result_code = (
-                result_code if isinstance(result_code, str) else ""
-            )
+            attempt.provider_result_code = result_code if isinstance(result_code, str) else ""
             attempt.save(
                 update_fields=[
                     "status",

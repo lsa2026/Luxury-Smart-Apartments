@@ -86,13 +86,12 @@ class GuestDetailsForm(forms.Form):
             }
         ),
     )
-    # Optional by decision: /v1/checkouts requires only entityId, amount,
-    # currency and paymentType. The address still helps 3-D Secure risk scoring,
-    # so it is asked for and sent when given, never demanded.
+    # Although /v1/checkouts accepts its four core fields, the provider's 3-D
+    # Secure 2 contract makes the street and city mandatory for authentication.
+    # The postcode is not mandatory and therefore stays optional.
     billing_street1 = forms.CharField(
         label=_("Street address"),
         max_length=100,
-        required=False,
         widget=forms.TextInput(attrs={"autocomplete": "address-line1"}),
     )
     billing_city = forms.CharField(
@@ -110,9 +109,7 @@ class GuestDetailsForm(forms.Form):
         label=_("State or region"),
         choices=(),
         required=False,
-        widget=forms.Select(
-            attrs={"autocomplete": "address-level1", "data-region-select": ""}
-        ),
+        widget=forms.Select(attrs={"autocomplete": "address-level1", "data-region-select": ""}),
     )
     billing_country = forms.ChoiceField(
         label=_("Country"),
@@ -196,9 +193,6 @@ class GuestDetailsForm(forms.Form):
             value = cleaned.get(name)
             if isinstance(value, str):
                 cleaned[name] = _clean_text(value)
-        # Street is optional; city is the one address line still demanded.
-        if not cleaned.get("billing_city"):
-            self.add_error("billing_city", _("This field is required."))
         self._resolve_region(cleaned)
         phone = cleaned.get("guest_phone")
         if isinstance(phone, str):

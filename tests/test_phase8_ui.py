@@ -454,16 +454,17 @@ def test_money_amount_is_customer_friendly() -> None:
 
 
 @pytest.mark.parametrize(
-    ("language", "expected_number", "currency_before_amount"),
+    ("language", "expected_number", "currency_label", "currency_before_amount"),
     [
-        ("ar", "٢٬٤٥٠٫٠٠", False),
-        ("en", "2,450.00", True),
-        ("fr", "2\u202f450,00", False),
+        ("ar", "٢٬٤٥٠٫٠٠", "ر.س", False),
+        ("en", "2,450.00", "SAR", True),
+        ("fr", "2\u202f450,00", "SAR", False),
     ],
 )
 def test_localized_money_follows_language_conventions(
     language: str,
     expected_number: str,
+    currency_label: str,
     currency_before_amount: bool,
 ) -> None:
     with translation.override(language):
@@ -471,8 +472,10 @@ def test_localized_money_follows_language_conventions(
 
     assert expected_number in rendered
     assert 'dir="ltr"' in rendered
-    assert "SAR" in rendered
-    assert (rendered.index("SAR") < rendered.index(expected_number)) is currency_before_amount
+    assert currency_label in rendered
+    assert (
+        rendered.index(currency_label) < rendered.index(expected_number)
+    ) is currency_before_amount
 
 
 @pytest.mark.parametrize(

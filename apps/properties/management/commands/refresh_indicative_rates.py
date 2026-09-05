@@ -43,13 +43,15 @@ class Command(BaseCommand):
         properties = Property.objects.filter(hostaway_is_active=True).order_by("id")
         if options["listing_id"]:
             properties = properties.filter(hostaway_listing_id=options["listing_id"])
+        property_rows = list(properties)
 
         start = timezone.localdate()
         end = start + timedelta(days=window_days)
         examined = updated = unchanged = no_availability = failed = 0
+        candidates: list[tuple[Property, Decimal, str]] = []
 
         with HostawayClient() as client:
-            for property_obj in properties:
+            for property_obj in property_rows:
                 examined += 1
                 try:
                     lowest = self._lowest_available_night(
@@ -69,25 +71,45 @@ class Command(BaseCommand):
                 if lowest is None:
                     no_availability += 1
                     continue
-                if lowest == property_obj.indicative_nightly_from:
+                currency = (property_obj.currency_code or "").strip().upper()
+                if len(currency) != 3 or not currency.isalpha():
+                    failed += 1
+                    self.stderr.write(
+                        f"listing {property_obj.hostaway_listing_id}: invalid currency"
+                    )
+                    continue
+                if (
+                    lowest == property_obj.indicative_nightly_from
+                    and currency == property_obj.indicative_currency
+                ):
                     unchanged += 1
                     continue
-                if options["dry_run"]:
-                    updated += 1
-                    continue
+                candidates.append((property_obj, lowest, currency))
 
-                with transaction.atomic():
-                    Property.objects.filter(pk=property_obj.pk).update(
-                        indicative_nightly_from=lowest,
-                        indicative_currency=property_obj.currency_code,
-                        indicative_priced_at=timezone.now(),
-                    )
-                updated += 1
+        updated = len(candidates)
+        aborted = failed > 0 and not options["dry_run"]
+        if not options["dry_run"] and not aborted and candidates:
+            priced_at = timezone.now()
+            for property_obj, lowest, currency in candidates:
+                property_obj.indicative_nightly_from = lowest
+                property_obj.indicative_currency = currency
+                property_obj.indicative_priced_at = priced_at
+            with transaction.atomic():
+                Property.objects.bulk_update(
+                    [property_obj for property_obj, _lowest, _currency in candidates],
+                    fields=(
+                        "indicative_nightly_from",
+                        "indicative_currency",
+                        "indicative_priced_at",
+                    ),
+                )
 
         mode = " (dry run)" if options["dry_run"] else ""
+        result = " aborted=true" if aborted else ""
         self.stdout.write(
             f"Indicative rates{mode}: examined={examined}, updated={updated}, "
             f"unchanged={unchanged}, no_availability={no_availability}, failed={failed}"
+            f"{result}"
         )
 
     def _lowest_available_night(

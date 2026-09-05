@@ -6328,3 +6328,193 @@ msgstr "تعذر التحقق من السعر مؤقتاً"
 #: templates/reservations/availability_result.html
 msgid "We couldn't verify the price right now. Please try again shortly."
 msgstr "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل."
+
+#: apps/core/admin.py
+msgid "Stay defaults"
+msgstr "الإعدادات الافتراضية للإقامة"
+
+#: apps/core/admin.py
+msgid "Used when a property has no local value; times also fall back to the channel manager before these defaults."
+msgstr "تُستخدم عندما لا تكون للوحدة قيمة محلية؛ وتعود الأوقات أولاً إلى مدير القنوات قبل هذه القيم الافتراضية."
+
+#: apps/core/models.py
+msgid "Default check-in hour"
+msgstr "ساعة الدخول الافتراضية"
+
+#: apps/core/models.py
+msgid "Used when Hostaway reports no check-in time for a property."
+msgstr "تُستخدم عندما لا يرسل مدير القنوات وقت دخول للوحدة."
+
+#: apps/core/models.py
+msgid "Default check-out hour"
+msgstr "ساعة الخروج الافتراضية"
+
+#: apps/core/models.py
+msgid "Used when Hostaway reports no check-out time for a property."
+msgstr "تُستخدم عندما لا يرسل مدير القنوات وقت خروج للوحدة."
+
+#: apps/core/models.py
+msgid "Default cancellation policy"
+msgstr "سياسة الإلغاء الافتراضية"
+
+#: apps/core/models.py
+msgid "Default house rules"
+msgstr "قواعد المنزل الافتراضية"
+
+#: apps/payments/regions.py
+msgid "Riyadh Region"
+msgstr "منطقة الرياض"
+
+#: apps/payments/regions.py
+msgid "Makkah Region"
+msgstr "منطقة مكة المكرمة"
+
+#: apps/payments/regions.py
+msgid "Madinah Region"
+msgstr "منطقة المدينة المنورة"
+
+#: apps/payments/regions.py
+msgid "Qassim Region"
+msgstr "منطقة القصيم"
+
+#: apps/payments/regions.py
+msgid "Eastern Province"
+msgstr "المنطقة الشرقية"
+
+#: apps/payments/regions.py
+msgid "Asir Region"
+msgstr "منطقة عسير"
+
+#: apps/payments/regions.py
+msgid "Tabuk Region"
+msgstr "منطقة تبوك"
+
+#: apps/payments/regions.py
+msgid "Hail Region"
+msgstr "منطقة حائل"
+
+#: apps/payments/regions.py
+msgid "Northern Borders Region"
+msgstr "منطقة الحدود الشمالية"
+
+#: apps/payments/regions.py
+msgid "Jazan Region"
+msgstr "منطقة جازان"
+
+#: apps/payments/regions.py
+msgid "Najran Region"
+msgstr "منطقة نجران"
+
+#: apps/payments/regions.py
+msgid "Al Bahah Region"
+msgstr "منطقة الباحة"
+
+#: apps/payments/regions.py
+msgid "Al Jawf Region"
+msgstr "منطقة الجوف"
+
+#: apps/payments/regions.py
+msgid "Choose your region"
+msgstr "اختر منطقتك"
+
+#: apps/reservations/booking_forms.py
+msgid "Choose your region."
+msgstr "اختر منطقتك."
+
+#: apps/properties/admin.py apps/properties/models.py
+msgid "Guest-facing check-in hour"
+msgstr "ساعة الدخول المعروضة للنزيل"
+
+#: apps/properties/admin.py apps/properties/models.py
+msgid "Guest-facing check-out hour"
+msgstr "ساعة الخروج المعروضة للنزيل"
+
+#: apps/properties/admin.py
+msgid "Stay times shown to guests"
+msgstr "أوقات الإقامة المعروضة للنزلاء"
+
+#: apps/properties/admin.py
+msgid "Leave blank to show the channel-manager time, then the site default."
+msgstr "اتركه فارغاً لعرض وقت مدير القنوات، ثم القيمة الافتراضية للموقع."
+
+#: apps/properties/models.py
+msgid "Indicative nightly rate"
+msgstr "السعر الاسترشادي لليلة"
+
+#: apps/properties/models.py
+msgid "Overrides the channel-manager time shown to guests."
+msgstr "يتجاوز وقت مدير القنوات في العرض الموجّه للنزلاء."
+
+#: apps/properties/models.py
+msgid "Represents its city on the home page"
+msgstr "تمثّل مدينتها في الصفحة الرئيسية"
+
+#: apps/properties/models.py templates/properties/_stay_policy.html
+#: templates/reservations/booking_quote_detail.html
+msgid "House rules"
+msgstr "قواعد المنزل"
+
+#: templates/includes/property_card.html templates/properties/property_detail.html
+msgid "Final price depends on your dates"
+msgstr "السعر النهائي يتحدد بتواريخك"
+
+#: templates/includes/property_card.html templates/properties/property_detail.html
+#, python-format
+msgid "From %(amount)s / night"
+msgstr "تبدأ من %(amount)s / ليلة"
+
+#: templates/properties/_stay_policy.html
+msgid "Before you book"
+msgstr "قبل أن تحجز"
+
+#: templates/properties/_stay_policy.html
+msgid "Times, cancellation and house rules"
+msgstr "أوقات الدخول والخروج والإلغاء وقواعد المنزل"
+
+#: templates/properties/_stay_policy.html templates/reservations/booking_quote_detail.html
+msgid "Check-in from"
+msgstr "الدخول ابتداءً من"
+
+#: templates/properties/_stay_policy.html templates/reservations/booking_quote_detail.html
+msgid "Check-out by"
+msgstr "الخروج قبل"
+
+#: templates/properties/_stay_policy.html
+#, python-format
+msgid "when you cancel at least %(hours)s hours before arrival"
+msgstr "عند الإلغاء قبل الوصول بما لا يقل عن %(hours)s ساعة"
+
+#: templates/properties/_stay_policy.html
+msgid "cleaning fee not refunded"
+msgstr "رسوم التنظيف غير مستردة"
+
+#: templates/properties/_stay_policy.html
+msgid "Cancellation terms for this stay are confirmed with our team before payment."
+msgstr "تؤكد شروط إلغاء هذه الإقامة مع فريقنا قبل الدفع."
+
+#: templates/reservations/booking_quote_detail.html
+msgid "optional"
+msgstr "اختياري"
+
+#: templates/reservations/booking_quote_detail.html
+msgid "What you are agreeing to"
+msgstr "ما توافق عليه"
+
+#: templates/reservations/booking_quote_detail.html
+#, python-format
+msgid "%(share)s back up to %(hours)s hours before arrival"
+msgstr "استرداد %(share)s عند الإلغاء قبل الوصول بما يصل إلى %(hours)s ساعة"
+
+#: templates/reservations/booking_quote_detail.html
+msgid "Read the full terms for this stay"
+msgstr "اقرأ الشروط الكاملة لهذه الإقامة"
+
+#: templates/reservations/booking_quote_detail.html
+#, python-format
+msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>, including the cancellation policy and house rules shown for this stay."
+msgstr "أوافق على <a href=\"%(url)s\" target=\"_blank\">الشروط والأحكام</a>، بما فيها سياسة الإلغاء وقواعد المنزل المعروضة لهذه الإقامة."
+
+#: apps/core/templatetags/presentation.py
+msgctxt "currency code"
+msgid "SAR"
+msgstr "ر.س"

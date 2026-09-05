@@ -1,6 +1,7 @@
 """The billing address asks for what the gateway needs, and no more."""
 
 import pytest
+from django.conf import settings
 
 from apps.payments.regions import SAUDI_REGIONS
 from apps.reservations.booking_forms import GuestDetailsForm
@@ -12,6 +13,7 @@ BASE = {
     "guest_last_name": "Example",
     "guest_email": "guest@example.invalid",
     "guest_phone": "0500000000",
+    "billing_street1": "King Fahd Road 10",
     "billing_city": "Riyadh",
     "billing_country": "SA",
     "special_requests": "",
@@ -25,14 +27,20 @@ def form(**overrides: object) -> GuestDetailsForm:
     return GuestDetailsForm({**BASE, "billing_region_sa": "Riyadh", **overrides})
 
 
-# --- what is no longer demanded ---------------------------------------------
+# --- what the payment journey actually demands ------------------------------
 
 
-def test_a_booking_completes_without_a_street_or_a_postcode() -> None:
-    submitted = form()
+def test_a_booking_requires_the_street_used_by_three_d_secure() -> None:
+    submitted = form(billing_street1="")
+
+    assert submitted.is_valid() is False
+    assert "billing_street1" in submitted.errors
+
+
+def test_a_booking_completes_without_a_postcode() -> None:
+    submitted = form(billing_street1="King Fahd Road 10")
 
     assert submitted.is_valid(), submitted.errors
-    assert submitted.cleaned_data["billing_street1"] == ""
     assert submitted.cleaned_data["billing_postcode"] == ""
 
 
@@ -115,7 +123,7 @@ def test_a_region_outside_the_list_is_refused_by_the_select() -> None:
 # --- what the gateway is sent ------------------------------------------------
 
 
-def test_an_empty_optional_field_is_omitted_rather_than_sent_blank() -> None:
+def test_an_empty_postcode_is_omitted_rather_than_sent_blank() -> None:
     from decimal import Decimal
     from types import SimpleNamespace
 
@@ -125,18 +133,22 @@ def test_an_empty_optional_field_is_omitted_rather_than_sent_blank() -> None:
         guest_email="guest@example.invalid",
         guest_first_name="Guest",
         guest_last_name="Example",
-        billing_street1="",
+        billing_street1="King Fahd Road 10",
         billing_city="Riyadh",
         billing_state="Riyadh",
         billing_postcode="",
         billing_country="SA",
         total_price=Decimal("500.00"),
+    )
+
+    payload = build_checkout_payload(
+        intent,
+        merchant_id="probe",
+        amount=Decimal("500.00"),
         currency="SAR",
     )
 
-    payload = build_checkout_payload(intent, merchant_id="probe")
-
-    assert "billing.street1" not in payload
+    assert payload["billing.street1"] == "King Fahd Road 10"
     assert "billing.postcode" not in payload
     assert payload["billing.city"] == "Riyadh"
 
@@ -157,10 +169,14 @@ def test_a_supplied_optional_field_is_sent() -> None:
         billing_postcode="12345",
         billing_country="SA",
         total_price=Decimal("500.00"),
-        currency="SAR",
     )
 
-    payload = build_checkout_payload(intent, merchant_id="probe")
+    payload = build_checkout_payload(
+        intent,
+        merchant_id="probe",
+        amount=Decimal("500.00"),
+        currency="SAR",
+    )
 
     assert payload["billing.street1"] == "King Fahd Road 10"
     assert payload["billing.postcode"] == "12345"
@@ -173,9 +189,12 @@ def test_the_review_page_offers_both_region_controls() -> None:
     from tests.test_booking_views_admin import owned_client_quote
 
     client, _quote, reference = owned_client_quote()
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = "en"
 
     content = client.get(f"/reservations/quotes/{reference}/").content.decode()
 
     assert 'data-region-group="SA"' in content
     assert 'data-region-group="other"' in content
     assert "data-draft-form" in content
+    assert "billing_street1" in content
+    assert "Street address</label>" in content

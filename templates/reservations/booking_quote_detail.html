@@ -253,7 +253,7 @@
 
                         <div class="quote-review__form-grid guest-journey__billing-grid">
                             <div class="form-field guest-journey__field--street{% if guest_form.billing_street1.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}<span class="form-optional">{% trans "optional" %}</span></label>
+                                <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}</label>
                                 {{ guest_form.billing_street1 }}
                                 {% for error in guest_form.billing_street1.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
@@ -296,7 +296,8 @@
                             <ul>
                                 {% if stay_policy.check_in_hour is not None %}<li><span>{% trans "Check-in from" %}</span><strong>{{ stay_policy.check_in_hour|localized_hour }}</strong></li>{% endif %}
                                 {% if stay_policy.check_out_hour is not None %}<li><span>{% trans "Check-out by" %}</span><strong>{{ stay_policy.check_out_hour|localized_hour }}</strong></li>{% endif %}
-                                {% if stay_policy.has_refund_ladder %}{% with best=stay_policy.refund_tiers.0 %}<li><span>{% trans "Cancellation" %}</span><strong>{% blocktrans with share=best.percentage|localized_percentage hours=best.hours_before|localized_number %}{{ share }} back up to {{ hours }} hours before arrival{% endblocktrans %}</strong></li>{% endwith %}{% endif %}
+                                {% if stay_policy.cancellation_policy_text %}<li><span>{% trans "Cancellation" %}</span><strong>{{ stay_policy.cancellation_policy_text|striptags|truncatechars:180 }}</strong></li>{% elif stay_policy.has_refund_ladder %}{% with best=stay_policy.refund_tiers.0 %}<li><span>{% trans "Cancellation" %}</span><strong>{% blocktrans with share=best.percentage|localized_percentage hours=best.hours_before|localized_number %}{{ share }} back up to {{ hours }} hours before arrival{% endblocktrans %}</strong></li>{% endwith %}{% endif %}
+                                {% if stay_policy.house_rules %}<li><span>{% trans "House rules" %}</span><strong>{{ stay_policy.house_rules|striptags|truncatechars:180 }}</strong></li>{% endif %}
                             </ul>
                             <a class="text-link" href="{{ property.get_absolute_url }}#stay-policy-title" target="_blank">{% trans "Read the full terms for this stay" %}</a>
                         </div>
@@ -306,7 +307,7 @@
                         {% url 'core:privacy' as privacy_url %}
                         <div class="guest-journey__legal" aria-label="{% trans 'Required agreements' %}">
                             <div class="form-field quote-review__choice{% if guest_form.terms_accepted.errors %} form-field--error{% endif %}">
-                                <label for="{{ guest_form.terms_accepted.id_for_label }}">{{ guest_form.terms_accepted }}<span>{% blocktrans with url=terms_url %}I accept the <a href="{{ url }}" target="_blank">terms and conditions</a>.{% endblocktrans %}</span></label>
+                                <label for="{{ guest_form.terms_accepted.id_for_label }}">{{ guest_form.terms_accepted }}<span>{% if not stay_policy.is_empty %}{% blocktrans with url=terms_url %}I accept the <a href="{{ url }}" target="_blank">terms and conditions</a>, including the cancellation policy and house rules shown for this stay.{% endblocktrans %}{% else %}{% blocktrans with url=terms_url %}I accept the <a href="{{ url }}" target="_blank">terms and conditions</a>.{% endblocktrans %}{% endif %}</span></label>
                                 {% for error in guest_form.terms_accepted.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
                             <div class="form-field quote-review__choice{% if guest_form.privacy_accepted.errors %} form-field--error{% endif %}">
