@@ -1,0 +1,64 @@
+name: Quality gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SECRET_KEY: ci-only-quality-gate-9Sx7kL4qP2vN8rT5wY1uC6mH3zB0aF9dK7sJ4xQ8
+      DJANGO_ALLOWED_HOSTS: testserver,localhost,luxurysmartapartments.com
+      DATABASE_URL: "sqlite:///:memory:"
+      HOSTAWAY_AUTO_SYNC_ENABLED: "false"
+      HOSTAWAY_LIVE_BOOKING_ENABLED: "false"
+      HOSTAWAY_LIVE_MODIFICATION_ENABLED: "false"
+      HOSTAWAY_LIVE_EXTENSION_ENABLED: "false"
+      HOSTAWAY_LIVE_CANCELLATION_ENABLED: "false"
+      HOSTAWAY_WEBHOOK_RECEIVER_ENABLED: "false"
+      HOSTAWAY_WEBHOOK_PROCESSING_ENABLED: "false"
+      HYPERPAY_ENABLED: "false"
+      EMAIL_DELIVERY_ENABLED: "false"
+      EMAIL_TASK_SCHEDULE_ENABLED: "false"
+      BOOKING_AUTOMATIC_MODIFICATION_APPROVAL: "false"
+      BOOKING_AUTOMATIC_CANCELLATION_ENABLED: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project and development tools
+        run: python -m pip install --upgrade pip && python -m pip install ".[dev]"
+
+      - name: Run tests
+        run: pytest
+
+      - name: Run Ruff lint
+        run: ruff check .
+
+      - name: Verify Ruff formatting
+        run: ruff format --check .
+
+      - name: Run Django system checks
+        run: python manage.py check
+
+      - name: Run Django deployment checks
+        run: python manage.py check --deploy --settings=config.settings.production
+
+      - name: Verify migrations are committed
+        run: python manage.py makemigrations --check
