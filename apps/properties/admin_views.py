@@ -36,10 +36,7 @@ def _property_rows() -> list[dict[str, object]]:
 
 @staff_member_required
 def image_alt_text_editor(request: HttpRequest) -> HttpResponse:
-    if not (
-        request.user.is_superuser
-        or request.user.has_perm("properties.change_propertyimage")
-    ):
+    if not (request.user.is_superuser or request.user.has_perm("properties.change_propertyimage")):
         raise PermissionDenied
 
     summary = _property_rows()
@@ -54,8 +51,7 @@ def image_alt_text_editor(request: HttpRequest) -> HttpResponse:
         if selected is None:
             raise PermissionDenied
         images = {
-            image.pk: image
-            for image in PropertyImage.objects.filter(property_id=selected["id"])
+            image.pk: image for image in PropertyImage.objects.filter(property_id=selected["id"])
         }
         changed: list[PropertyImage] = []
         for pk, image in images.items():
@@ -94,9 +90,7 @@ def image_alt_text_editor(request: HttpRequest) -> HttpResponse:
         queryset = PropertyImage.objects.filter(property_id=selected["id"])
         if only_missing:
             queryset = queryset.filter(MISSING_ALT)
-        images = list(
-            queryset.order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
-        )
+        images = list(queryset.order_by("-is_cover", "sort_order", "hostaway_sort_order", "id"))
 
     return render(
         request,

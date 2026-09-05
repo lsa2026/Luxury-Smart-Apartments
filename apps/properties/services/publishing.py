@@ -21,10 +21,7 @@ def evaluate_listing_publish_readiness(property_obj: Property) -> PublishReadine
 
     if property_obj.hostaway_listing_id <= 0:
         blockers.append("invalid_listing_id")
-    if (
-        settings.HOSTAWAY_LIVE_BOOKING_ENABLED
-        and property_obj.hostaway_listing_map_id is None
-    ):
+    if settings.HOSTAWAY_LIVE_BOOKING_ENABLED and property_obj.hostaway_listing_map_id is None:
         blockers.append("missing_listing_map_id")
     if settings.HOSTAWAY_AUTO_PUBLISH_REQUIRE_ACTIVE and (
         not property_obj.hostaway_is_active

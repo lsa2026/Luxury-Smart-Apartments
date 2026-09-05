@@ -14,10 +14,7 @@ from apps.reservations.models import BookingIntent
 
 @staff_member_required
 def customer_overview(request: HttpRequest) -> HttpResponse:
-    if not (
-        request.user.is_superuser
-        or request.user.has_perm("reservations.view_bookingintent")
-    ):
+    if not (request.user.is_superuser or request.user.has_perm("reservations.view_bookingintent")):
         raise PermissionDenied
 
     queryset = (
@@ -29,13 +26,14 @@ def customer_overview(request: HttpRequest) -> HttpResponse:
     booking_status = request.GET.get("status", "").strip()
     payment_status = request.GET.get("payment", "").strip()
     can_view_pii = bool(
-        request.user.is_superuser
-        or request.user.has_perm("reservations.view_bookingintent_pii")
+        request.user.is_superuser or request.user.has_perm("reservations.view_bookingintent_pii")
     )
     if query:
-        filters = Q(public_reference__icontains=query) | Q(
-            property__name_ar__icontains=query
-        ) | Q(property__name_en__icontains=query)
+        filters = (
+            Q(public_reference__icontains=query)
+            | Q(property__name_ar__icontains=query)
+            | Q(property__name_en__icontains=query)
+        )
         if can_view_pii:
             filters |= (
                 Q(guest_first_name__icontains=query)

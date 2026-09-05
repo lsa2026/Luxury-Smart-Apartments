@@ -421,9 +421,9 @@ class HyperPayService:
 
     def _complete_success(self, attempt: PaymentAttempt) -> VerificationOutcome:
         if attempt.modification_request_id:
-            modification = BookingModificationRequest.objects.select_related(
-                "reservation"
-            ).get(pk=attempt.modification_request_id)
+            modification = BookingModificationRequest.objects.select_related("reservation").get(
+                pk=attempt.modification_request_id
+            )
             if modification.status == BookingModificationRequest.Status.AWAITING_PAYMENT:
                 try:
                     # The checkout was revalidated before payment; repeat the
@@ -431,17 +431,12 @@ class HyperPayService:
                     self._revalidate_modification(modification)
                 except HyperPayCheckoutError:
                     modification.refresh_from_db()
-                    if (
-                        modification.status
-                        == BookingModificationRequest.Status.AWAITING_PAYMENT
-                    ):
+                    if modification.status == BookingModificationRequest.Status.AWAITING_PAYMENT:
                         BookingModificationRequest.objects.filter(
                             pk=modification.pk,
                             status=BookingModificationRequest.Status.AWAITING_PAYMENT,
                         ).update(
-                            status=(
-                                BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
-                            ),
+                            status=(BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL),
                             updated_at=timezone.now(),
                         )
                         modification.refresh_from_db()
@@ -572,9 +567,7 @@ class HyperPayService:
         ):
             attempt.status = PaymentAttempt.Status.FAILED
             attempt.failure_code = "checkout_response_invalid"
-            attempt.provider_result_code = (
-                result_code if isinstance(result_code, str) else ""
-            )
+            attempt.provider_result_code = result_code if isinstance(result_code, str) else ""
             attempt.save(
                 update_fields=[
                     "status",

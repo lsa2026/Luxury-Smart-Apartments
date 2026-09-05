@@ -65,9 +65,7 @@ class ReservationFinanceField:
             "total": _json_number(self.total),
             "isIncludedInTotalPrice": int(self.is_included_in_total_price),
             "isOverriddenByUser": int(self.is_overridden_by_user),
-            "isMandatory": (
-                int(self.is_mandatory) if self.is_mandatory is not None else None
-            ),
+            "isMandatory": (int(self.is_mandatory) if self.is_mandatory is not None else None),
             "isDeleted": int(self.is_deleted),
         }
         if self.listing_fee_setting_id is not None:

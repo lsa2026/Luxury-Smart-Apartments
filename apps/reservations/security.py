@@ -41,9 +41,7 @@ def grant_reservation_access(request: HttpRequest, public_reference: str) -> Non
     if not isinstance(grants, dict):
         grants = {}
     grants = {
-        key: expiry
-        for key, expiry in grants.items()
-        if isinstance(expiry, int) and expiry > now
+        key: expiry for key, expiry in grants.items() if isinstance(expiry, int) and expiry > now
     }
     grants[_management_key(public_reference)] = (
         now + settings.BOOKING_MANAGEMENT_SESSION_TTL_SECONDS

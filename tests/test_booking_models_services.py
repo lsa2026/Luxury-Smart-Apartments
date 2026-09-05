@@ -424,7 +424,7 @@ def test_guest_phone_accepts_numbers_from_any_country(
 @pytest.mark.parametrize(
     "raw_phone",
     [
-        "12345",              # too short for any country
+        "12345",  # too short for any country
         "+9999999999999999",  # no such country code, and over E.164 length
         "0000000000",
         "abcdefghij",

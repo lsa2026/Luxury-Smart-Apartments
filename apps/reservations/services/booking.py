@@ -282,9 +282,7 @@ def consume_revalidated_quote(
                 {
                     "provider": rates.provider,
                     "rate_timestamp": rates.rate_timestamp.isoformat(),
-                    "rates": {
-                        code: format(rate, "f") for code, rate in rates.rates.items()
-                    },
+                    "rates": {code: format(rate, "f") for code, rate in rates.rates.items()},
                     "source_rate_per_sar": format(rates.rate(quote.currency), "f"),
                     "display_rate_per_sar": format(rates.rate(display_currency), "f"),
                 }

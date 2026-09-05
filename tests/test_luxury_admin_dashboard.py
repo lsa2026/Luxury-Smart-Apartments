@@ -126,9 +126,7 @@ def test_reservation_detail_is_read_only_and_uses_operational_arabic_labels(
 
 
 @pytest.mark.django_db
-def test_booking_request_detail_is_a_compact_arabic_read_only_summary(
-    client, django_user_model
-):
+def test_booking_request_detail_is_a_compact_arabic_read_only_summary(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="request-manager",
         email="request-manager@example.com",

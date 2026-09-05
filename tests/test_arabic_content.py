@@ -195,9 +195,7 @@ def test_structured_data_matches_what_a_person_reads() -> None:
     data = property_structured_data(property_obj)
     summary = rating_summary(property_obj)
 
-    assert data["aggregateRating"]["ratingValue"] == float(
-        summary.published_average_out_of_five
-    )
+    assert data["aggregateRating"]["ratingValue"] == float(summary.published_average_out_of_five)
     assert data["aggregateRating"]["reviewCount"] == summary.published_count
 
 
@@ -258,9 +256,7 @@ def test_the_faq_page_groups_questions_by_category() -> None:
     response = Client().get("/faq/")
 
     assert response.status_code == 200
-    assert any(
-        group["items"] for group in response.context["faq_groups"]
-    )
+    assert any(group["items"] for group in response.context["faq_groups"])
 
 
 def test_a_property_question_stays_off_the_general_page() -> None:
