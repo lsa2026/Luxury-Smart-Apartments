@@ -107,7 +107,55 @@
                 <div class="faq-list">{% for item in property_faq_items %}<details class="faq-item"><summary>{{ item|localized_faq_question }}</summary><div class="rich-copy">{{ item|localized_faq_answer|linebreaks }}</div></details>{% endfor %}</div>
             </section>
             {% endif %}
-            <section class="content-section location-panel" aria-labelledby="location-title"><p class="eyebrow">{% trans "Location" %}</p><h2 id="location-title">{{ property|localized_city }}</h2><p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p></section>
+            <section class="content-section location-panel" aria-labelledby="location-title">
+                <div class="location-panel__heading">
+                    <div>
+                        <p class="eyebrow">{% trans "Location" %}</p>
+                        <h2 id="location-title">{{ property|localized_city }}</h2>
+                    </div>
+                    {% if public_map %}
+                    <span class="location-panel__privacy-badge">
+                        <span aria-hidden="true">◌</span>
+                        {% trans "Approximate area" %}
+                    </span>
+                    {% endif %}
+                </div>
+                <p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p>
+                {% if public_map %}
+                <div class="approximate-map" aria-label="{% trans 'Approximate property area map' %}">
+                    <iframe
+                        src="{{ public_map.embed_url }}"
+                        title="{% trans 'Approximate property area' %}"
+                        loading="lazy"
+                        tabindex="-1"
+                    ></iframe>
+                    <span class="approximate-map__circle" aria-hidden="true"></span>
+                    <span class="approximate-map__label">
+                        {% blocktrans with radius=public_map.radius_m|localized_number %}Approximate radius: {{ radius }} metres{% endblocktrans %}
+                    </span>
+                </div>
+                <a class="location-panel__map-link" href="{{ public_map.view_url }}" target="_blank" rel="noopener noreferrer">
+                    {% trans "View the approximate area on OpenStreetMap" %}
+                    <span aria-hidden="true">↗</span>
+                </a>
+                {% endif %}
+                {% if nearby_places %}
+                <div class="nearby-places">
+                    <h3>{% trans "Close to you" %}</h3>
+                    <ul>
+                        {% for place in nearby_places %}
+                        {% if place.display_name %}
+                        <li>
+                            <span aria-hidden="true">◆</span>
+                            <strong>{{ place.display_name }}</strong>
+                            {% if place.display_distance %}<small>{{ place.display_distance }}</small>{% endif %}
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </section>
             <section class="content-section property-reviews" aria-labelledby="property-reviews-title"><div class="section-heading section-heading--split"><div><p class="eyebrow">{% trans "Guest experiences" %}</p><h2 id="property-reviews-title">{% trans "Reviews" %}</h2></div><a class="text-link" href="{% url 'reviews:list' %}">{% trans "All reviews" %}</a></div>{% include "reviews/_review_cards.html" with reviews=property_reviews initial_review_count=4 review_batch_size=2 %}</section>
         </div>
         <aside class="booking-sidebar" id="availability">

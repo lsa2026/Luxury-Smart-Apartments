@@ -1,6 +1,8 @@
+import math
 from builtins import property as builtin_property
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -61,6 +63,32 @@ class Property(models.Model):
         decimal_places=6,
         null=True,
         blank=True,
+    )
+    # Public map data is deliberately separate from the exact source location.
+    # Editors choose a displaced neighbourhood centre; the public page renders
+    # an area around it and never exposes the source coordinates.
+    public_location_enabled = models.BooleanField(
+        default=False,
+        verbose_name=_("Show an approximate public map"),
+    )
+    public_location_latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name=_("Approximate map latitude"),
+    )
+    public_location_longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name=_("Approximate map longitude"),
+    )
+    public_location_radius_m = models.PositiveSmallIntegerField(
+        default=650,
+        validators=[MinValueValidator(500), MaxValueValidator(800)],
+        verbose_name=_("Approximate area radius in metres"),
     )
     currency_code = models.CharField(max_length=3, blank=True)
     average_review_rating = models.DecimalField(
@@ -178,6 +206,37 @@ class Property(models.Model):
                 name="property_valid_longitude",
             ),
             models.CheckConstraint(
+                condition=Q(public_location_latitude__isnull=True)
+                | Q(
+                    public_location_latitude__gte=-90,
+                    public_location_latitude__lte=90,
+                ),
+                name="property_valid_public_latitude",
+            ),
+            models.CheckConstraint(
+                condition=Q(public_location_longitude__isnull=True)
+                | Q(
+                    public_location_longitude__gte=-180,
+                    public_location_longitude__lte=180,
+                ),
+                name="property_valid_public_longitude",
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    public_location_radius_m__gte=500,
+                    public_location_radius_m__lte=800,
+                ),
+                name="property_public_radius_500_800m",
+            ),
+            models.CheckConstraint(
+                condition=Q(public_location_enabled=False)
+                | Q(
+                    public_location_latitude__isnull=False,
+                    public_location_longitude__isnull=False,
+                ),
+                name="property_public_map_has_centre",
+            ),
+            models.CheckConstraint(
                 condition=Q(average_review_rating__isnull=True)
                 | Q(average_review_rating__gte=0, average_review_rating__lte=10),
                 name="property_review_rating_0_10",
@@ -213,6 +272,32 @@ class Property(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("properties:detail", kwargs={"slug": self.slug})
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.public_location_enabled and (
+            self.public_location_latitude is None or self.public_location_longitude is None
+        ):
+            errors["public_location_enabled"] = str(
+                _("Choose an approximate map centre before enabling the map.")
+            )
+        if self.public_location_enabled and (self.latitude is None or self.longitude is None):
+            errors["public_location_enabled"] = str(
+                _("An exact source location is required to validate the privacy area.")
+            )
+        if self.public_location_enabled and self._public_location_distance_m is not None:
+            distance = self._public_location_distance_m
+            if distance < 100:
+                errors["public_location_latitude"] = str(
+                    _("Move the public map centre at least 100 metres from the exact location.")
+                )
+            elif distance > self.public_location_radius_m:
+                errors["public_location_latitude"] = str(
+                    _("The exact location must remain inside the approximate public area.")
+                )
+        if errors:
+            raise ValidationError(errors)
 
     @staticmethod
     def derive_hostaway_is_active(special_status: str) -> bool:
@@ -253,6 +338,83 @@ class Property(models.Model):
         if images is None:
             images = list(self.images.public()[:5])
         return list(images)
+
+    @builtin_property
+    def _public_location_distance_m(self) -> float | None:
+        coordinates = (
+            self.latitude,
+            self.longitude,
+            self.public_location_latitude,
+            self.public_location_longitude,
+        )
+        if any(value is None for value in coordinates):
+            return None
+        source_lat, source_lon, public_lat, public_lon = (
+            math.radians(float(value)) for value in coordinates
+        )
+        delta_lat = public_lat - source_lat
+        delta_lon = public_lon - source_lon
+        haversine = (
+            math.sin(delta_lat / 2) ** 2
+            + math.cos(source_lat) * math.cos(public_lat) * math.sin(delta_lon / 2) ** 2
+        )
+        return 6_371_000 * 2 * math.atan2(math.sqrt(haversine), math.sqrt(1 - haversine))
+
+    @builtin_property
+    def has_safe_public_location(self) -> bool:
+        distance = self._public_location_distance_m
+        return bool(
+            self.public_location_enabled
+            and distance is not None
+            and 100 <= distance <= self.public_location_radius_m
+        )
+
+
+class NearbyPlace(models.Model):
+    """A locally managed point of interest; no coordinates are published."""
+
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="nearby_places",
+    )
+    name_ar = models.CharField(max_length=160, blank=True)
+    name_en = models.CharField(max_length=160, blank=True)
+    name_fr = models.CharField(max_length=160, blank=True)
+    distance_ar = models.CharField(max_length=120, blank=True)
+    distance_en = models.CharField(max_length=120, blank=True)
+    distance_fr = models.CharField(max_length=120, blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        indexes = [models.Index(fields=["property", "is_active", "sort_order"])]
+        verbose_name = _("Nearby place")
+        verbose_name_plural = _("Nearby places")
+
+    def __str__(self) -> str:
+        return self.name_ar or self.name_en or self.name_fr or str(self.pk or "")
+
+    @builtin_property
+    def display_name(self) -> str:
+        language = (translation.get_language() or "ar").split("-")[0]
+        values = {
+            "ar": (self.name_ar, self.name_en, self.name_fr),
+            "en": (self.name_en, self.name_fr, self.name_ar),
+            "fr": (self.name_fr, self.name_en, self.name_ar),
+        }
+        return next((value for value in values.get(language, values["ar"]) if value), "")
+
+    @builtin_property
+    def display_distance(self) -> str:
+        language = (translation.get_language() or "ar").split("-")[0]
+        values = {
+            "ar": (self.distance_ar, self.distance_en, self.distance_fr),
+            "en": (self.distance_en, self.distance_fr, self.distance_ar),
+            "fr": (self.distance_fr, self.distance_en, self.distance_ar),
+        }
+        return next((value for value in values.get(language, values["ar"]) if value), "")
 
 
 class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):

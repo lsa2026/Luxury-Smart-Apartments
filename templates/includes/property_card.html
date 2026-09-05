@@ -1,4 +1,4 @@
-{% load i18n presentation currency %}
+{% load i18n static presentation currency %}
 {% firstof property_detail_url property.get_absolute_url as resolved_property_url %}
 {% with property_name=property|localized_property_name images=property.preview_images %}
 <article
@@ -34,10 +34,15 @@
             </a>
             {% empty %}
             <a class="property-card__slide is-active" href="{{ resolved_property_url }}">
-                <span class="media-empty" aria-label="{% trans 'No image available' %}">
-                    <span aria-hidden="true">◇</span>
-                    {% trans "No image available" %}
-                </span>
+                <img
+                    class="property-card__fallback-image"
+                    src="{% static 'images/property-placeholder.svg' %}"
+                    alt="{% blocktrans with name=property_name %}Branded placeholder for {{ name }}{% endblocktrans %}"
+                    width="720"
+                    height="560"
+                    loading="lazy"
+                    decoding="async"
+                >
             </a>
             {% endfor %}
         </div>

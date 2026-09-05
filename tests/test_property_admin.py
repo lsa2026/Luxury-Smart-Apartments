@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import RequestFactory
 
-from apps.properties.admin import PropertyAdmin, PropertyImageAdmin
+from apps.properties.admin import NearbyPlaceInline, PropertyAdmin, PropertyImageAdmin
 from apps.properties.models import Property, PropertyImage
 
 pytestmark = pytest.mark.django_db
@@ -41,7 +41,7 @@ def test_property_editor_uses_focused_asset_screens_and_collapsed_secondary_cont
         name_ar="وحدة مرتبة",
     )
 
-    assert model_admin.inlines == ()
+    assert model_admin.inlines == (NearbyPlaceInline,)
     assert "asset_management" in model_admin.readonly_fields
     assert "إدارة الصور" in str(model_admin.asset_management(property_obj))
     collapsed_sections = {
@@ -52,6 +52,28 @@ def test_property_editor_uses_focused_asset_screens_and_collapsed_secondary_cont
     assert "المحتوى الإنجليزي" in collapsed_sections
     assert "المحتوى الفرنسي" in collapsed_sections
     assert "SEO — العربية" in collapsed_sections
+
+
+def test_admin_warns_when_a_published_property_has_no_public_image() -> None:
+    request = RequestFactory().get("/admin/properties/property/")
+    request.user = get_user_model().objects.create_superuser(
+        username="image-readiness-admin",
+        email="image-readiness@example.invalid",
+        password="test-password",
+    )
+    property_obj = Property.objects.create(
+        hostaway_listing_id=551,
+        slug="published-without-image",
+        name_ar="وحدة بلا صورة",
+        is_visible=True,
+    )
+    model_admin = PropertyAdmin(Property, AdminSite())
+    annotated = model_admin.get_queryset(request).get(pk=property_obj.pk)
+
+    warning = str(model_admin.public_image_warning(annotated))
+
+    assert "هذه الوحدة المنشورة بلا صورة ظاهرة" in warning
+    assert model_admin.public_image_ready(annotated) is False
 
 
 def test_only_local_images_can_be_deleted_in_admin() -> None:

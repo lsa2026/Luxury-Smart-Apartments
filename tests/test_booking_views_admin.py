@@ -23,7 +23,7 @@ from apps.reservations.services.booking import (
     consume_revalidated_quote,
     create_quote_for_property,
 )
-from apps.reservations.signing import quote_reference
+from apps.reservations.signing import quote_fingerprint, quote_reference
 from apps.reservations.views import GuestDetailsView
 from tests.test_booking_models_services import (
     guest_data,
@@ -111,10 +111,10 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     assert 'name="guest_country_code"' not in content
     assert "+966 50 000 0000" in content
     assert 'inputmode="tel"' in content
-    assert 'data-guest-journey' in content
+    assert "data-guest-journey" in content
     assert 'data-journey-panel="1"' in content
     assert 'data-journey-panel="2"' in content
-    assert 'data-country-select' in content
+    assert "data-country-select" in content
     assert 'data-initial-step="1"' in content
     assert "عنوان الدفع" in content
     assert "عنوان الشارع" in content
@@ -123,6 +123,23 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     assert "الدولة" in content
     assert "الرمز البريدي" in content
     assert "الفوترة" not in content
+    assert "يشمل الإجمالي جميع مكوّنات السعر المبينة أعلاه" in content
+    assert "Hostaway" not in content
+
+
+def test_total_only_quote_shows_authoritative_average_and_unknown_inclusions() -> None:
+    client, quote, _reference = owned_client_quote()
+    quote.components = []
+    quote.signature = quote_fingerprint(quote)
+    quote.save(update_fields=["components", "signature"])
+    reference = quote_reference(quote)
+
+    content = client.get(f"/reservations/quotes/{reference}/").content.decode()
+
+    assert "لليلتين" in content
+    assert "٢٥٠٫١٣" in content
+    assert "لم يفصّل ما إذا كانت الضرائب أو رسوم التنظيف مشمولة" in content
+    assert "لم نضف أي مبلغ محليًا" in content
 
 
 @pytest.mark.parametrize(

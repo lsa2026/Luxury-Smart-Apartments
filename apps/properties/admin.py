@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.services.audit import record_audit
 
-from .models import Amenity, Property, PropertyAmenity, PropertyImage
+from .models import Amenity, NearbyPlace, Property, PropertyAmenity, PropertyImage
 
 
 def _demote_other_city_heroes(image: PropertyImage) -> None:
@@ -30,6 +30,7 @@ def _demote_other_city_heroes(image: PropertyImage) -> None:
         property__city=city,
         is_city_hero=True,
     ).exclude(pk=image.pk).update(is_city_hero=False)
+
 
 PROPERTY_SOURCE_FIELDS = (
     "hostaway_listing_id",
@@ -104,6 +105,10 @@ PROPERTY_LOCAL_FIELDS = {
     "house_rules_ar",
     "house_rules_en",
     "house_rules_fr",
+    "public_location_enabled",
+    "public_location_latitude",
+    "public_location_longitude",
+    "public_location_radius_m",
 }
 
 PROPERTY_FORM_FIELDS = (
@@ -133,6 +138,10 @@ PROPERTY_FORM_FIELDS = (
     "house_rules_ar",
     "house_rules_en",
     "house_rules_fr",
+    "public_location_enabled",
+    "public_location_latitude",
+    "public_location_longitude",
+    "public_location_radius_m",
     "content_is_customized",
 )
 
@@ -223,6 +232,21 @@ class PropertyAmenityInline(admin.TabularInline):
     can_delete = False
 
 
+class NearbyPlaceInline(admin.TabularInline):
+    model = NearbyPlace
+    extra = 1
+    fields = (
+        "name_ar",
+        "distance_ar",
+        "name_en",
+        "distance_en",
+        "name_fr",
+        "distance_fr",
+        "is_active",
+        "sort_order",
+    )
+
+
 @admin.register(Property)
 class PropertyAdmin(admin.ModelAdmin):
     form = PropertyAdminForm
@@ -233,6 +257,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "bedrooms_display",
         "source_active",
         "platform_visible",
+        "public_image_ready",
         "featured_display",
         "image_count",
         "content_languages",
@@ -256,12 +281,15 @@ class PropertyAdmin(admin.ModelAdmin):
         "=hostaway_listing_id",
         "=hostaway_listing_map_id",
     )
-    readonly_fields = PROPERTY_SOURCE_FIELDS + ("asset_management",)
+    readonly_fields = PROPERTY_SOURCE_FIELDS + (
+        "public_image_warning",
+        "asset_management",
+    )
     actions = ("queue_selected_property_sync",)
     # Large Hostaway listings can contain dozens of images and amenities. They
     # stay fully manageable on their dedicated screens instead of making the
     # main property form several pages long.
-    inlines = ()
+    inlines = (NearbyPlaceInline,)
     list_per_page = 25
     fieldsets = (
         (
@@ -270,9 +298,25 @@ class PropertyAdmin(admin.ModelAdmin):
                 "fields": (
                     "slug",
                     ("is_visible", "visibility_management"),
+                    "public_image_warning",
                     ("is_featured", "sort_order"),
                     "content_is_customized",
                 )
+            },
+        ),
+        (
+            _("Approximate public location"),
+            {
+                "fields": (
+                    "public_location_enabled",
+                    ("public_location_latitude", "public_location_longitude"),
+                    "public_location_radius_m",
+                ),
+                "description": _(
+                    "Choose a neighbourhood centre, not the exact property point. "
+                    "The public circle must contain the source location while keeping "
+                    "its centre at least 100 metres away."
+                ),
             },
         ),
         (
@@ -297,7 +341,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "description_en",
                     "city_en",
                     "house_rules_en",
-                )
+                ),
             },
         ),
         (
@@ -310,7 +354,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "description_fr",
                     "city_fr",
                     "house_rules_fr",
-                )
+                ),
             },
         ),
         (
@@ -338,9 +382,7 @@ class PropertyAdmin(admin.ModelAdmin):
             _("Images and amenities"),
             {
                 "fields": ("asset_management",),
-                "description": _(
-                    "Manage large image and amenity collections on focused screens."
-                ),
+                "description": _("Manage large image and amenity collections on focused screens."),
             },
         ),
         (
@@ -353,9 +395,42 @@ class PropertyAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Property]:
-        return super().get_queryset(request).annotate(
-            _image_count=models.Count("images", distinct=True),
-            _amenity_count=models.Count("property_amenities", distinct=True),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _image_count=models.Count("images", distinct=True),
+                _public_image_count=models.Count(
+                    "images",
+                    filter=models.Q(images__is_visible=True)
+                    & (
+                        models.Q(images__source=PropertyImage.Source.LOCAL)
+                        | models.Q(
+                            images__source=PropertyImage.Source.HOSTAWAY,
+                            images__is_active_at_source=True,
+                        )
+                    ),
+                    distinct=True,
+                ),
+                _amenity_count=models.Count("property_amenities", distinct=True),
+            )
+        )
+
+    @admin.display(description=_("Published image warning"))
+    def public_image_warning(self, obj: Property) -> str:
+        if not obj.pk or not obj.is_visible or not obj.hostaway_is_active:
+            return "—"
+        count = getattr(obj, "_public_image_count", None)
+        if count is None:
+            count = obj.images.public().count()
+        if count:
+            return str(_("A public image is available."))
+        return format_html(
+            '<p class="errornote">{}</p>',
+            _(
+                "Warning: this published property has no visible image. Guests will "
+                "see the branded fallback until a public image is restored."
+            ),
         )
 
     @admin.display(description=_("Media and amenities management"))
@@ -420,6 +495,14 @@ class PropertyAdmin(admin.ModelAdmin):
     @admin.display(description=_("Images"), ordering="_image_count")
     def image_count(self, obj: Property) -> int:
         return obj._image_count
+
+    @admin.display(
+        boolean=True,
+        description=_("Public image"),
+        ordering="_public_image_count",
+    )
+    def public_image_ready(self, obj: Property) -> bool:
+        return bool(obj._public_image_count)
 
     @admin.display(description=_("Language completeness"))
     def content_languages(self, obj: Property) -> str:
@@ -517,8 +600,7 @@ class PropertyAdmin(admin.ModelAdmin):
             sync_hostaway_properties_task.delay(listing_id=listing_id)
         self.message_user(
             request,
-            _("Added %(count)d property to the sync queue.")
-            % {"count": len(listing_ids)},
+            _("Added %(count)d property to the sync queue.") % {"count": len(listing_ids)},
         )
 
     def save_formset(

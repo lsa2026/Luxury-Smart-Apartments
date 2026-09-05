@@ -102,19 +102,9 @@
                         <strong>{% display_money quote.total_price quote.currency quote.exchange_rate_snapshot %}</strong>
                     </div>
 
-                    {% if quote.components %}
                     <div class="quote-review__breakdown">
-                        <h3>{% trans "Price breakdown" %}</h3>
-                        <ul class="price-components">
-                            {% for component in quote.components %}
-                            <li>
-                                <span>{{ component.title|localized_price_component }}</span>
-                                <strong>{% display_money component|price_component_amount quote.currency quote.exchange_rate_snapshot %}</strong>
-                            </li>
-                            {% endfor %}
-                        </ul>
+                        {% include "reservations/_price_breakdown.html" with quote=quote %}
                     </div>
-                    {% endif %}
 
                     <div class="quote-review__expiry">
                         <span aria-hidden="true">
@@ -143,7 +133,7 @@
                             <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
                         </svg>
                     </span>
-                    <p>{% trans "Your details remain local and are not sent to Hostaway at this stage." %}</p>
+                    <p>{% trans "Your details are protected and are used only to prepare this booking request at this stage." %}</p>
                 </div>
 
                 {% if quote_is_usable %}

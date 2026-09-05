@@ -137,17 +137,9 @@ var wpwlOptions = {
             </dl>
             {% endif %}
 
-            {% if not modification and intent.quote.components %}
+            {% if not modification %}
             <div class="checkout__breakdown">
-                <h3>{% trans "Price breakdown" %}</h3>
-                <ul class="price-components">
-                    {% for component in intent.quote.components %}
-                    <li>
-                        <span>{{ component.title|localized_price_component }}</span>
-                        <strong>{% display_money component|price_component_amount intent.currency intent.exchange_rate_snapshot %}</strong>
-                    </li>
-                    {% endfor %}
-                </ul>
+                {% include "reservations/_price_breakdown.html" with quote=intent.quote %}
             </div>
             {% endif %}
 

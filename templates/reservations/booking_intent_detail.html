@@ -31,22 +31,12 @@
             </div>
         </div>
         <dl class="quote-summary"><div><dt>{% trans "Check-in" %}</dt><dd>{{ intent.check_in|localized_date }}</dd></div><div><dt>{% trans "Check-out" %}</dt><dd>{{ intent.check_out|localized_date }}</dd></div><div><dt>{% trans "Nights" %}</dt><dd>{{ intent.nights|localized_number }}</dd></div><div><dt>{% trans "Guests" %}</dt><dd>{{ intent.guests|localized_number }}</dd></div><div><dt>{% trans "Email" %}</dt><dd><bdi dir="ltr">{{ masked_email }}</bdi></dd></div><div><dt>{% trans "Phone" %}</dt><dd><bdi dir="ltr">{{ masked_phone }}</bdi></dd></div></dl>
-        {% if intent.quote.components %}
         <div class="review-panel__breakdown">
-            <h3>{% trans "Price breakdown" %}</h3>
-            <ul class="price-components">
-                {% for component in intent.quote.components %}
-                <li>
-                    <span>{{ component.title|localized_price_component }}</span>
-                    <strong>{% display_money component|price_component_amount intent.currency intent.exchange_rate_snapshot %}</strong>
-                </li>
-                {% endfor %}
-            </ul>
+            {% include "reservations/_price_breakdown.html" with quote=intent.quote %}
         </div>
-        {% endif %}
         <div class="review-panel__total">
             <span>{% trans "Total" %}</span>
             <strong>{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}</strong>
-        </div><div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>{% if hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once>{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>{% elif payment_sandbox_enabled %}<div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "The next screen is a local simulation with no financial or Hostaway activity." %}</span></div><a class="button" href="{% url 'payments:sandbox_booking' intent.public_reference %}">{% trans "Continue to test payment" %}</a>{% else %}<button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button>{% endif %}</article>
+        </div><div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>{% if hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once>{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>{% elif payment_sandbox_enabled %}<div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "The next screen is a local simulation with no financial or live-booking activity." %}</span></div><a class="button" href="{% url 'payments:sandbox_booking' intent.public_reference %}">{% trans "Continue to test payment" %}</a>{% else %}<button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button>{% endif %}</article>
 </section>
 {% endblock %}

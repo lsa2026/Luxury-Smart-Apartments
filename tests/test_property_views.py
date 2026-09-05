@@ -1,7 +1,8 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.test import Client
 
-from apps.properties.models import Property, PropertyImage
+from apps.properties.models import NearbyPlace, Property, PropertyImage
 
 pytestmark = pytest.mark.django_db
 
@@ -61,6 +62,62 @@ def test_hidden_images_are_not_rendered_on_detail() -> None:
 
     assert "visible.jpg" in content
     assert "hidden.jpg" not in content
+
+
+def test_property_without_public_images_uses_branded_fallback() -> None:
+    property_obj = make_property(11)
+
+    content = Client().get("/properties/").content.decode()
+
+    assert "images/property-placeholder.svg" in content
+    assert f"صورة بديلة بهوية المنصة للوحدة {property_obj.name_ar}" in content
+
+
+def test_safe_approximate_map_never_publishes_exact_source_coordinates() -> None:
+    property_obj = make_property(12)
+    property_obj.latitude = "24.700000"
+    property_obj.longitude = "46.700000"
+    property_obj.public_location_latitude = "24.703000"
+    property_obj.public_location_longitude = "46.703000"
+    property_obj.public_location_radius_m = 650
+    property_obj.public_location_enabled = True
+    property_obj.full_clean()
+    property_obj.save()
+    NearbyPlace.objects.create(
+        property=property_obj,
+        name_ar="واجهة الحي",
+        name_en="District promenade",
+        distance_ar="خمس دقائق بالسيارة",
+    )
+
+    response = Client().get(property_obj.get_absolute_url())
+    content = response.content.decode()
+    csp = response.headers["Content-Security-Policy"]
+
+    assert response.status_code == 200
+    assert "https://www.openstreetmap.org/export/embed.html?" in content
+    assert "نصف قطر تقريبي: ٦٥٠ متر" in content
+    assert "واجهة الحي" in content
+    assert "خمس دقائق بالسيارة" in content
+    assert "24.700000" not in content
+    assert "46.700000" not in content
+    assert "frame-src 'self' https://www.openstreetmap.org" in csp
+    assert "style-src 'self';" in csp
+    assert "tile.openstreetmap.org" not in csp
+
+
+def test_exact_point_cannot_be_reused_as_public_map_centre() -> None:
+    property_obj = make_property(13)
+    property_obj.latitude = "24.700000"
+    property_obj.longitude = "46.700000"
+    property_obj.public_location_latitude = "24.700000"
+    property_obj.public_location_longitude = "46.700000"
+    property_obj.public_location_enabled = True
+
+    with pytest.raises(ValidationError) as error:
+        property_obj.full_clean()
+
+    assert "public_location_latitude" in error.value.message_dict
 
 
 def test_property_list_is_paginated() -> None:
@@ -147,9 +204,9 @@ def test_home_page_falls_back_to_stock_for_a_city_without_a_nominated_photo() ->
 @pytest.mark.parametrize(
     ("is_city_hero", "is_visible", "property_visible"),
     [
-        (False, True, True),   # not nominated
-        (True, False, True),   # nominated but hidden
-        (True, True, False),   # nominated on an unpublished property
+        (False, True, True),  # not nominated
+        (True, False, True),  # nominated but hidden
+        (True, True, False),  # nominated on an unpublished property
     ],
 )
 def test_only_a_public_nominated_photo_reaches_the_home_page(

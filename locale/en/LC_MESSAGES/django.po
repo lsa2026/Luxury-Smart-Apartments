@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 03:00+0300\n"
+"POT-Creation-Date: 2026-09-05 13:17+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -282,7 +282,7 @@ msgstr ""
 #: .\apps\core\admin_dashboard.py:151 .\apps\reservations\forms.py:89
 #: .\templates\accounts\dashboard.html:28
 #: .\templates\payments\hyperpay_checkout.html:133
-#: .\templates\properties\property_detail.html:122
+#: .\templates\properties\property_detail.html:170
 #: .\templates\reservations\availability_result.html:24
 #: .\templates\reservations\booking_intent_detail.html:33
 #: .\templates\reservations\booking_quote_detail.html:71
@@ -294,7 +294,7 @@ msgstr ""
 #: .\apps\core\admin_dashboard.py:164 .\apps\reservations\forms.py:96
 #: .\templates\accounts\dashboard.html:29
 #: .\templates\payments\hyperpay_checkout.html:134
-#: .\templates\properties\property_detail.html:123
+#: .\templates\properties\property_detail.html:171
 #: .\templates\reservations\availability_result.html:25
 #: .\templates\reservations\booking_intent_detail.html:33
 #: .\templates\reservations\booking_quote_detail.html:83
@@ -1356,7 +1356,7 @@ msgstr ""
 msgid "Requeue failed or retryable events"
 msgstr ""
 
-#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:497
+#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:577
 #: .\apps\reservations\admin.py:720 .\apps\reservations\admin.py:917
 msgid "This action requires elevated permissions."
 msgstr ""
@@ -1873,7 +1873,7 @@ msgstr ""
 msgid "Choose your region"
 msgstr ""
 
-#: .\apps\payments\templatetags\currency.py:51
+#: .\apps\payments\templatetags\currency.py:65
 msgid "Currency conversion is temporarily unavailable; the original price is shown."
 msgstr ""
 
@@ -1913,140 +1913,160 @@ msgstr ""
 msgid "The simulation was cancelled; the original booking remains unchanged."
 msgstr ""
 
-#: .\apps\properties\admin.py:147
+#: .\apps\properties\admin.py:155
 msgid "Short link"
 msgstr ""
 
-#: .\apps\properties\admin.py:148 .\apps\properties\admin.py:152
-#: .\apps\properties\admin.py:156
+#: .\apps\properties\admin.py:156 .\apps\properties\admin.py:160
+#: .\apps\properties\admin.py:164
 msgid "Property name"
 msgstr ""
 
-#: .\apps\properties\admin.py:149 .\apps\properties\admin.py:153
-#: .\apps\properties\admin.py:157
+#: .\apps\properties\admin.py:157 .\apps\properties\admin.py:161
+#: .\apps\properties\admin.py:165
 msgid "Short description"
 msgstr ""
 
-#: .\apps\properties\admin.py:150 .\apps\properties\admin.py:154
-#: .\apps\properties\admin.py:158
+#: .\apps\properties\admin.py:158 .\apps\properties\admin.py:162
+#: .\apps\properties\admin.py:166
 msgid "Full description"
 msgstr ""
 
-#: .\apps\properties\admin.py:151 .\apps\properties\admin.py:155
-#: .\apps\properties\admin.py:159 .\apps\properties\admin.py:396
+#: .\apps\properties\admin.py:159 .\apps\properties\admin.py:163
+#: .\apps\properties\admin.py:167 .\apps\properties\admin.py:468
 #: .\apps\reservations\booking_forms.py:99
 #: .\templates\properties\property_list.html:9
 msgid "City"
 msgstr ""
 
-#: .\apps\properties\admin.py:160 .\apps\properties\admin.py:162
-#: .\apps\properties\admin.py:164
+#: .\apps\properties\admin.py:168 .\apps\properties\admin.py:170
+#: .\apps\properties\admin.py:172
 msgid "SEO title"
 msgstr ""
 
-#: .\apps\properties\admin.py:161 .\apps\properties\admin.py:163
-#: .\apps\properties\admin.py:165
+#: .\apps\properties\admin.py:169 .\apps\properties\admin.py:171
+#: .\apps\properties\admin.py:173
 msgid "SEO description"
 msgstr ""
 
-#: .\apps\properties\admin.py:166 .\apps\properties\admin.py:412
+#: .\apps\properties\admin.py:174 .\apps\properties\admin.py:484
 msgid "Visible on the platform"
 msgstr ""
 
-#: .\apps\properties\admin.py:167
+#: .\apps\properties\admin.py:175
 msgid "Visibility management"
 msgstr ""
 
-#: .\apps\properties\admin.py:168
+#: .\apps\properties\admin.py:176
 msgid "Featured property"
 msgstr ""
 
-#: .\apps\properties\admin.py:169
+#: .\apps\properties\admin.py:177
 msgid "Display order"
 msgstr ""
 
-#: .\apps\properties\admin.py:170
+#: .\apps\properties\admin.py:178
 msgid "Local content is customised"
 msgstr ""
 
-#: .\apps\properties\admin.py:207 .\apps\properties\admin.py:587
+#: .\apps\properties\admin.py:215 .\apps\properties\admin.py:667
 msgid "Preview"
 msgstr ""
 
-#: .\apps\properties\admin.py:268
+#: .\apps\properties\admin.py:295
 msgid "Publishing and display"
 msgstr ""
 
-#: .\apps\properties\admin.py:279 .\apps\properties\admin.py:437
+#: .\apps\properties\admin.py:307
+msgid "Approximate public location"
+msgstr ""
+
+#: .\apps\properties\admin.py:315
+msgid "Choose a neighbourhood centre, not the exact property point. The public circle must contain the source location while keeping its centre at least 100 metres away."
+msgstr ""
+
+#: .\apps\properties\admin.py:322 .\apps\properties\admin.py:517
 msgid "Arabic content"
 msgstr ""
 
-#: .\apps\properties\admin.py:291
+#: .\apps\properties\admin.py:334
 msgid "English content"
 msgstr ""
 
-#: .\apps\properties\admin.py:304
+#: .\apps\properties\admin.py:347
 msgid "French content"
 msgstr ""
 
-#: .\apps\properties\admin.py:317
+#: .\apps\properties\admin.py:360
 msgid "SEO — Arabic"
 msgstr ""
 
-#: .\apps\properties\admin.py:324
+#: .\apps\properties\admin.py:367
 msgid "SEO — English"
 msgstr ""
 
-#: .\apps\properties\admin.py:331
+#: .\apps\properties\admin.py:374
 msgid "SEO — French"
 msgstr ""
 
-#: .\apps\properties\admin.py:338
+#: .\apps\properties\admin.py:381
 msgid "Images and amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:342
+#: .\apps\properties\admin.py:385
 msgid "Manage large image and amenity collections on focused screens."
 msgstr ""
 
-#: .\apps\properties\admin.py:347
+#: .\apps\properties\admin.py:390
 msgid "Hostaway operational data"
 msgstr ""
 
-#: .\apps\properties\admin.py:361
+#: .\apps\properties\admin.py:416
+msgid "Published image warning"
+msgstr ""
+
+#: .\apps\properties\admin.py:424
+msgid "A public image is available."
+msgstr ""
+
+#: .\apps\properties\admin.py:428
+msgid "Warning: this published property has no visible image. Guests will see the branded fallback until a public image is restored."
+msgstr ""
+
+#: .\apps\properties\admin.py:433
 msgid "Media and amenities management"
 msgstr ""
 
-#: .\apps\properties\admin.py:364
+#: .\apps\properties\admin.py:436
 msgid "Save the property first, then manage images and amenities."
 msgstr ""
 
-#: .\apps\properties\admin.py:382
+#: .\apps\properties\admin.py:454
 #, python-format
 msgid "%(images)d images · %(amenities)d amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:385
+#: .\apps\properties\admin.py:457
 msgid "Manage images"
 msgstr ""
 
-#: .\apps\properties\admin.py:387
+#: .\apps\properties\admin.py:459
 msgid "Edit alternative text"
 msgstr ""
 
-#: .\apps\properties\admin.py:389
+#: .\apps\properties\admin.py:461
 msgid "Manage amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:392
+#: .\apps\properties\admin.py:464
 msgid "Local name"
 msgstr ""
 
-#: .\apps\properties\admin.py:400 .\apps\reservations\forms.py:103
+#: .\apps\properties\admin.py:472 .\apps\reservations\forms.py:103
 #: .\templates\accounts\dashboard.html:30
 #: .\templates\payments\hyperpay_checkout.html:136
 #: .\templates\properties\property_detail.html:93
-#: .\templates\properties\property_detail.html:124
+#: .\templates\properties\property_detail.html:172
 #: .\templates\properties\property_list.html:10
 #: .\templates\reservations\availability_result.html:26
 #: .\templates\reservations\booking_intent_detail.html:33
@@ -2058,45 +2078,49 @@ msgstr ""
 msgid "Guests"
 msgstr ""
 
-#: .\apps\properties\admin.py:404
+#: .\apps\properties\admin.py:476
 #: .\templates\properties\property_detail.html:94
 #: .\templates\properties\property_list.html:11
 msgid "Bedrooms"
 msgstr ""
 
-#: .\apps\properties\admin.py:408
+#: .\apps\properties\admin.py:480
 #: .\templates\admin\integrations\integration_health.html:14
 msgid "Active in Hostaway"
 msgstr ""
 
-#: .\apps\properties\admin.py:416 .\templates\includes\property_card.html:50
+#: .\apps\properties\admin.py:488 .\templates\includes\property_card.html:55
 #: .\templates\includes\review_card.html:14
 msgid "Featured"
 msgstr ""
 
-#: .\apps\properties\admin.py:420
+#: .\apps\properties\admin.py:492
 msgid "Images"
 msgstr ""
 
-#: .\apps\properties\admin.py:424
+#: .\apps\properties\admin.py:498
+msgid "Public image"
+msgstr ""
+
+#: .\apps\properties\admin.py:504
 msgid "Language completeness"
 msgstr ""
 
-#: .\apps\properties\admin.py:433 .\templates\admin\index.html:180
+#: .\apps\properties\admin.py:513 .\templates\admin\index.html:180
 #: .\templates\admin\notifications\system_status.html:43
 msgid "Last sync"
 msgstr ""
 
-#: .\apps\properties\admin.py:488
+#: .\apps\properties\admin.py:568
 msgid "Sync the selected Hostaway properties"
 msgstr ""
 
-#: .\apps\properties\admin.py:509
+#: .\apps\properties\admin.py:589
 #, python-format
 msgid "The task worker is not running. Start it with: %(commands)s"
 msgstr ""
 
-#: .\apps\properties\admin.py:520
+#: .\apps\properties\admin.py:600
 #, python-format
 msgid "Added %(count)d property to the sync queue."
 msgstr ""
@@ -2143,8 +2167,8 @@ msgstr ""
 msgid "Outdoor and parking"
 msgstr ""
 
-#: .\apps\properties\apps.py:8 .\apps\properties\models.py:187
-#: .\apps\properties\views.py:184 .\apps\properties\views.py:201
+#: .\apps\properties\apps.py:8 .\apps\properties\models.py:246
+#: .\apps\properties\views.py:229 .\apps\properties\views.py:246
 #: .\templates\admin\base_site.html:32
 #: .\templates\admin\integrations\integration_health.html:32
 #: .\templates\admin\integrations\integration_health.html:47
@@ -2156,74 +2180,114 @@ msgstr ""
 msgid "Properties"
 msgstr ""
 
-#: .\apps\properties\models.py:23
+#: .\apps\properties\models.py:25
 msgid "Automatic"
 msgstr ""
 
-#: .\apps\properties\models.py:24
+#: .\apps\properties\models.py:26
 msgid "Manual"
 msgstr ""
 
-#: .\apps\properties\models.py:120
+#: .\apps\properties\models.py:72
+msgid "Show an approximate public map"
+msgstr ""
+
+#: .\apps\properties\models.py:79
+msgid "Approximate map latitude"
+msgstr ""
+
+#: .\apps\properties\models.py:86
+msgid "Approximate map longitude"
+msgstr ""
+
+#: .\apps\properties\models.py:91
+msgid "Approximate area radius in metres"
+msgstr ""
+
+#: .\apps\properties\models.py:148
 msgid "Indicative nightly rate"
 msgstr ""
 
-#: .\apps\properties\models.py:124 .\apps\properties\models.py:125
-#: .\apps\properties\models.py:126 .\templates\properties\_stay_policy.html:49
+#: .\apps\properties\models.py:152 .\apps\properties\models.py:153
+#: .\apps\properties\models.py:154 .\templates\properties\_stay_policy.html:49
 msgid "House rules"
 msgstr ""
 
-#: .\apps\properties\models.py:186 .\apps\reservations\admin.py:295
+#: .\apps\properties\models.py:245 .\apps\reservations\admin.py:295
 #: .\apps\reservations\admin.py:552
 msgid "Property"
 msgstr ""
 
+#: .\apps\properties\models.py:281
+msgid "Choose an approximate map centre before enabling the map."
+msgstr ""
+
+#: .\apps\properties\models.py:285
+msgid "An exact source location is required to validate the privacy area."
+msgstr ""
+
 #: .\apps\properties\models.py:291
+msgid "Move the public map centre at least 100 metres from the exact location."
+msgstr ""
+
+#: .\apps\properties\models.py:295
+msgid "The exact location must remain inside the approximate public area."
+msgstr ""
+
+#: .\apps\properties\models.py:396
+msgid "Nearby place"
+msgstr ""
+
+#: .\apps\properties\models.py:397
+msgid "Nearby places"
+msgstr ""
+
+#: .\apps\properties\models.py:456
 msgctxt "PropertyImage"
 msgid "Local"
 msgstr ""
 
-#: .\apps\properties\models.py:321
+#: .\apps\properties\models.py:486
 msgid "Represents its city on the home page"
 msgstr ""
 
-#: .\apps\properties\models.py:364
+#: .\apps\properties\models.py:529
 msgid "Property image"
 msgstr ""
 
-#: .\apps\properties\models.py:365
+#: .\apps\properties\models.py:530
 #: .\templates\admin\notifications\dashboard.html:31
 msgid "Property images"
 msgstr ""
 
-#: .\apps\properties\models.py:373
+#: .\apps\properties\models.py:538
 #, python-format
 msgid "Image %(pk)s"
 msgstr ""
 
-#: .\apps\properties\models.py:448
+#: .\apps\properties\models.py:613
 msgid "Amenity"
 msgstr ""
 
-#: .\apps\properties\models.py:449
+#: .\apps\properties\models.py:614
 #: .\templates\properties\property_detail.html:102
 msgid "Amenities"
 msgstr ""
 
-#: .\apps\properties\models.py:474
+#: .\apps\properties\models.py:639
 msgctxt "PropertyAmenity"
 msgid "Local"
 msgstr ""
 
-#: .\apps\properties\models.py:502
+#: .\apps\properties\models.py:667
 msgid "Property amenity"
 msgstr ""
 
-#: .\apps\properties\models.py:503
+#: .\apps\properties\models.py:668
 msgid "Property amenities"
 msgstr ""
 
-#: .\apps\properties\views.py:195 .\templates\admin\base_site.html:29
+#: .\apps\properties\views.py:240 .\templates\admin\base_site.html:29
 #: .\templates\includes\breadcrumb.html:4 .\templates\includes\header.html:14
 #: .\templates\includes\mobile_navigation.html:9
 msgid "Home"
@@ -3176,7 +3240,7 @@ msgstr ""
 #: .\templates\admin\integrations\integration_health.html:48
 #: .\templates\admin\notifications\dashboard.html:32
 #: .\templates\admin\notifications\dashboard.html:60
-#: .\templates\properties\property_detail.html:112
+#: .\templates\properties\property_detail.html:160
 msgid "Reviews"
 msgstr ""
 
@@ -3261,13 +3325,13 @@ msgid "Booking"
 msgstr ""
 
 #: .\templates\accounts\dashboard.html:22
-msgid "Test booking — no Hostaway booking"
+msgid "Test booking — no live booking"
 msgstr ""
 
 #: .\templates\accounts\dashboard.html:31
 #: .\templates\admin\core\customers.html:25
-#: .\templates\payments\hyperpay_checkout.html:155
-#: .\templates\reservations\booking_intent_detail.html:48
+#: .\templates\payments\hyperpay_checkout.html:147
+#: .\templates\reservations\booking_intent_detail.html:38
 msgid "Total"
 msgstr ""
 
@@ -4341,7 +4405,7 @@ msgstr ""
 msgid "Value"
 msgstr ""
 
-#: .\templates\admin\index.html:202 .\templates\includes\property_card.html:157
+#: .\templates\admin\index.html:202 .\templates\includes\property_card.html:162
 #: .\templates\properties\gallery.html:14
 msgid "View details"
 msgstr ""
@@ -5057,8 +5121,8 @@ msgstr ""
 msgid "Guest support"
 msgstr ""
 
-#: .\templates\core\home.html:67 .\templates\includes\property_card.html:153
-#: .\templates\properties\property_detail.html:148
+#: .\templates\core\home.html:67 .\templates\includes\property_card.html:158
+#: .\templates\properties\property_detail.html:196
 msgid "Live price checks"
 msgstr ""
 
@@ -5442,86 +5506,89 @@ msgid "Stay"
 msgstr ""
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:136
+#: .\templates\reservations\booking_quote_detail.html:124
 msgid "Guest details"
 msgstr ""
 
 #: .\templates\includes\property_card.html:23
-#: .\templates\includes\property_card.html:37
-#: .\templates\includes\property_card.html:39
 msgid "No image available"
 msgstr ""
 
-#: .\templates\includes\property_card.html:46
-#: .\templates\properties\property_detail.html:116
+#: .\templates\includes\property_card.html:40
+#, python-format
+msgid "Branded placeholder for %(name)s"
+msgstr ""
+
+#: .\templates\includes\property_card.html:51
+#: .\templates\properties\property_detail.html:164
 msgid "Daily · Monthly"
 msgstr ""
 
-#: .\templates\includes\property_card.html:60
+#: .\templates\includes\property_card.html:65
 #: .\templates\properties\gallery.html:66
-#: .\templates\properties\property_detail.html:164
+#: .\templates\properties\property_detail.html:212
 msgid "Previous photo"
 msgstr ""
 
-#: .\templates\includes\property_card.html:68
+#: .\templates\includes\property_card.html:73
 #: .\templates\properties\gallery.html:71
-#: .\templates\properties\property_detail.html:169
+#: .\templates\properties\property_detail.html:217
 msgid "Next photo"
 msgstr ""
 
-#: .\templates\includes\property_card.html:95
+#: .\templates\includes\property_card.html:100
 #: .\templates\includes\review_card.html:17
 #: .\templates\properties\property_detail.html:35
 #, python-format
 msgid "Rated %(rating)s out of 5"
 msgstr ""
 
-#: .\templates\includes\property_card.html:102
+#: .\templates\includes\property_card.html:107
 #: .\templates\properties\property_detail.html:25
 msgid "Property details"
 msgstr ""
 
-#: .\templates\includes\property_card.html:106
+#: .\templates\includes\property_card.html:111
 #, python-format
 msgid "%(counter)s guest"
 msgid_plural "%(counter)s guests"
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\templates\includes\property_card.html:112
+#: .\templates\includes\property_card.html:117
 #, python-format
 msgid "%(counter)s bedroom"
 msgid_plural "%(counter)s bedrooms"
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\templates\includes\property_card.html:118
+#: .\templates\includes\property_card.html:123
 #, python-format
 msgid "%(counter)s bed"
 msgid_plural "%(counter)s beds"
 msgstr[0] ""
 msgstr[1] ""
 
-#: .\templates\includes\property_card.html:126
+#: .\templates\includes\property_card.html:131
 msgid "Total for your stay"
 msgstr ""
 
-#: .\templates\includes\property_card.html:136
+#: .\templates\includes\property_card.html:141
 msgid "Choose this property"
 msgstr ""
 
-#: .\templates\includes\property_card.html:149
-#: .\templates\properties\property_detail.html:143
+#: .\templates\includes\property_card.html:154
+#: .\templates\properties\property_detail.html:191
 msgid "Final price depends on your dates"
 msgstr ""
 
-#: .\templates\includes\property_card.html:150
-#: .\templates\properties\property_detail.html:142
+#: .\templates\includes\property_card.html:155
+#: .\templates\properties\property_detail.html:190
 #, python-format
 msgid "From %(amount)s / night"
 msgstr ""
 
-#: .\templates\includes\property_card.html:152
+#: .\templates\includes\property_card.html:157
 msgid "Price based on dates"
 msgstr ""
 
@@ -5567,7 +5634,7 @@ msgstr ""
 
 #: .\templates\payments\hyperpay_checkout.html:3
 #: .\templates\payments\hyperpay_checkout.html:27
-#: .\templates\reservations\booking_quote_detail.html:243
+#: .\templates\reservations\booking_quote_detail.html:231
 msgid "Secure payment"
 msgstr ""
 
@@ -5640,21 +5707,15 @@ msgstr ""
 msgid "Nights"
 msgstr ""
 
-#: .\templates\payments\hyperpay_checkout.html:142
-#: .\templates\reservations\booking_intent_detail.html:36
-#: .\templates\reservations\booking_quote_detail.html:107
-msgid "Price breakdown"
-msgstr ""
-
-#: .\templates\payments\hyperpay_checkout.html:158
+#: .\templates\payments\hyperpay_checkout.html:150
 msgid "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference."
 msgstr ""
 
-#: .\templates\payments\hyperpay_checkout.html:162
+#: .\templates\payments\hyperpay_checkout.html:154
 msgid "Back to your change request"
 msgstr ""
 
-#: .\templates\payments\hyperpay_checkout.html:166
+#: .\templates\payments\hyperpay_checkout.html:158
 msgid "Back to your request"
 msgstr ""
 
@@ -5680,7 +5741,7 @@ msgid "Payment verified and change completed"
 msgstr ""
 
 #: .\templates\payments\hyperpay_result.html:18
-msgid "Your reservation was updated successfully in Hostaway."
+msgid "Your reservation was updated successfully."
 msgstr ""
 
 #: .\templates\payments\hyperpay_result.html:20
@@ -5784,7 +5845,7 @@ msgid "Test payment environment"
 msgstr ""
 
 #: .\templates\payments\sandbox_checkout.html:10
-msgid "No real money is charged, no card details are collected, and nothing is sent to Hostaway."
+msgid "No real money is charged, no card details are collected, and no live booking is created."
 msgstr ""
 
 #: .\templates\payments\sandbox_checkout.html:14
@@ -5832,7 +5893,7 @@ msgid "No external payment gateway call"
 msgstr ""
 
 #: .\templates\payments\sandbox_checkout.html:30
-msgid "No Hostaway reservation or modification"
+msgid "No live reservation or modification"
 msgstr ""
 
 #: .\templates\payments\sandbox_checkout.html:31
@@ -5860,17 +5921,17 @@ msgid "Times, cancellation and house rules"
 msgstr ""
 
 #: .\templates\properties\_stay_policy.html:17
-#: .\templates\reservations\booking_quote_detail.html:298
+#: .\templates\reservations\booking_quote_detail.html:286
 msgid "Check-in from"
 msgstr ""
 
 #: .\templates\properties\_stay_policy.html:23
-#: .\templates\reservations\booking_quote_detail.html:299
+#: .\templates\reservations\booking_quote_detail.html:287
 msgid "Check-out by"
 msgstr ""
 
 #: .\templates\properties\_stay_policy.html:30
-#: .\templates\reservations\booking_quote_detail.html:300
+#: .\templates\reservations\booking_quote_detail.html:288
 #: .\templates\reservations\manage_reservation.html:203
 msgid "Cancellation"
 msgstr ""
@@ -5891,7 +5952,7 @@ msgstr ""
 #: .\templates\properties\gallery.html:3
 #: .\templates\properties\property_detail.html:58
 #: .\templates\properties\property_detail.html:79
-#: .\templates\properties\property_detail.html:160
+#: .\templates\properties\property_detail.html:208
 msgid "Photo gallery"
 msgstr ""
 
@@ -5917,12 +5978,12 @@ msgid "Gallery pages"
 msgstr ""
 
 #: .\templates\properties\gallery.html:64
-#: .\templates\properties\property_detail.html:158
+#: .\templates\properties\property_detail.html:206
 msgid "Property photo viewer"
 msgstr ""
 
 #: .\templates\properties\gallery.html:65
-#: .\templates\properties\property_detail.html:163
+#: .\templates\properties\property_detail.html:211
 msgid "Close gallery"
 msgstr ""
 
@@ -5949,18 +6010,18 @@ msgid "%(rating)s across all booking channels"
 msgstr ""
 
 #: .\templates\properties\property_detail.html:51
-#: .\templates\properties\property_detail.html:121
+#: .\templates\properties\property_detail.html:169
 msgid "Your selected stay"
 msgstr ""
 
 #: .\templates\properties\property_detail.html:51
-#: .\templates\properties\property_detail.html:138
+#: .\templates\properties\property_detail.html:186
 #: .\templates\reservations\availability_result.html:50
 msgid "Live check"
 msgstr ""
 
 #: .\templates\properties\property_detail.html:52
-#: .\templates\properties\property_detail.html:133
+#: .\templates\properties\property_detail.html:181
 msgid "Continue booking"
 msgstr ""
 
@@ -6022,56 +6083,81 @@ msgstr ""
 msgid "Questions about this stay"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:111
+#: .\templates\properties\property_detail.html:114
 msgid "Location"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:111
+#: .\templates\properties\property_detail.html:120
+msgid "Approximate area"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:124
 msgid "For guest privacy and property security, the exact address is provided only through the confirmed booking process."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:112
-msgid "Guest experiences"
+#: .\templates\properties\property_detail.html:126
+msgid "Approximate property area map"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:112
-msgid "All reviews"
-msgstr ""
-
-#: .\templates\properties\property_detail.html:118
-msgid "Availability checked"
-msgstr ""
-
-#: .\templates\properties\property_detail.html:119
-msgid "Continue with this property"
-msgstr ""
-
-#: .\templates\properties\property_detail.html:120
-msgid "Your dates and guest count have been kept. You do not need to search again."
+#: .\templates\properties\property_detail.html:129
+msgid "Approximate property area"
 msgstr ""
 
 #: .\templates\properties\property_detail.html:135
-msgid "Change dates or guests"
-msgstr ""
-
-#: .\templates\properties\property_detail.html:136
-msgid "Availability is securely rechecked when you continue"
+#, python-format
+msgid "Approximate radius: %(radius)s metres"
 msgstr ""
 
 #: .\templates\properties\property_detail.html:139
+msgid "View the approximate area on OpenStreetMap"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:145
+msgid "Close to you"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:160
+msgid "Guest experiences"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:160
+msgid "All reviews"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:166
+msgid "Availability checked"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:167
+msgid "Continue with this property"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:168
+msgid "Your dates and guest count have been kept. You do not need to search again."
+msgstr ""
+
+#: .\templates\properties\property_detail.html:183
+msgid "Change dates or guests"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:184
+msgid "Availability is securely rechecked when you continue"
+msgstr ""
+
+#: .\templates\properties\property_detail.html:187
 #: .\templates\reservations\_availability_form.html:59
 msgid "Plan your stay"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:146
+#: .\templates\properties\property_detail.html:194
 msgid "Enter your dates to receive a temporary live price."
 msgstr ""
 
-#: .\templates\properties\property_detail.html:153
+#: .\templates\properties\property_detail.html:201
 msgid "You may also like"
 msgstr ""
 
-#: .\templates\properties\property_detail.html:153
+#: .\templates\properties\property_detail.html:201
 msgid "Similar stays"
 msgstr ""
 
@@ -6177,6 +6263,7 @@ msgstr ""
 
 #: .\templates\reservations\_availability_form.html:53
 #: .\templates\reservations\_management_calendar.html:16
+#: .\templates\reservations\_price_breakdown.html:24
 msgid "night"
 msgstr ""
 
@@ -6272,6 +6359,25 @@ msgstr ""
 msgid "Use these dates"
 msgstr ""
 
+#: .\templates\reservations\_price_breakdown.html:3
+msgid "Price breakdown"
+msgstr ""
+
+#: .\templates\reservations\_price_breakdown.html:15
+msgid "The total includes every price component listed above."
+msgstr ""
+
+#: .\templates\reservations\_price_breakdown.html:21
+#, python-format
+msgid "for %(nights)s night"
+msgid_plural "for %(nights)s nights"
+msgstr[0] ""
+msgstr[1] ""
+
+#: .\templates\reservations\_price_breakdown.html:29
+msgid "The pricing system returned one authoritative total but did not itemise whether taxes or cleaning fees are included. No amount has been added locally."
+msgstr ""
+
 #: .\templates\reservations\_reservation_access_form.html:24
 msgid "Open my booking"
 msgstr ""
@@ -6365,7 +6471,7 @@ msgid "Go back"
 msgstr ""
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:320
+#: .\templates\reservations\booking_quote_detail.html:308
 msgid "Review booking request"
 msgstr ""
 
@@ -6377,32 +6483,32 @@ msgstr ""
 msgid "Review your request"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Not a confirmed booking"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "This request is not confirmed until payment is completed and the booking is created."
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Continue to secure payment"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 #: .\templates\reservations\modification_detail.html:64
 msgid "Testing mode"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
-msgid "The next screen is a local simulation with no financial or Hostaway activity."
+#: .\templates\reservations\booking_intent_detail.html:40
+msgid "The next screen is a local simulation with no financial or live-booking activity."
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Continue to test payment"
 msgstr ""
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Payment will be enabled soon"
 msgstr ""
 
@@ -6441,109 +6547,109 @@ msgstr ""
 msgid "Total price"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:126
+#: .\templates\reservations\booking_quote_detail.html:114
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:135
+#: .\templates\reservations\booking_quote_detail.html:123
 msgid "Step two"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:146
-msgid "Your details remain local and are not sent to Hostaway at this stage."
+#: .\templates\reservations\booking_quote_detail.html:134
+msgid "Your details are protected and are used only to prepare this booking request at this stage."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:172
+#: .\templates\reservations\booking_quote_detail.html:160
 msgid "Guest details progress"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:175
+#: .\templates\reservations\booking_quote_detail.html:163
 msgid "Your details"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:175
+#: .\templates\reservations\booking_quote_detail.html:163
 msgid "Contact information"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:180
-#: .\templates\reservations\booking_quote_detail.html:244
+#: .\templates\reservations\booking_quote_detail.html:168
+#: .\templates\reservations\booking_quote_detail.html:232
 msgid "Payment address"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:180
+#: .\templates\reservations\booking_quote_detail.html:168
 msgid "For secure payment"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:187
+#: .\templates\reservations\booking_quote_detail.html:175
 msgid "Primary guest"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:188
+#: .\templates\reservations\booking_quote_detail.html:176
 msgid "How can we reach you?"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:190
+#: .\templates\reservations\booking_quote_detail.html:178
 msgid "4 fields"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:220
+#: .\templates\reservations\booking_quote_detail.html:208
 msgid "Optional details"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:220
+#: .\templates\reservations\booking_quote_detail.html:208
 msgid "Special requests and offers"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:235
+#: .\templates\reservations\booking_quote_detail.html:223
 msgid "Continue to payment address"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:246
+#: .\templates\reservations\booking_quote_detail.html:234
 msgid "Back"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:251
+#: .\templates\reservations\booking_quote_detail.html:239
 msgid "This address is required by the secure payment provider and may differ from the apartment address."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:256
-#: .\templates\reservations\booking_quote_detail.html:288
+#: .\templates\reservations\booking_quote_detail.html:244
+#: .\templates\reservations\booking_quote_detail.html:276
 msgid "optional"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:296
+#: .\templates\reservations\booking_quote_detail.html:284
 msgid "What you are agreeing to"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:300
+#: .\templates\reservations\booking_quote_detail.html:288
 #, python-format
 msgid "%(share)s back up to %(hours)s hours before arrival"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:302
+#: .\templates\reservations\booking_quote_detail.html:290
 msgid "Read the full terms for this stay"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:308
+#: .\templates\reservations\booking_quote_detail.html:296
 msgid "Required agreements"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:310
+#: .\templates\reservations\booking_quote_detail.html:298
 #, python-format
 msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:314
+#: .\templates\reservations\booking_quote_detail.html:302
 #, python-format
 msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">privacy policy</a>."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:323
+#: .\templates\reservations\booking_quote_detail.html:311
 msgid "Availability and price will be checked again before payment."
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:328
+#: .\templates\reservations\booking_quote_detail.html:316
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr ""
 
@@ -6565,7 +6671,7 @@ msgid "Test booking"
 msgstr ""
 
 #: .\templates\reservations\manage_reservation.html:83
-msgid "This is a local test record. No reservation or change has been sent to Hostaway."
+msgid "This is a local test record. No live reservation or change was created."
 msgstr ""
 
 #: .\templates\reservations\manage_reservation.html:117
@@ -6806,7 +6912,7 @@ msgid "Pay the difference securely"
 msgstr ""
 
 #: .\templates\reservations\modification_detail.html:64
-msgid "Pay the difference locally without financial or Hostaway activity."
+msgid "Pay the difference locally without financial or live-booking activity."
 msgstr ""
 
 #: .\templates\reservations\modification_detail.html:65

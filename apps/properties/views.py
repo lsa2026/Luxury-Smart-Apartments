@@ -1,3 +1,6 @@
+import math
+from urllib.parse import urlencode
+
 from django.db.models import Prefetch, QuerySet
 from django.http import Http404, HttpRequest, HttpResponse
 from django.urls import reverse
@@ -13,7 +16,7 @@ from apps.reviews.models import Review
 from apps.reviews.summary import rating_summary
 
 from .cities import canonical_city, supported_city_choices
-from .models import Property, PropertyAmenity, PropertyImage
+from .models import NearbyPlace, Property, PropertyAmenity, PropertyImage
 
 
 def _card_images() -> QuerySet[PropertyImage]:
@@ -23,6 +26,34 @@ def _card_images() -> QuerySet[PropertyImage]:
         "hostaway_sort_order",
         "id",
     )
+
+
+def _public_map_context(property_obj: Property) -> dict[str, object] | None:
+    """Build an OSM embed URL from the displaced public centre only."""
+    if not property_obj.has_safe_public_location:
+        return None
+    latitude = float(property_obj.public_location_latitude)
+    longitude = float(property_obj.public_location_longitude)
+    radius = property_obj.public_location_radius_m
+    padded_radius = radius * 1.35
+    latitude_delta = padded_radius / 111_320
+    longitude_delta = padded_radius / (111_320 * max(math.cos(math.radians(latitude)), 0.2))
+    bbox = ",".join(
+        f"{value:.6f}"
+        for value in (
+            longitude - longitude_delta,
+            latitude - latitude_delta,
+            longitude + longitude_delta,
+            latitude + latitude_delta,
+        )
+    )
+    embed_query = urlencode({"bbox": bbox, "layer": "mapnik"})
+    view_query = urlencode({"map": f"15/{latitude:.6f}/{longitude:.6f}"})
+    return {
+        "embed_url": f"https://www.openstreetmap.org/export/embed.html?{embed_query}",
+        "view_url": f"https://www.openstreetmap.org/?{view_query}",
+        "radius_m": radius,
+    }
 
 
 class PropertyListView(ListView):
@@ -72,9 +103,7 @@ class PropertyListView(ListView):
             context["page_obj"].object_list = page_properties
         context["filter_cities"] = [
             {"value": value, "label": label}
-            for value, label in supported_city_choices(
-                translation.get_language() or "ar"
-            )
+            for value, label in supported_city_choices(translation.get_language() or "ar")
         ]
         context["filter_room_types"] = sorted(
             {item.room_type for item in page_properties if item.room_type}
@@ -114,6 +143,11 @@ class PropertyDetailView(DetailView):
                 queryset=Review.objects.public().select_related("property")[:6],
                 to_attr="_public_reviews",
             ),
+            Prefetch(
+                "nearby_places",
+                queryset=NearbyPlace.objects.filter(is_active=True).order_by("sort_order", "id"),
+                to_attr="_public_nearby_places",
+            ),
         )
 
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
@@ -138,6 +172,9 @@ class PropertyDetailView(DetailView):
                     "guests": preserved_form.cleaned_data["guests"],
                 }
         all_gallery_images = property_obj._public_images
+        public_map = _public_map_context(property_obj)
+        if public_map:
+            self.request._public_osm_embed = True
         similar = list(
             Property.objects.public()
             .filter(city=property_obj.city)
@@ -178,6 +215,8 @@ class PropertyDetailView(DetailView):
                     is_active=True,
                     property=property_obj,
                 ),
+                "public_map": public_map,
+                "nearby_places": property_obj._public_nearby_places,
                 "similar_properties": similar,
                 "total_image_count": len(all_gallery_images),
                 "breadcrumb_items": [

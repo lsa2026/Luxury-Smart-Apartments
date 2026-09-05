@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 02:59+0300\n"
+"POT-Creation-Date: 2026-09-05 13:17+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -298,7 +298,7 @@ msgstr "وحدة غير مرتبطة"
 #: .\apps\core\admin_dashboard.py:151 .\apps\reservations\forms.py:89
 #: .\templates\accounts\dashboard.html:28
 #: .\templates\payments\hyperpay_checkout.html:133
-#: .\templates\properties\property_detail.html:122
+#: .\templates\properties\property_detail.html:170
 #: .\templates\reservations\availability_result.html:24
 #: .\templates\reservations\booking_intent_detail.html:33
 #: .\templates\reservations\booking_quote_detail.html:71
@@ -310,7 +310,7 @@ msgstr "الوصول"
 #: .\apps\core\admin_dashboard.py:164 .\apps\reservations\forms.py:96
 #: .\templates\accounts\dashboard.html:29
 #: .\templates\payments\hyperpay_checkout.html:134
-#: .\templates\properties\property_detail.html:123
+#: .\templates\properties\property_detail.html:171
 #: .\templates\reservations\availability_result.html:25
 #: .\templates\reservations\booking_intent_detail.html:33
 #: .\templates\reservations\booking_quote_detail.html:83
@@ -1385,7 +1385,7 @@ msgstr "البيانات المنقحة"
 msgid "Requeue failed or retryable events"
 msgstr "إعادة الأحداث الفاشلة أو القابلة للمحاولة إلى الطابور"
 
-#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:497
+#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:577
 #: .\apps\reservations\admin.py:720 .\apps\reservations\admin.py:917
 msgid "This action requires elevated permissions."
 msgstr "يتطلب الإجراء صلاحية عليا."
@@ -1904,7 +1904,7 @@ msgstr ""
 msgid "Choose your region"
 msgstr "اختر دولتك"
 
-#: .\apps\payments\templatetags\currency.py:51
+#: .\apps\payments\templatetags\currency.py:65
 msgid "Currency conversion is temporarily unavailable; the original price is shown."
 msgstr "تحويل العملة غير متاح مؤقتًا؛ يظهر السعر الأصلي."
 
@@ -1944,140 +1944,160 @@ msgstr "تمت محاكاة رفض دفع فرق السعر دون أي خصم."
 msgid "The simulation was cancelled; the original booking remains unchanged."
 msgstr "أُلغيت المحاكاة؛ ويبقى الحجز الأصلي دون تغيير."
 
-#: .\apps\properties\admin.py:147
+#: .\apps\properties\admin.py:155
 msgid "Short link"
 msgstr "الرابط المختصر"
 
-#: .\apps\properties\admin.py:148 .\apps\properties\admin.py:152
-#: .\apps\properties\admin.py:156
+#: .\apps\properties\admin.py:156 .\apps\properties\admin.py:160
+#: .\apps\properties\admin.py:164
 msgid "Property name"
 msgstr "اسم الوحدة"
 
-#: .\apps\properties\admin.py:149 .\apps\properties\admin.py:153
-#: .\apps\properties\admin.py:157
+#: .\apps\properties\admin.py:157 .\apps\properties\admin.py:161
+#: .\apps\properties\admin.py:165
 msgid "Short description"
 msgstr "الوصف المختصر"
 
-#: .\apps\properties\admin.py:150 .\apps\properties\admin.py:154
-#: .\apps\properties\admin.py:158
+#: .\apps\properties\admin.py:158 .\apps\properties\admin.py:162
+#: .\apps\properties\admin.py:166
 msgid "Full description"
 msgstr "الوصف الكامل"
 
-#: .\apps\properties\admin.py:151 .\apps\properties\admin.py:155
-#: .\apps\properties\admin.py:159 .\apps\properties\admin.py:396
+#: .\apps\properties\admin.py:159 .\apps\properties\admin.py:163
+#: .\apps\properties\admin.py:167 .\apps\properties\admin.py:468
 #: .\apps\reservations\booking_forms.py:99
 #: .\templates\properties\property_list.html:9
 msgid "City"
 msgstr "المدينة"
 
-#: .\apps\properties\admin.py:160 .\apps\properties\admin.py:162
-#: .\apps\properties\admin.py:164
+#: .\apps\properties\admin.py:168 .\apps\properties\admin.py:170
+#: .\apps\properties\admin.py:172
 msgid "SEO title"
 msgstr "عنوان SEO"
 
-#: .\apps\properties\admin.py:161 .\apps\properties\admin.py:163
-#: .\apps\properties\admin.py:165
+#: .\apps\properties\admin.py:169 .\apps\properties\admin.py:171
+#: .\apps\properties\admin.py:173
 msgid "SEO description"
 msgstr "وصف SEO"
 
-#: .\apps\properties\admin.py:166 .\apps\properties\admin.py:412
+#: .\apps\properties\admin.py:174 .\apps\properties\admin.py:484
 msgid "Visible on the platform"
 msgstr "ظاهرة في المنصة"
 
-#: .\apps\properties\admin.py:167
+#: .\apps\properties\admin.py:175
 msgid "Visibility management"
 msgstr "إدارة الظهور"
 
-#: .\apps\properties\admin.py:168
+#: .\apps\properties\admin.py:176
 msgid "Featured property"
 msgstr "وحدة مميّزة"
 
-#: .\apps\properties\admin.py:169
+#: .\apps\properties\admin.py:177
 msgid "Display order"
 msgstr "ترتيب الظهور"
 
-#: .\apps\properties\admin.py:170
+#: .\apps\properties\admin.py:178
 msgid "Local content is customised"
 msgstr "المحتوى المحلي مخصّص"
 
-#: .\apps\properties\admin.py:207 .\apps\properties\admin.py:587
+#: .\apps\properties\admin.py:215 .\apps\properties\admin.py:667
 msgid "Preview"
 msgstr "معاينة"
 
-#: .\apps\properties\admin.py:268
+#: .\apps\properties\admin.py:295
 msgid "Publishing and display"
 msgstr "النشر والعرض"
 
-#: .\apps\properties\admin.py:279 .\apps\properties\admin.py:437
+#: .\apps\properties\admin.py:307
+msgid "Approximate public location"
+msgstr "الموقع العام التقريبي"
+
+#: .\apps\properties\admin.py:315
+msgid "Choose a neighbourhood centre, not the exact property point. The public circle must contain the source location while keeping its centre at least 100 metres away."
+msgstr "اختر مركزًا للحي لا نقطة الوحدة الدقيقة. يجب أن تضم الدائرة العامة موقع المصدر وأن يبتعد مركزها عنه مئة متر على الأقل."
+
+#: .\apps\properties\admin.py:322 .\apps\properties\admin.py:517
 msgid "Arabic content"
 msgstr "المحتوى العربي"
 
-#: .\apps\properties\admin.py:291
+#: .\apps\properties\admin.py:334
 msgid "English content"
 msgstr "المحتوى الإنجليزي"
 
-#: .\apps\properties\admin.py:304
+#: .\apps\properties\admin.py:347
 msgid "French content"
 msgstr "المحتوى الفرنسي"
 
-#: .\apps\properties\admin.py:317
+#: .\apps\properties\admin.py:360
 msgid "SEO — Arabic"
 msgstr "SEO — العربية"
 
-#: .\apps\properties\admin.py:324
+#: .\apps\properties\admin.py:367
 msgid "SEO — English"
 msgstr "SEO — الإنجليزية"
 
-#: .\apps\properties\admin.py:331
+#: .\apps\properties\admin.py:374
 msgid "SEO — French"
 msgstr "SEO — الفرنسية"
 
-#: .\apps\properties\admin.py:338
+#: .\apps\properties\admin.py:381
 msgid "Images and amenities"
 msgstr "الصور والمرافق"
 
-#: .\apps\properties\admin.py:342
+#: .\apps\properties\admin.py:385
 msgid "Manage large image and amenity collections on focused screens."
 msgstr "أدر مجموعات الصور والمرافق الكبيرة في شاشات مخصصة وواضحة."
 
-#: .\apps\properties\admin.py:347
+#: .\apps\properties\admin.py:390
 msgid "Hostaway operational data"
 msgstr "بيانات Hostaway التشغيلية"
 
-#: .\apps\properties\admin.py:361
+#: .\apps\properties\admin.py:416
+msgid "Published image warning"
+msgstr "تحذير صورة الوحدة المنشورة"
+
+#: .\apps\properties\admin.py:424
+msgid "A public image is available."
+msgstr "تتوفر صورة عامة."
+
+#: .\apps\properties\admin.py:428
+msgid "Warning: this published property has no visible image. Guests will see the branded fallback until a public image is restored."
+msgstr "تحذير: هذه الوحدة المنشورة بلا صورة ظاهرة. سيرى الضيوف الصورة البديلة بهوية المنصة حتى استعادة صورة عامة."
+
+#: .\apps\properties\admin.py:433
 msgid "Media and amenities management"
 msgstr "إدارة الصور والمرافق"
 
-#: .\apps\properties\admin.py:364
+#: .\apps\properties\admin.py:436
 msgid "Save the property first, then manage images and amenities."
 msgstr "احفظ الوحدة أولًا، ثم أدر الصور والمرافق."
 
-#: .\apps\properties\admin.py:382
+#: .\apps\properties\admin.py:454
 #, python-format
 msgid "%(images)d images · %(amenities)d amenities"
 msgstr "%(images)d صورة · %(amenities)d مرفق"
 
-#: .\apps\properties\admin.py:385
+#: .\apps\properties\admin.py:457
 msgid "Manage images"
 msgstr "إدارة الصور"
 
-#: .\apps\properties\admin.py:387
+#: .\apps\properties\admin.py:459
 msgid "Edit alternative text"
 msgstr "تحرير النص البديل"
 
-#: .\apps\properties\admin.py:389
+#: .\apps\properties\admin.py:461
 msgid "Manage amenities"
 msgstr "إدارة المرافق"
 
-#: .\apps\properties\admin.py:392
+#: .\apps\properties\admin.py:464
 msgid "Local name"
 msgstr "الاسم المحلي"
 
-#: .\apps\properties\admin.py:400 .\apps\reservations\forms.py:103
+#: .\apps\properties\admin.py:472 .\apps\reservations\forms.py:103
 #: .\templates\accounts\dashboard.html:30
 #: .\templates\payments\hyperpay_checkout.html:136
 #: .\templates\properties\property_detail.html:93
-#: .\templates\properties\property_detail.html:124
+#: .\templates\properties\property_detail.html:172
 #: .\templates\properties\property_list.html:10
 #: .\templates\reservations\availability_result.html:26
 #: .\templates\reservations\booking_intent_detail.html:33
@@ -2089,45 +2109,49 @@ msgstr "الاسم المحلي"
 msgid "Guests"
 msgstr "الضيوف"
 
-#: .\apps\properties\admin.py:404
+#: .\apps\properties\admin.py:476
 #: .\templates\properties\property_detail.html:94
 #: .\templates\properties\property_list.html:11
 msgid "Bedrooms"
 msgstr "غرف النوم"
 
-#: .\apps\properties\admin.py:408
+#: .\apps\properties\admin.py:480
 #: .\templates\admin\integrations\integration_health.html:14
 msgid "Active in Hostaway"
 msgstr "نشط في Hostaway"
 
-#: .\apps\properties\admin.py:416 .\templates\includes\property_card.html:50
+#: .\apps\properties\admin.py:488 .\templates\includes\property_card.html:55
 #: .\templates\includes\review_card.html:14
 msgid "Featured"
 msgstr "مميزة"
 
-#: .\apps\properties\admin.py:420
+#: .\apps\properties\admin.py:492
 msgid "Images"
 msgstr "الصور"
 
-#: .\apps\properties\admin.py:424
+#: .\apps\properties\admin.py:498
+msgid "Public image"
+msgstr "صورة عامة"
+
+#: .\apps\properties\admin.py:504
 msgid "Language completeness"
 msgstr "اكتمال اللغات"
 
-#: .\apps\properties\admin.py:433 .\templates\admin\index.html:180
+#: .\apps\properties\admin.py:513 .\templates\admin\index.html:180
 #: .\templates\admin\notifications\system_status.html:43
 msgid "Last sync"
 msgstr "آخر مزامنة"
 
-#: .\apps\properties\admin.py:488
+#: .\apps\properties\admin.py:568
 msgid "Sync the selected Hostaway properties"
 msgstr "مزامنة وحدات Hostaway المحددة"
 
-#: .\apps\properties\admin.py:509
+#: .\apps\properties\admin.py:589
 #, python-format
 msgid "The task worker is not running. Start it with: %(commands)s"
 msgstr "عامل المهام غير مفعّل. شغّل: %(commands)s"
 
-#: .\apps\properties\admin.py:520
+#: .\apps\properties\admin.py:600
 #, python-format
 msgid "Added %(count)d property to the sync queue."
 msgstr "أضيفت %(count)d وحدة إلى طابور المزامنة."
@@ -2182,8 +2206,8 @@ msgstr "المزامنة الآمنة"
 msgid "Outdoor and parking"
 msgstr "العملاء والحجوزات"
 
-#: .\apps\properties\apps.py:8 .\apps\properties\models.py:187
-#: .\apps\properties\views.py:184 .\apps\properties\views.py:201
+#: .\apps\properties\apps.py:8 .\apps\properties\models.py:246
+#: .\apps\properties\views.py:229 .\apps\properties\views.py:246
 #: .\templates\admin\base_site.html:32
 #: .\templates\admin\integrations\integration_health.html:32
 #: .\templates\admin\integrations\integration_health.html:47
@@ -2195,74 +2219,114 @@ msgstr "العملاء والحجوزات"
 msgid "Properties"
 msgstr "الوحدات"
 
-#: .\apps\properties\models.py:23
+#: .\apps\properties\models.py:25
 msgid "Automatic"
 msgstr "تلقائي"
 
-#: .\apps\properties\models.py:24
+#: .\apps\properties\models.py:26
 msgid "Manual"
 msgstr "يدوي"
 
-#: .\apps\properties\models.py:120
+#: .\apps\properties\models.py:72
+msgid "Show an approximate public map"
+msgstr "عرض خريطة عامة تقريبية"
+
+#: .\apps\properties\models.py:79
+msgid "Approximate map latitude"
+msgstr "خط عرض مركز الخريطة التقريبي"
+
+#: .\apps\properties\models.py:86
+msgid "Approximate map longitude"
+msgstr "خط طول مركز الخريطة التقريبي"
+
+#: .\apps\properties\models.py:91
+msgid "Approximate area radius in metres"
+msgstr "نصف قطر النطاق التقريبي بالمتر"
+
+#: .\apps\properties\models.py:148
 msgid "Indicative nightly rate"
 msgstr ""
 
-#: .\apps\properties\models.py:124 .\apps\properties\models.py:125
-#: .\apps\properties\models.py:126 .\templates\properties\_stay_policy.html:49
+#: .\apps\properties\models.py:152 .\apps\properties\models.py:153
+#: .\apps\properties\models.py:154 .\templates\properties\_stay_policy.html:49
 msgid "House rules"
 msgstr ""
 
-#: .\apps\properties\models.py:186 .\apps\reservations\admin.py:295
+#: .\apps\properties\models.py:245 .\apps\reservations\admin.py:295
 #: .\apps\reservations\admin.py:552
 msgid "Property"
 msgstr "وحدة"
 
+#: .\apps\properties\models.py:281
+msgid "Choose an approximate map centre before enabling the map."
+msgstr "اختر مركزًا تقريبيًا للخريطة قبل تفعيلها."
+
+#: .\apps\properties\models.py:285
+msgid "An exact source location is required to validate the privacy area."
+msgstr "يلزم توفر موقع المصدر الدقيق للتحقق من نطاق الخصوصية."
+
 #: .\apps\properties\models.py:291
+msgid "Move the public map centre at least 100 metres from the exact location."
+msgstr "أبعِد مركز الخريطة العامة مئة متر على الأقل عن الموقع الدقيق."
+
+#: .\apps\properties\models.py:295
+msgid "The exact location must remain inside the approximate public area."
+msgstr "يجب أن يبقى الموقع الدقيق داخل النطاق العام التقريبي."
+
+#: .\apps\properties\models.py:396
+msgid "Nearby place"
+msgstr "مكان قريب"
+
+#: .\apps\properties\models.py:397
+msgid "Nearby places"
+msgstr "أماكن قريبة"
+
+#: .\apps\properties\models.py:456
 msgctxt "PropertyImage"
 msgid "Local"
 msgstr "محلية"
 
-#: .\apps\properties\models.py:321
+#: .\apps\properties\models.py:486
 msgid "Represents its city on the home page"
 msgstr ""
 
-#: .\apps\properties\models.py:364
+#: .\apps\properties\models.py:529
 msgid "Property image"
 msgstr "صورة وحدة"
 
-#: .\apps\properties\models.py:365
+#: .\apps\properties\models.py:530
 #: .\templates\admin\notifications\dashboard.html:31
 msgid "Property images"
 msgstr "صور الوحدات"
 
-#: .\apps\properties\models.py:373
+#: .\apps\properties\models.py:538
 #, python-format
 msgid "Image %(pk)s"
 msgstr "صورة %(pk)s"
 
-#: .\apps\properties\models.py:448
+#: .\apps\properties\models.py:613
 msgid "Amenity"
 msgstr "مرفق"
 
-#: .\apps\properties\models.py:449
+#: .\apps\properties\models.py:614
 #: .\templates\properties\property_detail.html:102
 msgid "Amenities"
 msgstr "المرافق"
 
-#: .\apps\properties\models.py:474
+#: .\apps\properties\models.py:639
 msgctxt "PropertyAmenity"
 msgid "Local"
 msgstr "محلي"
 
-#: .\apps\properties\models.py:502
+#: .\apps\properties\models.py:667
 msgid "Property amenity"
 msgstr "مرفق الوحدة"
 
-#: .\apps\properties\models.py:503
+#: .\apps\properties\models.py:668
 msgid "Property amenities"
 msgstr "مرافق الوحدات"
 
-#: .\apps\properties\views.py:195 .\templates\admin\base_site.html:29
+#: .\apps\properties\views.py:240 .\templates\admin\base_site.html:29
 #: .\templates\includes\breadcrumb.html:4 .\templates\includes\header.html:14
 #: .\templates\includes\mobile_navigation.html:9
 msgid "Home"
@@ -3213,7 +3277,7 @@ msgstr "تم تمييز %(count)d مراجعة."
 #: .\templates\admin\integrations\integration_health.html:48
 #: .\templates\admin\notifications\dashboard.html:32
 #: .\templates\admin\notifications\dashboard.html:60
-#: .\templates\properties\property_detail.html:112
+#: .\templates\properties\property_detail.html:160
 msgid "Reviews"
 msgstr "المراجعات"
 
@@ -3300,13 +3364,13 @@ msgid "Booking"
 msgstr "الحجز"
 
 #: .\templates\accounts\dashboard.html:22
-msgid "Test booking — no Hostaway booking"
-msgstr "حجز تجريبي — لا يوجد حجز في Hostaway"
+msgid "Test booking — no live booking"
+msgstr "حجز تجريبي — لا يوجد حجز فعلي"
 
 #: .\templates\accounts\dashboard.html:31
 #: .\templates\admin\core\customers.html:25
-#: .\templates\payments\hyperpay_checkout.html:155
-#: .\templates\reservations\booking_intent_detail.html:48
+#: .\templates\payments\hyperpay_checkout.html:147
+#: .\templates\reservations\booking_intent_detail.html:38
 msgid "Total"
 msgstr "الإجمالي"
 
@@ -4418,7 +4482,7 @@ msgstr "الوحدة"
 msgid "Value"
 msgstr "القيمة"
 
-#: .\templates\admin\index.html:202 .\templates\includes\property_card.html:157
+#: .\templates\admin\index.html:202 .\templates\includes\property_card.html:162
 #: .\templates\properties\gallery.html:14
 msgid "View details"
 msgstr "عرض التفاصيل"
@@ -5137,8 +5201,8 @@ msgstr "وجهتان استثنائيتان"
 msgid "Guest support"
 msgstr "دعم الضيوف"
 
-#: .\templates\core\home.html:67 .\templates\includes\property_card.html:153
-#: .\templates\properties\property_detail.html:148
+#: .\templates\core\home.html:67 .\templates\includes\property_card.html:158
+#: .\templates\properties\property_detail.html:196
 msgid "Live price checks"
 msgstr "تحقق مباشر من السعر"
 
@@ -5522,46 +5586,49 @@ msgid "Stay"
 msgstr "الإقامة"
 
 #: .\templates\includes\progress_indicator.html:5
-#: .\templates\reservations\booking_quote_detail.html:136
+#: .\templates\reservations\booking_quote_detail.html:124
 msgid "Guest details"
 msgstr "بيانات الضيف"
 
 #: .\templates\includes\property_card.html:23
-#: .\templates\includes\property_card.html:37
-#: .\templates\includes\property_card.html:39
 msgid "No image available"
 msgstr "لا توجد صورة متاحة"
 
-#: .\templates\includes\property_card.html:46
-#: .\templates\properties\property_detail.html:116
+#: .\templates\includes\property_card.html:40
+#, python-format
+msgid "Branded placeholder for %(name)s"
+msgstr "صورة بديلة بهوية المنصة للوحدة %(name)s"
+
+#: .\templates\includes\property_card.html:51
+#: .\templates\properties\property_detail.html:164
 msgid "Daily · Monthly"
 msgstr "يومي · شهري"
 
-#: .\templates\includes\property_card.html:60
+#: .\templates\includes\property_card.html:65
 #: .\templates\properties\gallery.html:66
-#: .\templates\properties\property_detail.html:164
+#: .\templates\properties\property_detail.html:212
 msgid "Previous photo"
 msgstr "الصورة السابقة"
 
-#: .\templates\includes\property_card.html:68
+#: .\templates\includes\property_card.html:73
 #: .\templates\properties\gallery.html:71
-#: .\templates\properties\property_detail.html:169
+#: .\templates\properties\property_detail.html:217
 msgid "Next photo"
 msgstr "الصورة التالية"
 
-#: .\templates\includes\property_card.html:95
+#: .\templates\includes\property_card.html:100
 #: .\templates\includes\review_card.html:17
 #: .\templates\properties\property_detail.html:35
 #, python-format
 msgid "Rated %(rating)s out of 5"
 msgstr "التقييم %(rating)s من 5"
 
-#: .\templates\includes\property_card.html:102
+#: .\templates\includes\property_card.html:107
 #: .\templates\properties\property_detail.html:25
 msgid "Property details"
 msgstr "تفاصيل الوحدة"
 
-#: .\templates\includes\property_card.html:106
+#: .\templates\includes\property_card.html:111
 #, python-format
 msgid "%(counter)s guest"
 msgid_plural "%(counter)s guests"
@@ -5572,7 +5639,7 @@ msgstr[3] "%(counter)s ضيوف"
 msgstr[4] "%(counter)s ضيفًا"
 msgstr[5] "%(counter)s ضيف"
 
-#: .\templates\includes\property_card.html:112
+#: .\templates\includes\property_card.html:117
 #, python-format
 msgid "%(counter)s bedroom"
 msgid_plural "%(counter)s bedrooms"
@@ -5583,7 +5650,7 @@ msgstr[3] "%(counter)s غرف نوم"
 msgstr[4] "%(counter)s غرفة نوم"
 msgstr[5] "%(counter)s غرفة نوم"
 
-#: .\templates\includes\property_card.html:118
+#: .\templates\includes\property_card.html:123
 #, python-format
 msgid "%(counter)s bed"
 msgid_plural "%(counter)s beds"
@@ -5594,29 +5661,29 @@ msgstr[3] "%(counter)s أسرّة"
 msgstr[4] "%(counter)s سريرًا"
 msgstr[5] "%(counter)s سرير"
 
-#: .\templates\includes\property_card.html:126
+#: .\templates\includes\property_card.html:131
 msgid "Total for your stay"
 msgstr "الإجمالي لإقامتك"
 
-#: .\templates\includes\property_card.html:136
+#: .\templates\includes\property_card.html:141
 msgid "Choose this property"
 msgstr "اختيار هذه الوحدة"
 
-#: .\templates\includes\property_card.html:149
-#: .\templates\properties\property_detail.html:143
+#: .\templates\includes\property_card.html:154
+#: .\templates\properties\property_detail.html:191
 #, fuzzy
 #| msgid "Price based on dates"
 msgid "Final price depends on your dates"
 msgstr "السعر حسب التواريخ"
 
-#: .\templates\includes\property_card.html:150
-#: .\templates\properties\property_detail.html:142
+#: .\templates\includes\property_card.html:155
+#: .\templates\properties\property_detail.html:190
 #, fuzzy, python-format
 #| msgid "%(count)d nights"
 msgid "From %(amount)s / night"
 msgstr "%(count)d ليالٍ"
 
-#: .\templates\includes\property_card.html:152
+#: .\templates\includes\property_card.html:157
 msgid "Price based on dates"
 msgstr "السعر حسب التواريخ"
 
@@ -5662,7 +5729,7 @@ msgstr "تواصل عبر واتساب"
 
 #: .\templates\payments\hyperpay_checkout.html:3
 #: .\templates\payments\hyperpay_checkout.html:27
-#: .\templates\reservations\booking_quote_detail.html:243
+#: .\templates\reservations\booking_quote_detail.html:231
 msgid "Secure payment"
 msgstr "دفع آمن"
 
@@ -5735,21 +5802,15 @@ msgstr "المغادرة المطلوبة"
 msgid "Nights"
 msgstr "الليالي"
 
-#: .\templates\payments\hyperpay_checkout.html:142
-#: .\templates\reservations\booking_intent_detail.html:36
-#: .\templates\reservations\booking_quote_detail.html:107
-msgid "Price breakdown"
-msgstr "تفاصيل السعر"
-
-#: .\templates\payments\hyperpay_checkout.html:158
+#: .\templates\payments\hyperpay_checkout.html:150
 msgid "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference."
 msgstr "سيتم تنفيذ عملية الدفع بالريال السعودي (SAR). المبلغ بالعملة المختارة معروض للتوضيح."
 
-#: .\templates\payments\hyperpay_checkout.html:162
+#: .\templates\payments\hyperpay_checkout.html:154
 msgid "Back to your change request"
 msgstr "العودة إلى طلب التعديل"
 
-#: .\templates\payments\hyperpay_checkout.html:166
+#: .\templates\payments\hyperpay_checkout.html:158
 msgid "Back to your request"
 msgstr "العودة إلى طلبك"
 
@@ -5775,8 +5836,8 @@ msgid "Payment verified and change completed"
 msgstr "تم التحقق من الدفع واكتمل التعديل"
 
 #: .\templates\payments\hyperpay_result.html:18
-msgid "Your reservation was updated successfully in Hostaway."
-msgstr "تم تحديث حجزك بنجاح في Hostaway."
+msgid "Your reservation was updated successfully."
+msgstr "تم تحديث حجزك بنجاح."
 
 #: .\templates\payments\hyperpay_result.html:20
 msgid "Payment verified; change pending"
@@ -5888,8 +5949,8 @@ msgid "Test payment environment"
 msgstr "بيئة دفع تجريبية"
 
 #: .\templates\payments\sandbox_checkout.html:10
-msgid "No real money is charged, no card details are collected, and nothing is sent to Hostaway."
-msgstr "لا يتم خصم أي مبلغ حقيقي، ولا نجمع بيانات بطاقات، ولا نرسل أي شيء إلى Hostaway."
+msgid "No real money is charged, no card details are collected, and no live booking is created."
+msgstr "لا يُخصم أي مبلغ حقيقي، ولا تُجمع بيانات بطاقات، ولا يُنشأ حجز فعلي."
 
 #: .\templates\payments\sandbox_checkout.html:14
 msgid "Booking payment test"
@@ -5936,8 +5997,8 @@ msgid "No external payment gateway call"
 msgstr "بدون اتصال ببوابة دفع خارجية"
 
 #: .\templates\payments\sandbox_checkout.html:30
-msgid "No Hostaway reservation or modification"
-msgstr "بدون إنشاء أو تعديل حجز في Hostaway"
+msgid "No live reservation or modification"
+msgstr "لا إنشاء أو تعديل لحجز فعلي"
 
 #: .\templates\payments\sandbox_checkout.html:31
 msgid "Clearly marked local test records"
@@ -5968,21 +6029,21 @@ msgid "Times, cancellation and house rules"
 msgstr "الشروط والخصوصية والإلغاء والكوكيز"
 
 #: .\templates\properties\_stay_policy.html:17
-#: .\templates\reservations\booking_quote_detail.html:298
+#: .\templates\reservations\booking_quote_detail.html:286
 #, fuzzy
 #| msgid "Check-in"
 msgid "Check-in from"
 msgstr "الوصول"
 
 #: .\templates\properties\_stay_policy.html:23
-#: .\templates\reservations\booking_quote_detail.html:299
+#: .\templates\reservations\booking_quote_detail.html:287
 #, fuzzy
 #| msgid "Check-out"
 msgid "Check-out by"
 msgstr "المغادرة"
 
 #: .\templates\properties\_stay_policy.html:30
-#: .\templates\reservations\booking_quote_detail.html:300
+#: .\templates\reservations\booking_quote_detail.html:288
 #: .\templates\reservations\manage_reservation.html:203
 msgid "Cancellation"
 msgstr "الإلغاء"
@@ -6004,7 +6065,7 @@ msgstr ""
 #: .\templates\properties\gallery.html:3
 #: .\templates\properties\property_detail.html:58
 #: .\templates\properties\property_detail.html:79
-#: .\templates\properties\property_detail.html:160
+#: .\templates\properties\property_detail.html:208
 msgid "Photo gallery"
 msgstr "معرض الصور"
 
@@ -6030,12 +6091,12 @@ msgid "Gallery pages"
 msgstr "صفحات المعرض"
 
 #: .\templates\properties\gallery.html:64
-#: .\templates\properties\property_detail.html:158
+#: .\templates\properties\property_detail.html:206
 msgid "Property photo viewer"
 msgstr "عارض صور الوحدة"
 
 #: .\templates\properties\gallery.html:65
-#: .\templates\properties\property_detail.html:163
+#: .\templates\properties\property_detail.html:211
 msgid "Close gallery"
 msgstr "إغلاق المعرض"
 
@@ -6067,18 +6128,18 @@ msgid "%(rating)s across all booking channels"
 msgstr ""
 
 #: .\templates\properties\property_detail.html:51
-#: .\templates\properties\property_detail.html:121
+#: .\templates\properties\property_detail.html:169
 msgid "Your selected stay"
 msgstr "إقامتك المختارة"
 
 #: .\templates\properties\property_detail.html:51
-#: .\templates\properties\property_detail.html:138
+#: .\templates\properties\property_detail.html:186
 #: .\templates\reservations\availability_result.html:50
 msgid "Live check"
 msgstr "تحقق مباشر"
 
 #: .\templates\properties\property_detail.html:52
-#: .\templates\properties\property_detail.html:133
+#: .\templates\properties\property_detail.html:181
 msgid "Continue booking"
 msgstr "متابعة الحجز"
 
@@ -6142,56 +6203,81 @@ msgstr ""
 msgid "Questions about this stay"
 msgstr "عن هذه الإقامة"
 
-#: .\templates\properties\property_detail.html:111
+#: .\templates\properties\property_detail.html:114
 msgid "Location"
 msgstr "الموقع"
 
-#: .\templates\properties\property_detail.html:111
+#: .\templates\properties\property_detail.html:120
+msgid "Approximate area"
+msgstr "نطاق تقريبي"
+
+#: .\templates\properties\property_detail.html:124
 msgid "For guest privacy and property security, the exact address is provided only through the confirmed booking process."
 msgstr "حفاظًا على خصوصية الضيف وأمان الوحدة، لا يُقدّم العنوان الدقيق إلا عبر مسار الحجز المؤكد."
 
-#: .\templates\properties\property_detail.html:112
+#: .\templates\properties\property_detail.html:126
+msgid "Approximate property area map"
+msgstr "خريطة النطاق التقريبي للوحدة"
+
+#: .\templates\properties\property_detail.html:129
+msgid "Approximate property area"
+msgstr "النطاق التقريبي للوحدة"
+
+#: .\templates\properties\property_detail.html:135
+#, python-format
+msgid "Approximate radius: %(radius)s metres"
+msgstr "نصف قطر تقريبي: %(radius)s متر"
+
+#: .\templates\properties\property_detail.html:139
+msgid "View the approximate area on OpenStreetMap"
+msgstr "عرض النطاق التقريبي على OpenStreetMap"
+
+#: .\templates\properties\property_detail.html:145
+msgid "Close to you"
+msgstr "قريب منك"
+
+#: .\templates\properties\property_detail.html:160
 msgid "Guest experiences"
 msgstr "تجارب الضيوف"
 
-#: .\templates\properties\property_detail.html:112
+#: .\templates\properties\property_detail.html:160
 msgid "All reviews"
 msgstr "جميع المراجعات"
 
-#: .\templates\properties\property_detail.html:118
+#: .\templates\properties\property_detail.html:166
 msgid "Availability checked"
 msgstr "تم التحقق من التوافر"
 
-#: .\templates\properties\property_detail.html:119
+#: .\templates\properties\property_detail.html:167
 msgid "Continue with this property"
 msgstr "المتابعة بهذه الوحدة"
 
-#: .\templates\properties\property_detail.html:120
+#: .\templates\properties\property_detail.html:168
 msgid "Your dates and guest count have been kept. You do not need to search again."
 msgstr "احتفظنا بتواريخك وعدد الضيوف، ولا تحتاج إلى البحث مرة أخرى."
 
-#: .\templates\properties\property_detail.html:135
+#: .\templates\properties\property_detail.html:183
 msgid "Change dates or guests"
 msgstr "تغيير التواريخ أو الضيوف"
 
-#: .\templates\properties\property_detail.html:136
+#: .\templates\properties\property_detail.html:184
 msgid "Availability is securely rechecked when you continue"
 msgstr "سيُعاد التحقق من التوافر بأمان عند المتابعة"
 
-#: .\templates\properties\property_detail.html:139
+#: .\templates\properties\property_detail.html:187
 #: .\templates\reservations\_availability_form.html:59
 msgid "Plan your stay"
 msgstr "خطط لإقامتك"
 
-#: .\templates\properties\property_detail.html:146
+#: .\templates\properties\property_detail.html:194
 msgid "Enter your dates to receive a temporary live price."
 msgstr "أدخل تواريخك للحصول على سعر مباشر مؤقت."
 
-#: .\templates\properties\property_detail.html:153
+#: .\templates\properties\property_detail.html:201
 msgid "You may also like"
 msgstr "قد يعجبك أيضًا"
 
-#: .\templates\properties\property_detail.html:153
+#: .\templates\properties\property_detail.html:201
 msgid "Similar stays"
 msgstr "إقامات مشابهة"
 
@@ -6297,6 +6383,7 @@ msgstr "تاريخا إقامتك جاهزان"
 
 #: .\templates\reservations\_availability_form.html:53
 #: .\templates\reservations\_management_calendar.html:16
+#: .\templates\reservations\_price_breakdown.html:24
 msgid "night"
 msgstr "ليلة"
 
@@ -6391,6 +6478,29 @@ msgstr "سيتم التحقق المباشر من التوافر والسعر ق
 #: .\templates\reservations\_management_calendar.html:52
 msgid "Use these dates"
 msgstr "اعتماد هذه التواريخ"
+
+#: .\templates\reservations\_price_breakdown.html:3
+msgid "Price breakdown"
+msgstr "تفاصيل السعر"
+
+#: .\templates\reservations\_price_breakdown.html:15
+msgid "The total includes every price component listed above."
+msgstr "يشمل الإجمالي جميع مكوّنات السعر المبينة أعلاه."
+
+#: .\templates\reservations\_price_breakdown.html:21
+#, python-format
+msgid "for %(nights)s night"
+msgid_plural "for %(nights)s nights"
+msgstr[0] "لـ %(nights)s ليلة"
+msgstr[1] "لليلة واحدة"
+msgstr[2] "لليلتين"
+msgstr[3] "لـ %(nights)s ليالٍ"
+msgstr[4] "لـ %(nights)s ليلة"
+msgstr[5] "لـ %(nights)s ليلة"
+
+#: .\templates\reservations\_price_breakdown.html:29
+msgid "The pricing system returned one authoritative total but did not itemise whether taxes or cleaning fees are included. No amount has been added locally."
+msgstr "أعاد نظام التسعير إجماليًا واحدًا معتمدًا، لكنه لم يفصّل ما إذا كانت الضرائب أو رسوم التنظيف مشمولة. لم نضف أي مبلغ محليًا."
 
 #: .\templates\reservations\_reservation_access_form.html:24
 msgid "Open my booking"
@@ -6489,7 +6599,7 @@ msgid "Go back"
 msgstr "العودة"
 
 #: .\templates\reservations\booking_intent_detail.html:3
-#: .\templates\reservations\booking_quote_detail.html:320
+#: .\templates\reservations\booking_quote_detail.html:308
 msgid "Review booking request"
 msgstr "مراجعة طلب الحجز"
 
@@ -6501,32 +6611,32 @@ msgstr "طلب حجز محلي"
 msgid "Review your request"
 msgstr "راجع طلبك"
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Not a confirmed booking"
 msgstr "هذا الطلب غير مؤكد"
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "This request is not confirmed until payment is completed and the booking is created."
 msgstr "هذا الطلب غير مؤكد حتى اكتمال الدفع وإنشاء الحجز."
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Continue to secure payment"
 msgstr "المتابعة إلى الدفع الآمن"
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 #: .\templates\reservations\modification_detail.html:64
 msgid "Testing mode"
 msgstr "وضع الاختبار"
 
-#: .\templates\reservations\booking_intent_detail.html:50
-msgid "The next screen is a local simulation with no financial or Hostaway activity."
-msgstr "الشاشة التالية محاكاة محلية بلا أي حركة مالية أو نشاط في Hostaway."
+#: .\templates\reservations\booking_intent_detail.html:40
+msgid "The next screen is a local simulation with no financial or live-booking activity."
+msgstr "الشاشة التالية محاكاة محلية بلا أي حركة مالية أو إنشاء حجز فعلي."
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Continue to test payment"
 msgstr "المتابعة إلى الدفع التجريبي"
 
-#: .\templates\reservations\booking_intent_detail.html:50
+#: .\templates\reservations\booking_intent_detail.html:40
 msgid "Payment will be enabled soon"
 msgstr "الدفع سيُفعّل قريبًا"
 
@@ -6565,113 +6675,113 @@ msgstr "تفاصيل الإقامة"
 msgid "Total price"
 msgstr "السعر الإجمالي"
 
-#: .\templates\reservations\booking_quote_detail.html:126
+#: .\templates\reservations\booking_quote_detail.html:114
 #, python-format
 msgid "This quote expires at %(expires)s."
 msgstr "ينتهي هذا العرض في %(expires)s."
 
-#: .\templates\reservations\booking_quote_detail.html:135
+#: .\templates\reservations\booking_quote_detail.html:123
 msgid "Step two"
 msgstr "الخطوة الثانية"
 
-#: .\templates\reservations\booking_quote_detail.html:146
-msgid "Your details remain local and are not sent to Hostaway at this stage."
-msgstr "تبقى بياناتك محلية ولا تُرسل إلى Hostaway في هذه المرحلة."
+#: .\templates\reservations\booking_quote_detail.html:134
+msgid "Your details are protected and are used only to prepare this booking request at this stage."
+msgstr "بياناتك محمية، ولا تُستخدم في هذه المرحلة إلا لإعداد طلب الحجز هذا."
 
-#: .\templates\reservations\booking_quote_detail.html:172
+#: .\templates\reservations\booking_quote_detail.html:160
 msgid "Guest details progress"
 msgstr "تقدم إدخال بيانات الضيف"
 
-#: .\templates\reservations\booking_quote_detail.html:175
+#: .\templates\reservations\booking_quote_detail.html:163
 msgid "Your details"
 msgstr "بياناتك"
 
-#: .\templates\reservations\booking_quote_detail.html:175
+#: .\templates\reservations\booking_quote_detail.html:163
 msgid "Contact information"
 msgstr "معلومات التواصل"
 
-#: .\templates\reservations\booking_quote_detail.html:180
-#: .\templates\reservations\booking_quote_detail.html:244
+#: .\templates\reservations\booking_quote_detail.html:168
+#: .\templates\reservations\booking_quote_detail.html:232
 msgid "Payment address"
 msgstr "عنوان الدفع"
 
-#: .\templates\reservations\booking_quote_detail.html:180
+#: .\templates\reservations\booking_quote_detail.html:168
 msgid "For secure payment"
 msgstr "للدفع الآمن"
 
-#: .\templates\reservations\booking_quote_detail.html:187
+#: .\templates\reservations\booking_quote_detail.html:175
 msgid "Primary guest"
 msgstr "الضيف الرئيسي"
 
-#: .\templates\reservations\booking_quote_detail.html:188
+#: .\templates\reservations\booking_quote_detail.html:176
 msgid "How can we reach you?"
 msgstr "كيف يمكننا التواصل معك؟"
 
-#: .\templates\reservations\booking_quote_detail.html:190
+#: .\templates\reservations\booking_quote_detail.html:178
 msgid "4 fields"
 msgstr "4 حقول"
 
-#: .\templates\reservations\booking_quote_detail.html:220
+#: .\templates\reservations\booking_quote_detail.html:208
 msgid "Optional details"
 msgstr "تفاصيل اختيارية"
 
-#: .\templates\reservations\booking_quote_detail.html:220
+#: .\templates\reservations\booking_quote_detail.html:208
 msgid "Special requests and offers"
 msgstr "الطلبات الخاصة والعروض"
 
-#: .\templates\reservations\booking_quote_detail.html:235
+#: .\templates\reservations\booking_quote_detail.html:223
 msgid "Continue to payment address"
 msgstr "متابعة إلى عنوان الدفع"
 
-#: .\templates\reservations\booking_quote_detail.html:246
+#: .\templates\reservations\booking_quote_detail.html:234
 msgid "Back"
 msgstr "رجوع"
 
-#: .\templates\reservations\booking_quote_detail.html:251
+#: .\templates\reservations\booking_quote_detail.html:239
 msgid "This address is required by the secure payment provider and may differ from the apartment address."
 msgstr "هذا العنوان مطلوب من مزود الدفع الآمن، وقد يختلف عن عنوان الشقة."
 
-#: .\templates\reservations\booking_quote_detail.html:256
-#: .\templates\reservations\booking_quote_detail.html:288
+#: .\templates\reservations\booking_quote_detail.html:244
+#: .\templates\reservations\booking_quote_detail.html:276
 #, fuzzy
 #| msgid "Optional"
 msgid "optional"
 msgstr "اختياري"
 
-#: .\templates\reservations\booking_quote_detail.html:296
+#: .\templates\reservations\booking_quote_detail.html:284
 #, fuzzy
 #| msgid "You are paying for"
 msgid "What you are agreeing to"
 msgstr "أنت تدفع مقابل"
 
-#: .\templates\reservations\booking_quote_detail.html:300
+#: .\templates\reservations\booking_quote_detail.html:288
 #, python-format
 msgid "%(share)s back up to %(hours)s hours before arrival"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:302
+#: .\templates\reservations\booking_quote_detail.html:290
 msgid "Read the full terms for this stay"
 msgstr ""
 
-#: .\templates\reservations\booking_quote_detail.html:308
+#: .\templates\reservations\booking_quote_detail.html:296
 msgid "Required agreements"
 msgstr "الموافقات المطلوبة"
 
-#: .\templates\reservations\booking_quote_detail.html:310
+#: .\templates\reservations\booking_quote_detail.html:298
 #, python-format
 msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>."
 msgstr "أوافق على <a href=\"%(url)s\" target=\"_blank\">الشروط والأحكام</a>."
 
-#: .\templates\reservations\booking_quote_detail.html:314
+#: .\templates\reservations\booking_quote_detail.html:302
 #, python-format
 msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">privacy policy</a>."
 msgstr "أوافق على <a href=\"%(url)s\" target=\"_blank\">سياسة الخصوصية</a>."
 
-#: .\templates\reservations\booking_quote_detail.html:323
+#: .\templates\reservations\booking_quote_detail.html:311
 msgid "Availability and price will be checked again before payment."
 msgstr "سنعيد التحقق من التوافر والسعر قبل الدفع."
 
-#: .\templates\reservations\booking_quote_detail.html:328
+#: .\templates\reservations\booking_quote_detail.html:316
 msgid "This quote is invalid or expired. Please check availability again."
 msgstr "عرض السعر غير صالح أو منتهي. تحقق من التوافر مجددًا."
 
@@ -6693,8 +6803,8 @@ msgid "Test booking"
 msgstr "حجز تجريبي"
 
 #: .\templates\reservations\manage_reservation.html:83
-msgid "This is a local test record. No reservation or change has been sent to Hostaway."
-msgstr "هذا سجل اختبار محلي. لم يتم إرسال أي حجز أو تعديل إلى Hostaway."
+msgid "This is a local test record. No live reservation or change was created."
+msgstr "هذا سجل اختبار محلي. لم يُنشأ حجز فعلي أو تعديل فعلي."
 
 #: .\templates\reservations\manage_reservation.html:117
 msgid "Booking journey"
@@ -6930,8 +7040,8 @@ msgid "Pay the difference securely"
 msgstr "دفع فرق السعر بأمان"
 
 #: .\templates\reservations\modification_detail.html:64
-msgid "Pay the difference locally without financial or Hostaway activity."
-msgstr "اختبر دفع الفرق محليًا دون أي حركة مالية أو نشاط في Hostaway."
+msgid "Pay the difference locally without financial or live-booking activity."
+msgstr "اختبر دفع الفرق محليًا دون حركة مالية أو إنشاء حجز فعلي."
 
 #: .\templates\reservations\modification_detail.html:65
 msgid "Test payment of the difference"
@@ -7028,3 +7138,6 @@ msgstr "كل مراجعات الضيوف"
 #: .\templates\reviews\review_list.html:7
 msgid "Review pages"
 msgstr "صفحات المراجعات"
+
+#~ msgid "Your details remain local and are not sent to Hostaway at this stage."
+#~ msgstr "تبقى بياناتك محلية ولا تُرسل إلى Hostaway في هذه المرحلة."
