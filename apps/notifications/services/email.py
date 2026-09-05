@@ -126,14 +126,10 @@ def _email_brand_context(language: str) -> dict[str, str]:
     linkedin_url = ""
     if site_setting is not None:
         contact_phone = (
-            site_setting.contact_phone
-            or site_setting.whatsapp_display_number
-            or contact_phone
+            site_setting.contact_phone or site_setting.whatsapp_display_number or contact_phone
         )
         whatsapp_display = (
-            site_setting.whatsapp_display_number
-            or site_setting.contact_phone
-            or whatsapp_display
+            site_setting.whatsapp_display_number or site_setting.contact_phone or whatsapp_display
         )
         support_email = site_setting.contact_email or support_email
         tagline = getattr(site_setting, f"tagline_{language}") or tagline
@@ -157,9 +153,7 @@ def _email_brand_context(language: str) -> dict[str, str]:
     ):
         whatsapp_digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{whatsapp_digits}"
     if not whatsapp_url and whatsapp_digits:
-        whatsapp_url = (
-            f"https://wa.me/{whatsapp_digits}?text={quote(whatsapp_greetings[language])}"
-        )
+        whatsapp_url = f"https://wa.me/{whatsapp_digits}?text={quote(whatsapp_greetings[language])}"
 
     site_url = f"{settings.SITE_BASE_URL.rstrip('/')}/"
     site_base_url = settings.SITE_BASE_URL.rstrip("/")
@@ -465,8 +459,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "حسابك جاهز. تابع حجوزاتك وعدّل تواريخك من مكان واحد.",
         "en": "Your account is ready. Follow your bookings and change your dates in one place.",
         "fr": (
-            "Votre compte est prêt. Suivez vos réservations et modifiez vos dates "
-            "au même endroit."
+            "Votre compte est prêt. Suivez vos réservations et modifiez vos dates au même endroit."
         ),
     },
     "daily_operations_summary": {
@@ -661,9 +654,9 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
                 if modification.reservation.property
                 else ""
             ),
-            "check_in": (
-                modification.new_check_in or modification.reservation.check_in
-            ).strftime("%d/%m/%Y"),
+            "check_in": (modification.new_check_in or modification.reservation.check_in).strftime(
+                "%d/%m/%Y"
+            ),
             "check_out": (
                 modification.new_check_out or modification.reservation.check_out
             ).strftime("%d/%m/%Y"),

@@ -59,9 +59,7 @@ class Command(BaseCommand):
                         limit=sample,
                     )
                     observed = {
-                        item.listing_map_id
-                        for item in document.observations
-                        if item.listing_map_id
+                        item.listing_map_id for item in document.observations if item.listing_map_id
                     }
                     if not observed:
                         skipped.append(f"{listing_id}: no reservation reported a Listing Map ID")

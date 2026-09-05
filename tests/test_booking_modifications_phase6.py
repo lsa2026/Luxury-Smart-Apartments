@@ -522,9 +522,7 @@ def test_extension_page_shows_new_total_difference_and_payment_action() -> None:
     modification = create_extension(reservation).request
     assert modification is not None
 
-    response = client.get(
-        f"/reservations/modifications/{modification.public_reference}/"
-    )
+    response = client.get(f"/reservations/modifications/{modification.public_reference}/")
     content = response.content.decode()
 
     assert response.status_code == 200
@@ -680,9 +678,7 @@ def test_the_manage_page_shows_the_hosts_cancellation_policy() -> None:
     reservation.property.cancellation_policy = "flexible"
     reservation.property.save()
 
-    content = client.get(
-        f"/reservations/manage/{reservation.public_reference}/"
-    ).content.decode()
+    content = client.get(f"/reservations/manage/{reservation.public_reference}/").content.decode()
 
     assert "إلغاء مرن" in content
 
@@ -714,9 +710,7 @@ def test_closed_stay_replaces_the_progress_bar_with_a_closing_statement(
     reservation.confirmed_at = None
     reservation.save()
 
-    content = client.get(
-        f"/reservations/manage/{reservation.public_reference}/"
-    ).content.decode()
+    content = client.get(f"/reservations/manage/{reservation.public_reference}/").content.decode()
 
     assert "booking-journey-closed" in content
     assert 'class="booking-journey"' not in content
@@ -728,9 +722,7 @@ def test_closed_stay_replaces_the_progress_bar_with_a_closing_statement(
 def test_active_stay_keeps_the_progress_bar_and_a_positive_pill() -> None:
     client, reservation = owned_web_reservation()
 
-    content = client.get(
-        f"/reservations/manage/{reservation.public_reference}/"
-    ).content.decode()
+    content = client.get(f"/reservations/manage/{reservation.public_reference}/").content.decode()
 
     assert 'class="booking-journey"' in content
     assert "booking-journey-closed" not in content
@@ -744,9 +736,7 @@ def test_a_lead_status_never_reads_as_a_confirmed_stay() -> None:
     reservation.confirmed_at = None
     reservation.save()
 
-    content = client.get(
-        f"/reservations/manage/{reservation.public_reference}/"
-    ).content.decode()
+    content = client.get(f"/reservations/manage/{reservation.public_reference}/").content.decode()
 
     assert "status-pill--progress" in content
     assert "status-pill--positive" not in content
@@ -797,9 +787,10 @@ def test_booking_reference_and_email_open_management_from_a_new_session() -> Non
     )
     assert cancellation.status_code == 302
     modification = BookingModificationRequest.objects.get()
-    assert client.get(
-        f"/reservations/modifications/{modification.public_reference}/"
-    ).status_code == 200
+    assert (
+        client.get(f"/reservations/modifications/{modification.public_reference}/").status_code
+        == 200
+    )
 
 
 def test_booking_access_uses_generic_error_and_requires_both_values() -> None:

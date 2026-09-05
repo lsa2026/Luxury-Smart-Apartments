@@ -110,9 +110,7 @@ class GuestDetailsForm(forms.Form):
         label=_("State or region"),
         choices=(),
         required=False,
-        widget=forms.Select(
-            attrs={"autocomplete": "address-level1", "data-region-select": ""}
-        ),
+        widget=forms.Select(attrs={"autocomplete": "address-level1", "data-region-select": ""}),
     )
     billing_country = forms.ChoiceField(
         label=_("Country"),

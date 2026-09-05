@@ -131,9 +131,7 @@ class AvailabilitySearchForm(forms.Form):
             "hostaway_is_active",
         )
         language = (translation.get_language() or "ar").split("-")[0]
-        self.fields["city"].choices = [("", _("All cities"))] + supported_city_choices(
-            language
-        )
+        self.fields["city"].choices = [("", _("All cities"))] + supported_city_choices(language)
         self.fields["city"].widget.attrs["data-city-select"] = ""
         self.fields["property"].queryset = public_properties.order_by("sort_order", "id")
         today = timezone.localdate().isoformat()

@@ -241,9 +241,7 @@ class HostawayBookingService:
             )
             from apps.notifications.services.events import handle_reservation_confirmed
 
-            transaction.on_commit(
-                lambda: handle_reservation_confirmed(locked_reservation.pk)
-            )
+            transaction.on_commit(lambda: handle_reservation_confirmed(locked_reservation.pk))
         reservation.refresh_from_db()
         operation.refresh_from_db()
         logger.info(
@@ -358,10 +356,14 @@ def _ensure_blocked_operation(
                 "error_code": code,
             },
         )
-        if operation.status in {
-            HostawayReservationOperation.Status.PREPARED,
-            HostawayReservationOperation.Status.BLOCKED,
-        } and operation.attempt_count == 0:
+        if (
+            operation.status
+            in {
+                HostawayReservationOperation.Status.PREPARED,
+                HostawayReservationOperation.Status.BLOCKED,
+            }
+            and operation.attempt_count == 0
+        ):
             operation.status = HostawayReservationOperation.Status.BLOCKED
             operation.error_code = code
             operation.save(update_fields=["status", "error_code", "updated_at"])

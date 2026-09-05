@@ -73,10 +73,7 @@ def execute_automatic_modification(
             ).first()
             if paid is None:
                 return AutomaticModificationOutcome("successful_payment_required", locked)
-            if (
-                paid.provider == "hyperpay"
-                and settings.HYPERPAY_ENVIRONMENT == "test"
-            ):
+            if paid.provider == "hyperpay" and settings.HYPERPAY_ENVIRONMENT == "test":
                 return AutomaticModificationOutcome("test_payment_live_write_blocked", locked)
 
         allowed = {
