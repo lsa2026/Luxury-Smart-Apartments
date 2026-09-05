@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 15
     env:
       DJANGO_SETTINGS_MODULE: config.settings.test
-      DJANGO_SECRET_KEY: ci-only-9Sx7-kL4-qP2-vN8-rT5-wY1-uC6-mH3-zB0
+      DJANGO_SECRET_KEY: ci-only-quality-gate-9Sx7kL4qP2vN8rT5wY1uC6mH3zB0aF9dK7sJ4xQ8
       DJANGO_ALLOWED_HOSTS: testserver,localhost,luxurysmartapartments.com
       DATABASE_URL: "sqlite:///:memory:"
       HOSTAWAY_AUTO_SYNC_ENABLED: "false"
