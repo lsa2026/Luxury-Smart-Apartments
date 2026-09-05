@@ -113,27 +113,27 @@
 
 ### صفحة الوحدة: قبل
 
-![صفحة الوحدة قبل إضافة السعر والسياسات](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/before-local-property.png?raw=1)
+![صفحة الوحدة قبل إضافة السعر والسياسات](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/before-local-property.png?raw=1)
 
 ### صفحة الوحدة: بعد
 
-![السعر الاسترشادي بعد التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/after-local-property-price.png?raw=1)
+![السعر الاسترشادي بعد التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/after-local-property-price.png?raw=1)
 
-![سياسة الإقامة بعد التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/after-local-property-policy.png?raw=1)
+![سياسة الإقامة بعد التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/after-local-property-policy.png?raw=1)
 
 ### عنوان الدفع: قبل
 
-![حقول عنوان الدفع قبل التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/before-local-billing-address.png?raw=1)
+![حقول عنوان الدفع قبل التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/before-local-billing-address.png?raw=1)
 
 ### عنوان الدفع: بعد
 
-![عنوان الدفع بعد التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/after-local-billing-address.png?raw=1)
+![عنوان الدفع بعد التنفيذ](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/after-local-billing-address.png?raw=1)
 
 ### الصور البطلة
 
-![الصفحة المنشورة أثناء محاولة إعادة الإنتاج](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/before-production-home.png?raw=1)
+![الصفحة المنشورة أثناء محاولة إعادة الإنتاج](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/before-production-home.png?raw=1)
 
-![الصفحة المحلية بعد التحصين](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/fix/p1-timezone-and-pricing/docs/screenshots/p1/after-local-home.png?raw=1)
+![الصفحة المحلية بعد التحصين](https://github.com/xmansx2030-lgtm/Luxury-Smart-Apartments/blob/c33c9ebf4101762133b12d8b4569915ff2d7608f/docs/screenshots/p1/after-local-home.png?raw=1)
 
 ## بوابة الجودة
 
