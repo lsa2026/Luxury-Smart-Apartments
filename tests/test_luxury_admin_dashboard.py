@@ -50,6 +50,7 @@ def test_dashboard_surfaces_actionable_customer_contact(client, django_user_mode
     assert "رسائل عملاء تنتظر الرد" in body
     assert "حوّل الرسالة إلى قيد المتابعة" in body
     assert reverse("admin:core_contactmessage_changelist") in body
+    assert reverse("admin:core_siteinterfaceimage_changelist") in body
 
 
 @pytest.mark.django_db
@@ -126,9 +127,7 @@ def test_reservation_detail_is_read_only_and_uses_operational_arabic_labels(
 
 
 @pytest.mark.django_db
-def test_booking_request_detail_is_a_compact_arabic_read_only_summary(
-    client, django_user_model
-):
+def test_booking_request_detail_is_a_compact_arabic_read_only_summary(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="request-manager",
         email="request-manager@example.com",

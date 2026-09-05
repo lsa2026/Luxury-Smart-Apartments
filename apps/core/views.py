@@ -18,7 +18,7 @@ from apps.reservations.security import is_rate_limited
 from apps.reviews.models import Review
 
 from .forms import ContactForm
-from .models import ContactMessage, FAQItem, SitePage
+from .models import ContactMessage, FAQItem, SiteInterfaceImage, SitePage
 
 
 def service_worker(request: HttpRequest) -> HttpResponse:
@@ -43,7 +43,9 @@ def _card_image_queryset() -> object:
     )
 
 
-def _cities_with_hero_images() -> list[dict[str, object]]:
+def _cities_with_hero_images(
+    interface_images: dict[str, SiteInterfaceImage] | None = None,
+) -> list[dict[str, object]]:
     """Return the supported cities, each carrying its own photograph if one is set.
 
     A city without a nominated hero simply has ``None`` here, and the template
@@ -53,7 +55,19 @@ def _cities_with_hero_images() -> list[dict[str, object]]:
     heroes: dict[str, PropertyImage] = {}
     for image in PropertyImage.objects.city_heroes():
         heroes.setdefault(image.property.city, image)
-    return [{**row, "hero": heroes.get(row["city"])} for row in supported_city_rows()]
+    interface_images = interface_images or {}
+    interface_placements = {
+        "Riyadh": SiteInterfaceImage.Placement.HOME_RIYADH_DESTINATION,
+        "Marrakesh": SiteInterfaceImage.Placement.HOME_MARRAKECH_DESTINATION,
+    }
+    return [
+        {
+            **row,
+            "hero": heroes.get(row["city"]),
+            "interface_image": interface_images.get(interface_placements[row["city"]]),
+        }
+        for row in supported_city_rows()
+    ]
 
 
 class HomeView(TemplateView):
@@ -61,6 +75,10 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)
+        interface_images = {
+            image.placement: image for image in SiteInterfaceImage.objects.filter(is_active=True)
+        }
+        managed_hero = interface_images.get(SiteInterfaceImage.Placement.HOME_HERO)
         featured_properties = list(
             Property.objects.public()
             .prefetch_related(
@@ -79,7 +97,11 @@ class HomeView(TemplateView):
                 "featured_reviews": Review.objects.public()
                 .select_related("property")
                 .order_by("-is_featured", "-departure_date")[:3],
-                "cities": _cities_with_hero_images(),
+                "cities": _cities_with_hero_images(interface_images),
+                "home_interface_images": interface_images,
+                "home_og_image": (
+                    self.request.build_absolute_uri(managed_hero.image.url) if managed_hero else ""
+                ),
                 "availability_form": AvailabilitySearchForm(),
                 "reservation_access_form": ReservationAccessForm(),
             }

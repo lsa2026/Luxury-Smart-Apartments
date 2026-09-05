@@ -10,10 +10,13 @@ pytestmark = pytest.mark.django_db
 
 
 def test_reference_contact_details_and_public_pages_are_seeded() -> None:
-    assert SitePage.objects.filter(
-        slug__in=("about", "contact", "terms", "privacy", "cancellation"),
-        is_published=True,
-    ).count() == 5
+    assert (
+        SitePage.objects.filter(
+            slug__in=("about", "contact", "terms", "privacy", "cancellation"),
+            is_published=True,
+        ).count()
+        == 5
+    )
 
     setting = SiteSetting.objects.get()
     assert setting.brand_name_ar == "Luxury Smart Apartments"
@@ -45,6 +48,20 @@ def test_contact_copy_and_contact_details_are_dashboard_backed() -> None:
     assert "+966501205651" in content
 
 
+def test_contact_page_uses_the_shared_whatsapp_target_and_clear_safety_icon() -> None:
+    setting = SiteSetting.objects.get()
+    setting.whatsapp_url = ""
+    setting.whatsapp_display_number = "+966 50 120 5651"
+    setting.save(update_fields=["whatsapp_url", "whatsapp_display_number"])
+
+    content = Client().get("/contact/").content.decode()
+
+    assert 'class="contact-channel contact-channel--whatsapp"' in content
+    assert "https://wa.me/966501205651" in content
+    assert ">LSA<" not in content
+    assert 'contact-note__mark" aria-hidden="true"' in content
+
+
 def test_contact_page_can_be_unpublished_from_dashboard() -> None:
     SitePage.objects.filter(slug="contact").update(is_published=False)
     assert Client().get("/contact/").status_code == 404
@@ -61,9 +78,7 @@ def test_structured_text_escapes_editor_input() -> None:
 def test_page_content_has_grouped_admin_controls() -> None:
     model_admin = SitePageAdmin(SitePage, admin.site)
     flattened_fields = {
-        field
-        for _, options in model_admin.fieldsets
-        for field in options["fields"]
+        field for _, options in model_admin.fieldsets for field in options["fields"]
     }
     assert {
         "body_ar",
@@ -84,4 +99,4 @@ def test_footer_uses_layered_luxury_layout_and_dashboard_contact_details() -> No
     assert 'class="footer-lower"' in content
     assert "saeed@luxurysmartapartments.com" in content
     assert "+966501205651" in content
-    assert "css/site.css?v=34" in content
+    assert "css/site.css?v=36" in content

@@ -5597,6 +5597,23 @@ h2 {
     place-items: center;
 }
 
+.contact-note__mark svg {
+    width: 1.55rem;
+    height: 1.55rem;
+    fill: currentcolor;
+}
+
+.contact-channel > span svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentcolor;
+}
+
+.contact-channel--whatsapp > span {
+    color: #fff;
+    background: #11753f;
+}
+
 .review-panel__media::after {
     position: absolute;
     background: linear-gradient(to top, rgb(16 10 40 / 88%) 0%, rgb(16 10 40 / 12%) 55%, rgb(16 10 40 / 0%) 100%);
@@ -6892,7 +6909,7 @@ h2 {
 .quote-review {
     position: relative;
     overflow: hidden;
-    padding-block: clamp(2rem, 4vw, 3.5rem) clamp(4.5rem, 8vw, 7rem);
+    padding-block: clamp(2rem, 4vw, 3.5rem) clamp(2.5rem, 4vw, 4rem);
     background:
         radial-gradient(circle at 8% 8%, rgb(215 173 98 / 12%), transparent 24rem),
         linear-gradient(180deg, #f5f0e8 0, #faf8f3 42%, #f6f1e9 100%);
@@ -7039,7 +7056,26 @@ h2 {
     display: grid;
     grid-template-columns: minmax(0, 1.04fr) minmax(22rem, 0.96fr);
     gap: clamp(1.25rem, 2.4vw, 2rem);
-    align-items: start;
+    align-items: stretch;
+}
+
+@media (min-width: 68.001rem) {
+    .quote-review__form-card,
+    .quote-review__form,
+    .guest-journey.is-enhanced .guest-journey__panel.is-active {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .quote-review__form,
+    .guest-journey.is-enhanced .guest-journey__panel.is-active {
+        flex: 1;
+    }
+
+    .guest-journey__next,
+    .guest-journey.is-enhanced .guest-journey__panel.is-active .quote-review__submit {
+        margin-block-start: auto;
+    }
 }
 
 .quote-review__stay,

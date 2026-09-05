@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-05 03:00+0300\n"
+"POT-Creation-Date: 2026-09-05 18:11+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -118,153 +118,174 @@ msgstr ""
 msgid "A new confirmation email is on its way."
 msgstr ""
 
-#: .\apps\core\admin.py:20
+#: .\apps\core\admin.py:21
 msgid "Platform administration"
 msgstr ""
 
-#: .\apps\core\admin.py:21
+#: .\apps\core\admin.py:22
 msgid "Command centre"
 msgstr ""
 
-#: .\apps\core\admin.py:41
+#: .\apps\core\admin.py:42
 msgid "Publishing"
 msgstr ""
 
-#: .\apps\core\admin.py:45 .\templates\admin\properties\image_alt_text.html:65
+#: .\apps\core\admin.py:46 .\templates\admin\properties\image_alt_text.html:65
 #: .\templates\admin\properties\image_alt_text.html:76
 msgid "Arabic"
 msgstr ""
 
-#: .\apps\core\admin.py:132
+#: .\apps\core\admin.py:133
 msgid "Site name"
 msgstr ""
 
-#: .\apps\core\admin.py:133
+#: .\apps\core\admin.py:134
 msgid "Arabic tagline"
 msgstr ""
 
-#: .\apps\core\admin.py:134
+#: .\apps\core\admin.py:135
 msgid "English tagline"
 msgstr ""
 
-#: .\apps\core\admin.py:135
+#: .\apps\core\admin.py:136
 msgid "French tagline"
 msgstr ""
 
-#: .\apps\core\admin.py:136
+#: .\apps\core\admin.py:137
 msgid "Arabic footer text"
 msgstr ""
 
-#: .\apps\core\admin.py:137
+#: .\apps\core\admin.py:138
 msgid "English footer text"
 msgstr ""
 
-#: .\apps\core\admin.py:138
+#: .\apps\core\admin.py:139
 msgid "French footer text"
 msgstr ""
 
-#: .\apps\core\admin.py:139 .\apps\core\admin.py:226
+#: .\apps\core\admin.py:140 .\apps\core\admin.py:227
 msgid "Contact email"
 msgstr ""
 
-#: .\apps\core\admin.py:140 .\apps\core\admin.py:227
+#: .\apps\core\admin.py:141 .\apps\core\admin.py:228
 msgid "Contact phone"
 msgstr ""
 
-#: .\apps\core\admin.py:141
+#: .\apps\core\admin.py:142
 msgid "WhatsApp display number"
 msgstr ""
 
-#: .\apps\core\admin.py:142 .\apps\core\admin.py:228
+#: .\apps\core\admin.py:143 .\apps\core\admin.py:229
 msgid "WhatsApp link"
 msgstr ""
 
-#: .\apps\core\admin.py:143
+#: .\apps\core\admin.py:144
 msgid "Instagram link"
 msgstr ""
 
-#: .\apps\core\admin.py:144
+#: .\apps\core\admin.py:145
 msgid "Facebook link"
 msgstr ""
 
-#: .\apps\core\admin.py:145
+#: .\apps\core\admin.py:146
 msgid "X link"
 msgstr ""
 
-#: .\apps\core\admin.py:146
+#: .\apps\core\admin.py:147
 msgid "LinkedIn link"
 msgstr ""
 
-#: .\apps\core\admin.py:147
+#: .\apps\core\admin.py:148
 msgid "Arabic office hours"
 msgstr ""
 
-#: .\apps\core\admin.py:148
+#: .\apps\core\admin.py:149
 msgid "English office hours"
 msgstr ""
 
-#: .\apps\core\admin.py:149
+#: .\apps\core\admin.py:150
 msgid "French office hours"
 msgstr ""
 
-#: .\apps\core\admin.py:150
+#: .\apps\core\admin.py:151
 msgid "Arabic public address"
 msgstr ""
 
-#: .\apps\core\admin.py:151
+#: .\apps\core\admin.py:152
 msgid "English public address"
 msgstr ""
 
-#: .\apps\core\admin.py:152
+#: .\apps\core\admin.py:153
 msgid "French public address"
 msgstr ""
 
-#: .\apps\core\admin.py:162
+#: .\apps\core\admin.py:163
 msgid "Configuration readiness"
 msgstr ""
 
-#: .\apps\core\admin.py:166
+#: .\apps\core\admin.py:167
 msgid "Brand"
 msgstr ""
 
-#: .\apps\core\admin.py:180
+#: .\apps\core\admin.py:181
 msgid "Stay defaults"
 msgstr ""
 
-#: .\apps\core\admin.py:183
+#: .\apps\core\admin.py:184
 msgid "Used only when the channel manager reports nothing for a property."
 msgstr ""
 
-#: .\apps\core\admin.py:195 .\templates\admin\notifications\dashboard.html:61
+#: .\apps\core\admin.py:196 .\templates\admin\notifications\dashboard.html:61
 #: .\templates\includes\footer.html:22 .\templates\includes\footer.html:50
 #: .\templates\includes\header.html:18
 #: .\templates\includes\mobile_navigation.html:13
 msgid "Contact"
 msgstr ""
 
-#: .\apps\core\admin.py:215
+#: .\apps\core\admin.py:216 .\apps\core\admin.py:293
 msgid "System"
 msgstr ""
 
-#: .\apps\core\admin.py:219
+#: .\apps\core\admin.py:220
 msgid "Contact information complete"
 msgstr ""
 
-#: .\apps\core\admin.py:223
+#: .\apps\core\admin.py:224
 msgid "Configuration status"
 msgstr ""
 
-#: .\apps\core\admin.py:234
+#: .\apps\core\admin.py:235
 msgid "Essential public contact information is complete."
 msgstr ""
 
-#: .\apps\core\admin.py:238
+#: .\apps\core\admin.py:239
 msgid "Complete the essential contact information"
 msgstr ""
 
-#: .\apps\core\admin.py:239
+#: .\apps\core\admin.py:240
 #, python-format
 msgid "Missing: %(fields)s"
+msgstr ""
+
+#: .\apps\core\admin.py:286
+msgid "Placement and image"
+msgstr ""
+
+#: .\apps\core\admin.py:290
+msgid "Accessible descriptions"
+msgstr ""
+
+#: .\apps\core\admin.py:296 .\apps\properties\admin.py:208
+#: .\apps\properties\admin.py:589
+msgid "Preview"
+msgstr ""
+
+#: .\apps\core\admin.py:299
+msgid "No image uploaded"
+msgstr ""
+
+#: .\apps\core\admin.py:306
+msgid "Arabic and English alt text ready"
 msgstr ""
 
 #: .\apps\core\admin_dashboard.py:110 .\apps\core\admin_dashboard.py:141
@@ -303,120 +324,120 @@ msgstr ""
 msgid "Check-out"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:238
+#: .\apps\core\admin_dashboard.py:236
 msgid "Bookings needing attention"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:240
+#: .\apps\core\admin_dashboard.py:237
 msgid "An unconfirmed creation or sync state that needs a manual decision."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:247
+#: .\apps\core\admin_dashboard.py:243
 msgid "Refunds to transfer to guests"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:249
+#: .\apps\core\admin_dashboard.py:245
 msgid "A change was applied automatically and left money owed. Contact the guest for bank details, transfer, then mark it."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:257
+#: .\apps\core\admin_dashboard.py:253
 msgid "Paid bookings not sent to Hostaway"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:259
+#: .\apps\core\admin_dashboard.py:255
 msgid "Payment succeeded but creation was blocked; check the operation reason."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:266
+#: .\apps\core\admin_dashboard.py:262
 msgid "Payments needing review"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:268
+#: .\apps\core\admin_dashboard.py:263
 msgid "A failed or under-review transaction in the last 30 days."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:275
+#: .\apps\core\admin_dashboard.py:269
 #: .\templates\admin\notifications\dashboard.html:35
 msgid "Failed webhooks"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:277
+#: .\apps\core\admin_dashboard.py:270
 msgid "Check reception before it affects booking updates."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:284
+#: .\apps\core\admin_dashboard.py:276
 msgid "Pending modification requests"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:286
+#: .\apps\core\admin_dashboard.py:277
 msgid "An extension or change awaiting approval or completion."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:293
+#: .\apps\core\admin_dashboard.py:283
 msgid "Payments pending for over 30 minutes"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:295
+#: .\apps\core\admin_dashboard.py:284
 msgid "Check their state with the provider before contacting the customer."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:302
+#: .\apps\core\admin_dashboard.py:290
 msgid "Undelivered emails"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:303
+#: .\apps\core\admin_dashboard.py:291
 msgid "Customer notifications that failed and need follow-up."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:309
+#: .\apps\core\admin_dashboard.py:297
 msgid "Properties not ready to publish"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:311
+#: .\apps\core\admin_dashboard.py:298
 msgid "Data, content, or visibility settings that need completing."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:318
+#: .\apps\core\admin_dashboard.py:304
 msgid "Customer messages awaiting a reply"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:320
+#: .\apps\core\admin_dashboard.py:305
 msgid "Move a message to in-progress as soon as you start handling it."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:327
+#: .\apps\core\admin_dashboard.py:311
 #: .\templates\admin\notifications\dashboard.html:34
 msgid "Unread alerts"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:329
+#: .\apps\core\admin_dashboard.py:312
 msgid "Review the alert centre and close what has been handled."
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:339
+#: .\apps\core\admin_dashboard.py:321
 msgid "Requests started"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:344
+#: .\apps\core\admin_dashboard.py:326
 #, fuzzy
 #| msgid "Read more"
 msgid "Reached payment"
 msgstr "Read more"
 
-#: .\apps\core\admin_dashboard.py:356
+#: .\apps\core\admin_dashboard.py:338
 msgid "Payment succeeded"
 msgstr ""
 
-#: .\apps\core\admin_dashboard.py:364
+#: .\apps\core\admin_dashboard.py:346
 #: .\templates\reservations\manage_reservation.html:149
 msgid "Booking confirmed"
 msgstr ""
 
-#: .\apps\core\admin_views.py:66
+#: .\apps\core\admin_views.py:64
 msgid "Protected data"
 msgstr ""
 
-#: .\apps\core\admin_views.py:77 .\templates\admin\core\customers.html:9
+#: .\apps\core\admin_views.py:75 .\templates\admin\core\customers.html:9
 msgid "Customers and bookings"
 msgstr ""
 
@@ -424,7 +445,7 @@ msgstr ""
 msgid "Core"
 msgstr ""
 
-#: .\apps\core\context_processors.py:73
+#: .\apps\core\context_processors.py:74
 msgid "Hello, I would like to ask about a stay with Luxury Smart Apartments."
 msgstr ""
 
@@ -440,23 +461,23 @@ msgstr ""
 msgid "Phone (optional)"
 msgstr ""
 
-#: .\apps\core\forms.py:32
+#: .\apps\core\forms.py:30
 msgid "Subject"
 msgstr ""
 
-#: .\apps\core\forms.py:37
+#: .\apps\core\forms.py:35
 msgid "Message"
 msgstr ""
 
-#: .\apps\core\forms.py:42
+#: .\apps\core\forms.py:40
 msgid "Include your booking number if your message is about a stay."
 msgstr ""
 
-#: .\apps\core\forms.py:60
+#: .\apps\core\forms.py:58
 msgid "Unable to send this message."
 msgstr ""
 
-#: .\apps\core\forms.py:75
+#: .\apps\core\forms.py:73
 msgid "Please provide a little more detail."
 msgstr ""
 
@@ -472,132 +493,209 @@ msgstr ""
 msgid "Local validation result"
 msgstr ""
 
-#: .\apps\core\models.py:35
+#: .\apps\core\models.py:36
 msgid "Content page"
 msgstr ""
 
-#: .\apps\core\models.py:36
+#: .\apps\core\models.py:37
 msgid "Content pages"
 msgstr ""
 
-#: .\apps\core\models.py:44
+#: .\apps\core\models.py:45
 msgid "Booking and payment"
 msgstr ""
 
-#: .\apps\core\models.py:45
+#: .\apps\core\models.py:46
 msgid "During your stay"
 msgstr ""
 
-#: .\apps\core\models.py:46
+#: .\apps\core\models.py:47
 msgid "Policies and cancellation"
 msgstr ""
 
-#: .\apps\core\models.py:47
+#: .\apps\core\models.py:48
 msgid "About the property"
 msgstr ""
 
-#: .\apps\core\models.py:57
+#: .\apps\core\models.py:58
 msgid "Specific property"
 msgstr ""
 
-#: .\apps\core\models.py:58
+#: .\apps\core\models.py:59
 msgid "Leave empty for a question that applies to every stay."
 msgstr ""
 
-#: .\apps\core\models.py:64
+#: .\apps\core\models.py:65
 msgid "Category"
 msgstr ""
 
-#: .\apps\core\models.py:84
+#: .\apps\core\models.py:85
 msgid "FAQ item"
 msgstr ""
 
-#: .\apps\core\models.py:85 .\templates\admin\base_site.html:60
-#: .\templates\admin\index.html:219
+#: .\apps\core\models.py:86 .\templates\admin\base_site.html:60
+#: .\templates\admin\index.html:220
 msgid "FAQ items"
 msgstr ""
 
-#: .\apps\core\models.py:122
+#: .\apps\core\models.py:123
 msgid "Default check-in hour"
 msgstr ""
 
-#: .\apps\core\models.py:123
+#: .\apps\core\models.py:124
 msgid "Used when Hostaway reports no check-in time for a property."
 msgstr ""
 
-#: .\apps\core\models.py:129
+#: .\apps\core\models.py:130
 msgid "Default check-out hour"
 msgstr ""
 
-#: .\apps\core\models.py:130
+#: .\apps\core\models.py:131
 msgid "Used when Hostaway reports no check-out time for a property."
 msgstr ""
 
-#: .\apps\core\models.py:132 .\apps\core\models.py:133
-#: .\apps\core\models.py:134
+#: .\apps\core\models.py:133 .\apps\core\models.py:134
+#: .\apps\core\models.py:135
 msgid "Default house rules"
 msgstr ""
 
-#: .\apps\core\models.py:138
+#: .\apps\core\models.py:139
 msgid "Site setting"
 msgstr ""
 
-#: .\apps\core\models.py:139
+#: .\apps\core\models.py:140
 msgid "Site settings"
 msgstr ""
 
-#: .\apps\core\models.py:162
-msgid "New"
-msgstr ""
-
-#: .\apps\core\models.py:163
-msgid "Being followed up"
-msgstr ""
-
-#: .\apps\core\models.py:164
-msgid "Closed"
-msgstr ""
-
 #: .\apps\core\models.py:165
-msgid "Spam"
+msgid "Home hero backdrop"
 msgstr ""
 
-#: .\apps\core\models.py:186 .\apps\notifications\models.py:21
-msgid "Contact message"
+#: .\apps\core\models.py:166
+msgid "Home Marrakech postcard"
 msgstr ""
 
-#: .\apps\core\models.py:187
-msgid "Contact messages"
+#: .\apps\core\models.py:167
+msgid "Home Riyadh destination"
+msgstr ""
+
+#: .\apps\core\models.py:168
+msgid "Home Marrakech destination"
+msgstr ""
+
+#: .\apps\core\models.py:169
+msgid "Home story image"
+msgstr ""
+
+#: .\apps\core\models.py:170
+msgid "Home final call to action"
+msgstr ""
+
+#: .\apps\core\models.py:176
+msgid "Interface placement"
+msgstr ""
+
+#: .\apps\core\models.py:177
+msgid "Each placement can have one managed image."
+msgstr ""
+
+#: .\apps\core\models.py:182
+msgid "Image"
+msgstr ""
+
+#: .\apps\core\models.py:183
+msgid "JPEG, PNG, or WebP; maximum 10 MB."
+msgstr ""
+
+#: .\apps\core\models.py:188
+msgid "Arabic alt text"
+msgstr ""
+
+#: .\apps\core\models.py:193
+msgid "English alt text"
+msgstr ""
+
+#: .\apps\core\models.py:198
+msgid "French alt text"
+msgstr ""
+
+#: .\apps\core\models.py:202 .\apps\notifications\models.py:44
+#: .\apps\reservations\models.py:37
+msgid "Active"
+msgstr ""
+
+#: .\apps\core\models.py:203
+msgid "Inactive images remain saved but are not shown publicly."
+msgstr ""
+
+#: .\apps\core\models.py:210
+msgid "Interface image"
+msgstr ""
+
+#: .\apps\core\models.py:211
+msgid "Interface images"
+msgstr ""
+
+#: .\apps\core\models.py:222
+msgid "Arabic alt text is required for an active image."
 msgstr ""
 
 #: .\apps\core\models.py:224
+msgid "English alt text is required for an active image."
+msgstr ""
+
+#: .\apps\core\models.py:231
+msgid "New"
+msgstr ""
+
+#: .\apps\core\models.py:232
+msgid "Being followed up"
+msgstr ""
+
+#: .\apps\core\models.py:233
+msgid "Closed"
+msgstr ""
+
+#: .\apps\core\models.py:234
+msgid "Spam"
+msgstr ""
+
+#: .\apps\core\models.py:255 .\apps\notifications\models.py:21
+msgid "Contact message"
+msgstr ""
+
+#: .\apps\core\models.py:256
+msgid "Contact messages"
+msgstr ""
+
+#: .\apps\core\models.py:293
 msgid "Legacy redirect"
 msgstr ""
 
-#: .\apps\core\models.py:225
+#: .\apps\core\models.py:294
 msgid "Legacy redirects"
 msgstr ""
 
-#: .\apps\core\models.py:281
+#: .\apps\core\models.py:350
 msgctxt "MarketingEventReceipt"
 msgid "Prepared"
 msgstr ""
 
-#: .\apps\core\models.py:282
+#: .\apps\core\models.py:351
 msgctxt "MarketingEventReceipt"
 msgid "Sent"
 msgstr ""
 
-#: .\apps\core\models.py:283
+#: .\apps\core\models.py:352
 msgctxt "MarketingEventReceipt"
 msgid "Blocked"
 msgstr ""
 
-#: .\apps\core\models.py:308
+#: .\apps\core\models.py:377
 msgid "Marketing event receipt"
 msgstr ""
 
-#: .\apps\core\models.py:309
+#: .\apps\core\models.py:378
 msgid "Marketing event receipts"
 msgstr ""
 
@@ -1150,7 +1248,7 @@ msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:350
 #: .\apps\core\templatetags\presentation.py:398
-#: .\apps\reservations\models.py:319 .\apps\reservations\models.py:543
+#: .\apps\reservations\models.py:317 .\apps\reservations\models.py:541
 msgid "Awaiting payment"
 msgstr ""
 
@@ -1164,7 +1262,7 @@ msgid "Confirming booking"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:354
-#: .\apps\reservations\models.py:323
+#: .\apps\reservations\models.py:321
 msgid "Confirmed"
 msgstr ""
 
@@ -1188,8 +1286,8 @@ msgstr ""
 msgid "Updating"
 msgstr ""
 
-#: .\apps\core\templatetags\presentation.py:358 .\apps\payments\admin.py:167
-#: .\apps\reservations\admin.py:403
+#: .\apps\core\templatetags\presentation.py:358 .\apps\payments\admin.py:165
+#: .\apps\reservations\admin.py:402
 msgid "Updated"
 msgstr ""
 
@@ -1224,7 +1322,7 @@ msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:378
 #: .\apps\core\templatetags\presentation.py:379
-#: .\apps\reservations\models.py:155
+#: .\apps\reservations\models.py:154
 #: .\templates\payments\hyperpay_result.html:47
 msgid "Payment verified"
 msgstr ""
@@ -1260,7 +1358,7 @@ msgid "Payment needs review"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:395
-#: .\apps\reservations\models.py:152 .\apps\reservations\models.py:537
+#: .\apps\reservations\models.py:151 .\apps\reservations\models.py:535
 msgid "Draft"
 msgstr ""
 
@@ -1277,7 +1375,7 @@ msgid "Ready to update"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:402
-#: .\apps\reservations\models.py:160 .\apps\reservations\models.py:547
+#: .\apps\reservations\models.py:159 .\apps\reservations\models.py:545
 msgid "Completed"
 msgstr ""
 
@@ -1291,24 +1389,24 @@ msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:405
 #: .\apps\notifications\models.py:23 .\apps\reservations\models.py:41
-#: .\apps\reservations\models.py:156 .\apps\reservations\models.py:550
+#: .\apps\reservations\models.py:155 .\apps\reservations\models.py:548
 msgid "Price changed"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:406
 #: .\apps\notifications\views.py:184 .\apps\reservations\models.py:42
-#: .\apps\reservations\models.py:157 .\apps\reservations\models.py:551
+#: .\apps\reservations\models.py:156 .\apps\reservations\models.py:549
 msgid "Unavailable"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:417
-#: .\apps\reservations\models.py:531 .\apps\reservations\models.py:694
+#: .\apps\reservations\models.py:529 .\apps\reservations\models.py:691
 #: .\templates\reservations\manage_reservation.html:259
 msgid "Extend stay"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:418
-#: .\apps\reservations\models.py:532
+#: .\apps\reservations\models.py:530
 #: .\templates\reservations\manage_reservation.html:295
 msgid "Change dates"
 msgstr ""
@@ -1319,11 +1417,11 @@ msgid "Change guests"
 msgstr ""
 
 #: .\apps\core\templatetags\presentation.py:420
-#: .\apps\notifications\models.py:26 .\apps\reservations\models.py:534
+#: .\apps\notifications\models.py:26 .\apps\reservations\models.py:532
 msgid "Cancellation request"
 msgstr ""
 
-#: .\apps\core\views.py:194
+#: .\apps\core\views.py:216
 msgid "Your message has been received."
 msgstr ""
 
@@ -1356,8 +1454,8 @@ msgstr ""
 msgid "Requeue failed or retryable events"
 msgstr ""
 
-#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:497
-#: .\apps\reservations\admin.py:720 .\apps\reservations\admin.py:917
+#: .\apps\integrations\admin.py:197 .\apps\properties\admin.py:500
+#: .\apps\reservations\admin.py:715 .\apps\reservations\admin.py:910
 msgid "This action requires elevated permissions."
 msgstr ""
 
@@ -1454,7 +1552,7 @@ msgstr ""
 msgid "Property unavailable"
 msgstr ""
 
-#: .\apps\notifications\models.py:25 .\apps\payments\admin.py:106
+#: .\apps\notifications\models.py:25 .\apps\payments\admin.py:104
 msgid "Modification request"
 msgstr ""
 
@@ -1470,7 +1568,7 @@ msgstr ""
 msgid "Unconfirmed booking"
 msgstr ""
 
-#: .\apps\notifications\models.py:30 .\apps\reservations\models.py:867
+#: .\apps\notifications\models.py:30 .\apps\reservations\models.py:864
 msgid "Refund owed to a guest"
 msgstr ""
 
@@ -1502,10 +1600,6 @@ msgstr ""
 msgid "Error"
 msgstr ""
 
-#: .\apps\notifications\models.py:44 .\apps\reservations\models.py:37
-msgid "Active"
-msgstr ""
-
 #: .\apps\notifications\models.py:45
 #: .\templates\admin\integrations\integration_health.html:16
 msgid "Archived"
@@ -1535,7 +1629,7 @@ msgctxt "EmailDelivery"
 msgid "Sent"
 msgstr ""
 
-#: .\apps\notifications\models.py:107 .\apps\reservations\models.py:552
+#: .\apps\notifications\models.py:107 .\apps\reservations\models.py:550
 msgid "Failure"
 msgstr ""
 
@@ -1723,7 +1817,7 @@ msgstr ""
 msgid "Use these references only when investigating the payment provider."
 msgstr ""
 
-#: .\apps\payments\admin.py:61 .\apps\payments\admin.py:160
+#: .\apps\payments\admin.py:61 .\apps\payments\admin.py:158
 msgid "Verification timeline"
 msgstr ""
 
@@ -1739,38 +1833,38 @@ msgstr ""
 msgid "Original booking"
 msgstr ""
 
-#: .\apps\payments\admin.py:87 .\apps\payments\admin.py:120
+#: .\apps\payments\admin.py:87 .\apps\payments\admin.py:118
 #: .\templates\payments\hyperpay_result.html:39
 msgid "Amount"
 msgstr ""
 
-#: .\apps\payments\admin.py:124 .\templates\admin\core\customers.html:16
+#: .\apps\payments\admin.py:122 .\templates\admin\core\customers.html:16
 #: .\templates\payments\hyperpay_result.html:40
 msgid "Payment status"
 msgstr ""
 
-#: .\apps\payments\admin.py:128
+#: .\apps\payments\admin.py:126
 msgid "Payment provider"
 msgstr ""
 
-#: .\apps\payments\admin.py:132
+#: .\apps\payments\admin.py:130
 msgid "Provider result"
 msgstr ""
 
-#: .\apps\payments\admin.py:142
+#: .\apps\payments\admin.py:140
 msgid "Failure reason"
 msgstr ""
 
-#: .\apps\payments\admin.py:146
+#: .\apps\payments\admin.py:144
 msgid "Provider technical references"
 msgstr ""
 
-#: .\apps\payments\admin.py:165 .\apps\payments\models.py:13
-#: .\apps\reservations\admin.py:401
+#: .\apps\payments\admin.py:163 .\apps\payments\models.py:13
+#: .\apps\reservations\admin.py:400
 msgid "Created"
 msgstr ""
 
-#: .\apps\payments\admin.py:169 .\templates\admin\index.html:171
+#: .\apps\payments\admin.py:167 .\templates\admin\index.html:171
 #, fuzzy
 #| msgid "Verified stay"
 msgid "Verified"
@@ -1780,8 +1874,8 @@ msgstr "Verified stay"
 msgid "Payments"
 msgstr ""
 
-#: .\apps\payments\models.py:15 .\apps\reservations\models.py:479
-#: .\apps\reservations\models.py:702
+#: .\apps\payments\models.py:15 .\apps\reservations\models.py:477
+#: .\apps\reservations\models.py:699
 msgid "Successful"
 msgstr ""
 
@@ -1881,127 +1975,123 @@ msgstr ""
 msgid "Unsupported display currency."
 msgstr ""
 
-#: .\apps\payments\views.py:205
+#: .\apps\payments\views.py:204
 msgid "Secure payment could not be started. Nothing was charged; please try again."
 msgstr ""
 
-#: .\apps\payments\views.py:273
+#: .\apps\payments\views.py:270
 msgid "The price-difference payment could not be started. Nothing was charged, and availability was checked again."
 msgstr ""
 
-#: .\apps\payments\views.py:380
+#: .\apps\payments\views.py:377
 msgid "The local payment test completed. No financial transaction or Hostaway operation was performed."
 msgstr ""
 
-#: .\apps\payments\views.py:392
+#: .\apps\payments\views.py:389
 msgid "Payment rejection was simulated. You can test again without any financial charge."
 msgstr ""
 
-#: .\apps\payments\views.py:399
+#: .\apps\payments\views.py:396
 msgid "Payment cancellation was simulated; the booking request did not change."
 msgstr ""
 
-#: .\apps\payments\views.py:452
+#: .\apps\payments\views.py:449
 msgid "The local price-difference payment test completed. The original booking did not change, and nothing was sent to Hostaway."
 msgstr ""
 
-#: .\apps\payments\views.py:459
+#: .\apps\payments\views.py:456
 msgid "Price-difference payment rejection was simulated without any charge."
 msgstr ""
 
-#: .\apps\payments\views.py:464
+#: .\apps\payments\views.py:461
 msgid "The simulation was cancelled; the original booking remains unchanged."
 msgstr ""
 
-#: .\apps\properties\admin.py:147
+#: .\apps\properties\admin.py:148
 msgid "Short link"
-msgstr ""
-
-#: .\apps\properties\admin.py:148 .\apps\properties\admin.py:152
-#: .\apps\properties\admin.py:156
-msgid "Property name"
 msgstr ""
 
 #: .\apps\properties\admin.py:149 .\apps\properties\admin.py:153
 #: .\apps\properties\admin.py:157
-msgid "Short description"
+msgid "Property name"
 msgstr ""
 
 #: .\apps\properties\admin.py:150 .\apps\properties\admin.py:154
 #: .\apps\properties\admin.py:158
-msgid "Full description"
+msgid "Short description"
 msgstr ""
 
 #: .\apps\properties\admin.py:151 .\apps\properties\admin.py:155
-#: .\apps\properties\admin.py:159 .\apps\properties\admin.py:396
+#: .\apps\properties\admin.py:159
+msgid "Full description"
+msgstr ""
+
+#: .\apps\properties\admin.py:152 .\apps\properties\admin.py:156
+#: .\apps\properties\admin.py:160 .\apps\properties\admin.py:399
 #: .\apps\reservations\booking_forms.py:99
 #: .\templates\properties\property_list.html:9
 msgid "City"
 msgstr ""
 
-#: .\apps\properties\admin.py:160 .\apps\properties\admin.py:162
-#: .\apps\properties\admin.py:164
+#: .\apps\properties\admin.py:161 .\apps\properties\admin.py:163
+#: .\apps\properties\admin.py:165
 msgid "SEO title"
 msgstr ""
 
-#: .\apps\properties\admin.py:161 .\apps\properties\admin.py:163
-#: .\apps\properties\admin.py:165
+#: .\apps\properties\admin.py:162 .\apps\properties\admin.py:164
+#: .\apps\properties\admin.py:166
 msgid "SEO description"
 msgstr ""
 
-#: .\apps\properties\admin.py:166 .\apps\properties\admin.py:412
+#: .\apps\properties\admin.py:167 .\apps\properties\admin.py:415
 msgid "Visible on the platform"
 msgstr ""
 
-#: .\apps\properties\admin.py:167
+#: .\apps\properties\admin.py:168
 msgid "Visibility management"
 msgstr ""
 
-#: .\apps\properties\admin.py:168
+#: .\apps\properties\admin.py:169
 msgid "Featured property"
 msgstr ""
 
-#: .\apps\properties\admin.py:169
+#: .\apps\properties\admin.py:170
 msgid "Display order"
 msgstr ""
 
-#: .\apps\properties\admin.py:170
+#: .\apps\properties\admin.py:171
 msgid "Local content is customised"
 msgstr ""
 
-#: .\apps\properties\admin.py:207 .\apps\properties\admin.py:587
-msgid "Preview"
-msgstr ""
-
-#: .\apps\properties\admin.py:268
+#: .\apps\properties\admin.py:269
 msgid "Publishing and display"
 msgstr ""
 
-#: .\apps\properties\admin.py:279 .\apps\properties\admin.py:437
+#: .\apps\properties\admin.py:280 .\apps\properties\admin.py:440
 msgid "Arabic content"
 msgstr ""
 
-#: .\apps\properties\admin.py:291
+#: .\apps\properties\admin.py:292
 msgid "English content"
 msgstr ""
 
-#: .\apps\properties\admin.py:304
+#: .\apps\properties\admin.py:305
 msgid "French content"
 msgstr ""
 
-#: .\apps\properties\admin.py:317
+#: .\apps\properties\admin.py:318
 msgid "SEO — Arabic"
 msgstr ""
 
-#: .\apps\properties\admin.py:324
+#: .\apps\properties\admin.py:325
 msgid "SEO — English"
 msgstr ""
 
-#: .\apps\properties\admin.py:331
+#: .\apps\properties\admin.py:332
 msgid "SEO — French"
 msgstr ""
 
-#: .\apps\properties\admin.py:338
+#: .\apps\properties\admin.py:339
 msgid "Images and amenities"
 msgstr ""
 
@@ -2009,40 +2099,40 @@ msgstr ""
 msgid "Manage large image and amenity collections on focused screens."
 msgstr ""
 
-#: .\apps\properties\admin.py:347
+#: .\apps\properties\admin.py:346
 msgid "Hostaway operational data"
 msgstr ""
 
-#: .\apps\properties\admin.py:361
+#: .\apps\properties\admin.py:364
 msgid "Media and amenities management"
 msgstr ""
 
-#: .\apps\properties\admin.py:364
+#: .\apps\properties\admin.py:367
 msgid "Save the property first, then manage images and amenities."
 msgstr ""
 
-#: .\apps\properties\admin.py:382
+#: .\apps\properties\admin.py:385
 #, python-format
 msgid "%(images)d images · %(amenities)d amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:385
+#: .\apps\properties\admin.py:388
 msgid "Manage images"
 msgstr ""
 
-#: .\apps\properties\admin.py:387
+#: .\apps\properties\admin.py:390
 msgid "Edit alternative text"
 msgstr ""
 
-#: .\apps\properties\admin.py:389
+#: .\apps\properties\admin.py:392
 msgid "Manage amenities"
 msgstr ""
 
-#: .\apps\properties\admin.py:392
+#: .\apps\properties\admin.py:395
 msgid "Local name"
 msgstr ""
 
-#: .\apps\properties\admin.py:400 .\apps\reservations\forms.py:103
+#: .\apps\properties\admin.py:403 .\apps\reservations\forms.py:103
 #: .\templates\accounts\dashboard.html:30
 #: .\templates\payments\hyperpay_checkout.html:136
 #: .\templates\properties\property_detail.html:93
@@ -2058,59 +2148,59 @@ msgstr ""
 msgid "Guests"
 msgstr ""
 
-#: .\apps\properties\admin.py:404
+#: .\apps\properties\admin.py:407
 #: .\templates\properties\property_detail.html:94
 #: .\templates\properties\property_list.html:11
 msgid "Bedrooms"
 msgstr ""
 
-#: .\apps\properties\admin.py:408
+#: .\apps\properties\admin.py:411
 #: .\templates\admin\integrations\integration_health.html:14
 msgid "Active in Hostaway"
 msgstr ""
 
-#: .\apps\properties\admin.py:416 .\templates\includes\property_card.html:50
+#: .\apps\properties\admin.py:419 .\templates\includes\property_card.html:50
 #: .\templates\includes\review_card.html:14
 msgid "Featured"
 msgstr ""
 
-#: .\apps\properties\admin.py:420
+#: .\apps\properties\admin.py:423
 msgid "Images"
 msgstr ""
 
-#: .\apps\properties\admin.py:424
+#: .\apps\properties\admin.py:427
 msgid "Language completeness"
 msgstr ""
 
-#: .\apps\properties\admin.py:433 .\templates\admin\index.html:180
+#: .\apps\properties\admin.py:436 .\templates\admin\index.html:180
 #: .\templates\admin\notifications\system_status.html:43
 msgid "Last sync"
 msgstr ""
 
-#: .\apps\properties\admin.py:488
+#: .\apps\properties\admin.py:491
 msgid "Sync the selected Hostaway properties"
 msgstr ""
 
-#: .\apps\properties\admin.py:509
+#: .\apps\properties\admin.py:512
 #, python-format
 msgid "The task worker is not running. Start it with: %(commands)s"
 msgstr ""
 
-#: .\apps\properties\admin.py:520
+#: .\apps\properties\admin.py:523
 #, python-format
 msgid "Added %(count)d property to the sync queue."
 msgstr ""
 
-#: .\apps\properties\admin_views.py:85
+#: .\apps\properties\admin_views.py:81
 #, python-format
 msgid "Saved alternative text for %(count)d image(s)."
 msgstr ""
 
-#: .\apps\properties\admin_views.py:88
+#: .\apps\properties\admin_views.py:84
 msgid "No alternative text was changed."
 msgstr ""
 
-#: .\apps\properties\admin_views.py:105 .\templates\admin\index.html:227
+#: .\apps\properties\admin_views.py:99 .\templates\admin\index.html:228
 #: .\templates\admin\properties\image_alt_text.html:10
 msgid "Image alternative text"
 msgstr ""
@@ -2144,7 +2234,7 @@ msgid "Outdoor and parking"
 msgstr ""
 
 #: .\apps\properties\apps.py:8 .\apps\properties\models.py:187
-#: .\apps\properties\views.py:184 .\apps\properties\views.py:201
+#: .\apps\properties\views.py:182 .\apps\properties\views.py:199
 #: .\templates\admin\base_site.html:32
 #: .\templates\admin\integrations\integration_health.html:32
 #: .\templates\admin\integrations\integration_health.html:47
@@ -2174,7 +2264,7 @@ msgid "House rules"
 msgstr ""
 
 #: .\apps\properties\models.py:186 .\apps\reservations\admin.py:295
-#: .\apps\reservations\admin.py:552
+#: .\apps\reservations\admin.py:551
 msgid "Property"
 msgstr ""
 
@@ -2223,7 +2313,7 @@ msgstr ""
 msgid "Property amenities"
 msgstr ""
 
-#: .\apps\properties\views.py:195 .\templates\admin\base_site.html:29
+#: .\apps\properties\views.py:193 .\templates\admin\base_site.html:29
 #: .\templates\includes\breadcrumb.html:4 .\templates\includes\header.html:14
 #: .\templates\includes\mobile_navigation.html:9
 msgid "Home"
@@ -2312,7 +2402,7 @@ msgid "View booking request"
 msgstr ""
 
 #: .\apps\reservations\admin.py:271 .\apps\reservations\admin.py:299
-#: .\apps\reservations\admin.py:524 .\apps\reservations\admin.py:556
+#: .\apps\reservations\admin.py:523 .\apps\reservations\admin.py:555
 #, fuzzy
 #| msgid "Show more reviews"
 msgid "Stay period"
@@ -2324,24 +2414,24 @@ msgid "Guest"
 msgstr ""
 
 #: .\apps\reservations\admin.py:283 .\apps\reservations\admin.py:312
-#: .\apps\reservations\admin.py:536 .\apps\reservations\admin.py:574
+#: .\apps\reservations\admin.py:535 .\apps\reservations\admin.py:573
 msgid "Booking value"
 msgstr ""
 
-#: .\apps\reservations\admin.py:291 .\apps\reservations\admin.py:548
+#: .\apps\reservations\admin.py:291 .\apps\reservations\admin.py:547
 msgid "Booking reference"
 msgstr ""
 
-#: .\apps\reservations\admin.py:305 .\apps\reservations\admin.py:562
+#: .\apps\reservations\admin.py:305 .\apps\reservations\admin.py:561
 #, python-format
 msgid "%(count)d nights"
 msgstr ""
 
-#: .\apps\reservations\admin.py:308 .\apps\reservations\admin.py:565
+#: .\apps\reservations\admin.py:308 .\apps\reservations\admin.py:564
 msgid "Occupancy"
 msgstr ""
 
-#: .\apps\reservations\admin.py:310 .\apps\reservations\admin.py:567
+#: .\apps\reservations\admin.py:310 .\apps\reservations\admin.py:566
 #, python-format
 msgid "%(count)d guests"
 msgstr ""
@@ -2350,222 +2440,222 @@ msgstr ""
 msgid "HyperPay amount"
 msgstr ""
 
-#: .\apps\reservations\admin.py:329 .\templates\admin\core\customers.html:25
+#: .\apps\reservations\admin.py:328 .\templates\admin\core\customers.html:25
 #: .\templates\reservations\modification_detail.html:3
 #: .\templates\reservations\modification_detail.html:10
 msgid "Request status"
 msgstr ""
 
-#: .\apps\reservations\admin.py:333
+#: .\apps\reservations\admin.py:332
 msgid "Guest name"
 msgstr ""
 
-#: .\apps\reservations\admin.py:337
+#: .\apps\reservations\admin.py:336
 msgid "Contact details"
 msgstr ""
 
-#: .\apps\reservations\admin.py:345
+#: .\apps\reservations\admin.py:344
 msgid "Billing address"
 msgstr ""
 
-#: .\apps\reservations\admin.py:359 .\apps\reservations\booking_forms.py:137
+#: .\apps\reservations\admin.py:358 .\apps\reservations\booking_forms.py:135
 msgid "Special requests"
 msgstr ""
 
-#: .\apps\reservations\admin.py:363
+#: .\apps\reservations\admin.py:362
 msgid "Linked booking records"
 msgstr ""
 
-#: .\apps\reservations\admin.py:366
+#: .\apps\reservations\admin.py:365
 msgid "View price quote"
 msgstr ""
 
-#: .\apps\reservations\admin.py:379
+#: .\apps\reservations\admin.py:378
 msgid "View confirmed booking"
 msgstr ""
 
-#: .\apps\reservations\admin.py:383
+#: .\apps\reservations\admin.py:382
 msgid "Customer consent"
 msgstr ""
 
-#: .\apps\reservations\admin.py:385
+#: .\apps\reservations\admin.py:384
 msgid "Yes"
 msgstr ""
 
-#: .\apps\reservations\admin.py:385
+#: .\apps\reservations\admin.py:384
 msgid "No"
 msgstr ""
 
-#: .\apps\reservations\admin.py:388
+#: .\apps\reservations\admin.py:387
 msgid "Terms accepted"
 msgstr ""
 
-#: .\apps\reservations\admin.py:390
+#: .\apps\reservations\admin.py:389
 msgid "Privacy accepted"
 msgstr ""
 
-#: .\apps\reservations\admin.py:392
+#: .\apps\reservations\admin.py:391
 msgid "Marketing consent"
 msgstr ""
 
-#: .\apps\reservations\admin.py:396 .\apps\reservations\admin.py:642
+#: .\apps\reservations\admin.py:395 .\apps\reservations\admin.py:637
 msgid "Timeline"
 msgstr ""
 
-#: .\apps\reservations\admin.py:405
+#: .\apps\reservations\admin.py:404
 msgid "Expires"
 msgstr ""
 
-#: .\apps\reservations\admin.py:409
+#: .\apps\reservations\admin.py:408
 msgid "Cancel the selected booking requests"
 msgstr ""
 
-#: .\apps\reservations\admin.py:420
+#: .\apps\reservations\admin.py:419
 msgid "You do not have permission to cancel."
 msgstr ""
 
-#: .\apps\reservations\admin.py:440
+#: .\apps\reservations\admin.py:439
 #, python-format
 msgid "Cancelled %(count)d request(s)."
 msgstr ""
 
-#: .\apps\reservations\admin.py:465
+#: .\apps\reservations\admin.py:464
 msgid "Stay summary"
 msgstr ""
 
-#: .\apps\reservations\admin.py:476
+#: .\apps\reservations\admin.py:475
 msgid "Status and collection"
 msgstr ""
 
-#: .\apps\reservations\admin.py:480
+#: .\apps\reservations\admin.py:479
 msgid "Safe booking management"
 msgstr ""
 
-#: .\apps\reservations\admin.py:484
+#: .\apps\reservations\admin.py:483
 msgid "Use the approved modification workflow so Hostaway, payment and the audit log stay consistent."
 msgstr ""
 
-#: .\apps\reservations\admin.py:490
+#: .\apps\reservations\admin.py:489
 msgid "Hostaway technical integration"
 msgstr ""
 
-#: .\apps\reservations\admin.py:495
+#: .\apps\reservations\admin.py:494
 msgid "Reference identifiers for search and diagnostics only; do not edit the booking from this screen."
 msgstr ""
 
-#: .\apps\reservations\admin.py:501
+#: .\apps\reservations\admin.py:500
 msgid "Timing and sync log"
 msgstr ""
 
-#: .\apps\reservations\admin.py:532
+#: .\apps\reservations\admin.py:531
 msgid "Booking status"
 msgstr ""
 
-#: .\apps\reservations\admin.py:544
+#: .\apps\reservations\admin.py:543
 msgid "Hostaway status"
 msgstr ""
 
-#: .\apps\reservations\admin.py:569
+#: .\apps\reservations\admin.py:568
 msgid "Booking and payment status"
 msgstr ""
 
-#: .\apps\reservations\admin.py:582
+#: .\apps\reservations\admin.py:581
 msgid "Booking source"
 msgstr ""
 
-#: .\apps\reservations\admin.py:584
+#: .\apps\reservations\admin.py:583
 msgid "test data"
 msgstr ""
 
-#: .\apps\reservations\admin.py:592
+#: .\apps\reservations\admin.py:591
 msgid "Manage the booking"
 msgstr ""
 
-#: .\apps\reservations\admin.py:607
+#: .\apps\reservations\admin.py:602
 msgid "Changes and cancellations are handled as audited requests; the confirmed reservation remains read-only."
 msgstr ""
 
-#: .\apps\reservations\admin.py:611
+#: .\apps\reservations\admin.py:606
 msgid "View modification and cancellation requests"
 msgstr ""
 
-#: .\apps\reservations\admin.py:613
+#: .\apps\reservations\admin.py:608
 msgid "View Hostaway execution log"
 msgstr ""
 
-#: .\apps\reservations\admin.py:616
+#: .\apps\reservations\admin.py:611
 msgid "Hostaway identifiers"
 msgstr ""
 
-#: .\apps\reservations\admin.py:625
+#: .\apps\reservations\admin.py:620
 msgid "Local integration identifiers"
 msgstr ""
 
-#: .\apps\reservations\admin.py:634
+#: .\apps\reservations\admin.py:629
 #: .\templates\admin\notifications\dashboard.html:65
 msgid "Sync"
 msgstr ""
 
-#: .\apps\reservations\admin.py:701 .\apps\reservations\admin.py:898
+#: .\apps\reservations\admin.py:696 .\apps\reservations\admin.py:891
 msgid "Request fingerprint"
 msgstr ""
 
-#: .\apps\reservations\admin.py:715 .\apps\reservations\admin.py:912
+#: .\apps\reservations\admin.py:710 .\apps\reservations\admin.py:905
 msgid "Mark unconfirmed operations as awaiting review"
 msgstr ""
 
-#: .\apps\reservations\admin.py:731 .\apps\reservations\admin.py:928
+#: .\apps\reservations\admin.py:726 .\apps\reservations\admin.py:921
 #, python-format
 msgid "Marked %(count)d operation(s) for review without resending."
 msgstr ""
 
-#: .\apps\reservations\admin.py:785
+#: .\apps\reservations\admin.py:779
 msgid "Quote summary"
 msgstr ""
 
-#: .\apps\reservations\admin.py:802
+#: .\apps\reservations\admin.py:796
 msgid "Approve locally without sending to Hostaway"
 msgstr ""
 
-#: .\apps\reservations\admin.py:807
+#: .\apps\reservations\admin.py:801
 msgid "You do not have permission to approve."
 msgstr ""
 
-#: .\apps\reservations\admin.py:829
+#: .\apps\reservations\admin.py:823
 #, python-format
 msgid "Approved %(count)d request(s) locally without sending."
 msgstr ""
 
-#: .\apps\reservations\admin.py:833
+#: .\apps\reservations\admin.py:826
 msgid "Reject the request locally"
 msgstr ""
 
-#: .\apps\reservations\admin.py:838
+#: .\apps\reservations\admin.py:831
 msgid "You do not have permission to reject."
 msgstr ""
 
-#: .\apps\reservations\admin.py:863
+#: .\apps\reservations\admin.py:856
 #, python-format
 msgid "Rejected %(count)d request(s) locally."
 msgstr ""
 
-#: .\apps\reservations\admin.py:1005
+#: .\apps\reservations\admin.py:997
 msgid "Guest contact"
 msgstr ""
 
-#: .\apps\reservations\admin.py:1011
+#: .\apps\reservations\admin.py:1003
 msgid "How the amount was calculated"
 msgstr ""
 
-#: .\apps\reservations\admin.py:1020
+#: .\apps\reservations\admin.py:1012
 msgid "Mark as transferred to the guest"
 msgstr ""
 
-#: .\apps\reservations\admin.py:1025
+#: .\apps\reservations\admin.py:1017
 msgid "You do not have permission to settle refunds."
 msgstr ""
 
-#: .\apps\reservations\admin.py:1048
+#: .\apps\reservations\admin.py:1040
 #, python-format
 msgid "Marked %(count)d refund(s) as transferred."
 msgstr ""
@@ -2596,57 +2686,57 @@ msgstr ""
 msgid "State or region"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:118
+#: .\apps\reservations\booking_forms.py:116
 msgid "Country"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:128
+#: .\apps\reservations\booking_forms.py:126
 msgid "Postal code"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:143
+#: .\apps\reservations\booking_forms.py:141
 msgid "Optional: arrival time, accessibility, or stay preferences"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:147
+#: .\apps\reservations\booking_forms.py:145
 msgid "I accept the terms"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:148
+#: .\apps\reservations\booking_forms.py:146
 msgid "I accept the privacy policy"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:150
+#: .\apps\reservations\booking_forms.py:148
 msgid "I would like to receive marketing offers"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:164
+#: .\apps\reservations\booking_forms.py:162
 msgid "Choose your country"
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:175
+#: .\apps\reservations\booking_forms.py:173
 msgid "First name is required."
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:181
+#: .\apps\reservations\booking_forms.py:179
 msgid "Last name is required."
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:191
+#: .\apps\reservations\booking_forms.py:189
 msgid "Enter a valid ISO two-letter country code."
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:201
-#: .\apps\reservations\booking_forms.py:235
+#: .\apps\reservations\booking_forms.py:199
+#: .\apps\reservations\booking_forms.py:233
 #: .\templates\reservations\_availability_form.html:9
 msgid "This field is required."
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:231
+#: .\apps\reservations\booking_forms.py:229
 msgid "Choose your region."
 msgstr ""
 
-#: .\apps\reservations\booking_forms.py:243
+#: .\apps\reservations\booking_forms.py:241
 msgid "The request identifier is invalid."
 msgstr ""
 
@@ -2684,20 +2774,20 @@ msgstr ""
 msgid "All cities"
 msgstr ""
 
-#: .\apps\reservations\forms.py:159
-#: .\apps\reservations\modification_forms.py:71
+#: .\apps\reservations\forms.py:157
+#: .\apps\reservations\modification_forms.py:69
 msgid "Check-out must be after check-in."
 msgstr ""
 
-#: .\apps\reservations\forms.py:161
+#: .\apps\reservations\forms.py:159
 msgid "The maximum stay is 366 nights."
 msgstr ""
 
-#: .\apps\reservations\forms.py:168
+#: .\apps\reservations\forms.py:166
 msgid "Guest count exceeds this property's capacity."
 msgstr ""
 
-#: .\apps\reservations\forms.py:175
+#: .\apps\reservations\forms.py:173
 msgid "Choose a property in the selected city."
 msgstr ""
 
@@ -2711,283 +2801,283 @@ msgctxt "BookingQuote"
 msgid "Cancelled"
 msgstr ""
 
-#: .\apps\reservations\models.py:104
+#: .\apps\reservations\models.py:103
 msgid "Booking quote"
 msgstr ""
 
-#: .\apps\reservations\models.py:105
+#: .\apps\reservations\models.py:104
 msgid "Booking quotes"
 msgstr ""
 
-#: .\apps\reservations\models.py:153 .\apps\reservations\models.py:538
+#: .\apps\reservations\models.py:152 .\apps\reservations\models.py:536
 msgid "Awaiting re-verification"
 msgstr ""
 
-#: .\apps\reservations\models.py:154
+#: .\apps\reservations\models.py:153
 #, fuzzy
 #| msgid "Read more"
 msgid "Ready for payment"
 msgstr "Read more"
 
-#: .\apps\reservations\models.py:158
+#: .\apps\reservations\models.py:157
 msgctxt "BookingIntent"
 msgid "Expired"
 msgstr ""
 
-#: .\apps\reservations\models.py:159
+#: .\apps\reservations\models.py:158
 msgctxt "BookingIntent"
 msgid "Cancelled"
 msgstr ""
 
-#: .\apps\reservations\models.py:257
+#: .\apps\reservations\models.py:255
 msgid "Booking intent"
 msgstr ""
 
-#: .\apps\reservations\models.py:258
+#: .\apps\reservations\models.py:256
 msgid "Booking intents"
 msgstr ""
 
-#: .\apps\reservations\models.py:313
+#: .\apps\reservations\models.py:311
 msgid "Live site"
 msgstr ""
 
-#: .\apps\reservations\models.py:314
+#: .\apps\reservations\models.py:312
 msgid "Hostaway manual"
 msgstr ""
 
-#: .\apps\reservations\models.py:315
+#: .\apps\reservations\models.py:313
 msgid "External channel"
 msgstr ""
 
-#: .\apps\reservations\models.py:316 .\apps\reservations\models.py:335
+#: .\apps\reservations\models.py:314 .\apps\reservations\models.py:333
 msgctxt "Reservation"
 msgid "Unknown"
 msgstr ""
 
-#: .\apps\reservations\models.py:320 .\apps\reservations\models.py:545
+#: .\apps\reservations\models.py:318 .\apps\reservations\models.py:543
 msgid "Ready for Hostaway"
 msgstr ""
 
-#: .\apps\reservations\models.py:321
+#: .\apps\reservations\models.py:319
 msgid "Creation pending"
 msgstr ""
 
-#: .\apps\reservations\models.py:322
+#: .\apps\reservations\models.py:320
 msgid "Creating"
 msgstr ""
 
-#: .\apps\reservations\models.py:324
+#: .\apps\reservations\models.py:322
 msgid "Creation failed"
 msgstr ""
 
-#: .\apps\reservations\models.py:325
+#: .\apps\reservations\models.py:323
 msgid "Creation result unconfirmed"
 msgstr ""
 
-#: .\apps\reservations\models.py:326
+#: .\apps\reservations\models.py:324
 msgid "Sync pending"
 msgstr ""
 
-#: .\apps\reservations\models.py:327
+#: .\apps\reservations\models.py:325
 msgid "Modified"
 msgstr ""
 
-#: .\apps\reservations\models.py:328
+#: .\apps\reservations\models.py:326
 msgctxt "Reservation"
 msgid "Cancelled"
 msgstr ""
 
-#: .\apps\reservations\models.py:331
+#: .\apps\reservations\models.py:329
 msgctxt "Reservation"
 msgid "Pending confirmation"
 msgstr ""
 
-#: .\apps\reservations\models.py:332
+#: .\apps\reservations\models.py:330
 msgctxt "Reservation"
 msgid "Inquiry"
 msgstr ""
 
-#: .\apps\reservations\models.py:333
+#: .\apps\reservations\models.py:331
 msgctxt "Reservation"
 msgid "Declined"
 msgstr ""
 
-#: .\apps\reservations\models.py:334
+#: .\apps\reservations\models.py:332
 msgctxt "Reservation"
 msgid "Expired"
 msgstr ""
 
-#: .\apps\reservations\models.py:430
+#: .\apps\reservations\models.py:428
 msgid "Local reservation"
 msgstr ""
 
-#: .\apps\reservations\models.py:431
+#: .\apps\reservations\models.py:429
 msgid "Local reservations"
 msgstr ""
 
-#: .\apps\reservations\models.py:472
+#: .\apps\reservations\models.py:470
 msgid "Create booking"
 msgstr ""
 
-#: .\apps\reservations\models.py:473
+#: .\apps\reservations\models.py:471
 msgid "Fetch booking"
 msgstr ""
 
-#: .\apps\reservations\models.py:474
+#: .\apps\reservations\models.py:472
 msgid "Creation reconciliation"
 msgstr ""
 
-#: .\apps\reservations\models.py:477
+#: .\apps\reservations\models.py:475
 msgctxt "HostawayReservationOperation"
 msgid "Prepared"
 msgstr ""
 
-#: .\apps\reservations\models.py:478 .\apps\reservations\models.py:546
-#: .\apps\reservations\models.py:701
+#: .\apps\reservations\models.py:476 .\apps\reservations\models.py:544
+#: .\apps\reservations\models.py:698
 msgid "In progress"
+msgstr ""
+
+#: .\apps\reservations\models.py:478
+msgctxt "HostawayReservationOperation"
+msgid "Failed"
+msgstr ""
+
+#: .\apps\reservations\models.py:479 .\apps\reservations\models.py:701
+msgid "Unconfirmed"
 msgstr ""
 
 #: .\apps\reservations\models.py:480
 msgctxt "HostawayReservationOperation"
-msgid "Failed"
-msgstr ""
-
-#: .\apps\reservations\models.py:481 .\apps\reservations\models.py:704
-msgid "Unconfirmed"
-msgstr ""
-
-#: .\apps\reservations\models.py:482
-msgctxt "HostawayReservationOperation"
 msgid "Blocked"
 msgstr ""
 
-#: .\apps\reservations\models.py:520
+#: .\apps\reservations\models.py:518
 msgid "Hostaway booking operation"
 msgstr ""
 
-#: .\apps\reservations\models.py:521
+#: .\apps\reservations\models.py:519
 msgid "Hostaway booking operations"
 msgstr ""
 
-#: .\apps\reservations\models.py:533
+#: .\apps\reservations\models.py:531
 msgid "Change guest count"
 msgstr ""
 
-#: .\apps\reservations\models.py:541
+#: .\apps\reservations\models.py:539
 msgid "Awaiting customer approval"
 msgstr ""
 
-#: .\apps\reservations\models.py:544
+#: .\apps\reservations\models.py:542
 msgid "Awaiting administration"
 msgstr ""
 
-#: .\apps\reservations\models.py:548
+#: .\apps\reservations\models.py:546
 msgctxt "BookingModificationRequest"
 msgid "Rejected"
 msgstr ""
 
-#: .\apps\reservations\models.py:549
+#: .\apps\reservations\models.py:547
 msgctxt "BookingModificationRequest"
 msgid "Expired"
 msgstr ""
 
-#: .\apps\reservations\models.py:553
+#: .\apps\reservations\models.py:551
 msgid "Result unconfirmed"
 msgstr ""
 
-#: .\apps\reservations\models.py:639
+#: .\apps\reservations\models.py:636
 msgid "Booking modification request"
 msgstr ""
 
-#: .\apps\reservations\models.py:640
+#: .\apps\reservations\models.py:637
 msgid "Booking modification requests"
 msgstr ""
 
-#: .\apps\reservations\models.py:693
+#: .\apps\reservations\models.py:690
 msgid "Update dates"
 msgstr ""
 
-#: .\apps\reservations\models.py:695
+#: .\apps\reservations\models.py:692
 msgid "Update guests"
 msgstr ""
 
-#: .\apps\reservations\models.py:696
+#: .\apps\reservations\models.py:693
 msgid "Cancel booking"
 msgstr ""
 
-#: .\apps\reservations\models.py:697
+#: .\apps\reservations\models.py:694
 msgid "Modification reconciliation"
 msgstr ""
 
-#: .\apps\reservations\models.py:700
+#: .\apps\reservations\models.py:697
 msgctxt "HostawayModificationOperation"
 msgid "Prepared"
 msgstr ""
 
-#: .\apps\reservations\models.py:703
+#: .\apps\reservations\models.py:700
 msgctxt "HostawayModificationOperation"
 msgid "Failed"
 msgstr ""
 
-#: .\apps\reservations\models.py:705
+#: .\apps\reservations\models.py:702
 msgctxt "HostawayModificationOperation"
 msgid "Blocked"
 msgstr ""
 
-#: .\apps\reservations\models.py:737
+#: .\apps\reservations\models.py:734
 msgid "Hostaway modification operation"
 msgstr ""
 
-#: .\apps\reservations\models.py:738
+#: .\apps\reservations\models.py:735
 msgid "Hostaway modification operations"
 msgstr ""
 
-#: .\apps\reservations\models.py:755
+#: .\apps\reservations\models.py:752
 msgid "Hostaway policy name, exactly as synced onto the property."
 msgstr ""
 
-#: .\apps\reservations\models.py:758
+#: .\apps\reservations\models.py:755
 msgid "Applies when the cancellation happens at least this long before arrival."
 msgstr ""
 
-#: .\apps\reservations\models.py:764
+#: .\apps\reservations\models.py:761
 msgid "Percentage of the stay total returned to the guest."
 msgstr ""
 
-#: .\apps\reservations\models.py:768
+#: .\apps\reservations\models.py:765
 msgid "Uncheck to keep the cleaning fee when this tier applies."
 msgstr ""
 
-#: .\apps\reservations\models.py:784
+#: .\apps\reservations\models.py:781
 msgid "Cancellation policy tier"
 msgstr ""
 
-#: .\apps\reservations\models.py:785
+#: .\apps\reservations\models.py:782
 msgid "Cancellation policy tiers"
 msgstr ""
 
-#: .\apps\reservations\models.py:800
+#: .\apps\reservations\models.py:797
 msgid "Price decreased after a change"
 msgstr ""
 
-#: .\apps\reservations\models.py:801
+#: .\apps\reservations\models.py:798
 msgid "Cancellation refund"
 msgstr ""
 
-#: .\apps\reservations\models.py:804
+#: .\apps\reservations\models.py:801
 msgid "Due to the guest"
 msgstr ""
 
-#: .\apps\reservations\models.py:805
+#: .\apps\reservations\models.py:802
 msgid "Transferred"
 msgstr ""
 
-#: .\apps\reservations\models.py:806
+#: .\apps\reservations\models.py:803
 msgctxt "RefundObligation"
 msgid "Cancelled"
 msgstr ""
 
-#: .\apps\reservations\models.py:868
+#: .\apps\reservations\models.py:865
 msgid "Refunds owed to guests"
 msgstr ""
 
@@ -3012,11 +3102,11 @@ msgstr ""
 msgid "Number of guests"
 msgstr ""
 
-#: .\apps\reservations\modification_forms.py:77
+#: .\apps\reservations\modification_forms.py:75
 msgid "New number of guests"
 msgstr ""
 
-#: .\apps\reservations\modification_forms.py:88
+#: .\apps\reservations\modification_forms.py:84
 msgid "I understand this is a review request and does not cancel the booking or issue a refund."
 msgstr ""
 
@@ -3030,7 +3120,7 @@ msgid "A secure quote could not be created for these dates."
 msgstr ""
 
 #: .\apps\reservations\views.py:315 .\apps\reservations\views.py:349
-#: .\apps\reservations\views.py:486 .\apps\reservations\views.py:801
+#: .\apps\reservations\views.py:486 .\apps\reservations\views.py:799
 msgid "Too many requests."
 msgstr ""
 
@@ -3079,64 +3169,64 @@ msgstr ""
 msgid "The stay would be longer than the maximum nights this property allows."
 msgstr ""
 
-#: .\apps\reservations\views.py:757
+#: .\apps\reservations\views.py:756
 msgid "This property does not accept a stay that starts today."
 msgstr ""
 
-#: .\apps\reservations\views.py:760
+#: .\apps\reservations\views.py:758
 msgid "This change is too close to the arrival time to be requested online."
 msgstr ""
 
-#: .\apps\reservations\views.py:762
+#: .\apps\reservations\views.py:760
 msgid "The property does not accept arrivals on that date."
 msgstr ""
 
-#: .\apps\reservations\views.py:763
+#: .\apps\reservations\views.py:761
 msgid "The property does not accept departures on that date."
 msgstr ""
 
-#: .\apps\reservations\views.py:764
+#: .\apps\reservations\views.py:762
 msgid "The guest count exceeds this property's capacity."
 msgstr ""
 
-#: .\apps\reservations\views.py:765 .\apps\reservations\views.py:766
+#: .\apps\reservations\views.py:763 .\apps\reservations\views.py:764
 msgid "The requested dates are no longer available."
 msgstr ""
 
-#: .\apps\reservations\views.py:767
+#: .\apps\reservations\views.py:765
 msgid "Check-in cannot be in the past."
 msgstr ""
 
-#: .\apps\reservations\views.py:768
+#: .\apps\reservations\views.py:766
 msgid "The stay dates are invalid."
 msgstr ""
 
-#: .\apps\reservations\views.py:769
+#: .\apps\reservations\views.py:767
 msgid "An extension has to add at least one night."
 msgstr ""
 
-#: .\apps\reservations\views.py:770
+#: .\apps\reservations\views.py:768
 msgid "This extension is longer than we can take online."
 msgstr ""
 
-#: .\apps\reservations\views.py:772
+#: .\apps\reservations\views.py:770
 msgid "Live availability could not be reached. Please try again shortly."
 msgstr ""
 
-#: .\apps\reservations\views.py:774
+#: .\apps\reservations\views.py:772
 msgid "A price for these dates could not be prepared."
 msgstr ""
 
-#: .\apps\reservations\views.py:776
+#: .\apps\reservations\views.py:774
 msgid "Cancellation requests are unavailable right now. Please contact guest support."
 msgstr ""
 
-#: .\apps\reservations\views.py:779
+#: .\apps\reservations\views.py:777
 #: .\templates\reservations\manage_reservation.html:211
 msgid "Please complete changes through the booking platform or contact management."
 msgstr ""
 
-#: .\apps\reservations\views.py:871
+#: .\apps\reservations\views.py:869
 msgid "The change request could not be created. The booking was not changed."
 msgstr ""
 
@@ -3171,7 +3261,7 @@ msgid "Featured %(count)d review(s)."
 msgstr ""
 
 #: .\apps\reviews\apps.py:8 .\apps\reviews\models.py:93
-#: .\templates\admin\base_site.html:61 .\templates\admin\index.html:229
+#: .\templates\admin\base_site.html:61 .\templates\admin\index.html:230
 #: .\templates\admin\integrations\integration_health.html:33
 #: .\templates\admin\integrations\integration_health.html:48
 #: .\templates\admin\notifications\dashboard.html:32
@@ -3626,7 +3716,7 @@ msgstr ""
 msgid "All tools"
 msgstr ""
 
-#: .\templates\admin\base_site.html:41 .\templates\admin\index.html:235
+#: .\templates\admin\base_site.html:41 .\templates\admin\index.html:236
 msgid "All administration tools"
 msgstr ""
 
@@ -3916,7 +4006,7 @@ msgid "All checks on this page are local. No request is sent to Google."
 msgstr ""
 
 #: .\templates\admin\core\marketing_diagnostics.html:9
-#: .\templates\admin\index.html:225
+#: .\templates\admin\index.html:226
 msgid "Google integrations"
 msgstr ""
 
@@ -4379,42 +4469,50 @@ msgid "Phone, email and social networks"
 msgstr ""
 
 #: .\templates\admin\index.html:219
+msgid "Homepage photography"
+msgstr ""
+
+#: .\templates\admin\index.html:219
+msgid "Replace stock interface photos and edit alt text"
+msgstr ""
+
+#: .\templates\admin\index.html:220
 msgid "Answers, ordering and the three languages"
 msgstr ""
 
-#: .\templates\admin\index.html:223
+#: .\templates\admin\index.html:224
 msgid "Growth and visibility"
 msgstr ""
 
-#: .\templates\admin\index.html:223
+#: .\templates\admin\index.html:224
 msgid "Google and SEO"
 msgstr ""
 
-#: .\templates\admin\index.html:225
+#: .\templates\admin\index.html:226
 msgid "GA4, GTM, Ads and Consent Mode"
 msgstr ""
 
-#: .\templates\admin\index.html:226
+#: .\templates\admin\index.html:227
 msgid "SEO health"
 msgstr ""
 
-#: .\templates\admin\index.html:226
+#: .\templates\admin\index.html:227
 msgid "Sitemap, structured data and missing content"
 msgstr ""
 
-#: .\templates\admin\index.html:227
+#: .\templates\admin\index.html:228
 msgid "Bulk editing in three languages for accessibility and SEO"
 msgstr ""
 
-#: .\templates\admin\index.html:228
+#: .\templates\admin\index.html:229
 msgid "Hostaway sync"
 msgstr ""
 
-#: .\templates\admin\index.html:228
+#: .\templates\admin\index.html:229
 msgid "Source reading and the safe sync log"
 msgstr ""
 
-#: .\templates\admin\index.html:229
+#: .\templates\admin\index.html:230
 msgid "Visibility, featuring and customer experience quality"
 msgstr ""
 
@@ -4941,35 +5039,39 @@ msgstr ""
 msgid "Phone"
 msgstr ""
 
-#: .\templates\core\contact.html:46
+#: .\templates\core\contact.html:38
+msgid "Start a conversation"
+msgstr ""
+
+#: .\templates\core\contact.html:53
 msgid "Follow us on social media"
 msgstr ""
 
-#: .\templates\core\contact.html:54
+#: .\templates\core\contact.html:62
 msgid "Before you send"
 msgstr ""
 
-#: .\templates\core\contact.html:55
+#: .\templates\core\contact.html:63
 msgid "Please do not include payment card details, passwords, or identity documents."
 msgstr ""
 
-#: .\templates\core\contact.html:56
+#: .\templates\core\contact.html:64
 msgid "Read common questions"
 msgstr ""
 
-#: .\templates\core\contact.html:60
+#: .\templates\core\contact.html:68
 msgid "Contact us"
 msgstr ""
 
-#: .\templates\core\contact.html:61
+#: .\templates\core\contact.html:69
 msgid "Too many messages were sent. Please wait and try again."
 msgstr ""
 
-#: .\templates\core\contact.html:62
+#: .\templates\core\contact.html:70
 msgid "Please correct the highlighted fields."
 msgstr ""
 
-#: .\templates\core\contact.html:74
+#: .\templates\core\contact.html:82
 msgid "Send message"
 msgstr ""
 

@@ -3,14 +3,14 @@
 
 {% block title %}{% trans "Luxury Smart Apartments | Smart stays in Riyadh and Marrakech" %}{% endblock %}
 {% block meta_description %}{% trans "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability." %}{% endblock %}
-{% block og_image %}<meta property="og:image" content="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600&amp;q=85">{% endblock %}
+{% block og_image %}<meta property="og:image" content="{% if home_og_image %}{{ home_og_image }}{% else %}https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600&amp;q=85{% endif %}">{% endblock %}
 
 {% block content %}
 <section class="travel-hero" aria-labelledby="travel-hero-title">
     <img
         class="travel-hero__backdrop"
-        src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400&amp;q=88"
-        alt="{% trans 'Riyadh skyline and palm trees' %}"
+        src="{% if home_interface_images.home_hero %}{{ home_interface_images.home_hero.image.url }}{% else %}https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400&amp;q=88{% endif %}"
+        alt="{% if home_interface_images.home_hero %}{{ home_interface_images.home_hero|localized_image_alt }}{% else %}{% trans 'Riyadh skyline and palm trees' %}{% endif %}"
         width="2400"
         height="1500"
         fetchpriority="high"
@@ -37,8 +37,8 @@
 
         <a class="travel-hero__postcard" data-image-fallback href="{% url 'properties:list' %}?city=Marrakesh" aria-label="{% trans 'Explore stays in Marrakech' %}">
             <img
-                src="https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=900&amp;q=88"
-                alt="{% trans 'Traditional riad courtyard with a pool in Marrakech' %}"
+                src="{% if home_interface_images.home_marrakech_postcard %}{{ home_interface_images.home_marrakech_postcard.image.url }}{% else %}https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=900&amp;q=88{% endif %}"
+                alt="{% if home_interface_images.home_marrakech_postcard %}{{ home_interface_images.home_marrakech_postcard|localized_image_alt }}{% else %}{% trans 'Traditional riad courtyard with a pool in Marrakech' %}{% endif %}"
                 width="900"
                 height="1100"
                 decoding="async"
@@ -96,8 +96,8 @@
                     has not been curated yet.
                 {% endcomment %}
                 <img
-                    src="{% if city.hero %}{{ city.hero.display_url }}{% elif city.city == 'Riyadh' %}https://images.unsplash.com/photo-1674386491555-5b92161e4d04?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% else %}https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% endif %}"
-                    alt="{% if city.hero %}{% with city_label=city|localized_city %}{{ city.hero|localized_image_alt|default:city_label }}{% endwith %}{% elif city.city == 'Riyadh' %}{% trans 'Aerial view of Riyadh city' %}{% else %}{% trans 'Riad courtyard in Marrakech' %}{% endif %}"
+                    src="{% if city.hero %}{{ city.hero.display_url }}{% elif city.interface_image %}{{ city.interface_image.image.url }}{% elif city.city == 'Riyadh' %}https://images.unsplash.com/photo-1674386491555-5b92161e4d04?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% else %}https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1600&amp;q=86{% endif %}"
+                    alt="{% if city.hero %}{% with city_label=city|localized_city %}{{ city.hero|localized_image_alt|default:city_label }}{% endwith %}{% elif city.interface_image %}{{ city.interface_image|localized_image_alt }}{% elif city.city == 'Riyadh' %}{% trans 'Aerial view of Riyadh city' %}{% else %}{% trans 'Riad courtyard in Marrakech' %}{% endif %}"
                     width="1600"
                     height="1200"
                     loading="lazy"
@@ -119,7 +119,7 @@
 <section class="section travel-story" aria-labelledby="why-title">
     <div class="container travel-story__grid">
         <div class="travel-story__media">
-            <img src="https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1400&amp;q=86" alt="{% trans 'Elegant Moroccan courtyard in Marrakech' %}" width="1400" height="1700" loading="lazy" decoding="async">
+            <img src="{% if home_interface_images.home_story %}{{ home_interface_images.home_story.image.url }}{% else %}https://images.unsplash.com/photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=1400&amp;q=86{% endif %}" alt="{% if home_interface_images.home_story %}{{ home_interface_images.home_story|localized_image_alt }}{% else %}{% trans 'Elegant Moroccan courtyard in Marrakech' %}{% endif %}" width="1400" height="1700" loading="lazy" decoding="async">
             <span><b>{% trans "Stay beautifully" %}</b><small>{% trans "From arrival to checkout" %}</small></span>
         </div>
         <div class="travel-story__content">
@@ -153,7 +153,7 @@
 
 <section class="section container travel-final" id="booking-management">
     <div class="travel-final__panel">
-        <img src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2000&amp;q=84" alt="" width="2000" height="900" loading="lazy" decoding="async">
+        <img src="{% if home_interface_images.home_final_cta %}{{ home_interface_images.home_final_cta.image.url }}{% else %}https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2000&amp;q=84{% endif %}" alt="{% if home_interface_images.home_final_cta %}{{ home_interface_images.home_final_cta|localized_image_alt }}{% endif %}" width="2000" height="900" loading="lazy" decoding="async">
         <span class="travel-final__shade" aria-hidden="true"></span>
         <div>
             <p class="eyebrow">{% trans "Your next story starts here" %}</p>

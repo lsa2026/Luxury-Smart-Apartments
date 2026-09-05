@@ -206,9 +206,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
     reservations_attention = Reservation.objects.filter(
         normalized_status__in=reservation_attention_statuses
     ).count()
-    refunds_due = RefundObligation.objects.filter(
-        status=RefundObligation.Status.DUE
-    ).count()
+    refunds_due = RefundObligation.objects.filter(status=RefundObligation.Status.DUE).count()
     # A paid booking normally leaves ready_for_hostaway within the same request.
     # One that lingers was refused before any call was made — a blocked Hostaway
     # operation carries the reason — and nothing else would surface it.
@@ -236,9 +234,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             "severity": "critical",
             "count": reservations_attention,
             "title": _("Bookings needing attention"),
-            "description": _(
-                    "An unconfirmed creation or sync state that needs a manual decision."
-                ),
+            "description": _("An unconfirmed creation or sync state that needs a manual decision."),
             "url": _url("admin:reservations_reservation_changelist"),
         },
         {
@@ -246,9 +242,9 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             "count": refunds_due,
             "title": _("Refunds to transfer to guests"),
             "description": _(
-                    "A change was applied automatically and left money owed. "
-                    "Contact the guest for bank details, transfer, then mark it."
-                ),
+                "A change was applied automatically and left money owed. "
+                "Contact the guest for bank details, transfer, then mark it."
+            ),
             "url": _url("admin:reservations_refundobligation_changelist"),
         },
         {
@@ -256,44 +252,36 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             "count": stale_unsent_reservations,
             "title": _("Paid bookings not sent to Hostaway"),
             "description": _(
-                    "Payment succeeded but creation was blocked; check the operation reason."
-                ),
+                "Payment succeeded but creation was blocked; check the operation reason."
+            ),
             "url": _url("admin:reservations_hostawayreservationoperation_changelist"),
         },
         {
             "severity": "critical",
             "count": payment_attention,
             "title": _("Payments needing review"),
-            "description": _(
-                    "A failed or under-review transaction in the last 30 days."
-                ),
+            "description": _("A failed or under-review transaction in the last 30 days."),
             "url": _url("admin:payments_paymentattempt_changelist"),
         },
         {
             "severity": "critical",
             "count": failed_webhooks,
             "title": _("Failed webhooks"),
-            "description": _(
-                    "Check reception before it affects booking updates."
-                ),
+            "description": _("Check reception before it affects booking updates."),
             "url": _url("admin:integrations_hostawaywebhookevent_changelist"),
         },
         {
             "severity": "warning",
             "count": pending_modifications,
             "title": _("Pending modification requests"),
-            "description": _(
-                    "An extension or change awaiting approval or completion."
-                ),
+            "description": _("An extension or change awaiting approval or completion."),
             "url": _url("admin:reservations_bookingmodificationrequest_changelist"),
         },
         {
             "severity": "warning",
             "count": stale_pending_payments,
             "title": _("Payments pending for over 30 minutes"),
-            "description": _(
-                    "Check their state with the provider before contacting the customer."
-                ),
+            "description": _("Check their state with the provider before contacting the customer."),
             "url": _url("admin:payments_paymentattempt_changelist"),
         },
         {
@@ -307,27 +295,21 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             "severity": "warning",
             "count": properties_need_attention,
             "title": _("Properties not ready to publish"),
-            "description": _(
-                    "Data, content, or visibility settings that need completing."
-                ),
+            "description": _("Data, content, or visibility settings that need completing."),
             "url": _url("admin:properties_property_changelist"),
         },
         {
             "severity": "info",
             "count": new_contacts,
             "title": _("Customer messages awaiting a reply"),
-            "description": _(
-                    "Move a message to in-progress as soon as you start handling it."
-                ),
+            "description": _("Move a message to in-progress as soon as you start handling it."),
             "url": _url("admin:core_contactmessage_changelist"),
         },
         {
             "severity": "info",
             "count": unread_notifications,
             "title": _("Unread alerts"),
-            "description": _(
-                    "Review the alert centre and close what has been handled."
-                ),
+            "description": _("Review the alert centre and close what has been handled."),
             "url": _url("notifications:center"),
         },
     ]
@@ -462,6 +444,7 @@ def dashboard_payload(request: object) -> dict[str, Any]:
             "faq": _url("admin:core_faqitem_changelist"),
             "reviews": _url("admin:reviews_review_changelist"),
             "settings": _url("admin:core_sitesetting_changelist"),
+            "interface_images": _url("admin:core_siteinterfaceimage_changelist"),
             "operations": _url("notifications:dashboard"),
             "notifications": _url("notifications:center"),
             "system": _url("notifications:system_status"),
