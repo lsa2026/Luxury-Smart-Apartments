@@ -1503,6 +1503,14 @@ document.querySelectorAll("form").forEach((form) => {
         const isSaudi = country.value === "SA";
         saudiGroup.hidden = !isSaudi;
         otherGroup.hidden = isSaudi;
+        saudiGroup.querySelectorAll("input, select, textarea").forEach((field) => {
+            field.disabled = !isSaudi;
+            field.required = isSaudi;
+        });
+        otherGroup.querySelectorAll("input, select, textarea").forEach((field) => {
+            field.disabled = isSaudi;
+            field.required = !isSaudi;
+        });
     }
 
     country.addEventListener("change", applyCountry);
