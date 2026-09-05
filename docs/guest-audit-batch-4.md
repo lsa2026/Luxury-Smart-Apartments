@@ -31,6 +31,7 @@ loading.
 - [Before: catalogue without date filters and ambiguous RTL counter](audit-screenshots/p4/before-property-filters.jpg)
 - [After: desktop catalogue with dates and localized counters](audit-screenshots/p4/after-property-filters-desktop.jpg)
 - [After: dates carried into the property booking form](audit-screenshots/p4/after-prefilled-property-detail.jpg)
+- [Before: SEO fields without an editorial contract](audit-screenshots/p4/before-seo-admin-guidance.jpg)
 - [After: explicit SEO title guidance in the admin](audit-screenshots/p4/after-seo-admin-guidance.jpg)
 
 The responsive catalogue was also inspected at the browser's smallest allowed
