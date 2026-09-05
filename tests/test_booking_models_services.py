@@ -308,7 +308,7 @@ def test_guest_form_validation_normalization_and_xss() -> None:
             "guest_first_name": "<b>Test</b>",
             "guest_last_name": "Guest",
             "guest_email": "test@example.invalid",
-            "guest_phone": "050 000 0000",
+            "guest_phone": "+966 500 000 000",
             "billing_street1": "King Fahd Road 10",
             "billing_city": "Riyadh",
             "billing_state": "Riyadh",
@@ -328,13 +328,13 @@ def test_guest_form_validation_normalization_and_xss() -> None:
     assert form.cleaned_data["marketing_consent"] is False
 
 
-def test_guest_form_uses_the_stay_country_for_a_local_mobile_number() -> None:
+def test_guest_form_accepts_an_e164_mobile_number_for_any_stay_country() -> None:
     form = GuestDetailsForm(
         {
             "guest_first_name": "Test",
             "guest_last_name": "Guest",
             "guest_email": "test@example.invalid",
-            "guest_phone": "0612345678",
+            "guest_phone": "+212612345678",
             "billing_street1": "Avenue Hassan II 10",
             "billing_city": "Marrakech",
             "billing_state": "Marrakech-Safi",
@@ -352,13 +352,13 @@ def test_guest_form_uses_the_stay_country_for_a_local_mobile_number() -> None:
     assert form.cleaned_data["guest_phone"] == "+212612345678"
 
 
-def test_guest_phone_uses_selected_billing_country_not_property_country() -> None:
+def test_guest_phone_does_not_depend_on_the_selected_billing_country() -> None:
     form = GuestDetailsForm(
         {
             "guest_first_name": "Test",
             "guest_last_name": "Guest",
             "guest_email": "test@example.invalid",
-            "guest_phone": "0500000000",
+            "guest_phone": "+966500000000",
             "billing_street1": "King Fahd Road 10",
             "billing_city": "Riyadh",
             "billing_state": "Riyadh",
@@ -380,18 +380,16 @@ def test_guest_phone_uses_selected_billing_country_not_property_country() -> Non
 @pytest.mark.parametrize(
     ("raw_phone", "billing_country", "expected"),
     [
-        # A local number written the way each country writes it.
-        ("01012345678", "EG", "+201012345678"),
-        ("07911123456", "GB", "+447911123456"),
-        ("(212) 555-1234", "US", "+12125551234"),
-        ("98765 43210", "IN", "+919876543210"),
-        ("0151 12345678", "DE", "+4915112345678"),
-        ("090-1234-5678", "JP", "+819012345678"),
-        # An explicit country code is authoritative wherever it is typed.
+        # An explicit country code is required, regardless of billing country.
+        ("+201012345678", "EG", "+201012345678"),
+        ("+447911123456", "GB", "+447911123456"),
+        ("+12125551234", "US", "+12125551234"),
+        ("+919876543210", "IN", "+919876543210"),
+        ("+4915112345678", "DE", "+4915112345678"),
+        ("+819012345678", "JP", "+819012345678"),
+        # The number is valid independently of the selected billing country.
         ("+33612345678", "GB", "+33612345678"),
-        ("0033612345678", "GB", "+33612345678"),
-        # A guest billing overseas may still carry a Saudi mobile: the number
-        # falls back to the site default rather than being rejected.
+        # A guest billing overseas may still carry a Saudi mobile.
         ("+966500000000", "GB", "+966500000000"),
     ],
 )
@@ -425,13 +423,17 @@ def test_guest_phone_accepts_numbers_from_any_country(
 @pytest.mark.parametrize(
     "raw_phone",
     [
+        "6462817246",  # number entered without its country calling code
+        "0500000000",  # local Saudi number
+        "01012345678",  # valid Egyptian local notation without +20
+        "0033612345678",  # dial-out prefix is not accepted as E.164 input
         "12345",  # too short for any country
         "+9999999999999999",  # no such country code, and over E.164 length
         "0000000000",
         "abcdefghij",
     ],
 )
-def test_guest_phone_still_rejects_numbers_that_are_not_dialable(raw_phone: str) -> None:
+def test_guest_phone_rejects_local_or_invalid_phone_numbers(raw_phone: str) -> None:
     form = GuestDetailsForm(
         {
             "guest_first_name": "Test",
@@ -490,7 +492,7 @@ def test_guest_form_rejects_invalid_input(overrides: dict[str, str]) -> None:
         "guest_first_name": "Test",
         "guest_last_name": "Guest",
         "guest_email": "test@example.invalid",
-        "guest_phone": "0500000000",
+        "guest_phone": "+966500000000",
         "billing_street1": "King Fahd Road 10",
         "billing_city": "Riyadh",
         "billing_state": "Riyadh",

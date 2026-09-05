@@ -61,12 +61,21 @@ class SecurityHeadersMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         request.csp_nonce = secrets.token_urlsafe(18)
         response = self.get_response(request)
+        public_map_page = bool(getattr(request, "_public_map_enabled", False))
+        property_admin_map = request.path.startswith("/admin/properties/property/")
+        location_map_page = public_map_page or property_admin_map
         image_sources = " ".join(
             source
             for source in settings.HOSTAWAY_IMAGE_CSP_SOURCES
             if source.startswith("https://") and ";" not in source
         )
-        style_sources = "'self' 'unsafe-inline'" if request.path.startswith("/admin/") else "'self'"
+        if location_map_page:
+            image_sources = f"{image_sources} https://tile.openstreetmap.org"
+        style_sources = (
+            "'self' 'unsafe-inline'"
+            if request.path.startswith("/admin/") or public_map_page
+            else "'self'"
+        )
         google_allowed = (
             settings.GOOGLE_INTEGRATIONS_ENABLED
             and not request.path.startswith(("/admin/", "/health/", "/integrations/"))

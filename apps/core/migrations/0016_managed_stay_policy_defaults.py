@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("core", "0014_merge_20260905_0300"),
+        ("core", "0015_simplify_arabic_tagline"),
     ]
 
     operations = [

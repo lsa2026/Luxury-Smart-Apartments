@@ -11,3 +11,6 @@ pip install .
 # Compiled catalogs (.mo) are committed, so gettext is not needed at build time.
 python manage.py collectstatic --no-input
 python manage.py migrate --no-input
+# Hostaway names arrive in English.  Fill the curated Arabic/French labels for
+# existing and newly-synced amenities without overwriting dashboard wording.
+python manage.py seed_amenity_arabic_names

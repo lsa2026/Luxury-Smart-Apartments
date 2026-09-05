@@ -93,6 +93,9 @@ PROPERTY_LOCAL_FIELDS = {
     "city_ar",
     "city_en",
     "city_fr",
+    "public_location_enabled",
+    "public_location_latitude",
+    "public_location_longitude",
     "seo_title_ar",
     "seo_title_en",
     "seo_title_fr",
@@ -126,6 +129,9 @@ PROPERTY_FORM_FIELDS = (
     "city_ar",
     "city_en",
     "city_fr",
+    "public_location_enabled",
+    "public_location_latitude",
+    "public_location_longitude",
     "seo_title_ar",
     "seo_title_en",
     "seo_title_fr",
@@ -168,6 +174,7 @@ class PropertyAdminForm(forms.ModelForm):
             "short_description_fr": _("Short description"),
             "description_fr": _("Full description"),
             "city_fr": _("City"),
+            "public_location_enabled": _("Show the location map to guests"),
             "seo_title_ar": _("SEO title"),
             "seo_description_ar": _("SEO description"),
             "seo_title_en": _("SEO title"),
@@ -182,6 +189,27 @@ class PropertyAdminForm(forms.ModelForm):
             "display_check_out_hour": _("Guest-facing check-out hour"),
             "content_is_customized": _("Local content is customised"),
         }
+        widgets = {
+            "public_location_latitude": forms.HiddenInput(),
+            "public_location_longitude": forms.HiddenInput(),
+        }
+
+    def clean(self) -> dict[str, object]:
+        cleaned_data = super().clean()
+        latitude = cleaned_data.get("public_location_latitude")
+        longitude = cleaned_data.get("public_location_longitude")
+        enabled = cleaned_data.get("public_location_enabled")
+        if (latitude is None) != (longitude is None):
+            self.add_error(
+                "public_location_enabled",
+                _("Choose a complete location from the map or clear it."),
+            )
+        elif enabled and latitude is None:
+            self.add_error(
+                "public_location_enabled",
+                _("Choose the property location on the map before showing it to guests."),
+            )
+        return cleaned_data
 
 
 class PropertyImageInline(admin.TabularInline):
@@ -269,7 +297,7 @@ class PropertyAdmin(admin.ModelAdmin):
         "=hostaway_listing_id",
         "=hostaway_listing_map_id",
     )
-    readonly_fields = PROPERTY_SOURCE_FIELDS + ("asset_management",)
+    readonly_fields = PROPERTY_SOURCE_FIELDS + ("asset_management", "location_picker")
     actions = ("queue_selected_property_sync",)
     # Large Hostaway listings can contain dozens of images and amenities. They
     # stay fully manageable on their dedicated screens instead of making the
@@ -312,6 +340,22 @@ class PropertyAdmin(admin.ModelAdmin):
                     "city_en",
                     "cancellation_policy_en",
                     "house_rules_en",
+                ),
+            },
+        ),
+        (
+            _("Guest location map"),
+            {
+                "fields": (
+                    "public_location_enabled",
+                    "location_picker",
+                    "public_location_latitude",
+                    "public_location_longitude",
+                ),
+                "description": _(
+                    "Click the map or drag the marker to choose the location shown to guests. "
+                    "Coordinates are saved automatically and Hostaway sync will not overwrite "
+                    "this selection."
                 ),
             },
         ),
@@ -414,6 +458,63 @@ class PropertyAdmin(admin.ModelAdmin):
             _("Edit alternative text"),
             amenities_url,
             _("Manage amenities"),
+        )
+
+    @admin.display(description=_("Choose the location on the map"))
+    def location_picker(self, obj: Property | None) -> str:
+        latitude = (
+            obj.public_location_latitude
+            if obj and obj.public_location_latitude is not None
+            else (obj.latitude if obj else None)
+        )
+        longitude = (
+            obj.public_location_longitude
+            if obj and obj.public_location_longitude is not None
+            else (obj.longitude if obj else None)
+        )
+        city = (obj.city if obj else "").strip().casefold()
+        if (
+            latitude is None
+            and longitude is None
+            and city
+            in {
+                "marrakesh",
+                "marrakech",
+                "مراكش",
+            }
+        ):
+            latitude, longitude = "31.629472", "-7.981084"
+        latitude = latitude if latitude is not None else "24.713552"
+        longitude = longitude if longitude is not None else "46.675296"
+        return format_html(
+            '<div class="lsa-location-picker" data-location-picker '
+            'data-default-latitude="{}" data-default-longitude="{}" '
+            'data-selected-label="{}" data-empty-label="{}">'
+            '<div class="lsa-location-picker__map" data-location-picker-map '
+            'role="application" aria-label="{}"></div>'
+            '<div class="lsa-location-picker__status" aria-live="polite">'
+            "<span data-location-picker-status>{}</span>"
+            '<button type="button" class="button" data-location-picker-clear>{}</button>'
+            "</div></div>",
+            latitude,
+            longitude,
+            _("Location selected. Drag the marker to refine it."),
+            _("No public location selected yet."),
+            _("Map for choosing the property location"),
+            _("Click the map or drag the marker to set the location."),
+            _("Clear location"),
+        )
+
+    class Media:
+        css = {
+            "all": (
+                "vendor/leaflet/leaflet.css",
+                "css/admin-property-map.css",
+            )
+        }
+        js = (
+            "vendor/leaflet/leaflet.js",
+            "js/admin-property-map.js",
         )
 
     @admin.display(description=_("Local name"), ordering="name_ar")

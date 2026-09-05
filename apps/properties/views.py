@@ -25,6 +25,25 @@ def _card_images() -> QuerySet[PropertyImage]:
     )
 
 
+def _public_location_map(property_obj: Property) -> dict[str, str] | None:
+    if (
+        not property_obj.public_location_enabled
+        or property_obj.public_location_latitude is None
+        or property_obj.public_location_longitude is None
+    ):
+        return None
+    latitude = format(property_obj.public_location_latitude, "f")
+    longitude = format(property_obj.public_location_longitude, "f")
+    return {
+        "latitude": latitude,
+        "longitude": longitude,
+        "external_url": (
+            "https://www.openstreetmap.org/"
+            f"?mlat={latitude}&mlon={longitude}#map=16/{latitude}/{longitude}"
+        ),
+    }
+
+
 class PropertyListView(ListView):
     template_name = "properties/property_list.html"
     context_object_name = "properties"
@@ -178,6 +197,7 @@ class PropertyDetailView(DetailView):
                 ),
                 "similar_properties": similar,
                 "total_image_count": len(all_gallery_images),
+                "public_location_map": _public_location_map(property_obj),
                 "breadcrumb_items": [
                     {"label": _("Properties"), "url": reverse("properties:list")},
                     {"label": property_obj.display_name, "url": ""},
@@ -211,6 +231,7 @@ class PropertyDetailView(DetailView):
                 },
             }
         )
+        self.request._public_map_enabled = context["public_location_map"] is not None
         return context
 
 

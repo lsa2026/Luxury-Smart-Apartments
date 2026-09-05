@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from django.test import Client
 
@@ -61,6 +63,48 @@ def test_hidden_images_are_not_rendered_on_detail() -> None:
 
     assert "visible.jpg" in content
     assert "hidden.jpg" not in content
+
+
+def test_enabled_public_location_renders_an_interactive_map_and_geo_schema() -> None:
+    property_obj = make_property(11)
+    property_obj.public_location_enabled = True
+    property_obj.public_location_latitude = Decimal("24.713552")
+    property_obj.public_location_longitude = Decimal("46.675296")
+    property_obj.save(
+        update_fields=[
+            "public_location_enabled",
+            "public_location_latitude",
+            "public_location_longitude",
+        ]
+    )
+
+    response = Client().get(property_obj.get_absolute_url())
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "data-property-map" in content
+    assert 'data-latitude="24.713552"' in content
+    assert 'data-longitude="46.675296"' in content
+    assert "vendor/leaflet/leaflet.js" in content
+    assert "openstreetmap.org" in content
+    assert '"@type":"GeoCoordinates"' in content
+    assert "https://tile.openstreetmap.org" in response.headers["Content-Security-Policy"]
+
+
+def test_disabled_public_location_does_not_expose_coordinates_or_map_resources() -> None:
+    property_obj = make_property(12)
+    property_obj.public_location_latitude = Decimal("24.700001")
+    property_obj.public_location_longitude = Decimal("46.600001")
+    property_obj.save(update_fields=["public_location_latitude", "public_location_longitude"])
+
+    response = Client().get(property_obj.get_absolute_url())
+    content = response.content.decode()
+
+    assert "data-property-map" not in content
+    assert "24.700001" not in content
+    assert "vendor/leaflet/leaflet.js" not in content
+    assert '"@type":"GeoCoordinates"' not in content
+    assert "https://tile.openstreetmap.org" not in response.headers["Content-Security-Policy"]
 
 
 def test_property_list_is_paginated() -> None:

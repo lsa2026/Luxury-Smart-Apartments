@@ -12,8 +12,7 @@ BASE = {
     "guest_first_name": "Guest",
     "guest_last_name": "Example",
     "guest_email": "guest@example.invalid",
-    "guest_phone": "0500000000",
-    "billing_street1": "King Fahd Road 10",
+    "guest_phone": "+966500000000",
     "billing_city": "Riyadh",
     "billing_state": "Riyadh",
     "billing_country": "SA",
@@ -31,17 +30,11 @@ def form(**overrides: object) -> GuestDetailsForm:
 # --- what the payment journey actually demands ------------------------------
 
 
-def test_a_booking_requires_the_street_used_by_three_d_secure() -> None:
-    submitted = form(billing_street1="")
-
-    assert submitted.is_valid() is False
-    assert "billing_street1" in submitted.errors
-
-
-def test_a_booking_completes_without_a_postcode() -> None:
-    submitted = form(billing_street1="King Fahd Road 10")
+def test_a_booking_completes_without_a_street_or_a_postcode() -> None:
+    submitted = form()
 
     assert submitted.is_valid(), submitted.errors
+    assert submitted.cleaned_data["billing_street1"] == ""
     assert submitted.cleaned_data["billing_postcode"] == ""
 
 

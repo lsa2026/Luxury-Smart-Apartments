@@ -111,6 +111,10 @@ def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
     populated_property()
     content = Client().get("/").content.decode()
     assert 'lang="ar" dir="rtl"' in content
+    assert "إقامة ذكية فاخرة" in content
+    assert "إقامات ذكية فاخرة" not in content
+    footer = content[content.index('<footer class="site-footer"') :]
+    assert "<h2>إقامة ذكية فاخرة</h2>" in footer
     assert 'class="skip-link"' in content
     assert '<main id="main-content"' in content
     assert "<header" in content and "<footer" in content
@@ -343,6 +347,68 @@ def test_hidden_image_and_private_address_are_not_rendered() -> None:
     content = Client().get(property_obj.get_absolute_url()).content.decode()
     assert "PRIVATE ADDRESS 123" not in content
     assert "86002.jpg" not in content
+
+
+def test_stale_marketplace_cdn_image_is_not_rendered_in_the_public_gallery() -> None:
+    property_obj = populated_property(861)
+    PropertyImage.objects.create(
+        property=property_obj,
+        hostaway_image_id=86102,
+        hostaway_url="https://a0.muscache.com/im/pictures/stale-image.jpg",
+        sync_key="id:86102",
+        source=PropertyImage.Source.HOSTAWAY,
+        alt_text_ar="صورة غير صالحة",
+    )
+
+    content = Client().get(property_obj.get_absolute_url()).content.decode()
+
+    assert "stale-image.jpg" not in content
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        (
+            "ar",
+            (
+                "مراجعة واحدة",
+                "٤.٩ عبر جميع قنوات الحجز",
+                "ابتداءً من",
+                "قبل الحجز",
+                "تسجيل الوصول من",
+            ),
+        ),
+        (
+            "fr",
+            (
+                "1 avis",
+                "4.9 sur l’ensemble des canaux de réservation",
+                "À partir de",
+                "Avant de réserver",
+                "Arrivée à partir de",
+            ),
+        ),
+    ],
+)
+def test_property_detail_renders_localized_review_price_and_policy_copy(
+    language: str,
+    expected: tuple[str, ...],
+) -> None:
+    property_obj = populated_property(862)
+    property_obj.average_review_rating = Decimal("9.8")
+    property_obj.indicative_nightly_from = Decimal("700.00")
+    property_obj.indicative_currency = "SAR"
+    property_obj.check_in_time_start = 15
+    property_obj.save()
+
+    content = (
+        Client()
+        .get(property_obj.get_absolute_url(), HTTP_ACCEPT_LANGUAGE=language)
+        .content.decode()
+    )
+
+    for phrase in expected:
+        assert phrase in content
 
 
 def test_amenity_and_review_are_visible_on_detail() -> None:

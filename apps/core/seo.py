@@ -222,6 +222,16 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
             **({"addressLocality": locality} if locality else {}),
             **({"addressCountry": property_obj.country_code} if property_obj.country_code else {}),
         }
+    if (
+        property_obj.public_location_enabled
+        and property_obj.public_location_latitude is not None
+        and property_obj.public_location_longitude is not None
+    ):
+        data["geo"] = {
+            "@type": "GeoCoordinates",
+            "latitude": float(property_obj.public_location_latitude),
+            "longitude": float(property_obj.public_location_longitude),
+        }
     if property_obj.person_capacity:
         data["occupancy"] = {
             "@type": "QuantitativeValue",

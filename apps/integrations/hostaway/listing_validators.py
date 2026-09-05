@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from typing import Any, TypeVar
+from typing import Any
 from urllib.parse import urlparse
 
 from django.utils import timezone
@@ -15,7 +15,6 @@ from django.utils.dateparse import parse_datetime
 
 from .exceptions import HostawayResponseError
 
-T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
@@ -387,7 +386,7 @@ def _normalize_images(
                 raise HostawayResponseError("must be an object")
             image = HostawayListingImage(
                 image_id=_optional_positive_integer(payload.get("id"), "id"),
-                url=_https_url(payload.get("url")),
+                url=_hostaway_image_url(payload.get("url")),
                 caption=_string(payload.get("caption")),
                 sort_order=_optional_nonnegative_integer(
                     payload.get("sortOrder"),
@@ -407,6 +406,15 @@ def _normalize_images(
         except HostawayResponseError as exc:
             errors.append(f"image {index}: {exc}")
     return images
+
+
+def _hostaway_image_url(value: Any) -> str:
+    """Accept secure source media, but reject stale external marketplace URLs."""
+    url = _https_url(value)
+    hostname = (urlparse(url).hostname or "").casefold()
+    if hostname == "muscache.com" or hostname.endswith(".muscache.com"):
+        raise HostawayResponseError("url must not use an external marketplace CDN")
+    return url
 
 
 def _normalize_listing_amenities(
@@ -435,7 +443,7 @@ def _normalize_listing_amenities(
     return amenities
 
 
-def _safe_optional(
+def _safe_optional[T](
     parser: Callable[[], T],
     fallback: T,
     errors: list[str],

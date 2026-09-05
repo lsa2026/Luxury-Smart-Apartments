@@ -4,6 +4,8 @@ from django import forms
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
+from .phone_numbers import InvalidPhoneNumber, normalize_phone_number
+
 
 def _clean_text(value: str) -> str:
     return " ".join(strip_tags(value).split()).strip()
@@ -24,7 +26,18 @@ class ContactForm(forms.Form):
         label=_("Phone (optional)"),
         max_length=30,
         required=False,
-        widget=forms.TextInput(attrs={"autocomplete": "tel", "inputmode": "tel", "dir": "ltr"}),
+        help_text=_(
+            "Enter an international number, starting with + and its country code, "
+            "for example +966500000000."
+        ),
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "tel",
+                "inputmode": "tel",
+                "dir": "ltr",
+                "placeholder": "+<country code> <number>",
+            }
+        ),
     )
     subject = forms.CharField(
         label=_("Subject"),
@@ -62,7 +75,18 @@ class ContactForm(forms.Form):
         return _clean_text(self.cleaned_data["name"])
 
     def clean_phone(self) -> str:
-        return _clean_text(self.cleaned_data["phone"])
+        value = _clean_text(self.cleaned_data["phone"])
+        if not value:
+            return ""
+        try:
+            return normalize_phone_number(value)
+        except InvalidPhoneNumber:
+            raise forms.ValidationError(
+                _(
+                    "Enter a valid mobile number in international format, starting "
+                    "with +, for example +966500000000."
+                )
+            ) from None
 
     def clean_subject(self) -> str:
         return _clean_text(self.cleaned_data["subject"])

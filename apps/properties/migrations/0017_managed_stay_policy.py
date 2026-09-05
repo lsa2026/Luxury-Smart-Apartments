@@ -4,7 +4,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("properties", "0015_indicative_nightly_rate"),
+        ("properties", "0016_property_public_location_enabled_and_more"),
     ]
 
     operations = [
