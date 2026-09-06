@@ -10,6 +10,17 @@ document.querySelectorAll("[data-currency-selector]").forEach((form) => {
 
 const brandSplash = document.querySelector("[data-brand-splash]");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const interfaceLanguage = document.documentElement.lang || "ar";
+const interfaceNumberLocale = interfaceLanguage.startsWith("ar")
+    ? `${interfaceLanguage}-u-nu-arab`
+    : interfaceLanguage;
+const interfaceNumberFormatter = new Intl.NumberFormat(interfaceNumberLocale, {
+    useGrouping: false,
+});
+
+function formatInterfaceNumber(value) {
+    return interfaceNumberFormatter.format(value);
+}
 
 if (brandSplash) {
     let splashSeen = false;
@@ -1243,7 +1254,7 @@ document.querySelectorAll("[data-card-gallery]").forEach((gallery) => {
             dot.classList.toggle("is-active", dotIndex === activeIndex);
         });
         if (current) {
-            current.textContent = String(activeIndex + 1);
+            current.textContent = formatInterfaceNumber(activeIndex + 1);
         }
     }
 
@@ -1311,10 +1322,10 @@ if (lightbox instanceof HTMLDialogElement) {
         imageElement.alt = selected.alt || "";
         captionElement.textContent = selected.caption || "";
         if (currentElement) {
-            currentElement.textContent = String(currentIndex + 1);
+            currentElement.textContent = formatInterfaceNumber(currentIndex + 1);
         }
         if (totalElement) {
-            totalElement.textContent = String(images.length);
+            totalElement.textContent = formatInterfaceNumber(images.length);
         }
         if (progressElement) {
             progressElement.style.setProperty("--lightbox-progress", `${((currentIndex + 1) / images.length) * 100}%`);

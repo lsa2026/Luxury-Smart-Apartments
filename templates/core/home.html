@@ -63,7 +63,7 @@
 <div class="experience-bar travel-proof" aria-label="{% trans 'Why stay with us' %}">
     <div class="container experience-bar__inner">
         <div><strong>02</strong><span>{% trans "Exceptional destinations" %}</span></div>
-        <div><strong>24/7</strong><span>{% trans "Guest support" %}</span></div>
+        <div><strong><bdi dir="ltr">{{ 24|localized_number }}/{{ 7|localized_number }}</bdi></strong><span>{% trans "Guest support" %}</span></div>
         <div><strong>100%</strong><span>{% trans "Live price checks" %}</span></div>
         <div><strong>∞</strong><span>{% trans "Memories waiting" %}</span></div>
     </div>
@@ -153,7 +153,7 @@
 
 <section class="section container travel-final" id="booking-management">
     <div class="travel-final__panel">
-        <img src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2000&amp;q=84" alt="" width="2000" height="900" loading="lazy" decoding="async">
+        <img src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2000&amp;q=84" alt="{% trans 'Riyadh skyline and palm trees' %}" width="2000" height="900" loading="lazy" decoding="async">
         <span class="travel-final__shade" aria-hidden="true"></span>
         <div>
             <p class="eyebrow">{% trans "Your next story starts here" %}</p>

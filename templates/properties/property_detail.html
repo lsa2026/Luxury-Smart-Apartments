@@ -69,7 +69,7 @@
                 class="gallery-showcase__item gallery-showcase__item--{{ forloop.counter }}"
                 type="button"
                 data-lightbox-open="{{ forloop.counter0 }}"
-                aria-label="{% blocktrans with current=forloop.counter total=total_image_count %}Open photo {{ current }} of {{ total }}{% endblocktrans %}"
+                aria-label="{% blocktrans with current=forloop.counter|localized_number total=total_image_count|localized_number %}Open photo {{ current }} of {{ total }}{% endblocktrans %}"
             >
                 <img
                     src="{{ image.display_url }}"
@@ -81,7 +81,7 @@
                 >
                 {% if forloop.counter == 5 and total_image_count > 5 %}
                 <span class="gallery-showcase__remaining">
-                    <b>{{ total_image_count }}</b>
+                    <b>{{ total_image_count|localized_number }}</b>
                     {% trans "Photo gallery" %}
                 </span>
                 {% endif %}
@@ -90,7 +90,7 @@
         </div>
         <button class="gallery-more" type="button" data-lightbox-open="0">
             <span aria-hidden="true">▦</span>
-            {% blocktrans with count=total_image_count %}View all {{ count }} photos{% endblocktrans %}
+            {% blocktrans with count=total_image_count|localized_number %}View all {{ count }} photos{% endblocktrans %}
         </button>
         {% else %}<div class="empty-state"><h2>{% trans "Photos are being prepared" %}</h2><p>{% trans "Property details remain available below." %}</p></div>{% endif %}
     </section>
@@ -218,9 +218,9 @@
     <div class="lightbox__footer">
         <div class="lightbox__progress" aria-hidden="true"><span data-lightbox-progress></span></div>
         <div class="lightbox__status" aria-live="polite">
-            <b data-lightbox-current>1</b>
-            <span aria-hidden="true">/</span>
-            <span data-lightbox-total>{{ total_image_count }}</span>
+            <b data-lightbox-current>{{ 1|localized_number }}</b>
+            <span>{% trans "of" %}</span>
+            <span data-lightbox-total>{{ total_image_count|localized_number }}</span>
         </div>
     </div>
     <script type="application/json" data-lightbox-data nonce="{{ csp_nonce }}">

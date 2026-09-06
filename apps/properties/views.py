@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.db.models import Prefetch, QuerySet
 from django.http import Http404, HttpRequest, HttpResponse
 from django.urls import reverse
@@ -13,6 +15,7 @@ from apps.reviews.models import Review
 from apps.reviews.summary import rating_summary, with_published_rating
 
 from .cities import canonical_city, supported_city_choices
+from .forms import PropertyBrowseDatesForm
 from .models import Property, PropertyAmenity, PropertyImage
 
 
@@ -96,6 +99,25 @@ class PropertyListView(ListView):
         context["filter_room_types"] = sorted(
             {item.room_type for item in page_properties if item.room_type}
         )
+        browse_dates_form = PropertyBrowseDatesForm(self.request.GET or None)
+        if browse_dates_form.is_valid():
+            check_in = browse_dates_form.cleaned_data.get("check_in")
+            check_out = browse_dates_form.cleaned_data.get("check_out")
+            if check_in and check_out:
+                guests = self.request.GET.get("guests", "").strip()
+                detail_query = urlencode(
+                    {
+                        "source": "browse",
+                        "check_in": check_in.isoformat(),
+                        "check_out": check_out.isoformat(),
+                        "guests": guests if guests.isdigit() and int(guests) > 0 else "2",
+                    }
+                )
+                for property_obj in page_properties:
+                    property_obj.browse_detail_url = (
+                        f"{property_obj.get_absolute_url()}?{detail_query}"
+                    )
+        context["browse_dates_form"] = browse_dates_form
         context["active_filters"] = self.request.GET
         query = self.request.GET.copy()
         query.pop("page", None)
@@ -138,6 +160,7 @@ class PropertyDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         property_obj = self.object
         preserved_search = None
+        availability_form = AvailabilitySearchForm(property_obj=property_obj)
         if self.request.GET.get("source") == "availability":
             search_data = self.request.GET.copy()
             search_data["city"] = canonical_city(property_obj.city)
@@ -154,6 +177,23 @@ class PropertyDetailView(DetailView):
                     "check_out": preserved_form.cleaned_data["check_out"],
                     "guests": preserved_form.cleaned_data["guests"],
                 }
+        elif self.request.GET.get("source") == "browse":
+            browse_data = self.request.GET.copy()
+            browse_data["city"] = canonical_city(property_obj.city)
+            browse_data["property"] = str(property_obj.pk)
+            browse_availability_form = AvailabilitySearchForm(
+                browse_data,
+                property_obj=property_obj,
+            )
+            if browse_availability_form.is_valid():
+                availability_form = AvailabilitySearchForm(
+                    initial={
+                        "check_in": browse_availability_form.cleaned_data["check_in"],
+                        "check_out": browse_availability_form.cleaned_data["check_out"],
+                        "guests": browse_availability_form.cleaned_data["guests"],
+                    },
+                    property_obj=property_obj,
+                )
         all_gallery_images = property_obj._public_images
         similar = list(
             with_published_rating(Property.objects.public())
@@ -186,7 +226,7 @@ class PropertyDetailView(DetailView):
                 "all_gallery_images": all_gallery_images,
                 "visible_amenities": property_obj._public_amenities,
                 "property_reviews": property_obj._public_reviews,
-                "availability_form": AvailabilitySearchForm(property_obj=property_obj),
+                "availability_form": availability_form,
                 "preserved_search": preserved_search,
                 "stay_policy": stay_policy_for(property_obj),
                 # One figure for the page and its structured data alike.

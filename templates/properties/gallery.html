@@ -53,7 +53,7 @@
     {% if is_paginated %}
     <nav class="pagination" aria-label="{% trans 'Gallery pages' %}">
         {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>{% endif %}
-        <span>{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+        <span>{% blocktrans with current=page_obj.number|localized_number total=paginator.num_pages|localized_number %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>
         {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>{% endif %}
     </nav>
     {% endif %}
