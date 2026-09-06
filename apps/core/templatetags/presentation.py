@@ -749,6 +749,12 @@ def localized_money(value: object, currency: object) -> str:
     )
 
 
+@register.filter(name="format_money")
+def format_money(value: object, currency: object) -> str:
+    """Backward-compatible alias for the unified localized money formatter."""
+    return localized_money(value, currency)
+
+
 @register.filter
 def rating_out_of_five(value: object) -> str:
     try:
