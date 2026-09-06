@@ -61,7 +61,7 @@
                 <button class="button" type="submit">{% trans "Pay the difference securely" %}</button>
             </form>
             {% elif payment_sandbox_enabled %}
-            <div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "Pay the difference locally without financial or Hostaway activity." %}</span></div>
+            <div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "Pay the difference locally without financial or live-booking activity." %}</span></div>
             <a class="button" href="{% url 'payments:sandbox_modification' modification.public_reference %}">{% trans "Test payment of the difference" %}</a>
             {% else %}
             <div class="notice"><strong>{% trans "Difference payment required" %}</strong><p>{% trans "A secure payment button will appear here once the payment gateway is connected." %}</p></div>

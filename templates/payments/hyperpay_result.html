@@ -15,7 +15,7 @@
         <div class="notice notice--important"><strong>{% trans "Verification is temporarily unavailable" %}</strong><p>{% trans "We could not verify the payment with HyperPay. No booking has been confirmed. Please contact support before trying again." %}</p></div>
     {% elif outcome.status == success and outcome.modification %}
         {% if outcome.modification.status == 'completed' %}
-        <div class="notice"><strong>{% trans "Payment verified and change completed" %}</strong><p>{% trans "Your reservation was updated successfully in Hostaway." %}</p></div>
+        <div class="notice"><strong>{% trans "Payment verified and change completed" %}</strong><p>{% trans "Your reservation was updated successfully." %}</p></div>
         {% else %}
         <div class="notice notice--important"><strong>{% trans "Payment verified; change pending" %}</strong><p>{% trans "Do not pay again. The payment is recorded and the reservation change needs operational follow-up." %}</p></div>
         {% endif %}

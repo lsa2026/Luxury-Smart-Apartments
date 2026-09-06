@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 560" role="img" aria-labelledby="title desc">
+  <title id="title">Luxury Smart Apartments</title>
+  <desc id="desc">Branded property image placeholder</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#132b27"/>
+      <stop offset="1" stop-color="#071412"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="18%" r="70%">
+      <stop offset="0" stop-color="#c9a86a" stop-opacity=".34"/>
+      <stop offset="1" stop-color="#c9a86a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="720" height="560" fill="url(#background)"/>
+  <rect width="720" height="560" fill="url(#glow)"/>
+  <g fill="none" stroke="#d8bd84" stroke-width="2" opacity=".8">
+    <path d="M214 362V232l146-84 146 84v130"/>
+    <path d="M270 362V252h180v110M327 362v-68h66v68"/>
+    <path d="M198 362h324"/>
+  </g>
+  <circle cx="360" cy="255" r="10" fill="#d8bd84" opacity=".9"/>
+  <text x="360" y="419" fill="#f6f0e4" font-family="Georgia, serif" font-size="31" letter-spacing="8" text-anchor="middle">LSA</text>
+  <text x="360" y="452" fill="#d8bd84" font-family="Arial, sans-serif" font-size="13" letter-spacing="3" text-anchor="middle">LUXURY SMART APARTMENTS</text>
+</svg>

@@ -1,0 +1,32 @@
+{% load i18n presentation currency %}
+<div class="price-breakdown">
+    <h3>{% trans "Price breakdown" %}</h3>
+    {% if quote.components %}
+    <ul class="price-components">
+        {% for component in quote.components %}
+        <li>
+            <span>{{ component.title|localized_price_component }}</span>
+            <strong>{% display_money component|price_component_amount quote.currency quote.exchange_rate_snapshot %}</strong>
+        </li>
+        {% endfor %}
+    </ul>
+    <p class="price-breakdown__note">
+        <span aria-hidden="true">✓</span>
+        {% trans "The total includes every price component listed above." %}
+    </p>
+    {% else %}
+    <p class="price-breakdown__summary">
+        <strong>{% display_money quote.total_price quote.currency quote.exchange_rate_snapshot %}</strong>
+        <span>
+            {% blocktrans count counter=quote.nights with nights=quote.nights|localized_number %}for {{ nights }} night{% plural %}for {{ nights }} nights{% endblocktrans %}
+            ·
+            {% display_money quote.total_price|nightly_average:quote.nights quote.currency quote.exchange_rate_snapshot %}
+            / {% trans "night" %}
+        </span>
+    </p>
+    <p class="price-breakdown__note price-breakdown__note--neutral">
+        <span aria-hidden="true">i</span>
+        {% trans "The pricing system returned one authoritative total but did not itemise whether taxes or cleaning fees are included. No amount has been added locally." %}
+    </p>
+    {% endif %}
+</div>

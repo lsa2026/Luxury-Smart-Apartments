@@ -1,5 +1,7 @@
 """Render structured source money in the visitor's display-only currency."""
 
+from decimal import Decimal, InvalidOperation
+
 from django import template
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
@@ -13,6 +15,18 @@ from apps.payments.currency import (
 )
 
 register = template.Library()
+
+
+@register.filter
+def nightly_average(total: object, nights: object) -> Decimal | str:
+    """Present the quote total per night without changing its authority."""
+    try:
+        night_count = int(nights)
+        if night_count < 1:
+            return ""
+        return Decimal(str(total)) / Decimal(night_count)
+    except (InvalidOperation, TypeError, ValueError):
+        return ""
 
 
 @register.simple_tag(takes_context=True)

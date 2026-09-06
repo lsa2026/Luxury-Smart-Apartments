@@ -7,7 +7,7 @@
 <section class="section container sandbox-checkout-shell">
     <div class="sandbox-banner" role="status">
         <span class="sandbox-banner__icon" aria-hidden="true">✓</span>
-        <div><strong>{% trans "Test payment environment" %}</strong><p>{% trans "No real money is charged, no card details are collected, and nothing is sent to Hostaway." %}</p></div>
+        <div><strong>{% trans "Test payment environment" %}</strong><p>{% trans "No real money is charged, no card details are collected, and no live booking is created." %}</p></div>
     </div>
     <div class="sandbox-checkout-grid">
         <article class="sandbox-payment-card">
@@ -27,7 +27,7 @@
             <ul>
                 <li>{% trans "No card number or banking data" %}</li>
                 <li>{% trans "No external payment gateway call" %}</li>
-                <li>{% trans "No Hostaway reservation or modification" %}</li>
+                <li>{% trans "No live reservation or modification" %}</li>
                 <li>{% trans "Clearly marked local test records" %}</li>
             </ul>
             <p class="sandbox-reference">{% trans "Reference" %}<br><code>{{ subject.public_reference }}</code></p>
