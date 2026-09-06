@@ -724,7 +724,7 @@ def localized_money(value: object, currency: object) -> str:
         )
 
     currency_label = _currency_label(currency_code, language)
-    if currency_label == currency_code:
+    if language == "ar" and currency_label == currency_code:
         return format_html(
             '<bdi class="money money--{}" dir="ltr">'
             '<span class="money__amount">{}</span>'

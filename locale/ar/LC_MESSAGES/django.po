@@ -4384,6 +4384,15 @@ msgstr "%(count)s وصول اليوم"
 msgid "SAR"
 msgstr "ر.س"
 
+msgid "MAD"
+msgstr "د.م"
+
+msgid "USD"
+msgstr "$"
+
+msgid "EUR"
+msgstr "€"
+
 #: .\templates\admin\index.html:100
 msgid "Successful payments this month"
 msgstr "مدفوعات ناجحة هذا الشهر"
