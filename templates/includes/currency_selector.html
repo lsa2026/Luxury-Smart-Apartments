@@ -7,13 +7,45 @@
 >
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ currency_return_url }}">
-    <label>
-        <span class="sr-only">{% trans "Display currency" %}</span>
-        <select name="currency" aria-label="{% trans 'Display currency' %}" data-currency-select>
+    <details class="currency-selector__menu" data-currency-menu>
+        <summary
+            class="currency-selector__trigger"
+            role="button"
+            aria-label="{% trans 'Display currency' %}: {{ display_currency }}"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-currency-trigger
+        >
+            <span class="currency-selector__current" dir="ltr" aria-hidden="true">
+                <strong>{{ display_currency }}</strong>
+                {% for option in display_currency_options %}
+                    {% if option.code == display_currency %}<span>{{ option.symbol }}</span>{% endif %}
+                {% endfor %}
+            </span>
+            <svg class="currency-selector__chevron" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="m4 6 4 4 4-4" />
+            </svg>
+        </summary>
+        <div class="currency-selector__options" role="menu" aria-label="{% trans 'Display currency' %}">
             {% for option in display_currency_options %}
-            <option value="{{ option.code }}"{% if option.code == display_currency %} selected{% endif %}>{{ option.code }} · {{ option.symbol }}</option>
+            <button
+                class="currency-selector__option{% if option.code == display_currency %} is-selected{% endif %}"
+                type="submit"
+                name="currency"
+                value="{{ option.code }}"
+                role="menuitemradio"
+                aria-checked="{% if option.code == display_currency %}true{% else %}false{% endif %}"
+                data-currency-option
+            >
+                <span class="currency-selector__identity" dir="ltr">
+                    <strong>{{ option.code }}</strong>
+                    <span>{{ option.symbol }}</span>
+                </span>
+                <svg class="currency-selector__check" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="m3 8.5 3 3 7-7" />
+                </svg>
+            </button>
             {% endfor %}
-        </select>
-    </label>
-    <button class="currency-selector__submit" type="submit" aria-label="{% trans 'Apply display currency' %}">↵</button>
+        </div>
+    </details>
 </form>
