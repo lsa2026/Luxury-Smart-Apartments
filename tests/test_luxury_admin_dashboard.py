@@ -84,6 +84,7 @@ def test_dashboard_surfaces_actionable_customer_contact(client, django_user_mode
     assert "رسائل عملاء تنتظر الرد" in body
     assert "حوّل الرسالة إلى قيد المتابعة" in body
     assert reverse("admin:core_contactmessage_changelist") in body
+    assert reverse("admin:core_siteinterfaceimage_changelist") in body
 
 
 @pytest.mark.django_db

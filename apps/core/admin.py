@@ -12,6 +12,7 @@ from .models import (
     FAQItem,
     LegacyRedirect,
     MarketingEventReceipt,
+    SiteInterfaceImage,
     SitePage,
     SiteSetting,
 )
@@ -325,6 +326,73 @@ class SiteSettingAdmin(admin.ModelAdmin):
             object_reference=str(obj.pk),
             summary="Public site settings were updated.",
             metadata={"fields": getattr(form, "changed_data", [])},
+        )
+
+
+@admin.register(SiteInterfaceImage)
+class SiteInterfaceImageAdmin(admin.ModelAdmin):
+    list_display = (
+        "placement",
+        "image_preview",
+        "alt_text_readiness",
+        "is_active",
+        "updated_at",
+    )
+    list_filter = ("is_active", "placement")
+    list_editable = ("is_active",)
+    readonly_fields = ("image_preview", "created_at", "updated_at")
+    fieldsets = (
+        (
+            _("Placement and image"),
+            {"fields": ("placement", "image", "image_preview", "is_active")},
+        ),
+        (
+            _("Accessible descriptions"),
+            {"fields": ("alt_text_ar", "alt_text_en", "alt_text_fr")},
+        ),
+        (_("System"), {"fields": ("created_at", "updated_at")}),
+    )
+
+    @admin.display(description=_("Preview"))
+    def image_preview(self, obj: SiteInterfaceImage) -> str:
+        if not obj.pk or not obj.image:
+            return str(_("No image uploaded"))
+        return format_html(
+            '<img src="{}" alt="" style="width: 180px; max-height: 110px; '
+            'object-fit: cover; border-radius: 10px;" loading="lazy">',
+            obj.image.url,
+        )
+
+    @admin.display(boolean=True, description=_("Arabic and English alt text ready"))
+    def alt_text_readiness(self, obj: SiteInterfaceImage) -> bool:
+        return bool(obj.alt_text_ar.strip() and obj.alt_text_en.strip())
+
+    def save_model(
+        self,
+        request: HttpRequest,
+        obj: SiteInterfaceImage,
+        form: object,
+        change: bool,
+    ) -> None:
+        super().save_model(request, obj, form, change)
+        record_audit(
+            request=request,
+            action="site_interface_image.changed",
+            object_type="SiteInterfaceImage",
+            object_reference=obj.placement,
+            summary="A public interface image was updated.",
+            metadata={"fields": getattr(form, "changed_data", [])},
+        )
+
+    def delete_model(self, request: HttpRequest, obj: SiteInterfaceImage) -> None:
+        reference = obj.placement
+        super().delete_model(request, obj)
+        record_audit(
+            request=request,
+            action="site_interface_image.deleted",
+            object_type="SiteInterfaceImage",
+            object_reference=reference,
+            summary="A public interface image was deleted.",
         )
 
 

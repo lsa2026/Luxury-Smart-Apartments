@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 from .branding import BRAND_NAME
+from .uploads import site_interface_image_upload_to, validate_site_interface_image
 
 
 class SitePage(models.Model):
@@ -167,6 +168,74 @@ class SiteSetting(models.Model):
                 "brand_name_fr",
             }
         super().save(*args, **kwargs)
+
+
+class SiteInterfaceImage(models.Model):
+    """An administrator-managed visual used in a fixed public interface slot."""
+
+    class Placement(models.TextChoices):
+        HOME_HERO = "home_hero", _("Home hero backdrop")
+        HOME_MARRAKECH_POSTCARD = "home_marrakech_postcard", _("Home Marrakech postcard")
+        HOME_RIYADH_DESTINATION = "home_riyadh_destination", _("Home Riyadh destination")
+        HOME_MARRAKECH_DESTINATION = "home_marrakech_destination", _("Home Marrakech destination")
+        HOME_STORY = "home_story", _("Home story image")
+        HOME_FINAL_CTA = "home_final_cta", _("Home final call to action")
+
+    placement = models.CharField(
+        max_length=40,
+        choices=Placement.choices,
+        unique=True,
+        verbose_name=_("Interface placement"),
+        help_text=_("Each placement can have one managed image."),
+    )
+    image = models.ImageField(
+        upload_to=site_interface_image_upload_to,
+        validators=[validate_site_interface_image],
+        verbose_name=_("Image"),
+        help_text=_("JPEG, PNG, or WebP; maximum 10 MB."),
+    )
+    alt_text_ar = models.CharField(
+        max_length=240,
+        blank=True,
+        verbose_name=_("Arabic alt text"),
+    )
+    alt_text_en = models.CharField(
+        max_length=240,
+        blank=True,
+        verbose_name=_("English alt text"),
+    )
+    alt_text_fr = models.CharField(
+        max_length=240,
+        blank=True,
+        verbose_name=_("French alt text"),
+    )
+    is_active = models.BooleanField(
+        default=False,
+        verbose_name=_("Active"),
+        help_text=_("Inactive images remain saved but are not shown publicly."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["placement"]
+        verbose_name = _("Interface image")
+        verbose_name_plural = _("Interface images")
+
+    def __str__(self) -> str:
+        return self.get_placement_display()
+
+    def clean(self) -> None:
+        super().clean()
+        if not self.is_active:
+            return
+        errors = {}
+        if not self.alt_text_ar.strip():
+            errors["alt_text_ar"] = _("Arabic alt text is required for an active image.")
+        if not self.alt_text_en.strip():
+            errors["alt_text_en"] = _("English alt text is required for an active image.")
+        if errors:
+            raise ValidationError(errors)
 
 
 class ContactMessage(models.Model):
