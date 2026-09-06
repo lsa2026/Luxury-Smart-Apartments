@@ -84,6 +84,7 @@ class SecurityHeadersMiddleware:
         script_sources = ["'self'", f"'nonce-{request.csp_nonce}'"]
         connect_sources = ["'self'"]
         frame_sources = ["'self'"]
+        google_image_sources: list[str] = []
         if getattr(request, "_public_osm_embed", False):
             frame_sources.append("https://www.openstreetmap.org")
         form_action_sources = ["'self'"]
@@ -103,22 +104,50 @@ class SecurityHeadersMiddleware:
             settings.GOOGLE_TAG_MANAGER_ENABLED or settings.GOOGLE_ANALYTICS_ENABLED
         ):
             script_sources.append("https://www.googletagmanager.com")
-        if google_allowed and settings.GOOGLE_ANALYTICS_ENABLED:
             connect_sources.extend(
                 [
+                    "https://www.googletagmanager.com",
                     "https://www.google-analytics.com",
                     "https://region1.google-analytics.com",
+                    "https://analytics.google.com",
+                ]
+            )
+            google_image_sources.extend(
+                [
+                    "https://www.googletagmanager.com",
+                    "https://www.google-analytics.com",
                 ]
             )
         if google_allowed and settings.GOOGLE_TAG_MANAGER_ENABLED:
             frame_sources.append("https://www.googletagmanager.com")
         if google_allowed and settings.GOOGLE_ADS_ENABLED:
+            script_sources.extend(
+                [
+                    "https://www.googleadservices.com",
+                    "https://www.google.com",
+                ]
+            )
             connect_sources.extend(
                 [
                     "https://www.googleadservices.com",
+                    "https://www.google.com",
                     "https://googleads.g.doubleclick.net",
                 ]
             )
+            frame_sources.extend(
+                [
+                    "https://www.google.com",
+                    "https://td.doubleclick.net",
+                ]
+            )
+            google_image_sources.extend(
+                [
+                    "https://www.google.com",
+                    "https://googleads.g.doubleclick.net",
+                ]
+            )
+        if google_image_sources:
+            image_sources = f"{image_sources} {' '.join(google_image_sources)}"
         response.setdefault(
             "Content-Security-Policy",
             (
