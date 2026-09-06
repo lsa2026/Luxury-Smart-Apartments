@@ -14,7 +14,7 @@
             <p class="eyebrow">{% if kind == 'booking' %}{% trans "Booking payment test" %}{% else %}{% trans "Difference payment test" %}{% endif %}</p>
             <h1>{% trans "Choose a test result" %}</h1>
             <p>{% trans "Use the controls below to verify how the customer experience behaves. These controls never contact a bank." %}</p>
-            <div class="sandbox-amount"><span>{% trans "Test amount" %}</span><strong>{{ amount|localized_money:subject.currency }}</strong></div>
+            <div class="sandbox-amount"><span>{% trans "Test amount" %}</span><strong>{{ amount|format_money:subject.currency }}</strong></div>
             <form method="post" class="sandbox-actions">
                 {% csrf_token %}
                 <button class="button" type="submit" name="action" value="success">{% trans "Simulate successful payment" %}</button>

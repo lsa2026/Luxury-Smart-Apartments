@@ -16,12 +16,32 @@ from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Final
 
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q, QuerySet
 
 from apps.reviews.models import Review
 
 # Hostaway rates out of ten; the site presents five stars.
 _SCALE: Final = Decimal("2")
+
+_PUBLIC_REVIEW_FILTER = Q(
+    reviews__review_type=Review.Type.GUEST_TO_HOST,
+    reviews__status=Review.Status.PUBLISHED,
+    reviews__is_visible=True,
+    reviews__rating__isnull=False,
+) & ~Q(
+    reviews__public_review="",
+    reviews__public_review_ar="",
+    reviews__public_review_en="",
+    reviews__public_review_fr="",
+)
+
+
+def with_published_rating(queryset: QuerySet) -> QuerySet:
+    """Annotate card queries with the same review population shown to guests."""
+    return queryset.annotate(
+        published_review_rating=Avg("reviews__rating", filter=_PUBLIC_REVIEW_FILTER),
+        published_review_count=Count("reviews", filter=_PUBLIC_REVIEW_FILTER),
+    )
 
 
 @dataclass(frozen=True)

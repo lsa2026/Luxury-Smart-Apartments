@@ -91,10 +91,10 @@
                 </p>
                 <h2><a href="{{ resolved_property_url }}">{{ property_name }}</a></h2>
             </div>
-            {% if property.average_review_rating %}
-            <span class="card-rating" aria-label="{% blocktrans with rating=property.average_review_rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
+            {% if property.published_review_rating %}
+            <span class="card-rating" aria-label="{% blocktrans with rating=property.published_review_rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
                 <span aria-hidden="true">★</span>
-                {{ property.average_review_rating|rating_out_of_five }}
+                {{ property.published_review_rating|rating_out_of_five }}
             </span>
             {% endif %}
         </div>
@@ -146,7 +146,7 @@
             <span class="property-card__price-note">
                 {% if property.indicative_nightly_from %}
                 <small>{% trans "Final price depends on your dates" %}</small>
-                <strong>{% blocktrans with amount=property.indicative_nightly_from|localized_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
+                <strong>{% blocktrans with amount=property.indicative_nightly_from|format_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
                 {% else %}
                 <small>{% trans "Price based on dates" %}</small>
                 <strong>{% trans "Live price checks" %}</strong>

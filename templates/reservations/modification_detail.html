@@ -33,11 +33,11 @@
             <div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|localized_date }}</dd></div>
             {% endif %}
             {% if modification.new_total != None %}
-            <div><dt>{% trans "New price" %}</dt><dd>{{ modification.new_total|localized_money:modification.currency }}</dd></div>
+            <div><dt>{% trans "New price" %}</dt><dd>{{ modification.new_total|format_money:modification.currency }}</dd></div>
             {% if modification.price_difference < 0 %}
-            <div><dt>{% trans "Amount returned to you" %}</dt><dd>{{ modification.refund_amount|localized_money:modification.currency }}</dd></div>
+            <div><dt>{% trans "Amount returned to you" %}</dt><dd>{{ modification.refund_amount|format_money:modification.currency }}</dd></div>
             {% else %}
-            <div><dt>{% trans "Price difference" %}</dt><dd>{{ modification.price_difference|localized_money:modification.currency }}</dd></div>
+            <div><dt>{% trans "Price difference" %}</dt><dd>{{ modification.price_difference|format_money:modification.currency }}</dd></div>
             {% endif %}
             {% endif %}
         </dl>

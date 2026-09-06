@@ -4,7 +4,7 @@ from django import template
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
 
-from apps.core.templatetags.presentation import localized_money
+from apps.core.templatetags.presentation import format_money
 from apps.payments.currency import (
     CurrencyError,
     CurrencyService,
@@ -28,7 +28,7 @@ def display_money(
         source = normalize_currency(source_currency)
         display = normalize_currency(context.get("display_currency", "SAR"))
         if source == display:
-            return localized_money(value, source)
+            return format_money(value, source)
         if audit_snapshot:
             rates = rates_from_audit_snapshot(audit_snapshot)
         else:
@@ -44,10 +44,10 @@ def display_money(
             rates = live_rates
         amount_sar = CurrencyService.source_to_sar(value, source, rates)
         converted = CurrencyService.sar_to_display(amount_sar, display, rates)
-        return localized_money(converted, display)
+        return format_money(converted, display)
     except CurrencyError:
         return format_html(
             '<span class="money-conversion-unavailable" title="{}">{}</span>',
             _("Currency conversion is temporarily unavailable; the original price is shown."),
-            localized_money(value, source_currency),
+            format_money(value, source_currency),
         )

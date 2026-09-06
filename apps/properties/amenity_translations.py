@@ -1,4 +1,4 @@
-"""Hand-written Arabic and French names for the amenities Hostaway reports.
+"""Load the reviewed amenity copy shipped as repository data.
 
 Every entry here was written by a person, not produced by a translation service:
 the site does not machine-translate source content, and an amenity label is read
@@ -12,7 +12,9 @@ than being guessed at, and the seeding command reports it so the gap is visible.
 the template may use. Both are optional and safe to leave empty.
 """
 
-from typing import Final, NamedTuple
+import json
+from pathlib import Path
+from typing import Final, NamedTuple, cast
 
 from django.utils.translation import gettext_lazy as _
 
@@ -44,59 +46,31 @@ CATEGORY_LABELS: Final = {
     OUTDOOR: _("Outdoor and parking"),
 }
 
-AMENITY_COPY: Final[dict[str, AmenityCopy]] = {
-    # --- essentials ---------------------------------------------------------
-    "internet": AmenityCopy("إنترنت", "Internet", ESSENTIALS, "wifi"),
-    "wireless": AmenityCopy("واي فاي", "Wi-Fi", ESSENTIALS, "wifi"),
-    "essentials": AmenityCopy("مستلزمات أساسية", "Nécessaire de base", ESSENTIALS, "essentials"),
-    "hot water": AmenityCopy("ماء ساخن", "Eau chaude", ESSENTIALS, "hot-water"),
-    "linens": AmenityCopy("مفروشات وأغطية", "Linge de maison", ESSENTIALS, "linens"),
-    "hangers": AmenityCopy("علّاقات ملابس", "Cintres", ESSENTIALS, "hangers"),
-    "clothing storage": AmenityCopy(
-        "خزانة ملابس", "Rangement pour vêtements", ESSENTIALS, "wardrobe"
-    ),
-    "cleaning products": AmenityCopy("مواد تنظيف", "Produits d'entretien", ESSENTIALS, "cleaning"),
-    # --- kitchen and dining -------------------------------------------------
-    "kitchen": AmenityCopy("مطبخ", "Cuisine", KITCHEN, "kitchen"),
-    "kitchen utensils": AmenityCopy("أدوات مطبخ", "Ustensiles de cuisine", KITCHEN, "utensils"),
-    "cooking basics": AmenityCopy("أساسيات الطهي", "Nécessaire de cuisine", KITCHEN, "cooking"),
-    "refrigerator": AmenityCopy("ثلاجة", "Réfrigérateur", KITCHEN, "fridge"),
-    "oven": AmenityCopy("فرن", "Four", KITCHEN, "oven"),
-    "coffee/tea maker": AmenityCopy(
-        "صانعة قهوة وشاي", "Cafetière et bouilloire", KITCHEN, "coffee"
-    ),
-    "dining table": AmenityCopy("طاولة طعام", "Table à manger", KITCHEN, "dining"),
-    # --- comfort and entertainment ------------------------------------------
-    "air conditioning": AmenityCopy("تكييف", "Climatisation", COMFORT, "air-conditioning"),
-    "tv": AmenityCopy("تلفزيون", "Télévision", COMFORT, "tv"),
-    "room darkening shades": AmenityCopy("ستائر معتمة", "Rideaux occultants", COMFORT, "blinds"),
-    "exercise equipment": AmenityCopy("أجهزة رياضية", "Équipement de sport", COMFORT, "gym"),
-    "bidet": AmenityCopy("شطّاف", "Bidet", COMFORT, "bidet"),
-    "hair dryer": AmenityCopy("مجفف شعر", "Sèche-cheveux", COMFORT, "hair-dryer"),
-    # --- laundry ------------------------------------------------------------
-    "washing machine": AmenityCopy("غسالة ملابس", "Lave-linge", LAUNDRY, "washer"),
-    "dryer": AmenityCopy("مجفف ملابس", "Sèche-linge", LAUNDRY, "dryer"),
-    "iron": AmenityCopy("مكواة", "Fer à repasser", LAUNDRY, "iron"),
-    # --- family -------------------------------------------------------------
-    "baby crib": AmenityCopy("سرير أطفال", "Lit bébé", FAMILY, "crib"),
-    "suitable for children": AmenityCopy("مناسب للأطفال", "Adapté aux enfants", FAMILY, "children"),
-    "suitable for infants": AmenityCopy("مناسب للرُّضّع", "Adapté aux nourrissons", FAMILY, "infant"),
-    # --- safety -------------------------------------------------------------
-    "smoke detector": AmenityCopy("كاشف دخان", "Détecteur de fumée", SAFETY, "smoke-detector"),
-    "carbon monoxide detector": AmenityCopy(
-        "كاشف أول أكسيد الكربون",
-        "Détecteur de monoxyde de carbone",
-        SAFETY,
-        "co-detector",
-    ),
-    "fire extinguisher": AmenityCopy("طفاية حريق", "Extincteur", SAFETY, "extinguisher"),
-    "first aid kit": AmenityCopy(
-        "حقيبة إسعافات أولية", "Trousse de premiers secours", SAFETY, "first-aid"
-    ),
-    # --- outdoor and parking ------------------------------------------------
-    "free parking": AmenityCopy("موقف مجاني", "Parking gratuit", OUTDOOR, "parking"),
-    "swimming pool": AmenityCopy("مسبح", "Piscine", OUTDOOR, "pool"),
-}
+_DATA_FILE: Final = Path(__file__).with_name("data") / "amenity_translations.json"
+_VALID_CATEGORIES: Final = frozenset(CATEGORY_LABELS)
+
+
+def _load_copy() -> dict[str, AmenityCopy]:
+    """Read and validate the deliberately hand-written catalogue once at import."""
+    payload = cast(dict[str, object], json.loads(_DATA_FILE.read_text(encoding="utf-8")))
+    catalogue: dict[str, AmenityCopy] = {}
+    for source_name, raw_entry in payload.items():
+        if not isinstance(raw_entry, dict):
+            raise ValueError(f"Amenity copy for {source_name!r} must be an object")
+        required = ("name_ar", "name_fr", "category", "icon_key")
+        if any(not isinstance(raw_entry.get(field), str) for field in required):
+            raise ValueError(f"Amenity copy for {source_name!r} has an invalid field")
+        entry = AmenityCopy(*(str(raw_entry[field]).strip() for field in required))
+        if not all(entry) or entry.category not in _VALID_CATEGORIES:
+            raise ValueError(f"Amenity copy for {source_name!r} is incomplete")
+        normalized_name = " ".join(source_name.split()).casefold()
+        if normalized_name in catalogue:
+            raise ValueError(f"Duplicate amenity copy key: {normalized_name!r}")
+        catalogue[normalized_name] = entry
+    return catalogue
+
+
+AMENITY_COPY: Final = _load_copy()
 
 
 def copy_for(source_name: str) -> AmenityCopy | None:

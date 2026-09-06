@@ -16,9 +16,10 @@ from apps.properties.models import Property, PropertyImage
 from apps.reservations.forms import AvailabilitySearchForm, ReservationAccessForm
 from apps.reservations.security import is_rate_limited
 from apps.reviews.models import Review
+from apps.reviews.summary import with_published_rating
 
 from .forms import ContactForm
-from .models import ContactMessage, FAQItem, SitePage
+from .models import ContactMessage, FAQItem, SitePage, SiteSetting
 
 
 def service_worker(request: HttpRequest) -> HttpResponse:
@@ -62,7 +63,7 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)
         featured_properties = list(
-            Property.objects.public()
+            with_published_rating(Property.objects.public())
             .prefetch_related(
                 Prefetch(
                     "images",
@@ -127,6 +128,9 @@ class FAQView(TemplateView):
             group["items"].append(item)
         context["faq_items"] = items
         context["faq_groups"] = list(groups.values())
+        site_setting = SiteSetting.objects.order_by("pk").first()
+        context["default_check_in_hour"] = getattr(site_setting, "default_check_in_hour", None)
+        context["default_check_out_hour"] = getattr(site_setting, "default_check_out_hour", None)
         return context
 
 
