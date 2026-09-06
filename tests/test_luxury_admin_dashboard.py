@@ -1,7 +1,6 @@
 import pytest
 from django.urls import reverse
 
-<<<<<<< HEAD
 from apps.core.models import ContactMessage, SiteSetting
 from apps.core.templatetags.presentation import localized_money_text
 from apps.payments.models import PaymentAttempt
