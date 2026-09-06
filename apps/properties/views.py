@@ -91,9 +91,7 @@ class PropertyListView(ListView):
             context["page_obj"].object_list = page_properties
         context["filter_cities"] = [
             {"value": value, "label": label}
-            for value, label in supported_city_choices(
-                translation.get_language() or "ar"
-            )
+            for value, label in supported_city_choices(translation.get_language() or "ar")
         ]
         context["filter_room_types"] = sorted(
             {item.room_type for item in page_properties if item.room_type}

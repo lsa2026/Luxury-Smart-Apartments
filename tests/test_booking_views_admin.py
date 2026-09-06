@@ -112,10 +112,14 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     # Public contact numbers use the same canonical E.164 form as every input.
     assert "+966501205651" in content
     assert 'inputmode="tel"' in content
-    assert 'data-guest-journey' in content
+    assert "data-guest-journey" in content
     assert 'data-journey-panel="1"' in content
     assert 'data-journey-panel="2"' in content
-    assert 'data-country-select' in content
+    assert 'name="billing_country"' in content
+    assert "data-country-select" in content
+    assert 'type="text" name="billing_city"' in content
+    assert 'type="text" name="billing_state"' in content
+    assert 'name="billing_region_sa"' not in content
     assert 'data-initial-step="1"' in content
     assert "عنوان الدفع" in content
     assert "عنوان الشارع" in content

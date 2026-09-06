@@ -282,10 +282,8 @@ msgid "Brand"
 msgstr "Marque"
 
 #: .\apps\core\admin.py:219
-#, fuzzy
-#| msgid "Stay details"
 msgid "Stay defaults"
-msgstr "Détails du séjour"
+msgstr "Paramètres de séjour par défaut"
 
 #: .\apps\core\admin.py:222
 msgid "Used only when the channel manager reports nothing for a property."
@@ -609,29 +607,25 @@ msgid "FAQ items"
 msgstr "Questions fréquentes"
 
 #: .\apps\core\models.py:122
-#, fuzzy
-#| msgid "Requested check-in"
 msgid "Default check-in hour"
-msgstr "Arrivée demandée"
+msgstr "Heure d’arrivée par défaut"
 
 #: .\apps\core\models.py:123
 msgid "Used when Hostaway reports no check-in time for a property."
-msgstr ""
+msgstr "Utilisée lorsque Hostaway ne fournit aucune heure d’arrivée pour le logement."
 
 #: .\apps\core\models.py:129
-#, fuzzy
-#| msgid "Requested check-out"
 msgid "Default check-out hour"
-msgstr "Départ demandé"
+msgstr "Heure de départ par défaut"
 
 #: .\apps\core\models.py:130
 msgid "Used when Hostaway reports no check-out time for a property."
-msgstr ""
+msgstr "Utilisée lorsque Hostaway ne fournit aucune heure de départ pour le logement."
 
 #: .\apps\core\models.py:132 .\apps\core\models.py:133
 #: .\apps\core\models.py:134
 msgid "Default house rules"
-msgstr ""
+msgstr "Règlement intérieur par défaut"
 
 #: .\apps\core\models.py:138
 msgid "Site setting"
@@ -7569,16 +7563,22 @@ msgstr "Tous les avis des voyageurs"
 msgid "Review pages"
 msgstr "Pages des avis"
 
-#~ msgid ""
-#~ "Enter a valid mobile number, with its country code if it is not a local "
-#~ "number."
-#~ msgstr ""
-#~ "Saisissez un numéro de mobile valide, avec son indicatif pays s’il ne "
-#~ "s’agit pas d’un numéro local."
+#: .\apps\core\admin.py
+msgid "Default stay times"
+msgstr "Horaires de séjour par défaut"
 
-#~ msgid ""
-#~ "Any country is accepted. Write it with a country code, such as "
-#~ "+966500000000, or as a local number for the country you select below."
-#~ msgstr ""
-#~ "Tous les pays sont acceptés. Saisissez-le avec l’indicatif du pays, par "
-#~ "exemple +966500000000, ou comme numéro local du pays choisi ci-dessous."
+#: .\apps\core\admin.py
+msgid "Used only when neither a property override nor a channel-manager time exists."
+msgstr "Utilisés uniquement sans dérogation propre au logement ni horaire du gestionnaire de canaux."
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no cancellation-policy text."
+msgstr "Contenu géré affiché lorsqu’un logement n’a pas de texte de politique d’annulation."
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no local house rules."
+msgstr "Contenu géré affiché lorsqu’un logement n’a pas de règlement intérieur local."
+
+#: .\templates\admin\index.html
+msgid "Check-in, check-out, cancellation and house rules"
+msgstr "Arrivée, départ, annulation et règlement intérieur"

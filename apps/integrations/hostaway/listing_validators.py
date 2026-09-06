@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from typing import Any, TypeVar
+from typing import Any
 from urllib.parse import urlparse
 
 from django.utils import timezone
@@ -15,7 +15,6 @@ from django.utils.dateparse import parse_datetime
 
 from .exceptions import HostawayResponseError
 
-T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
@@ -444,7 +443,7 @@ def _normalize_listing_amenities(
     return amenities
 
 
-def _safe_optional(
+def _safe_optional[T](
     parser: Callable[[], T],
     fallback: T,
     errors: list[str],

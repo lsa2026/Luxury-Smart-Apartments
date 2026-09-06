@@ -2,7 +2,6 @@ import json
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import Final
 
 from django import template
 from django.utils import formats, timezone, translation
@@ -584,28 +583,10 @@ def localized_percentage(value: object) -> str:
     return text
 
 
-# An Arabic page showing "SAR" reads as untranslated, so the currencies this
-# site actually prices in carry their Arabic symbol. A currency absent here
-# keeps its ISO code, which is correct everywhere and wrong nowhere.
-_ARABIC_CURRENCY_SYMBOLS: Final = {
-    "SAR": "ر.س",
-    "MAD": "د.م",
-    "AED": "د.إ",
-    "KWD": "د.ك",
-    "BHD": "د.ب",
-    "QAR": "ر.ق",
-    "OMR": "ر.ع",
-    "EGP": "ج.م",
-    "USD": "$",
-    "EUR": "€",
-    "GBP": "£",
-}
-
-
 def _currency_label(currency_code: str, language: str) -> str:
-    """The currency as this language writes it."""
+    """Use catalogue-owned labels on Arabic pages and ISO codes elsewhere."""
     if language == "ar":
-        return _ARABIC_CURRENCY_SYMBOLS.get(currency_code, currency_code)
+        return translation.gettext(currency_code)
     return currency_code
 
 
@@ -710,6 +691,18 @@ def localized_money(value: object, currency: object) -> str:
             currency_label,
             "\u00a0",
             number,
+        )
+
+    currency_label = _currency_label(currency_code, language)
+    if currency_label == currency_code:
+        return format_html(
+            '<bdi class="money money--{}" dir="ltr">'
+            '<span class="money__amount">{}</span>'
+            '<span class="money__currency">{}</span>'
+            "</bdi>",
+            language,
+            number,
+            currency_label,
         )
 
     return format_html(

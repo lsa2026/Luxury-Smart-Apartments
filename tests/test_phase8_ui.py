@@ -401,9 +401,11 @@ def test_property_detail_renders_localized_review_price_and_policy_copy(
     property_obj.check_in_time_start = 15
     property_obj.save()
 
-    content = Client().get(
-        property_obj.get_absolute_url(), HTTP_ACCEPT_LANGUAGE=language
-    ).content.decode()
+    content = (
+        Client()
+        .get(property_obj.get_absolute_url(), HTTP_ACCEPT_LANGUAGE=language)
+        .content.decode()
+    )
 
     for phrase in expected:
         assert phrase in content

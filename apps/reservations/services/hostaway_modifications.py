@@ -167,9 +167,7 @@ class HostawayModificationService:
             locked_operation.save()
             from apps.notifications.services.events import handle_modification_completed
 
-            transaction.on_commit(
-                lambda: handle_modification_completed(locked_request.pk)
-            )
+            transaction.on_commit(lambda: handle_modification_completed(locked_request.pk))
         modification.refresh_from_db()
         operation.refresh_from_db()
         return ModificationExecution("completed", modification, operation)

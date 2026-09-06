@@ -63,7 +63,7 @@ def test_long_review_has_accessible_expand_control() -> None:
     content = Client().get("/reviews/").content.decode()
 
     assert 'data-review-copy class="is-collapsible"' in content
-    assert 'data-review-toggle' in content
+    assert "data-review-toggle" in content
     assert 'aria-controls="review-copy-' in content
 
 
@@ -82,8 +82,8 @@ def test_review_collection_supports_progressive_reveal() -> None:
 
     content = Client().get("/reviews/").content.decode()
 
-    assert 'data-review-collection' in content
+    assert "data-review-collection" in content
     assert 'data-initial-count="6"' in content
     assert 'data-mobile-initial-count="3"' in content
     assert 'data-batch-size="3"' in content
-    assert 'data-review-more' in content
+    assert "data-review-more" in content

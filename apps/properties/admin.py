@@ -31,6 +31,7 @@ def _demote_other_city_heroes(image: PropertyImage) -> None:
         is_city_hero=True,
     ).exclude(pk=image.pk).update(is_city_hero=False)
 
+
 PROPERTY_SOURCE_FIELDS = (
     "hostaway_listing_id",
     "hostaway_listing_map_id",
@@ -104,6 +105,11 @@ PROPERTY_LOCAL_FIELDS = {
     "is_visible",
     "is_featured",
     "sort_order",
+    "display_check_in_hour",
+    "display_check_out_hour",
+    "cancellation_policy_ar",
+    "cancellation_policy_en",
+    "cancellation_policy_fr",
     "house_rules_ar",
     "house_rules_en",
     "house_rules_fr",
@@ -136,6 +142,11 @@ PROPERTY_FORM_FIELDS = (
     "visibility_management",
     "is_featured",
     "sort_order",
+    "display_check_in_hour",
+    "display_check_out_hour",
+    "cancellation_policy_ar",
+    "cancellation_policy_en",
+    "cancellation_policy_fr",
     "house_rules_ar",
     "house_rules_en",
     "house_rules_fr",
@@ -174,6 +185,8 @@ class PropertyAdminForm(forms.ModelForm):
             "visibility_management": _("Visibility management"),
             "is_featured": _("Featured property"),
             "sort_order": _("Display order"),
+            "display_check_in_hour": _("Guest-facing check-in hour"),
+            "display_check_out_hour": _("Guest-facing check-out hour"),
             "content_is_customized": _("Local content is customised"),
         }
         widgets = {
@@ -311,6 +324,7 @@ class PropertyAdmin(admin.ModelAdmin):
                     "short_description_ar",
                     "description_ar",
                     "city_ar",
+                    "cancellation_policy_ar",
                     "house_rules_ar",
                 )
             },
@@ -324,8 +338,9 @@ class PropertyAdmin(admin.ModelAdmin):
                     "short_description_en",
                     "description_en",
                     "city_en",
+                    "cancellation_policy_en",
                     "house_rules_en",
-                )
+                ),
             },
         ),
         (
@@ -353,8 +368,18 @@ class PropertyAdmin(admin.ModelAdmin):
                     "short_description_fr",
                     "description_fr",
                     "city_fr",
+                    "cancellation_policy_fr",
                     "house_rules_fr",
-                )
+                ),
+            },
+        ),
+        (
+            _("Stay times shown to guests"),
+            {
+                "description": _(
+                    "Leave blank to show the channel-manager time, then the site default."
+                ),
+                "fields": ("display_check_in_hour", "display_check_out_hour"),
             },
         ),
         (
@@ -382,9 +407,7 @@ class PropertyAdmin(admin.ModelAdmin):
             _("Images and amenities"),
             {
                 "fields": ("asset_management",),
-                "description": _(
-                    "Manage large image and amenity collections on focused screens."
-                ),
+                "description": _("Manage large image and amenity collections on focused screens."),
             },
         ),
         (
@@ -397,9 +420,13 @@ class PropertyAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet[Property]:
-        return super().get_queryset(request).annotate(
-            _image_count=models.Count("images", distinct=True),
-            _amenity_count=models.Count("property_amenities", distinct=True),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(
+                _image_count=models.Count("images", distinct=True),
+                _amenity_count=models.Count("property_amenities", distinct=True),
+            )
         )
 
     @admin.display(description=_("Media and amenities management"))
@@ -446,11 +473,16 @@ class PropertyAdmin(admin.ModelAdmin):
             else (obj.longitude if obj else None)
         )
         city = (obj.city if obj else "").strip().casefold()
-        if latitude is None and longitude is None and city in {
-            "marrakesh",
-            "marrakech",
-            "مراكش",
-        }:
+        if (
+            latitude is None
+            and longitude is None
+            and city
+            in {
+                "marrakesh",
+                "marrakech",
+                "مراكش",
+            }
+        ):
             latitude, longitude = "31.629472", "-7.981084"
         latitude = latitude if latitude is not None else "24.713552"
         longitude = longitude if longitude is not None else "46.675296"
@@ -461,7 +493,7 @@ class PropertyAdmin(admin.ModelAdmin):
             '<div class="lsa-location-picker__map" data-location-picker-map '
             'role="application" aria-label="{}"></div>'
             '<div class="lsa-location-picker__status" aria-live="polite">'
-            '<span data-location-picker-status>{}</span>'
+            "<span data-location-picker-status>{}</span>"
             '<button type="button" class="button" data-location-picker-clear>{}</button>'
             "</div></div>",
             latitude,
@@ -613,8 +645,7 @@ class PropertyAdmin(admin.ModelAdmin):
             sync_hostaway_properties_task.delay(listing_id=listing_id)
         self.message_user(
             request,
-            _("Added %(count)d property to the sync queue.")
-            % {"count": len(listing_ids)},
+            _("Added %(count)d property to the sync queue.") % {"count": len(listing_ids)},
         )
 
     def save_formset(

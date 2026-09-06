@@ -1,6 +1,7 @@
 from builtins import property as builtin_property
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -139,6 +140,32 @@ class Property(models.Model):
     )
     indicative_currency = models.CharField(max_length=3, blank=True)
     indicative_priced_at = models.DateTimeField(null=True, blank=True)
+    display_check_in_hour = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(24)],
+        verbose_name=_("Guest-facing check-in hour"),
+        help_text=_("Overrides the channel-manager time shown to guests."),
+    )
+    display_check_out_hour = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(24)],
+        verbose_name=_("Guest-facing check-out hour"),
+        help_text=_("Overrides the channel-manager time shown to guests."),
+    )
+    cancellation_policy_ar = models.TextField(
+        blank=True,
+        verbose_name=_("Cancellation policy"),
+    )
+    cancellation_policy_en = models.TextField(
+        blank=True,
+        verbose_name=_("Cancellation policy"),
+    )
+    cancellation_policy_fr = models.TextField(
+        blank=True,
+        verbose_name=_("Cancellation policy"),
+    )
     house_rules_ar = models.TextField(blank=True, verbose_name=_("House rules"))
     house_rules_en = models.TextField(blank=True, verbose_name=_("House rules"))
     house_rules_fr = models.TextField(blank=True, verbose_name=_("House rules"))
@@ -317,12 +344,16 @@ class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):
         # producing a broken tile in the guest gallery.  Keep only the normal
         # public records and exclude this known non-Hostaway CDN until the next
         # Hostaway sync deactivates the stale record.
-        return self.filter(is_visible=True).exclude(
-            source=PropertyImage.Source.HOSTAWAY,
-            hostaway_url__icontains=".muscache.com/",
-        ).filter(
-            Q(source=PropertyImage.Source.LOCAL)
-            | Q(source=PropertyImage.Source.HOSTAWAY, is_active_at_source=True)
+        return (
+            self.filter(is_visible=True)
+            .exclude(
+                source=PropertyImage.Source.HOSTAWAY,
+                hostaway_url__icontains=".muscache.com/",
+            )
+            .filter(
+                Q(source=PropertyImage.Source.LOCAL)
+                | Q(source=PropertyImage.Source.HOSTAWAY, is_active_at_source=True)
+            )
         )
 
     def city_heroes(self) -> "PropertyImageQuerySet":

@@ -33,9 +33,7 @@ def test_property_page_copy_is_translated_in_every_supported_guest_language(
 ) -> None:
     with override(language):
         summary = gettext("%(rating)s across all booking channels") % {"rating": "4.9"}
-        review_count = ngettext(
-            "%(counter)s review", "%(counter)s reviews", 2
-        ) % {"counter": 2}
+        review_count = ngettext("%(counter)s review", "%(counter)s reviews", 2) % {"counter": 2}
         price = gettext("From %(amount)s / night") % {"amount": "SAR 700.00"}
 
         assert summary == expected["summary"]

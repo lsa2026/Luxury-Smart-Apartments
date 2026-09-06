@@ -3,8 +3,10 @@
 This is the display counterpart of ``host_policy``, which enforces the same
 values at booking time. Nothing here invents a rule:
 
-* arrival and departure hours come from Hostaway, with a site-wide default used
-  only when Hostaway reported none;
+* locally managed arrival and departure hours take precedence for presentation;
+  otherwise the channel-manager value and then the site default are used;
+* cancellation prose and house rules are administration-written content, with
+  site-wide fallbacks and no machine translation;
 * the refund ladder is rendered from the tiers the administration entered, so an
   empty table honestly shows "no automatic refund" rather than a friendly
   sentence nobody agreed to;
@@ -36,6 +38,7 @@ class StayPolicy:
     check_out_hour: int | None
     check_in_is_default: bool
     check_out_is_default: bool
+    cancellation_policy_text: str
     house_rules: str
     refund_tiers: list[RefundTier] = field(default_factory=list)
     policy_code: str = ""
@@ -49,9 +52,13 @@ class StayPolicy:
         return bool(self.refund_tiers)
 
     @property
+    def has_cancellation(self) -> bool:
+        return bool(self.cancellation_policy_text or self.has_refund_ladder)
+
+    @property
     def is_empty(self) -> bool:
         """True when there is nothing worth rendering a section for."""
-        return not (self.has_times or self.has_refund_ladder or self.house_rules)
+        return not (self.has_times or self.has_cancellation or self.house_rules)
 
 
 def _language() -> str:
@@ -101,13 +108,31 @@ def stay_policy_for(property_obj: Property) -> StayPolicy:
     """Everything the guest should read about this stay before paying."""
     site_setting = SiteSetting.objects.order_by("pk").first()
 
+    local_check_in = _valid_hour(property_obj.display_check_in_hour)
+    local_check_out = _valid_hour(property_obj.display_check_out_hour)
     listing_check_in = _valid_hour(property_obj.check_in_time_start)
     listing_check_out = _valid_hour(property_obj.check_out_time)
     default_check_in = _valid_hour(getattr(site_setting, "default_check_in_hour", None))
     default_check_out = _valid_hour(getattr(site_setting, "default_check_out_hour", None))
 
-    check_in = listing_check_in if listing_check_in is not None else default_check_in
-    check_out = listing_check_out if listing_check_out is not None else default_check_out
+    check_in = (
+        local_check_in
+        if local_check_in is not None
+        else listing_check_in
+        if listing_check_in is not None
+        else default_check_in
+    )
+    check_out = (
+        local_check_out
+        if local_check_out is not None
+        else listing_check_out
+        if listing_check_out is not None
+        else default_check_out
+    )
+
+    cancellation_policy_text = _localized(property_obj, "cancellation_policy")
+    if not cancellation_policy_text and site_setting is not None:
+        cancellation_policy_text = _localized(site_setting, "default_cancellation_policy")
 
     house_rules = _localized(property_obj, "house_rules")
     if not house_rules and site_setting is not None:
@@ -116,8 +141,13 @@ def stay_policy_for(property_obj: Property) -> StayPolicy:
     return StayPolicy(
         check_in_hour=check_in,
         check_out_hour=check_out,
-        check_in_is_default=listing_check_in is None and check_in is not None,
-        check_out_is_default=listing_check_out is None and check_out is not None,
+        check_in_is_default=(
+            local_check_in is None and listing_check_in is None and check_in is not None
+        ),
+        check_out_is_default=(
+            local_check_out is None and listing_check_out is None and check_out is not None
+        ),
+        cancellation_policy_text=cancellation_policy_text,
         house_rules=house_rules,
         refund_tiers=refund_tiers_for(property_obj.cancellation_policy),
         policy_code=(property_obj.cancellation_policy or "").strip(),

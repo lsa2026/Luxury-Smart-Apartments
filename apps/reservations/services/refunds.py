@@ -74,9 +74,10 @@ def cancellation_refund(
     if reservation.property is not None:
         policy = (reservation.property.cancellation_policy or "").strip()
     moment = at or timezone.now()
-    detail: dict[str, Any] = {"policy_code": policy, "stay_total": format(
-        reservation.total_price, "f"
-    )}
+    detail: dict[str, Any] = {
+        "policy_code": policy,
+        "stay_total": format(reservation.total_price, "f"),
+    }
 
     if not policy:
         detail["reason"] = "no_policy_on_property"

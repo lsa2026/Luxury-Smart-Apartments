@@ -250,8 +250,7 @@ def test_provider_failure_rejects_last_known_good_older_than_max_age() -> None:
         base_currency=stale.base_currency,
         rates=stale.rates,
         rate_timestamp=stale.rate_timestamp,
-        fetched_at=timezone.now()
-        - timedelta(seconds=settings.FX_LKG_MAX_AGE_SECONDS + 1),
+        fetched_at=timezone.now() - timedelta(seconds=settings.FX_LKG_MAX_AGE_SECONDS + 1),
     )
     cache.values[LKG_CACHE_KEY] = stale.to_cache_value()
     service = CurrencyService(
@@ -373,8 +372,7 @@ def test_one_rate_fetch_supports_multiple_money_values_on_one_page(
     monkeypatch.setattr(CurrencyService, "get_rates", get_rates)
     request = RequestFactory().get("/properties/")
     output = Template(
-        "{% load currency %}"
-        "{% display_money first 'SAR' %}|{% display_money second 'MAD' %}"
+        "{% load currency %}{% display_money first 'SAR' %}|{% display_money second 'MAD' %}"
     ).render(
         Context(
             {

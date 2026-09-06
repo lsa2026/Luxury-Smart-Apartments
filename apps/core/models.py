@@ -129,6 +129,18 @@ class SiteSetting(models.Model):
         verbose_name=_("Default check-out hour"),
         help_text=_("Used when Hostaway reports no check-out time for a property."),
     )
+    default_cancellation_policy_ar = models.TextField(
+        blank=True,
+        verbose_name=_("Default cancellation policy"),
+    )
+    default_cancellation_policy_en = models.TextField(
+        blank=True,
+        verbose_name=_("Default cancellation policy"),
+    )
+    default_cancellation_policy_fr = models.TextField(
+        blank=True,
+        verbose_name=_("Default cancellation policy"),
+    )
     default_house_rules_ar = models.TextField(blank=True, verbose_name=_("Default house rules"))
     default_house_rules_en = models.TextField(blank=True, verbose_name=_("Default house rules"))
     default_house_rules_fr = models.TextField(blank=True, verbose_name=_("Default house rules"))

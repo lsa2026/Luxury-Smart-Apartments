@@ -61,6 +61,22 @@ def test_arrival_hours_come_from_the_channel_manager() -> None:
     assert policy.check_in_is_default is False
 
 
+def test_locally_managed_hours_override_the_channel_manager_for_display() -> None:
+    property_obj = make_property(
+        display_check_in_hour=17,
+        display_check_out_hour=10,
+        check_in_time_start=16,
+        check_out_time=11,
+    )
+
+    policy = stay_policy_for(property_obj)
+
+    assert policy.check_in_hour == 17
+    assert policy.check_out_hour == 10
+    assert policy.check_in_is_default is False
+    assert policy.check_out_is_default is False
+
+
 def test_the_site_default_fills_only_what_the_source_omitted() -> None:
     set_site_defaults(default_check_in_hour=15, default_check_out_hour=12)
     property_obj = make_property(check_in_time_start=16, check_out_time=None)
@@ -129,6 +145,22 @@ def test_tiers_of_another_policy_never_leak_in() -> None:
 # --- house rules ------------------------------------------------------------
 
 
+def test_cancellation_policy_prefers_property_content_over_the_site_default() -> None:
+    set_site_defaults(default_cancellation_policy_ar="سياسة الموقع")
+    property_obj = make_property(cancellation_policy_ar="سياسة الوحدة")
+
+    with translation.override("ar"):
+        assert stay_policy_for(property_obj).cancellation_policy_text == "سياسة الوحدة"
+
+
+def test_cancellation_policy_falls_back_to_the_site_default() -> None:
+    set_site_defaults(default_cancellation_policy_ar="سياسة الموقع")
+    property_obj = make_property()
+
+    with translation.override("ar"):
+        assert stay_policy_for(property_obj).cancellation_policy_text == "سياسة الموقع"
+
+
 def test_house_rules_prefer_the_property_over_the_site_default() -> None:
     set_site_defaults(default_house_rules_ar="قواعد الموقع")
     property_obj = make_property(house_rules_ar="قواعد الوحدة")
@@ -159,6 +191,7 @@ def test_the_property_page_shows_the_three_answers() -> None:
         check_in_time_start=16,
         check_out_time=11,
         cancellation_policy="flexible",
+        cancellation_policy_ar="يمكن الإلغاء وفق السياسة المعروضة.",
         house_rules_ar="ممنوع التدخين داخل الوحدة.",
     )
     make_tier("flexible", 48, "100")
@@ -168,6 +201,7 @@ def test_the_property_page_shows_the_three_answers() -> None:
     assert "stay-policy" in content
     assert "١٦:٠٠" in content
     assert "١١:٠٠" in content
+    assert "يمكن الإلغاء وفق السياسة المعروضة." in content
     assert "ممنوع التدخين داخل الوحدة." in content
 
 
@@ -177,3 +211,26 @@ def test_the_property_page_omits_the_section_when_nothing_is_configured() -> Non
     content = Client().get(property_obj.get_absolute_url()).content.decode()
 
     assert 'id="stay-policy-title"' not in content
+
+
+def test_the_quote_review_summarizes_managed_policy_and_house_rules() -> None:
+    from tests.test_booking_views_admin import owned_client_quote
+
+    client, quote, reference = owned_client_quote()
+    quote.property.cancellation_policy_ar = "إلغاء مُدار من لوحة التحكم."
+    quote.property.house_rules_ar = "قواعد مُدارة من لوحة التحكم."
+    quote.property.display_check_in_hour = 17
+    quote.property.save(
+        update_fields=(
+            "cancellation_policy_ar",
+            "house_rules_ar",
+            "display_check_in_hour",
+        )
+    )
+
+    content = client.get(f"/reservations/quotes/{reference}/").content.decode()
+
+    assert "إلغاء مُدار من لوحة التحكم." in content
+    assert "قواعد مُدارة من لوحة التحكم." in content
+    assert "١٧:٠٠" in content
+    assert "سياسة الإلغاء وقواعد المنزل المعروضة لهذه الإقامة" in content

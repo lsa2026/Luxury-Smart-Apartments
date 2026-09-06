@@ -12,7 +12,8 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 from django.test import Client
-from django.utils import timezone, translation
+from django.urls import reverse
+from django.utils import translation
 
 from apps.core.templatetags.presentation import (
     localized_date,
@@ -28,6 +29,8 @@ UTC_INSTANT = dt.datetime(2026, 9, 3, 23, 46, tzinfo=dt.UTC)
 def test_the_site_runs_on_riyadh_time() -> None:
     assert settings.TIME_ZONE == "Asia/Riyadh"
     assert settings.USE_TZ is True
+    assert settings.CELERY_TIMEZONE == "Asia/Riyadh"
+    assert settings.CELERY_ENABLE_UTC is True
 
 
 def test_a_stored_utc_instant_is_shown_in_riyadh_time() -> None:
@@ -81,19 +84,18 @@ def test_unusable_values_render_as_empty(value: object) -> None:
 @pytest.mark.django_db
 def test_a_quote_page_shows_its_expiry_in_riyadh_time() -> None:
     """The end-to-end case: the expiry a guest reads on the page."""
-    from tests.test_account_booking_claim import make_reservation
+    from tests.test_booking_views_admin import owned_client_quote
 
-    reservation = make_reservation("LSA-TZ-1")
-    quote = reservation.booking_intent.quote
-    quote.expires_at = UTC_INSTANT
+    client, quote, reference = owned_client_quote()
+    quote.expires_at = dt.datetime(2026, 9, 30, 23, 46, tzinfo=dt.UTC)
     quote.save(update_fields=["expires_at"])
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = "en"
 
-    with translation.override("en"):
-        rendered = localized_datetime(quote.expires_at)
+    response = client.get(reverse("reservations:quote_detail", args=[reference]))
 
-    local = timezone.localtime(quote.expires_at)
-    assert local.day == 4
-    assert rendered == "4 September 2026 02:46"
+    assert response.status_code == 200
+    assert b"This quote expires at 1 October 2026 02:46." in response.content
+    assert b"30 September 2026 23:46" not in response.content
 
 
 @pytest.mark.django_db
@@ -120,9 +122,7 @@ def test_content_entrance_animations_do_not_hide_their_element_at_rest(
     the animation actually runs. The resting state must be the visible one."""
     css = _stylesheet()
 
-    declaration = next(
-        line for line in css.splitlines() if f"animation: {animation} " in line
-    )
+    declaration = next(line for line in css.splitlines() if f"animation: {animation} " in line)
     assert "both" not in declaration, declaration
     assert "forwards" in declaration, declaration
 

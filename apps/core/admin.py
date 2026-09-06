@@ -216,14 +216,35 @@ class SiteSettingAdmin(admin.ModelAdmin):
             },
         ),
         (
-            _("Stay defaults"),
+            _("Default stay times"),
             {
                 "description": _(
-                    "Used only when the channel manager reports nothing for a property."
+                    "Used only when neither a property override nor a channel-manager time exists."
                 ),
                 "fields": (
                     "default_check_in_hour",
                     "default_check_out_hour",
+                ),
+            },
+        ),
+        (
+            _("Default cancellation policy"),
+            {
+                "description": _(
+                    "Managed content shown when a property has no cancellation-policy text."
+                ),
+                "fields": (
+                    "default_cancellation_policy_ar",
+                    "default_cancellation_policy_en",
+                    "default_cancellation_policy_fr",
+                ),
+            },
+        ),
+        (
+            _("Default house rules"),
+            {
+                "description": _("Managed content shown when a property has no local house rules."),
+                "fields": (
                     "default_house_rules_ar",
                     "default_house_rules_en",
                     "default_house_rules_fr",

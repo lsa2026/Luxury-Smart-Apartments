@@ -9,7 +9,6 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES, normalize_country_code
-from apps.payments.regions import SAUDI_COUNTRY_CODE, region_choices
 
 
 def _clean_text(value: str) -> str:
@@ -65,19 +64,10 @@ class GuestDetailsForm(forms.Form):
         max_length=80,
         widget=forms.TextInput(attrs={"autocomplete": "address-level2"}),
     )
-    # Saudi guests pick from the thirteen regions; everyone else types their own.
     billing_state = forms.CharField(
         label=_("State or region"),
         max_length=50,
         widget=forms.TextInput(attrs={"autocomplete": "address-level1"}),
-    )
-    billing_region_sa = forms.ChoiceField(
-        label=_("State or region"),
-        choices=(),
-        required=False,
-        widget=forms.Select(
-            attrs={"autocomplete": "address-level1", "data-region-select": ""}
-        ),
     )
     billing_country = forms.ChoiceField(
         label=_("Country"),
@@ -129,7 +119,6 @@ class GuestDetailsForm(forms.Form):
             ("", _("Choose your country")),
             *((code, code) for code in sorted(ISO_ALPHA2_COUNTRY_CODES)),
         ]
-        self.fields["billing_region_sa"].choices = region_choices()
         if not self.is_bound:
             self.initial["idempotency_key"] = secrets.token_urlsafe(32)
             self.initial["billing_country"] = self.default_country_code
@@ -161,10 +150,8 @@ class GuestDetailsForm(forms.Form):
             value = cleaned.get(name)
             if isinstance(value, str):
                 cleaned[name] = _clean_text(value)
-        # Street is optional; city is the one address line still demanded.
         if not cleaned.get("billing_city"):
             self.add_error("billing_city", _("This field is required."))
-        self._resolve_region(cleaned)
         phone = cleaned.get("guest_phone")
         if isinstance(phone, str):
             try:
@@ -178,30 +165,6 @@ class GuestDetailsForm(forms.Form):
                     ),
                 )
         return cleaned
-
-    def _resolve_region(self, cleaned: dict[str, object]) -> None:
-        """Take the region from the select for Saudi Arabia, the text elsewhere.
-
-        Only one of the two ever reaches the gateway, so a guest who starts in
-        one country and switches cannot leave a stale value behind.
-        """
-        country = cleaned.get("billing_country")
-        if country == SAUDI_COUNTRY_CODE:
-            chosen = (cleaned.get("billing_region_sa") or "").strip()
-            # Either control satisfies the field. The select is what the page
-            # shows, but accepting the text keeps older clients and direct posts
-            # working rather than failing them on presentation.
-            if chosen:
-                cleaned["billing_state"] = chosen
-                self.errors.pop("billing_state", None)
-                return
-            if cleaned.get("billing_state"):
-                return
-            self.add_error("billing_region_sa", _("Choose your region."))
-            return
-        cleaned["billing_region_sa"] = ""
-        if not cleaned.get("billing_state"):
-            self.add_error("billing_state", _("This field is required."))
 
     def clean_special_requests(self) -> str:
         return _clean_text(self.cleaned_data["special_requests"])

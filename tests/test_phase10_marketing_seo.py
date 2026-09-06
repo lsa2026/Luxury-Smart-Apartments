@@ -443,13 +443,12 @@ def test_private_quote_template_has_no_hreflang_block() -> None:
     assert "{% block hreflang %}{% endblock %}" in source
 
 
-def test_billing_country_switch_disables_the_hidden_region_control() -> None:
+def test_billing_country_script_does_not_toggle_a_duplicate_region_control() -> None:
     script = Path("static/js/site.js").read_text(encoding="utf-8")
 
-    assert 'field.disabled = !isSaudi;' in script
-    assert 'field.disabled = isSaudi;' in script
-    assert 'field.required = isSaudi;' in script
-    assert 'field.required = !isSaudi;' in script
+    assert "[data-country-select]" in script
+    assert "data-saudi-region-field" not in script
+    assert "data-other-region-field" not in script
 
 
 def test_property_structured_data_is_safe_and_complete(

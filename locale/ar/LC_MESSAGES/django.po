@@ -250,10 +250,8 @@ msgid "Brand"
 msgstr "العلامة"
 
 #: .\apps\core\admin.py:219
-#, fuzzy
-#| msgid "Stay details"
 msgid "Stay defaults"
-msgstr "تفاصيل الإقامة"
+msgstr "افتراضيات الإقامة"
 
 #: .\apps\core\admin.py:222
 msgid "Used only when the channel manager reports nothing for a property."
@@ -560,29 +558,25 @@ msgid "FAQ items"
 msgstr "الأسئلة الشائعة"
 
 #: .\apps\core\models.py:122
-#, fuzzy
-#| msgid "Requested check-in"
 msgid "Default check-in hour"
-msgstr "الوصول المطلوب"
+msgstr "ساعة الدخول الافتراضية"
 
 #: .\apps\core\models.py:123
 msgid "Used when Hostaway reports no check-in time for a property."
-msgstr ""
+msgstr "تُستخدم عندما لا يرسل Hostaway وقت دخول للوحدة."
 
 #: .\apps\core\models.py:129
-#, fuzzy
-#| msgid "Requested check-out"
 msgid "Default check-out hour"
-msgstr "المغادرة المطلوبة"
+msgstr "ساعة الخروج الافتراضية"
 
 #: .\apps\core\models.py:130
 msgid "Used when Hostaway reports no check-out time for a property."
-msgstr ""
+msgstr "تُستخدم عندما لا يرسل Hostaway وقت خروج للوحدة."
 
 #: .\apps\core\models.py:132 .\apps\core\models.py:133
 #: .\apps\core\models.py:134
 msgid "Default house rules"
-msgstr ""
+msgstr "قواعد المنزل الافتراضية"
 
 #: .\apps\core\models.py:138
 msgid "Site setting"
@@ -6703,6 +6697,39 @@ msgstr "تعذر التحقق من السعر مؤقتاً"
 msgid "We couldn't verify the price right now. Please try again shortly."
 msgstr "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل."
 
+#: apps/core/admin.py
+msgid "Used when a property has no local value; times also fall back to the channel manager before these defaults."
+msgstr "تُستخدم عندما لا تكون للوحدة قيمة محلية؛ وتعود الأوقات أولاً إلى مدير القنوات قبل هذه القيم الافتراضية."
+
+#: apps/core/models.py
+msgid "Default cancellation policy"
+msgstr "سياسة الإلغاء الافتراضية"
+
+#: apps/properties/admin.py apps/properties/models.py
+msgid "Guest-facing check-in hour"
+msgstr "ساعة الدخول المعروضة للنزيل"
+
+#: apps/properties/admin.py apps/properties/models.py
+msgid "Guest-facing check-out hour"
+msgstr "ساعة الخروج المعروضة للنزيل"
+
+#: apps/properties/admin.py
+msgid "Stay times shown to guests"
+msgstr "أوقات الإقامة المعروضة للنزلاء"
+
+#: apps/properties/admin.py
+msgid "Leave blank to show the channel-manager time, then the site default."
+msgstr "اتركه فارغاً لعرض وقت مدير القنوات، ثم القيمة الافتراضية للموقع."
+
+#: apps/properties/models.py
+msgid "Overrides the channel-manager time shown to guests."
+msgstr "يتجاوز وقت مدير القنوات في العرض الموجّه للنزلاء."
+
+#: templates/reservations/booking_quote_detail.html
+#, python-format
+msgid "I accept the <a href=\"%(url)s\" target=\"_blank\">terms and conditions</a>, including the cancellation policy and house rules shown for this stay."
+msgstr "أوافق على <a href=\"%(url)s\" target=\"_blank\">الشروط والأحكام</a>، بما فيها سياسة الإلغاء وقواعد المنزل المعروضة لهذه الإقامة."
+
 #: .\templates\reservations\availability_result.html:55
 msgid "These dates are not available"
 msgstr "هذه التواريخ غير متاحة"
@@ -7297,14 +7324,22 @@ msgstr "كل مراجعات الضيوف"
 msgid "Review pages"
 msgstr "صفحات المراجعات"
 
-#~ msgid ""
-#~ "Enter a valid mobile number, with its country code if it is not a local "
-#~ "number."
-#~ msgstr "أدخل رقم جوال صحيحًا، مع رمز الدولة إن لم يكن رقمًا محليًا."
+#: .\apps\core\admin.py
+msgid "Default stay times"
+msgstr "أوقات الإقامة الافتراضية"
 
-#~ msgid ""
-#~ "Any country is accepted. Write it with a country code, such as "
-#~ "+966500000000, or as a local number for the country you select below."
-#~ msgstr ""
-#~ "من أي دولة. اكتبه مع رمز الدولة، مثل +966500000000، أو كرقم محلي للدولة "
-#~ "التي تختارها أدناه."
+#: .\apps\core\admin.py
+msgid "Used only when neither a property override nor a channel-manager time exists."
+msgstr "تُستخدم فقط عندما لا يوجد تجاوز خاص بالوحدة ولا وقت وارد من مدير القنوات."
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no cancellation-policy text."
+msgstr "محتوى مُدار يظهر عندما لا تحتوي الوحدة على نص لسياسة الإلغاء."
+
+#: .\apps\core\admin.py
+msgid "Managed content shown when a property has no local house rules."
+msgstr "محتوى مُدار يظهر عندما لا تحتوي الوحدة على قواعد منزل محلية."
+
+#: .\templates\admin\index.html
+msgid "Check-in, check-out, cancellation and house rules"
+msgstr "الدخول والخروج والإلغاء وقواعد المنزل"

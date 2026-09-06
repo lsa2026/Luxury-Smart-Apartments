@@ -86,9 +86,7 @@ class SecurityHeadersMiddleware:
         frame_sources = ["'self'"]
         form_action_sources = ["'self'"]
         font_sources = ["'self'"]
-        hyperpay_page = settings.HYPERPAY_ENABLED and request.path.startswith(
-            "/payments/hyperpay/"
-        )
+        hyperpay_page = settings.HYPERPAY_ENABLED and request.path.startswith("/payments/hyperpay/")
         if hyperpay_page:
             script_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
             connect_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
@@ -98,9 +96,7 @@ class SecurityHeadersMiddleware:
             image_sources = f"{image_sources} {settings.HYPERPAY_WIDGET_ORIGIN}"
             # COPYandPAY creates a runtime stylesheet and inserts its widget rules
             # into it. Keep this relaxation isolated to the TEST payment route.
-            style_sources = (
-                f"{style_sources} 'unsafe-inline' {settings.HYPERPAY_WIDGET_ORIGIN}"
-            )
+            style_sources = f"{style_sources} 'unsafe-inline' {settings.HYPERPAY_WIDGET_ORIGIN}"
         if google_allowed and (
             settings.GOOGLE_TAG_MANAGER_ENABLED or settings.GOOGLE_ANALYTICS_ENABLED
         ):

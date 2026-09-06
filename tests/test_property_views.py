@@ -82,7 +82,7 @@ def test_enabled_public_location_renders_an_interactive_map_and_geo_schema() -> 
     content = response.content.decode()
 
     assert response.status_code == 200
-    assert 'data-property-map' in content
+    assert "data-property-map" in content
     assert 'data-latitude="24.713552"' in content
     assert 'data-longitude="46.675296"' in content
     assert "vendor/leaflet/leaflet.js" in content
@@ -95,9 +95,7 @@ def test_disabled_public_location_does_not_expose_coordinates_or_map_resources()
     property_obj = make_property(12)
     property_obj.public_location_latitude = Decimal("24.700001")
     property_obj.public_location_longitude = Decimal("46.600001")
-    property_obj.save(
-        update_fields=["public_location_latitude", "public_location_longitude"]
-    )
+    property_obj.save(update_fields=["public_location_latitude", "public_location_longitude"])
 
     response = Client().get(property_obj.get_absolute_url())
     content = response.content.decode()
@@ -193,9 +191,9 @@ def test_home_page_falls_back_to_stock_for_a_city_without_a_nominated_photo() ->
 @pytest.mark.parametrize(
     ("is_city_hero", "is_visible", "property_visible"),
     [
-        (False, True, True),   # not nominated
-        (True, False, True),   # nominated but hidden
-        (True, True, False),   # nominated on an unpublished property
+        (False, True, True),  # not nominated
+        (True, False, True),  # nominated but hidden
+        (True, True, False),  # nominated on an unpublished property
     ],
 )
 def test_only_a_public_nominated_photo_reaches_the_home_page(

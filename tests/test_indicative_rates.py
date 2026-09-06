@@ -138,6 +138,46 @@ def test_a_failed_connection_writes_nothing() -> None:
     assert "failed=1" in output
 
 
+def test_one_failed_listing_aborts_all_writes() -> None:
+    first = make_property(9101)
+    second = make_property(9102)
+    client = patch("apps.properties.management.commands.refresh_indicative_rates.HostawayClient")
+    mock = client.start()
+    instance = mock.return_value.__enter__.return_value
+    instance.get_listing_calendar.side_effect = [
+        calendar((True, "590")),
+        HostawayError("unreachable"),
+    ]
+
+    try:
+        output = run()
+    finally:
+        client.stop()
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert first.indicative_nightly_from is None
+    assert second.indicative_nightly_from is None
+    assert "aborted=true" in output
+
+
+def test_currency_change_refreshes_an_unchanged_amount() -> None:
+    property_obj = make_property(
+        indicative_nightly_from=Decimal("590.00"),
+        indicative_currency="USD",
+    )
+    patcher = with_calendar(calendar((True, "590")))
+
+    try:
+        run()
+    finally:
+        patcher.stop()
+
+    property_obj.refresh_from_db()
+    assert property_obj.indicative_currency == "SAR"
+    assert property_obj.indicative_priced_at is not None
+
+
 def test_dry_run_reports_without_writing() -> None:
     property_obj = make_property()
     patcher = with_calendar(calendar((True, "590")))
