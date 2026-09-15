@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import DatabaseError
 from django.http import HttpRequest
+from django.urls import translate_url
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 
@@ -15,6 +16,7 @@ from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_labels
 
 from .branding import BRAND_NAME
+from .middleware import PUBLIC_LOCALIZED_VIEW_NAMES
 from .models import SiteSetting
 
 GOOGLE_EXCLUDED_PREFIXES = (
@@ -92,8 +94,23 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     canonical_path = request.path
     canonical_suffix = ""
     page_value = request.GET.get("page", "")
-    if request.path == "/properties/" and page_value.isdigit() and int(page_value) > 1:
+    resolver_match = getattr(request, "resolver_match", None)
+    view_name = resolver_match.view_name if resolver_match is not None else ""
+    if view_name == "properties:list" and page_value.isdigit() and int(page_value) > 1:
         canonical_suffix = f"?page={int(page_value)}"
+    language_urls = {
+        code: (
+            f"{settings.SITE_CANONICAL_URL}"
+            f"{translate_url(canonical_path, code)}{canonical_suffix}"
+        )
+        for code, _name in settings.LANGUAGES
+    }
+    if view_name not in PUBLIC_LOCALIZED_VIEW_NAMES:
+        language_urls = {
+            code: f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"
+            for code, _name in settings.LANGUAGES
+        }
+    default_language = settings.LANGUAGE_CODE.split("-")[0]
     site_name = BRAND_NAME
     language = (translation.get_language() or settings.LANGUAGE_CODE).split("-")[0]
     footer_cities = supported_city_labels(language)
@@ -137,9 +154,10 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         "footer_cities": footer_cities,
         "current_year": datetime.now(tz=timezone.get_current_timezone()).year,
         "canonical_url": (f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"),
-        "hreflang_ar_url": (f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"),
-        "hreflang_en_url": (f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"),
-        "hreflang_fr_url": (f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"),
+        "hreflang_ar_url": language_urls["ar"],
+        "hreflang_en_url": language_urls["en"],
+        "hreflang_fr_url": language_urls["fr"],
+        "hreflang_x_default_url": language_urls[default_language],
         "current_language_code": language,
         "csp_nonce": getattr(request, "csp_nonce", ""),
         "organization_data": organization_data,

@@ -27,7 +27,7 @@ def test_reference_contact_details_and_public_pages_are_seeded() -> None:
 
 
 def test_legal_content_is_structured_and_no_longer_a_placeholder() -> None:
-    response = Client().get("/legal/terms/")
+    response = Client().get("/ar/legal/terms/")
     content = response.content.decode()
 
     assert response.status_code == 200
@@ -42,7 +42,7 @@ def test_contact_copy_and_contact_details_are_dashboard_backed() -> None:
     page.body_ar = "رسالة تواصل قابلة للتعديل من لوحة الإدارة."
     page.save(update_fields=["body_ar"])
 
-    content = Client().get("/contact/").content.decode()
+    content = Client().get("/ar/contact/").content.decode()
     assert "رسالة تواصل قابلة للتعديل من لوحة الإدارة." in content
     assert "saeed@luxurysmartapartments.com" in content
     assert "+966501205651" in content
@@ -50,7 +50,7 @@ def test_contact_copy_and_contact_details_are_dashboard_backed() -> None:
 
 def test_contact_page_can_be_unpublished_from_dashboard() -> None:
     SitePage.objects.filter(slug="contact").update(is_published=False)
-    assert Client().get("/contact/").status_code == 404
+    assert Client().get("/ar/contact/").status_code == 404
 
 
 def test_structured_text_escapes_editor_input() -> None:
@@ -77,7 +77,7 @@ def test_page_content_has_grouped_admin_controls() -> None:
 
 
 def test_footer_uses_layered_luxury_layout_and_dashboard_contact_details() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
 
     assert 'class="footer-invitation"' in content
     assert 'class="container footer-grid"' in content

@@ -21,6 +21,7 @@ from .models import LegacyRedirect, SitePage
 PUBLIC_STATIC_NAMES = (
     "core:home",
     "properties:list",
+    "reviews:list",
     "core:about",
     "core:faq",
     "core:contact",
@@ -35,10 +36,33 @@ PUBLIC_STATIC_NAMES = (
 class SitemapEntry:
     location: str
     last_modified: datetime | None = None
+    alternates: tuple[tuple[str, str], ...] = ()
+
+
+def _localized_absolute_urls(view_name: str, **kwargs: object) -> dict[str, str]:
+    base_url = settings.SITE_CANONICAL_URL.rstrip("/")
+    urls = {}
+    for language_code, _name in settings.LANGUAGES:
+        with translation.override(language_code):
+            urls[language_code] = f"{base_url}{reverse(view_name, kwargs=kwargs or None)}"
+    return urls
+
+
+def _localized_entries(
+    view_name: str,
+    last_modified: datetime | None = None,
+    **kwargs: object,
+) -> list[SitemapEntry]:
+    urls = _localized_absolute_urls(view_name, **kwargs)
+    default_language = settings.LANGUAGE_CODE.split("-")[0]
+    alternates = tuple(urls.items()) + (("x-default", urls[default_language]),)
+    return [
+        SitemapEntry(location=url, last_modified=last_modified, alternates=alternates)
+        for url in urls.values()
+    ]
 
 
 def public_sitemap_entries() -> list[SitemapEntry]:
-    base_url = settings.SITE_CANONICAL_URL.rstrip("/")
     page_updates = dict(SitePage.objects.values_list("slug", "updated_at"))
     name_slug = {
         "core:about": "about",
@@ -47,17 +71,17 @@ def public_sitemap_entries() -> list[SitemapEntry]:
         "core:cancellation": "cancellation",
         "core:cookies": "cookies",
     }
-    entries = [
-        SitemapEntry(
-            f"{base_url}{reverse(name)}",
-            page_updates.get(name_slug.get(name, "")),
+    entries = []
+    for name in PUBLIC_STATIC_NAMES:
+        entries.extend(_localized_entries(name, page_updates.get(name_slug.get(name, ""))))
+    for property_obj in Property.objects.public().only("slug", "updated_at"):
+        entries.extend(
+            _localized_entries(
+                "properties:detail",
+                property_obj.updated_at,
+                slug=property_obj.slug,
+            )
         )
-        for name in PUBLIC_STATIC_NAMES
-    ]
-    entries.extend(
-        SitemapEntry(f"{base_url}{property_obj.get_absolute_url()}", property_obj.updated_at)
-        for property_obj in Property.objects.public().only("slug", "updated_at")
-    )
     unique = {entry.location: entry for entry in entries}
     return list(unique.values())
 
@@ -70,15 +94,11 @@ def _sitemap_xml(entries: Iterable[SitemapEntry]) -> str:
     ]
     for entry in entries:
         location = escape(entry.location, quote=True)
+        rows.extend(["<url>", f"<loc>{location}</loc>"])
         rows.extend(
-            [
-                "<url>",
-                f"<loc>{location}</loc>",
-                f'<xhtml:link rel="alternate" hreflang="ar" href="{location}" />',
-                f'<xhtml:link rel="alternate" hreflang="en" href="{location}" />',
-                f'<xhtml:link rel="alternate" hreflang="fr" href="{location}" />',
-                f'<xhtml:link rel="alternate" hreflang="x-default" href="{location}" />',
-            ]
+            f'<xhtml:link rel="alternate" hreflang="{escape(language, quote=True)}" '
+            f'href="{escape(url, quote=True)}" />'
+            for language, url in entry.alternates
         )
         if entry.last_modified:
             rows.append(f"<lastmod>{entry.last_modified.date().isoformat()}</lastmod>")
@@ -89,10 +109,10 @@ def _sitemap_xml(entries: Iterable[SitemapEntry]) -> str:
 
 def sitemap_xml(request: HttpRequest) -> HttpResponse:
     del request
-    content = cache.get("seo:sitemap:v1")
+    content = cache.get("seo:sitemap:v2")
     if content is None:
         content = _sitemap_xml(public_sitemap_entries())
-        cache.set("seo:sitemap:v1", content, timeout=settings.SITEMAP_CACHE_SECONDS)
+        cache.set("seo:sitemap:v2", content, timeout=settings.SITEMAP_CACHE_SECONDS)
     return HttpResponse(content, content_type="application/xml; charset=utf-8")
 
 
@@ -109,7 +129,6 @@ def robots_txt(request: HttpRequest) -> HttpResponse:
             "Disallow: /reservations/quotes/",
             "Disallow: /reservations/requests/",
             "Disallow: /reservations/manage/",
-            "Disallow: /*?",
             f"Sitemap: {base_url}/sitemap.xml",
             "",
         ]
@@ -185,9 +204,9 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
     prefetched_images = getattr(property_obj, "_public_images", None)
     if prefetched_images is None:
         prefetched_images = list(
-            property_obj.images.public().order_by("-is_cover", "sort_order", "id")[:5]
+            property_obj.images.public().order_by("-is_cover", "sort_order", "id")[:20]
         )
-    image_urls = [image.display_url for image in prefetched_images[:5] if image.display_url]
+    image_urls = [image.display_url for image in prefetched_images[:20] if image.display_url]
     language = (translation.get_language() or "ar").split("-")[0]
     description_fields = {
         "ar": ("description_ar", "description_en", "hostaway_description", "description_fr"),
@@ -205,9 +224,17 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
         ),
         "",
     )[:500]
+    has_public_geo = (
+        property_obj.public_location_enabled
+        and property_obj.public_location_latitude is not None
+        and property_obj.public_location_longitude is not None
+    )
+    vacation_rental_ready = bool(
+        property_obj.person_capacity and has_public_geo and len(image_urls) >= 8
+    )
     data: dict[str, Any] = {
         "@context": "https://schema.org",
-        "@type": "VacationRental" if description and image_urls else "LodgingBusiness",
+        "@type": "VacationRental" if vacation_rental_ready else "LodgingBusiness",
         "name": property_obj.display_name,
         "description": description,
         "url": f"{settings.SITE_CANONICAL_URL}{property_obj.get_absolute_url()}",
@@ -222,29 +249,30 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
             **({"addressLocality": locality} if locality else {}),
             **({"addressCountry": property_obj.country_code} if property_obj.country_code else {}),
         }
-    if (
-        property_obj.public_location_enabled
-        and property_obj.public_location_latitude is not None
-        and property_obj.public_location_longitude is not None
-    ):
+    if has_public_geo:
         data["geo"] = {
             "@type": "GeoCoordinates",
             "latitude": float(property_obj.public_location_latitude),
             "longitude": float(property_obj.public_location_longitude),
         }
+    accommodation: dict[str, Any] = {"@type": "Accommodation"}
     if property_obj.person_capacity:
-        data["occupancy"] = {
+        accommodation["occupancy"] = {
             "@type": "QuantitativeValue",
-            "maxValue": property_obj.person_capacity,
+            "value": property_obj.person_capacity,
         }
     if property_obj.bedrooms_number is not None:
-        data["numberOfBedrooms"] = property_obj.bedrooms_number
+        accommodation["numberOfBedrooms"] = property_obj.bedrooms_number
+    if property_obj.bathrooms_number is not None:
+        accommodation["numberOfBathroomsTotal"] = float(property_obj.bathrooms_number)
+    if vacation_rental_ready:
+        data["containsPlace"] = accommodation
     amenities = [
         link.amenity.display_name
         for link in getattr(property_obj, "_public_amenities", [])
         if link.amenity.display_name
     ]
-    if amenities:
+    if amenities and not vacation_rental_ready:
         data["amenityFeature"] = [
             {"@type": "LocationFeatureSpecification", "name": name, "value": True}
             for name in amenities[:20]

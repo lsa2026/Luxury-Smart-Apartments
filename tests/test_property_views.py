@@ -30,7 +30,7 @@ def test_hidden_and_inactive_properties_are_not_public() -> None:
     make_property(2, visible=False)
     make_property(3, active=False)
 
-    response = Client().get("/properties/")
+    response = Client().get("/ar/properties/")
     content = response.content.decode()
 
     assert response.status_code == 200
@@ -111,8 +111,8 @@ def test_property_list_is_paginated() -> None:
     for listing_id in range(20, 31):
         make_property(listing_id)
 
-    first_page = Client().get("/properties/")
-    second_page = Client().get("/properties/?page=2")
+    first_page = Client().get("/ar/properties/")
+    second_page = Client().get("/ar/properties/?page=2")
 
     assert first_page.context["paginator"].per_page == 9
     assert len(first_page.context["properties"]) == 9
@@ -129,7 +129,7 @@ def test_property_list_avoids_n_plus_one(django_assert_num_queries: object) -> N
         )
 
     with django_assert_num_queries(3):
-        response = Client().get("/properties/")
+        response = Client().get("/ar/properties/")
         assert response.status_code == 200
 
 
@@ -169,7 +169,7 @@ def test_home_page_shows_the_nominated_photo_for_each_city() -> None:
     make_hero_image(riyadh, "https://example.invalid/riyadh-hero.jpg")
     make_hero_image(marrakesh, "https://example.invalid/marrakesh-hero.jpg")
 
-    grid = destinations_grid(Client().get("/").content.decode())
+    grid = destinations_grid(Client().get("/ar/").content.decode())
 
     assert "https://example.invalid/riyadh-hero.jpg" in grid
     assert "https://example.invalid/marrakesh-hero.jpg" in grid
@@ -180,7 +180,7 @@ def test_home_page_shows_the_nominated_photo_for_each_city() -> None:
 def test_home_page_falls_back_to_stock_for_a_city_without_a_nominated_photo() -> None:
     make_hero_image(make_property(103), "https://example.invalid/riyadh-hero.jpg")
 
-    grid = destinations_grid(Client().get("/").content.decode())
+    grid = destinations_grid(Client().get("/ar/").content.decode())
 
     assert "https://example.invalid/riyadh-hero.jpg" in grid
     # Marrakesh has nothing nominated, so its card keeps the stock image
@@ -209,7 +209,7 @@ def test_only_a_public_nominated_photo_reaches_the_home_page(
         is_visible=is_visible,
     )
 
-    grid = destinations_grid(Client().get("/").content.decode())
+    grid = destinations_grid(Client().get("/ar/").content.decode())
 
     assert "https://example.invalid/should-not-appear.jpg" not in grid
     assert RIYADH_STOCK_PHOTO in grid
@@ -223,7 +223,7 @@ def test_a_city_with_two_nominated_photos_resolves_to_one_deterministically() ->
     make_hero_image(plain, "https://example.invalid/plain.jpg")
     make_hero_image(featured, "https://example.invalid/featured.jpg")
 
-    grid = destinations_grid(Client().get("/").content.decode())
+    grid = destinations_grid(Client().get("/ar/").content.decode())
 
     # The featured property wins, matching how the listing orders properties.
     assert "https://example.invalid/featured.jpg" in grid

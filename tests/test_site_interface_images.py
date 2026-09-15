@@ -64,7 +64,7 @@ def test_home_uses_active_dashboard_image_and_accessible_alt_text(tmp_path) -> N
         )
 
         with translation.override("en"):
-            response = english_client().get("/")
+            response = english_client().get("/en/")
             content = response.content.decode()
 
     assert response.status_code == 200
@@ -75,7 +75,7 @@ def test_home_uses_active_dashboard_image_and_accessible_alt_text(tmp_path) -> N
 
 
 def test_home_preserves_stock_fallback_when_slot_is_not_configured() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
 
     assert "photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400" in content
     assert "photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=900" in content
@@ -108,7 +108,7 @@ def test_real_property_city_hero_keeps_priority_over_interface_fallback(tmp_path
         )
 
         with translation.override("en"):
-            content = english_client().get("/").content.decode()
+            content = english_client().get("/en/").content.decode()
 
     assert "https://images.example.com/real-riyadh.jpg" in content
     assert "A real Riyadh property" in content

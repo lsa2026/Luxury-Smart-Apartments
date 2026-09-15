@@ -97,7 +97,7 @@ def test_contact_form_keeps_phone_optional() -> None:
 
 def test_contact_page_displays_the_international_phone_format_help() -> None:
     with override("ar"):
-        content = Client().get("/contact/").content.decode()
+        content = Client().get("/ar/contact/").content.decode()
 
     assert "اكتب رقمًا دوليًا يبدأ بعلامة + ورمز الدولة" in content
 

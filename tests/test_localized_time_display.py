@@ -101,7 +101,7 @@ def test_a_quote_page_shows_its_expiry_in_riyadh_time() -> None:
 @pytest.mark.django_db
 def test_client_pages_still_render(client: Client) -> None:
     # Guards against an import-time mistake in the filter module.
-    assert client.get("/").status_code == 200
+    assert client.get("/ar/").status_code == 200
 
 
 # --- hero imagery must not depend on an animation ---------------------------
@@ -129,7 +129,7 @@ def test_content_entrance_animations_do_not_hide_their_element_at_rest(
 
 @pytest.mark.django_db
 def test_the_home_page_marks_its_third_party_images_for_fallback(client: Client) -> None:
-    content = client.get("/").content.decode()
+    content = client.get("/ar/").content.decode()
 
     # The Marrakech postcard and both destination cards.
     assert content.count("data-image-fallback") >= 2

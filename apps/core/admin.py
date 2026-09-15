@@ -77,7 +77,7 @@ class SitePageAdmin(admin.ModelAdmin):
         change: bool,
     ) -> None:
         super().save_model(request, obj, form, change)
-        cache.delete("seo:sitemap:v1")
+        cache.delete("seo:sitemap:v2")
         record_audit(
             request=request,
             action="site_content.changed",
