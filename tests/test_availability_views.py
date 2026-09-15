@@ -283,7 +283,7 @@ def test_invalid_available_search_context_falls_back_to_normal_availability_form
 
 def test_home_and_property_forms_are_rtl_and_do_not_call_hostaway() -> None:
     property_obj = make_property()
-    response = Client().get("/")
+    response = Client().get("/ar/")
     detail = Client().get(property_obj.get_absolute_url())
     assert response.status_code == 200
     assert detail.status_code == 200
@@ -295,7 +295,7 @@ def test_home_and_property_forms_are_rtl_and_do_not_call_hostaway() -> None:
 def test_availability_get_without_a_valid_read_only_search_redirects_safely() -> None:
     response = Client().get("/properties/search-availability/")
     assert response.status_code == 302
-    assert response.url == "/properties/"
+    assert response.url == "/ar/properties/"
 
 
 def test_availability_post_requires_csrf() -> None:
@@ -314,7 +314,7 @@ def test_price_result_is_rtl_and_hides_internal_fields(
     property_obj = make_property()
     DummyService.result = available_result(property_obj)
     client = Client(enforce_csrf_checks=True)
-    home = client.get("/")
+    home = client.get("/ar/")
     token = home.cookies["csrftoken"].value
     response = client.post(
         "/properties/search-availability/",

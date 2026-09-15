@@ -109,7 +109,7 @@ def populated_property(listing_id: int = 801) -> Property:
 
 def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
     populated_property()
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
     assert 'lang="ar" dir="rtl"' in content
     assert "إقامة ذكية فاخرة" in content
     assert "إقامات ذكية فاخرة" not in content
@@ -121,7 +121,7 @@ def test_home_is_arabic_rtl_and_has_accessible_landmarks() -> None:
 
 
 def test_footer_does_not_show_stay_mode_badges() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
     footer = content[content.index('<footer class="site-footer"') :]
 
     assert "إقامات يومية" not in footer
@@ -141,7 +141,7 @@ def test_english_switch_is_ltr_and_translated() -> None:
         {"language": "en", "next": property_obj.get_absolute_url()},
     )
     assert response.status_code == 302
-    content = client.get(property_obj.get_absolute_url()).content.decode()
+    content = client.get(f"/en/properties/{property_obj.slug}/").content.decode()
     assert 'lang="en" dir="ltr"' in content
     assert "About this stay" in content
     assert property_obj.hostaway_description in content
@@ -167,7 +167,7 @@ def test_french_switch_is_ltr_and_translates_interface_and_hostaway_content() ->
         {"language": "fr", "next": property_obj.get_absolute_url()},
     )
     assert response.status_code == 302
-    content = client.get(property_obj.get_absolute_url()).content.decode()
+    content = client.get(f"/fr/properties/{property_obj.slug}/").content.decode()
     assert 'lang="fr" dir="ltr"' in content
     assert "À propos de ce séjour" in content
     assert property_obj.name_fr in content
@@ -176,7 +176,7 @@ def test_french_switch_is_ltr_and_translates_interface_and_hostaway_content() ->
 
 
 def test_language_switcher_has_all_three_languages() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
     assert 'value="ar"' in content
     assert 'value="en"' in content
     assert 'value="fr"' in content
@@ -193,9 +193,9 @@ def test_currency_selector_is_custom_accessible_and_bidi_safe(
     direction: str,
 ) -> None:
     client = Client()
-    client.post("/i18n/setlang/", {"language": language, "next": "/"})
+    client.post("/i18n/setlang/", {"language": language, "next": f"/{language}/"})
 
-    content = client.get("/").content.decode()
+    content = client.get(f"/{language}/").content.decode()
 
     assert f'lang="{language}" dir="{direction}"' in content
     assert content.count("data-currency-menu") == 2
@@ -214,14 +214,14 @@ def test_currency_selector_is_custom_accessible_and_bidi_safe(
 
 def test_currency_selector_marks_the_persisted_currency_as_current() -> None:
     client = Client()
-    client.post("/i18n/setlang/", {"language": "en", "next": "/"})
+    client.post("/i18n/setlang/", {"language": "en", "next": "/en/"})
     selected = client.post(
         reverse("payments:set_currency"),
         {"currency": "USD", "next": "/"},
     )
 
     assert selected.status_code == 302
-    content = client.get("/").content.decode()
+    content = client.get("/en/").content.decode()
     selected_option = (
         'class="currency-selector__option is-selected"\n'
         '                type="submit"\n'
@@ -270,7 +270,7 @@ def test_availability_filter_exposes_city_capacity_and_readable_dates() -> None:
     marrakech.city_fr = "Marrakech"
     marrakech.save(update_fields=["city", "city_ar", "city_en", "city_fr"])
 
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
 
     assert f'value="{riyadh.pk}" data-city="Riyadh" data-capacity="4"' in content
     assert f'value="{marrakech.pk}" data-city="Marrakesh" data-capacity="4"' in content
@@ -301,8 +301,12 @@ def test_footer_has_only_the_two_fixed_cities_on_every_page(
     duplicate_riyadh.city_ar = "Manea Al Mreidi"
     duplicate_riyadh.save(update_fields=["city_ar"])
 
-    for path in ("/", "/properties/", riyadh.get_absolute_url()):
-        content = Client().get(path, HTTP_ACCEPT_LANGUAGE=language).content.decode()
+    for path in (
+        f"/{language}/",
+        f"/{language}/properties/",
+        f"/{language}/properties/{riyadh.slug}/",
+    ):
+        content = Client().get(path).content.decode()
         city_list = content[content.index("<div data-footer-cities") :]
         city_list = city_list[: city_list.index("</ul>")]
 
@@ -315,7 +319,7 @@ def test_footer_has_only_the_two_fixed_cities_on_every_page(
 def test_seven_visible_properties_are_listed() -> None:
     for listing_id in range(810, 817):
         property_factory(listing_id)
-    response = Client().get("/properties/")
+    response = Client().get("/ar/properties/")
     assert response.status_code == 200
     assert len(response.context["properties"]) == 7
 
@@ -324,7 +328,7 @@ def test_hidden_and_archived_properties_are_not_public() -> None:
     visible = property_factory(820)
     hidden = property_factory(821, visible=False)
     archived = property_factory(822, active=False)
-    content = Client().get("/properties/").content.decode()
+    content = Client().get("/ar/properties/").content.decode()
     assert visible.name_ar in content
     assert hidden.name_ar not in content
     assert archived.name_ar not in content
@@ -332,7 +336,7 @@ def test_hidden_and_archived_properties_are_not_public() -> None:
 
 def test_property_card_has_dimensions_lazy_image_and_alt() -> None:
     property_obj = populated_property(830)
-    content = Client().get("/properties/").content.decode()
+    content = Client().get("/ar/properties/").content.decode()
     assert property_obj.name_ar in content
     assert 'loading="lazy"' in content
     assert 'width="720"' in content
@@ -344,7 +348,7 @@ def test_property_card_gallery_exposes_prefetched_slides_and_controls() -> None:
     for image_id in range(83101, 83106):
         image_factory(property_obj, image_id)
 
-    content = Client().get("/properties/").content.decode()
+    content = Client().get("/ar/properties/").content.decode()
 
     assert content.count("data-card-slide") == 5
     assert "data-card-previous" in content
@@ -361,7 +365,7 @@ def test_property_filters_use_local_database() -> None:
         "apps.integrations.hostaway.client.HostawayClient.get_listings",
         side_effect=AssertionError("Hostaway must not be called"),
     ):
-        response = Client().get("/properties/", {"city": "Riyadh", "guests": 2})
+        response = Client().get("/ar/properties/", {"city": "Riyadh", "guests": 2})
     assert response.status_code == 200
 
 
@@ -369,7 +373,7 @@ def test_property_type_filter_uses_localized_customer_label() -> None:
     property_obj = property_factory(841)
     property_obj.room_type = "entire_home"
     property_obj.save(update_fields=["room_type"])
-    content = Client().get("/properties/").content.decode()
+    content = Client().get("/ar/properties/").content.decode()
     assert ">وحدة كاملة</option>" in content
 
 
@@ -467,7 +471,7 @@ def test_property_detail_renders_localized_review_price_and_policy_copy(
 
     content = (
         Client()
-        .get(property_obj.get_absolute_url(), HTTP_ACCEPT_LANGUAGE=language)
+        .get(f"/{language}/properties/{property_obj.slug}/")
         .content.decode()
     )
 
@@ -477,7 +481,7 @@ def test_property_detail_renders_localized_review_price_and_policy_copy(
 
 def test_amenity_and_review_are_visible_on_detail() -> None:
     property_obj = populated_property(870)
-    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    content = Client().get(f"/ar/properties/{property_obj.slug}/").content.decode()
     assert "واي فاي" in content
     assert "Synthetic public review." in content
 
@@ -486,7 +490,7 @@ def test_featured_review_is_ordered_first() -> None:
     property_obj = property_factory(880)
     review_factory(property_obj, 2, featured=False)
     review_factory(property_obj, 1, featured=True)
-    content = Client().get("/reviews/").content.decode()
+    content = Client().get("/ar/reviews/").content.decode()
     assert content.index("مميزة") < content.index("Synthetic public review.")
 
 
@@ -514,13 +518,13 @@ def test_availability_form_has_csrf_dates_loading_and_submit_guard() -> None:
 @pytest.mark.parametrize(
     ("url", "heading"),
     [
-        ("/about/", "من نحن"),
-        ("/faq/", "الأسئلة الشائعة"),
-        ("/contact/", "اتصل بنا"),
-        ("/legal/terms/", "الشروط والأحكام"),
-        ("/legal/privacy/", "سياسة الخصوصية"),
-        ("/legal/cancellation/", "سياسة الإلغاء"),
-        ("/legal/cookies/", "سياسة ملفات الارتباط"),
+        ("/ar/about/", "من نحن"),
+        ("/ar/faq/", "الأسئلة الشائعة"),
+        ("/ar/contact/", "اتصل بنا"),
+        ("/ar/legal/terms/", "الشروط والأحكام"),
+        ("/ar/legal/privacy/", "سياسة الخصوصية"),
+        ("/ar/legal/cancellation/", "سياسة الإلغاء"),
+        ("/ar/legal/cookies/", "سياسة ملفات الارتباط"),
     ],
 )
 def test_content_pages(url: str, heading: str) -> None:
@@ -536,14 +540,14 @@ def test_faq_uses_accessible_details() -> None:
         answer_ar="إجابة مصطنعة",
         answer_en="Synthetic answer",
     )
-    content = Client().get("/faq/").content.decode()
+    content = Client().get("/ar/faq/").content.decode()
     assert "<details" in content and "<summary>" in content
 
 
 def test_contact_valid_submission_is_local_only() -> None:
     with patch("django.core.mail.send_mail", side_effect=AssertionError("No email")):
         response = Client().post(
-            "/contact/",
+            "/ar/contact/",
             {
                 "name": "Test Guest",
                 "email": "guest@example.invalid",
@@ -559,12 +563,12 @@ def test_contact_valid_submission_is_local_only() -> None:
 
 def test_contact_honeypot_is_rendered_once_and_success_is_visible() -> None:
     client = Client()
-    form_content = client.get("/contact/").content.decode()
+    form_content = client.get("/ar/contact/").content.decode()
     assert form_content.count('name="website"') == 1
     assert ">Website</label>" not in form_content
 
     response = client.post(
-        "/contact/",
+        "/ar/contact/",
         {
             "name": "Test Guest",
             "email": "guest@example.invalid",
@@ -697,7 +701,7 @@ def test_hostaway_price_component_is_localized(language: str, expected: str) -> 
 
 def test_contact_honeypot_and_xss_cleaning() -> None:
     response = Client().post(
-        "/contact/",
+        "/ar/contact/",
         {
             "name": "<b>Test</b>",
             "email": "guest@example.invalid",
@@ -715,7 +719,7 @@ def test_contact_honeypot_and_xss_cleaning() -> None:
 
 def test_contact_honeypot_rejects_bots() -> None:
     response = Client().post(
-        "/contact/",
+        "/ar/contact/",
         {
             "name": "Bot",
             "email": "bot@example.invalid",
@@ -739,8 +743,8 @@ def test_contact_rate_limit() -> None:
         "website": "reject",
     }
     for _ in range(5):
-        client.post("/contact/", payload)
-    assert client.post("/contact/", payload).status_code == 429
+        client.post("/ar/contact/", payload)
+    assert client.post("/ar/contact/", payload).status_code == 429
 
 
 def test_private_pages_are_noindex() -> None:
@@ -760,23 +764,23 @@ def test_private_pages_are_noindex() -> None:
 
 
 def test_home_has_canonical_open_graph_and_structured_data() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
     assert 'rel="canonical"' in content
     assert 'property="og:title"' in content
     assert '"@type":"Organization"' in content
     assert 'type="application/ld+json"' in content
 
 
-def test_detail_has_vacation_rental_structured_data_without_listing_id() -> None:
+def test_detail_uses_safe_lodging_schema_until_vacation_requirements_are_met() -> None:
     property_obj = populated_property(920)
     content = Client().get(property_obj.get_absolute_url()).content.decode()
-    assert '"@type":"VacationRental"' in content
+    assert '"@type":"LodgingBusiness"' in content
     assert '"@type":"BreadcrumbList"' in content
     assert "hostaway_listing_id" not in content
 
 
 def test_public_csp_has_nonce_and_no_unsafe_inline() -> None:
-    response = Client().get("/")
+    response = Client().get("/ar/")
     csp = response.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-" in csp
     assert "style-src 'self';" in csp
@@ -784,7 +788,7 @@ def test_public_csp_has_nonce_and_no_unsafe_inline() -> None:
     assert "frame-ancestors 'none'" in csp
 
 
-@pytest.mark.parametrize("path", ["/missing-phase-eight-page/", "/properties/missing/"])
+@pytest.mark.parametrize("path", ["/missing-phase-eight-page/", "/ar/properties/missing/"])
 def test_branded_404_pages(path: str) -> None:
     response = Client().get(path)
     assert response.status_code == 404
@@ -796,7 +800,7 @@ def test_property_list_query_count_is_bounded() -> None:
         property_obj = property_factory(listing_id)
         image_factory(property_obj, listing_id * 100 + 1)
     with CaptureQueriesContext(connection) as queries:
-        response = Client().get("/properties/")
+        response = Client().get("/ar/properties/")
         assert response.status_code == 200
     assert len(queries) <= 5
 
@@ -813,8 +817,8 @@ def test_public_browsing_creates_no_reservation_or_payment() -> None:
     property_obj = populated_property(950)
     before = (Reservation.objects.count(), PaymentAttempt.objects.count())
     client = Client()
-    client.get("/")
-    client.get("/properties/")
+    client.get("/ar/")
+    client.get("/ar/properties/")
     client.get(property_obj.get_absolute_url())
     assert (Reservation.objects.count(), PaymentAttempt.objects.count()) == before
 

@@ -36,7 +36,7 @@ def test_hidden_reviews_do_not_appear_in_public_view() -> None:
     make_review(property_obj, 9100, visible=True)
     make_review(property_obj, 9101, visible=False)
 
-    response = Client().get("/reviews/")
+    response = Client().get("/ar/reviews/")
 
     assert response.status_code == 200
     content = response.content.decode()
@@ -60,7 +60,7 @@ def test_long_review_has_accessible_expand_control() -> None:
     review.public_review = "تجربة إقامة رائعة ومريحة. " * 20
     review.save(update_fields=["public_review"])
 
-    content = Client().get("/reviews/").content.decode()
+    content = Client().get("/ar/reviews/").content.decode()
 
     assert 'data-review-copy class="is-collapsible"' in content
     assert "data-review-toggle" in content
@@ -80,7 +80,7 @@ def test_review_collection_supports_progressive_reveal() -> None:
     for review_id in range(9300, 9307):
         make_review(property_obj, review_id, visible=True)
 
-    content = Client().get("/reviews/").content.decode()
+    content = Client().get("/ar/reviews/").content.decode()
 
     assert "data-review-collection" in content
     assert 'data-initial-count="6"' in content

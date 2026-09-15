@@ -26,13 +26,13 @@ class MainImageAltParser(HTMLParser):
 
 def test_every_homepage_content_image_has_meaningful_alt_text() -> None:
     parser = MainImageAltParser()
-    parser.feed(Client().get("/").content.decode())
+    parser.feed(Client().get("/ar/").content.decode())
 
     assert parser.image_alts
     assert all(alt and alt.strip() for alt in parser.image_alts)
 
 
 def test_homepage_support_ratio_is_isolated_in_rtl() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
 
     assert '<bdi dir="ltr">٢٤/٧</bdi>' in content

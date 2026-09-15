@@ -1,15 +1,11 @@
 from django.urls import path
 
-from .seo import robots_txt, sitemap_xml
-from .views import ContactView, ContentPageView, FAQView, HomeView, service_worker
+from .views import ContactView, ContentPageView, FAQView, HomeView
 
 app_name = "core"
 
 urlpatterns = [
-    path("service-worker.js", service_worker, name="service_worker"),
     path("", HomeView.as_view(), name="home"),
-    path("sitemap.xml", sitemap_xml, name="sitemap"),
-    path("robots.txt", robots_txt, name="robots"),
     path(
         "about/",
         ContentPageView.as_view(page_slug="about"),

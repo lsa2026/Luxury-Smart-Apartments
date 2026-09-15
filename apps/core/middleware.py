@@ -6,11 +6,61 @@ from collections.abc import Callable
 from django.conf import settings
 from django.db import DatabaseError
 from django.db.models import F
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render
+from django.urls import Resolver404, resolve
 from django.utils import timezone
 
 from .models import LegacyRedirect
+
+PUBLIC_LOCALIZED_VIEW_NAMES = frozenset(
+    {
+        "core:home",
+        "core:about",
+        "core:faq",
+        "core:contact",
+        "core:terms",
+        "core:privacy",
+        "core:cancellation",
+        "core:cookies",
+        "properties:list",
+        "properties:gallery",
+        "properties:detail",
+        "reviews:list",
+    }
+)
+
+
+class PublicLanguagePrefixRedirectMiddleware:
+    """Move old unprefixed public URLs to the Arabic canonical URL."""
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        if response.status_code != 404 or request.method not in {"GET", "HEAD"}:
+            return response
+
+        default_language = settings.LANGUAGE_CODE.split("-")[0]
+        candidate = f"/{default_language}{request.path}"
+        candidates = (candidate, f"{candidate}/") if not candidate.endswith("/") else (candidate,)
+        for destination_path in candidates:
+            try:
+                match = resolve(destination_path)
+            except Resolver404:
+                continue
+            if match.view_name in PUBLIC_LOCALIZED_VIEW_NAMES:
+                candidate = destination_path
+                break
+        else:
+            return response
+        if match.view_name not in PUBLIC_LOCALIZED_VIEW_NAMES:
+            return response
+
+        query_string = request.META.get("QUERY_STRING", "")
+        destination = f"{candidate}?{query_string}" if query_string else candidate
+        return HttpResponsePermanentRedirect(destination)
 
 
 class LegacyRedirectMiddleware:

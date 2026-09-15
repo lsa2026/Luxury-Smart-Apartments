@@ -602,7 +602,7 @@ class PropertyAdmin(admin.ModelAdmin):
         if change and "is_visible" in changed_data:
             obj.visibility_management = Property.VisibilityManagement.MANUAL
         super().save_model(request, obj, form, change)
-        cache.delete("seo:sitemap:v1")
+        cache.delete("seo:sitemap:v2")
         if change and changed_data:
             record_audit(
                 request=request,

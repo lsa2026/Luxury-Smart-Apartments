@@ -212,7 +212,7 @@ def test_an_archived_property_is_skipped() -> None:
 def test_the_card_shows_the_anchor_as_a_from_price() -> None:
     make_property(indicative_nightly_from=Decimal("590.00"), indicative_currency="SAR")
 
-    content = Client().get("/properties/").content.decode()
+    content = Client().get("/ar/properties/").content.decode()
 
     assert "٥٩٠" in content
     assert "Live price checks" not in content
@@ -221,7 +221,7 @@ def test_the_card_shows_the_anchor_as_a_from_price() -> None:
 def test_the_card_keeps_the_original_wording_without_an_anchor() -> None:
     make_property()
 
-    content = Client().get("/properties/").content.decode()
+    content = Client().get("/ar/properties/").content.decode()
 
     # The Arabic translation of "Price based on dates" is what ships; assert the
     # anchor markup is simply absent.
