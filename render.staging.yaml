@@ -1,0 +1,115 @@
+# Safe Render preview for ongoing development.
+#
+# This is intentionally separate from render.yaml, which remains the future
+# production blueprint. It never receives production payment, channel-manager,
+# email, webhook, or custom-domain settings.
+
+databases:
+  - name: lsa-staging-postgres
+    databaseName: lsa_staging
+    user: lsa_staging
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "17"
+    ipAllowList: []
+
+services:
+  - type: keyvalue
+    name: lsa-staging-cache
+    plan: free
+    region: frankfurt
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+    persistenceMode: off
+
+  - type: web
+    name: lsa-staging-web
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: infra/render-staging
+    autoDeploy: true
+    healthCheckPath: /health/live/
+    buildCommand: ./build.sh
+    startCommand: >-
+      gunicorn config.wsgi:application
+      --bind 0.0.0.0:$PORT
+      --workers 2
+      --threads 2
+      --timeout 60
+      --graceful-timeout 30
+      --access-logfile -
+      --error-logfile -
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
+        value: "False"
+      # A staging-only wildcard. Production continues to list only its two
+      # approved domains in render.yaml.
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lsa-staging-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lsa-staging-cache
+          property: connectionString
+      - key: CACHE_URL
+        fromService:
+          type: keyvalue
+          name: lsa-staging-cache
+          property: connectionString
+
+      # Keep every external side effect off in the preview.
+      - key: HYPERPAY_ENABLED
+        value: "False"
+      - key: PAYMENT_SANDBOX_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_BOOKING_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
+        value: "False"
+      - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+        value: "False"
+      - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
+        value: "False"
+      - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "False"
+      - key: EMAIL_DELIVERY_ENABLED
+        value: "False"
+      - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "False"
+      - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: GOOGLE_INTEGRATIONS_ENABLED
+        value: "False"
+      - key: GOOGLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: APPLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: OPERATIONS_OWNER_EMAIL
+        value: saeed@luxurysmartapartments.com
+      - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED
+        value: "True"
