@@ -94,11 +94,109 @@ services:
       - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
         value: "False"
       - key: CELERY_SYNC_DISPATCH_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_DELIVERY_ENABLED
         value: "False"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "True"
+      - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
         value: "False"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: GOOGLE_INTEGRATIONS_ENABLED
+        value: "False"
+      - key: GOOGLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: APPLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: OPERATIONS_OWNER_EMAIL
+        value: saeed@luxurysmartapartments.com
+      - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED
+        value: "True"
+
+  # One temporary staging process combines the queue worker and scheduler.
+  # Production will keep them separate, but this is sufficient to prove the
+  # broker, task execution, and scheduled recovery path without doubling cost.
+  - type: worker
+    name: lsa-staging-queue
+    runtime: python
+    plan: starter
+    region: frankfurt
+    branch: infra/render-staging
+    autoDeploy: true
+    buildCommand: ./build-worker.sh
+    startCommand: >-
+      celery -A config worker --beat
+      --loglevel info
+      --concurrency 1
+      --without-gossip
+      --without-mingle
+      --schedule /tmp/celerybeat-schedule
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: STAGING_DEMO_DATA_ENABLED
+        value: "True"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      # The worker must share signing material with the web process so a
+      # queued account link is valid when the guest opens it later.
+      - key: DJANGO_SECRET_KEY
+        fromService:
+          type: web
+          name: lsa-staging-web
+          envVarKey: DJANGO_SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lsa-staging-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lsa-staging-cache
+          property: connectionString
+      - key: CACHE_URL
+        fromService:
+          type: keyvalue
+          name: lsa-staging-cache
+          property: connectionString
+
+      # The queue infrastructure is live; every customer-facing or financial
+      # side effect remains deliberately off in staging.
+      - key: HYPERPAY_ENABLED
+        value: "False"
+      - key: PAYMENT_SANDBOX_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_BOOKING_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
+        value: "False"
+      - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+        value: "False"
+      - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
+        value: "False"
+      - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "True"
+      - key: EMAIL_DELIVERY_ENABLED
+        value: "False"
+      - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "True"
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
         value: "False"
       - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
