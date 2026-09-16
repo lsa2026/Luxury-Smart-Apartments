@@ -303,20 +303,14 @@ services:
       - key: HOSTAWAY_BASE_URL
         value: https://api.hostaway.com/v1
       - key: HOSTAWAY_ACCOUNT_ID
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: HOSTAWAY_ACCOUNT_ID
+        # Kept deliberately blank while every Hostaway write/sync switch is
+        # disabled.  Using `fromService` here would prevent Render from
+        # creating the worker before credentials are intentionally supplied.
+        value: ""
       - key: HOSTAWAY_API_SECRET
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: HOSTAWAY_API_SECRET
+        value: ""
       - key: HOSTAWAY_ACCESS_TOKEN
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: HOSTAWAY_ACCESS_TOKEN
+        value: ""
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
         value: "False"
       - key: HOSTAWAY_REVIEW_SYNC_ENABLED
@@ -371,15 +365,11 @@ services:
       - key: HYPERPAY_BASE_URL
         value: https://eu-prod.oppwa.com/
       - key: HYPERPAY_ENTITY_ID
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: HYPERPAY_ENTITY_ID
+        # No payment credentials are present until the explicit launch
+        # checkpoint.  HyperPay itself is disabled above.
+        value: ""
       - key: HYPERPAY_ACCESS_TOKEN
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: HYPERPAY_ACCESS_TOKEN
+        value: ""
       - key: HYPERPAY_CURRENCY
         value: SAR
       - key: HYPERPAY_PAYMENT_TYPE
@@ -400,10 +390,7 @@ services:
       - key: EMAIL_HOST_USER
         value: saeed@luxurysmartapartments.com
       - key: EMAIL_HOST_PASSWORD
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: EMAIL_HOST_PASSWORD
+        value: ""
       - key: EMAIL_USE_TLS
         value: "True"
       - key: EMAIL_USE_SSL
