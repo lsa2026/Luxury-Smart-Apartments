@@ -6,11 +6,61 @@ from collections.abc import Callable
 from django.conf import settings
 from django.db import DatabaseError
 from django.db.models import F
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponsePermanentRedirect
 from django.shortcuts import render
+from django.urls import Resolver404, resolve
 from django.utils import timezone
 
 from .models import LegacyRedirect
+
+PUBLIC_LOCALIZED_VIEW_NAMES = frozenset(
+    {
+        "core:home",
+        "core:about",
+        "core:faq",
+        "core:contact",
+        "core:terms",
+        "core:privacy",
+        "core:cancellation",
+        "core:cookies",
+        "properties:list",
+        "properties:gallery",
+        "properties:detail",
+        "reviews:list",
+    }
+)
+
+
+class PublicLanguagePrefixRedirectMiddleware:
+    """Move old unprefixed public URLs to the Arabic canonical URL."""
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        if response.status_code != 404 or request.method not in {"GET", "HEAD"}:
+            return response
+
+        default_language = settings.LANGUAGE_CODE.split("-")[0]
+        candidate = f"/{default_language}{request.path}"
+        candidates = (candidate, f"{candidate}/") if not candidate.endswith("/") else (candidate,)
+        for destination_path in candidates:
+            try:
+                match = resolve(destination_path)
+            except Resolver404:
+                continue
+            if match.view_name in PUBLIC_LOCALIZED_VIEW_NAMES:
+                candidate = destination_path
+                break
+        else:
+            return response
+        if match.view_name not in PUBLIC_LOCALIZED_VIEW_NAMES:
+            return response
+
+        query_string = request.META.get("QUERY_STRING", "")
+        destination = f"{candidate}?{query_string}" if query_string else candidate
+        return HttpResponsePermanentRedirect(destination)
 
 
 class LegacyRedirectMiddleware:
@@ -62,6 +112,7 @@ class SecurityHeadersMiddleware:
         request.csp_nonce = secrets.token_urlsafe(18)
         response = self.get_response(request)
         public_map_page = bool(getattr(request, "_public_map_enabled", False))
+        trustindex_widget_page = bool(getattr(request, "_trustindex_widget_enabled", False))
         property_admin_map = request.path.startswith("/admin/properties/property/")
         location_map_page = public_map_page or property_admin_map
         image_sources = " ".join(
@@ -71,6 +122,16 @@ class SecurityHeadersMiddleware:
         )
         if location_map_page:
             image_sources = f"{image_sources} https://tile.openstreetmap.org"
+        if trustindex_widget_page:
+            image_sources = " ".join(
+                (
+                    image_sources,
+                    "https://cdn.trustindex.io",
+                    "https://lh3.googleusercontent.com",
+                    "https://graph.facebook.com",
+                    "https://xx.bstatic.com",
+                )
+            )
         style_sources = (
             "'self' 'unsafe-inline'"
             if request.path.startswith("/admin/") or public_map_page
@@ -89,6 +150,12 @@ class SecurityHeadersMiddleware:
             frame_sources.append("https://www.openstreetmap.org")
         form_action_sources = ["'self'"]
         font_sources = ["'self'"]
+        if trustindex_widget_page:
+            # The review content stays within the site, while the verified
+            # Trustindex widget loads only on explicitly approved review pages.
+            script_sources.append("https://cdn.trustindex.io")
+            connect_sources.append("https://cdn.trustindex.io")
+            style_sources = f"{style_sources} 'unsafe-inline' https://cdn.trustindex.io"
         hyperpay_page = settings.HYPERPAY_ENABLED and request.path.startswith("/payments/hyperpay/")
         if hyperpay_page:
             script_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)

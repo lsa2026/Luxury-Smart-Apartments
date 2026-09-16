@@ -299,7 +299,7 @@ def make_faq(**overrides: object) -> FAQItem:
 def test_the_faq_page_groups_questions_by_category() -> None:
     make_faq(category=FAQItem.Category.POLICY, question_ar="سؤال الإلغاء")
 
-    response = Client().get("/faq/")
+    response = Client().get("/ar/faq/")
 
     assert response.status_code == 200
     assert any(group["items"] for group in response.context["faq_groups"])
@@ -309,7 +309,7 @@ def test_a_property_question_stays_off_the_general_page() -> None:
     property_obj = make_property()
     make_faq(property=property_obj, question_ar="سؤال خاص بالوحدة")
 
-    content = Client().get("/faq/").content.decode()
+    content = Client().get("/ar/faq/").content.decode()
 
     assert "سؤال خاص بالوحدة" not in content
 

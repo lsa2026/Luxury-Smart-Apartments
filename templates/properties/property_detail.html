@@ -140,7 +140,10 @@
                 <p class="eyebrow">{% trans "Location" %}</p>
                 <h2 id="location-title">{{ property|localized_city }}</h2>
                 {% if public_location_map %}
-                <p>{% trans "Explore the property's location and nearby area on the interactive map." %}</p>
+                <p>{% if current_language_code == "ar" %}يظهر الموقع الدقيق للوحدة أدناه. استخدم خرائط Google للوصول إليها.{% elif current_language_code == "fr" %}L’emplacement exact du logement est indiqué ci-dessous. Utilisez Google Maps pour vous y rendre.{% else %}The exact property location is shown below. Use Google Maps for directions.{% endif %}</p>
+                {% if property.public_address %}
+                <p class="location-panel__address"><strong>{% if current_language_code == "ar" %}العنوان الكامل{% elif current_language_code == "fr" %}Adresse complète{% else %}Full address{% endif %}</strong><br>{{ property.public_address }}</p>
+                {% endif %}
                 <div
                     class="property-map"
                     data-property-map
@@ -150,14 +153,22 @@
                     aria-label="{% trans 'Interactive map showing the property location' %}"
                 ></div>
                 <a class="button button--outline location-panel__map-link" href="{{ public_location_map.external_url }}" target="_blank" rel="noopener noreferrer">
-                    {% trans "Open in OpenStreetMap" %}
-                    <span aria-hidden="true">↗</span>
+                    <span aria-hidden="true">📍</span>
+                    {% if current_language_code == "ar" %}فتح الاتجاهات في خرائط Google{% elif current_language_code == "fr" %}Ouvrir l’itinéraire dans Google Maps{% else %}Open directions in Google Maps{% endif %}
                 </a>
                 {% else %}
-                <p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p>
+                <p>{% if current_language_code == "ar" %}يجري إعداد الموقع الدقيق للنشر.{% elif current_language_code == "fr" %}L’emplacement exact est en cours de préparation pour publication.{% else %}The exact location is being prepared for publication.{% endif %}</p>
                 {% endif %}
             </section>
-            <section class="content-section property-reviews" aria-labelledby="property-reviews-title"><div class="section-heading section-heading--split"><div><p class="eyebrow">{% trans "Guest experiences" %}</p><h2 id="property-reviews-title">{% trans "Reviews" %}</h2></div><a class="text-link" href="{% url 'reviews:list' %}">{% trans "All reviews" %}</a></div>{% include "reviews/_review_cards.html" with reviews=property_reviews initial_review_count=4 review_batch_size=2 %}</section>
+            <section class="content-section property-reviews" aria-labelledby="property-reviews-title">
+                <div class="section-heading section-heading--split"><div><p class="eyebrow">{% trans "Guest experiences" %}</p><h2 id="property-reviews-title">{% trans "Reviews" %}</h2></div>{% if property_full_reviews_widget_id %}<a class="text-link" href="{% url 'properties:reviews' property.slug %}">{% trans "All reviews" %}</a>{% else %}<a class="text-link" href="{% url 'reviews:list' %}">{% trans "All reviews" %}</a>{% endif %}</div>
+                {% if property.trustindex_widget_id %}
+                <div class="trustindex-widget" data-trustindex-property-reviews><script defer async src="https://cdn.trustindex.io/loader.js?{{ property.trustindex_widget_id }}"></script></div>
+                {% if property_full_reviews_widget_id and rating_summary.has_reviews %}<p class="property-reviews__all-link"><a class="button button--outline" href="{% url 'properties:reviews' property.slug %}">{% trans "All reviews" %} ({{ rating_summary.review_count }})</a></p>{% endif %}
+                {% else %}
+                <div class="empty-state"><h3>{% if current_language_code == "ar" %}يجري إعداد المراجعات الموثقة{% elif current_language_code == "fr" %}Les avis vérifiés sont en cours de préparation{% else %}Verified reviews are being prepared{% endif %}</h3><p>{% if current_language_code == "ar" %}ستظهر لهذه الوحدة مراجعات ضيوف موثقة فور ربط مصادر مراجعاتها.{% elif current_language_code == "fr" %}Cet hébergement affichera des avis vérifiés dès que ses sources d’avis seront connectées.{% else %}This property will show verified guest reviews once its review sources are connected.{% endif %}</p></div>
+                {% endif %}
+            </section>
         </div>
         <aside class="booking-sidebar" id="availability">
             <div class="booking-sidebar__card">

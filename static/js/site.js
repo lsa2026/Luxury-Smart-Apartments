@@ -77,6 +77,37 @@ const interfaceNumberFormatter = new Intl.NumberFormat(interfaceNumberLocale, {
     useGrouping: false,
 });
 
+// Trustindex supplies the verified review content, but its outbound platform
+// links would take a guest away from the direct booking journey. Keep browsing
+// reviews inside this website while retaining the provider attribution.
+const trustindexReviewWidgets = document.querySelectorAll(
+    "[data-trustindex-home-reviews], [data-trustindex-property-reviews], [data-trustindex-property-full-reviews]"
+);
+
+function disableExternalReviewLinks(root) {
+    root.querySelectorAll("a[href]").forEach((link) => {
+        try {
+            const destination = new URL(link.href, window.location.href);
+            if (destination.origin !== window.location.origin) {
+                link.removeAttribute("href");
+                link.removeAttribute("target");
+                link.removeAttribute("rel");
+                link.setAttribute("aria-disabled", "true");
+            }
+        } catch {
+            link.removeAttribute("href");
+        }
+    });
+}
+
+trustindexReviewWidgets.forEach((widget) => {
+    disableExternalReviewLinks(widget);
+    new MutationObserver(() => disableExternalReviewLinks(widget)).observe(widget, {
+        childList: true,
+        subtree: true,
+    });
+});
+
 function formatInterfaceNumber(value) {
     return interfaceNumberFormatter.format(value);
 }

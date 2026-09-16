@@ -181,7 +181,7 @@ def test_invalid_consent_default_is_rejected() -> None:
 
 
 def test_consent_defaults_are_denied() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
     for name in (
         'data-consent-default-analytics="denied"',
         'data-consent-default-ad="denied"',
@@ -204,26 +204,26 @@ def test_consent_defaults_are_denied() -> None:
     ],
 )
 def test_consent_controls_are_rendered(marker: str) -> None:
-    assert marker in Client().get("/").content.decode()
+    assert marker in Client().get("/ar/").content.decode()
 
 
 def test_consent_banner_is_rtl_in_arabic() -> None:
-    content = Client().get("/").content.decode()
+    content = Client().get("/ar/").content.decode()
     assert 'lang="ar" dir="rtl"' in content
     assert "data-consent-banner" in content
 
 
 def test_consent_banner_is_ltr_in_english() -> None:
     client = Client()
-    client.post("/i18n/setlang/", {"language": "en", "next": "/"})
-    content = client.get("/").content.decode()
+    client.post("/i18n/setlang/", {"language": "en", "next": "/ar/"})
+    content = client.get("/en/").content.decode()
     assert 'lang="en" dir="ltr"' in content
     assert "Your privacy choices" in content
 
 
 def test_consent_version_is_exposed_without_pii() -> None:
     with override_settings(COOKIE_CONSENT_VERSION=7):
-        content = Client().get("/").content.decode()
+        content = Client().get("/ar/").content.decode()
     assert 'data-cookie-consent-version="7"' in content
 
 
@@ -312,7 +312,7 @@ def test_property_list_and_detail_render_safe_events(
     property_obj: Property,
     image: PropertyImage,
 ) -> None:
-    list_content = Client().get("/properties/").content.decode()
+    list_content = Client().get("/ar/properties/").content.decode()
     detail_content = Client().get(property_obj.get_absolute_url()).content.decode()
     assert "data-analytics-list" in list_content
     assert "data-analytics-item" in list_content
@@ -350,7 +350,7 @@ def test_purchase_is_not_prepared_without_confirmed_hostaway_reservation() -> No
 
 
 def test_refund_receipt_is_not_created_by_public_pages() -> None:
-    Client().get("/")
+    Client().get("/ar/")
     assert not MarketingEventReceipt.objects.filter(event_name="refund").exists()
 
 
@@ -420,8 +420,8 @@ def test_public_page_has_canonical_and_hreflang(property_obj: Property) -> None:
 
 
 def test_filtered_list_canonical_drops_filter_query() -> None:
-    content = Client().get("/properties/?city=Riyadh").content.decode()
-    assert f'rel="canonical" href="{settings.SITE_CANONICAL_URL}/properties/"' in content
+    content = Client().get("/ar/properties/?city=Riyadh").content.decode()
+    assert f'rel="canonical" href="{settings.SITE_CANONICAL_URL}/ar/properties/"' in content
     assert "city=Riyadh" not in content.split('rel="canonical"', 1)[1].split(">", 1)[0]
 
 
@@ -433,8 +433,8 @@ def test_paginated_list_canonical_keeps_page_number() -> None:
             hostaway_name=f"Pagination Stay {index}",
             is_visible=True,
         )
-    content = Client().get("/properties/?page=2").content.decode()
-    assert f"{settings.SITE_CANONICAL_URL}/properties/?page=2" in content
+    content = Client().get("/ar/properties/?page=2").content.decode()
+    assert f"{settings.SITE_CANONICAL_URL}/ar/properties/?page=2" in content
 
 
 def test_private_quote_template_has_no_hreflang_block() -> None:
@@ -461,7 +461,7 @@ def test_property_structured_data_is_safe_and_complete(
     property_obj.save()
     data = property_structured_data(property_obj)
     rendered = str(data)
-    assert data["@type"] == "VacationRental"
+    assert data["@type"] == "LodgingBusiness"
     assert data["identifier"] == property_obj.slug
     assert data["aggregateRating"]["reviewCount"] == 1
     assert data["aggregateRating"]["ratingValue"] == 4.0
@@ -649,7 +649,7 @@ def test_local_diagnostic_actions_are_csrf_protected(
 
 
 def test_csp_has_no_general_unsafe_inline() -> None:
-    response = Client().get("/")
+    response = Client().get("/ar/")
     csp = response["Content-Security-Policy"]
     assert "script-src 'self'" in csp
     assert "'unsafe-eval'" not in csp
@@ -657,7 +657,7 @@ def test_csp_has_no_general_unsafe_inline() -> None:
 
 
 def test_google_domains_are_absent_from_disabled_csp() -> None:
-    csp = Client().get("/")["Content-Security-Policy"]
+    csp = Client().get("/ar/")["Content-Security-Policy"]
     assert "googletagmanager.com" not in csp
     assert "google-analytics.com" not in csp
     assert "doubleclick.net" not in csp
@@ -670,8 +670,8 @@ def test_public_page_load_does_not_create_commercial_records() -> None:
         MarketingEventReceipt.objects.count(),
     )
     with patch("httpx.Client.request", side_effect=AssertionError("no network")):
-        Client().get("/")
-        Client().get("/properties/")
+        Client().get("/ar/")
+        Client().get("/ar/properties/")
     assert counts == (
         Reservation.objects.count(),
         PaymentAttempt.objects.count(),

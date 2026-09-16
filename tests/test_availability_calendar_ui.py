@@ -21,13 +21,13 @@ def calendar_dialog(content: str) -> str:
 
 
 def test_calendar_offers_a_way_to_clear_the_chosen_dates() -> None:
-    dialog = calendar_dialog(Client().get("/").content.decode())
+    dialog = calendar_dialog(Client().get("/ar/").content.decode())
 
     assert "data-calendar-clear" in dialog
 
 
 def test_clear_starts_disabled_so_it_cannot_be_pressed_before_a_date_is_chosen() -> None:
-    dialog = calendar_dialog(Client().get("/").content.decode())
+    dialog = calendar_dialog(Client().get("/ar/").content.decode())
 
     clear_button = re.search(r"<button[^>]*data-calendar-clear[^>]*>", dialog)
     assert clear_button is not None
@@ -35,7 +35,7 @@ def test_clear_starts_disabled_so_it_cannot_be_pressed_before_a_date_is_chosen()
 
 
 def test_clear_sits_beside_confirm_rather_than_replacing_it() -> None:
-    dialog = calendar_dialog(Client().get("/").content.decode())
+    dialog = calendar_dialog(Client().get("/ar/").content.decode())
 
     # Both controls belong to the footer: clearing must not remove the way to
     # accept the dates, and confirming must not remove the way to start again.

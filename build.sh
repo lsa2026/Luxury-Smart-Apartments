@@ -20,4 +20,7 @@ python manage.py seed_amenity_arabic_names
 # granting the preview any Hostaway, payment, or messaging credentials.
 if [ "${STAGING_DEMO_DATA_ENABLED:-False}" = "True" ]; then
   python manage.py seed_staging_demo_data
+  python manage.py publish_hostaway_property_locations
+  python manage.py apply_trustindex_widgets
+  python manage.py sync_trustindex_review_metrics
 fi

@@ -767,7 +767,7 @@ def _invalidate_property_caches() -> None:
         [
             "properties:list:version",
             "properties:detail:version",
-            "seo:sitemap:v1",
+            "seo:sitemap:v2",
             "site:footer-cities:v2",
         ]
     )
