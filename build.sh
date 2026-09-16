@@ -14,3 +14,10 @@ python manage.py migrate --no-input
 # Hostaway names arrive in English.  Fill the curated Arabic/French labels for
 # existing and newly-synced amenities without overwriting dashboard wording.
 python manage.py seed_amenity_arabic_names
+
+# The owned Render preview starts with an empty database.  Its small, curated
+# catalogue lets us exercise public pages and the operations area without
+# granting the preview any Hostaway, payment, or messaging credentials.
+if [ "${STAGING_DEMO_DATA_ENABLED:-False}" = "True" ]; then
+  python manage.py seed_staging_demo_data
+fi

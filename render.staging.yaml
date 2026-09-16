@@ -47,6 +47,8 @@ services:
         value: config.settings.production
       - key: DJANGO_DEBUG
         value: "False"
+      - key: STAGING_DEMO_DATA_ENABLED
+        value: "True"
       # A staging-only wildcard. Production continues to list only its two
       # approved domains in render.yaml.
       - key: DJANGO_ALLOWED_HOSTS
