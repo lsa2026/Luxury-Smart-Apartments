@@ -30,13 +30,10 @@ services:
     region: frankfurt
     branch: main
     autoDeploy: true
-    # The official domains remain attached to the previous Render account
-    # during the handover.  This service first launches on its generated
-    # onrender.com hostname; re-add the two domains below only after they have
-    # been detached from the previous account and their DNS records point here.
-    # domains:
-    #   - luxurysmartapartments.com
-    #   - www.luxurysmartapartments.com
+    # Registering the root domain also creates the www redirect in Render. The
+    # DNS update will then point both public hostnames to this service.
+    domains:
+      - luxurysmartapartments.com
     healthCheckPath: /health/live/
     buildCommand: ./build.sh
     startCommand: >-
