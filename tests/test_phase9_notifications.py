@@ -288,6 +288,47 @@ def test_email_disabled_records_no_external_send() -> None:
     assert send_queued_email(delivery.pk).code == "email_delivery_disabled"
 
 
+@override_settings(
+    EMAIL_DELIVERY_ENABLED=True,
+    EMAIL_TEST_RECIPIENT_ALLOWLIST=frozenset({"owner@example.invalid"}),
+)
+def test_staging_recipient_allowlist_blocks_other_addresses_before_dispatch() -> None:
+    contact = make_contact()
+    with patch("apps.notifications.tasks.send_email_delivery_task.delay") as delay:
+        delivery = queue_email(
+            message_type="contact_confirmation",
+            recipient=contact.email,
+            recipient_source="contact",
+            recipient_reference=str(contact.pk),
+            language="ar",
+            idempotency_key="staging-recipient-brake",
+        )
+
+    assert delivery.status == EmailDelivery.Status.DISABLED
+    assert delivery.provider == "disabled"
+    assert delivery.last_error_code == "email_recipient_not_allowed_in_test"
+    delay.assert_not_called()
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    EMAIL_TEST_RECIPIENT_ALLOWLIST=frozenset({"owner@example.invalid"}),
+)
+def test_staging_recipient_allowlist_blocks_a_direct_provider_send() -> None:
+    request = EmailMessageRequest(
+        recipient="guest@example.invalid",
+        subject="Test",
+        template_name="contact",
+        language="en",
+        context={"heading": "Test", "message": "Test"},
+    )
+
+    with pytest.raises(EmailProviderError, match="email_recipient_not_allowed_in_test"):
+        DjangoEmailProvider().send(request)
+
+    assert not mail.outbox
+
+
 def test_email_delivery_idempotency() -> None:
     contact = make_contact()
     first = queue_email(

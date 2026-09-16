@@ -97,6 +97,28 @@ services:
         value: "True"
       - key: EMAIL_DELIVERY_ENABLED
         value: "False"
+      # Stage 7.3: email stays disabled until a one-address queue test is
+      # explicitly approved.  Even then, this brake permits only the owner.
+      - key: EMAIL_TEST_RECIPIENT_ALLOWLIST
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: DEFAULT_FROM_EMAIL
+        value: Luxury Smart Apartments <saeed@luxurysmartapartments.com>
+      - key: EMAIL_REPLY_TO
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_USE_SSL
+        value: "False"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
         value: "True"
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
@@ -194,6 +216,29 @@ services:
       - key: CELERY_SYNC_DISPATCH_ENABLED
         value: "True"
       - key: EMAIL_DELIVERY_ENABLED
+        value: "False"
+      - key: EMAIL_TEST_RECIPIENT_ALLOWLIST
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: DEFAULT_FROM_EMAIL
+        value: Luxury Smart Apartments <saeed@luxurysmartapartments.com>
+      - key: EMAIL_REPLY_TO
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        value: saeed@luxurysmartapartments.com
+      - key: EMAIL_HOST_PASSWORD
+        fromService:
+          type: web
+          name: lsa-staging-web
+          envVarKey: EMAIL_HOST_PASSWORD
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_USE_SSL
         value: "False"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
         value: "True"

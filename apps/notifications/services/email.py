@@ -63,6 +63,8 @@ class DjangoEmailProvider:
     name = "django"
 
     def send(self, request: EmailMessageRequest) -> EmailSendResult:
+        if not _test_recipient_is_allowed(request.recipient):
+            raise EmailProviderError("email_recipient_not_allowed_in_test", permanent=True)
         template_root = f"emails/{request.language}/{request.template_name}"
         context = {
             **request.context,
@@ -476,6 +478,12 @@ def recipient_hmac(email: str) -> str:
     return salted_hmac("email-recipient.v1", normalized).hexdigest()
 
 
+def _test_recipient_is_allowed(email: str) -> bool:
+    """Apply a staging-only recipient brake when the allowlist is configured."""
+    allowlist = settings.EMAIL_TEST_RECIPIENT_ALLOWLIST
+    return not allowlist or email.strip().casefold() in allowlist
+
+
 def _provider_name() -> str:
     if not settings.EMAIL_DELIVERY_ENABLED:
         return DisabledEmailProvider.name
@@ -500,9 +508,11 @@ def queue_email(
 ) -> EmailDelivery:
     normalized_language = language if language in {"ar", "en", "fr"} else "ar"
     subject = strip_tags(SUBJECTS[message_type][normalized_language]).strip()
+    recipient_is_allowed = _test_recipient_is_allowed(recipient)
+    delivery_is_enabled = settings.EMAIL_DELIVERY_ENABLED and recipient_is_allowed
     status = (
         EmailDelivery.Status.QUEUED
-        if settings.EMAIL_DELIVERY_ENABLED
+        if delivery_is_enabled
         else EmailDelivery.Status.DISABLED
     )
     delivery, created = EmailDelivery.objects.get_or_create(
@@ -517,10 +527,20 @@ def queue_email(
             "subject": subject,
             "template_name": TEMPLATE_GROUPS[message_type],
             "status": status,
-            "provider": _provider_name(),
+            "provider": (
+                DjangoEmailProvider.name
+                if delivery_is_enabled
+                else DisabledEmailProvider.name
+            ),
             "queued_at": timezone.now(),
             "last_error_code": (
-                "" if settings.EMAIL_DELIVERY_ENABLED else "email_delivery_disabled"
+                ""
+                if delivery_is_enabled
+                else (
+                    "email_recipient_not_allowed_in_test"
+                    if settings.EMAIL_TEST_RECIPIENT_ALLOWLIST
+                    else "email_delivery_disabled"
+                )
             ),
         },
     )

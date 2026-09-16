@@ -470,6 +470,14 @@ CONTACT_RATE_LIMIT_REQUESTS = 5
 CONTACT_RATE_LIMIT_WINDOW = 10 * 60
 
 EMAIL_DELIVERY_ENABLED = strict_bool("EMAIL_DELIVERY_ENABLED")
+# A non-empty allowlist is a deliberate safety brake for limited environments
+# such as staging: no other address can be queued or sent.  Production leaves
+# it empty, so normal customer delivery remains unchanged.
+EMAIL_TEST_RECIPIENT_ALLOWLIST = frozenset(
+    value.strip().casefold()
+    for value in env.list("EMAIL_TEST_RECIPIENT_ALLOWLIST", default=[])
+    if value.strip()
+)
 EMAIL_BACKEND = env(
     "EMAIL_BACKEND",
     default="django.core.mail.backends.console.EmailBackend",
