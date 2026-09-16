@@ -21,12 +21,3 @@ python manage.py seed_amenity_arabic_names
 if [ "${STAGING_DEMO_DATA_ENABLED:-False}" = "True" ]; then
   python manage.py seed_staging_demo_data
 fi
-
-# Render's free plan has no web shell or one-off jobs.  This opt-in switch is
-# therefore a deliberately temporary escape hatch for a single, reviewed,
-# read-only Hostaway catalogue import into the staging database.  It must stay
-# unset/False except for that one deploy; recurring sync remains disabled in
-# the staging blueprint.
-if [ "${HOSTAWAY_INITIAL_SYNC_ON_DEPLOY:-False}" = "True" ]; then
-  python manage.py sync_hostaway_properties --force
-fi
