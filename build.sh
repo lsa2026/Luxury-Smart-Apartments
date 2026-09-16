@@ -16,6 +16,7 @@ python manage.py migrate --no-input
 # idempotent: it changes only a record that is not already current.  Keeping
 # this in the web build makes a fresh Render database match the release code
 # without relying on an undocumented manual step.
+python manage.py bootstrap_release_properties
 python manage.py apply_property_localizations
 python manage.py publish_hostaway_property_locations
 python manage.py apply_trustindex_widgets
