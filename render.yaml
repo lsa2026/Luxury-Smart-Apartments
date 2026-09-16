@@ -30,10 +30,12 @@ services:
     region: frankfurt
     branch: main
     autoDeploy: true
-    # Registering the root domain also creates the www redirect in Render. The
-    # DNS update will then point both public hostnames to this service.
-    domains:
-      - luxurysmartapartments.com
+    # The official domain is currently attached to an unknown legacy Render
+    # account. Keep the new infrastructure deployable until that account
+    # releases it; then add the root domain here (Render creates the www
+    # redirect automatically).
+    # domains:
+    #   - luxurysmartapartments.com
     healthCheckPath: /health/live/
     buildCommand: ./build.sh
     startCommand: >-
