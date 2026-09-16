@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 from django.views import View
 
 from apps.accounts.services import claimable_reference
+from apps.core.marketing import prepare_purchase_event
 from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
@@ -321,6 +322,15 @@ class HyperPayResultView(View):
         claimable = ""
         if outcome and outcome.reservation and not request.user.is_authenticated:
             claimable = claimable_reference(request, outcome.reservation.public_reference)
+        purchase_event = None
+        if outcome and outcome.reservation:
+            # This is intentionally prepared only after both authoritative
+            # conditions hold: HyperPay has verified the charge and Hostaway
+            # has confirmed the reservation. The browser sends no guest data.
+            purchase_event, _receipt = prepare_purchase_event(
+                payment_attempt=display_attempt,
+                reservation=outcome.reservation,
+            )
         response = render(
             request,
             "payments/hyperpay_result.html",
@@ -329,6 +339,7 @@ class HyperPayResultView(View):
                 "outcome": outcome,
                 "success": HyperPayStatus.SUCCESS,
                 "claimable_reference": claimable,
+                "purchase_event": purchase_event,
             },
             status=200 if outcome else 503,
         )

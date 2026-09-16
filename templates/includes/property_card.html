@@ -96,10 +96,10 @@
                 </p>
                 <h2><a href="{{ resolved_property_url }}">{{ property_name }}</a></h2>
             </div>
-            {% if property.published_review_rating %}
-            <span class="card-rating" aria-label="{% blocktrans with rating=property.published_review_rating|rating_out_of_five %}Rated {{ rating }} out of 5{% endblocktrans %}">
+            {% if property.trustindex_rating and property.trustindex_review_count %}
+            <span class="card-rating" aria-label="{% blocktrans with rating=property.trustindex_rating|localized_decimal %}Rated {{ rating }} out of 5{% endblocktrans %}">
                 <span aria-hidden="true">★</span>
-                {{ property.published_review_rating|rating_out_of_five }}
+                {{ property.trustindex_rating|localized_decimal }}
             </span>
             {% endif %}
         </div>

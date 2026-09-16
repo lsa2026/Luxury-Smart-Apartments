@@ -91,8 +91,6 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
         command_map = {
             "properties": "python manage.py sync_hostaway_properties",
             "properties_dry_run": "python manage.py sync_hostaway_properties --dry-run",
-            "reviews": "python manage.py sync_hostaway_reviews",
-            "reviews_dry_run": "python manage.py sync_hostaway_reviews --dry-run",
         }
         command = command_map.get(action)
         if command is None:
@@ -114,15 +112,11 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
                 messages.WARNING,
             )
             return
-        from .tasks import sync_hostaway_properties_task, sync_hostaway_reviews_task
+        from .tasks import sync_hostaway_properties_task
 
         dry_run = action.endswith("_dry_run")
-        task = (
-            sync_hostaway_properties_task
-            if action.startswith("properties")
-            else sync_hostaway_reviews_task
-        )
-        lock_name = "properties" if action.startswith("properties") else "reviews"
+        task = sync_hostaway_properties_task
+        lock_name = "properties"
         if not cache.add(f"lsa:admin-dispatch:{lock_name}", "queued", timeout=60):
             self.message_user(
                 request,

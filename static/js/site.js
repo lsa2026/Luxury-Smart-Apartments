@@ -77,6 +77,34 @@ const interfaceNumberFormatter = new Intl.NumberFormat(interfaceNumberLocale, {
     useGrouping: false,
 });
 
+const trustindexReviewWidgets = document.querySelectorAll(
+    "[data-trustindex-property-reviews], [data-trustindex-property-full-reviews]"
+);
+
+function disableExternalReviewLinks(root) {
+    root.querySelectorAll("a[href]").forEach((link) => {
+        try {
+            const destination = new URL(link.href, window.location.href);
+            if (destination.origin !== window.location.origin) {
+                link.removeAttribute("href");
+                link.removeAttribute("target");
+                link.removeAttribute("rel");
+                link.setAttribute("aria-disabled", "true");
+            }
+        } catch {
+            link.removeAttribute("href");
+        }
+    });
+}
+
+trustindexReviewWidgets.forEach((widget) => {
+    disableExternalReviewLinks(widget);
+    new MutationObserver(() => disableExternalReviewLinks(widget)).observe(widget, {
+        childList: true,
+        subtree: true,
+    });
+});
+
 function formatInterfaceNumber(value) {
     return interfaceNumberFormatter.format(value);
 }
@@ -436,7 +464,13 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
     const confirmButton = calendar.querySelector("[data-calendar-confirm]");
     const clearButton = calendar.querySelector("[data-calendar-clear]");
     const closeButton = calendar.querySelector("[data-calendar-close]");
+    const availabilityStatus = calendar.querySelector("[data-calendar-availability-status]");
     const mobileCalendar = window.matchMedia("(max-width: 42rem)");
+    const calendarAvailabilityUrl = calendar.dataset.calendarAvailabilityUrl || "";
+    const unavailableLabel = calendar.dataset.unavailableLabel || "Unavailable";
+    const availabilityLoadingLabel = calendar.dataset.calendarLoadingLabel || "Checking live availability…";
+    const availabilityReadyLabel = calendar.dataset.calendarReadyLabel || "Live availability is up to date";
+    const availabilityFallbackLabel = calendar.dataset.calendarFallbackLabel || "Availability will be confirmed before booking";
 
     if (
         !(calendar instanceof HTMLDialogElement)
@@ -471,6 +505,8 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
     let activeField = "check_in";
     let displayMonth = null;
     let returnFocus = null;
+    const availabilityByDate = new Map();
+    const requestedAvailabilityWindows = new Set();
 
     function parseDate(value) {
         const parts = String(value || "").split("-").map(Number);
@@ -498,6 +534,88 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
 
     function addDays(date, amount) {
         return new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
+    }
+
+    function datesCrossUnavailableNight(startDate, endDate) {
+        for (let cursor = startDate; cursor < endDate; cursor = addDays(cursor, 1)) {
+            const availability = availabilityByDate.get(formatDate(cursor));
+            if (availability && !availability.arrivalAvailable) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    async function loadVisibleCalendarAvailability() {
+        if (!calendarAvailabilityUrl || !displayMonth) {
+            if (availabilityStatus) {
+                availabilityStatus.textContent = availabilityFallbackLabel;
+            }
+            return;
+        }
+        const monthCount = mobileCalendar.matches ? 1 : 2;
+        const startDate = startOfMonth(displayMonth);
+        const endDate = new Date(
+            displayMonth.getFullYear(),
+            displayMonth.getMonth() + monthCount,
+            1,
+        );
+        // The service deliberately refuses a window that starts in the past.
+        // A guest may still be viewing the current month, so request only from
+        // today while leaving past dates visible and disabled in the calendar.
+        const requestStartDate = startDate < today ? today : startDate;
+        const windowKey = `${formatDate(requestStartDate)}:${formatDate(endDate)}`;
+        if (requestedAvailabilityWindows.has(windowKey)) {
+            return;
+        }
+        requestedAvailabilityWindows.add(windowKey);
+        if (availabilityStatus) {
+            availabilityStatus.textContent = availabilityLoadingLabel;
+        }
+
+        try {
+            const url = new URL(calendarAvailabilityUrl, window.location.origin);
+            url.searchParams.set("start", formatDate(requestStartDate));
+            url.searchParams.set("end", formatDate(endDate));
+            const response = await fetch(url, {
+                credentials: "same-origin",
+                headers: { Accept: "application/json" },
+            });
+            if (!response.ok) {
+                if (availabilityStatus) {
+                    availabilityStatus.textContent = availabilityFallbackLabel;
+                }
+                return;
+            }
+            const payload = await response.json();
+            if (!Array.isArray(payload.days)) {
+                if (availabilityStatus) {
+                    availabilityStatus.textContent = availabilityFallbackLabel;
+                }
+                return;
+            }
+            payload.days.forEach((day) => {
+                if (!day || typeof day.date !== "string") {
+                    return;
+                }
+                availabilityByDate.set(day.date, {
+                    arrivalAvailable: day.arrival_available === true,
+                    departureAvailable: day.departure_available === true,
+                });
+            });
+            if (availabilityStatus) {
+                availabilityStatus.textContent = availabilityReadyLabel;
+            }
+            if (calendar.open) {
+                renderCalendar();
+            }
+        } catch (_error) {
+            // Keep the picker usable if the read-only projection is offline.
+            // The server still verifies every chosen stay before it proceeds.
+            if (availabilityStatus) {
+                availabilityStatus.textContent = availabilityFallbackLabel;
+            }
+        }
     }
 
     function sameDay(left, right) {
@@ -610,7 +728,24 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
 
             const beforeToday = date < today;
             const beforeArrival = activeField === "check_out" && arrival && date <= arrival;
-            button.disabled = Boolean(beforeToday || beforeArrival);
+            const availability = availabilityByDate.get(formatDate(date));
+            const unavailableArrival = activeField === "check_in"
+                && availability
+                && !availability.arrivalAvailable;
+            const unavailableDeparture = activeField === "check_out"
+                && availability
+                && !availability.departureAvailable;
+            const rangeIncludesUnavailableNight = activeField === "check_out"
+                && arrival
+                && datesCrossUnavailableNight(arrival, date);
+            const isUnavailable = Boolean(
+                unavailableArrival || unavailableDeparture || rangeIncludesUnavailableNight,
+            );
+            button.disabled = Boolean(beforeToday || beforeArrival || isUnavailable);
+            button.classList.toggle("is-unavailable", isUnavailable);
+            if (isUnavailable) {
+                button.setAttribute("aria-label", `${fullDateFormatter.format(date)} — ${unavailableLabel}`);
+            }
             button.classList.toggle("is-today", sameDay(date, today));
             button.classList.toggle("is-arrival", sameDay(date, arrival));
             button.classList.toggle("is-departure", sameDay(date, departure));
@@ -646,6 +781,7 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
             previousButton.disabled = displayMonth <= startOfMonth(today);
         }
         updateSelectionSummary();
+        void loadVisibleCalendarAvailability();
     }
 
     function openCalendar(field, trigger) {

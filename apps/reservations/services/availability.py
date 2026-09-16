@@ -426,7 +426,7 @@ class AvailabilityService:
         cache_key = (
             f"hostaway:price:v2:{request.property.hostaway_listing_id}:"
             f"{request.check_in.isoformat()}:{request.check_out.isoformat()}:"
-            f"{request.guests}"
+            f"{request.guests}:{request.property.price_currency_override.upper()}"
         )
         if not bypass_cache:
             cached = self.cache.get(cache_key)
@@ -440,6 +440,7 @@ class AvailabilityService:
             check_out=request.check_out,
             guests=request.guests,
             bypass_currency_cache=bypass_cache,
+            currency_override=request.property.price_currency_override,
         )
         duration_ms = max(0, round((self.timer() - started) * 1000))
         self.cache.set(

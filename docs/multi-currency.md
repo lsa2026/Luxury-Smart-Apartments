@@ -6,6 +6,12 @@ The booking platform has three deliberately separate monetary concepts:
   paired with its explicit currency when present or the current
   `Listing.currencyCode` for the exact same listing ID. The application never
   derives currency from city, country, geography, listing name, or category.
+- **Documented local correction:** an administrator may set a three-letter
+  `price_currency_override` for one specific property when Hostaway attaches a
+  wrong currency label to an otherwise correct amount. It is a property-level
+  business decision, not a geographic rule: the numeric amount is retained and
+  only its currency interpretation changes. A conflicting explicit
+  price/listing pair from Hostaway itself is still rejected.
 - **Payment price:** the server-calculated amount in SAR. HyperPay receives this
   amount and `currency=SAR` only.
 - **Display price:** a presentation-only conversion in SAR, MAD, USD, or EUR.
@@ -54,12 +60,17 @@ project so web workers share fresh and LKG rates.
 
 ## Hostaway currency contract and freshness
 
-`resolve_hostaway_price_currency()` is the sole precedence boundary. An
-explicit supported `priceDetails` currency wins; otherwise the supported
-`Listing.currencyCode` is the authoritative fallback. When both are present
-they must match. A mismatch logs `HOSTAWAY_CURRENCY_CONFLICT` and fails closed.
-Missing, unsupported, malformed, or differently bound listing metadata also
-fails closed, before any financial quote or HyperPay checkout exists.
+`resolve_hostaway_price_currency()` is the sole precedence boundary. A
+documented per-property override takes precedence over the supported
+`priceDetails` and `Listing.currencyCode` labels, retaining the numeric amount
+while correcting its currency interpretation. Without an override,
+`priceDetails` takes precedence and `Listing.currencyCode` is its fallback.
+When both Hostaway sources are present they must match. A mismatch logs
+`HOSTAWAY_CURRENCY_CONFLICT` and fails closed even when an override exists. A
+correction that differs from Hostaway metadata logs
+`HOSTAWAY_CURRENCY_OVERRIDE` for review. Missing, unsupported, malformed, or
+differently bound listing metadata still fails closed before any financial
+quote or HyperPay checkout exists.
 
 The existing `GET /listings/{listingId}` client path is reused. Only the
 sanitized listing ID and currency code are cached, for 300 seconds by default,

@@ -5,6 +5,20 @@
 {% block hreflang %}{% endblock %}
 {% block content %}
 <section class="section container narrow payment-result">
+    {% if purchase_event %}
+    <div
+        data-analytics-purchase-event
+        data-analytics-transaction-id="{{ purchase_event.transaction_id }}"
+        data-analytics-currency="{{ purchase_event.currency }}"
+        data-analytics-value="{{ purchase_event.value }}"
+        data-analytics-item-id="{{ purchase_event.items.0.item_id }}"
+        data-analytics-item-name="{{ purchase_event.items.0.item_name }}"
+        data-analytics-item-brand="{{ purchase_event.items.0.item_brand }}"
+        data-analytics-item-category="{{ purchase_event.items.0.item_category }}"
+        data-analytics-item-city="{{ purchase_event.items.0.item_category2 }}"
+        hidden
+    ></div>
+    {% endif %}
     <div class="section-heading">
         <p class="eyebrow">HyperPay</p>
         <h1>{% trans "Payment result" %}</h1>

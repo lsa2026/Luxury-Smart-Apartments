@@ -71,14 +71,25 @@ def test_home_uses_active_dashboard_image_and_accessible_alt_text(tmp_path) -> N
     assert image.image.url in content
     assert "Managed Riyadh hero" in content
     assert f'content="http://testserver{image.image.url}"' in content
-    assert "photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400" not in content
+    assert "photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600" not in content
 
 
 def test_home_preserves_stock_fallback_when_slot_is_not_configured() -> None:
     content = Client().get("/ar/").content.decode()
 
-    assert "photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400" in content
+    assert "photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600" in content
     assert "photo-1750859464437-b66433efd869?auto=format&amp;fit=crop&amp;w=900" in content
+
+
+def test_property_gallery_prioritizes_only_its_first_image() -> None:
+    template = (settings.BASE_DIR / "templates" / "properties" / "property_detail.html").read_text(
+        encoding="utf-8"
+    )
+
+    expected_loading = (
+        '{% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}'
+    )
+    assert expected_loading in template
 
 
 @override_settings(MEDIA_URL="/test-media/")

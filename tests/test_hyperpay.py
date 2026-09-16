@@ -759,6 +759,38 @@ def test_fake_browser_success_is_only_a_verification_trigger(monkeypatch) -> Non
 
 
 @override_settings(**HYPERPAY_SETTINGS)
+def test_purchase_event_is_rendered_only_after_verified_confirmed_booking(monkeypatch) -> None:
+    client = Client()
+    reservation = confirmed_reservation()
+    intent = reservation.booking_intent
+    own_intent(client, intent)
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="confirmed_purchase_checkout_12345678",
+        merchant_transaction_id="LSA-confirmed-purchase-123456",
+        amount=intent.total_price,
+        currency=intent.currency,
+        status=PaymentAttempt.Status.SUCCEEDED,
+        idempotency_key="confirmed-purchase-event-key-123456",
+    )
+    ResultViewServiceStub.outcome = VerificationOutcome(
+        attempt,
+        HyperPayStatus.SUCCESS,
+        reservation=reservation,
+    )
+    monkeypatch.setattr(HyperPayResultView, "service_class", ResultViewServiceStub)
+
+    response = client.get(reverse("payments:hyperpay_result", args=[attempt.pk]))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "data-analytics-purchase-event" in content
+    assert f'data-analytics-transaction-id="{reservation.public_reference}"' in content
+    assert "data-analytics-item-id=" in content
+
+
+@override_settings(**HYPERPAY_SETTINGS)
 def test_tampered_resource_path_and_idor_are_rejected(monkeypatch) -> None:
     owner = Client()
     intent = payable_intent()

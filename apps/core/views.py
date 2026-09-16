@@ -15,11 +15,9 @@ from apps.properties.cities import supported_city_rows
 from apps.properties.models import Property, PropertyImage
 from apps.reservations.forms import AvailabilitySearchForm, ReservationAccessForm
 from apps.reservations.security import is_rate_limited
-from apps.reviews.models import Review
-from apps.reviews.summary import with_published_rating
 
 from .forms import ContactForm
-from .models import ContactMessage, FAQItem, SitePage, SiteSetting
+from .models import ContactMessage, FAQItem, SiteInterfaceImage, SitePage, SiteSetting
 
 
 def service_worker(request: HttpRequest) -> HttpResponse:
@@ -60,10 +58,33 @@ def _cities_with_hero_images() -> list[dict[str, object]]:
 class HomeView(TemplateView):
     template_name = "core/home.html"
 
+    def dispatch(
+        self,
+        request: HttpRequest,
+        *args: object,
+        **kwargs: object,
+    ) -> HttpResponse:
+        request._trustindex_widget_enabled = True
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)
+        language = (translation.get_language() or "ar").split("-")[0]
+        hero_image = SiteInterfaceImage.objects.filter(
+            placement=SiteInterfaceImage.Placement.HOME_HERO,
+            is_active=True,
+        ).first()
+        hero_alt = ""
+        hero_og_url = ""
+        if hero_image:
+            hero_alt = (
+                getattr(hero_image, f"alt_text_{language}", "")
+                or hero_image.alt_text_en
+                or hero_image.alt_text_ar
+            )
+            hero_og_url = self.request.build_absolute_uri(hero_image.image.url)
         featured_properties = list(
-            with_published_rating(Property.objects.public())
+            Property.objects.public()
             .prefetch_related(
                 Prefetch(
                     "images",
@@ -77,9 +98,17 @@ class HomeView(TemplateView):
             {
                 "featured_properties": featured_properties,
                 "hero_property": featured_properties[0] if featured_properties else None,
-                "featured_reviews": Review.objects.public()
-                .select_related("property")
-                .order_by("-is_featured", "-departure_date")[:3],
+                "home_hero_image": hero_image,
+                "home_hero_alt": hero_alt,
+                "home_hero_og_url": hero_og_url,
+                "trustindex_general_widget_id": {
+                    "ar": "cf56bfb80db642820b86b5cdc90",
+                    "en": "018647b80f89428a137637d5e0f",
+                    "fr": "018647b80f89428a137637d5e0f",
+                }.get(
+                    (translation.get_language() or "ar").split("-")[0],
+                    "018647b80f89428a137637d5e0f",
+                ),
                 "cities": _cities_with_hero_images(),
                 "availability_form": AvailabilitySearchForm(),
                 "reservation_access_form": ReservationAccessForm(),

@@ -30,6 +30,7 @@
           {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}">{% trans "Customers" %}</a>{% endif %}
           {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}">{% trans "Bookings" %}</a>{% endif %}
           {% if perms.properties.view_property %}<a href="{% url 'admin:properties_property_changelist' %}">{% trans "Properties" %}</a>{% endif %}
+          {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:hub' %}">مركز العمليات</a>{% endif %}
           {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:dashboard' %}">{% trans "Reports" %}</a>{% endif %}
         </nav>
 
@@ -47,6 +48,7 @@
               <div class="lsa-command__groups">
                 <div class="lsa-command__group">
                   <h2>{% trans "Operations and bookings" %}</h2>
+                  {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:hub' %}" data-lsa-command-item><b>مركز العمليات</b><small>متابعة الحجوزات والتحصيل والاسترجاعات دون تنفيذ مالي مباشر</small></a>{% endif %}
                   {% if perms.reservations.view_bookingintent %}<a href="{% url 'admin_customers' %}" data-lsa-command-item><b>{% trans "Customers and the booking journey" %}</b><small>{% trans "Unified search across customer, booking and payment" %}</small></a>{% endif %}
                   {% if perms.reservations.view_reservation %}<a href="{% url 'admin:reservations_reservation_changelist' %}" data-lsa-command-item><b>{% trans "Confirmed bookings" %}</b><small>{% trans "Check-in, check-out and Hostaway status" %}</small></a>{% endif %}
                   {% if perms.reservations.view_bookingmodificationrequest %}<a href="{% url 'admin:reservations_bookingmodificationrequest_changelist' %}" data-lsa-command-item><b>{% trans "Modification and extension" %}</b><small>{% trans "Approval, balance payment and execution log" %}</small></a>{% endif %}

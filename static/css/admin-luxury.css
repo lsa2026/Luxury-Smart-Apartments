@@ -363,6 +363,16 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-sync-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }.lsa-sync-form > div { display: flex; align-items: center; gap: 8px; padding: 11px; border: 1px solid var(--lsa-line); border-radius: 10px; }.lsa-sync-form > div > span { flex: 1; font-size: 10px; font-weight: 700; }
 .lsa-health__list--roomy li { min-height: 29px; }
 
+/* Operations hub foundation (Phase 6.0) */
+.lsa-operations-hub__hero { margin-bottom: 14px; }
+.lsa-private-notice { display: grid; grid-template-columns: 38px minmax(0,1fr) auto; align-items: center; gap: 13px; margin-bottom: 14px; padding: 14px 16px; color: #335c50; border: 1px solid #cfe1d8; border-radius: 14px; background: #e9f3ee; }
+.lsa-private-notice > span:first-child { display: grid; place-items: center; width: 34px; height: 34px; color: #23624d; border-radius: 50%; background: #fff; font-size: 17px; font-weight: 800; }.lsa-private-notice b { font-size: 11px; }.lsa-private-notice p { margin: 3px 0 0; color: #527266; font-size: 9px; line-height: 1.65; }.lsa-private-notice__state { padding: 5px 9px; color: #366d58; border-radius: 99px; background: #d7eadf; font-size: 8px; font-weight: 800; white-space: nowrap; }
+.lsa-operations-strip--hub { margin-bottom: 14px; }.lsa-operations-strip--hub > a { min-height: 92px; }.lsa-operations-strip--hub i { margin-top: 7px; }
+.lsa-hub-grid,.lsa-hub-work-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(330px,.85fr); gap: 14px; margin-bottom: 14px; }.lsa-lifecycle { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }.lsa-lifecycle li { position: relative; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 11px; padding: 0 0 16px; }.lsa-lifecycle li:last-child { padding-bottom: 0; }.lsa-lifecycle li:not(:last-child)::after { position: absolute; top: 34px; right: 16px; bottom: 0; width: 1px; background: var(--lsa-line); content: ""; }.lsa-lifecycle li > span { z-index: 1; display: grid; place-items: center; width: 32px; height: 32px; color: #715b31; border: 1px solid #e6d5ad; border-radius: 50%; background: #f7f0df; font-size: 10px; font-weight: 800; }.lsa-lifecycle b,.lsa-lifecycle small { display: block; }.lsa-lifecycle b { padding-top: 2px; color: var(--lsa-ink); font-size: 11px; }.lsa-lifecycle small { margin-top: 3px; color: var(--lsa-muted); font-size: 9px; line-height: 1.6; }
+.lsa-payment-route { display: grid; gap: 5px; padding: 14px; border: 1px solid var(--lsa-line); border-radius: 12px; }.lsa-payment-route + .lsa-payment-route { margin-top: 9px; }.lsa-payment-route span { color: var(--lsa-gold); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }.lsa-payment-route b { color: var(--lsa-ink); font-size: 11px; }.lsa-payment-route small { color: var(--lsa-muted); font-size: 9px; line-height: 1.6; }.lsa-payment-route.is-pending { border-color: #ead7ad; background: #faf4e5; }.lsa-payment-route.is-fallback { border-style: dashed; background: color-mix(in srgb,var(--lsa-paper) 82%,#e4eee8); }
+.lsa-hub-action { display: grid; grid-template-columns: 36px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 12px 0; border-bottom: 1px solid var(--lsa-line); }.lsa-hub-action:last-child { border-bottom: 0; }.lsa-hub-action > span { display: grid; place-items: center; width: 34px; height: 34px; color: #735d35; border-radius: 9px; background: #f0e8d7; font-weight: 800; }.lsa-hub-action b,.lsa-hub-action small { display: block; }.lsa-hub-action b { color: var(--lsa-ink); font-size: 10px; }.lsa-hub-action small { margin-top: 3px; color: var(--lsa-muted); font-size: 9px; line-height: 1.55; }.lsa-hub-action em { padding: 5px 7px; color: #89714a; border-radius: 99px; background: #f2ead9; font-size: 8px; font-style: normal; font-weight: 800; white-space: nowrap; }
+.lsa-hub-access { margin-bottom: 24px; }.lsa-access-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }.lsa-access-grid > div { padding: 13px; border: 1px solid var(--lsa-line); border-radius: 11px; background: var(--body-bg); }.lsa-access-grid span,.lsa-access-grid b,.lsa-access-grid small { display: block; }.lsa-access-grid span { color: var(--lsa-gold); font-size: 8px; font-weight: 800; }.lsa-access-grid b { margin-top: 6px; color: var(--lsa-ink); font-size: 10px; line-height: 1.55; }.lsa-access-grid small { margin-top: 5px; color: var(--lsa-muted); font-size: 8px; line-height: 1.6; }
+
 /* Focused admin workflows -------------------------------------------------- */
 .lsa-admin-money,.lsa-admin-stay { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .lsa-admin-money { color: var(--lsa-ink); font-weight: 800; }
@@ -454,10 +464,12 @@ html.lsa-command-open body { overflow: hidden; }
   .lsa-readiness { grid-template-columns: auto minmax(0,1fr); }
   .lsa-readiness .lsa-btn { grid-column: 1/-1; }
   .lsa-flag-grid,.lsa-sync-form { grid-template-columns: 1fr; }
+  .lsa-hub-grid,.lsa-hub-work-grid,.lsa-access-grid { grid-template-columns: 1fr; }
   .lsa-sync-form > div { flex-wrap: wrap; }.lsa-sync-form > div > span { flex-basis: 100%; }
   .lsa-notification { grid-template-columns: 4px minmax(0,1fr); }.lsa-notification__action { grid-column: 2; }
   .lsa-notification__body > div { align-items: flex-start; flex-direction: column; gap: 4px; }
   .lsa-period-filter > small { margin: 4px 0 0; text-align: center; }
+  .lsa-private-notice { grid-template-columns: 34px minmax(0,1fr); }.lsa-private-notice__state { grid-column: 2; justify-self: start; }
   #content > h1 { margin-bottom: 16px; }
   .object-tools { float: none; margin: 0 0 12px; padding: 0; }
   .object-tools li { float: none; }
@@ -507,3 +519,10 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-alt-actions small { color: var(--lsa-muted); font-size: 9px; }
 .lsa-alt-clear { padding: 26px; color: #2b6c55; border: 1px dashed color-mix(in srgb,#4eaa7b 40%,var(--lsa-line)); border-radius: 13px; background: color-mix(in srgb,var(--lsa-paper) 88%,#deeee7); text-align: center; font-size: 11px; font-weight: 700; }
 @media (max-width: 900px) { .lsa-alt-layout { grid-template-columns: 1fr; } }
+
+/* The operational owner signs in through a verified identity, not a shared password. */
+.lsa-admin-login__intro { margin: 0 0 1rem; color: var(--body-fg); font-size: .86rem; line-height: 1.65; }
+.lsa-admin-login__google { margin: 0 0 .85rem; }
+.lsa-admin-login__google button { width: 100%; min-height: 2.8rem; border: 0; color: #fff; background: #0d6c58; border-radius: .5rem; cursor: pointer; font: inherit; font-weight: 700; }
+.lsa-admin-login__google button:hover,.lsa-admin-login__google button:focus-visible { background: #064a3b; }
+.lsa-admin-login__or { margin: 0 0 1rem; color: var(--body-quiet-color); font-size: .78rem; text-align: center; }

@@ -90,22 +90,14 @@ def localized_property_seo_title(property_obj: object) -> str:
 
 
 @register.filter
-def localized_property_seo_title(property_obj: object) -> str:
-    if _language() == "en":
-        return (
-            getattr(property_obj, "seo_title_en", "")
-            or getattr(property_obj, "seo_title_ar", "")
-            or localized_property_name(property_obj)
-        )
-    return (
-        getattr(property_obj, "seo_title_ar", "")
-        or getattr(property_obj, "seo_title_en", "")
-        or localized_property_name(property_obj)
-    )
-
-
-@register.filter
 def localized_property_description(property_obj: object) -> str:
+    # Long-form provider copy is currently received in English.  It is better
+    # to show the translated-content placeholder than to place an English
+    # paragraph inside an Arabic or French guest journey.
+    if _language() == "ar":
+        return str(_read(property_obj, "description_ar") or "")
+    if _language() == "fr":
+        return str(_read(property_obj, "description_fr") or "")
     return _localized_value(
         property_obj,
         "description",
@@ -123,21 +115,6 @@ def localized_property_meta_description(property_obj: object) -> str:
             "description",
             source_fields=("hostaway_description",),
         )
-    )
-
-
-@register.filter
-def localized_property_meta_description(property_obj: object) -> str:
-    if _language() == "en":
-        return (
-            getattr(property_obj, "seo_description_en", "")
-            or getattr(property_obj, "short_description_en", "")
-            or localized_property_description(property_obj)
-        )
-    return (
-        getattr(property_obj, "seo_description_ar", "")
-        or getattr(property_obj, "short_description_ar", "")
-        or localized_property_description(property_obj)
     )
 
 

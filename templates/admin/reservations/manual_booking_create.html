@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> فحص حي من Hostaway</span>
+      <h1>حجز يدوي جديد</h1>
+      <p>اختر الوحدة والتواريخ وعدد الضيوف. لن تُنشأ مسودة قبل نجاح فحص التوفر والسعر.</p>
+    </div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:manual_booking_list' %}">كل المسودات</a>
+  </section>
+  <section class="lsa-panel">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+      <div class="form-row">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+      <p class="help">مصدر الحقيقة في هذه الخطوة هو Hostaway. لا نستخدم السعر الظاهر في أي بطاقة أو متصفح.</p>
+      <button class="default" type="submit">فحص التوفر والسعر</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

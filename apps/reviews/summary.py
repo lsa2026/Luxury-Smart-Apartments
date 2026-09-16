@@ -1,87 +1,32 @@
-"""One rating figure, used by the page and by its structured data alike.
+"""One public review summary, sourced only from Trustindex.
 
-Two numbers existed for the same property. The page showed
-``Property.average_review_rating``, which Hostaway computes across every channel
-it manages, while the JSON-LD averaged only the reviews published on this site.
-A visitor could read 4.9 above a list of reviews averaging 4.1.
-
-The published reviews win, for two reasons: they are what the visitor can
-actually count on the page, and search engines require ``aggregateRating`` to
-describe ratings visible on that page. The all-channel figure is not discarded —
-it is returned separately so a template can show it under its own label, where
-it reads as extra information rather than as a contradiction.
+The site does not calculate or display Hostaway reviews. Trustindex renders the
+review content and platform attribution; its visible aggregate is copied
+locally for cards, sorting and structured data.
 """
 
 from dataclasses import dataclass
-from decimal import ROUND_HALF_UP, Decimal
-from typing import Final
-
-from django.db.models import Avg, Count, Q, QuerySet
-
-from apps.reviews.models import Review
-
-# Hostaway rates out of ten; the site presents five stars.
-_SCALE: Final = Decimal("2")
-
-_PUBLIC_REVIEW_FILTER = Q(
-    reviews__review_type=Review.Type.GUEST_TO_HOST,
-    reviews__status=Review.Status.PUBLISHED,
-    reviews__is_visible=True,
-    reviews__rating__isnull=False,
-) & ~Q(
-    reviews__public_review="",
-    reviews__public_review_ar="",
-    reviews__public_review_en="",
-    reviews__public_review_fr="",
-)
-
-
-def with_published_rating(queryset: QuerySet) -> QuerySet:
-    """Annotate card queries with the same review population shown to guests."""
-    return queryset.annotate(
-        published_review_rating=Avg("reviews__rating", filter=_PUBLIC_REVIEW_FILTER),
-        published_review_count=Count("reviews", filter=_PUBLIC_REVIEW_FILTER),
-    )
+from decimal import Decimal
 
 
 @dataclass(frozen=True)
 class RatingSummary:
-    published_average_out_of_five: Decimal | None
-    published_count: int
-    all_channel_average_out_of_five: Decimal | None
+    average_out_of_five: Decimal | None
+    review_count: int
 
     @property
-    def has_published(self) -> bool:
-        return self.published_average_out_of_five is not None and self.published_count > 0
-
-    @property
-    def differs_from_all_channels(self) -> bool:
-        """True when the wider average is worth showing beside the page's own."""
-        if not self.has_published or self.all_channel_average_out_of_five is None:
-            return False
-        return self.all_channel_average_out_of_five != self.published_average_out_of_five
-
-
-def _out_of_five(value: object) -> Decimal | None:
-    if value in (None, ""):
-        return None
-    try:
-        return (Decimal(str(value)) / _SCALE).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
-    except (ArithmeticError, TypeError, ValueError):
-        return None
+    def has_reviews(self) -> bool:
+        return self.average_out_of_five is not None and self.review_count > 0
 
 
 def rating_summary(property_obj: object) -> RatingSummary:
-    """The figures for one property, both derived the same way every time."""
-    aggregate = (
-        Review.objects.public()
-        .filter(property=property_obj)
-        .aggregate(average=Avg("rating"), count=Count("id"))
-    )
+    """Return only the aggregate rendered by the property's Trustindex widget."""
+    widget_id = getattr(property_obj, "trustindex_widget_id", "")
+    rating = getattr(property_obj, "trustindex_rating", None)
+    review_count = getattr(property_obj, "trustindex_review_count", 0) or 0
+    if not widget_id or rating is None or review_count <= 0:
+        return RatingSummary(average_out_of_five=None, review_count=0)
     return RatingSummary(
-        published_average_out_of_five=_out_of_five(aggregate["average"]),
-        published_count=aggregate["count"] or 0,
-        all_channel_average_out_of_five=_out_of_five(
-            getattr(property_obj, "average_review_rating", None)
-        ),
+        average_out_of_five=rating,
+        review_count=review_count,
     )

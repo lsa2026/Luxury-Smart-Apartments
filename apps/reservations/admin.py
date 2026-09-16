@@ -20,6 +20,7 @@ from .models import (
     CancellationPolicyTier,
     HostawayModificationOperation,
     HostawayReservationOperation,
+    ManualBookingDraft,
     RefundObligation,
     Reservation,
 )
@@ -41,6 +42,68 @@ PAYMENT_STATUS_LABELS = {
     "refunded": _("Refunded"),
     "partially_refunded": _("Partially refunded"),
 }
+
+
+@admin.register(ManualBookingDraft)
+class ManualBookingDraftAdmin(ModelAdmin):
+    """Read-only backup view; creation stays in the guided operations screen."""
+
+    list_display = (
+        "public_reference",
+        "property",
+        "check_in",
+        "check_out",
+        "guests",
+        "final_amount",
+        "price_source",
+        "status",
+        "created_at",
+    )
+    list_filter = ("status", "price_source", "property")
+    search_fields = ("public_reference", "guest_email", "guest_phone")
+    readonly_fields = (
+        "public_reference",
+        "quote",
+        "property",
+        "check_in",
+        "check_out",
+        "nights",
+        "guests",
+        "currency",
+        "system_total_price",
+        "final_total_price",
+        "payment_amount_sar",
+        "selected_display_currency",
+        "exchange_rate_snapshot",
+        "price_source",
+        "price_override_reason",
+        "guest_first_name",
+        "guest_last_name",
+        "guest_email",
+        "guest_phone",
+        "special_requests",
+        "status",
+        "availability_checked_at",
+        "expires_at",
+        "created_by",
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(description=_("Final amount"), ordering="final_total_price")
+    def final_amount(self, obj: ManualBookingDraft) -> str:
+        return localized_money(obj.final_total_price, obj.currency)
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: ManualBookingDraft | None = None,
+    ) -> bool:
+        return False
+
 
 
 def _hostaway_status_label(value: str) -> object:

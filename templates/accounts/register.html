@@ -153,6 +153,8 @@
             </button>
         </form>
 
+        {% include "accounts/_social_signin.html" %}
+
         <p class="auth-panel__footer">
             {% trans "Already have an account?" %}
             <a href="{% url 'accounts:login' %}">{% trans "Sign in" %}</a>

@@ -6,13 +6,13 @@ from django.test import override_settings
 from django.utils import timezone
 
 from apps.core.models import SiteSetting
+from apps.core.templatetags.presentation import localized_money_text
 from apps.notifications.models import EmailDelivery
 from apps.notifications.services.email import (
     DjangoEmailProvider,
     EmailMessageRequest,
     send_queued_email,
 )
-from apps.core.templatetags.presentation import localized_money_text
 from apps.notifications.services.events import (
     handle_modification_completed,
     handle_modification_created,

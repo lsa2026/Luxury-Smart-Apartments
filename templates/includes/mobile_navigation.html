@@ -1,8 +1,10 @@
-{% load i18n %}
+{% load i18n static %}
 <div class="mobile-nav" id="mobile-navigation" hidden data-mobile-nav>
     <div class="mobile-nav__panel" role="dialog" aria-modal="true" aria-label="{% trans 'Mobile navigation' %}">
         <div class="mobile-nav__heading">
-            <strong>Luxury Smart Apartments</strong>
+            <span class="mobile-nav__wordmark" aria-hidden="true">
+                <img src="{% static 'images/brand/luxury-living-lockup-dark.svg' %}" alt="" width="640" height="150">
+            </span>
             <button type="button" data-menu-close aria-label="{% trans 'Close menu' %}">×</button>
         </div>
         <nav aria-label="{% trans 'Mobile navigation' %}">

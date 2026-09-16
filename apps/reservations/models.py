@@ -32,6 +32,10 @@ def refund_obligation_reference() -> str:
     return secrets.token_urlsafe(18)
 
 
+def manual_booking_draft_reference() -> str:
+    return f"MB-{secrets.token_urlsafe(12)}"
+
+
 class BookingQuote(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "active", _("Active")
@@ -144,6 +148,163 @@ class BookingQuote(models.Model):
     @classmethod
     def default_expiry(cls) -> datetime:
         return timezone.now() + timedelta(seconds=settings.BOOKING_QUOTE_TTL_SECONDS)
+
+
+class ManualBookingDraft(models.Model):
+    """An owner-created booking draft; it never creates a Hostaway reservation."""
+
+    class Status(models.TextChoices):
+        QUOTED = "quoted", _("Quoted")
+        READY_FOR_PAYMENT = "ready_for_payment", _("Ready for payment")
+        EXPIRED = "expired", pgettext_lazy("ManualBookingDraft", "Expired")
+        CANCELLED = "cancelled", pgettext_lazy("ManualBookingDraft", "Cancelled")
+
+    class PriceSource(models.TextChoices):
+        SYSTEM = "system", _("Hostaway live price")
+        MANUAL_OVERRIDE = "manual_override", _("Manual price adjustment")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_reference = models.CharField(
+        max_length=32,
+        unique=True,
+        default=manual_booking_draft_reference,
+        editable=False,
+    )
+    quote = models.OneToOneField(
+        BookingQuote,
+        on_delete=models.PROTECT,
+        related_name="manual_booking_draft",
+        editable=False,
+    )
+    property = models.ForeignKey(
+        "properties.Property",
+        on_delete=models.PROTECT,
+        related_name="manual_booking_drafts",
+        editable=False,
+    )
+    check_in = models.DateField(editable=False)
+    check_out = models.DateField(editable=False)
+    nights = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)], editable=False)
+    guests = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)], editable=False)
+    currency = models.CharField(max_length=3, editable=False)
+    system_total_price = models.DecimalField(max_digits=14, decimal_places=4, editable=False)
+    final_total_price = models.DecimalField(max_digits=14, decimal_places=4)
+    payment_amount_sar = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    selected_display_currency = models.CharField(max_length=3, blank=True, editable=False)
+    exchange_rate_snapshot = models.JSONField(default=dict, blank=True, editable=False)
+    price_source = models.CharField(
+        max_length=20,
+        choices=PriceSource.choices,
+        default=PriceSource.SYSTEM,
+        editable=False,
+    )
+    price_override_reason = models.TextField(max_length=500, blank=True)
+    guest_first_name = models.CharField(max_length=100, blank=True)
+    guest_last_name = models.CharField(max_length=100, blank=True)
+    guest_email = models.EmailField(max_length=254, blank=True)
+    guest_phone = models.CharField(max_length=32, blank=True)
+    special_requests = models.TextField(max_length=1000, blank=True)
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.QUOTED,
+    )
+    availability_checked_at = models.DateTimeField(editable=False)
+    expires_at = models.DateTimeField(editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_manual_booking_drafts",
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "expires_at"]),
+            models.Index(fields=["property", "check_in"]),
+            models.Index(fields=["created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(final_total_price__gte=0),
+                name="manual_booking_draft_final_total_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(system_total_price__gte=0),
+                name="manual_booking_draft_system_total_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(payment_amount_sar__isnull=True) | Q(payment_amount_sar__gte=0),
+                name="manual_booking_draft_payment_sar_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(check_out__gt=F("check_in")),
+                name="manual_booking_draft_checkout_after_checkin",
+            ),
+        ]
+        verbose_name = _("Manual booking draft")
+        verbose_name_plural = _("Manual booking drafts")
+
+    def __str__(self) -> str:
+        return self.public_reference
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.property_id and self.quote_id and self.quote.property_id != self.property_id:
+            errors["property"] = "Property must match the verified quote."
+        if self.quote_id:
+            quote = self.quote
+            for field_name in ("check_in", "check_out", "nights", "guests", "currency"):
+                if getattr(self, field_name) != getattr(quote, field_name):
+                    errors[field_name] = "Stay details must match the verified quote."
+            if self.system_total_price != quote.total_price:
+                errors["system_total_price"] = "System price must match the verified quote."
+        if self.check_in and self.check_out:
+            expected_nights = (self.check_out - self.check_in).days
+            if expected_nights < 1:
+                errors["check_out"] = "Check-out must be after check-in."
+            if self.nights != expected_nights:
+                errors["nights"] = "Nights must match the date interval."
+        if self.currency and (
+            len(self.currency) != 3 or not self.currency.isascii() or not self.currency.isalpha()
+        ):
+            errors["currency"] = "Currency must be a three-letter code."
+        if self.selected_display_currency and (
+            self.selected_display_currency not in settings.FX_SUPPORTED_CURRENCIES
+        ):
+            errors["selected_display_currency"] = "Display currency is not supported."
+        if not isinstance(self.exchange_rate_snapshot, dict):
+            errors["exchange_rate_snapshot"] = "Exchange-rate snapshot must be an object."
+        if self.final_total_price != self.system_total_price:
+            if self.price_source != self.PriceSource.MANUAL_OVERRIDE:
+                errors["price_source"] = "A different final price requires a manual adjustment."
+            if len(self.price_override_reason.strip()) < 10:
+                errors["price_override_reason"] = "Explain every manual price adjustment."
+        elif self.price_source != self.PriceSource.SYSTEM:
+            errors["price_source"] = "An unchanged price must use the system price source."
+        if self.status == self.Status.READY_FOR_PAYMENT:
+            for field_name in (
+                "guest_first_name",
+                "guest_last_name",
+                "guest_email",
+                "guest_phone",
+            ):
+                if not str(getattr(self, field_name, "")).strip():
+                    errors[field_name] = "Guest details are required before payment."
+        if errors:
+            raise ValidationError(errors)
 
 
 class BookingIntent(models.Model):

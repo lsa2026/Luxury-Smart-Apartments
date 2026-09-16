@@ -793,6 +793,7 @@ msgctxt "dashboard status"
 msgid "Unavailable"
 msgstr "غير متاح"
 
+
 #: .\apps\core\templatetags\admin_dashboard.py:42
 msgctxt "dashboard status"
 msgid "Unconfirmed"
@@ -6350,16 +6351,20 @@ msgid "Location"
 msgstr "الموقع"
 
 #: .\templates\properties\property_detail.html:122
-msgid "Explore the property's location and nearby area on the interactive map."
-msgstr "استكشف موقع الوحدة والمنطقة المحيطة بها على الخريطة التفاعلية."
+msgid "The exact property location is shown below. Use Google Maps for directions."
+msgstr "يظهر الموقع الدقيق للوحدة أدناه. استخدم خرائط Google للوصول إليها."
+
+#: .\templates\properties\property_detail.html:124
+msgid "Full address"
+msgstr "العنوان الكامل"
 
 #: .\templates\properties\property_detail.html:129
 msgid "Interactive map showing the property location"
 msgstr "خريطة تفاعلية تعرض موقع الوحدة"
 
 #: .\templates\properties\property_detail.html:132
-msgid "Open in OpenStreetMap"
-msgstr "فتح في OpenStreetMap"
+msgid "Open directions in Google Maps"
+msgstr "فتح الاتجاهات في خرائط Google"
 
 #: .\templates\properties\property_detail.html:136
 msgid ""
@@ -7352,3 +7357,20 @@ msgstr "محتوى مُدار يظهر عندما لا تحتوي الوحدة �
 #: .\templates\admin\index.html
 msgid "Check-in, check-out, cancellation and house rules"
 msgstr "الدخول والخروج والإلغاء وقواعد المنزل"
+
+#: templates/properties/property_detail.html
+msgid "Verified reviews are being prepared"
+msgstr "يجري إعداد المراجعات الموثقة"
+
+
+#: templates/properties/property_detail.html
+msgid "This property will show verified guest reviews once its review sources are connected."
+msgstr "ستظهر لهذه الوحدة مراجعات ضيوف موثقة فور ربط مصادر مراجعاتها."
+
+#: templates/reviews/review_list.html
+msgid "Verified guest reviews collected from our public booking platforms."
+msgstr "مراجعات ضيوف موثقة جُمعت من منصات الحجز العامة لدينا."
+
+#: templates/reviews/review_list.html
+msgid "Verified feedback from Google, Booking.com and Airbnb."
+msgstr "آراء ضيوف موثقة من Google وBooking.com وAirbnb."

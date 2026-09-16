@@ -71,7 +71,9 @@ def sync_hostaway_reviews_task(
     listing_id: int | None = None,
     dry_run: bool = False,
 ) -> dict[str, int | str]:
-    """Run the published guest-to-host review sync once."""
+    """Run the legacy review importer only when explicitly enabled."""
+    if not settings.HOSTAWAY_REVIEW_SYNC_ENABLED:
+        return {"status": "disabled", "fetched": 0, "created": 0, "updated": 0, "failed": 0}
     with distributed_task_lock("reviews") as acquired:
         if not acquired:
             return {"status": "already_running"}

@@ -38,6 +38,10 @@ SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+# Apple sends its OAuth result through a cross-site POST.  This relaxation is
+# confined to HTTPS production and is necessary only once Apple is enabled.
+if APPLE_SIGN_IN_ENABLED:  # noqa: F405
+    SESSION_COOKIE_SAMESITE = "None"
 SECURE_HSTS_SECONDS = 31_536_000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True

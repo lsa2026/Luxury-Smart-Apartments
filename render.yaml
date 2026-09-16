@@ -197,6 +197,31 @@ services:
         value: saeed@luxurysmartapartments.com
       - key: OPERATIONS_EMAIL
         value: saeed@luxurysmartapartments.com
+
+      # --- Owner access and social identity --------------------------------
+      # Google verifies identity; the Django application grants administrative
+      # authority only to the exact business owner address below. OAuth secrets
+      # are dashboard-only values and are never committed to this blueprint.
+      - key: OPERATIONS_OWNER_EMAIL
+        value: saeed@luxurysmartapartments.com
+      - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED
+        value: "True"
+      - key: GOOGLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: APPLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: APPLE_SERVICE_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY
+        sync: false
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
         value: "True"
       - key: CONTACT_NOTIFICATION_EMAIL_ENABLED

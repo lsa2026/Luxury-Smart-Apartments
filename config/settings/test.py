@@ -10,5 +10,12 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ["HYPERPAY_ENABLED"] = "false"
 os.environ["HYPERPAY_ENTITY_ID"] = ""
 os.environ["HYPERPAY_ACCESS_TOKEN"] = ""
+os.environ["OPERATIONS_OWNER_ENFORCEMENT_ENABLED"] = "false"
+os.environ["GOOGLE_SIGN_IN_ENABLED"] = "false"
+os.environ["APPLE_SIGN_IN_ENABLED"] = "false"
+# Tests exercise the operational event flow and must never inherit a local
+# choice to mute it or to route mail through a real SMTP provider.
+os.environ["NOTIFICATIONS_ENABLED"] = "true"
+os.environ["EMAIL_LOCAL_SMTP_ENABLED"] = "false"
 
 from .development import *  # noqa: E402,F403

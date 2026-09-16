@@ -842,6 +842,7 @@ msgctxt "dashboard status"
 msgid "Unavailable"
 msgstr "Indisponible"
 
+
 #: .\apps\core\templatetags\admin_dashboard.py:42
 msgctxt "dashboard status"
 msgid "Unconfirmed"
@@ -6554,17 +6555,20 @@ msgid "Location"
 msgstr "Emplacement"
 
 #: .\templates\properties\property_detail.html:122
-msgid "Explore the property's location and nearby area on the interactive map."
-msgstr ""
-"Explorez l’emplacement du logement et ses environs sur la carte interactive."
+msgid "The exact property location is shown below. Use Google Maps for directions."
+msgstr "L’emplacement exact du logement est indiqué ci-dessous. Utilisez Google Maps pour vous y rendre."
+
+#: .\templates\properties\property_detail.html:124
+msgid "Full address"
+msgstr "Adresse complète"
 
 #: .\templates\properties\property_detail.html:129
 msgid "Interactive map showing the property location"
 msgstr "Carte interactive indiquant l’emplacement du logement"
 
 #: .\templates\properties\property_detail.html:132
-msgid "Open in OpenStreetMap"
-msgstr "Ouvrir dans OpenStreetMap"
+msgid "Open directions in Google Maps"
+msgstr "Ouvrir l’itinéraire dans Google Maps"
 
 #: .\templates\properties\property_detail.html:136
 msgid ""
@@ -7582,3 +7586,20 @@ msgstr "Contenu géré affiché lorsqu’un logement n’a pas de règlement int
 #: .\templates\admin\index.html
 msgid "Check-in, check-out, cancellation and house rules"
 msgstr "Arrivée, départ, annulation et règlement intérieur"
+
+#: templates/properties/property_detail.html
+msgid "Verified reviews are being prepared"
+msgstr "Les avis vérifiés sont en cours de préparation"
+
+
+#: templates/properties/property_detail.html
+msgid "This property will show verified guest reviews once its review sources are connected."
+msgstr "Cet hébergement affichera des avis vérifiés dès que ses sources d’avis seront connectées."
+
+#: templates/reviews/review_list.html
+msgid "Verified guest reviews collected from our public booking platforms."
+msgstr "Avis vérifiés de voyageurs recueillis sur nos plateformes de réservation publiques."
+
+#: templates/reviews/review_list.html
+msgid "Verified feedback from Google, Booking.com and Airbnb."
+msgstr "Avis vérifiés provenant de Google, Booking.com et Airbnb."

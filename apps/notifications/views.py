@@ -12,6 +12,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
+from apps.accounts.access import require_operations_owner
+from apps.core.admin_dashboard import dashboard_payload
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
 from apps.notifications.exports import report_rows, write_csv
 from apps.notifications.health import readiness_status
@@ -21,11 +23,7 @@ from apps.notifications.services.audit import record_audit
 
 
 def _require_operations_permission(request: HttpRequest) -> None:
-    if not (
-        request.user.is_superuser
-        or request.user.has_perm("notifications.manage_notification_center")
-    ):
-        raise PermissionDenied
+    require_operations_owner(request.user)
 
 
 @staff_member_required
@@ -110,6 +108,27 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
             "title": _("Operational reports dashboard"),
             "report": operations_report(start_date, end_date),
             "selected_period": selected_period,
+        },
+    )
+
+
+@staff_member_required
+def operations_hub(request: HttpRequest) -> HttpResponse:
+    """Private, read-only foundation for the reservations operations centre.
+
+    It intentionally reuses the local dashboard aggregates instead of calling
+    Hostaway, HyperPay, or a messaging provider.  Phase 6.0 is a safe place to
+    understand the work queue; later phases add the deliberately confirmed
+    actions for manual bookings, payment links, and refunds.
+    """
+
+    _require_operations_permission(request)
+    return render(
+        request,
+        "admin/notifications/operations_hub.html",
+        {
+            "title": "مركز العمليات",
+            "dashboard": dashboard_payload(request),
         },
     )
 

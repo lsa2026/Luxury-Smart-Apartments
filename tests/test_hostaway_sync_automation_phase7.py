@@ -243,7 +243,10 @@ def test_property_task_delegates_to_service() -> None:
 
 def test_review_task_delegates_to_service() -> None:
     report = Mock(fetched=3, created=2, updated=1, failed=0)
-    with patch("apps.integrations.tasks.sync_reviews", return_value=report) as service:
+    with (
+        patch("apps.integrations.tasks.sync_reviews", return_value=report) as service,
+        patch("apps.integrations.tasks.settings.HOSTAWAY_REVIEW_SYNC_ENABLED", True),
+    ):
         result = sync_hostaway_reviews_task.run(dry_run=True)
 
     service.assert_called_once_with(listing_id=None, dry_run=True)

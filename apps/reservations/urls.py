@@ -7,6 +7,7 @@ from .views import (
     GuestDetailsView,
     ModificationCreateView,
     ModificationDetailView,
+    PropertyCalendarAvailabilityView,
     ReservationAccessView,
     ReservationLogoutView,
     ReservationManageView,
@@ -15,6 +16,11 @@ from .views import (
 app_name = "reservations"
 
 urlpatterns = [
+    path(
+        "calendar/<slug:slug>/",
+        PropertyCalendarAvailabilityView.as_view(),
+        name="calendar_availability",
+    ),
     path("quotes/", AvailabilitySearchView.as_view(), name="quote_create"),
     path(
         "quotes/<str:reference>/",

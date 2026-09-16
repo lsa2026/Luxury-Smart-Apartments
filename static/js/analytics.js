@@ -17,6 +17,7 @@
         view_item_list: new Set(["item_list_name", "items"]),
         select_item: new Set(["item_list_name", "items"]),
         view_item: new Set(["currency", "value", "items"]),
+        view_all_reviews: new Set(["language", "review_count", "items"]),
         begin_checkout: new Set(["currency", "value", "items", "nights", "guests"]),
         generate_lead: new Set(["lead_source"]),
         check_availability: new Set(["city", "nights", "guests"]),
@@ -127,6 +128,33 @@
     const detail = document.querySelector("[data-analytics-view-item]");
     if (detail) {
         pushEvent("view_item", {items: [itemFromElement(detail)]});
+    }
+    const reviewPage = document.querySelector("[data-analytics-view-all-reviews]");
+    if (reviewPage) {
+        pushEvent("view_all_reviews", {
+            language: reviewPage.dataset.analyticsLanguage,
+            review_count: Number(reviewPage.dataset.analyticsReviewCount || 0),
+            items: [itemFromElement(reviewPage)],
+        });
+    }
+    const purchase = document.querySelector("[data-analytics-purchase-event]");
+    if (purchase) {
+        const item = cleanItem({
+            item_id: purchase.dataset.analyticsItemId,
+            item_name: purchase.dataset.analyticsItemName,
+            item_brand: purchase.dataset.analyticsItemBrand,
+            item_category: purchase.dataset.analyticsItemCategory,
+            item_category2: purchase.dataset.analyticsItemCity,
+            quantity: 1,
+            currency: purchase.dataset.analyticsCurrency,
+            price: Number(purchase.dataset.analyticsValue || 0),
+        });
+        pushEvent("purchase", {
+            transaction_id: purchase.dataset.analyticsTransactionId,
+            value: Number(purchase.dataset.analyticsValue || 0),
+            currency: purchase.dataset.analyticsCurrency,
+            items: Object.keys(item).length ? [item] : [],
+        });
     }
     document.querySelectorAll("[data-analytics-event]").forEach((element) => {
         const eventName = element.dataset.analyticsEvent;

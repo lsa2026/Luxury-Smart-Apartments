@@ -30,7 +30,6 @@
       <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Last run" %}</span><h2>{% trans "Source log" %}</h2></div></header>
       <dl class="lsa-activity-list">
         <div><dt>{% trans "Properties" %}</dt><dd>{% if health.last_property_sync %}<strong>{{ health.last_property_sync.get_status_display }}</strong><small>{% blocktrans with elapsed=health.last_property_sync.started_at|timesince count_items=health.last_property_sync.fetched_count %}{{ elapsed }} ago · {{ count_items }} items{% endblocktrans %}</small>{% else %}<strong>{% trans "No previous run" %}</strong>{% endif %}</dd></div>
-        <div><dt>{% trans "Reviews" %}</dt><dd>{% if health.last_review_sync %}<strong>{{ health.last_review_sync.get_status_display }}</strong><small>{% blocktrans with elapsed=health.last_review_sync.started_at|timesince count_items=health.last_review_sync.fetched_count %}{{ elapsed }} ago · {{ count_items }} items{% endblocktrans %}</small>{% else %}<strong>{% trans "No previous run" %}</strong>{% endif %}</dd></div>
       </dl>
     </article>
   </section>
@@ -45,7 +44,6 @@
     {% if not dispatch_enabled %}<div class="lsa-callout lsa-callout--warn"><strong>{% trans "The task worker is not running" %}</strong><span>{% trans "The buttons will not run a sync now; a message will show the local command to run." %}</span></div>{% endif %}
     <form method="post" class="lsa-sync-form">{% csrf_token %}
       <div><span>{% trans "Properties" %}</span><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="properties_dry_run">{% trans "Dry run" context "admin field label" %}</button><button class="lsa-btn lsa-btn--danger-outline" name="sync_action" value="properties">{% trans "Real sync" %}</button></div>
-      <div><span>{% trans "Reviews" %}</span><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="reviews_dry_run">{% trans "Dry run" context "admin field label" %}</button><button class="lsa-btn lsa-btn--danger-outline" name="sync_action" value="reviews">{% trans "Real sync" %}</button></div>
     </form>
   </section>
 </main>

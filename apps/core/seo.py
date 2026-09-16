@@ -209,13 +209,13 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
     image_urls = [image.display_url for image in prefetched_images[:20] if image.display_url]
     language = (translation.get_language() or "ar").split("-")[0]
     description_fields = {
-        "ar": ("description_ar", "description_en", "hostaway_description", "description_fr"),
-        "en": ("description_en", "hostaway_description", "description_fr", "description_ar"),
-        "fr": ("description_fr", "description_en", "hostaway_description", "description_ar"),
-    }.get(
-        language,
-        ("description_ar", "description_en", "hostaway_description", "description_fr"),
-    )
+        # Do not silently put Hostaway's English long-form copy in an Arabic
+        # or French page or in its structured data.  A missing translated
+        # description is preferable to contradictory SEO language signals.
+        "ar": ("description_ar",),
+        "en": ("description_en", "hostaway_description"),
+        "fr": ("description_fr",),
+    }.get(language, ("description_ar",))
     description = next(
         (
             value
@@ -236,10 +236,11 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
         "@context": "https://schema.org",
         "@type": "VacationRental" if vacation_rental_ready else "LodgingBusiness",
         "name": property_obj.display_name,
-        "description": description,
         "url": f"{settings.SITE_CANONICAL_URL}{property_obj.get_absolute_url()}",
         "identifier": property_obj.slug,
     }
+    if description:
+        data["description"] = description
     if image_urls:
         data["image"] = image_urls
     locality = property_obj.display_city
@@ -277,15 +278,15 @@ def property_structured_data(property_obj: Property) -> dict[str, Any]:
             {"@type": "LocationFeatureSpecification", "name": name, "value": True}
             for name in amenities[:20]
         ]
-    # The same summary the page renders: aggregateRating must describe ratings
-    # a visitor can actually see, never a wider figure from other channels.
+    # The same Trustindex summary the page renders: aggregateRating must
+    # describe a score a visitor can actually see, never legacy source data.
     summary = rating_summary(property_obj)
-    if summary.has_published:
+    if summary.has_reviews:
         data["aggregateRating"] = {
             "@type": "AggregateRating",
-            "ratingValue": float(summary.published_average_out_of_five),
+            "ratingValue": float(summary.average_out_of_five),
             "bestRating": 5,
             "worstRating": 0,
-            "reviewCount": summary.published_count,
+            "reviewCount": summary.review_count,
         }
     return data

@@ -5,6 +5,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.templatetags.presentation import localized_money
+
 from .models import PaymentAttempt
 
 

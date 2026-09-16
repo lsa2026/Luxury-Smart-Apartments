@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> المرحلة 6.1</span>
+      <h1>مسودات الحجز اليدوي</h1>
+      <p>هذه المسودات لا تحجز في Hostaway ولا ترسل رابط دفع. تعرض فقط قراراتك الموثقة بعد فحص التوفر.</p>
+    </div>
+    <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">إنشاء مسودة حجز</a>
+  </section>
+  <section class="lsa-panel">
+    {% if drafts %}
+    <table>
+      <thead><tr><th>المرجع</th><th>الوحدة</th><th>الإقامة</th><th>السعر النهائي</th><th>الحالة</th><th></th></tr></thead>
+      <tbody>
+      {% for draft in drafts %}
+      <tr>
+        <td dir="ltr">{{ draft.public_reference }}</td>
+        <td>{{ draft.property }}</td>
+        <td dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</td>
+        <td dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</td>
+        <td>{{ draft.get_status_display }}</td>
+        <td><a href="{% url 'notifications:manual_booking_detail' draft.pk %}">فتح</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>لا توجد مسودات بعد.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

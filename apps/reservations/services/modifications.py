@@ -108,6 +108,7 @@ class ModificationService:
                 check_out=new_check_out,
                 guests=reservation.guests,
                 bypass_currency_cache=True,
+                currency_override=reservation.property.price_currency_override,
             )
         except (HostawayError, ValueError):
             return ModificationCreation("hostaway_temporarily_unavailable")
@@ -272,6 +273,7 @@ class ModificationService:
                     check_out=modification.new_check_out,
                     guests=modification.new_guests,
                     bypass_currency_cache=True,
+                    currency_override=reservation.property.price_currency_override,
                 )
             else:
                 result = self.availability_service.check(

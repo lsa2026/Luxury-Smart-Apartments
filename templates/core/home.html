@@ -3,16 +3,15 @@
 
 {% block title %}{% trans "Luxury Smart Apartments | Smart stays in Riyadh and Marrakech" %}{% endblock %}
 {% block meta_description %}{% trans "Explore smart apartments and family stays in Riyadh and Marrakech, then check live price and availability." %}{% endblock %}
-{% block og_image %}<meta property="og:image" content="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600&amp;q=85">{% endblock %}
+{% block og_image %}{% if home_hero_og_url %}<meta property="og:image" content="{{ home_hero_og_url }}">{% else %}<meta property="og:image" content="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600&amp;q=85">{% endif %}{% endblock %}
 
 {% block content %}
 <section class="travel-hero" aria-labelledby="travel-hero-title">
     <img
         class="travel-hero__backdrop"
-        src="https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=2400&amp;q=88"
-        alt="{% trans 'Riyadh skyline and palm trees' %}"
-        width="2400"
-        height="1500"
+        src="{% if home_hero_image %}{{ home_hero_image.image.url }}{% else %}https://images.unsplash.com/photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600&amp;q=80{% endif %}"
+        alt="{% if home_hero_image %}{{ home_hero_alt }}{% else %}{% trans 'Riyadh skyline and palm trees' %}{% endif %}"
+        {% if not home_hero_image %}width="1600" height="1000"{% endif %}
         fetchpriority="high"
         decoding="async"
     >
@@ -136,7 +135,6 @@
     </div>
 </section>
 
-{% if featured_reviews %}
 <section class="section section--soft travel-reviews" aria-labelledby="featured-reviews-title">
     <div class="container">
         <div class="section-heading section-heading--split">
@@ -146,10 +144,11 @@
             </div>
             <a class="text-link text-link--arrow" href="{% url 'reviews:list' %}">{% trans "Read all reviews" %}<span aria-hidden="true">←</span></a>
         </div>
-        {% include "reviews/_review_cards.html" with reviews=featured_reviews %}
+        <div class="trustindex-widget" data-trustindex-home-reviews>
+            <script defer async src="https://cdn.trustindex.io/loader.js?{{ trustindex_general_widget_id }}"></script>
+        </div>
     </div>
 </section>
-{% endif %}
 
 <section class="section container travel-final" id="booking-management">
     <div class="travel-final__panel">

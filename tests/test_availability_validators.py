@@ -93,6 +93,27 @@ def test_hostaway_currency_precedence_accepts_matching_authoritative_sources(
     )
 
 
+def test_local_currency_override_corrects_a_documented_hostaway_currency_label() -> None:
+    assert (
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload(None),
+            {"id": 511786, "currencyCode": "SAR"},
+            currency_override="MAD",
+        )
+        == "MAD"
+    )
+    assert (
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload("SAR"),
+            {"id": 511786, "currencyCode": "SAR"},
+            currency_override="MAD",
+        )
+        == "MAD"
+    )
+
+
 @pytest.mark.parametrize(
     ("price_currency", "listing_currency"),
     [("MAD", "SAR"), ("SAR", "MAD")],
@@ -109,6 +130,16 @@ def test_hostaway_currency_conflict_fails_closed_and_is_logged(
                 {"id": 511786, "currencyCode": listing_currency},
             )
     assert log_error.call_args.args[0].startswith("HOSTAWAY_CURRENCY_CONFLICT")
+
+
+def test_local_currency_override_does_not_mask_a_hostaway_internal_conflict() -> None:
+    with pytest.raises(HostawayResponseError, match="conflict"):
+        resolve_hostaway_price_currency(
+            511786,
+            _price_currency_payload("SAR"),
+            {"id": 511786, "currencyCode": "MAD"},
+            currency_override="MAD",
+        )
 
 
 def test_hostaway_currency_missing_from_both_sources_is_rejected() -> None:

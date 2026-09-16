@@ -11,12 +11,12 @@ from apps.core.models import FAQItem
 from apps.core.seo import property_structured_data
 from apps.reservations.forms import AvailabilitySearchForm
 from apps.reservations.services.stay_policy import stay_policy_for
-from apps.reviews.models import Review
-from apps.reviews.summary import rating_summary, with_published_rating
+from apps.reviews.summary import rating_summary
 
 from .cities import canonical_city, supported_city_choices
 from .forms import PropertyBrowseDatesForm
 from .models import Property, PropertyAmenity, PropertyImage
+from .trustindex import full_review_widget_id
 
 
 def _card_images() -> QuerySet[PropertyImage]:
@@ -33,6 +33,7 @@ def _public_location_map(property_obj: Property) -> dict[str, str] | None:
         not property_obj.public_location_enabled
         or property_obj.public_location_latitude is None
         or property_obj.public_location_longitude is None
+        or not property_obj.google_maps_cid.isdigit()
     ):
         return None
     latitude = format(property_obj.public_location_latitude, "f")
@@ -40,10 +41,7 @@ def _public_location_map(property_obj: Property) -> dict[str, str] | None:
     return {
         "latitude": latitude,
         "longitude": longitude,
-        "external_url": (
-            "https://www.openstreetmap.org/"
-            f"?mlat={latitude}&mlon={longitude}#map=16/{latitude}/{longitude}"
-        ),
+        "external_url": f"https://www.google.com/maps?cid={property_obj.google_maps_cid}",
     }
 
 
@@ -53,7 +51,7 @@ class PropertyListView(ListView):
     paginate_by = 9
 
     def get_queryset(self) -> QuerySet[Property]:
-        queryset = with_published_rating(Property.objects.public()).prefetch_related(
+        queryset = Property.objects.public().prefetch_related(
             Prefetch(
                 "images",
                 queryset=_card_images()[:5],
@@ -80,7 +78,7 @@ class PropertyListView(ListView):
             queryset = queryset.filter(room_type=room_type)
         ordering_map = {
             "featured": ("-is_featured", "sort_order", "id"),
-            "rating": ("-published_review_rating", "-is_featured", "id"),
+            "rating": ("-trustindex_rating", "-is_featured", "id"),
             "capacity": ("-person_capacity", "-is_featured", "id"),
         }
         return queryset.order_by(*ordering_map.get(ordering, ordering_map["featured"]))
@@ -148,11 +146,6 @@ class PropertyDetailView(DetailView):
                 .order_by("sort_order", "id"),
                 to_attr="_public_amenities",
             ),
-            Prefetch(
-                "reviews",
-                queryset=Review.objects.public().select_related("property")[:6],
-                to_attr="_public_reviews",
-            ),
         )
 
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
@@ -160,6 +153,7 @@ class PropertyDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         property_obj = self.object
         preserved_search = None
+        preselected_search = None
         availability_form = AvailabilitySearchForm(property_obj=property_obj)
         if self.request.GET.get("source") == "availability":
             search_data = self.request.GET.copy()
@@ -186,6 +180,11 @@ class PropertyDetailView(DetailView):
                 property_obj=property_obj,
             )
             if browse_availability_form.is_valid():
+                preselected_search = {
+                    "check_in": browse_availability_form.cleaned_data["check_in"],
+                    "check_out": browse_availability_form.cleaned_data["check_out"],
+                    "guests": browse_availability_form.cleaned_data["guests"],
+                }
                 availability_form = AvailabilitySearchForm(
                     initial={
                         "check_in": browse_availability_form.cleaned_data["check_in"],
@@ -196,7 +195,7 @@ class PropertyDetailView(DetailView):
                 )
         all_gallery_images = property_obj._public_images
         similar = list(
-            with_published_rating(Property.objects.public())
+            Property.objects.public()
             .filter(city=property_obj.city)
             .exclude(pk=property_obj.pk)
             .prefetch_related(
@@ -210,7 +209,7 @@ class PropertyDetailView(DetailView):
         if len(similar) < 3:
             excluded = [property_obj.pk, *(item.pk for item in similar)]
             similar.extend(
-                with_published_rating(Property.objects.public())
+                Property.objects.public()
                 .exclude(pk__in=excluded)
                 .prefetch_related(
                     Prefetch(
@@ -225,12 +224,13 @@ class PropertyDetailView(DetailView):
                 "gallery_images": all_gallery_images[:5],
                 "all_gallery_images": all_gallery_images,
                 "visible_amenities": property_obj._public_amenities,
-                "property_reviews": property_obj._public_reviews,
                 "availability_form": availability_form,
                 "preserved_search": preserved_search,
+                "preselected_search": preselected_search,
                 "stay_policy": stay_policy_for(property_obj),
                 # One figure for the page and its structured data alike.
                 "rating_summary": rating_summary(property_obj),
+                "property_full_reviews_widget_id": full_review_widget_id(property_obj),
                 "property_faq_items": FAQItem.objects.filter(
                     is_active=True,
                     property=property_obj,
@@ -283,6 +283,41 @@ class PropertyDetailView(DetailView):
             }
         )
         self.request._public_map_enabled = context["public_location_map"] is not None
+        self.request._trustindex_widget_enabled = bool(property_obj.trustindex_widget_id)
+        return context
+
+
+class PropertyReviewListView(DetailView):
+    """Render the verified full-review widget for one approved property."""
+
+    template_name = "properties/property_review_list.html"
+    context_object_name = "property"
+    slug_url_kwarg = "slug"
+
+    def get_queryset(self) -> QuerySet[Property]:
+        return Property.objects.public()
+
+    def get_context_data(self, **kwargs: object) -> dict[str, object]:
+        context = super().get_context_data(**kwargs)
+        widget_id = full_review_widget_id(self.object)
+        if not widget_id:
+            raise Http404
+        self.request._trustindex_widget_enabled = True
+        context.update(
+            {
+                "trustindex_widget_id": widget_id,
+                "rating_summary": rating_summary(self.object),
+                "review_language": (translation.get_language() or "ar").split("-")[0],
+                "breadcrumb_items": [
+                    {"label": _("Properties"), "url": reverse("properties:list")},
+                    {
+                        "label": self.object.display_name,
+                        "url": self.object.get_absolute_url(),
+                    },
+                    {"label": _("Guest reviews"), "url": ""},
+                ],
+            }
+        )
         return context
 
 

@@ -320,6 +320,7 @@ class HostawayClient:
         check_out: date,
         guests: int,
         bypass_currency_cache: bool = False,
+        currency_override: str = "",
     ) -> PriceQuote:
         """Calculate a price with priceDetails v2; this never creates a reservation."""
         self._validate_stay_range(
@@ -349,6 +350,7 @@ class HostawayClient:
             check_out=check_out,
             guests=guests,
             listing_response=listing_currency_record,
+            currency_override=currency_override,
         )
 
     def create_reservation_with_price_details(

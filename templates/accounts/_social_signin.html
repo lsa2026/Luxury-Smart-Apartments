@@ -1,0 +1,27 @@
+{% load i18n socialaccount %}
+{% if google_sign_in_enabled or apple_sign_in_enabled %}
+<section class="auth-social" aria-label="{% trans 'Other secure sign-in options' %}">
+    <div class="auth-social__divider"><span>{% trans "Or continue with" %}</span></div>
+    <div class="auth-social__actions">
+        {% if google_sign_in_enabled %}
+        <form method="post" action="{% provider_login_url 'google' process='login' next=next %}">
+            {% csrf_token %}
+            <button class="auth-social__button" type="submit">
+                <span class="auth-social__google" aria-hidden="true">G</span>
+                {% trans "Continue with Google" %}
+            </button>
+        </form>
+        {% endif %}
+        {% if apple_sign_in_enabled %}
+        <form method="post" action="{% provider_login_url 'apple' process='login' next=next %}">
+            {% csrf_token %}
+            <button class="auth-social__button" type="submit">
+                <span class="auth-social__apple" aria-hidden="true">●</span>
+                {% trans "Continue with Apple" %}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    <p class="auth-social__note">{% trans "A provider confirms your identity; it never grants administrative access on its own." %}</p>
+</section>
+{% endif %}

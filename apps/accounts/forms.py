@@ -1,6 +1,7 @@
 """Customer account forms with email-first authentication."""
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.utils.translation import gettext_lazy as _
@@ -41,6 +42,10 @@ class CustomerRegistrationForm(UserCreationForm):
 
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().casefold()
+        if email == settings.OPERATIONS_OWNER_EMAIL:
+            raise forms.ValidationError(
+                _("This business address signs in through the secure owner verification route.")
+            )
         if (
             User.objects.filter(email__iexact=email).exists()
             or User.objects.filter(username__iexact=email).exists()

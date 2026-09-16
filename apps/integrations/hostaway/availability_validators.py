@@ -177,6 +177,7 @@ def validate_price_response(
     check_out: date,
     guests: int,
     listing_response: Any = None,
+    currency_override: str = "",
 ) -> PriceQuote:
     """Validate priceDetails v2 and convert all monetary values to Decimal."""
     if not isinstance(payload, dict):
@@ -241,6 +242,7 @@ def validate_price_response(
         listing_id,
         payload,
         listing_response,
+        currency_override=currency_override,
     )
 
     result_types: dict[str, set[str]] = {}
@@ -265,8 +267,16 @@ def resolve_hostaway_price_currency(
     listing_id: int,
     price_details_response: Any,
     listing_response: Any,
+    *,
+    currency_override: str = "",
 ) -> str:
-    """Resolve Hostaway currency without any geographic or listing-name inference."""
+    """Resolve currency with an opt-in, property-specific business override.
+
+    An override is permitted only for a documented Hostaway currency-labeling
+    defect on one property.  It preserves the amount and replaces only the
+    source currency interpretation.  It never relaxes listing-ID binding or a
+    conflict between Hostaway's own price and listing currency records.
+    """
     if isinstance(listing_id, bool) or not isinstance(listing_id, int) or listing_id <= 0:
         raise HostawayResponseError("Hostaway listing ID must be a positive integer.")
     if not isinstance(price_details_response, dict):
@@ -278,6 +288,10 @@ def resolve_hostaway_price_currency(
     price_currency = _supported_currency(
         price_result.get("currency") or price_result.get("currencyCode"),
         source="priceDetails",
+    )
+    override_currency = _supported_currency(
+        currency_override,
+        source="local override",
     )
     listing_currency = ""
     if listing_response is not None:
@@ -306,7 +320,23 @@ def resolve_hostaway_price_currency(
             listing_currency,
         )
         raise HostawayResponseError("Hostaway price and listing currencies conflict.")
-    currency = price_currency or listing_currency
+    if override_currency:
+        if (
+            (price_currency and price_currency != override_currency)
+            or (listing_currency and listing_currency != override_currency)
+        ):
+            logger.warning(
+                "HOSTAWAY_CURRENCY_OVERRIDE listing_id=%s price_currency=%s "
+                "listing_currency=%s override_currency=%s",
+                listing_id,
+                price_currency or "missing",
+                listing_currency,
+                override_currency,
+            )
+        return override_currency
+    if price_currency:
+        return price_currency
+    currency = listing_currency
     if not currency:
         raise HostawayResponseError("Hostaway price response does not identify a currency.")
     return currency

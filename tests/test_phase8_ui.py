@@ -440,7 +440,7 @@ def test_stale_marketplace_cdn_image_is_not_rendered_in_the_public_gallery() -> 
             "ar",
             (
                 "مراجعة واحدة",
-                "٤.٩ عبر جميع قنوات الحجز",
+                "٤.٩",
                 "ابتداءً من",
                 "قبل الحجز",
                 "تسجيل الوصول من",
@@ -450,7 +450,7 @@ def test_stale_marketplace_cdn_image_is_not_rendered_in_the_public_gallery() -> 
             "fr",
             (
                 "1 avis",
-                "4.9 sur l’ensemble des canaux de réservation",
+                "4.9",
                 "À partir de",
                 "Avant de réserver",
                 "Arrivée à partir de",
@@ -463,7 +463,9 @@ def test_property_detail_renders_localized_review_price_and_policy_copy(
     expected: tuple[str, ...],
 ) -> None:
     property_obj = populated_property(862)
-    property_obj.average_review_rating = Decimal("9.8")
+    property_obj.trustindex_widget_id = "a" * 24
+    property_obj.trustindex_rating = Decimal("4.9")
+    property_obj.trustindex_review_count = 1
     property_obj.indicative_nightly_from = Decimal("700.00")
     property_obj.indicative_currency = "SAR"
     property_obj.check_in_time_start = 15
@@ -479,19 +481,23 @@ def test_property_detail_renders_localized_review_price_and_policy_copy(
         assert phrase in content
 
 
-def test_amenity_and_review_are_visible_on_detail() -> None:
+def test_amenity_and_trustindex_review_slider_are_visible_on_detail() -> None:
     property_obj = populated_property(870)
+    property_obj.trustindex_widget_id = "b" * 24
+    property_obj.save(update_fields=["trustindex_widget_id"])
     content = Client().get(f"/ar/properties/{property_obj.slug}/").content.decode()
     assert "واي فاي" in content
-    assert "Synthetic public review." in content
+    assert "data-trustindex-property-reviews" in content
+    assert "Synthetic public review." not in content
 
 
-def test_featured_review_is_ordered_first() -> None:
+def test_public_review_page_uses_the_trustindex_source() -> None:
     property_obj = property_factory(880)
     review_factory(property_obj, 2, featured=False)
     review_factory(property_obj, 1, featured=True)
     content = Client().get("/ar/reviews/").content.decode()
-    assert content.index("مميزة") < content.index("Synthetic public review.")
+    assert "data-trustindex-general-reviews" in content
+    assert "Synthetic public review." not in content
 
 
 def test_property_detail_does_not_call_hostaway() -> None:
@@ -779,12 +785,12 @@ def test_detail_uses_safe_lodging_schema_until_vacation_requirements_are_met() -
     assert "hostaway_listing_id" not in content
 
 
-def test_public_csp_has_nonce_and_no_unsafe_inline() -> None:
+def test_public_csp_scopes_the_trustindex_widget_exception_to_the_home_page() -> None:
     response = Client().get("/ar/")
     csp = response.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-" in csp
-    assert "style-src 'self';" in csp
-    assert "unsafe-inline" not in csp
+    assert "https://cdn.trustindex.io" in csp
+    assert "style-src 'self' 'unsafe-inline' https://cdn.trustindex.io;" in csp
     assert "frame-ancestors 'none'" in csp
 
 

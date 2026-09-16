@@ -6,6 +6,7 @@ control starts in.
 """
 
 import re
+from pathlib import Path
 
 import pytest
 from django.test import Client
@@ -41,6 +42,21 @@ def test_clear_sits_beside_confirm_rather_than_replacing_it() -> None:
     # accept the dates, and confirming must not remove the way to start again.
     assert "data-calendar-confirm" in dialog
     assert dialog.index("data-calendar-clear") < dialog.index("data-calendar-confirm")
+
+
+def test_calendar_announces_live_availability_state() -> None:
+    dialog = calendar_dialog(Client().get("/ar/").content.decode())
+
+    assert "data-calendar-availability-status" in dialog
+    assert "data-calendar-loading-label" in dialog
+    assert "data-calendar-ready-label" in dialog
+
+
+def test_current_month_request_never_starts_before_today() -> None:
+    script = Path("static/js/site.js").read_text(encoding="utf-8")
+
+    assert "const requestStartDate = startDate < today ? today : startDate;" in script
+    assert 'url.searchParams.set("start", formatDate(requestStartDate));' in script
 
 
 def test_clear_is_reachable_on_a_property_page_too() -> None:

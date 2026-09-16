@@ -326,6 +326,18 @@ def test_analytics_debug_source_logs_keys_not_payload() -> None:
     assert "console.info(payload)" not in script
 
 
+def test_purchase_browser_bridge_uses_only_safe_booking_fields() -> None:
+    script = Path("static/js/analytics.js").read_text(encoding="utf-8")
+
+    assert "[data-analytics-purchase-event]" in script
+    assert 'pushEvent("purchase"' in script
+    assert "analyticsTransactionId" in script
+    assert "analyticsItemId" in script
+    assert "analyticsEmail" not in script
+    assert "analyticsPhone" not in script
+    assert "analyticsGuestName" not in script
+
+
 def test_purchase_is_not_prepared_for_unpaid_attempt() -> None:
     attempt = SimpleNamespace(status=PaymentAttempt.Status.PENDING)
     reservation = SimpleNamespace()
@@ -458,6 +470,9 @@ def test_property_structured_data_is_safe_and_complete(
 ) -> None:
     property_obj.address = "PRIVATE SYNTHETIC ADDRESS"
     property_obj.public_address = "Synthetic public district"
+    property_obj.trustindex_widget_id = "c" * 24
+    property_obj.trustindex_rating = Decimal("4.0")
+    property_obj.trustindex_review_count = 1
     property_obj.save()
     data = property_structured_data(property_obj)
     rendered = str(data)
@@ -470,13 +485,12 @@ def test_property_structured_data_is_safe_and_complete(
     assert "price" not in data and "availability" not in data
 
 
-def test_hidden_review_not_counted_in_structured_data(
+def test_legacy_hostaway_review_is_not_counted_in_structured_data(
     property_obj: Property,
     image: PropertyImage,
     visible_review: Review,
 ) -> None:
-    visible_review.is_visible = False
-    visible_review.save()
+    del image, visible_review
     assert "aggregateRating" not in property_structured_data(property_obj)
 
 

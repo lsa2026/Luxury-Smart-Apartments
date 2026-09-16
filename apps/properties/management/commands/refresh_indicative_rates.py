@@ -71,7 +71,9 @@ class Command(BaseCommand):
                 if lowest is None:
                     no_availability += 1
                     continue
-                currency = (property_obj.currency_code or "").strip().upper()
+                currency = (
+                    property_obj.price_currency_override or property_obj.currency_code
+                ).strip().upper()
                 if len(currency) != 3 or not currency.isalpha():
                     failed += 1
                     self.stderr.write(

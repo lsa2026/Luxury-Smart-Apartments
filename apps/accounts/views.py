@@ -24,6 +24,10 @@ from .tokens import read_verification_token
 CLAIM_PARAM = "claim"
 RESEND_RATE_LIMIT_REQUESTS = 3
 RESEND_RATE_LIMIT_WINDOW = 15 * 60
+# The existing email-and-password forms deliberately keep using Django's local
+# backend.  Social providers register a second backend, so newly created users
+# must state this explicitly when their session is created.
+LOCAL_AUTH_BACKEND = "django.contrib.auth.backends.ModelBackend"
 
 
 def _active_language(request: HttpRequest) -> str:
@@ -101,7 +105,7 @@ class RegisterView(View):
                 status=400,
             )
         user = form.save()
-        login(request, user)
+        login(request, user, backend=LOCAL_AUTH_BACKEND)
         _send_verification(request, user)
         # Only promise an email the site can actually deliver. While delivery is
         # off the row is still queued, so the audit trail is unbroken and the
@@ -148,7 +152,7 @@ class LoginView(View):
                 status=400,
             )
         user = form.get_user()
-        login(request, user)
+        login(request, user, backend=LOCAL_AUTH_BACKEND)
         messages.success(request, _("Welcome back."))
         _claim_after_authentication(request, user)
         return redirect(_safe_next(request, "accounts:dashboard"))

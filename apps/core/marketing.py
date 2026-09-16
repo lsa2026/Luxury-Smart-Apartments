@@ -14,6 +14,7 @@ EVENT_SCHEMAS: dict[str, frozenset[str]] = {
     "view_item_list": frozenset({"item_list_name", "items"}),
     "select_item": frozenset({"item_list_name", "items"}),
     "view_item": frozenset({"currency", "value", "items"}),
+    "view_all_reviews": frozenset({"language", "review_count", "items"}),
     "begin_checkout": frozenset({"currency", "value", "items", "nights", "guests"}),
     "generate_lead": frozenset({"lead_source"}),
     "check_availability": frozenset({"city", "nights", "guests"}),

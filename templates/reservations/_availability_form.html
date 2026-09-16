@@ -52,6 +52,23 @@
         data-selected-help="{% trans 'Your stay dates are ready' %}"
         data-night-label="{% trans 'night' %}"
         data-nights-label="{% trans 'nights' %}"
+        {% if property %}
+        data-calendar-availability-url="{% url 'reservations:calendar_availability' property.slug %}"
+        {% endif %}
+        data-unavailable-label="{% trans 'Unavailable' %}"
+        {% if current_language_code == "ar" %}
+        data-calendar-loading-label="يتم التحقق من التوافر المباشر…"
+        data-calendar-ready-label="تم تحديث التوافر المباشر"
+        data-calendar-fallback-label="سيُؤكَّد التوافر قبل إتمام الحجز"
+        {% elif current_language_code == "fr" %}
+        data-calendar-loading-label="Vérification des disponibilités en direct…"
+        data-calendar-ready-label="Les disponibilités en direct sont à jour"
+        data-calendar-fallback-label="La disponibilité sera confirmée avant la réservation"
+        {% else %}
+        data-calendar-loading-label="Checking live availability…"
+        data-calendar-ready-label="Live availability is up to date"
+        data-calendar-fallback-label="Availability will be confirmed before booking"
+        {% endif %}
         aria-label="{% trans 'Choose your stay dates' %}"
     >
         <div class="luxury-calendar__header">
@@ -83,6 +100,7 @@
         </div>
 
         <div class="luxury-calendar__months" data-calendar-months></div>
+        <p class="luxury-calendar__availability-status" data-calendar-availability-status role="status" aria-live="polite"></p>
 
         <div class="luxury-calendar__footer">
             <p><span aria-hidden="true">◆</span>{% trans "Your arrival day stays highlighted while you choose departure." %}</p>

@@ -81,6 +81,7 @@ PROPERTY_SOURCE_FIELDS = (
 
 PROPERTY_LOCAL_FIELDS = {
     "slug",
+    "price_currency_override",
     "name_ar",
     "name_en",
     "name_fr",
@@ -96,6 +97,8 @@ PROPERTY_LOCAL_FIELDS = {
     "public_location_enabled",
     "public_location_latitude",
     "public_location_longitude",
+    "google_maps_cid",
+    "trustindex_widget_id",
     "seo_title_ar",
     "seo_title_en",
     "seo_title_fr",
@@ -132,6 +135,8 @@ PROPERTY_FORM_FIELDS = (
     "public_location_enabled",
     "public_location_latitude",
     "public_location_longitude",
+    "google_maps_cid",
+    "trustindex_widget_id",
     "seo_title_ar",
     "seo_title_en",
     "seo_title_fr",
@@ -297,7 +302,13 @@ class PropertyAdmin(admin.ModelAdmin):
         "=hostaway_listing_id",
         "=hostaway_listing_map_id",
     )
-    readonly_fields = PROPERTY_SOURCE_FIELDS + ("asset_management", "location_picker")
+    readonly_fields = PROPERTY_SOURCE_FIELDS + (
+        "asset_management",
+        "location_picker",
+        "trustindex_rating",
+        "trustindex_review_count",
+        "trustindex_synced_at",
+    )
     actions = ("queue_selected_property_sync",)
     # Large Hostaway listings can contain dozens of images and amenities. They
     # stay fully manageable on their dedicated screens instead of making the
@@ -314,6 +325,16 @@ class PropertyAdmin(admin.ModelAdmin):
                     ("is_featured", "sort_order"),
                     "content_is_customized",
                 )
+            },
+        ),
+        (
+            _("Price currency correction"),
+            {
+                "fields": ("price_currency_override",),
+                "description": _(
+                    "Use only for a documented Hostaway currency-labeling error on this "
+                    "property. The price number is retained; its currency is corrected."
+                ),
             },
         ),
         (
@@ -351,11 +372,27 @@ class PropertyAdmin(admin.ModelAdmin):
                     "location_picker",
                     "public_location_latitude",
                     "public_location_longitude",
+                    "google_maps_cid",
                 ),
                 "description": _(
                     "Click the map or drag the marker to choose the location shown to guests. "
                     "Coordinates are saved automatically and Hostaway sync will not overwrite "
                     "this selection."
+                ),
+            },
+        ),
+        (
+            _("Trustindex guest reviews"),
+            {
+                "fields": (
+                    "trustindex_widget_id",
+                    "trustindex_rating",
+                    "trustindex_review_count",
+                    "trustindex_synced_at",
+                ),
+                "description": _(
+                    "Public reviews and rating come only from this Trustindex widget. "
+                    "The rating and count refresh automatically and are not edited here."
                 ),
             },
         ),

@@ -192,30 +192,46 @@ def test_the_stored_review_is_never_edited() -> None:
 # --- 9. One rating -----------------------------------------------------------
 
 
-def test_the_visible_rating_is_the_average_of_the_visible_reviews() -> None:
+def test_the_visible_rating_comes_only_from_trustindex() -> None:
     property_obj = make_property(average_review_rating=Decimal("9.8"))
-    make_review(property_obj, "10.0", 5003)
+    property_obj.trustindex_widget_id = "a" * 24
+    property_obj.trustindex_rating = Decimal("4.7")
+    property_obj.trustindex_review_count = 18
+    property_obj.save(
+        update_fields=[
+            "trustindex_widget_id",
+            "trustindex_rating",
+            "trustindex_review_count",
+        ]
+    )
     make_review(property_obj, "6.0", 5004)
 
     summary = rating_summary(property_obj)
 
-    assert summary.published_average_out_of_five == Decimal("4.0")
-    assert summary.published_count == 2
-    assert summary.all_channel_average_out_of_five == Decimal("4.9")
+    assert summary.average_out_of_five == Decimal("4.7")
+    assert summary.review_count == 18
 
 
 def test_structured_data_matches_what_a_person_reads() -> None:
     from apps.core.seo import property_structured_data
 
     property_obj = make_property(average_review_rating=Decimal("9.8"))
-    make_review(property_obj, "10.0", 5005)
-    make_review(property_obj, "6.0", 5006)
+    property_obj.trustindex_widget_id = "b" * 24
+    property_obj.trustindex_rating = Decimal("4.8")
+    property_obj.trustindex_review_count = 21
+    property_obj.save(
+        update_fields=[
+            "trustindex_widget_id",
+            "trustindex_rating",
+            "trustindex_review_count",
+        ]
+    )
 
     data = property_structured_data(property_obj)
     summary = rating_summary(property_obj)
 
-    assert data["aggregateRating"]["ratingValue"] == float(summary.published_average_out_of_five)
-    assert data["aggregateRating"]["reviewCount"] == summary.published_count
+    assert data["aggregateRating"]["ratingValue"] == float(summary.average_out_of_five)
+    assert data["aggregateRating"]["reviewCount"] == summary.review_count
 
 
 def test_no_rating_is_published_without_reviews() -> None:
@@ -314,13 +330,13 @@ def test_a_property_question_stays_off_the_general_page() -> None:
     assert "سؤال خاص بالوحدة" not in content
 
 
-def test_a_property_question_appears_on_its_own_page() -> None:
+def test_property_page_does_not_render_the_removed_faq_section() -> None:
     property_obj = make_property()
     make_faq(property=property_obj, question_ar="سؤال خاص بالوحدة")
 
     content = Client().get(property_obj.get_absolute_url()).content.decode()
 
-    assert "سؤال خاص بالوحدة" in content
+    assert "سؤال خاص بالوحدة" not in content
 
 
 def test_another_property_never_shows_a_foreign_question() -> None:

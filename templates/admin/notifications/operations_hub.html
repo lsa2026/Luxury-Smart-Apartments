@@ -1,0 +1,90 @@
+{% extends "admin/base_site.html" %}
+{% load presentation %}
+
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} lsa-dashboard-page lsa-operations-hub-page{% endblock %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-hub" dir="rtl">
+  <section class="lsa-hero lsa-operations-hub__hero">
+    <div>
+      <span class="lsa-kicker"><i></i> المرحلة 6.0 · أساس تشغيلي آمن</span>
+      <h1>مركز العمليات</h1>
+      <p>مساحة خاصة لاتخاذ قرارات الحجز والتحصيل والمتابعة. هذه النسخة للقراءة فقط: لا تنشئ حجزًا أو رابط دفع أو رسالة أو استرجاعًا ماليًا.</p>
+      <small class="lsa-live-time"><i></i> ظاهر لك كأدمن فقط، وليس جزءًا من الموقع الموجّه للضيوف.</small>
+    </div>
+    <div class="lsa-hero__actions">
+      <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">حجز يدوي جديد</a>
+      <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:dashboard' %}">التقارير التشغيلية</a>
+      <a class="lsa-btn lsa-btn--gold" href="{{ dashboard.urls.bookings }}">قائمة الحجوزات</a>
+    </div>
+    <div class="lsa-hero__orb" aria-hidden="true"></div>
+  </section>
+
+  <section class="lsa-private-notice" aria-label="حماية مركز العمليات">
+    <span aria-hidden="true">⌑</span>
+    <div><b>خاص ومغلق عن الضيوف</b><p>يتطلب هذا الرابط تسجيل دخول إداري وصلاحية عمليات. لا يظهر في القائمة العامة أو خريطة الموقع أو محركات البحث.</p></div>
+    <span class="lsa-private-notice__state">قراءة فقط</span>
+  </section>
+
+  <section class="lsa-operations-strip lsa-operations-strip--hub" aria-label="ملخص العمل الحالي">
+    <a href="{{ dashboard.urls.bookings }}"><span>حجوزات تحتاج متابعة</span><strong>{{ dashboard.reservations_attention }}</strong><i>فتح القائمة ←</i></a>
+    <a href="{{ dashboard.urls.payments }}"><span>دفعات معلّقة</span><strong>{{ dashboard.pending_payments }}</strong><i>فتح سجل الدفع ←</i></a>
+    <a href="{{ dashboard.urls.modifications }}"><span>طلبات تعديل</span><strong>{{ dashboard.pending_modifications }}</strong><i>فتح الطلبات ←</i></a>
+    <a href="{{ dashboard.urls.bookings }}"><span>استرجاعات مستحقة</span><strong>{{ dashboard.refunds_due }}</strong><i>فتح السجل ←</i></a>
+  </section>
+
+  <section class="lsa-hub-grid">
+    <article class="lsa-panel lsa-hub-lifecycle">
+      <header class="lsa-panel__header">
+        <div><span class="lsa-panel__eyebrow">المسار المعتمد</span><h2>دورة الحجز الداخلي</h2></div>
+        <span class="lsa-panel-count">سيُفعل تدريجيًا</span>
+      </header>
+      <ol class="lsa-lifecycle">
+        <li><span>1</span><div><b>فحص التوفر</b><small>مصدر الحقيقة هو Hostaway قبل أي التزام للضيف.</small></div></li>
+        <li><span>2</span><div><b>اعتماد السعر</b><small>يُحفظ سعر النظام والسعر النهائي وأي تعديل مع سببه.</small></div></li>
+        <li><span>3</span><div><b>إنشاء رابط دفع</b><small>رابط HyperPay المستضاف أو طلب منظم للمحاسبة كبديل.</small></div></li>
+        <li><span>4</span><div><b>التحقق من الدفع</b><small>لا يثبت الحجز من مجرد فتح الرابط؛ يجب تحقق الخادم من HyperPay.</small></div></li>
+        <li><span>5</span><div><b>تأكيد Hostaway</b><small>تُسجّل النتيجة المرجعية قبل إرسال التأكيد النهائي للضيف.</small></div></li>
+      </ol>
+    </article>
+
+    <article class="lsa-panel lsa-hub-payment-route">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">التحصيل</span><h2>مسار رابط الدفع</h2></div></header>
+      <div class="lsa-payment-route is-pending">
+        <span>HyperPay</span>
+        <b>بانتظار تأكيد واجهة API لروابط hypbill.com</b>
+        <small>لن نفترض أن API الـCheckout الحالية تنشئ روابط مستضافة قبل رد فريق HyperPay.</small>
+      </div>
+      <div class="lsa-payment-route is-fallback">
+        <span>بديل تشغيلي</span>
+        <b>طلب رابط يدوي للمحاسبة</b>
+        <small>يُرسل النظام بيانات الحجز الضرورية فقط، ثم يُسجل الرابط قبل إرساله للضيف.</small>
+      </div>
+      <p class="lsa-safety-note">لن يُفعّل الإرسال عبر WhatsApp أو أي إجراء مالي في هذه المرحلة.</p>
+    </article>
+  </section>
+
+  <section class="lsa-hub-work-grid">
+    <article class="lsa-panel">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلة 6.1</span><h2>الحجز اليدوي والسعر</h2></div></header>
+      <a class="lsa-hub-action" href="{% url 'notifications:manual_booking_create' %}"><span>⌂</span><div><b>إنشاء مسودة بعد فحص التوفر</b><small>اختيار الوحدة والتواريخ والضيف، ثم حفظ تسعير النظام والتعديل اليدوي مع سببه.</small></div><em>متاح الآن</em></a>
+      <div class="lsa-hub-action is-planned"><span>≋</span><div><b>سجل تدقيق دائم</b><small>كل قرار يحفظ صاحبه ووقته وسببه، دون تعديل صامت على السعر أو الحجز.</small></div><em>قريبًا</em></div>
+    </article>
+    <article class="lsa-panel">
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلتان 6.2 و6.3</span><h2>الدفع والإلغاء والاسترجاع</h2></div></header>
+      <div class="lsa-hub-action is-planned"><span>↗</span><div><b>إرسال رابط دفع للضيف</b><small>إما عبر رابط HyperPay الآلي أو بعد استلام الرابط اليدوي من المحاسبة.</small></div><em>قريبًا</em></div>
+      <div class="lsa-hub-action is-planned"><span>↺</span><div><b>إلغاء واسترجاع مضبوط</b><small>كامل أو جزئي، بمبلغ معتمد وسبب وسجل مالي؛ لا استرجاع تلقائي بمجرد الإلغاء.</small></div><em>قريبًا</em></div>
+    </article>
+  </section>
+
+  <section class="lsa-panel lsa-hub-access">
+    <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">الدخول والصلاحيات</span><h2>خطة حماية الحسابات</h2></div></header>
+    <div class="lsa-access-grid">
+      <div><span>الضيوف</span><b>Google أو Apple أو البريد الإلكتروني الشخصي</b><small>تسهيل الدخول إلى حساب الضيف وحجوزاته فقط.</small></div>
+      <div><span>الإدارة</span><b>Google ببريد العمل + صلاحية عمليات</b><small>لا تمنح هوية Google أو Apple وحدها أي صلاحية إدارية.</small></div>
+      <div><span>الإجراء المالي</span><b>تأكيد صريح وسجل تدقيق</b><small>يظل الإرسال والاسترجاع محميين بخطوة اعتماد عند تفعيلهما.</small></div>
+    </div>
+  </section>
+</main>
+{% endblock %}

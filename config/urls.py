@@ -12,6 +12,7 @@ from apps.core.views import service_worker
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
+    path("accounts/", include("allauth.urls")),
     path("", include("apps.accounts.urls")),
     path("payments/", include("apps.payments.urls")),
     path("", include("apps.notifications.urls")),

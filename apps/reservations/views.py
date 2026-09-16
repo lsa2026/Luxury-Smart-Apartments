@@ -1,7 +1,7 @@
 """Public quote and local booking-intent flow; no Hostaway reservation is created."""
 
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core import signing
 from django.db import DatabaseError
 from django.db.models import Prefetch, Q
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone, translation
@@ -46,7 +46,11 @@ from .security import (
     session_owns,
 )
 from .services.automatic_modifications import execute_automatic_modification
-from .services.availability import AvailabilityRequest, AvailabilityService
+from .services.availability import (
+    AvailabilityRequest,
+    AvailabilityService,
+    resolve_day_inventory,
+)
 from .services.booking import consume_revalidated_quote
 from .services.modifications import ModificationService
 from .services.stay_policy import stay_policy_for
@@ -57,6 +61,78 @@ from .signing import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class PropertyCalendarAvailabilityView(View):
+    """Expose a small, privacy-safe projection of Hostaway calendar availability."""
+
+    http_method_names = ["get"]
+    max_window_days = 93
+    service_class = AvailabilityService
+
+    def get(self, request: HttpRequest, slug: str) -> JsonResponse:
+        if is_rate_limited(
+            request,
+            scope="calendar-availability",
+            requests=settings.AVAILABILITY_RATE_LIMIT_REQUESTS,
+            window=settings.AVAILABILITY_RATE_LIMIT_WINDOW,
+        ):
+            return JsonResponse({"detail": "rate_limited"}, status=429)
+
+        try:
+            start_date = date.fromisoformat(request.GET["start"])
+            end_date = date.fromisoformat(request.GET["end"])
+        except (KeyError, TypeError, ValueError):
+            return JsonResponse({"detail": "invalid_date_range"}, status=400)
+
+        today = timezone.localdate()
+        if (
+            start_date < today
+            or end_date <= start_date
+            or (end_date - start_date).days > self.max_window_days
+        ):
+            return JsonResponse({"detail": "invalid_date_range"}, status=400)
+
+        try:
+            property_obj = Property.objects.public().only(
+                "id", "hostaway_listing_id", "is_visible", "hostaway_special_status"
+            ).get(slug=slug)
+        except Property.DoesNotExist as exc:
+            raise Http404 from exc
+
+        try:
+            with self.service_class() as service:
+                calendar = service.fetch_calendar(
+                    property_obj=property_obj,
+                    start_date=start_date,
+                    end_date=end_date,
+                    bypass_cache=False,
+                )
+        except Exception:
+            # The picker may still open when Hostaway is temporarily unavailable;
+            # the authoritative availability check remains at form submission.
+            logger.warning(
+                "Calendar projection unavailable for listing_id=%s",
+                property_obj.hostaway_listing_id,
+                exc_info=True,
+            )
+            return JsonResponse({"detail": "temporarily_unavailable"}, status=503)
+
+        days = []
+        for calendar_day in calendar.document.days:
+            inventory = resolve_day_inventory(calendar_day)
+            days.append(
+                {
+                    "date": calendar_day.date.isoformat(),
+                    "arrival_available": bool(
+                        inventory.is_available and not calendar_day.closed_on_arrival
+                    ),
+                    "departure_available": not bool(calendar_day.closed_on_departure),
+                }
+            )
+        response = JsonResponse({"days": days})
+        response["Cache-Control"] = "private, max-age=30"
+        return response
 
 
 def _owned_quote(request: HttpRequest, reference: str) -> BookingQuote:

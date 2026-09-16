@@ -27,6 +27,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.apple",
+    "allauth.socialaccount.providers.google",
     "apps.core.apps.CoreConfig",
     "apps.accounts.apps.AccountsConfig",
     "apps.properties.apps.PropertiesConfig",
@@ -49,6 +54,8 @@ MIDDLEWARE = [
     "apps.core.middleware.LegacyRedirectMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "apps.accounts.middleware.OwnerOnlyAdminMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.SecurityHeadersMiddleware",
@@ -67,6 +74,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_context",
+                "apps.accounts.context_processors.authentication_options",
             ],
         },
     },
@@ -149,6 +157,25 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+# Existing guest accounts authenticate by email and password.  django-allauth
+# adds Google and Apple as optional identity providers; it does not replace the
+# ordinary Django backend that powers the private administration area.
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "/ar/"
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_ADAPTER = "apps.accounts.social_adapters.LuxurySocialAccountAdapter"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
+SOCIALACCOUNT_LOGIN_ON_GET = False
+SOCIALACCOUNT_STORE_TOKENS = False
 
 LANGUAGE_CODE = "ar"
 LANGUAGES = [
@@ -383,9 +410,14 @@ HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES = optional_positive_int(
     "HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES",
     5,
 )
-HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES = optional_positive_int(
-    "HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES",
-    15,
+# Trustindex is the only public review authority. The legacy Hostaway review
+# importer remains available for audit/history but is disabled by default and
+# must never run from the automatic property-sync schedule.
+HOSTAWAY_REVIEW_SYNC_ENABLED = strict_bool("HOSTAWAY_REVIEW_SYNC_ENABLED")
+TRUSTINDEX_REVIEW_SYNC_ENABLED = strict_bool("TRUSTINDEX_REVIEW_SYNC_ENABLED")
+TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES = optional_positive_int(
+    "TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES",
+    360,
 )
 HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES = optional_positive_int(
     "HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES",
@@ -447,10 +479,6 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
             "task": "apps.integrations.tasks.refresh_indicative_rates_task",
             "schedule": crontab(hour=5, minute=30),
         },
-        "hostaway-reviews": {
-            "task": "apps.integrations.tasks.sync_hostaway_reviews_task",
-            "schedule": HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES * 60,
-        },
         "hostaway-webhooks": {
             "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
             "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
@@ -463,6 +491,11 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
             "task": "apps.integrations.tasks.expire_booking_objects_task",
             "schedule": BOOKING_EXPIRATION_INTERVAL_MINUTES * 60,
         },
+    }
+if TRUSTINDEX_REVIEW_SYNC_ENABLED:
+    CELERY_BEAT_SCHEDULE["trustindex-review-metrics"] = {
+        "task": "apps.reviews.tasks.sync_trustindex_review_metrics_task",
+        "schedule": TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES * 60,
     }
 
 SITE_CANONICAL_URL = env("SITE_CANONICAL_URL", default="http://localhost:8000").rstrip("/")
@@ -521,6 +554,68 @@ NOTIFICATION_RETENTION_DAYS = optional_positive_int(
     180,
 )
 AUDIT_LOG_RETENTION_DAYS = optional_positive_int("AUDIT_LOG_RETENTION_DAYS", 730)
+
+# There is one operational owner.  A social provider can verify an identity,
+# but it cannot grant operational authority: the exact email and Django's
+# administrative flags are both required by apps.accounts.access.
+OPERATIONS_OWNER_EMAIL = env(
+    "OPERATIONS_OWNER_EMAIL",
+    default="saeed@luxurysmartapartments.com",
+).strip().casefold()
+if "@" not in OPERATIONS_OWNER_EMAIL:
+    raise ImproperlyConfigured("OPERATIONS_OWNER_EMAIL must be a valid business email address.")
+OPERATIONS_OWNER_ENFORCEMENT_ENABLED = strict_bool(
+    "OPERATIONS_OWNER_ENFORCEMENT_ENABLED",
+    True,
+)
+
+# OAuth secrets live only in the deployment environment.  They are never
+# stored in Django's database or committed to Git.  The buttons remain hidden
+# until their provider has been deliberately enabled and fully configured.
+GOOGLE_SIGN_IN_ENABLED = strict_bool("GOOGLE_SIGN_IN_ENABLED")
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="").strip()
+GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="").strip()
+APPLE_SIGN_IN_ENABLED = strict_bool("APPLE_SIGN_IN_ENABLED")
+APPLE_SERVICE_ID = env("APPLE_SERVICE_ID", default="").strip()
+APPLE_KEY_ID = env("APPLE_KEY_ID", default="").strip()
+APPLE_TEAM_ID = env("APPLE_TEAM_ID", default="").strip()
+APPLE_PRIVATE_KEY = env("APPLE_PRIVATE_KEY", default="").replace("\\n", "\n").strip()
+
+SOCIALACCOUNT_PROVIDERS: dict[str, dict] = {}
+if GOOGLE_SIGN_IN_ENABLED:
+    if not GOOGLE_OAUTH_CLIENT_ID or not GOOGLE_OAUTH_CLIENT_SECRET:
+        raise ImproperlyConfigured(
+            "GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET are required "
+            "when GOOGLE_SIGN_IN_ENABLED is true."
+        )
+    SOCIALACCOUNT_PROVIDERS["google"] = {
+        "APP": {
+            "client_id": GOOGLE_OAUTH_CLIENT_ID,
+            "secret": GOOGLE_OAUTH_CLIENT_SECRET,
+            "key": "",
+        },
+        "SCOPE": ["openid", "profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "OAUTH_PKCE_ENABLED": True,
+        "VERIFIED_EMAIL": True,
+    }
+if APPLE_SIGN_IN_ENABLED:
+    if not all((APPLE_SERVICE_ID, APPLE_KEY_ID, APPLE_TEAM_ID, APPLE_PRIVATE_KEY)):
+        raise ImproperlyConfigured(
+            "Apple sign-in requires APPLE_SERVICE_ID, APPLE_KEY_ID, APPLE_TEAM_ID, "
+            "and APPLE_PRIVATE_KEY."
+        )
+    SOCIALACCOUNT_PROVIDERS["apple"] = {
+        "APPS": [
+            {
+                "client_id": APPLE_SERVICE_ID,
+                "secret": APPLE_KEY_ID,
+                "key": APPLE_TEAM_ID,
+                "settings": {"certificate_key": APPLE_PRIVATE_KEY},
+            }
+        ],
+        "VERIFIED_EMAIL": True,
+    }
 
 GOOGLE_INTEGRATIONS_ENABLED = strict_bool("GOOGLE_INTEGRATIONS_ENABLED")
 GOOGLE_TAG_MANAGER_ENABLED = strict_bool("GOOGLE_TAG_MANAGER_ENABLED")

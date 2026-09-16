@@ -1,8 +1,44 @@
 {% extends "base.html" %}
 {% load i18n presentation %}
 {% block title %}{% trans "Guest reviews" %} | Luxury Smart Apartments{% endblock %}
-{% block meta_description %}{% trans "Published guest-to-host reviews, shown with privacy-conscious guest names." %}{% endblock %}
+{% block meta_description %}{% trans "Verified guest reviews collected from our public booking platforms." %}{% endblock %}
 {% block content %}
-<header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Verified stays" %}</p><h1>{% trans "Guest reviews" %}</h1><p>{% trans "Published guest experiences presented with privacy in mind." %}</p></div></header>
-<section class="section container"><h2 class="sr-only">{% trans "All guest reviews" %}</h2>{% include "reviews/_review_cards.html" with reviews=reviews %}{% if is_paginated %}<nav class="pagination" aria-label="{% trans 'Review pages' %}">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" rel="prev">{% trans "Previous" %}</a>{% endif %}<span>{% blocktrans with current=page_obj.number|localized_number total=paginator.num_pages|localized_number %}Page {{ current }} of {{ total }}{% endblocktrans %}</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" rel="next">{% trans "Next" %}</a>{% endif %}</nav>{% endif %}</section>
+<header class="page-hero page-hero--compact">
+    <div class="container">
+        <p class="eyebrow">{% trans "Verified stays" %}</p>
+        <h1>{% trans "Guest reviews" %}</h1>
+        {% if selected_review_property %}
+            <p>{{ selected_review_property|localized_property_name }}</p>
+        {% else %}
+            <p>{% trans "Verified feedback from Google, Booking.com and Airbnb." %}</p>
+        {% endif %}
+    </div>
+</header>
+<section class="section container">
+    <h2 class="sr-only">{% trans "All guest reviews" %}</h2>
+    <form class="review-explorer" method="get" aria-label="{% trans 'Filter properties' %}">
+        <div class="form-field">
+            <label for="review-property">{% trans "Properties" %}</label>
+            <select id="review-property" name="property">
+                <option value="">{% trans "All guest reviews" %}</option>
+                {% for property_obj in review_properties %}
+                    <option value="{{ property_obj.slug }}"{% if selected_review_property and selected_review_property.pk == property_obj.pk %} selected{% endif %}>{{ property_obj|localized_property_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="button button--compact" type="submit">{% trans "Apply filters" %}</button>
+        <p class="review-explorer__hint">{{ review_explorer_hint }}</p>
+    </form>
+    {% if selected_review_property and not selected_review_widget_id %}
+        <div class="review-explorer__empty" role="status">
+            <p class="eyebrow">{% trans "Guest reviews" %}</p>
+            <h3>{% trans "Verified reviews are being prepared" %}</h3>
+            <p>{% trans "This property will show verified guest reviews once its review sources are connected." %}</p>
+        </div>
+    {% else %}
+        <div class="trustindex-widget" data-trustindex-general-reviews{% if selected_review_property %} data-trustindex-property-full-reviews{% endif %}>
+            <script defer async src="https://cdn.trustindex.io/loader.js?{{ trustindex_widget_id }}"></script>
+        </div>
+    {% endif %}
+</section>
 {% endblock %}
