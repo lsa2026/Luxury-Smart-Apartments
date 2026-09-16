@@ -136,7 +136,6 @@
     </div>
 </section>
 
-{% if featured_reviews %}
 <section class="section section--soft travel-reviews" aria-labelledby="featured-reviews-title">
     <div class="container">
         <div class="section-heading section-heading--split">
@@ -146,10 +145,11 @@
             </div>
             <a class="text-link text-link--arrow" href="{% url 'reviews:list' %}">{% trans "Read all reviews" %}<span aria-hidden="true">←</span></a>
         </div>
-        {% include "reviews/_review_cards.html" with reviews=featured_reviews %}
+        <div class="trustindex-widget" data-trustindex-home-reviews>
+            <script defer async src="https://cdn.trustindex.io/loader.js?{{ trustindex_general_widget_id }}"></script>
+        </div>
     </div>
 </section>
-{% endif %}
 
 <section class="section container travel-final" id="booking-management">
     <div class="travel-final__panel">

@@ -6546,6 +6546,18 @@ h2 {
     margin-block-end: 1.6rem;
 }
 
+/* Avoid sending guests out to an external review platform from a direct-booking page. */
+[data-trustindex-property-reviews] .ti-header-write-btn-container,
+[data-trustindex-property-full-reviews] .ti-header-write-btn-container {
+    display: none !important;
+}
+
+.property-reviews__all-link {
+    display: flex;
+    justify-content: center;
+    margin: 1.25rem 0 0;
+}
+
 .property-reviews .review-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;

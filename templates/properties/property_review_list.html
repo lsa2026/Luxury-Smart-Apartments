@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load i18n presentation %}
+{% block title %}{% trans "Guest reviews" %} | {{ property|localized_property_name }} | Luxury Smart Apartments{% endblock %}
+{% block meta_description %}{% trans "Verified feedback from Google, Booking.com and Airbnb." %}{% endblock %}
+{% block content %}
+<header class="page-hero page-hero--compact"><div class="container"><p class="eyebrow">{% trans "Guest experiences" %}</p><h1>{% trans "Guest reviews" %}</h1><p>{{ property|localized_property_name }}</p></div></header>
+<section class="section container" data-analytics-view-all-reviews data-analytics-language="{{ review_language }}" data-analytics-review-count="{{ rating_summary.review_count }}" data-item-id="{{ property.slug }}" data-item-name="{{ property|localized_property_name }}">
+    <div class="section-heading section-heading--split"><div><p class="eyebrow">{% trans "Verified stays" %}</p><h2>{% trans "All guest reviews" %}</h2></div><a class="text-link" href="{{ property.get_absolute_url }}">{% trans "Properties" %}</a></div>
+    <div class="trustindex-widget" data-trustindex-property-full-reviews><script defer async src="https://cdn.trustindex.io/loader.js?{{ trustindex_widget_id }}"></script></div>
+</section>
+{% endblock %}

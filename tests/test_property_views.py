@@ -70,11 +70,13 @@ def test_enabled_public_location_renders_an_interactive_map_and_geo_schema() -> 
     property_obj.public_location_enabled = True
     property_obj.public_location_latitude = Decimal("24.713552")
     property_obj.public_location_longitude = Decimal("46.675296")
+    property_obj.google_maps_cid = "4981474889453888860"
     property_obj.save(
         update_fields=[
             "public_location_enabled",
             "public_location_latitude",
             "public_location_longitude",
+            "google_maps_cid",
         ]
     )
 
@@ -86,7 +88,7 @@ def test_enabled_public_location_renders_an_interactive_map_and_geo_schema() -> 
     assert 'data-latitude="24.713552"' in content
     assert 'data-longitude="46.675296"' in content
     assert "vendor/leaflet/leaflet.js" in content
-    assert "openstreetmap.org" in content
+    assert "https://www.google.com/maps?cid=4981474889453888860" in content
     assert '"@type":"GeoCoordinates"' in content
     assert "https://tile.openstreetmap.org" in response.headers["Content-Security-Policy"]
 

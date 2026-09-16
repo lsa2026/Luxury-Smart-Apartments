@@ -1,89 +1,49 @@
 import pytest
 from django.test import Client
-from django.utils import timezone
 
 from apps.properties.models import Property
-from apps.reviews.models import Review
 
 pytestmark = pytest.mark.django_db
 
 
-def make_review(property_obj: Property, review_id: int, *, visible: bool) -> Review:
-    return Review.objects.create(
-        hostaway_review_id=review_id,
-        property=property_obj,
-        hostaway_listing_map_id=property_obj.hostaway_listing_id,
-        review_type=Review.Type.GUEST_TO_HOST,
-        status=Review.Status.PUBLISHED,
-        guest_name="عبدالله الكامل",
-        rating="9.0",
-        public_review=f"Review text {review_id}",
-        is_visible=visible,
-        synced_at=timezone.now(),
-    )
-
-
-def test_hidden_reviews_do_not_appear_in_public_view() -> None:
-    property_obj = Property.objects.create(
-        hostaway_listing_id=7100,
-        slug="test-property",
+def make_property(listing_id: int, *, widget_id: str = "") -> Property:
+    return Property.objects.create(
+        hostaway_listing_id=listing_id,
+        slug=f"review-property-{listing_id}",
         name_ar="وحدة الاختبار",
         name_en="Test Property",
         city_ar="الرياض",
         city_en="Riyadh",
         country_code="SA",
+        trustindex_widget_id=widget_id,
     )
-    make_review(property_obj, 9100, visible=True)
-    make_review(property_obj, 9101, visible=False)
+
+
+def test_review_explorer_never_renders_legacy_hostaway_review_copy() -> None:
+    property_obj = make_property(7100)
 
     response = Client().get("/ar/reviews/")
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Review text 9100" in content
-    assert "Review text 9101" not in content
-    assert "عبدالله الكامل" not in content
-    assert "عبدالله" in content
+    assert property_obj.slug in content
+    assert "cdn.trustindex.io/loader.js" in content
+    assert "Review text" not in content
 
 
-def test_long_review_has_accessible_expand_control() -> None:
-    property_obj = Property.objects.create(
-        hostaway_listing_id=7200,
-        slug="long-review-property",
-        name_ar="وحدة الاختبار",
-        name_en="Test Property",
-        city_ar="الرياض",
-        city_en="Riyadh",
-        country_code="SA",
-    )
-    review = make_review(property_obj, 9200, visible=True)
-    review.public_review = "تجربة إقامة رائعة ومريحة. " * 20
-    review.save(update_fields=["public_review"])
+def test_review_explorer_accepts_a_property_filter() -> None:
+    selected = make_property(7200)
+    make_property(7201)
 
-    content = Client().get("/ar/reviews/").content.decode()
+    response = Client().get("/ar/reviews/", {"property": selected.slug})
 
-    assert 'data-review-copy class="is-collapsible"' in content
-    assert "data-review-toggle" in content
-    assert 'aria-controls="review-copy-' in content
+    assert response.status_code == 200
+    assert f'value="{selected.slug}" selected' in response.content.decode()
 
 
-def test_review_collection_supports_progressive_reveal() -> None:
-    property_obj = Property.objects.create(
-        hostaway_listing_id=7300,
-        slug="review-collection-property",
-        name_ar="وحدة الاختبار",
-        name_en="Test Property",
-        city_ar="الرياض",
-        city_en="Riyadh",
-        country_code="SA",
-    )
-    for review_id in range(9300, 9307):
-        make_review(property_obj, review_id, visible=True)
+def test_property_review_page_returns_not_found_without_approved_widget() -> None:
+    property_obj = make_property(7300)
 
-    content = Client().get("/ar/reviews/").content.decode()
+    response = Client().get(f"/ar/properties/{property_obj.slug}/reviews/")
 
-    assert "data-review-collection" in content
-    assert 'data-initial-count="6"' in content
-    assert 'data-mobile-initial-count="3"' in content
-    assert 'data-batch-size="3"' in content
-    assert "data-review-more" in content
+    assert response.status_code == 404

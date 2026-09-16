@@ -118,6 +118,34 @@ class Property(models.Model):
         blank=True,
         verbose_name=_("Public map longitude"),
     )
+    google_maps_cid = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name=_("Google Maps business identifier"),
+    )
+    # Trustindex is the only public review authority. Hostaway synchronisation
+    # must never overwrite these curated guest-facing values.
+    trustindex_widget_id = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name=_("Trustindex review widget identifier"),
+    )
+    trustindex_rating = models.DecimalField(
+        max_digits=2,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        verbose_name=_("Trustindex rating out of 5"),
+    )
+    trustindex_review_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("Trustindex review count"),
+    )
+    trustindex_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Trustindex metrics last refreshed"),
+    )
     seo_title_ar = models.CharField(max_length=255, blank=True)
     seo_title_en = models.CharField(max_length=255, blank=True)
     seo_title_fr = models.CharField(max_length=255, blank=True)
@@ -263,6 +291,11 @@ class Property(models.Model):
                 condition=Q(average_review_rating__isnull=True)
                 | Q(average_review_rating__gte=0, average_review_rating__lte=10),
                 name="property_review_rating_0_10",
+            ),
+            models.CheckConstraint(
+                condition=Q(trustindex_rating__isnull=True)
+                | Q(trustindex_rating__gte=0, trustindex_rating__lte=5),
+                name="property_trustindex_rating_0_5",
             ),
         ]
         verbose_name = _("Property")

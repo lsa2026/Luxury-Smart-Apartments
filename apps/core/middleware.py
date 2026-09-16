@@ -112,6 +112,7 @@ class SecurityHeadersMiddleware:
         request.csp_nonce = secrets.token_urlsafe(18)
         response = self.get_response(request)
         public_map_page = bool(getattr(request, "_public_map_enabled", False))
+        trustindex_widget_page = bool(getattr(request, "_trustindex_widget_enabled", False))
         property_admin_map = request.path.startswith("/admin/properties/property/")
         location_map_page = public_map_page or property_admin_map
         image_sources = " ".join(
@@ -121,6 +122,16 @@ class SecurityHeadersMiddleware:
         )
         if location_map_page:
             image_sources = f"{image_sources} https://tile.openstreetmap.org"
+        if trustindex_widget_page:
+            image_sources = " ".join(
+                (
+                    image_sources,
+                    "https://cdn.trustindex.io",
+                    "https://lh3.googleusercontent.com",
+                    "https://graph.facebook.com",
+                    "https://xx.bstatic.com",
+                )
+            )
         style_sources = (
             "'self' 'unsafe-inline'"
             if request.path.startswith("/admin/") or public_map_page
@@ -139,6 +150,12 @@ class SecurityHeadersMiddleware:
             frame_sources.append("https://www.openstreetmap.org")
         form_action_sources = ["'self'"]
         font_sources = ["'self'"]
+        if trustindex_widget_page:
+            # The review content stays within the site, while the verified
+            # Trustindex widget loads only on explicitly approved review pages.
+            script_sources.append("https://cdn.trustindex.io")
+            connect_sources.append("https://cdn.trustindex.io")
+            style_sources = f"{style_sources} 'unsafe-inline' https://cdn.trustindex.io"
         hyperpay_page = settings.HYPERPAY_ENABLED and request.path.startswith("/payments/hyperpay/")
         if hyperpay_page:
             script_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
