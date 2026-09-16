@@ -30,11 +30,13 @@ services:
     region: frankfurt
     branch: main
     autoDeploy: true
-    # Custom domain served by this service. The apex is primary; Render
-    # redirects the www host to it once both DNS records resolve.
-    domains:
-      - luxurysmartapartments.com
-      - www.luxurysmartapartments.com
+    # The official domains remain attached to the previous Render account
+    # during the handover.  This service first launches on its generated
+    # onrender.com hostname; re-add the two domains below only after they have
+    # been detached from the previous account and their DNS records point here.
+    # domains:
+    #   - luxurysmartapartments.com
+    #   - www.luxurysmartapartments.com
     healthCheckPath: /health/live/
     buildCommand: ./build.sh
     startCommand: >-
