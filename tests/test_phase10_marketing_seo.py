@@ -22,6 +22,7 @@ from apps.core.marketing import (
     EVENT_SCHEMAS,
     prepare_purchase_event,
     property_analytics_item,
+    purchase_receipt_token,
     sanitize_analytics_event,
 )
 from apps.core.models import LegacyRedirect, MarketingEventReceipt
@@ -364,6 +365,30 @@ def test_purchase_is_not_prepared_without_confirmed_hostaway_reservation() -> No
 def test_refund_receipt_is_not_created_by_public_pages() -> None:
     Client().get("/ar/")
     assert not MarketingEventReceipt.objects.filter(event_name="refund").exists()
+
+
+def test_purchase_receipt_acknowledgement_is_idempotent() -> None:
+    receipt = MarketingEventReceipt.objects.create(
+        event_name="purchase",
+        object_type="Reservation",
+        object_reference_hash=MarketingEventReceipt.reference_hmac("LSA-TEST-123"),
+    )
+    token = purchase_receipt_token(receipt)
+    url = reverse("marketing:purchase_acknowledge")
+
+    assert Client().post(url, {"receipt_token": token}).status_code == 204
+    receipt.refresh_from_db()
+    assert receipt.status == MarketingEventReceipt.Status.EMITTED
+    assert receipt.emitted_at is not None
+    assert Client().post(url, {"receipt_token": token}).status_code == 204
+
+
+def test_purchase_receipt_acknowledgement_rejects_invalid_token() -> None:
+    response = Client().post(
+        reverse("marketing:purchase_acknowledge"),
+        {"receipt_token": "invalid"},
+    )
+    assert response.status_code == 400
 
 
 def test_sitemap_is_xml_and_contains_public_property(

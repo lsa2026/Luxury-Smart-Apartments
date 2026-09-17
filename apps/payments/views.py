@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core import signing
 from django.http import Http404, HttpRequest, HttpResponse
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -13,7 +14,7 @@ from django.utils.translation import gettext as _
 from django.views import View
 
 from apps.accounts.services import claimable_reference
-from apps.core.marketing import prepare_purchase_event
+from apps.core.marketing import prepare_purchase_event, purchase_receipt_token
 from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
@@ -323,11 +324,12 @@ class HyperPayResultView(View):
         if outcome and outcome.reservation and not request.user.is_authenticated:
             claimable = claimable_reference(request, outcome.reservation.public_reference)
         purchase_event = None
+        purchase_receipt = None
         if outcome and outcome.reservation:
             # This is intentionally prepared only after both authoritative
             # conditions hold: HyperPay has verified the charge and Hostaway
             # has confirmed the reservation. The browser sends no guest data.
-            purchase_event, _receipt = prepare_purchase_event(
+            purchase_event, purchase_receipt = prepare_purchase_event(
                 payment_attempt=display_attempt,
                 reservation=outcome.reservation,
             )
@@ -340,6 +342,12 @@ class HyperPayResultView(View):
                 "success": HyperPayStatus.SUCCESS,
                 "claimable_reference": claimable,
                 "purchase_event": purchase_event,
+                "purchase_receipt_token": (
+                    purchase_receipt_token(purchase_receipt)
+                    if purchase_event and purchase_receipt
+                    else ""
+                ),
+                "purchase_receipt_csrf_token": get_token(request) if purchase_event else "",
             },
             status=200 if outcome else 503,
         )

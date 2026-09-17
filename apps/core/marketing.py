@@ -4,11 +4,15 @@ import re
 from decimal import Decimal
 from typing import Any
 
+from django.core import signing
 from django.utils import translation
 
 from apps.core.models import MarketingEventReceipt
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import Reservation
+
+
+PURCHASE_RECEIPT_TOKEN_SALT = "marketing.purchase-receipt.v1"
 
 EVENT_SCHEMAS: dict[str, frozenset[str]] = {
     "view_item_list": frozenset({"item_list_name", "items"}),
@@ -199,3 +203,17 @@ def prepare_purchase_event(
         },
     )
     return payload, receipt
+
+
+def purchase_receipt_token(receipt: MarketingEventReceipt) -> str:
+    """Issue a signed, opaque acknowledgement token for one prepared purchase."""
+    if (
+        receipt.event_name != "purchase"
+        or receipt.status != MarketingEventReceipt.Status.PREPARED
+    ):
+        raise ValueError("Only prepared purchase receipts can be acknowledged.")
+    return signing.dumps(
+        {"receipt_id": str(receipt.pk), "event_name": receipt.event_name},
+        salt=PURCHASE_RECEIPT_TOKEN_SALT,
+        compress=True,
+    )

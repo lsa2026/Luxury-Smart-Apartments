@@ -16,6 +16,9 @@
         data-analytics-item-brand="{{ purchase_event.items.0.item_brand }}"
         data-analytics-item-category="{{ purchase_event.items.0.item_category }}"
         data-analytics-item-city="{{ purchase_event.items.0.item_category2 }}"
+        data-analytics-receipt-token="{{ purchase_receipt_token }}"
+        data-analytics-receipt-csrf="{{ purchase_receipt_csrf_token }}"
+        data-analytics-receipt-url="{% url 'marketing:purchase_acknowledge' %}"
         hidden
     ></div>
     {% endif %}

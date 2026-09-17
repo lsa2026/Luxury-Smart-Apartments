@@ -83,15 +83,43 @@
             console.info("LSA analytics event", eventName, Object.keys(clean));
         }
         if (!enabled) {
-            return clean;
+            return false;
         }
         const consent = window.LSAConsent?.parseConsent();
         if (!consent?.analytics) {
-            return clean;
+            return false;
         }
         window.dataLayer = window.dataLayer || [];
         window.dataLayer.push({event: eventName, ...clean});
         return clean;
+    }
+
+    function acknowledgePurchaseReceipt(element, transactionId) {
+        const token = element.dataset.analyticsReceiptToken;
+        const url = element.dataset.analyticsReceiptUrl;
+        if (!token || !url || !transactionId) {
+            return;
+        }
+        const storageKey = `lsa:purchase:${transactionId}`;
+        try {
+            if (window.sessionStorage.getItem(storageKey) === "pushed") {
+                return;
+            }
+            window.sessionStorage.setItem(storageKey, "pushed");
+        } catch (error) {
+            // Storage can be unavailable in privacy modes; the server receipt remains the fallback.
+        }
+        fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": element.dataset.analyticsReceiptCsrf || "",
+            },
+            body: new URLSearchParams({receipt_token: token}),
+        }).catch(() => {
+            // A later result-page load can safely retry the signed acknowledgement.
+        });
     }
 
     function itemFromElement(element, index = 0) {
@@ -139,6 +167,7 @@
     }
     const purchase = document.querySelector("[data-analytics-purchase-event]");
     if (purchase) {
+        const transactionId = purchase.dataset.analyticsTransactionId;
         const item = cleanItem({
             item_id: purchase.dataset.analyticsItemId,
             item_name: purchase.dataset.analyticsItemName,
@@ -149,12 +178,15 @@
             currency: purchase.dataset.analyticsCurrency,
             price: Number(purchase.dataset.analyticsValue || 0),
         });
-        pushEvent("purchase", {
-            transaction_id: purchase.dataset.analyticsTransactionId,
+        const pushed = pushEvent("purchase", {
+            transaction_id: transactionId,
             value: Number(purchase.dataset.analyticsValue || 0),
             currency: purchase.dataset.analyticsCurrency,
             items: Object.keys(item).length ? [item] : [],
         });
+        if (pushed) {
+            acknowledgePurchaseReceipt(purchase, transactionId);
+        }
     }
     document.querySelectorAll("[data-analytics-event]").forEach((element) => {
         const eventName = element.dataset.analyticsEvent;

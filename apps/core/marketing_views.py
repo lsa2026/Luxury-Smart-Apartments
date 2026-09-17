@@ -4,17 +4,19 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core import signing
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from apps.properties.models import Property
 
 from .checks import validate_google_configuration
-from .marketing import sanitize_analytics_event
-from .models import LegacyRedirect
+from .marketing import PURCHASE_RECEIPT_TOKEN_SALT, sanitize_analytics_event
+from .models import LegacyRedirect, MarketingEventReceipt
 from .seo import property_structured_data, public_sitemap_entries, seo_diagnostics
 
 
@@ -106,3 +108,29 @@ def validate_marketing_component(request: HttpRequest, component: str) -> HttpRe
             "valid": result is not None,
         },
     )
+
+
+@require_POST
+def acknowledge_purchase_event(request: HttpRequest) -> HttpResponse:
+    """Atomically close the one-time browser bridge after it pushes a purchase."""
+    token = request.POST.get("receipt_token", "")
+    try:
+        payload = signing.loads(
+            token,
+            salt=PURCHASE_RECEIPT_TOKEN_SALT,
+            max_age=60 * 60 * 24 * 7,
+        )
+    except signing.BadSignature:
+        return HttpResponse(status=400)
+    if not isinstance(payload, dict) or payload.get("event_name") != "purchase":
+        return HttpResponse(status=400)
+
+    MarketingEventReceipt.objects.filter(
+        pk=payload.get("receipt_id"),
+        event_name="purchase",
+        status=MarketingEventReceipt.Status.PREPARED,
+    ).update(
+        status=MarketingEventReceipt.Status.EMITTED,
+        emitted_at=timezone.now(),
+    )
+    return HttpResponse(status=204)

@@ -787,6 +787,7 @@ def test_purchase_event_is_rendered_only_after_verified_confirmed_booking(monkey
     assert response.status_code == 200
     assert "data-analytics-purchase-event" in content
     assert f'data-analytics-transaction-id="{reservation.public_reference}"' in content
+    assert "data-analytics-receipt-token" in content
     assert "data-analytics-item-id=" in content
 
 
