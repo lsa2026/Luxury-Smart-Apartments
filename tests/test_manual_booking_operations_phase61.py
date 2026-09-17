@@ -255,3 +255,58 @@ def test_owner_can_find_manual_drafts_by_guest_name():
 
     assert page.status_code == 200
     assert "Aseel Hafez" in page.content.decode()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_owner_can_permanently_delete_an_uncharged_manual_draft():
+    property_obj = make_property()
+    actor = owner()
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=timezone.localdate() + timedelta(days=10),
+        check_out=timezone.localdate() + timedelta(days=12),
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(make_availability(property_obj)),
+    )
+    assert creation.draft is not None
+    draft = creation.draft
+    quote_id = draft.quote_id
+    public_reference = draft.public_reference
+
+    client = Client()
+    client.force_login(actor)
+    response = client.post(
+        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        {"action": "delete", "confirm_deletion": "on"},
+    )
+
+    assert response.status_code == 302
+    assert not ManualBookingDraft.objects.filter(pk=draft.pk).exists()
+    assert not BookingQuote.objects.filter(pk=quote_id).exists()
+    assert AuditLog.objects.filter(
+        action="manual_booking.deleted",
+        object_reference=public_reference,
+    ).exists()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_manual_booking_create_screen_exposes_live_calendar_for_each_property():
+    make_property()
+    actor = owner()
+    client = Client()
+    client.force_login(actor)
+
+    page = client.get(reverse("notifications:manual_booking_create"))
+
+    content = page.content.decode()
+    assert page.status_code == 200
+    assert 'id="manual-booking-calendar-urls"' in content
+    assert "data-luxury-calendar" in content
+    assert "data-calendar-property-select" in content

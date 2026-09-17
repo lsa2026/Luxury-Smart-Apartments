@@ -466,11 +466,27 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
     const closeButton = calendar.querySelector("[data-calendar-close]");
     const availabilityStatus = calendar.querySelector("[data-calendar-availability-status]");
     const mobileCalendar = window.matchMedia("(max-width: 42rem)");
-    const calendarAvailabilityUrl = calendar.dataset.calendarAvailabilityUrl || "";
+    let calendarAvailabilityUrl = calendar.dataset.calendarAvailabilityUrl || "";
+    const availabilityMapId = calendar.dataset.calendarAvailabilityMapId || "";
+    const availabilityMapNode = availabilityMapId ? document.getElementById(availabilityMapId) : null;
+    let calendarAvailabilityMap = {};
+    if (availabilityMapNode?.textContent) {
+        try {
+            const candidate = JSON.parse(availabilityMapNode.textContent);
+            if (candidate && typeof candidate === "object") {
+                calendarAvailabilityMap = candidate;
+            }
+        } catch (_error) {
+            calendarAvailabilityMap = {};
+        }
+    }
+    const propertyInput = form?.querySelector("[data-calendar-property-select]");
+    const propertySummary = form?.querySelector("[data-calendar-property-summary]");
     const unavailableLabel = calendar.dataset.unavailableLabel || "Unavailable";
     const availabilityLoadingLabel = calendar.dataset.calendarLoadingLabel || "Checking live availability…";
     const availabilityReadyLabel = calendar.dataset.calendarReadyLabel || "Live availability is up to date";
     const availabilityFallbackLabel = calendar.dataset.calendarFallbackLabel || "Availability will be confirmed before booking";
+    const noPropertyLabel = calendar.dataset.calendarNoPropertyLabel || "Choose a property first";
 
     if (
         !(calendar instanceof HTMLDialogElement)
@@ -689,6 +705,38 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
         }
     }
 
+    function resetCalendarAvailabilityForProperty() {
+        if (!(propertyInput instanceof HTMLSelectElement) || !availabilityMapId) {
+            return;
+        }
+        const nextUrl = String(calendarAvailabilityMap[propertyInput.value] || "");
+        const changed = calendarAvailabilityUrl !== nextUrl;
+        calendarAvailabilityUrl = nextUrl;
+        if (changed) {
+            availabilityByDate.clear();
+            requestedAvailabilityWindows.clear();
+            arrivalInput.value = "";
+            departureInput.value = "";
+            departureInput.min = initialDepartureMinimum;
+            activeField = "check_in";
+            dispatchDateChange(arrivalInput);
+            dispatchDateChange(departureInput);
+        }
+        const selectedOption = propertyInput.selectedOptions[0];
+        const hasProperty = Boolean(calendarAvailabilityUrl);
+        arrivalTrigger.disabled = !hasProperty;
+        departureTrigger.disabled = !hasProperty;
+        if (propertySummary) {
+            propertySummary.textContent = hasProperty && selectedOption
+                ? `تقويم التوفر المباشر: ${selectedOption.textContent.trim()}`
+                : noPropertyLabel;
+        }
+        if (!hasProperty && availabilityStatus) {
+            availabilityStatus.textContent = noPropertyLabel;
+        }
+        updateSelectionSummary();
+    }
+
     function createMonth(monthDate, arrival, departure) {
         const article = document.createElement("section");
         article.className = "luxury-calendar__month";
@@ -801,9 +849,11 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
     departureTrigger.hidden = false;
     form.classList.add("has-luxury-calendar");
     updateSelectionSummary();
+    resetCalendarAvailabilityForProperty();
 
     arrivalTrigger.addEventListener("click", () => openCalendar("check_in", arrivalTrigger));
     departureTrigger.addEventListener("click", () => openCalendar("check_out", departureTrigger));
+    propertyInput?.addEventListener("change", resetCalendarAvailabilityForProperty);
 
     calendar.querySelectorAll("[data-calendar-mode]").forEach((button) => {
         button.addEventListener("click", () => {

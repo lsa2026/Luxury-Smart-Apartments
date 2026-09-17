@@ -1,4 +1,10 @@
 {% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script src="{% static 'js/site.js' %}?v=20260917-manual-calendar" defer></script>
+{% endblock %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -6,24 +12,69 @@
     <div>
       <span class="lsa-kicker"><i></i> فحص حي من Hostaway</span>
       <h1>حجز يدوي جديد</h1>
-      <p>اختر الوحدة والتواريخ وعدد الضيوف. لن تُنشأ مسودة قبل نجاح فحص التوفر والسعر.</p>
+      <p>اختر الوحدة ثم راجع تقويم التوفر الحي قبل اختيار التواريخ. لن تُنشأ مسودة قبل نجاح فحص التوفر والسعر.</p>
     </div>
     <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:manual_booking_list' %}">كل المسودات</a>
   </section>
   <section class="lsa-panel">
-    <form method="post" novalidate>
+    <form method="post" class="lsa-manual-booking-form" novalidate>
       {% csrf_token %}
       {{ form.non_field_errors }}
-      {% for field in form %}
-      <div class="form-row">
-        {{ field.label_tag }}
-        {{ field }}
-        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-        {{ field.errors }}
+      <div class="lsa-manual-booking-form__grid">
+        <div class="form-row lsa-manual-booking-form__property">
+          {{ form.property.label_tag }}
+          {{ form.property }}
+          {{ form.property.errors }}
+          <small class="help" data-calendar-property-summary>اختر الوحدة أولًا لعرض تقويم التوفر المباشر.</small>
+        </div>
+        {% for field in form %}
+          {% if field.name == "check_in" or field.name == "check_out" %}
+          <div class="form-row lsa-manual-booking-form__date">
+            {{ field.label_tag }}
+            {{ field }}
+            <button class="lsa-date-trigger" type="button" data-date-trigger="{{ field.name }}" hidden>
+              <span class="lsa-date-trigger__copy">
+                <small>{% if field.name == "check_in" %}الوصول{% else %}المغادرة{% endif %}</small>
+                <strong data-date-trigger-value>اختر التاريخ</strong>
+              </span>
+              <span aria-hidden="true">⌄</span>
+            </button>
+            {{ field.errors }}
+          </div>
+          {% elif field.name == "guests" %}
+          <div class="form-row lsa-manual-booking-form__guests">
+            {{ field.label_tag }}
+            {{ field }}
+            {{ field.errors }}
+          </div>
+          {% endif %}
+        {% endfor %}
       </div>
-      {% endfor %}
-      <p class="help">مصدر الحقيقة في هذه الخطوة هو Hostaway. لا نستخدم السعر الظاهر في أي بطاقة أو متصفح.</p>
+      <p class="help">مصدر الحقيقة في هذه الخطوة هو Hostaway. الأيام المشطوبة في التقويم غير متاحة، ويُعاد فحص التوفر والسعر قبل حفظ المسودة.</p>
       <button class="default" type="submit">فحص التوفر والسعر</button>
+
+      {{ calendar_urls|json_script:"manual-booking-calendar-urls" }}
+      <dialog class="lsa-manual-booking-calendar" data-luxury-calendar data-calendar-availability-map-id="manual-booking-calendar-urls" data-choose-label="اختر التاريخ" data-arrival-label="الوصول" data-departure-label="المغادرة" data-arrival-help="اختر يوم الوصول من الأيام المتاحة." data-departure-help="اختر يوم المغادرة من الأيام المتاحة." data-selected-help="التواريخ جاهزة لفحص السعر والتوفر." data-night-label="ليلة" data-nights-label="ليالٍ" data-unavailable-label="غير متاح" data-calendar-loading-label="يتم تحميل التوفر المباشر…" data-calendar-ready-label="الأيام غير المتاحة موضحة في التقويم." data-calendar-fallback-label="سيُعاد فحص التوفر قبل حفظ المسودة." data-calendar-no-property-label="اختر الوحدة أولًا لعرض تقويمها." aria-label="اختر تواريخ الإقامة">
+        <div class="lsa-manual-booking-calendar__header">
+          <div><span>التوفر المباشر</span><h2>اختر تواريخ الإقامة</h2><p data-calendar-help>اختر يوم الوصول من الأيام المتاحة.</p></div>
+          <button type="button" data-calendar-close aria-label="إغلاق التقويم">×</button>
+        </div>
+        <div class="lsa-manual-booking-calendar__selection">
+          <button type="button" data-calendar-mode="check_in"><small>الوصول</small><strong data-calendar-arrival>اختر التاريخ</strong></button>
+          <span aria-hidden="true">←</span>
+          <button type="button" data-calendar-mode="check_out"><small>المغادرة</small><strong data-calendar-departure>اختر التاريخ</strong></button>
+          <span data-calendar-nights hidden></span>
+        </div>
+        <div class="lsa-manual-booking-calendar__navigation">
+          <button type="button" data-calendar-previous aria-label="الشهر السابق">→</button><strong data-calendar-heading aria-live="polite"></strong><button type="button" data-calendar-next aria-label="الشهر التالي">←</button>
+        </div>
+        <div class="lsa-manual-booking-calendar__months" data-calendar-months></div>
+        <p class="lsa-manual-booking-calendar__status" data-calendar-availability-status role="status" aria-live="polite"></p>
+        <div class="lsa-manual-booking-calendar__footer">
+          <p>الأيام المشطوبة غير متاحة لهذه الوحدة.</p>
+          <div><button type="button" data-calendar-clear disabled>مسح التواريخ</button><button class="default" type="button" data-calendar-confirm disabled>تأكيد التواريخ</button></div>
+        </div>
+      </dialog>
     </form>
   </section>
 </main>

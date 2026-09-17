@@ -41,6 +41,19 @@ class ManualBookingAvailabilityForm(forms.Form):
             is_visible=True,
             hostaway_is_active=True,
         ).order_by("city_ar", "name_ar", "name_en")
+        self.fields["property"].widget.attrs.update(
+            {
+                "class": "lsa-manual-booking__property-select",
+                "data-calendar-property-select": "",
+            }
+        )
+        for field_name in ("check_in", "check_out"):
+            self.fields[field_name].widget.attrs.update(
+                {
+                    "class": "lsa-manual-booking__date-input",
+                    "min": timezone.localdate().isoformat(),
+                }
+            )
 
     def clean(self) -> dict[str, object]:
         cleaned = super().clean()
@@ -161,4 +174,13 @@ class ManualBookingCancelForm(forms.Form):
     confirm_cancellation = forms.BooleanField(
         label="أؤكد إلغاء هذه المسودة فقط",
         error_messages={"required": "أكد إلغاء المسودة قبل المتابعة."},
+    )
+
+
+class ManualBookingDeleteForm(forms.Form):
+    """Require acknowledgement before permanently deleting an uncharged draft."""
+
+    confirm_deletion = forms.BooleanField(
+        label="أفهم أن المسودة ستُحذف نهائيًا من قائمة المسودات",
+        error_messages={"required": "أكد الحذف النهائي قبل المتابعة."},
     )

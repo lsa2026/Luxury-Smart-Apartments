@@ -65,5 +65,16 @@
     </form>
   </section>
   {% endif %}
+  <section class="lsa-panel lsa-manual-booking__delete">
+    <h2>حذف المسودة نهائيًا</h2>
+    <p class="help">يزيل هذا المسودة وسعرها المؤقت من القائمة فقط. لا يستخدم للحجوزات المؤكدة ولا ينفذ أي استرجاع.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      {{ delete_form.confirm_deletion }} {{ delete_form.confirm_deletion.label_tag }}
+      {{ delete_form.confirm_deletion.errors }}
+      <p><button class="deletelink" type="submit">حذف المسودة نهائيًا</button></p>
+    </form>
+  </section>
 </main>
 {% endblock %}
