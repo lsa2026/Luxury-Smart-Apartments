@@ -214,7 +214,7 @@ class CancellationExecutionForm(forms.Form):
     """One explicit owner confirmation before a live cancellation is sent."""
 
     confirm_external_cancellation = forms.BooleanField(
-        label="أؤكد إرسال الإلغاء إلى Hostaway بعد مراجعة الاسترداد",
+        label="أؤكد إلغاء الحجز وإرسال الاسترداد إلى وسيلة الدفع الأصلية",
         error_messages={"required": "أكد الإلغاء الخارجي قبل المتابعة."},
     )
 
