@@ -239,7 +239,7 @@ def test_admin_action_checkbox_survives_localized_result_headers(client, django_
 
 
 @pytest.mark.django_db
-def test_admin_shell_exposes_permission_aware_command_center(client, django_user_model):
+def test_admin_shell_exposes_focused_booking_navigation(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="command-admin",
         email="command-admin@example.com",
@@ -251,6 +251,6 @@ def test_admin_shell_exposes_permission_aware_command_center(client, django_user
     body = response.content.decode()
 
     assert response.status_code == 200
-    assert "كل الأدوات" in body
-    assert "التعديل والتمديد" in body
-    assert "الفريق والصلاحيات" in body
+    assert "إدارة الحجوزات" in body
+    assert "كل الأدوات" not in body
+    assert "الفريق والصلاحيات" not in body

@@ -174,6 +174,8 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-primary-nav a { position: relative; padding: 11px 12px; color: #cbd9d5 !important; border-radius: 9px; font-size: 11px; font-weight: 700; }
 .lsa-primary-nav a:hover { color: #fff !important; background: rgba(255,255,255,.07); }
 .lsa-header-actions { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.lsa-booking-action { display: flex; min-height: 38px; align-items: center; padding: 0 14px; color: #1d342b !important; border-radius: 10px; background: linear-gradient(135deg,#e1c789,#c59d53); font-size: 11px; font-weight: 800; }
+.lsa-booking-action:hover { filter: brightness(1.05); }
 .lsa-icon-action,.lsa-command__trigger { display: flex; align-items: center; justify-content: center; min-height: 38px; color: #dce6e2 !important; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; background: rgba(255,255,255,.045); }
 .lsa-icon-action { width: 38px; font-size: 17px; }
 .lsa-command > summary,.lsa-user-menu > summary { list-style: none; cursor: pointer; }
@@ -408,7 +410,7 @@ html.lsa-command-open body { overflow: hidden; }
 
 @media (max-width: 1250px) {
   .lsa-primary-nav { display: none; }
-  .lsa-command { margin-inline-start: auto; }
+  .lsa-booking-action { margin-inline-start: auto; }
   .lsa-stat-grid--six { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .lsa-operations-strip { grid-template-columns: repeat(3,minmax(0,1fr)); }
   .lsa-operations-strip > * { border-bottom: 1px solid var(--lsa-line); }
@@ -434,8 +436,8 @@ html.lsa-command-open body { overflow: hidden; }
   .lsa-shell-header__inner { min-height: 66px; }
   .lsa-admin-brand__mark { width: 36px; height: 36px; font-size: 10px; }
   .lsa-admin-brand__name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lsa-command__trigger { min-width: 40px; width: 40px; padding: 0; }
-  .lsa-command__trigger > span,.lsa-user-menu > summary i,.lsa-icon-action { display: none; }
+  .lsa-booking-action { min-height: 36px; padding: 0 10px; font-size: 10px; white-space: nowrap; }
+  .lsa-user-menu > summary i,.lsa-icon-action { display: none; }
   .lsa-user-menu > summary { padding: 3px; }
   .lsa-command__panel { top: 0; right: 0; width: 100vw; max-height: 100dvh; height: 100dvh; padding: 18px 14px; border: 0; border-radius: 0; transform: none; }
   .lsa-command__groups { gap: 9px; }
@@ -535,6 +537,21 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-admin-language select:hover,.lsa-admin-language select:focus { border-color: rgba(218,190,126,.85); outline: none; }
 .lsa-admin-language select option { color: #183b30; background: #fffdf8; }
 @media (max-width: 700px) { .lsa-admin-language select { min-width: 0; max-width: 94px; padding-right: 25px; font-size: 10px; } }
+
+/* A deliberately small, touch-friendly operations entrance. */
+.lsa-booking-console { max-width: 1120px; }
+.lsa-booking-console__grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin-top: 18px; }
+.lsa-booking-console__card { position: relative; display: flex; min-height: 310px; flex-direction: column; gap: 18px; padding: 24px; overflow: hidden; border: 1px solid var(--lsa-line); border-radius: 18px; background: var(--lsa-paper); box-shadow: 0 12px 36px rgba(23,56,45,.07); }
+.lsa-booking-console__card--critical { border-color: #e4c4bf; }
+.lsa-booking-console__number { display: grid; width: 36px; height: 36px; place-items: center; color: #634b1f; border-radius: 50%; background: #f3e5c4; font-size: 13px; font-weight: 800; }
+.lsa-booking-console__card h2 { margin: 0 0 9px; color: var(--lsa-ink); font-size: 21px; }
+.lsa-booking-console__card p { margin: 0; color: var(--lsa-ink); font-size: 13px; font-weight: 600; line-height: 1.75; }
+.lsa-booking-console__card small { display: block; margin-top: 12px; color: var(--lsa-muted); font-size: 11px; line-height: 1.7; }
+.lsa-booking-console__card .lsa-btn { width: 100%; min-height: 46px; margin-top: auto; box-sizing: border-box; text-align: center; }
+.lsa-btn--danger { color: #fff !important; border-color: #9a4d49 !important; background: #9a4d49 !important; }
+.lsa-btn--danger:hover { background: #7d3936 !important; }
+.lsa-booking-console__note { margin: 18px 0 0; padding: 13px 16px; color: var(--lsa-muted); border: 1px solid var(--lsa-line); border-radius: 12px; background: var(--body-bg); font-size: 11px; line-height: 1.7; }
+@media (max-width: 767px) { .lsa-booking-console__grid { grid-template-columns: 1fr; gap: 12px; }.lsa-booking-console__card { min-height: 0; padding: 20px; } }
 
 /* Manual booking: the property name remains readable and dates use the same
    live Hostaway availability projection as the guest-facing calendar. */

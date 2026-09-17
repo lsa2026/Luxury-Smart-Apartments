@@ -1,4 +1,4 @@
-"""Phase 6.0: the operations hub is private and intentionally read-only."""
+"""The booking operations entrance is private and intentionally focused."""
 
 from unittest.mock import patch
 
@@ -31,7 +31,7 @@ def test_operations_hub_is_private_and_does_not_call_providers(db):
         response = client.get(reverse("notifications:hub"))
     content = response.content.decode()
     assert response.status_code == 200
-    assert "مركز العمليات" in content
-    assert "خاص ومغلق عن الضيوف" in content
-    assert "المرحلة 9.2" in content
-    assert "لا تنشئ حجزًا في Hostaway أو رابط دفع أو رسالة أو استرجاعًا ماليًا تلقائيًا" in content
+    assert "إدارة الحجوزات" in content
+    assert "إنشاء حجز جديد" in content
+    assert "البحث عن حجز" in content
+    assert "إدارة الإلغاءات" in content
