@@ -301,15 +301,24 @@ services:
 
       - key: HOSTAWAY_BASE_URL
         value: https://api.hostaway.com/v1
+      # The worker receives the same dashboard-only credentials as the web
+      # service.  They are never committed to this file and stay inactive
+      # until the explicit UAT/live switches are enabled below.
       - key: HOSTAWAY_ACCOUNT_ID
-        # Kept deliberately blank while every Hostaway write/sync switch is
-        # disabled.  Using `fromService` here would prevent Render from
-        # creating the worker before credentials are intentionally supplied.
-        value: ""
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_ACCOUNT_ID
       - key: HOSTAWAY_API_SECRET
-        value: ""
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_API_SECRET
       - key: HOSTAWAY_ACCESS_TOKEN
-        value: ""
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_ACCESS_TOKEN
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
         value: "False"
       - key: HOSTAWAY_REVIEW_SYNC_ENABLED
@@ -389,7 +398,10 @@ services:
       - key: EMAIL_HOST_USER
         value: saeed@luxurysmartapartments.com
       - key: EMAIL_HOST_PASSWORD
-        value: ""
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: EMAIL_HOST_PASSWORD
       - key: EMAIL_USE_TLS
         value: "True"
       - key: EMAIL_USE_SSL
