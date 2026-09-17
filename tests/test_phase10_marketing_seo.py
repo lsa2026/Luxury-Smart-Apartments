@@ -701,6 +701,21 @@ def test_csp_has_no_general_unsafe_inline() -> None:
     assert "script-src 'self' 'unsafe-inline'" not in csp
 
 
+def test_google_ads_csp_allows_documented_measurement_endpoints() -> None:
+    with override_settings(
+        GOOGLE_INTEGRATIONS_ENABLED=True,
+        GOOGLE_ADS_ENABLED=True,
+    ):
+        csp = Client().get("/ar/")["Content-Security-Policy"]
+    assert "connect-src" in csp
+    # The wildcard covers stats.g.doubleclick.net, the endpoint reported by
+    # Google Tag diagnostics, without allowing unrelated origins.
+    assert "https://*.g.doubleclick.net" in csp
+    assert "https://pagead2.googlesyndication.com" in csp
+    assert "https://www.google.com.sa" in csp
+    assert "img-src" in csp
+
+
 def test_google_domains_are_absent_from_disabled_csp() -> None:
     csp = Client().get("/ar/")["Content-Security-Policy"]
     assert "googletagmanager.com" not in csp

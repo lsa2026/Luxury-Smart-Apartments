@@ -200,6 +200,14 @@ class SecurityHeadersMiddleware:
                     "https://www.googleadservices.com",
                     "https://www.google.com",
                     "https://googleads.g.doubleclick.net",
+                    # Google Ads and GA4 advertising features send collection
+                    # beacons through additional, documented DoubleClick and
+                    # Google endpoints (including stats.g.doubleclick.net).
+                    "https://*.g.doubleclick.net",
+                    "https://*.google.com",
+                    "https://www.google.com.sa",
+                    "https://pagead2.googlesyndication.com",
+                    "https://ad.doubleclick.net",
                 ]
             )
             frame_sources.extend(
@@ -212,6 +220,11 @@ class SecurityHeadersMiddleware:
                 [
                     "https://www.google.com",
                     "https://googleads.g.doubleclick.net",
+                    "https://*.g.doubleclick.net",
+                    "https://*.google.com",
+                    "https://www.google.com.sa",
+                    "https://pagead2.googlesyndication.com",
+                    "https://www.googleadservices.com",
                 ]
             )
         if google_image_sources:
