@@ -30,12 +30,12 @@ services:
     region: frankfurt
     branch: main
     autoDeploy: true
-    # The official domain is currently attached to an unknown legacy Render
-    # account. Keep the new infrastructure deployable until that account
-    # releases it; then add the root domain here (Render creates the www
-    # redirect automatically).
-    # domains:
-    #   - luxurysmartapartments.com
+    # The official domain has now been released from the legacy Render account.
+    # Both public hostnames are attached here so the production service owns
+    # the canonical domain and its www alias.
+    domains:
+      - luxurysmartapartments.com
+      - www.luxurysmartapartments.com
     healthCheckPath: /health/live/
     buildCommand: ./build.sh
     startCommand: >-
