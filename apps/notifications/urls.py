@@ -25,6 +25,26 @@ urlpatterns = [
         operations_views.manual_booking_detail,
         name="manual_booking_detail",
     ),
+    path(
+        "admin/operations/cancellations/",
+        operations_views.cancellation_list,
+        name="cancellation_list",
+    ),
+    path(
+        "admin/operations/cancellations/<uuid:request_id>/",
+        operations_views.cancellation_detail,
+        name="cancellation_detail",
+    ),
+    path(
+        "admin/operations/refunds/",
+        operations_views.refund_list,
+        name="refund_list",
+    ),
+    path(
+        "admin/operations/refunds/<uuid:refund_id>/",
+        operations_views.refund_detail,
+        name="refund_detail",
+    ),
     path("admin/operations/", views.operations_dashboard, name="dashboard"),
     path("admin/operations/status/", views.system_status, name="system_status"),
     path("admin/notifications/", views.notification_center, name="center"),

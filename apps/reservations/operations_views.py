@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
@@ -16,13 +19,23 @@ from apps.notifications.models import AuditLog
 from apps.notifications.services.audit import record_audit
 
 from .manual_bookings import create_manual_booking_draft, finalize_manual_booking_draft
-from .models import BookingQuote, ManualBookingDraft
+from .models import (
+    BookingModificationRequest,
+    BookingQuote,
+    ManualBookingDraft,
+    RefundObligation,
+)
 from .operations_forms import (
+    CancellationDecisionForm,
+    CancellationRejectionForm,
     ManualBookingAvailabilityForm,
     ManualBookingCancelForm,
     ManualBookingDeleteForm,
     ManualBookingFinalizeForm,
+    RefundDecisionForm,
+    RefundSettlementForm,
 )
+from .services.refunds import cancellation_refund
 
 
 def _require_owner(request: HttpRequest) -> None:
@@ -34,6 +47,14 @@ _MANUAL_DRAFT_AUDIT_LABELS = {
     "manual_booking.ready_for_payment": "تم اعتماد بيانات الضيف والسعر النهائي.",
     "manual_booking.cancelled": "تم إلغاء المسودة الداخلية قبل الدفع.",
     "manual_booking.deleted": "حُذفت المسودة نهائيًا قبل الدفع.",
+}
+
+_CANCELLATION_AUDIT_LABELS = {
+    "cancellation.approved_locally": "تم اعتماد الإلغاء محليًا بانتظار التنفيذ الخارجي.",
+    "cancellation.rejected_locally": "رُفض طلب الإلغاء محليًا.",
+    "refund.amount_approved": "اعتمد مبلغ الاسترداد بعد المراجعة.",
+    "refund.marked_transferred": "سُجل تحويل الاسترداد للضيف.",
+    "refund.cancelled_by_owner": "أغلق استحقاق الاسترداد دون تحويل.",
 }
 
 
@@ -258,6 +279,296 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "form": form,
             "cancel_form": cancel_form,
             "delete_form": delete_form,
+            "audit_entries": audit_entries,
+        },
+    )
+
+
+@staff_member_required
+def cancellation_list(request: HttpRequest) -> HttpResponse:
+    """Owner queue for cancellation decisions, with no provider call on GET."""
+
+    _require_owner(request)
+    status = request.GET.get("status", "")
+    query = request.GET.get("q", "").strip()
+    cancellations = BookingModificationRequest.objects.filter(
+        request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
+    ).select_related("reservation__property", "reservation__booking_intent")
+    if status in BookingModificationRequest.Status.values:
+        cancellations = cancellations.filter(status=status)
+    if query:
+        cancellations = cancellations.filter(
+            Q(reservation__booking_intent__guest_first_name__icontains=query)
+            | Q(reservation__booking_intent__guest_last_name__icontains=query)
+            | Q(reservation__booking_intent__guest_email__icontains=query)
+            | Q(public_reference__icontains=query)
+            | Q(reservation__public_reference__icontains=query)
+        )
+    return render(
+        request,
+        "admin/reservations/cancellation_list.html",
+        {
+            "title": "طلبات الإلغاء والاسترداد",
+            "cancellations": cancellations.order_by("-requested_at")[:100],
+            "status": status,
+            "query": query,
+            "status_options": BookingModificationRequest.Status.choices,
+        },
+    )
+
+
+@staff_member_required
+def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
+    """Review one cancellation before any separately-enabled Hostaway action."""
+
+    _require_owner(request)
+    cancellation = get_object_or_404(
+        BookingModificationRequest.objects.select_related(
+            "reservation__property", "reservation__booking_intent"
+        ).prefetch_related("refund_obligations"),
+        pk=request_id,
+        request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
+    )
+    approval_form = CancellationDecisionForm()
+    rejection_form = CancellationRejectionForm()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "approve":
+            approval_form = CancellationDecisionForm(request.POST)
+            if approval_form.is_valid():
+                if cancellation.status != BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL:
+                    messages.error(request, "لا يمكن اعتماد هذا الطلب في حالته الحالية.")
+                else:
+                    now = timezone.now()
+                    cancellation.status = BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+                    cancellation.approved_at = now
+                    cancellation.save(update_fields=["status", "approved_at", "updated_at"])
+                    record_audit(
+                        request=request,
+                        action="cancellation.approved_locally",
+                        object_type="BookingModificationRequest",
+                        object_reference=cancellation.public_reference,
+                        summary="Cancellation approved locally; no Hostaway request was sent.",
+                        metadata={"note": approval_form.cleaned_data["decision_note"]},
+                    )
+                    messages.success(
+                        request,
+                        "اعتمد الإلغاء داخل النظام فقط. "
+                        "لم يُرسل أي إلغاء إلى Hostaway ولم يُنفذ استرداد.",
+                    )
+                    return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
+        elif action == "reject":
+            rejection_form = CancellationRejectionForm(request.POST)
+            if rejection_form.is_valid():
+                if cancellation.status in {
+                    BookingModificationRequest.Status.COMPLETED,
+                    BookingModificationRequest.Status.REJECTED,
+                }:
+                    messages.error(request, "لا يمكن رفض طلب مكتمل أو مرفوض مسبقًا.")
+                else:
+                    now = timezone.now()
+                    cancellation.status = BookingModificationRequest.Status.REJECTED
+                    cancellation.rejected_at = now
+                    cancellation.save(update_fields=["status", "rejected_at", "updated_at"])
+                    record_audit(
+                        request=request,
+                        action="cancellation.rejected_locally",
+                        object_type="BookingModificationRequest",
+                        object_reference=cancellation.public_reference,
+                        summary="Cancellation rejected locally.",
+                        metadata={"note": rejection_form.cleaned_data["decision_note"]},
+                    )
+                    messages.success(request, "رُفض الطلب محليًا مع حفظ سبب القرار في سجل التدقيق.")
+                    return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
+
+    estimated_refund = cancellation_refund(cancellation.reservation)
+    audit_entries = list(
+        AuditLog.objects.filter(
+            object_type="BookingModificationRequest",
+            object_reference=cancellation.public_reference,
+        ).select_related("actor_user")[:20]
+    )
+    for entry in audit_entries:
+        entry.display_summary = _CANCELLATION_AUDIT_LABELS.get(entry.action, entry.summary)
+    return render(
+        request,
+        "admin/reservations/cancellation_detail.html",
+        {
+            "title": "مراجعة طلب الإلغاء",
+            "cancellation": cancellation,
+            "estimated_refund": estimated_refund,
+            "refunds": cancellation.refund_obligations.all(),
+            "approval_form": approval_form,
+            "rejection_form": rejection_form,
+            "audit_entries": audit_entries,
+        },
+    )
+
+
+@staff_member_required
+def refund_list(request: HttpRequest) -> HttpResponse:
+    """A local record of money owed; opening it never moves funds."""
+
+    _require_owner(request)
+    status = request.GET.get("status", "")
+    query = request.GET.get("q", "").strip()
+    refunds = RefundObligation.objects.select_related(
+        "reservation__property", "reservation__booking_intent", "modification_request"
+    )
+    if status in RefundObligation.Status.values:
+        refunds = refunds.filter(status=status)
+    if query:
+        refunds = refunds.filter(
+            Q(reservation__booking_intent__guest_first_name__icontains=query)
+            | Q(reservation__booking_intent__guest_last_name__icontains=query)
+            | Q(reservation__booking_intent__guest_email__icontains=query)
+            | Q(public_reference__icontains=query)
+            | Q(reservation__public_reference__icontains=query)
+        )
+    return render(
+        request,
+        "admin/reservations/refund_list.html",
+        {
+            "title": "الاستردادات المستحقة",
+            "refunds": refunds.order_by("-created_at")[:100],
+            "status": status,
+            "query": query,
+            "status_options": RefundObligation.Status.choices,
+        },
+    )
+
+
+@staff_member_required
+def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
+    """Approve a full/partial amount and record an already-made transfer safely."""
+
+    _require_owner(request)
+    refund = get_object_or_404(
+        RefundObligation.objects.select_related(
+            "reservation__property", "reservation__booking_intent", "modification_request"
+        ),
+        pk=refund_id,
+    )
+    decision_form = RefundDecisionForm(current_amount=refund.amount)
+    settlement_form = RefundSettlementForm()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "approve_amount":
+            decision_form = RefundDecisionForm(request.POST, current_amount=refund.amount)
+            if decision_form.is_valid():
+                approved_amount = decision_form.cleaned_data["approved_amount"]
+                if refund.status != RefundObligation.Status.DUE:
+                    messages.error(request, "لا يمكن تغيير مبلغ استرداد تم إقفاله أو تحويله.")
+                else:
+                    original_amount = refund.amount
+                    decision_note = decision_form.cleaned_data["decision_note"]
+                    calculation = (
+                        deepcopy(refund.calculation) if isinstance(refund.calculation, dict) else {}
+                    )
+                    calculation["operator_decision"] = {
+                        "original_amount": format(original_amount, "f"),
+                        "approved_amount": format(approved_amount, "f"),
+                        "note": decision_note,
+                        "decided_at": timezone.now().isoformat(),
+                    }
+                    refund.amount = approved_amount
+                    refund.note = decision_note
+                    refund.calculation = calculation
+                    refund.save(update_fields=["amount", "note", "calculation", "updated_at"])
+                    record_audit(
+                        request=request,
+                        action="refund.amount_approved",
+                        object_type="RefundObligation",
+                        object_reference=refund.public_reference,
+                        summary="Refund amount approved locally; no financial transfer was made.",
+                        metadata={
+                            "original_amount": format(original_amount, "f"),
+                            "approved_amount": format(approved_amount, "f"),
+                            "currency": refund.currency,
+                        },
+                    )
+                    messages.success(
+                        request,
+                        "حُفظ مبلغ الاسترداد المعتمد. لا يزال التحويل المالي خطوة مستقلة.",
+                    )
+                    return redirect("notifications:refund_detail", refund_id=refund.pk)
+        elif action == "mark_transferred":
+            settlement_form = RefundSettlementForm(request.POST)
+            if settlement_form.is_valid():
+                if refund.status != RefundObligation.Status.DUE:
+                    messages.error(request, "لا يمكن تسجيل تحويل لهذا الاسترداد في حالته الحالية.")
+                elif refund.amount <= Decimal("0"):
+                    messages.error(request, "لا يوجد مبلغ لتحويله. أغلق الاستحقاق بدلًا من ذلك.")
+                else:
+                    now = timezone.now()
+                    refund.status = RefundObligation.Status.TRANSFERRED
+                    refund.transfer_reference = settlement_form.cleaned_data["transfer_reference"]
+                    refund.note = settlement_form.cleaned_data["settlement_note"] or refund.note
+                    refund.transferred_at = now
+                    refund.transferred_by = request.user
+                    refund.save(
+                        update_fields=[
+                            "status",
+                            "transfer_reference",
+                            "note",
+                            "transferred_at",
+                            "transferred_by",
+                            "updated_at",
+                        ]
+                    )
+                    record_audit(
+                        request=request,
+                        action="refund.marked_transferred",
+                        object_type="RefundObligation",
+                        object_reference=refund.public_reference,
+                        summary="Refund was recorded as transferred after owner confirmation.",
+                        metadata={
+                            "amount": format(refund.amount, "f"),
+                            "currency": refund.currency,
+                        },
+                    )
+                    messages.success(
+                        request,
+                        "سُجل التحويل في النظام. لم يتصل الموقع بأي بوابة دفع.",
+                    )
+                    return redirect("notifications:refund_detail", refund_id=refund.pk)
+        elif action == "close_without_transfer":
+            if refund.status != RefundObligation.Status.DUE:
+                messages.error(request, "لا يمكن إغلاق هذا الاستحقاق في حالته الحالية.")
+            elif refund.amount != Decimal("0"):
+                messages.error(
+                    request,
+                    "اعتمد مبلغ 0 أولًا مع سبب واضح قبل إغلاق الاستحقاق دون تحويل.",
+                )
+            else:
+                refund.status = RefundObligation.Status.CANCELLED
+                refund.save(update_fields=["status", "updated_at"])
+                record_audit(
+                    request=request,
+                    action="refund.cancelled_by_owner",
+                    object_type="RefundObligation",
+                    object_reference=refund.public_reference,
+                    summary="Zero-value refund obligation closed by owner.",
+                    metadata={},
+                )
+                messages.success(request, "أُغلق الاستحقاق الصفري مع بقاء سجل القرار محفوظًا.")
+                return redirect("notifications:refund_detail", refund_id=refund.pk)
+
+    audit_entries = list(
+        AuditLog.objects.filter(
+            object_type="RefundObligation", object_reference=refund.public_reference
+        ).select_related("actor_user")[:20]
+    )
+    for entry in audit_entries:
+        entry.display_summary = _CANCELLATION_AUDIT_LABELS.get(entry.action, entry.summary)
+    return render(
+        request,
+        "admin/reservations/refund_detail.html",
+        {
+            "title": "مراجعة الاسترداد",
+            "refund": refund,
+            "decision_form": decision_form,
+            "settlement_form": settlement_form,
             "audit_entries": audit_entries,
         },
     )

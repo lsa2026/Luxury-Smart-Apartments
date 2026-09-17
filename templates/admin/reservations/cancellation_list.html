@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> المرحلة 9.4 · قرار الإلغاء</span>
+      <h1>طلبات الإلغاء</h1>
+      <p>تظهر أسماء الضيوف أولًا. الاعتماد هنا محلي وموثق؛ التنفيذ الخارجي لا يحدث من هذه الشاشة.</p>
+    </div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">مركز العمليات</a>
+  </section>
+
+  <section class="lsa-panel">
+    <form method="get" class="lsa-period-filter">
+      <input name="q" value="{{ query }}" placeholder="ابحث باسم الضيف أو البريد أو المرجع">
+      <select name="status">
+        <option value="">كل الحالات</option>
+        {% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit">بحث</button>
+    </form>
+  </section>
+
+  <section class="lsa-panel">
+    {% if cancellations %}
+    <div class="lsa-table-scroll"><table>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>وقت الطلب</th><th></th></tr></thead>
+      <tbody>
+        {% for item in cancellations %}
+        <tr>
+          <td><b>{% if item.reservation.booking_intent %}{{ item.reservation.booking_intent.guest_first_name }} {{ item.reservation.booking_intent.guest_last_name }}{% else %}—{% endif %}</b><br><small>{{ item.reservation.booking_intent.guest_email|default:"" }}</small></td>
+          <td>{{ item.reservation.property|default:"—" }}</td>
+          <td dir="ltr">{{ item.old_check_in }} → {{ item.old_check_out }}</td>
+          <td>{{ item.get_status_display }}</td>
+          <td dir="ltr">{{ item.requested_at }}</td>
+          <td><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:cancellation_detail' item.pk %}">مراجعة</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<p class="help">لا توجد طلبات إلغاء مطابقة حاليًا.</p>{% endif %}
+  </section>
+</main>
+{% endblock %}

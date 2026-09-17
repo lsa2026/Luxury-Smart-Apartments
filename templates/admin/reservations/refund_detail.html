@@ -1,0 +1,47 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> المرحلة 9.4 · {{ refund.get_status_display }}</span>
+      <h1>{{ refund.guest_name|default:"استرداد ضيف" }}</h1>
+      <p>{{ refund.reservation.property|default:"وحدة غير مرتبطة" }} · الاستحقاق <span dir="ltr">{{ refund.public_reference }}</span> · <b dir="ltr">{{ refund.amount }} {{ refund.currency }}</b></p>
+    </div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:refund_list' %}">كل الاستردادات</a>
+  </section>
+
+  <section class="lsa-panel">
+    <h2>ملخص الاسترداد</h2>
+    <p><b>الضيف:</b> {{ refund.guest_name|default:"—" }} · <span dir="ltr">{{ refund.guest_email|default:"—" }} · {{ refund.guest_phone|default:"—" }}</span></p>
+    <p><b>السبب:</b> {{ refund.get_reason_display }} · <b>حالة التحويل:</b> {{ refund.get_status_display }}</p>
+    {% if refund.note %}<p><b>الملاحظة:</b> {{ refund.note }}</p>{% endif %}
+    {% if refund.transfer_reference %}<p><b>مرجع التحويل:</b> <span dir="ltr">{{ refund.transfer_reference }}</span></p>{% endif %}
+  </section>
+
+  {% if refund.status == "due" %}
+  <section class="lsa-panel">
+    <h2>اعتماد المبلغ</h2>
+    <p class="help">يمكنك الإبقاء على مبلغ السياسة أو تعديله إلى استرداد جزئي أو كامل حسب الاتفاق. أي تغيير يتطلب سببًا ويحفظ القيمة الأصلية في سجل المراجعة.</p>
+    <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="approve_amount">
+      {% for field in decision_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+      <button class="default" type="submit">حفظ مبلغ الاسترداد المعتمد</button>
+    </form>
+  </section>
+  {% if refund.amount > 0 %}
+  <section class="lsa-panel">
+    <h2>تسجيل تحويل منفذ</h2>
+    <p class="help">استخدم هذا فقط بعد أن يتم التحويل فعليًا عبر البنك أو بوابة الدفع. لا ينفذ الموقع تحويلًا من هذه الصفحة.</p>
+    <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="mark_transferred">
+      {% for field in settlement_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+      <button type="submit">تسجيل التحويل المنفذ</button>
+    </form>
+  </section>
+  {% else %}
+  <section class="lsa-panel lsa-manual-booking__delete"><h2>إغلاق استحقاق صفري</h2><p class="help">هذا فقط بعد اعتماد مبلغ 0 بسبب واضح.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="close_without_transfer"><button class="deletelink" type="submit">إغلاق دون تحويل</button></form></section>
+  {% endif %}
+  {% endif %}
+
+  <section class="lsa-panel"><h2>سجل الاسترداد</h2>{% if audit_entries %}<div class="lsa-table-scroll"><table><thead><tr><th>الوقت</th><th>الإجراء</th><th>بواسطة</th></tr></thead><tbody>{% for entry in audit_entries %}<tr><td dir="ltr">{{ entry.created_at }}</td><td>{{ entry.display_summary }}</td><td>{% if entry.actor_user %}{{ entry.actor_user.get_full_name|default:entry.actor_user.username }}{% else %}النظام{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="help">لا توجد أحداث تشغيلية مسجلة بعد.</p>{% endif %}</section>
+</main>
+{% endblock %}

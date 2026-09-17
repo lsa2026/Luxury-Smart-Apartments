@@ -184,3 +184,92 @@ class ManualBookingDeleteForm(forms.Form):
         label="أفهم أن المسودة ستُحذف نهائيًا من قائمة المسودات",
         error_messages={"required": "أكد الحذف النهائي قبل المتابعة."},
     )
+
+
+class CancellationDecisionForm(forms.Form):
+    """A deliberate local decision; it never sends a Hostaway request."""
+
+    decision_note = forms.CharField(
+        label="ملاحظة القرار",
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    def clean_decision_note(self) -> str:
+        return _clean_text(self.cleaned_data["decision_note"])
+
+
+class CancellationRejectionForm(CancellationDecisionForm):
+    """A rejection must remain explainable to the guest and future operators."""
+
+    def clean_decision_note(self) -> str:
+        value = super().clean_decision_note()
+        if len(value) < 10:
+            raise forms.ValidationError("اكتب سبب الرفض بوضوح (10 أحرف على الأقل).")
+        return value
+
+
+class RefundDecisionForm(forms.Form):
+    """Records an owner-approved full or partial refund without moving money."""
+
+    approved_amount = forms.DecimalField(
+        label="مبلغ الاسترداد المعتمد",
+        max_digits=14,
+        decimal_places=4,
+        min_value=Decimal("0"),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+    )
+    decision_note = forms.CharField(
+        label="سبب القرار",
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    def __init__(self, *args: object, current_amount: Decimal, **kwargs: object) -> None:
+        self.current_amount = current_amount
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self.initial["approved_amount"] = current_amount
+
+    def clean_decision_note(self) -> str:
+        return _clean_text(self.cleaned_data["decision_note"])
+
+    def clean(self) -> dict[str, object]:
+        cleaned = super().clean()
+        amount = cleaned.get("approved_amount")
+        note = cleaned.get("decision_note")
+        if amount is not None and amount != self.current_amount and (
+            not isinstance(note, str) or len(note) < 10
+        ):
+            self.add_error(
+                "decision_note",
+                "اشرح بوضوح سبب تغيير مبلغ الاسترداد (10 أحرف على الأقل).",
+            )
+        return cleaned
+
+
+class RefundSettlementForm(forms.Form):
+    """Records a completed external transfer; it does not call a payment provider."""
+
+    transfer_reference = forms.CharField(label="مرجع التحويل", max_length=100)
+    settlement_note = forms.CharField(
+        label="ملاحظة التحويل",
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    confirm_settlement = forms.BooleanField(
+        label="أؤكد أن المبلغ حُوِّل فعليًا إلى الضيف",
+        error_messages={"required": "أكد تنفيذ التحويل الفعلي قبل تسجيله."},
+    )
+
+    def clean_transfer_reference(self) -> str:
+        value = _clean_text(self.cleaned_data["transfer_reference"])
+        if len(value) < 2:
+            raise forms.ValidationError("أدخل مرجع التحويل أو الرقم البنكي الصحيح.")
+        return value
+
+    def clean_settlement_note(self) -> str:
+        return _clean_text(self.cleaned_data["settlement_note"])

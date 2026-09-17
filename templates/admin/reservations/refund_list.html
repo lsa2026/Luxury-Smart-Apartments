@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> المرحلة 9.4 · متابعة مالية موثقة</span>
+      <h1>الاستردادات المستحقة</h1>
+      <p>اعتماد المبلغ وتسجيل التحويل بعد تنفيذه فعليًا. هذه الشاشة لا تحول المال ولا تتصل ببوابة الدفع.</p>
+    </div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">مركز العمليات</a>
+  </section>
+
+  <section class="lsa-panel">
+    <form method="get" class="lsa-period-filter">
+      <input name="q" value="{{ query }}" placeholder="ابحث باسم الضيف أو البريد أو المرجع">
+      <select name="status"><option value="">كل الحالات</option>{% for value, label in status_options %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button type="submit">بحث</button>
+    </form>
+  </section>
+
+  <section class="lsa-panel">
+    {% if refunds %}<div class="lsa-table-scroll"><table>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>المبلغ</th><th>السبب</th><th>الحالة</th><th></th></tr></thead>
+      <tbody>{% for refund in refunds %}<tr>
+        <td><b>{{ refund.guest_name|default:"—" }}</b><br><small>{{ refund.guest_email|default:"" }}</small></td>
+        <td>{{ refund.reservation.property|default:"—" }}</td><td dir="ltr">{{ refund.amount }} {{ refund.currency }}</td><td>{{ refund.get_reason_display }}</td><td>{{ refund.get_status_display }}</td>
+        <td><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:refund_detail' refund.pk %}">مراجعة</a></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>{% else %}<p class="help">لا توجد استردادات مطابقة حاليًا.</p>{% endif %}
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> المرحلة 9.4 · {{ cancellation.get_status_display }}</span>
+      <h1>{% if cancellation.reservation.booking_intent %}{{ cancellation.reservation.booking_intent.guest_first_name }} {{ cancellation.reservation.booking_intent.guest_last_name }}{% else %}طلب إلغاء{% endif %}</h1>
+      <p><span dir="ltr">{{ cancellation.old_check_in }} → {{ cancellation.old_check_out }}</span> · {{ cancellation.reservation.property|default:"وحدة غير مرتبطة" }} · المرجع الداخلي <span dir="ltr">{{ cancellation.public_reference }}</span></p>
+    </div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:cancellation_list' %}">كل طلبات الإلغاء</a>
+  </section>
+
+  <section class="lsa-panel">
+    <h2>بيانات الطلب</h2>
+    <p><b>البريد:</b> <span dir="ltr">{{ cancellation.reservation.booking_intent.guest_email|default:"—" }}</span> · <b>الجوال:</b> <span dir="ltr">{{ cancellation.reservation.booking_intent.guest_phone|default:"—" }}</span></p>
+    <p><b>سبب الضيف:</b> {{ cancellation.reason|default:"لم يضف الضيف سببًا." }}</p>
+    <p><b>تقدير الاسترداد وفق السياسة الآن:</b> <span dir="ltr">{{ estimated_refund.amount }} {{ estimated_refund.currency }}</span></p>
+    <p class="help">هذا تقدير للمراجعة فقط؛ الاستحقاق المالي لا يُنشأ إلا بعد اكتمال الإلغاء الخارجي بنجاح.</p>
+  </section>
+
+  {% if cancellation.status == "pending_admin_approval" %}
+  <section class="lsa-panel">
+    <h2>قرار الإدارة</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}<input type="hidden" name="action" value="approve">
+      <div class="form-row">{{ approval_form.decision_note.label_tag }}{{ approval_form.decision_note }}{{ approval_form.decision_note.errors }}</div>
+      <p class="help">الاعتماد يجهز الطلب فقط. لن يرسل إلغاء إلى Hostaway من هذه الخطوة.</p>
+      <button class="default" type="submit">اعتماد محلي للإلغاء</button>
+    </form>
+  </section>
+  <section class="lsa-panel lsa-manual-booking__delete">
+    <h2>رفض الطلب</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}<input type="hidden" name="action" value="reject">
+      <div class="form-row">{{ rejection_form.decision_note.label_tag }}{{ rejection_form.decision_note }}{{ rejection_form.decision_note.errors }}</div>
+      <button class="deletelink" type="submit">رفض طلب الإلغاء</button>
+    </form>
+  </section>
+  {% elif cancellation.status == "ready_for_hostaway" %}
+  <section class="lsa-panel"><h2>بانتظار التنفيذ الخارجي</h2><p>تم اعتماد الطلب داخل المركز. سنضيف خطوة التنفيذ الفعلية بعد مراجعة إعدادات Hostaway وتشغيلها في مرحلة مستقلة محمية.</p></section>
+  {% endif %}
+
+  {% if refunds %}
+  <section class="lsa-panel"><h2>استحقاق الاسترداد</h2>{% for refund in refunds %}<p><span dir="ltr">{{ refund.amount }} {{ refund.currency }}</span> · {{ refund.get_status_display }} · <a href="{% url 'notifications:refund_detail' refund.pk %}">مراجعة الاسترداد</a></p>{% endfor %}</section>
+  {% endif %}
+  <section class="lsa-panel"><h2>سجل القرار</h2>{% if audit_entries %}<div class="lsa-table-scroll"><table><thead><tr><th>الوقت</th><th>الإجراء</th><th>بواسطة</th></tr></thead><tbody>{% for entry in audit_entries %}<tr><td dir="ltr">{{ entry.created_at }}</td><td>{{ entry.display_summary }}</td><td>{% if entry.actor_user %}{{ entry.actor_user.get_full_name|default:entry.actor_user.username }}{% else %}النظام{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="help">لا توجد قرارات تشغيلية مسجلة بعد.</p>{% endif %}</section>
+</main>
+{% endblock %}

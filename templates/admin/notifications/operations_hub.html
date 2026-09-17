@@ -8,9 +8,9 @@
 <main class="lsa-dashboard lsa-operations-hub" dir="rtl">
   <section class="lsa-hero lsa-operations-hub__hero">
     <div>
-      <span class="lsa-kicker"><i></i> المرحلة 9.2 · إدارة الحجوزات اليدوية</span>
+      <span class="lsa-kicker"><i></i> المرحلة 9.4 · إدارة الحجوزات والإلغاءات</span>
       <h1>مركز العمليات</h1>
-      <p>مساحة خاصة لفحص التوفر، اعتماد السعر، ومتابعة مسودات الحجز. لا تنشئ حجزًا في Hostaway أو رابط دفع أو رسالة أو استرجاعًا ماليًا تلقائيًا.</p>
+      <p>مساحة خاصة لفحص التوفر، اعتماد السعر، ومتابعة مسودات الحجز وطلبات الإلغاء. لا تنشئ حجزًا في Hostaway أو رابط دفع أو رسالة أو استرجاعًا ماليًا تلقائيًا.</p>
       <small class="lsa-live-time"><i></i> ظاهر لك كأدمن فقط، وليس جزءًا من الموقع الموجّه للضيوف.</small>
     </div>
     <div class="lsa-hero__actions">
@@ -31,7 +31,7 @@
     <a href="{{ dashboard.urls.bookings }}"><span>حجوزات تحتاج متابعة</span><strong>{{ dashboard.reservations_attention }}</strong><i>فتح القائمة ←</i></a>
     <a href="{{ dashboard.urls.payments }}"><span>دفعات معلّقة</span><strong>{{ dashboard.pending_payments }}</strong><i>فتح سجل الدفع ←</i></a>
     <a href="{{ dashboard.urls.modifications }}"><span>طلبات تعديل</span><strong>{{ dashboard.pending_modifications }}</strong><i>فتح الطلبات ←</i></a>
-    <a href="{{ dashboard.urls.bookings }}"><span>استرجاعات مستحقة</span><strong>{{ dashboard.refunds_due }}</strong><i>فتح السجل ←</i></a>
+    <a href="{% url 'notifications:refund_list' %}"><span>استرجاعات مستحقة</span><strong>{{ dashboard.refunds_due }}</strong><i>فتح السجل ←</i></a>
   </section>
 
   <section class="lsa-hub-grid">
@@ -72,9 +72,9 @@
       <a class="lsa-hub-action" href="{% url 'notifications:manual_booking_list' %}"><span>≋</span><div><b>سجل تدقيق دائم</b><small>كل فحص أو اعتماد أو إلغاء للمسودة يظهر بصاحبه ووقته، دون تعديل صامت.</small></div><em>متاح الآن</em></a>
     </article>
     <article class="lsa-panel">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلتان 6.2 و6.3</span><h2>الدفع والإلغاء والاسترجاع</h2></div></header>
-      <div class="lsa-hub-action is-planned"><span>↗</span><div><b>إرسال رابط دفع للضيف</b><small>إما عبر رابط HyperPay الآلي أو بعد استلام الرابط اليدوي من المحاسبة.</small></div><em>قريبًا</em></div>
-      <div class="lsa-hub-action is-planned"><span>↺</span><div><b>إلغاء واسترجاع مضبوط</b><small>كامل أو جزئي، بمبلغ معتمد وسبب وسجل مالي؛ لا استرجاع تلقائي بمجرد الإلغاء.</small></div><em>قريبًا</em></div>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلتان 9.3 و9.4</span><h2>الدفع والإلغاء والاسترجاع</h2></div></header>
+      <div class="lsa-hub-action is-planned"><span>↗</span><div><b>إرسال رابط دفع للضيف</b><small>إما عبر رابط HyperPay الآلي أو بعد استلام الرابط اليدوي من المحاسبة.</small></div><em>بانتظار HyperPay</em></div>
+      <a class="lsa-hub-action" href="{% url 'notifications:cancellation_list' %}"><span>↺</span><div><b>طلبات الإلغاء والاسترداد</b><small>قرار محلي موثق، ثم مبلغ كامل أو جزئي مع سبب وسجل تحويل. لا اتصال مالي تلقائي.</small></div><em>متاح الآن</em></a>
     </article>
   </section>
 
