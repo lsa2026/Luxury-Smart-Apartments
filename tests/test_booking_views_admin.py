@@ -126,7 +126,7 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     assert "المدينة" in content
     assert "المنطقة أو المحافظة" in content
     assert "الدولة" in content
-    assert "الرمز البريدي" in content
+    assert "الرمز البريدي" not in content
     assert "الفوترة" not in content
 
 
@@ -141,7 +141,6 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
                 "المدينة",
                 "المنطقة أو المحافظة",
                 "الدولة",
-                "الرمز البريدي",
                 "متابعة إلى عنوان الدفع",
             ),
         ),
@@ -153,7 +152,6 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
                 "City",
                 "State or region",
                 "Country",
-                "Postal code",
                 "Continue to payment address",
             ),
         ),
@@ -165,7 +163,6 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
                 "Ville",
                 "État ou région",
                 "Pays",
-                "Code postal",
                 "Continuer vers l’adresse de paiement",
             ),
         ),

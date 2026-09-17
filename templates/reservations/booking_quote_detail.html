@@ -238,7 +238,7 @@
 
                         <div class="guest-journey__billing-note">
                             <span aria-hidden="true">✓</span>
-                            <p>{% trans "This address is required by the secure payment provider and may differ from the apartment address." %}</p>
+                            <p>{% if current_language_code == "ar" %}استخدم العنوان المرتبط ببطاقة الدفع، وقد يختلف عن عنوان الشقة.{% elif current_language_code == "fr" %}Saisissez l’adresse associée à la carte de paiement ; elle peut différer de l’adresse de l’appartement.{% else %}Enter the address associated with the payment card. It may differ from the apartment address.{% endif %}</p>
                         </div>
 
                         <div class="quote-review__form-grid guest-journey__billing-grid">
@@ -261,11 +261,6 @@
                                 <label for="{{ guest_form.billing_state.id_for_label }}">{{ guest_form.billing_state.label }}</label>
                                 {{ guest_form.billing_state }}
                                 {% for error in guest_form.billing_state.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="form-field guest-journey__field--postcode{% if guest_form.billing_postcode.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_postcode.id_for_label }}">{{ guest_form.billing_postcode.label }}<span class="form-optional">{% trans "optional" %}</span></label>
-                                {{ guest_form.billing_postcode }}
-                                {% for error in guest_form.billing_postcode.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
                         </div>
 

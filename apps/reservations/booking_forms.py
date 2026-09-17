@@ -50,13 +50,12 @@ class GuestDetailsForm(forms.Form):
             }
         ),
     )
-    # Optional by decision: /v1/checkouts requires only entityId, amount,
-    # currency and paymentType. The address still helps 3-D Secure risk scoring,
-    # so it is asked for and sent when given, never demanded.
+    # HyperPay requires the billing address for the 3-D Secure authentication
+    # journey. Keep this as one clear required field rather than letting the
+    # guest discover the requirement only after reaching payment.
     billing_street1 = forms.CharField(
         label=_("Street address"),
         max_length=100,
-        required=False,
         widget=forms.TextInput(attrs={"autocomplete": "address-line1"}),
     )
     billing_city = forms.CharField(

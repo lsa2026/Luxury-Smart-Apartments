@@ -8222,12 +8222,12 @@ h2 {
 
 @media (min-width: 23rem) and (max-width: 48rem) {
     .guest-journey__panel .quote-review__form-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: 1fr;
     }
 
     .guest-journey__panel .quote-review__field--guest_first_name,
     .guest-journey__panel .quote-review__field--guest_last_name {
-        grid-column: span 3 !important;
+        grid-column: 1 !important;
     }
 }
 
