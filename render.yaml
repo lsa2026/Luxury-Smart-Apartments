@@ -396,10 +396,8 @@ services:
       - key: EMAIL_HOST_USER
         value: saeed@luxurysmartapartments.com
       - key: EMAIL_HOST_PASSWORD
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: EMAIL_HOST_PASSWORD
+        # Set once in the Render dashboard for this worker. Do not commit it.
+        sync: false
       - key: EMAIL_USE_TLS
         value: "True"
       - key: EMAIL_USE_SSL
