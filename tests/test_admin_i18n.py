@@ -60,3 +60,19 @@ def test_admin_index_keeps_arabic_for_arabic_users(staff_client):
     response = staff_client.get(reverse("admin:index"), headers={"accept-language": "ar"})
     body = response.content.decode()
     assert "أولويات تحتاج قرارًا" in body
+
+
+@pytest.mark.django_db
+def test_admin_header_offers_language_switching(staff_client):
+    response = staff_client.get(reverse("admin:index"))
+    body = response.content.decode()
+    assert 'action="/i18n/setlang/"' in body
+    assert 'data-language-select' in body
+
+    response = staff_client.post(
+        reverse("set_language"),
+        {"language": "en", "next": reverse("admin:index")},
+    )
+    assert response.status_code == 302
+    response = staff_client.get(reverse("admin:index"))
+    assert "Welcome, the administration team" in response.content.decode()

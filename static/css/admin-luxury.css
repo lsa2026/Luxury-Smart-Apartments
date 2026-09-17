@@ -526,6 +526,16 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-admin-login__google:hover,.lsa-admin-login__google:focus-visible { color: #fff; background: #064a3b; }
 .lsa-admin-login__or { margin: 0 0 1rem; color: var(--body-quiet-color); font-size: .78rem; text-align: center; }
 
+/* Keep language choice available in the operations console, just as it is on
+   the guest site.  It submits immediately and returns the owner to the
+   current screen. */
+.lsa-admin-language { flex: 0 0 auto; }
+.lsa-admin-language .language-switcher { margin: 0; }
+.lsa-admin-language select { min-height: 40px; padding: 0 34px 0 13px; color: #fff; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: rgba(255,255,255,.06); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.lsa-admin-language select:hover,.lsa-admin-language select:focus { border-color: rgba(218,190,126,.85); outline: none; }
+.lsa-admin-language select option { color: #183b30; background: #fffdf8; }
+@media (max-width: 700px) { .lsa-admin-language select { min-width: 0; max-width: 94px; padding-right: 25px; font-size: 10px; } }
+
 /* Manual booking: the property name remains readable and dates use the same
    live Hostaway availability projection as the guest-facing calendar. */
 .lsa-manual-booking-form__grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }

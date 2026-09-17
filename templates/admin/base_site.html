@@ -5,12 +5,12 @@
 
 {% block extrastyle %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260904-1">
+  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260918-1">
 {% endblock %}
 
 {% block extrahead %}
   {{ block.super }}
-  <script src="{% static 'js/admin-luxury.js' %}?v=20260828-1" defer></script>
+  <script src="{% static 'js/admin-luxury.js' %}?v=20260918-1" defer></script>
 {% endblock %}
 
 {% block header %}
@@ -36,6 +36,9 @@
 
         <div class="lsa-header-actions">
           <a href="{% url 'core:home' %}" target="_blank" class="lsa-icon-action" title="{% trans "View the platform" %}" aria-label="{% trans "View the platform" %}">↗</a>
+          <div class="lsa-admin-language" aria-label="{% trans "Language" %}">
+            {% include "includes/language_switcher.html" %}
+          </div>
           <details class="lsa-command" data-lsa-command>
             <summary class="lsa-command__trigger"><span>{% trans "All tools" %}</span><i aria-hidden="true">⌘</i></summary>
             <div class="lsa-command__backdrop" data-lsa-command-close></div>

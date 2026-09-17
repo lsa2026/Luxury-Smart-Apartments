@@ -66,6 +66,10 @@
       });
     });
   });
+
+  document.querySelectorAll("[data-language-select]").forEach((select) => {
+    select.addEventListener("change", () => select.form?.requestSubmit());
+  });
 })();
 
 /* Image alternative text editor: fill empty fields from the property name. */
