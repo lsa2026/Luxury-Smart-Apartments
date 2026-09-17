@@ -26,12 +26,13 @@ def validate_google_configuration() -> list[tuple[str, str]]:
     if settings.GOOGLE_ADS_ENABLED:
         if not GOOGLE_ADS_ID_PATTERN.fullmatch(settings.GOOGLE_ADS_CONVERSION_ID):
             errors.append(("core.E103", "A valid Google Ads conversion ID is required."))
-        for label_name in (
-            "GOOGLE_ADS_BOOKING_CONVERSION_LABEL",
-            "GOOGLE_ADS_CONTACT_CONVERSION_LABEL",
-        ):
-            if not CONVERSION_LABEL_PATTERN.fullmatch(getattr(settings, label_name)):
-                errors.append(("core.E104", f"A valid {label_name} is required."))
+        # A confirmed booking is the only production conversion wired in this
+        # release.  A contact label remains an optional future setting; making
+        # it mandatory here unnecessarily prevents the verified purchase tag
+        # from being enabled.
+        label_name = "GOOGLE_ADS_BOOKING_CONVERSION_LABEL"
+        if not CONVERSION_LABEL_PATTERN.fullmatch(getattr(settings, label_name)):
+            errors.append(("core.E104", f"A valid {label_name} is required."))
     if settings.GOOGLE_ADS_ENHANCED_CONVERSIONS_ENABLED:
         errors.append(("core.E105", "Enhanced Conversions are not supported in this phase."))
     consent_values = {

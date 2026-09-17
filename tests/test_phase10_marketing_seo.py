@@ -160,7 +160,6 @@ def test_valid_google_identifiers_pass_local_validation() -> None:
         GOOGLE_ADS_ENABLED=True,
         GOOGLE_ADS_CONVERSION_ID="AW-123456",
         GOOGLE_ADS_BOOKING_CONVERSION_LABEL="BOOKING_1",
-        GOOGLE_ADS_CONTACT_CONVERSION_LABEL="CONTACT_1",
     ):
         assert validate_google_configuration() == []
 
