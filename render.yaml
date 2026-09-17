@@ -81,16 +81,14 @@ services:
           property: connectionString
 
       # --- UAT safety -----------------------------------------------------
-      # The public domain is now served from this account.  UAT connects only
-      # to test payments and read-only availability synchronisation.
-      # UAT: HyperPay's test gateway is safe to exercise without charging cards.
-      # Live payments remain a separate, explicit launch decision.
+      # Production checkout: credentials remain dashboard-only secrets. A
+      # verified payment must create the corresponding Hostaway reservation.
       - key: HYPERPAY_ENABLED
         value: "True"
       - key: HYPERPAY_ENVIRONMENT
-        value: test
+        value: production
       - key: HYPERPAY_BASE_URL
-        value: https://eu-test.oppwa.com/
+        value: https://eu-prod.oppwa.com/
       - key: HYPERPAY_ENTITY_ID
         sync: false
       - key: HYPERPAY_ACCESS_TOKEN
@@ -116,7 +114,7 @@ services:
       # Required by check payments.E107 while HyperPay runs in production: a
       # verified payment must create the real reservation, never a local one.
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
-        value: "False"
+        value: "True"
       # Channel a website booking is filed under. Verified against this account:
       # every reservation the public API creates carries channelId 2000 "direct".
       # Creation is refused outright when this is missing.
@@ -336,7 +334,7 @@ services:
       # Must match the web service: the payments checks run in every process,
       # so a mismatch would stop the worker from booting at all.
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
-        value: "False"
+        value: "True"
       # Channel a website booking is filed under. Verified against this account:
       # every reservation the public API creates carries channelId 2000 "direct".
       # Creation is refused outright when this is missing.
