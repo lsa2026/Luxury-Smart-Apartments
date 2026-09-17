@@ -289,6 +289,13 @@ def test_analytics_discards_unknown_payload_keys() -> None:
     ) == {"available": True}
 
 
+def test_whatsapp_click_keeps_only_safe_attribution_fields() -> None:
+    assert sanitize_analytics_event(
+        "whatsapp_click",
+        {"lead_source": "floating_button", "language": "ar", "unknown": "discarded"},
+    ) == {"lead_source": "floating_button", "language": "ar"}
+
+
 def test_analytics_limits_item_count_and_item_fields() -> None:
     payload = sanitize_analytics_event(
         "view_item_list",

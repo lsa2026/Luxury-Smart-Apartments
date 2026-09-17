@@ -29,6 +29,7 @@ EVENT_SCHEMAS: dict[str, frozenset[str]] = {
     "modification_request_created": frozenset({"request_type"}),
     "cancellation_request_created": frozenset({"request_type"}),
     "contact_form_submitted": frozenset({"lead_source"}),
+    "whatsapp_click": frozenset({"lead_source", "language"}),
     "language_changed": frozenset({"language"}),
     "cookie_consent_updated": frozenset({"analytics", "marketing", "version"}),
     "purchase": frozenset({"transaction_id", "value", "currency", "items", "tax", "coupon"}),

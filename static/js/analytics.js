@@ -28,6 +28,7 @@
         modification_request_created: new Set(["request_type"]),
         cancellation_request_created: new Set(["request_type"]),
         contact_form_submitted: new Set(["lead_source"]),
+        whatsapp_click: new Set(["lead_source", "language"]),
         language_changed: new Set(["language"]),
         cookie_consent_updated: new Set(["analytics", "marketing", "version"]),
         purchase: new Set(["transaction_id", "value", "currency", "items", "tax", "coupon"]),
