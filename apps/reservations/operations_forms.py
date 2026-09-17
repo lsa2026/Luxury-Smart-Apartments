@@ -273,3 +273,12 @@ class RefundSettlementForm(forms.Form):
 
     def clean_settlement_note(self) -> str:
         return _clean_text(self.cleaned_data["settlement_note"])
+
+
+class RefundGatewaySubmitForm(forms.Form):
+    """A separate confirmation makes a live refund an intentional owner action."""
+
+    confirm_gateway_refund = forms.BooleanField(
+        label="أؤكد إعادة هذا المبلغ إلى بطاقة الضيف عبر HyperPay",
+        error_messages={"required": "أكد تنفيذ الاسترداد عبر بوابة الدفع قبل المتابعة."},
+    )

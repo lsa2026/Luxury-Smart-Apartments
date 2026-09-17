@@ -324,6 +324,13 @@ HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED = strict_bool(
     "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED",
     True,
 )
+# Refunds are deliberately a separate opt-in from collecting a payment. The
+# production guard prevents an otherwise harmless deployment from returning
+# real money before the sandbox flow has been accepted.
+HYPERPAY_REFUNDS_ENABLED = strict_bool("HYPERPAY_REFUNDS_ENABLED")
+HYPERPAY_REFUNDS_PRODUCTION_ENABLED = strict_bool(
+    "HYPERPAY_REFUNDS_PRODUCTION_ENABLED"
+)
 HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
     "HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS", default=86400
 )

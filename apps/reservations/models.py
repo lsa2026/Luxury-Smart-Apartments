@@ -960,6 +960,7 @@ class RefundObligation(models.Model):
 
     class Status(models.TextChoices):
         DUE = "due", _("Due to the guest")
+        PROCESSING = "processing", _("Processing with payment provider")
         TRANSFERRED = "transferred", _("Transferred")
         CANCELLED = "cancelled", pgettext_lazy("RefundObligation", "Cancelled")
 

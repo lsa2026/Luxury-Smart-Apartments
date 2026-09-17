@@ -32,3 +32,9 @@ class HyperPayCheckoutError(HyperPayError):
 
 class HyperPayVerificationError(HyperPayError):
     code = "hyperpay_verification_failed"
+
+
+class HyperPayRefundError(HyperPayError):
+    """A refund could not safely be completed or its result is unknown."""
+
+    code = "hyperpay_refund_failed"

@@ -17,6 +17,7 @@ from django.utils import timezone
 from apps.accounts.access import require_operations_owner
 from apps.notifications.models import AuditLog
 from apps.notifications.services.audit import record_audit
+from apps.payments.hyperpay.refunds import HyperPayRefundService
 
 from .manual_bookings import create_manual_booking_draft, finalize_manual_booking_draft
 from .models import (
@@ -33,6 +34,7 @@ from .operations_forms import (
     ManualBookingDeleteForm,
     ManualBookingFinalizeForm,
     RefundDecisionForm,
+    RefundGatewaySubmitForm,
     RefundSettlementForm,
 )
 from .services.refunds import cancellation_refund
@@ -53,6 +55,10 @@ _CANCELLATION_AUDIT_LABELS = {
     "cancellation.approved_locally": "تم اعتماد الإلغاء محليًا بانتظار التنفيذ الخارجي.",
     "cancellation.rejected_locally": "رُفض طلب الإلغاء محليًا.",
     "refund.amount_approved": "اعتمد مبلغ الاسترداد بعد المراجعة.",
+    "refund.hyperpay_submitted": "أُرسل الاسترداد إلى HyperPay.",
+    "refund.hyperpay_completed": "أكدت HyperPay الاسترداد.",
+    "refund.hyperpay_failed": "رفضت HyperPay الاسترداد؛ لم يُسجل كتحويل.",
+    "refund.hyperpay_review": "نتيجة الاسترداد غير مؤكدة وتحتاج مراجعة قبل أي إعادة محاولة.",
     "refund.marked_transferred": "سُجل تحويل الاسترداد للضيف.",
     "refund.cancelled_by_owner": "أغلق استحقاق الاسترداد دون تحويل.",
 }
@@ -451,6 +457,7 @@ def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
     )
     decision_form = RefundDecisionForm(current_amount=refund.amount)
     settlement_form = RefundSettlementForm()
+    gateway_form = RefundGatewaySubmitForm()
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "approve_amount":
@@ -532,6 +539,26 @@ def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
                         "سُجل التحويل في النظام. لم يتصل الموقع بأي بوابة دفع.",
                     )
                     return redirect("notifications:refund_detail", refund_id=refund.pk)
+        elif action == "submit_hyperpay_refund":
+            gateway_form = RefundGatewaySubmitForm(request.POST)
+            if gateway_form.is_valid():
+                from apps.payments.hyperpay.exceptions import HyperPayRefundError
+
+                try:
+                    outcome = HyperPayRefundService().submit(refund, operator=request.user)
+                except HyperPayRefundError as exc:
+                    messages.error(request, f"تعذر إرسال الاسترداد إلى HyperPay ({exc.code}).")
+                else:
+                    record_audit(
+                        request=request,
+                        action=outcome.audit_action,
+                        object_type="RefundObligation",
+                        object_reference=refund.public_reference,
+                        summary=outcome.audit_summary,
+                        metadata=outcome.audit_metadata,
+                    )
+                    messages.success(request, outcome.message)
+                    return redirect("notifications:refund_detail", refund_id=refund.pk)
         elif action == "close_without_transfer":
             if refund.status != RefundObligation.Status.DUE:
                 messages.error(request, "لا يمكن إغلاق هذا الاستحقاق في حالته الحالية.")
@@ -569,6 +596,8 @@ def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
             "refund": refund,
             "decision_form": decision_form,
             "settlement_form": settlement_form,
+            "gateway_form": gateway_form,
+            "hyperpay_refund_available": HyperPayRefundService.is_available(),
             "audit_entries": audit_entries,
         },
     )

@@ -53,6 +53,11 @@ class HyperPayClient:
             params={"entityId": settings.HYPERPAY_ENTITY_ID},
         )
 
+    def refund_payment(self, payment_id: str, payload: Mapping[str, str]) -> dict[str, Any]:
+        """Refund a captured payment using HyperPay's Backoffice API."""
+
+        return self._request("POST", f"/v1/payments/{payment_id}", data=payload)
+
     def _request(self, method: str, path: str, **kwargs: object) -> dict[str, Any]:
         try:
             response = self.http.request(method, path, **kwargs)

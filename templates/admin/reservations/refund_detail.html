@@ -29,6 +29,16 @@
     </form>
   </section>
   {% if refund.amount > 0 %}
+  {% if hyperpay_refund_available %}
+  <section class="lsa-panel">
+    <h2>استرداد عبر HyperPay</h2>
+    <p class="help">يعيد المبلغ المعتمد إلى وسيلة الدفع الأصلية. لا تستخدمه إلا للاسترداد الذي راجعته واعتمدته.</p>
+    <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="submit_hyperpay_refund">
+      {% for field in gateway_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+      <button class="deletelink" type="submit">إرسال الاسترداد إلى HyperPay</button>
+    </form>
+  </section>
+  {% endif %}
   <section class="lsa-panel">
     <h2>تسجيل تحويل منفذ</h2>
     <p class="help">استخدم هذا فقط بعد أن يتم التحويل فعليًا عبر البنك أو بوابة الدفع. لا ينفذ الموقع تحويلًا من هذه الصفحة.</p>
@@ -40,6 +50,13 @@
   {% else %}
   <section class="lsa-panel lsa-manual-booking__delete"><h2>إغلاق استحقاق صفري</h2><p class="help">هذا فقط بعد اعتماد مبلغ 0 بسبب واضح.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="close_without_transfer"><button class="deletelink" type="submit">إغلاق دون تحويل</button></form></section>
   {% endif %}
+  {% endif %}
+
+  {% if refund.status == "processing" %}
+  <section class="lsa-panel">
+    <h2>الاسترداد قيد المراجعة</h2>
+    <p class="help">سُجل طلب الاسترداد لدى البوابة، لكن النتيجة ليست نهائية بعد. لا تعِد إرساله؛ راجع HyperPay أولًا.</p>
+  </section>
   {% endif %}
 
   <section class="lsa-panel"><h2>سجل الاسترداد</h2>{% if audit_entries %}<div class="lsa-table-scroll"><table><thead><tr><th>الوقت</th><th>الإجراء</th><th>بواسطة</th></tr></thead><tbody>{% for entry in audit_entries %}<tr><td dir="ltr">{{ entry.created_at }}</td><td>{{ entry.display_summary }}</td><td>{% if entry.actor_user %}{{ entry.actor_user.get_full_name|default:entry.actor_user.username }}{% else %}النظام{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="help">لا توجد أحداث تشغيلية مسجلة بعد.</p>{% endif %}</section>
