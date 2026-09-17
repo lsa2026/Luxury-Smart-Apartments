@@ -385,7 +385,7 @@
                             <path d="M7 3v3m10-3v3M4.5 9h15M5 5h14v15H5zM9 13l6 5m0-5-6 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
                         </svg>
                     </span>
-                    <span><strong>{% trans "Request cancellation" %}</strong><small>{% trans "Review the cancellation options" %}</small></span>
+                    <span><strong>{% if automatic_cancellation_enabled %}{% trans "Cancel booking" %}{% else %}{% trans "Request cancellation" %}{% endif %}</strong><small>{% if automatic_cancellation_enabled %}{% trans "Cancel securely and return any eligible refund" %}{% else %}{% trans "Review the cancellation options" %}{% endif %}</small></span>
                     <i aria-hidden="true">
                         <svg viewBox="0 0 20 20" width="18" height="18"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg>
                     </i>
@@ -399,11 +399,16 @@
                     {% endif %}
                     <p class="booking-policy-note booking-policy-note--warning">
                         <span aria-hidden="true">!</span>
+                        {% if automatic_cancellation_enabled %}
+                        {% trans "Cancelling releases your dates immediately and cannot be undone." %}
+                        {% blocktrans with amount=cancellation_estimate.amount currency=cancellation_estimate.currency %}The eligible refund is {{ amount }} {{ currency }} and is returned to the original payment method after the cancellation is confirmed.{% endblocktrans %}
+                        {% else %}
                         {% trans "Cancelling releases your dates immediately and cannot be undone." %}
                         {% blocktrans with days=refund_working_days %}Any refund due is transferred to your bank account within {{ days }} working days, after we contact you for the details.{% endblocktrans %}
+                        {% endif %}
                     </p>
                     {% csrf_token %}{{ cancellation_form.as_p }}
-                    <button class="button button--secondary" type="submit">{% trans "Send for review" %}</button>
+                    <button class="button button--secondary" type="submit">{% if automatic_cancellation_enabled %}{% trans "Cancel booking and process refund" %}{% else %}{% trans "Send for review" %}{% endif %}</button>
                 </form>
             </details>
         </div>

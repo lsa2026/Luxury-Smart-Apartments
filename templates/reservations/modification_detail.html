@@ -42,11 +42,17 @@
             {% endif %}
         </dl>
         {% if modification.status == 'completed' %}
-        <div class="notice notice--success"><strong>{% trans "Change completed" %}</strong><p>{% trans "Your booking has been updated successfully in the reservation system." %}</p></div>
+        <div class="notice notice--success"><strong>{% if modification.request_type == 'cancel_reservation' %}{% trans "Booking cancelled" %}{% else %}{% trans "Change completed" %}{% endif %}</strong><p>{% if modification.request_type == 'cancel_reservation' %}{% trans "Your cancellation was confirmed in the reservation system." %}{% else %}{% trans "Your booking has been updated successfully in the reservation system." %}{% endif %}</p></div>
         {% elif modification.status == 'processing' or modification.status == 'ready_for_hostaway' %}
         <div class="notice notice--important"><strong>{% trans "Change is being applied" %}</strong><p>{% trans "Payment and checks are complete. Do not pay again while the reservation update is processed." %}</p></div>
         {% else %}
         <div class="notice notice--important"><strong>{% trans "Request received" %}</strong><p>{% trans "Your original booking remains active until the change is completed." %}</p></div>
+        {% endif %}
+        {% if refund %}
+        <div class="notice {% if refund.status == 'transferred' %}notice--success{% else %}notice--important{% endif %}">
+            <strong>{% trans "Refund status" %}</strong>
+            <p>{% blocktrans with amount=refund.amount currency=refund.currency status=refund.get_status_display %}{{ amount }} {{ currency }} · {{ status }}{% endblocktrans %}</p>
+        </div>
         {% endif %}
         {% if modification.price_difference < 0 %}
         <p class="booking-policy-note">

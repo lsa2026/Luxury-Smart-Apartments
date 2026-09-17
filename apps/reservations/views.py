@@ -55,6 +55,7 @@ from .services.availability import (
 )
 from .services.booking import consume_revalidated_quote
 from .services.modifications import ModificationService
+from .services.refunds import cancellation_refund
 from .services.stay_policy import stay_policy_for
 from .signing import (
     quote_id_from_reference,
@@ -663,6 +664,11 @@ def _management_context(
         .order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
         .first()
     )
+    automatic_cancellation_enabled = bool(
+        settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        and settings.BOOKING_AUTOMATIC_REFUND_ENABLED
+        and settings.HYPERPAY_ENVIRONMENT == "production"
+    )
     context: dict[str, object] = {
         "reservation": reservation,
         "cover_image": cover_image,
@@ -684,11 +690,19 @@ def _management_context(
         ),
         "guest_form": GuestChangeRequestForm(initial={"new_guests": reservation.guests}),
         "cancellation_form": CancellationRequestForm(),
+        "automatic_cancellation_enabled": automatic_cancellation_enabled,
+        "cancellation_estimate": cancellation_refund(reservation),
     }
     context.update(overrides)
     extension_form = context["extension_form"]
     date_form = context["date_form"]
     guest_form = context["guest_form"]
+    cancellation_form = context["cancellation_form"]
+    if not automatic_cancellation_enabled:
+        cancellation_form.fields["confirm"].label = _(
+            "I understand this is a review request and does not cancel "
+            "the booking or issue a refund."
+        )
     extension_form.fields["new_check_out"].widget.attrs["min"] = (
         reservation.check_out + timedelta(days=1)
     ).isoformat()
@@ -1076,7 +1090,35 @@ class ModificationCreateView(View):
             raise Http404
         if outcome.request is not None:
             if outcome.request.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY:
-                execute_automatic_modification(outcome.request)
+                execution = execute_automatic_modification(outcome.request)
+                if execution.code != "completed":
+                    messages.error(
+                        request,
+                        _(
+                            "The cancellation could not be completed. Your booking has not been changed."
+                        ),
+                    )
+                elif execution.refund_code == "refund.hyperpay_completed":
+                    messages.success(
+                        request,
+                        _(
+                            "Your booking was cancelled and your refund was sent to the original payment method."
+                        ),
+                    )
+                elif execution.refund_code == "refund.hyperpay_submitted":
+                    messages.success(
+                        request,
+                        _(
+                            "Your booking was cancelled and your refund has been submitted to the payment provider."
+                        ),
+                    )
+                elif execution.refund is not None and execution.refund_code:
+                    messages.warning(
+                        request,
+                        _(
+                            "Your booking was cancelled. The refund needs a final review before it can be sent."
+                        ),
+                    )
             return _private_response(
                 redirect(
                     "reservations:modification_detail",
@@ -1123,6 +1165,7 @@ class ModificationDetailView(View):
                 {
                     "modification": modification,
                     "hyperpay_enabled": settings.HYPERPAY_ENABLED,
+                    "refund": modification.refund_obligations.order_by("-created_at").first(),
                 },
             )
         )

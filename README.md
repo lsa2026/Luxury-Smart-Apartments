@@ -328,12 +328,22 @@ BOOKING_MODIFICATION_CUTOFF_HOURS=48
 BOOKING_CANCELLATION_REQUEST_ENABLED=True
 BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False
 BOOKING_AUTOMATIC_CANCELLATION_ENABLED=False
+HYPERPAY_REFUNDS_ENABLED=False
+HYPERPAY_REFUNDS_PRODUCTION_ENABLED=False
+BOOKING_AUTOMATIC_REFUND_ENABLED=False
 ```
 
 عند تفعيل `BOOKING_AUTOMATIC_MODIFICATION_APPROVAL` وflags الكتابة المناسبة،
 ينفذ المسار الطبيعي دون تدخل إداري. يحفظ `HostawayModificationOperation` بصمة
 HMAC وحالة idempotency فقط، دون request أو response خام. timeout أو 5xx بعد
 محاولة الكتابة يجعل الحالة `unknown` ولا يعاد PUT تلقائيًا لتجنب تكرار التعديل.
+
+يمكن تفعيل الإلغاء والاسترداد الذاتي للضيف فقط عند تشغيل flags الإلغاء الحي،
+و`HYPERPAY_REFUNDS_ENABLED` و`HYPERPAY_REFUNDS_PRODUCTION_ENABLED`، ثم
+`BOOKING_AUTOMATIC_REFUND_ENABLED`. عندها يلغي الموقع الحجز في Hostaway أولًا؛
+ولا يرسل المبلغ إلى البطاقة الأصلية إلا بعد أن يؤكد Hostaway الإلغاء. أي رفض أو
+نتيجة غير مؤكدة من HyperPay تبقي الاستحقاق في مركز العمليات للمراجعة ولا تعيد
+إرسال الاسترداد تلقائيًا.
 
 التوثيق الرسمي الحالي يحدد تعديل الحجز عبر
 `PUT /reservations/{reservationId}`، والإلغاء عبر

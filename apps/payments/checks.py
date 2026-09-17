@@ -75,4 +75,17 @@ def hyperpay_configuration_check(
                 id="payments.E109",
             )
         )
+    if settings.BOOKING_AUTOMATIC_REFUND_ENABLED and not (
+        settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        and settings.HYPERPAY_REFUNDS_ENABLED
+        and settings.HYPERPAY_REFUNDS_PRODUCTION_ENABLED
+        and settings.HYPERPAY_ENVIRONMENT == "production"
+    ):
+        errors.append(
+            Error(
+                "Automatic refunds require live cancellation and the explicit "
+                "HyperPay production-refund opt-in.",
+                id="payments.E110",
+            )
+        )
     return errors

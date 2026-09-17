@@ -81,8 +81,8 @@ class GuestChangeRequestForm(ReasonMixin):
 class CancellationRequestForm(ReasonMixin):
     confirm = forms.BooleanField(
         label=_(
-            "I understand this is a review request and does not cancel "
-            "the booking or issue a refund."
+            "I understand that the booking will be cancelled and any eligible "
+            "refund will be returned to the original payment method."
         ),
         required=True,
     )

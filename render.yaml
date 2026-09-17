@@ -151,6 +151,8 @@ services:
       # transfers it. An empty tier table refunds nothing automatically.
       - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
         value: "False"
+      - key: BOOKING_AUTOMATIC_REFUND_ENABLED
+        value: "False"
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
         value: "False"
       # Working days quoted to the guest for the bank transfer.
@@ -363,6 +365,8 @@ services:
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
         value: "False"
       - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        value: "False"
+      - key: BOOKING_AUTOMATIC_REFUND_ENABLED
         value: "False"
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
         value: "False"

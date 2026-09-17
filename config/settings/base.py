@@ -409,6 +409,10 @@ BOOKING_CANCELLATION_REQUEST_ENABLED = strict_bool(
 )
 BOOKING_AUTOMATIC_MODIFICATION_APPROVAL = strict_bool("BOOKING_AUTOMATIC_MODIFICATION_APPROVAL")
 BOOKING_AUTOMATIC_CANCELLATION_ENABLED = strict_bool("BOOKING_AUTOMATIC_CANCELLATION_ENABLED")
+# A cancellation can create a refund obligation without sending money.  This is
+# an additional, production-only opt-in for returning an eligible cancellation
+# refund to the original HyperPay payment method automatically.
+BOOKING_AUTOMATIC_REFUND_ENABLED = strict_bool("BOOKING_AUTOMATIC_REFUND_ENABLED")
 # Working days the guest is told a bank transfer takes. Shown wherever a
 # refund is promised, so the promise is changed in one place.
 BOOKING_REFUND_WORKING_DAYS = optional_positive_int("BOOKING_REFUND_WORKING_DAYS", 5)

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.db import transaction
@@ -14,18 +15,24 @@ from ..models import BookingModificationRequest, RefundObligation
 from .hostaway_modifications import HostawayModificationService, ModificationExecution
 from .refunds import RefundComputation, cancellation_refund, record_obligation
 
+if TYPE_CHECKING:
+    from apps.payments.hyperpay.refunds import HyperPayRefundService
+
 
 @dataclass(frozen=True, slots=True)
 class AutomaticModificationOutcome:
     code: str
     request: BookingModificationRequest
     execution: ModificationExecution | None = None
+    refund: RefundObligation | None = None
+    refund_code: str | None = None
 
 
 def execute_automatic_modification(
     modification: BookingModificationRequest,
     *,
     service: HostawayModificationService | None = None,
+    refund_service: "HyperPayRefundService | None" = None,
 ) -> AutomaticModificationOutcome:
     """Approve and execute a safe modification without an administrative hop.
 
@@ -97,12 +104,27 @@ def execute_automatic_modification(
     else:
         with HostawayModificationService() as owned_service:
             execution = owned_service.execute(locked)
+    refund = None
+    refund_code = None
     if execution.code == "completed":
-        _record_refund_if_owed(execution.request)
-    return AutomaticModificationOutcome(execution.code, execution.request, execution)
+        refund = _record_refund_if_owed(execution.request)
+        if (
+            refund is not None
+            and execution.request.request_type
+            == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+            and settings.BOOKING_AUTOMATIC_REFUND_ENABLED
+        ):
+            refund_code = _submit_automatic_refund(refund, service=refund_service)
+    return AutomaticModificationOutcome(
+        execution.code,
+        execution.request,
+        execution,
+        refund=refund,
+        refund_code=refund_code,
+    )
 
 
-def _record_refund_if_owed(modification: BookingModificationRequest) -> None:
+def _record_refund_if_owed(modification: BookingModificationRequest) -> RefundObligation | None:
     """Write down what the guest is owed, only after Hostaway accepted the change.
 
     Recording first would risk a debt for a change that never happened; recording
@@ -124,10 +146,30 @@ def _record_refund_if_owed(modification: BookingModificationRequest) -> None:
         )
         reason = RefundObligation.Reason.MODIFICATION_DECREASE
     else:
-        return
-    record_obligation(
+        return None
+    return record_obligation(
         reservation,
         reason=reason,
         computation=computation,
         modification=modification,
     )
+
+
+def _submit_automatic_refund(
+    refund: RefundObligation,
+    *,
+    service: "HyperPayRefundService | None" = None,
+) -> str:
+    """Return money only after Hostaway has confirmed the cancellation.
+
+    A provider error never reopens or reverses a confirmed cancellation.  The
+    obligation remains visible to the operations team for a safe retry.
+    """
+    from apps.payments.hyperpay.exceptions import HyperPayRefundError
+    from apps.payments.hyperpay.refunds import HyperPayRefundService
+
+    try:
+        outcome = (service or HyperPayRefundService()).submit(refund, operator=None)
+    except HyperPayRefundError as exc:
+        return exc.code
+    return outcome.audit_action
