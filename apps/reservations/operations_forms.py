@@ -153,3 +153,12 @@ class ManualBookingFinalizeForm(forms.Form):
                     "عند تعديل سعر Hostaway اكتب سببًا واضحًا لا يقل عن 10 أحرف.",
                 )
         return cleaned
+
+
+class ManualBookingCancelForm(forms.Form):
+    """Require an explicit acknowledgement before cancelling a local draft."""
+
+    confirm_cancellation = forms.BooleanField(
+        label="أؤكد إلغاء هذه المسودة فقط",
+        error_messages={"required": "أكد إلغاء المسودة قبل المتابعة."},
+    )

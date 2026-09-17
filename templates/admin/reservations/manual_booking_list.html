@@ -4,20 +4,30 @@
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
-      <span class="lsa-kicker"><i></i> المرحلة 6.1</span>
+      <span class="lsa-kicker"><i></i> المرحلة 9.2</span>
       <h1>مسودات الحجز اليدوي</h1>
-      <p>هذه المسودات لا تحجز في Hostaway ولا ترسل رابط دفع. تعرض فقط قراراتك الموثقة بعد فحص التوفر.</p>
+      <p>افحص التوفر واعتمد السعر ثم تابع كل مسودة باسم الضيف. لا تنشئ المسودة حجزًا في Hostaway ولا ترسل رابط دفع.</p>
     </div>
     <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">إنشاء مسودة حجز</a>
   </section>
   <section class="lsa-panel">
+    <form method="get" class="lsa-inline-form" aria-label="البحث في مسودات الحجز">
+      <label>بحث بالضيف أو الوحدة أو المرجع <input type="search" name="q" value="{{ query }}"></label>
+      <label>الحالة
+        <select name="status">
+          <option value="">كل الحالات</option>
+          {% for value, label in status_options %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <button type="submit">بحث</button>
+    </form>
     {% if drafts %}
     <table>
       <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>السعر النهائي</th><th>الحالة</th><th>المرجع</th><th></th></tr></thead>
       <tbody>
       {% for draft in drafts %}
       <tr>
-        <td>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}—{% endif %}</td>
+        <td>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}لم تُسجل بيانات الضيف بعد{% endif %}</td>
         <td>{{ draft.property }}</td>
         <td dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</td>
         <td dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</td>

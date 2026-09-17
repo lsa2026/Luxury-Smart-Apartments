@@ -1,11 +1,13 @@
 """Phase 6.1: owner-created drafts stay local, priced, and auditable."""
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.notifications.models import AuditLog
 from apps.reservations.manual_bookings import (
@@ -188,3 +190,68 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
     assert audit.actor_user == actor
     assert audit.object_reference == creation.draft.public_reference
     assert "guest" not in audit.summary.casefold()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_owner_can_cancel_a_manual_draft_and_see_its_audit_history():
+    property_obj = make_property()
+    actor = owner()
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=timezone.localdate() + timedelta(days=10),
+        check_out=timezone.localdate() + timedelta(days=12),
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(make_availability(property_obj)),
+    )
+    assert creation.draft is not None
+    draft = creation.draft
+    client = Client()
+    client.force_login(actor)
+
+    response = client.post(
+        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        {"action": "cancel", "confirm_cancellation": "on"},
+    )
+
+    assert response.status_code == 302
+    draft.refresh_from_db()
+    assert draft.status == ManualBookingDraft.Status.CANCELLED
+    assert AuditLog.objects.filter(
+        action="manual_booking.cancelled",
+        object_reference=draft.public_reference,
+    ).exists()
+    page = client.get(reverse("notifications:manual_booking_detail", args=[draft.pk]))
+    assert "تم إلغاء المسودة الداخلية قبل الدفع." in page.content.decode()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_owner_can_find_manual_drafts_by_guest_name():
+    property_obj = make_property()
+    actor = owner()
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=timezone.localdate() + timedelta(days=10),
+        check_out=timezone.localdate() + timedelta(days=12),
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(make_availability(property_obj)),
+    )
+    assert creation.draft is not None
+    draft = creation.draft
+    draft.guest_first_name = "Aseel"
+    draft.guest_last_name = "Hafez"
+    draft.save(update_fields=["guest_first_name", "guest_last_name", "updated_at"])
+
+    client = Client()
+    client.force_login(actor)
+    page = client.get(reverse("notifications:manual_booking_list"), {"q": "Aseel"})
+
+    assert page.status_code == 200
+    assert "Aseel Hafez" in page.content.decode()

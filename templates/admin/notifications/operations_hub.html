@@ -8,9 +8,9 @@
 <main class="lsa-dashboard lsa-operations-hub" dir="rtl">
   <section class="lsa-hero lsa-operations-hub__hero">
     <div>
-      <span class="lsa-kicker"><i></i> المرحلة 6.0 · أساس تشغيلي آمن</span>
+      <span class="lsa-kicker"><i></i> المرحلة 9.2 · إدارة الحجوزات اليدوية</span>
       <h1>مركز العمليات</h1>
-      <p>مساحة خاصة لاتخاذ قرارات الحجز والتحصيل والمتابعة. هذه النسخة للقراءة فقط: لا تنشئ حجزًا أو رابط دفع أو رسالة أو استرجاعًا ماليًا.</p>
+      <p>مساحة خاصة لفحص التوفر، اعتماد السعر، ومتابعة مسودات الحجز. لا تنشئ حجزًا في Hostaway أو رابط دفع أو رسالة أو استرجاعًا ماليًا تلقائيًا.</p>
       <small class="lsa-live-time"><i></i> ظاهر لك كأدمن فقط، وليس جزءًا من الموقع الموجّه للضيوف.</small>
     </div>
     <div class="lsa-hero__actions">
@@ -24,7 +24,7 @@
   <section class="lsa-private-notice" aria-label="حماية مركز العمليات">
     <span aria-hidden="true">⌑</span>
     <div><b>خاص ومغلق عن الضيوف</b><p>يتطلب هذا الرابط تسجيل دخول إداري وصلاحية عمليات. لا يظهر في القائمة العامة أو خريطة الموقع أو محركات البحث.</p></div>
-    <span class="lsa-private-notice__state">قراءة فقط</span>
+    <span class="lsa-private-notice__state">تحكم داخلي</span>
   </section>
 
   <section class="lsa-operations-strip lsa-operations-strip--hub" aria-label="ملخص العمل الحالي">
@@ -67,9 +67,9 @@
 
   <section class="lsa-hub-work-grid">
     <article class="lsa-panel">
-      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلة 6.1</span><h2>الحجز اليدوي والسعر</h2></div></header>
+      <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلة 9.2</span><h2>الحجز اليدوي والسعر</h2></div></header>
       <a class="lsa-hub-action" href="{% url 'notifications:manual_booking_create' %}"><span>⌂</span><div><b>إنشاء مسودة بعد فحص التوفر</b><small>اختيار الوحدة والتواريخ والضيف، ثم حفظ تسعير النظام والتعديل اليدوي مع سببه.</small></div><em>متاح الآن</em></a>
-      <div class="lsa-hub-action is-planned"><span>≋</span><div><b>سجل تدقيق دائم</b><small>كل قرار يحفظ صاحبه ووقته وسببه، دون تعديل صامت على السعر أو الحجز.</small></div><em>قريبًا</em></div>
+      <a class="lsa-hub-action" href="{% url 'notifications:manual_booking_list' %}"><span>≋</span><div><b>سجل تدقيق دائم</b><small>كل فحص أو اعتماد أو إلغاء للمسودة يظهر بصاحبه ووقته، دون تعديل صامت.</small></div><em>متاح الآن</em></a>
     </article>
     <article class="lsa-panel">
       <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">المرحلتان 6.2 و6.3</span><h2>الدفع والإلغاء والاسترجاع</h2></div></header>

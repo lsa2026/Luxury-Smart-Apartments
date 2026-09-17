@@ -33,4 +33,5 @@ def test_operations_hub_is_private_and_does_not_call_providers(db):
     assert response.status_code == 200
     assert "مركز العمليات" in content
     assert "خاص ومغلق عن الضيوف" in content
-    assert "لا تنشئ حجزًا أو رابط دفع أو رسالة أو استرجاعًا ماليًا" in content
+    assert "المرحلة 9.2" in content
+    assert "لا تنشئ حجزًا في Hostaway أو رابط دفع أو رسالة أو استرجاعًا ماليًا تلقائيًا" in content

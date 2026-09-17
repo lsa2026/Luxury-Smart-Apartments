@@ -4,29 +4,72 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from apps.accounts.access import require_operations_owner
+from apps.notifications.models import AuditLog
 from apps.notifications.services.audit import record_audit
 
 from .manual_bookings import create_manual_booking_draft, finalize_manual_booking_draft
 from .models import ManualBookingDraft
-from .operations_forms import ManualBookingAvailabilityForm, ManualBookingFinalizeForm
+from .operations_forms import (
+    ManualBookingAvailabilityForm,
+    ManualBookingCancelForm,
+    ManualBookingFinalizeForm,
+)
 
 
 def _require_owner(request: HttpRequest) -> None:
     require_operations_owner(request.user)
 
 
+_MANUAL_DRAFT_AUDIT_LABELS = {
+    "manual_booking.availability_checked": "تم فحص التوفر وتثبيت سعر النظام.",
+    "manual_booking.ready_for_payment": "تم اعتماد بيانات الضيف والسعر النهائي.",
+    "manual_booking.cancelled": "تم إلغاء المسودة الداخلية قبل الدفع.",
+}
+
+
 @staff_member_required
 def manual_booking_list(request: HttpRequest) -> HttpResponse:
     _require_owner(request)
-    drafts = ManualBookingDraft.objects.select_related("property").order_by("-created_at")[:50]
+    ManualBookingDraft.objects.filter(
+        status__in=(
+            ManualBookingDraft.Status.QUOTED,
+            ManualBookingDraft.Status.READY_FOR_PAYMENT,
+        ),
+        expires_at__lt=timezone.now(),
+    ).update(status=ManualBookingDraft.Status.EXPIRED)
+
+    status = request.GET.get("status", "")
+    query = request.GET.get("q", "").strip()
+    drafts = ManualBookingDraft.objects.select_related("property")
+    if status in ManualBookingDraft.Status.values:
+        drafts = drafts.filter(status=status)
+    if query:
+        drafts = drafts.filter(
+            Q(guest_first_name__icontains=query)
+            | Q(guest_last_name__icontains=query)
+            | Q(guest_email__icontains=query)
+            | Q(public_reference__icontains=query)
+            | Q(property__name_ar__icontains=query)
+            | Q(property__name_en__icontains=query)
+            | Q(property__name_fr__icontains=query)
+        )
+    drafts = drafts.order_by("-created_at")[:50]
     return render(
         request,
         "admin/reservations/manual_booking_list.html",
-        {"title": "مسودات الحجز اليدوي", "drafts": drafts},
+        {
+            "title": "مسودات الحجز اليدوي",
+            "drafts": drafts,
+            "status": status,
+            "query": query,
+            "status_options": ManualBookingDraft.Status.choices,
+        },
     )
 
 
@@ -87,7 +130,32 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         ManualBookingDraft.objects.select_related("property", "quote"),
         pk=draft_id,
     )
-    if request.method == "POST":
+    cancel_form = ManualBookingCancelForm()
+    if request.method == "POST" and request.POST.get("action") == "cancel":
+        cancel_form = ManualBookingCancelForm(request.POST)
+        if cancel_form.is_valid():
+            if draft.status not in {
+                ManualBookingDraft.Status.QUOTED,
+                ManualBookingDraft.Status.READY_FOR_PAYMENT,
+            }:
+                messages.error(request, "لا يمكن إلغاء هذه المسودة في حالتها الحالية.")
+            else:
+                draft.status = ManualBookingDraft.Status.CANCELLED
+                draft.save(update_fields=["status", "updated_at"])
+                record_audit(
+                    request=request,
+                    action="manual_booking.cancelled",
+                    object_type="ManualBookingDraft",
+                    object_reference=draft.public_reference,
+                    summary="Manual booking draft cancelled before payment.",
+                    metadata={"status": draft.status},
+                )
+                messages.success(
+                    request,
+                    "أُلغيت المسودة الداخلية. لم يُلغَ حجز في Hostaway ولم يُنفذ أي استرجاع.",
+                )
+                return redirect("notifications:manual_booking_detail", draft_id=draft.pk)
+    elif request.method == "POST":
         form = ManualBookingFinalizeForm(request.POST, draft=draft)
         if form.is_valid():
             finalized = finalize_manual_booking_draft(
@@ -126,8 +194,23 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                 form.add_error(None, "تعذّر حفظ المسودة. لم يُنفذ أي إجراء خارجي.")
     else:
         form = ManualBookingFinalizeForm(draft=draft)
+    audit_entries = list(
+        AuditLog.objects.filter(
+        object_type="ManualBookingDraft",
+        object_reference=draft.public_reference,
+        )
+        .select_related("actor_user")[:20]
+    )
+    for entry in audit_entries:
+        entry.display_summary = _MANUAL_DRAFT_AUDIT_LABELS.get(entry.action, entry.summary)
     return render(
         request,
         "admin/reservations/manual_booking_detail.html",
-        {"title": "مسودة حجز يدوي", "draft": draft, "form": form},
+        {
+            "title": "مسودة حجز يدوي",
+            "draft": draft,
+            "form": form,
+            "cancel_form": cancel_form,
+            "audit_entries": audit_entries,
+        },
     )

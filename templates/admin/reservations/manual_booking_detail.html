@@ -4,7 +4,7 @@
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
-      <span class="lsa-kicker"><i></i> مسودة داخلية · {{ draft.get_status_display }}</span>
+      <span class="lsa-kicker"><i></i> المرحلة 9.2 · مسودة داخلية · {{ draft.get_status_display }}</span>
       <h1>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}حجز {{ draft.property }}{% endif %}</h1>
       <p>{% if draft.guest_first_name or draft.guest_last_name %}<b>الضيف:</b> {{ draft.guest_first_name }} {{ draft.guest_last_name }} · {% endif %}<span dir="ltr">{{ draft.public_reference }} · {{ draft.check_in }} → {{ draft.check_out }}</span> · {{ draft.guests }} ضيوف</p>
     </div>
@@ -19,7 +19,7 @@
       <p><b>السعر المعتمد:</b> <span dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</span></p>
       {% if draft.price_override_reason %}<p><b>سبب التعديل:</b> {{ draft.price_override_reason }}</p>{% endif %}
       <p class="help">المسودة جاهزة للمرحلة التالية فقط. لم يُنشأ رابط دفع أو حجز خارجي.</p>
-    {% else %}
+    {% elif draft.status == "quoted" %}
       <form method="post" novalidate>
         {% csrf_token %}
         {{ form.non_field_errors }}
@@ -37,7 +37,33 @@
         <p class="help">عند تغيير السعر، يطلب النظام سببًا واضحًا ويحتفظ بالسعر الأصلي من Hostaway للمراجعة.</p>
         <button class="default" type="submit">حفظ المسودة وتجهيزها للدفع</button>
       </form>
+    {% else %}
+      <p class="help">هذه المسودة {{ draft.get_status_display }}، ولذلك لا يمكن تعديلها أو متابعتها للدفع.</p>
     {% endif %}
   </section>
+  <section class="lsa-panel">
+    <h2>سجل المسودة</h2>
+    {% if audit_entries %}
+      <table>
+        <thead><tr><th>الوقت</th><th>الإجراء</th><th>بواسطة</th></tr></thead>
+        <tbody>{% for entry in audit_entries %}<tr><td dir="ltr">{{ entry.created_at }}</td><td>{{ entry.display_summary }}</td><td>{% if entry.actor_user %}{{ entry.actor_user.get_full_name|default:entry.actor_user.username }}{% else %}النظام{% endif %}</td></tr>{% endfor %}</tbody>
+      </table>
+    {% else %}
+      <p>لا توجد أحداث مسجلة لهذه المسودة بعد.</p>
+    {% endif %}
+  </section>
+  {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
+  <section class="lsa-panel">
+    <h2>إلغاء المسودة</h2>
+    <p class="help">هذا يلغي المسودة الداخلية فقط؛ لا يلغي حجزًا خارجيًا ولا ينفذ استرجاعًا.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="cancel">
+      {{ cancel_form.confirm_cancellation }} {{ cancel_form.confirm_cancellation.label_tag }}
+      {{ cancel_form.confirm_cancellation.errors }}
+      <p><button type="submit">إلغاء المسودة</button></p>
+    </form>
+  </section>
+  {% endif %}
 </main>
 {% endblock %}
