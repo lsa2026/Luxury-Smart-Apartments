@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}{% get_current_language as current_language %}
+{% load i18n %}
 
 {% block title %}{% trans "Manage booking" %} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{% trans "Open your secure booking management area using your booking number and email." %}{% endblock %}
@@ -7,6 +7,7 @@
 {% block hreflang %}{% endblock %}
 
 {% block content %}
+{% get_current_language as current_language %}
 <header class="page-hero page-hero--compact booking-access-hero">
     <div class="container">
         <p class="eyebrow">{% trans "Your stay, in one place" %}</p>
