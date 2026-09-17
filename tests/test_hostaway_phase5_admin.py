@@ -2,6 +2,7 @@ import pytest
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
+from types import SimpleNamespace
 
 from apps.integrations.admin import HostawayWebhookEventAdmin
 from apps.integrations.models import HostawayWebhookEvent
@@ -45,3 +46,27 @@ def test_phase5_admin_models_are_read_only_and_block_manual_add() -> None:
     assert webhook_admin.has_delete_permission(request) is False
     assert "sanitized_payload" not in webhook_admin.fields
     assert "payload_summary" in webhook_admin.readonly_fields
+
+
+def test_hostaway_operation_list_prioritizes_guest_name_over_reference() -> None:
+    operation_admin = HostawayReservationOperationAdmin(
+        HostawayReservationOperation,
+        AdminSite(),
+    )
+    operation = SimpleNamespace(
+        reservation=SimpleNamespace(
+            booking_intent_id="intent-id",
+            booking_intent=SimpleNamespace(
+                guest_first_name="Saeed",
+                guest_last_name="Alghamdi",
+            ),
+        )
+    )
+    external_operation = SimpleNamespace(
+        reservation=SimpleNamespace(booking_intent_id=None),
+    )
+
+    assert operation_admin.list_display[0] == "guest_name"
+    assert operation_admin.guest_name(operation) == "Saeed Alghamdi"
+    assert operation_admin.guest_name(external_operation) == "—"
+    assert "reservation__booking_intent__guest_first_name" in operation_admin.search_fields

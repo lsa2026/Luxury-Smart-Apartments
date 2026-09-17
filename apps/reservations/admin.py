@@ -716,7 +716,7 @@ class ReservationAdmin(ModelAdmin):
 @admin.register(HostawayReservationOperation)
 class HostawayReservationOperationAdmin(ModelAdmin):
     list_display = (
-        "reservation",
+        "guest_name",
         "operation_type",
         "status",
         "attempt_count",
@@ -725,7 +725,12 @@ class HostawayReservationOperationAdmin(ModelAdmin):
         "created_at",
     )
     list_filter = ("operation_type", "status", "created_at")
-    search_fields = ("reservation__public_reference", "error_code")
+    search_fields = (
+        "reservation__booking_intent__guest_first_name",
+        "reservation__booking_intent__guest_last_name",
+        "reservation__public_reference",
+        "error_code",
+    )
     actions = ("mark_unknown_for_review",)
     readonly_fields = (
         "id",
@@ -743,6 +748,18 @@ class HostawayReservationOperationAdmin(ModelAdmin):
         "updated_at",
     )
     exclude = ("request_fingerprint",)
+
+    def get_queryset(self, request: HttpRequest):
+        """Avoid a query per row while showing the operationally useful name."""
+
+        return super().get_queryset(request).select_related("reservation__booking_intent")
+
+    @admin.display(description=_("Guest"))
+    def guest_name(self, obj: HostawayReservationOperation) -> str:
+        intent = obj.reservation.booking_intent if obj.reservation.booking_intent_id else None
+        if intent is None:
+            return "—"
+        return f"{intent.guest_first_name} {intent.guest_last_name}".strip() or "—"
 
     @admin.display(description=_("Request fingerprint"))
     def fingerprint_preview(self, obj: HostawayReservationOperation) -> str:
