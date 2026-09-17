@@ -1,16 +1,30 @@
+from types import SimpleNamespace
+
 import pytest
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
-from types import SimpleNamespace
 
 from apps.integrations.admin import HostawayWebhookEventAdmin
 from apps.integrations.models import HostawayWebhookEvent
 from apps.reservations.admin import (
+    BookingIntentAdmin,
+    BookingModificationRequestAdmin,
+    HostawayModificationOperationAdmin,
     HostawayReservationOperationAdmin,
+    ManualBookingDraftAdmin,
     ReservationAdmin,
+    RefundObligationAdmin,
 )
-from apps.reservations.models import HostawayReservationOperation, Reservation
+from apps.reservations.models import (
+    BookingIntent,
+    BookingModificationRequest,
+    HostawayModificationOperation,
+    HostawayReservationOperation,
+    ManualBookingDraft,
+    RefundObligation,
+    Reservation,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -70,3 +84,31 @@ def test_hostaway_operation_list_prioritizes_guest_name_over_reference() -> None
     assert operation_admin.guest_name(operation) == "Saeed Alghamdi"
     assert operation_admin.guest_name(external_operation) == "—"
     assert "reservation__booking_intent__guest_first_name" in operation_admin.search_fields
+
+
+def test_every_booking_operations_list_prioritizes_the_guest_name() -> None:
+    site = AdminSite()
+    request = RequestFactory().get("/admin/")
+    request.user = get_user_model().objects.create_superuser(
+        username="owner",
+        email="owner@example.invalid",
+        password="synthetic-password",
+    )
+    intent = SimpleNamespace(guest_first_name="Saeed", guest_last_name="Alghamdi")
+    reservation = SimpleNamespace(booking_intent_id="intent-id", booking_intent=intent)
+    draft = SimpleNamespace(guest_first_name="Saeed", guest_last_name="Alghamdi")
+    modification = SimpleNamespace(reservation=reservation)
+
+    assert ManualBookingDraftAdmin(ManualBookingDraft, site).list_display[0] == "guest_name"
+    assert BookingIntentAdmin(BookingIntent, site).get_list_display(request)[0] == "guest_name_list"
+    assert ReservationAdmin(Reservation, site).guest_name(reservation) == "Saeed Alghamdi"
+    assert BookingModificationRequestAdmin(
+        BookingModificationRequest, site
+    ).guest_name(SimpleNamespace(reservation=reservation)) == "Saeed Alghamdi"
+    assert HostawayModificationOperationAdmin(
+        HostawayModificationOperation, site
+    ).guest_name(SimpleNamespace(modification_request=modification)) == "Saeed Alghamdi"
+    assert RefundObligationAdmin(RefundObligation, site).guest_name_display(
+        SimpleNamespace(guest_name="Saeed Alghamdi")
+    ) == "Saeed Alghamdi"
+    assert ManualBookingDraftAdmin(ManualBookingDraft, site).guest_name(draft) == "Saeed Alghamdi"

@@ -5,8 +5,8 @@
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
       <span class="lsa-kicker"><i></i> مسودة داخلية · {{ draft.get_status_display }}</span>
-      <h1>حجز {{ draft.property }}</h1>
-      <p dir="ltr">{{ draft.public_reference }} · {{ draft.check_in }} → {{ draft.check_out }} · {{ draft.guests }} ضيوف</p>
+      <h1>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}حجز {{ draft.property }}{% endif %}</h1>
+      <p>{% if draft.guest_first_name or draft.guest_last_name %}<b>الضيف:</b> {{ draft.guest_first_name }} {{ draft.guest_last_name }} · {% endif %}<span dir="ltr">{{ draft.public_reference }} · {{ draft.check_in }} → {{ draft.check_out }}</span> · {{ draft.guests }} ضيوف</p>
     </div>
     <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:manual_booking_list' %}">كل المسودات</a>
   </section>

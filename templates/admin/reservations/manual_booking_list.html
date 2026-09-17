@@ -13,15 +13,16 @@
   <section class="lsa-panel">
     {% if drafts %}
     <table>
-      <thead><tr><th>المرجع</th><th>الوحدة</th><th>الإقامة</th><th>السعر النهائي</th><th>الحالة</th><th></th></tr></thead>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>السعر النهائي</th><th>الحالة</th><th>المرجع</th><th></th></tr></thead>
       <tbody>
       {% for draft in drafts %}
       <tr>
-        <td dir="ltr">{{ draft.public_reference }}</td>
+        <td>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}—{% endif %}</td>
         <td>{{ draft.property }}</td>
         <td dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</td>
         <td dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</td>
         <td>{{ draft.get_status_display }}</td>
+        <td dir="ltr">{{ draft.public_reference }}</td>
         <td><a href="{% url 'notifications:manual_booking_detail' draft.pk %}">فتح</a></td>
       </tr>
       {% endfor %}

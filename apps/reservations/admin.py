@@ -49,7 +49,7 @@ class ManualBookingDraftAdmin(ModelAdmin):
     """Read-only backup view; creation stays in the guided operations screen."""
 
     list_display = (
-        "public_reference",
+        "guest_name",
         "property",
         "check_in",
         "check_out",
@@ -60,7 +60,13 @@ class ManualBookingDraftAdmin(ModelAdmin):
         "created_at",
     )
     list_filter = ("status", "price_source", "property")
-    search_fields = ("public_reference", "guest_email", "guest_phone")
+    search_fields = (
+        "guest_first_name",
+        "guest_last_name",
+        "public_reference",
+        "guest_email",
+        "guest_phone",
+    )
     readonly_fields = (
         "public_reference",
         "quote",
@@ -93,6 +99,10 @@ class ManualBookingDraftAdmin(ModelAdmin):
     @admin.display(description=_("Final amount"), ordering="final_total_price")
     def final_amount(self, obj: ManualBookingDraft) -> str:
         return localized_money(obj.final_total_price, obj.currency)
+
+    @admin.display(description=_("Guest"))
+    def guest_name(self, obj: ManualBookingDraft) -> str:
+        return f"{obj.guest_first_name} {obj.guest_last_name}".strip() or "—"
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
@@ -185,6 +195,8 @@ class BookingIntentAdmin(ModelAdmin):
     )
     list_filter = ("status", "property", "check_in", "expires_at")
     search_fields = (
+        "guest_first_name",
+        "guest_last_name",
         "public_reference",
         "property__name_ar",
         "property__name_en",
@@ -229,7 +241,7 @@ class BookingIntentAdmin(ModelAdmin):
         if request.user.is_superuser or request.user.has_perm(
             "reservations.view_bookingintent_pii"
         ):
-            display.insert(2, "guest_name_list")
+            display.insert(0, "guest_name_list")
         return tuple(display)
 
     def get_fieldsets(
@@ -502,7 +514,7 @@ class BookingIntentAdmin(ModelAdmin):
 @admin.register(Reservation)
 class ReservationAdmin(ModelAdmin):
     list_display = (
-        "public_reference",
+        "guest_name",
         "property",
         "stay_window",
         "guests",
@@ -513,6 +525,8 @@ class ReservationAdmin(ModelAdmin):
     )
     list_filter = ("source_type", "normalized_status", "hostaway_status", "check_in")
     search_fields = (
+        "booking_intent__guest_first_name",
+        "booking_intent__guest_last_name",
         "public_reference",
         "hostaway_reservation_id",
         "property__name_ar",
@@ -523,6 +537,7 @@ class ReservationAdmin(ModelAdmin):
             _("Stay summary"),
             {
                 "fields": (
+                    "guest_name_display",
                     "reference_display",
                     "property_display",
                     "stay_dates_display",
@@ -565,6 +580,7 @@ class ReservationAdmin(ModelAdmin):
     )
     readonly_fields = tuple(field.name for field in Reservation._meta.fields) + (
         "reference_display",
+        "guest_name_display",
         "property_display",
         "stay_dates_display",
         "occupancy_display",
@@ -578,6 +594,20 @@ class ReservationAdmin(ModelAdmin):
         "timeline_display",
     )
     empty_value_display = "—"
+
+    def get_queryset(self, request: HttpRequest):
+        return super().get_queryset(request).select_related("booking_intent")
+
+    @admin.display(description=_("Guest"))
+    def guest_name(self, obj: Reservation) -> str:
+        intent = obj.booking_intent if obj.booking_intent_id else None
+        if intent is None:
+            return "—"
+        return f"{intent.guest_first_name} {intent.guest_last_name}".strip() or "—"
+
+    @admin.display(description=_("Guest"))
+    def guest_name_display(self, obj: Reservation) -> str:
+        return self.guest_name(obj)
 
     @admin.display(description=_("Stay period"), ordering="check_in")
     def stay_window(self, obj: Reservation) -> str:
@@ -798,8 +828,7 @@ class HostawayReservationOperationAdmin(ModelAdmin):
 @admin.register(BookingModificationRequest)
 class BookingModificationRequestAdmin(ModelAdmin):
     list_display = (
-        "public_reference",
-        "reservation",
+        "guest_name",
         "request_type",
         "status",
         "old_check_in",
@@ -813,10 +842,16 @@ class BookingModificationRequestAdmin(ModelAdmin):
         "completed_at",
     )
     list_filter = ("request_type", "status", "currency", "requested_at")
-    search_fields = ("public_reference", "reservation__public_reference")
+    search_fields = (
+        "reservation__booking_intent__guest_first_name",
+        "reservation__booking_intent__guest_last_name",
+        "public_reference",
+        "reservation__public_reference",
+    )
     actions = ("approve_locally", "reject_locally")
     fields = (
         "id",
+        "guest_name_display",
         "public_reference",
         "reservation",
         "request_type",
@@ -843,6 +878,20 @@ class BookingModificationRequestAdmin(ModelAdmin):
     )
     readonly_fields = fields
     exclude = ("quote_snapshot", "idempotency_key", "session_key_hash")
+
+    def get_queryset(self, request: HttpRequest):
+        return super().get_queryset(request).select_related("reservation__booking_intent")
+
+    @admin.display(description=_("Guest"))
+    def guest_name(self, obj: BookingModificationRequest) -> str:
+        intent = obj.reservation.booking_intent if obj.reservation.booking_intent_id else None
+        if intent is None:
+            return "—"
+        return f"{intent.guest_first_name} {intent.guest_last_name}".strip() or "—"
+
+    @admin.display(description=_("Guest"))
+    def guest_name_display(self, obj: BookingModificationRequest) -> str:
+        return self.guest_name(obj)
 
     @admin.display(description=_("Quote summary"))
     def quote_summary(self, obj: BookingModificationRequest) -> str:
@@ -928,7 +977,7 @@ class BookingModificationRequestAdmin(ModelAdmin):
 @admin.register(HostawayModificationOperation)
 class HostawayModificationOperationAdmin(ModelAdmin):
     list_display = (
-        "modification_request",
+        "guest_name",
         "operation_type",
         "status",
         "attempt_count",
@@ -936,10 +985,16 @@ class HostawayModificationOperationAdmin(ModelAdmin):
         "created_at",
     )
     list_filter = ("operation_type", "status", "created_at")
-    search_fields = ("modification_request__public_reference", "error_code")
+    search_fields = (
+        "modification_request__reservation__booking_intent__guest_first_name",
+        "modification_request__reservation__booking_intent__guest_last_name",
+        "modification_request__public_reference",
+        "error_code",
+    )
     actions = ("mark_unknown_for_review",)
     fields = (
         "id",
+        "guest_name",
         "modification_request",
         "operation_type",
         "idempotency_key",
@@ -955,6 +1010,19 @@ class HostawayModificationOperationAdmin(ModelAdmin):
     )
     readonly_fields = fields
     exclude = ("request_fingerprint",)
+
+    def get_queryset(self, request: HttpRequest):
+        return super().get_queryset(request).select_related(
+            "modification_request__reservation__booking_intent"
+        )
+
+    @admin.display(description=_("Guest"))
+    def guest_name(self, obj: HostawayModificationOperation) -> str:
+        reservation = obj.modification_request.reservation
+        intent = reservation.booking_intent if reservation.booking_intent_id else None
+        if intent is None:
+            return "—"
+        return f"{intent.guest_first_name} {intent.guest_last_name}".strip() or "—"
 
     @admin.display(description=_("Request fingerprint"))
     def fingerprint_preview(self, obj: HostawayModificationOperation) -> str:
@@ -1020,7 +1088,7 @@ class RefundObligationAdmin(ModelAdmin):
     """Money owed to a guest. The transfer happens in the bank, not here."""
 
     list_display = (
-        "public_reference",
+        "guest_name_display",
         "amount",
         "currency",
         "reason",
@@ -1030,6 +1098,8 @@ class RefundObligationAdmin(ModelAdmin):
     )
     list_filter = ("status", "reason", "currency")
     search_fields = (
+        "reservation__booking_intent__guest_first_name",
+        "reservation__booking_intent__guest_last_name",
         "public_reference",
         "reservation__public_reference",
         "transfer_reference",
@@ -1038,6 +1108,7 @@ class RefundObligationAdmin(ModelAdmin):
     actions = ("mark_transferred",)
     readonly_fields = (
         "public_reference",
+        "guest_name_display",
         "reservation",
         "modification_request",
         "reason",
@@ -1052,6 +1123,9 @@ class RefundObligationAdmin(ModelAdmin):
     )
     fields = readonly_fields + ("status", "transfer_reference", "note")
 
+    def get_queryset(self, request: HttpRequest):
+        return super().get_queryset(request).select_related("reservation__booking_intent")
+
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
@@ -1061,6 +1135,10 @@ class RefundObligationAdmin(ModelAdmin):
         obj: RefundObligation | None = None,
     ) -> bool:
         return False
+
+    @admin.display(description=_("Guest"))
+    def guest_name_display(self, obj: RefundObligation) -> str:
+        return obj.guest_name or "—"
 
     @admin.display(description=_("Guest contact"))
     def guest_contact(self, obj: RefundObligation) -> str:
