@@ -29,7 +29,7 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
         """
 
         super().pre_social_login(request, sociallogin)
-        if sociallogin.is_existing or sociallogin.account.provider != "google":
+        if sociallogin.account.provider != "google":
             return
 
         owner_email = self._verified_owner_email(sociallogin)
@@ -38,7 +38,8 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
 
         with transaction.atomic():
             owner = self._get_or_create_owner(owner_email)
-            sociallogin.connect(request, owner)
+            if not sociallogin.is_existing:
+                sociallogin.connect(request, owner)
 
     @staticmethod
     def _verified_owner_email(sociallogin):  # type: ignore[no-untyped-def]
@@ -68,5 +69,15 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
         owner.is_staff = True
         owner.is_superuser = True
         owner.save()
+        # ``SocialLogin.connect()`` deliberately skips allauth's normal email
+        # persistence.  Record the address here because this branch only runs
+        # after Google has supplied its verified claim for the one owner email.
+        from allauth.account.models import EmailAddress
+
+        EmailAddress.objects.update_or_create(
+            user=owner,
+            email=email,
+            defaults={"verified": True, "primary": True},
+        )
         profile_for(owner).mark_verified()
         return owner

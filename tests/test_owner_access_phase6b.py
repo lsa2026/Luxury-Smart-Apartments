@@ -141,3 +141,6 @@ def test_only_a_verified_google_identity_can_provision_the_owner(db):
     assert social_login.user == owner
     assert is_operations_owner(owner) is True
     assert SocialAccount.objects.filter(user=owner, provider="google").exists()
+    verified_address = EmailAddress.objects.get(user=owner, email=OWNER_EMAIL)
+    assert verified_address.verified is True
+    assert verified_address.primary is True
