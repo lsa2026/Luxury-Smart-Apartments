@@ -9,6 +9,7 @@ from django.urls import include, path
 from apps.core.admin_views import customer_overview
 from apps.core.seo import robots_txt, sitemap_xml
 from apps.core.views import service_worker
+from apps.notifications.views import admin_landing
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
@@ -19,6 +20,7 @@ urlpatterns = [
     path("", include("apps.core.marketing_urls")),
     path("", include("apps.properties.admin_urls")),
     path("admin/customers/", customer_overview, name="admin_customers"),
+    path("admin/", admin_landing, name="admin_landing"),
     path("admin/", admin.site.urls),
     path("service-worker.js", service_worker, name="service_worker"),
     path("sitemap.xml", sitemap_xml, name="sitemap"),

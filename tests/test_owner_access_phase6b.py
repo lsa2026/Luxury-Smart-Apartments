@@ -50,7 +50,7 @@ def test_only_the_designated_business_email_can_open_the_django_admin(db):
 
     owner_client = Client()
     owner_client.force_login(owner)
-    assert owner_client.get(reverse("admin:index")).status_code == 200
+    assert owner_client.get(reverse("admin:index")).status_code == 302
 
     other_client = Client()
     other_client.force_login(other_admin)

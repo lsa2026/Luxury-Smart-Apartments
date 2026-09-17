@@ -27,6 +27,14 @@ def _require_operations_permission(request: HttpRequest) -> None:
 
 
 @staff_member_required
+def admin_landing(request: HttpRequest) -> HttpResponse:
+    """Make the administration root a focused reservations workspace."""
+
+    _require_operations_permission(request)
+    return redirect("notifications:hub")
+
+
+@staff_member_required
 def notification_center(request: HttpRequest) -> HttpResponse:
     _require_operations_permission(request)
     queryset = Notification.objects.select_related("recipient_user").filter(

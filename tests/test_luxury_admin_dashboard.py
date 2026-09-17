@@ -8,7 +8,7 @@ from tests.test_booking_modifications_phase6 import confirmed_reservation
 
 
 @pytest.mark.django_db
-def test_luxury_dashboard_renders_for_superuser(client, django_user_model):
+def test_administration_landing_opens_focused_booking_workspace(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="owner",
         email="owner@example.com",
@@ -16,20 +16,18 @@ def test_luxury_dashboard_renders_for_superuser(client, django_user_model):
     )
     client.force_login(user)
 
-    response = client.get(reverse("admin:index"))
+    response = client.get(reverse("admin:index"), follow=True)
 
     assert response.status_code == 200
-    assert "مركز القيادة" in response.content.decode()
-    assert "Hostaway" in response.content.decode()
-    assert reverse("admin_customers") in response.content.decode()
-    assert "أولويات تحتاج قرارًا" in response.content.decode()
-    assert "خطة الإقامات" in response.content.decode()
-    assert "مسار الحجز" in response.content.decode()
-    assert "التحصيل المالي" in response.content.decode()
+    body = response.content.decode()
+    assert "إدارة الحجوزات" in body
+    assert "إنشاء حجز جديد" in body
+    assert "إدارة الإلغاءات" in body
+    assert "أولويات تحتاج قرارًا" not in body
 
 
 @pytest.mark.django_db
-def test_dashboard_opens_the_owner_managed_stay_defaults(client, django_user_model):
+def test_site_settings_remain_available_directly_to_the_owner(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="policy-owner",
         email="policy-owner@example.com",
@@ -40,14 +38,7 @@ def test_dashboard_opens_the_owner_managed_stay_defaults(client, django_user_mod
         site_setting = SiteSetting.objects.create(site_name="Luxury Smart Apartments")
     client.force_login(user)
 
-    dashboard_response = client.get(reverse("admin:index"))
     change_url = reverse("admin:core_sitesetting_change", args=(site_setting.pk,))
-    body = dashboard_response.content.decode()
-
-    assert dashboard_response.status_code == 200
-    assert change_url in body
-    assert "افتراضيات الإقامة" in body
-
     settings_response = client.get(change_url)
     settings_body = settings_response.content.decode()
     assert settings_response.status_code == 200
@@ -61,7 +52,7 @@ def test_dashboard_opens_the_owner_managed_stay_defaults(client, django_user_mod
 
 
 @pytest.mark.django_db
-def test_dashboard_surfaces_actionable_customer_contact(client, django_user_model):
+def test_booking_workspace_hides_unneeded_customer_contact_tools(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="duty-manager",
         email="duty-manager@example.com",
@@ -76,14 +67,13 @@ def test_dashboard_surfaces_actionable_customer_contact(client, django_user_mode
     )
     client.force_login(user)
 
-    response = client.get(reverse("admin:index"))
+    response = client.get(reverse("notifications:hub"))
     body = response.content.decode()
 
     assert response.status_code == 200
-    assert "رسائل عملاء تنتظر الرد" in body
-    assert "حوّل الرسالة إلى قيد المتابعة" in body
-    assert reverse("admin:core_contactmessage_changelist") in body
-    assert reverse("admin:core_siteinterfaceimage_changelist") in body
+    assert "إدارة الحجوزات" in body
+    assert "رسائل عملاء تنتظر الرد" not in body
+    assert reverse("admin:core_contactmessage_changelist") not in body
 
 
 @pytest.mark.django_db
@@ -247,7 +237,7 @@ def test_admin_shell_exposes_focused_booking_navigation(client, django_user_mode
     )
     client.force_login(user)
 
-    response = client.get(reverse("admin:index"))
+    response = client.get(reverse("notifications:hub"))
     body = response.content.decode()
 
     assert response.status_code == 200

@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import translation
 
 ADMIN_URLS = [
-    "admin:index",
+    "notifications:hub",
     "properties_admin:image_alt_text",
     "marketing:seo_dashboard",
     "marketing:diagnostics",
@@ -28,10 +28,11 @@ def staff_client(client, db):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
-def test_admin_index_renders_in_each_language(staff_client, language):
+def test_admin_landing_opens_the_booking_workspace(staff_client, language):
     with translation.override(language):
         response = staff_client.get(reverse("admin:index"), headers={"accept-language": language})
-    assert response.status_code == 200
+    assert response.status_code == 302
+    assert response.url == reverse("notifications:hub")
 
 
 @pytest.mark.django_db
@@ -47,32 +48,18 @@ def test_custom_admin_screens_render(staff_client, language):
 
 
 @pytest.mark.django_db
-def test_admin_index_is_actually_translated(staff_client):
-    """The English index must not fall back to the original Arabic wording."""
-    response = staff_client.get(reverse("admin:index"), headers={"accept-language": "en"})
-    body = response.content.decode()
-    assert "Command centre" in body or "Priorities needing a decision" in body
-    assert "أولويات تحتاج قرارًا" not in body
-
-
-@pytest.mark.django_db
-def test_admin_index_keeps_arabic_for_arabic_users(staff_client):
-    response = staff_client.get(reverse("admin:index"), headers={"accept-language": "ar"})
-    body = response.content.decode()
-    assert "أولويات تحتاج قرارًا" in body
-
-
 @pytest.mark.django_db
 def test_admin_header_offers_language_switching(staff_client):
-    response = staff_client.get(reverse("admin:index"))
+    workspace_url = reverse("notifications:hub")
+    response = staff_client.get(workspace_url)
     body = response.content.decode()
     assert 'action="/i18n/setlang/"' in body
     assert 'data-language-select' in body
 
     response = staff_client.post(
         reverse("set_language"),
-        {"language": "en", "next": reverse("admin:index")},
+        {"language": "en", "next": workspace_url},
     )
     assert response.status_code == 302
-    response = staff_client.get(reverse("admin:index"))
-    assert "Welcome, the administration team" in response.content.decode()
+    response = staff_client.get(workspace_url)
+    assert '<option value="en" selected>English</option>' in response.content.decode()
