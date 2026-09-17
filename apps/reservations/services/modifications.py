@@ -205,8 +205,7 @@ class ModificationService:
             request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
             status=(
                 BookingModificationRequest.Status.READY_FOR_HOSTAWAY
-                if settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
-                and settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+                if settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
                 else BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
             ),
             old_check_in=reservation.check_in,

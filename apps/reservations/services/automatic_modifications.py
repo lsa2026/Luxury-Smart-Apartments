@@ -40,7 +40,11 @@ def execute_automatic_modification(
     remain an explicit exception until an automated refund workflow exists.
     """
 
-    if not settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL:
+    automatic_cancellation = (
+        modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+        and settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+    )
+    if not (settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL or automatic_cancellation):
         # A successful difference payment must never leave the request claiming
         # that payment is still due when automatic execution is intentionally off.
         if modification.status == BookingModificationRequest.Status.AWAITING_PAYMENT:

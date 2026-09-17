@@ -65,13 +65,13 @@ def hyperpay_configuration_check(
                 id="payments.E108",
             )
         )
-    if settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED and not (
-        settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
-        and settings.HOSTAWAY_LIVE_CANCELLATION_ENABLED
+    if (
+        settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        and not settings.HOSTAWAY_LIVE_CANCELLATION_ENABLED
     ):
         errors.append(
             Error(
-                "Automatic cancellation requires automatic approval and live cancellation.",
+                "Automatic cancellation requires live Hostaway cancellation.",
                 id="payments.E109",
             )
         )

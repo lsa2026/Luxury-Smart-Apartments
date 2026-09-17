@@ -16,7 +16,6 @@ from apps.reservations.services.modifications import ModificationService
 from tests.test_booking_modifications_phase6 import WriteClientStub, confirmed_reservation
 from tests.test_hyperpay_refunds_phase94 import REFUND_SETTINGS, RefundStub
 
-
 pytestmark = pytest.mark.django_db
 
 
@@ -26,7 +25,7 @@ pytestmark = pytest.mark.django_db
         "HYPERPAY_ENVIRONMENT": "production",
         "HYPERPAY_BASE_URL": "https://eu-prod.oppwa.com/",
         "HYPERPAY_REFUNDS_PRODUCTION_ENABLED": True,
-        "BOOKING_AUTOMATIC_MODIFICATION_APPROVAL": True,
+        "BOOKING_AUTOMATIC_MODIFICATION_APPROVAL": False,
         "BOOKING_AUTOMATIC_CANCELLATION_ENABLED": True,
         "BOOKING_AUTOMATIC_REFUND_ENABLED": True,
         "HOSTAWAY_LIVE_CANCELLATION_ENABLED": True,
@@ -58,6 +57,7 @@ def test_automatic_guest_cancellation_refunds_only_after_hostaway_confirms():
         session_hash=reservation.booking_intent.session_key_hash,
     ).request
     assert modification is not None
+    assert modification.status == modification.Status.READY_FOR_HOSTAWAY
     snapshot = HostawayReservationSnapshot(
         reservation_id=reservation.hostaway_reservation_id,
         listing_map_id=reservation.hostaway_listing_map_id,
