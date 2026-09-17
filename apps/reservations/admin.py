@@ -136,7 +136,9 @@ class BookingQuoteAdmin(ModelAdmin):
         "status",
         "expires_at",
     )
-    list_filter = ("status", "property", "check_in", "expires_at")
+    # The reservations workspace is intentionally search-led.  The filter
+    # sidebar consumes valuable space without helping the day-to-day workflow.
+    list_filter = ()
     search_fields = ("property__name_ar", "property__name_en")
     date_hierarchy = "created_at"
     fields = (
@@ -193,7 +195,9 @@ class BookingIntentAdmin(ModelAdmin):
         "status",
         "expires_at",
     )
-    list_filter = ("status", "property", "check_in", "expires_at")
+    # Reservations are found quickly by guest name, phone number, or reference;
+    # do not show a separate filter sidebar in the streamlined admin workspace.
+    list_filter = ()
     search_fields = (
         "guest_first_name",
         "guest_last_name",
