@@ -23,9 +23,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options) -> str:  # type: ignore[no-untyped-def]
         del args
         user_model = get_user_model()
-        owner = user_model.objects.filter(
-            email__iexact=settings.OPERATIONS_OWNER_EMAIL
-        ).first()
+        owner = user_model.objects.filter(email__iexact=settings.OPERATIONS_OWNER_EMAIL).first()
         created = owner is None
         if owner is None:
             owner = user_model(
@@ -43,9 +41,11 @@ class Command(BaseCommand):
 
         revoked = 0
         if options["revoke_other_admin_access"]:
-            revoked = user_model.objects.exclude(pk=owner.pk).filter(
-                is_staff=True
-            ).update(is_staff=False, is_superuser=False)
+            revoked = (
+                user_model.objects.exclude(pk=owner.pk)
+                .filter(is_staff=True)
+                .update(is_staff=False, is_superuser=False)
+            )
 
         status = "created" if created else "repaired"
         message = f"Operations owner {status}."

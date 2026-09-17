@@ -94,9 +94,11 @@ class PropertyCalendarAvailabilityView(View):
             return JsonResponse({"detail": "invalid_date_range"}, status=400)
 
         try:
-            property_obj = Property.objects.public().only(
-                "id", "hostaway_listing_id", "is_visible", "hostaway_special_status"
-            ).get(slug=slug)
+            property_obj = (
+                Property.objects.public()
+                .only("id", "hostaway_listing_id", "is_visible", "hostaway_special_status")
+                .get(slug=slug)
+            )
         except Property.DoesNotExist as exc:
             raise Http404 from exc
 

@@ -321,9 +321,8 @@ def resolve_hostaway_price_currency(
         )
         raise HostawayResponseError("Hostaway price and listing currencies conflict.")
     if override_currency:
-        if (
-            (price_currency and price_currency != override_currency)
-            or (listing_currency and listing_currency != override_currency)
+        if (price_currency and price_currency != override_currency) or (
+            listing_currency and listing_currency != override_currency
         ):
             logger.warning(
                 "HOSTAWAY_CURRENCY_OVERRIDE listing_id=%s price_currency=%s "

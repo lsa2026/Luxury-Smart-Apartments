@@ -14,9 +14,7 @@ BUSINESS_PROFILE_PATH = (
 
 
 class Command(BaseCommand):
-    help = (
-        "Publish exact Hostaway coordinates with their verified Google Maps business profiles."
-    )
+    help = "Publish exact Hostaway coordinates with their verified Google Maps business profiles."
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--dry-run", action="store_true")

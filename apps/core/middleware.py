@@ -112,9 +112,7 @@ class SecurityHeadersMiddleware:
         request.csp_nonce = secrets.token_urlsafe(18)
         response = self.get_response(request)
         public_map_page = bool(getattr(request, "_public_map_enabled", False))
-        trustindex_widget_page = bool(
-            getattr(request, "_trustindex_widget_enabled", False)
-        )
+        trustindex_widget_page = bool(getattr(request, "_trustindex_widget_enabled", False))
         property_admin_map = request.path.startswith("/admin/properties/property/")
         location_map_page = public_map_page or property_admin_map
         image_sources = " ".join(

@@ -100,8 +100,7 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         canonical_suffix = f"?page={int(page_value)}"
     language_urls = {
         code: (
-            f"{settings.SITE_CANONICAL_URL}"
-            f"{translate_url(canonical_path, code)}{canonical_suffix}"
+            f"{settings.SITE_CANONICAL_URL}{translate_url(canonical_path, code)}{canonical_suffix}"
         )
         for code, _name in settings.LANGUAGES
     }

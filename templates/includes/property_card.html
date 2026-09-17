@@ -81,7 +81,10 @@
                 {% endfor %}
             </div>
             <span class="property-card__counter" aria-hidden="true">
-                <b data-card-current>1</b> / {{ images|length }}
+                <b data-card-current>{{ 1|localized_number }}</b>
+                {% get_current_language as current_language %}
+                <span>{% if current_language == "ar" %}من{% elif current_language == "fr" %}sur{% else %}of{% endif %}</span>
+                <span data-card-total>{{ images|length|localized_number }}</span>
             </span>
         </div>
         {% endif %}

@@ -99,9 +99,7 @@ class ManualBookingFinalizeForm(forms.Form):
     ) -> None:
         self.draft = draft
         super().__init__(*args, **kwargs)
-        self.fields["final_total_price"].help_text = (
-            f"بالعملة الأصلية للحجز: {draft.currency}."
-        )
+        self.fields["final_total_price"].help_text = f"بالعملة الأصلية للحجز: {draft.currency}."
         if not self.is_bound:
             self.initial.update(
                 {

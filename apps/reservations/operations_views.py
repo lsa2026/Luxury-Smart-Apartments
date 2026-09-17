@@ -22,10 +22,7 @@ def _require_owner(request: HttpRequest) -> None:
 @staff_member_required
 def manual_booking_list(request: HttpRequest) -> HttpResponse:
     _require_owner(request)
-    drafts = (
-        ManualBookingDraft.objects.select_related("property")
-        .order_by("-created_at")[:50]
-    )
+    drafts = ManualBookingDraft.objects.select_related("property").order_by("-created_at")[:50]
     return render(
         request,
         "admin/reservations/manual_booking_list.html",

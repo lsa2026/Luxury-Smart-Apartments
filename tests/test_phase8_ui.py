@@ -209,7 +209,7 @@ def test_currency_selector_is_custom_accessible_and_bidi_safe(
     assert content.count('value="EUR"') >= 2
     assert content.count('aria-checked="true"') == 2
     assert content.count('class="currency-selector__identity" dir="ltr"') == 8
-    assert "<select name=\"currency\"" not in content
+    assert '<select name="currency"' not in content
 
 
 def test_currency_selector_marks_the_persisted_currency_as_current() -> None:
@@ -471,11 +471,7 @@ def test_property_detail_renders_localized_review_price_and_policy_copy(
     property_obj.check_in_time_start = 15
     property_obj.save()
 
-    content = (
-        Client()
-        .get(f"/{language}/properties/{property_obj.slug}/")
-        .content.decode()
-    )
+    content = Client().get(f"/{language}/properties/{property_obj.slug}/").content.decode()
 
     for phrase in expected:
         assert phrase in content

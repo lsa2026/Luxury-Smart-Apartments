@@ -7,22 +7,20 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.properties.models import Property
 
-
 SEED_PATH = Path(__file__).resolve().parents[2] / "data" / "release_properties.json"
 EXPECTED_PROPERTY_COUNT = 7
 
 
 class Command(BaseCommand):
-    help = (
-        "Load the reviewed property, image and amenity snapshot into an empty database."
-    )
+    help = "Load the reviewed property, image and amenity snapshot into an empty database."
 
     def handle(self, *args: object, **options: object) -> None:
         existing_count = Property.objects.count()
         if existing_count:
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Release property bootstrap skipped: {existing_count} properties already exist."
+                    "Release property bootstrap skipped: "
+                    f"{existing_count} properties already exist."
                 )
             )
             return

@@ -23,11 +23,7 @@ class Command(BaseCommand):
                 metrics = fetch_widget_metrics(widget_id)
             except TrustindexFetchError as exc:
                 failed += 1
-                self.stderr.write(
-                    self.style.WARNING(
-                        f"{property_obj.hostaway_listing_id}: {exc}"
-                    )
-                )
+                self.stderr.write(self.style.WARNING(f"{property_obj.hostaway_listing_id}: {exc}"))
                 continue
             refreshed += 1
             if not dry_run:

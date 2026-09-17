@@ -261,21 +261,30 @@ def test_completed_paid_extension_email_contains_verified_before_and_after_detai
     assert modification.old_check_in.strftime("%d/%m/%Y") in html
     assert modification.old_check_out.strftime("%d/%m/%Y") in html
     assert modification.new_check_out.strftime("%d/%m/%Y") in html
-    assert localized_money_text(
-        modification.old_total,
-        modification.currency,
-        language=language,
-    ) in html
-    assert localized_money_text(
-        modification.new_total,
-        modification.currency,
-        language=language,
-    ) in html
-    assert localized_money_text(
-        modification.price_difference,
-        modification.currency,
-        language=language,
-    ) in html
+    assert (
+        localized_money_text(
+            modification.old_total,
+            modification.currency,
+            language=language,
+        )
+        in html
+    )
+    assert (
+        localized_money_text(
+            modification.new_total,
+            modification.currency,
+            language=language,
+        )
+        in html
+    )
+    assert (
+        localized_money_text(
+            modification.price_difference,
+            modification.currency,
+            language=language,
+        )
+        in html
+    )
     assert reservation.public_reference in html
     assert modification.public_reference in html
     assert payment_label in text

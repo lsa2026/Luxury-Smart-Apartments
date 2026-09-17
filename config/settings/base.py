@@ -558,10 +558,14 @@ AUDIT_LOG_RETENTION_DAYS = optional_positive_int("AUDIT_LOG_RETENTION_DAYS", 730
 # There is one operational owner.  A social provider can verify an identity,
 # but it cannot grant operational authority: the exact email and Django's
 # administrative flags are both required by apps.accounts.access.
-OPERATIONS_OWNER_EMAIL = env(
-    "OPERATIONS_OWNER_EMAIL",
-    default="saeed@luxurysmartapartments.com",
-).strip().casefold()
+OPERATIONS_OWNER_EMAIL = (
+    env(
+        "OPERATIONS_OWNER_EMAIL",
+        default="saeed@luxurysmartapartments.com",
+    )
+    .strip()
+    .casefold()
+)
 if "@" not in OPERATIONS_OWNER_EMAIL:
     raise ImproperlyConfigured("OPERATIONS_OWNER_EMAIL must be a valid business email address.")
 OPERATIONS_OWNER_ENFORCEMENT_ENABLED = strict_bool(

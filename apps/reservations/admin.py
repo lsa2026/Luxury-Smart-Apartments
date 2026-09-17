@@ -105,7 +105,6 @@ class ManualBookingDraftAdmin(ModelAdmin):
         return False
 
 
-
 def _hostaway_status_label(value: str) -> object:
     return HOSTAWAY_STATUS_LABELS.get((value or "").casefold(), value or _("Not linked"))
 

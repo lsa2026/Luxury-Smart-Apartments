@@ -72,8 +72,10 @@ class Command(BaseCommand):
                     no_availability += 1
                     continue
                 currency = (
-                    property_obj.price_currency_override or property_obj.currency_code
-                ).strip().upper()
+                    (property_obj.price_currency_override or property_obj.currency_code)
+                    .strip()
+                    .upper()
+                )
                 if len(currency) != 3 or not currency.isalpha():
                     failed += 1
                     self.stderr.write(

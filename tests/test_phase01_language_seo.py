@@ -62,7 +62,7 @@ def test_canonical_and_hreflang_are_distinct_and_reciprocal(
     base_url = settings.SITE_CANONICAL_URL
     for language in ("ar", "en", "fr"):
         content = Client().get(f"/{language}/properties/{property_obj.slug}/").content.decode()
-        canonical = f'{base_url}/{language}/properties/{property_obj.slug}/'
+        canonical = f"{base_url}/{language}/properties/{property_obj.slug}/"
         assert f'rel="canonical" href="{canonical}"' in content
         for alternate in ("ar", "en", "fr"):
             assert (
@@ -70,8 +70,7 @@ def test_canonical_and_hreflang_are_distinct_and_reciprocal(
                 f'href="{base_url}/{alternate}/properties/{property_obj.slug}/"'
             ) in content
         assert (
-            f'hreflang="x-default" '
-            f'href="{base_url}/ar/properties/{property_obj.slug}/"'
+            f'hreflang="x-default" href="{base_url}/ar/properties/{property_obj.slug}/"'
         ) in content
 
 

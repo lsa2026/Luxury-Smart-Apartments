@@ -222,7 +222,8 @@
         <div class="lightbox__progress" aria-hidden="true"><span data-lightbox-progress></span></div>
         <div class="lightbox__status" aria-live="polite">
             <b data-lightbox-current>{{ 1|localized_number }}</b>
-            <span>{% trans "of" %}</span>
+            {% get_current_language as current_language %}
+            <span>{% if current_language == "ar" %}من{% elif current_language == "fr" %}sur{% else %}of{% endif %}</span>
             <span data-lightbox-total>{{ total_image_count|localized_number }}</span>
         </div>
     </div>
