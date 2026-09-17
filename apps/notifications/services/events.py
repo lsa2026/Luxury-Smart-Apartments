@@ -260,6 +260,35 @@ def handle_refund_due(obligation_id: object) -> None:
     )
 
 
+def handle_refund_submitted(obligation_id: object) -> None:
+    """Tell the guest only after HyperPay accepts or confirms a refund."""
+    from apps.reservations.models import RefundObligation
+
+    try:
+        refund = RefundObligation.objects.select_related(
+            "reservation__booking_intent"
+        ).get(pk=obligation_id)
+        intent = refund.reservation.booking_intent
+        if (
+            intent is None
+            or refund.status
+            not in {RefundObligation.Status.PROCESSING, RefundObligation.Status.TRANSFERRED}
+            or not settings.MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        ):
+            return
+        state = "confirmed" if refund.status == RefundObligation.Status.TRANSFERRED else "pending"
+        queue_email(
+            message_type="refund_submitted",
+            recipient=intent.guest_email,
+            recipient_source="refund",
+            recipient_reference=refund.public_reference,
+            language=intent.language,
+            idempotency_key=f"refund-submitted:{refund.public_reference}:{state}",
+        )
+    except (DatabaseError, KeyError, ObjectDoesNotExist, ValueError) as exc:
+        logger.error("Refund guest email queue failed code=%s", type(exc).__name__)
+
+
 def handle_reservation_confirmed(reservation_id: object) -> None:
     from apps.reservations.models import Reservation
 

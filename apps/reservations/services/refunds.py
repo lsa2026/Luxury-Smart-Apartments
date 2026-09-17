@@ -59,6 +59,33 @@ def _cleaning_fee(reservation: Reservation) -> Decimal:
     return max(total, Decimal("0"))
 
 
+def _successful_original_payment(reservation: Reservation) -> Decimal | None:
+    """Return the card amount actually collected for the original stay.
+
+    Hostaway's reservation total can differ from the amount that made it
+    through the payment gateway. A refund must never be created for more than
+    the original successful card payment.
+    """
+    intent = reservation.booking_intent
+    if intent is None:
+        return None
+
+    from apps.payments.models import PaymentAttempt
+
+    amount = (
+        PaymentAttempt.objects.filter(
+            booking_intent=intent,
+            modification_request__isnull=True,
+            status=PaymentAttempt.Status.SUCCEEDED,
+            currency=reservation.currency,
+        )
+        .order_by("-verified_at", "-created_at")
+        .values_list("amount", flat=True)
+        .first()
+    )
+    return Decimal(amount) if amount is not None else None
+
+
 def cancellation_refund(
     reservation: Reservation,
     *,
@@ -108,6 +135,9 @@ def cancellation_refund(
     if not tier.refunds_cleaning_fee:
         cleaning = min(_cleaning_fee(reservation), base)
         base -= cleaning
+    original_payment = _successful_original_payment(reservation)
+    if original_payment is not None:
+        base = min(base, original_payment)
     amount = _quantize(base * percentage / Decimal("100"))
     detail.update(
         {
@@ -117,6 +147,9 @@ def cancellation_refund(
             "refunds_cleaning_fee": tier.refunds_cleaning_fee,
             "cleaning_fee_withheld": format(cleaning, "f"),
             "refundable_base": format(base, "f"),
+            "original_payment_ceiling": (
+                format(original_payment, "f") if original_payment is not None else None
+            ),
         }
     )
     return RefundComputation(max(amount, Decimal("0")), currency, detail)

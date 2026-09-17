@@ -4,6 +4,8 @@
 {{ message }}
 
 {% if property_name %}Logement : {{ property_name }}{% endif %}
+{% if refund_amount %}Remboursement envoyé vers le moyen de paiement d’origine : {{ refund_amount }}{% if refund_status %}
+Statut : {{ refund_status }}{% endif %}{% endif %}
 {% if is_completed_modification %}Type de modification : {{ modification_type }}
 
 Avant :

@@ -4,6 +4,8 @@
 {{ message }}
 
 {% if property_name %}الوحدة: {{ property_name }}{% endif %}
+{% if refund_amount %}تم إرسال الاسترداد إلى وسيلة الدفع الأصلية: {{ refund_amount }}{% if refund_status %}
+الحالة: {{ refund_status }}{% endif %}{% endif %}
 {% if is_completed_modification %}نوع التعديل: {{ modification_type }}
 
 قبل التعديل:

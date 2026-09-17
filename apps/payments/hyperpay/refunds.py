@@ -232,6 +232,10 @@ class HyperPayRefundService:
                     else PaymentAttempt.Status.PARTIALLY_REFUNDED
                 )
                 payment.save(update_fields=["status", "updated_at"])
+                transaction.on_commit(
+                    lambda refund_id=refund.pk: _queue_guest_refund_notice(refund_id),
+                    robust=True,
+                )
                 return RefundOutcome(
                     "refund.hyperpay_completed",
                     "HyperPay confirmed the refund.",
@@ -245,6 +249,10 @@ class HyperPayRefundService:
                 detail["state"] = "provider_pending"
                 refund.calculation = calculation
                 refund.save(update_fields=["calculation", "updated_at"])
+                transaction.on_commit(
+                    lambda refund_id=refund.pk: _queue_guest_refund_notice(refund_id),
+                    robust=True,
+                )
                 return RefundOutcome(
                     "refund.hyperpay_submitted",
                     "HyperPay accepted the refund and it is pending.",
@@ -280,3 +288,15 @@ class HyperPayRefundService:
             if detail.get("original_payment_id") == payment.provider_payment_id:
                 total += obligation.amount
         return total
+
+
+def _queue_guest_refund_notice(refund_id: object) -> None:
+    """Keep notification failure out of the payment-provider transaction path."""
+    try:
+        from apps.notifications.services.events import handle_refund_submitted
+
+        handle_refund_submitted(refund_id)
+    except (ImportError, ValueError):
+        # The refund is already recorded. Logging here is intentionally avoided
+        # because email delivery has its own auditable retry record.
+        return

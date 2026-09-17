@@ -278,6 +278,11 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "en": "Reservation cancelled",
         "fr": "Réservation annulée",
     },
+    "refund_submitted": {
+        "ar": "تم إرسال استردادك إلى وسيلة الدفع",
+        "en": "Your refund was sent to your payment method",
+        "fr": "Votre remboursement a été envoyé vers votre moyen de paiement",
+    },
     "reservation_modified": {
         "ar": "تم تعديل الحجز",
         "en": "Reservation updated",
@@ -330,6 +335,7 @@ TEMPLATE_GROUPS = {
     "reservation_creation_failed": "reservation",
     "reservation_unknown": "reservation",
     "reservation_cancelled": "reservation",
+    "refund_submitted": "reservation",
     "reservation_modified": "modification",
     "reservation_access_link": "account",
     "daily_operations_summary": "operations",
@@ -443,6 +449,20 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "تم إلغاء الحجز بعد التحقق من الحالة النهائية.",
         "en": "The reservation was cancelled after final-state verification.",
         "fr": "La réservation a été annulée après vérification de son état final.",
+    },
+    "refund_submitted": {
+        "ar": (
+            "أرسلنا طلب الاسترداد إلى وسيلة الدفع الأصلية. قد يستغرق ظهور المبلغ "
+            "في كشف البطاقة وقتًا وفق جهة الإصدار."
+        ),
+        "en": (
+            "We sent the refund to the original payment method. It may take time "
+            "to appear, depending on the card issuer."
+        ),
+        "fr": (
+            "Nous avons envoyé le remboursement vers le moyen de paiement d’origine. "
+            "Son affichage dépend du délai de votre émetteur de carte."
+        ),
     },
     "reservation_modified": {
         "ar": "تم تعديل الحجز بعد التحقق من الحالة النهائية.",
@@ -755,6 +775,31 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
                 }
             )
         return intent.guest_email, context
+    if delivery.recipient_source == "refund":
+        from apps.reservations.models import RefundObligation
+
+        refund = RefundObligation.objects.select_related(
+            "reservation__booking_intent",
+            "reservation__property",
+        ).get(public_reference=delivery.recipient_reference)
+        reservation = refund.reservation
+        intent = reservation.booking_intent
+        if intent is None:
+            raise EmailProviderError("recipient_not_available", permanent=True)
+        return intent.guest_email, {
+            "reference": reservation.public_reference,
+            "property_name": (
+                _localized_property_name(reservation.property, delivery.language)
+                if reservation.property
+                else ""
+            ),
+            "check_in": reservation.check_in.strftime("%d/%m/%Y"),
+            "check_out": reservation.check_out.strftime("%d/%m/%Y"),
+            "guests": reservation.guests,
+            "refund_amount": _format_money(refund.amount, refund.currency, delivery.language),
+            "refund_status": refund.get_status_display(),
+            "manage_url": f"{settings.SITE_BASE_URL}/reservations/manage/",
+        }
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)

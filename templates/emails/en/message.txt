@@ -4,6 +4,8 @@
 {{ message }}
 
 {% if property_name %}Property: {{ property_name }}{% endif %}
+{% if refund_amount %}Refund sent to the original payment method: {{ refund_amount }}{% if refund_status %}
+Status: {{ refund_status }}{% endif %}{% endif %}
 {% if is_completed_modification %}Update type: {{ modification_type }}
 
 Before:

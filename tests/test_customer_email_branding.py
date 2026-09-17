@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from decimal import Decimal
 
 import pytest
 from django.core import mail
@@ -16,9 +17,11 @@ from apps.notifications.services.email import (
 from apps.notifications.services.events import (
     handle_modification_completed,
     handle_modification_created,
+    handle_refund_submitted,
 )
 from apps.payments.models import PaymentAttempt
-from apps.reservations.models import BookingModificationRequest
+from apps.reservations.models import BookingModificationRequest, RefundObligation
+from apps.reservations.services.refunds import RefundComputation, record_obligation
 from tests.test_booking_modifications_phase6 import confirmed_reservation, create_extension
 
 pytestmark = pytest.mark.django_db
@@ -307,3 +310,23 @@ def test_completed_cancellation_queues_cancellation_email() -> None:
 
     assert queue.call_args.kwargs["message_type"] == "reservation_cancelled"
     assert queue.call_args.kwargs["recipient"] == reservation.booking_intent.guest_email
+
+
+@override_settings(MODIFICATION_NOTIFICATION_EMAIL_ENABLED=True)
+def test_submitted_refund_queues_a_clear_guest_notification() -> None:
+    reservation = confirmed_reservation()
+    refund = record_obligation(
+        reservation,
+        reason=RefundObligation.Reason.CANCELLATION,
+        computation=RefundComputation(Decimal("125.0000"), "SAR"),
+    )
+    assert refund is not None
+    refund.status = RefundObligation.Status.PROCESSING
+    refund.save(update_fields=["status", "updated_at"])
+
+    with patch("apps.notifications.services.events.queue_email") as queue:
+        handle_refund_submitted(refund.pk)
+
+    assert queue.call_args.kwargs["message_type"] == "refund_submitted"
+    assert queue.call_args.kwargs["recipient"] == reservation.booking_intent.guest_email
+    assert queue.call_args.kwargs["recipient_source"] == "refund"

@@ -10,6 +10,7 @@ from django.test import RequestFactory, override_settings
 
 from apps.core.admin_dashboard import dashboard_payload
 from apps.notifications.models import Notification
+from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingModificationRequest,
     CancellationPolicyTier,
@@ -105,6 +106,25 @@ def test_a_tier_can_withhold_the_cleaning_fee() -> None:
 
     assert computation.amount == Decimal("850.0000")
     assert computation.detail["cleaning_fee_withheld"] == "150.00"
+
+
+def test_a_cancellation_refund_never_exceeds_the_successful_card_payment() -> None:
+    flexible_tiers()
+    reservation = priced_reservation("1594.0000")
+    PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        provider="hyperpay",
+        provider_payment_id="original-payment-refund-ceiling",
+        amount=Decimal("1248.0000"),
+        currency="SAR",
+        status=PaymentAttempt.Status.SUCCEEDED,
+        idempotency_key="refund-ceiling-original-payment-000000000001",
+    )
+
+    computation = refunds.cancellation_refund(reservation)
+
+    assert computation.amount == Decimal("1248.0000")
+    assert computation.detail["original_payment_ceiling"] == "1248.0000"
 
 
 def test_recording_an_obligation_announces_it_with_contact_details() -> None:
