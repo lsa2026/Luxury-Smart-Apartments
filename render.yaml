@@ -386,7 +386,7 @@ services:
         value: "False"
 
       - key: EMAIL_DELIVERY_ENABLED
-        value: "True"
+        value: "False"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
