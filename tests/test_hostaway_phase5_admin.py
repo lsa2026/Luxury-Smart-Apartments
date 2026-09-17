@@ -7,14 +7,16 @@ from django.test import RequestFactory
 
 from apps.integrations.admin import HostawayWebhookEventAdmin
 from apps.integrations.models import HostawayWebhookEvent
+from apps.payments.admin import PaymentAttemptAdmin
+from apps.payments.models import PaymentAttempt
 from apps.reservations.admin import (
     BookingIntentAdmin,
     BookingModificationRequestAdmin,
     HostawayModificationOperationAdmin,
     HostawayReservationOperationAdmin,
     ManualBookingDraftAdmin,
-    ReservationAdmin,
     RefundObligationAdmin,
+    ReservationAdmin,
 )
 from apps.reservations.models import (
     BookingIntent,
@@ -94,7 +96,11 @@ def test_every_booking_operations_list_prioritizes_the_guest_name() -> None:
         email="owner@example.invalid",
         password="synthetic-password",
     )
-    intent = SimpleNamespace(guest_first_name="Saeed", guest_last_name="Alghamdi")
+    intent = SimpleNamespace(
+        guest_first_name="Saeed",
+        guest_last_name="Alghamdi",
+        public_reference="BK-TEST-123",
+    )
     reservation = SimpleNamespace(booking_intent_id="intent-id", booking_intent=intent)
     draft = SimpleNamespace(guest_first_name="Saeed", guest_last_name="Alghamdi")
     modification = SimpleNamespace(reservation=reservation)
@@ -112,3 +118,8 @@ def test_every_booking_operations_list_prioritizes_the_guest_name() -> None:
         SimpleNamespace(guest_name="Saeed Alghamdi")
     ) == "Saeed Alghamdi"
     assert ManualBookingDraftAdmin(ManualBookingDraft, site).guest_name(draft) == "Saeed Alghamdi"
+    payment = SimpleNamespace(booking_intent=intent, booking_intent_id="intent-id")
+    payment_admin = PaymentAttemptAdmin(PaymentAttempt, site)
+    assert payment_admin.list_display[0] == "guest_name"
+    assert "booking_intent__guest_first_name" in payment_admin.search_fields
+    assert "Saeed Alghamdi" in str(payment_admin.guest_name(payment))

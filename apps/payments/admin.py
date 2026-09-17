@@ -12,7 +12,7 @@ from .models import PaymentAttempt
 @admin.register(PaymentAttempt)
 class PaymentAttemptAdmin(admin.ModelAdmin):
     list_display = (
-        "booking_reference",
+        "guest_name",
         "payment_context",
         "provider",
         "amount_list",
@@ -23,6 +23,9 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
     list_select_related = ("booking_intent", "modification_request")
     list_filter = ("status", "provider", "currency", "created_at")
     search_fields = (
+        "booking_intent__guest_first_name",
+        "booking_intent__guest_last_name",
+        "booking_intent__guest_email",
         "booking_intent__public_reference",
         "modification_request__public_reference",
         "provider_reference",
@@ -76,9 +79,19 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
         "timeline_display",
     )
 
-    @admin.display(description=_("Booking request"), ordering="booking_intent__public_reference")
-    def booking_reference(self, obj: PaymentAttempt) -> str:
-        return obj.booking_intent.public_reference
+    @admin.display(description=_("Guest"), ordering="booking_intent__guest_first_name")
+    def guest_name(self, obj: PaymentAttempt) -> str:
+        """Put the operationally useful guest name before technical references."""
+
+        intent = obj.booking_intent
+        name = f"{intent.guest_first_name} {intent.guest_last_name}".strip() or "—"
+        url = reverse("admin:reservations_bookingintent_change", args=(obj.booking_intent_id,))
+        return format_html(
+            '<a href="{}">{}</a><br><small dir="ltr">{}</small>',
+            url,
+            name,
+            intent.public_reference,
+        )
 
     @admin.display(description=_("Payment for"))
     def payment_context(self, obj: PaymentAttempt) -> object:
@@ -93,10 +106,13 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
     @admin.display(description=_("Booking request"))
     def booking_display(self, obj: PaymentAttempt) -> str:
         url = reverse("admin:reservations_bookingintent_change", args=(obj.booking_intent_id,))
+        intent = obj.booking_intent
+        name = f"{intent.guest_first_name} {intent.guest_last_name}".strip() or "—"
         return format_html(
-            '<a href="{}" dir="ltr">{}</a>',
+            '<a href="{}">{}</a><br><small dir="ltr">{}</small>',
             url,
-            obj.booking_intent.public_reference,
+            name,
+            intent.public_reference,
         )
 
     @admin.display(description=_("Modification request"))
