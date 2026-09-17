@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n %}{% get_current_language as current_language %}
 
 {% block title %}{% trans "Manage booking" %} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{% trans "Open your secure booking management area using your booking number and email." %}{% endblock %}
@@ -11,7 +11,7 @@
     <div class="container">
         <p class="eyebrow">{% trans "Your stay, in one place" %}</p>
         <h1>{% trans "Manage your booking easily" %}</h1>
-        <p>{% trans "Enter the booking number from your confirmation and the email used when booking." %}</p>
+        {% if current_language == "ar" %}<p>أدخل اسم العائلة ورقم الجوال، وسنرسل رابطًا آمنًا إلى بريد الحجز.</p>{% elif current_language == "fr" %}<p>Saisissez votre nom et votre numéro de mobile ; nous enverrons un lien sécurisé à l’adresse de réservation.</p>{% else %}<p>Enter your last name and mobile number. We will send a secure link to the booking email.</p>{% endif %}
     </div>
 </header>
 

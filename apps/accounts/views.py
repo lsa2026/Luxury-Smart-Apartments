@@ -18,7 +18,11 @@ from apps.reservations.security import is_rate_limited
 from .emails import queue_verification_email, queue_welcome_email
 from .forms import CustomerAuthenticationForm, CustomerRegistrationForm
 from .models import profile_for
-from .services import claim_reservation, claimable_reference
+from .services import (
+    claim_reservation,
+    claim_reservations_for_verified_email,
+    claimable_reference,
+)
 from .tokens import read_verification_token
 
 CLAIM_PARAM = "claim"
@@ -207,6 +211,7 @@ def verify_email(request: HttpRequest, token: str) -> HttpResponse:
     profile = profile_for(user)
     if not profile.is_email_verified:
         profile.mark_verified()
+        claim_reservations_for_verified_email(user)
         queue_welcome_email(user, language=_active_language(request))
     messages.success(request, _("Your email address is confirmed."))
     if request.user.is_authenticated and request.user.pk == user.pk:

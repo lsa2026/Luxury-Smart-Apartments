@@ -14,7 +14,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db import transaction
 from django.http import HttpRequest
 
-from apps.reservations.models import Reservation
+from apps.reservations.models import BookingIntent, Reservation
 from apps.reservations.security import session_can_manage
 
 
@@ -63,3 +63,15 @@ def claimable_reference(request: HttpRequest, public_reference: str) -> str:
         booking_intent__customer__isnull=True,
     ).exists()
     return reference if unclaimed else ""
+
+
+def claim_reservations_for_verified_email(user: AbstractBaseUser) -> int:
+    """Attach direct bookings only after the guest proves their inbox."""
+    email = (getattr(user, "email", "") or "").strip().casefold()
+    if not email or not getattr(user, "pk", None):
+        return 0
+    with transaction.atomic():
+        return BookingIntent.objects.filter(
+            customer__isnull=True,
+            guest_email__iexact=email,
+        ).update(customer=user)

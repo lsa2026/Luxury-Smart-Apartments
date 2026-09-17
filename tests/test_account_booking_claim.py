@@ -193,3 +193,21 @@ def test_a_booking_already_owned_is_never_moved_between_accounts() -> None:
 
     reservation.booking_intent.refresh_from_db()
     assert reservation.booking_intent.customer == owner
+
+
+def test_verified_email_claims_direct_bookings_made_on_another_device() -> None:
+    """Inbox proof is sufficient; a plain registration email is not."""
+    from apps.accounts.services import claim_reservations_for_verified_email
+
+    reservation = make_reservation("LSA-CLAIM-VERIFIED")
+    guest = User.objects.create_user(
+        username="guest@example.invalid",
+        email="guest@example.invalid",
+        password="Correct-Horse-Battery-2026",
+    )
+
+    claimed = claim_reservations_for_verified_email(guest)
+
+    assert claimed == 1
+    reservation.booking_intent.refresh_from_db()
+    assert reservation.booking_intent.customer == guest

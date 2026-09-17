@@ -8,6 +8,7 @@ from django.db import transaction
 
 from .access import normalize_email
 from .models import profile_for
+from .services import claim_reservations_for_verified_email
 
 
 class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -40,6 +41,19 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
             owner = self._get_or_create_owner(owner_email)
             if not sociallogin.is_existing:
                 sociallogin.connect(request, owner)
+
+    def save_user(self, request, sociallogin, form=None):  # type: ignore[no-untyped-def]
+        """Provider-verified guest emails unlock the same booking dashboard."""
+        user = super().save_user(request, sociallogin, form)
+        normalized_email = normalize_email(user.email)
+        verified = any(
+            address.verified and normalize_email(address.email) == normalized_email
+            for address in sociallogin.email_addresses
+        )
+        if verified:
+            profile_for(user).mark_verified()
+            claim_reservations_for_verified_email(user)
+        return user
 
     @staticmethod
     def _verified_owner_email(sociallogin):  # type: ignore[no-untyped-def]

@@ -6,33 +6,53 @@ from django import forms
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.properties.cities import canonical_city, supported_city_choices
 from apps.properties.models import Property
 
 
 class ReservationAccessForm(forms.Form):
-    booking_reference = forms.CharField(
-        label=_("Booking number"),
+    """Find a possible booking only to send a secure email link."""
+
+    last_name = forms.CharField(
+        label=_("Last name"),
+        max_length=100,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "family-name",
+                "spellcheck": "false",
+                "placeholder": _("As entered when booking"),
+            }
+        ),
+    )
+    phone = forms.CharField(
+        label=_("Phone number"),
         max_length=32,
         widget=forms.TextInput(
             attrs={
-                "autocomplete": "off",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "placeholder": _("For example: your confirmation number"),
+                "autocomplete": "tel",
+                "inputmode": "tel",
+                "dir": "ltr",
+                "placeholder": _("For example: +966 50 000 0000"),
             }
         ),
     )
-    email = forms.EmailField(
-        label=_("Booking email"),
-        max_length=254,
-        widget=forms.EmailInput(
-            attrs={
-                "autocomplete": "email",
-                "placeholder": _("The email used for booking"),
-            }
-        ),
-    )
+
+    def clean_last_name(self) -> str:
+        return self.cleaned_data["last_name"].strip()
+
+    def clean_phone(self) -> str:
+        try:
+            return normalize_phone_number(self.cleaned_data["phone"])
+        except InvalidPhoneNumber:
+            raise forms.ValidationError(_("Enter a valid international phone number."))
+
+
+class LegacyReservationAccessForm(forms.Form):
+    """Keep prior reference-and-email links working without showing them publicly."""
+
+    booking_reference = forms.CharField(max_length=32)
+    email = forms.EmailField(max_length=254)
 
     def clean_booking_reference(self) -> str:
         return self.cleaned_data["booking_reference"].strip()

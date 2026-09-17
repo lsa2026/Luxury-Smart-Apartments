@@ -9,6 +9,7 @@ from .views import (
     ModificationDetailView,
     PropertyCalendarAvailabilityView,
     ReservationAccessView,
+    ReservationAccessLinkView,
     ReservationLogoutView,
     ReservationManageView,
 )
@@ -41,6 +42,11 @@ urlpatterns = [
         "manage/",
         ReservationAccessView.as_view(),
         name="manage_access",
+    ),
+    path(
+        "manage/access/<str:token>/",
+        ReservationAccessLinkView.as_view(),
+        name="manage_access_link",
     ),
     path(
         "manage/logout/",

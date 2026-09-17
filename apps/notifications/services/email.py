@@ -283,6 +283,11 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "en": "Reservation updated",
         "fr": "Réservation mise à jour",
     },
+    "reservation_access_link": {
+        "ar": "رابط آمن لإدارة حجزك",
+        "en": "Secure link to manage your booking",
+        "fr": "Lien sécurisé pour gérer votre réservation",
+    },
     "account_verify_email": {
         "ar": "أكّد بريدك الإلكتروني",
         "en": "Confirm your email address",
@@ -326,6 +331,7 @@ TEMPLATE_GROUPS = {
     "reservation_unknown": "reservation",
     "reservation_cancelled": "reservation",
     "reservation_modified": "modification",
+    "reservation_access_link": "account",
     "daily_operations_summary": "operations",
     "account_verify_email": "account",
     "account_password_reset": "account",
@@ -442,6 +448,11 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ar": "تم تعديل الحجز بعد التحقق من الحالة النهائية.",
         "en": "The reservation was updated after final-state verification.",
         "fr": "La réservation a été mise à jour après vérification de son état final.",
+    },
+    "reservation_access_link": {
+        "ar": "استخدم هذا الرابط الآمن لفتح تفاصيل حجزك وإدارتها. الرابط مؤقت ويُستخدم مرة واحدة.",
+        "en": "Use this secure link to open and manage your booking. It is temporary and works once.",
+        "fr": "Utilisez ce lien sécurisé pour ouvrir et gérer votre réservation. Il est temporaire et utilisable une seule fois.",
     },
     "account_verify_email": {
         "ar": "تأكيد بريدك يحمي حسابك ويتيح لنا إرسال تفاصيل إقامتك إليك.",
@@ -707,7 +718,7 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         intent = reservation.booking_intent
         if intent is None:
             raise EmailProviderError("recipient_not_available", permanent=True)
-        return intent.guest_email, {
+        context = {
             "reference": reservation.public_reference,
             "property_name": (
                 _localized_property_name(reservation.property, delivery.language)
@@ -721,6 +732,29 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
             "total_price": reservation.total_price,
             "currency": reservation.currency,
         }
+        if delivery.message_type == "reservation_access_link":
+            from apps.reservations.access_tokens import make_access_link_token
+
+            token = make_access_link_token(reservation.public_reference, intent.guest_email)
+            context.update(
+                {
+                    "action_url": f"{settings.SITE_BASE_URL}/reservations/manage/access/{token}/",
+                    "action_label": {
+                        "ar": "فتح حجزي بأمان",
+                        "en": "Open my booking securely",
+                        "fr": "Ouvrir ma réservation en sécurité",
+                    }.get(delivery.language, "Open my booking securely"),
+                    "eyebrow": {
+                        "ar": "إدارة الحجز",
+                        "en": "Booking management",
+                        "fr": "Gestion de réservation",
+                    }.get(delivery.language, "Booking management"),
+                    "expires_in_minutes": int(
+                        settings.BOOKING_MANAGEMENT_ACCESS_LINK_MAX_AGE_SECONDS / 60
+                    ),
+                }
+            )
+        return intent.guest_email, context
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)

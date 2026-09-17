@@ -171,6 +171,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_UNIQUE_EMAIL = True
+# The branded allauth subject templates already name the company. Avoid the
+# default technical prefix such as "[luxurysmartapartments.com]".
+ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
 SOCIALACCOUNT_ADAPTER = "apps.accounts.social_adapters.LuxurySocialAccountAdapter"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
@@ -294,6 +297,10 @@ BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_WINDOW = optional_positive_int(
 BOOKING_MANAGEMENT_SESSION_TTL_SECONDS = optional_positive_int(
     "BOOKING_MANAGEMENT_SESSION_TTL_SECONDS",
     4 * 60 * 60,
+)
+BOOKING_MANAGEMENT_ACCESS_LINK_MAX_AGE_SECONDS = optional_positive_int(
+    "BOOKING_MANAGEMENT_ACCESS_LINK_MAX_AGE_SECONDS",
+    30 * 60,
 )
 
 # Local, cardless payment simulation for development and acceptance testing only.

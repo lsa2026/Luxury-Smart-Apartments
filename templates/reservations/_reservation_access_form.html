@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n %}{% get_current_language as current_language %}
 <form
     class="booking-access-form"
     method="post"
@@ -21,11 +21,11 @@
         </div>
         {% endfor %}
         <button class="button booking-access-form__submit" type="submit">
-            {% trans "Open my booking" %}
+            {% if current_language == "ar" %}أرسل رابطًا آمنًا{% elif current_language == "fr" %}Envoyer un lien sécurisé{% else %}Send a secure link{% endif %}
         </button>
     </div>
     <p class="booking-access-form__privacy">
         <span aria-hidden="true">✓</span>
-        {% trans "Your details are used only to verify this booking." %}
+        {% if current_language == "ar" %}لن تظهر أي تفاصيل قبل التحقق من بريد الحجز.{% elif current_language == "fr" %}Aucun détail ne s’affiche avant la vérification de l’adresse de réservation.{% else %}No details are shown before the booking email is verified.{% endif %}
     </p>
 </form>

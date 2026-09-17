@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import Client, override_settings
+from django.test.client import RequestFactory
+
+from allauth.account.models import EmailAddress
+from allauth.core.context import request_context
 
 from apps.accounts.models import CustomerProfile, profile_for
 from apps.accounts.tokens import make_verification_token, read_verification_token
@@ -112,6 +117,27 @@ def test_confirming_queues_the_welcome_email_once() -> None:
     Client().get(f"/account/verify/{token}/", follow=True)
 
     assert EmailDelivery.objects.filter(message_type="account_welcome").count() == 1
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="notifications@example.invalid",
+    ALLOWED_HOSTS=["localhost"],
+)
+def test_allauth_confirmation_email_uses_the_branded_html_template() -> None:
+    """Google/Apple's allauth path must not fall back to a plain system mail."""
+    user = make_user("social-guest@example.invalid")
+    address = EmailAddress.objects.create(user=user, email=user.email, primary=True)
+    request = RequestFactory().get("/", HTTP_HOST="localhost")
+
+    with request_context(request):
+        address.send_confirmation(request, signup=True)
+
+    message = mail.outbox[-1]
+    assert message.subject == "تأكيد بريدك الإلكتروني | Luxury Smart Apartments"
+    assert message.alternatives
+    assert "Luxury Smart Apartments" in message.alternatives[0].content
+    assert "تأكيد البريد الإلكتروني" in message.alternatives[0].content
 
 
 # --- password reset ---------------------------------------------------------

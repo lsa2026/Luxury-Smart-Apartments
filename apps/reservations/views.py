@@ -1,6 +1,7 @@
 """Public quote and local booking-intent flow; no Hostaway reservation is created."""
 
 import logging
+import secrets
 from datetime import date, timedelta
 from urllib.parse import urlencode
 
@@ -20,8 +21,9 @@ from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_choices
 from apps.properties.models import Property, PropertyImage
 
+from .access_tokens import consume_access_link_token
 from .booking_forms import GuestDetailsForm
-from .forms import AvailabilitySearchForm, ReservationAccessForm
+from .forms import AvailabilitySearchForm, LegacyReservationAccessForm, ReservationAccessForm
 from .models import (
     BookingIntent,
     BookingModificationRequest,
@@ -702,7 +704,7 @@ def _management_context(
 
 
 class ReservationAccessView(View):
-    """Open a limited management session using the booking reference and email."""
+    """Email a secure management link after a surname-and-mobile challenge."""
 
     http_method_names = ["get", "post"]
 
@@ -718,7 +720,88 @@ class ReservationAccessView(View):
 
     def post(self, request: HttpRequest) -> HttpResponse:
         request._disable_google_integrations = True
+        # Older confirmation messages used this stronger pair directly. Keep
+        # those links working while the public form moves to the simpler flow.
+        if "booking_reference" in request.POST or "email" in request.POST:
+            return self._legacy_post(request)
+
         form = ReservationAccessForm(request.POST)
+        if is_ip_rate_limited(
+            request,
+            scope="reservation-management-access",
+            requests=settings.BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_REQUESTS,
+            window=settings.BOOKING_MANAGEMENT_ACCESS_RATE_LIMIT_WINDOW,
+        ):
+            form.add_error(
+                None,
+                _("Too many attempts. Please wait a few minutes and try again."),
+            )
+            return _private_response(
+                render(
+                    request,
+                    "reservations/reservation_access.html",
+                    {"reservation_access_form": form, "rate_limited": True},
+                    status=429,
+                )
+            )
+        if not form.is_valid():
+            return _private_response(
+                render(
+                    request,
+                    "reservations/reservation_access.html",
+                    {"reservation_access_form": form},
+                ),
+                status=400,
+            )
+
+        reservation = (
+            Reservation.objects.select_related("booking_intent")
+            .filter(
+                booking_intent__guest_last_name__iexact=form.cleaned_data["last_name"],
+                booking_intent__guest_phone=form.cleaned_data["phone"],
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        if reservation is not None and reservation.booking_intent is not None:
+            from apps.notifications.services.email import queue_email
+
+            queue_email(
+                message_type="reservation_access_link",
+                recipient=reservation.booking_intent.guest_email,
+                recipient_source="reservation",
+                recipient_reference=reservation.public_reference,
+                language=reservation.booking_intent.language,
+                idempotency_key=(
+                    f"reservation-access-link:{reservation.public_reference}:"
+                    f"{secrets.token_urlsafe(12)}"
+                ),
+            )
+            try:
+                from apps.notifications.services.audit import record_audit
+
+                record_audit(
+                    action="reservation.management_link_requested",
+                    object_type="Reservation",
+                    object_reference=reservation.public_reference,
+                    summary="Secure booking-management link requested.",
+                    request=request,
+                    metadata={"source": "last_name_phone"},
+                )
+            except DatabaseError:
+                logger.warning("Reservation management-link audit could not be recorded.")
+
+        # This response intentionally remains identical whether a matching
+        # reservation exists. It prevents surname-and-phone probing.
+        messages.success(
+            request,
+            _("If the details match a booking, a secure link will arrive shortly."),
+        )
+        return _private_response(redirect("reservations:manage_access"))
+
+    def _legacy_post(self, request: HttpRequest) -> HttpResponse:
+        """Honor the previous reference-and-email challenge for issued links."""
+        form = LegacyReservationAccessForm(request.POST)
         if is_ip_rate_limited(
             request,
             scope="reservation-management-access",
@@ -794,6 +877,66 @@ class ReservationAccessView(View):
                 "reservations:manage",
                 public_reference=reservation.public_reference,
             )
+        )
+
+
+class ReservationAccessLinkView(View):
+    """Consume an emailed proof link and begin a limited management session."""
+
+    http_method_names = ["get"]
+
+    def get(self, request: HttpRequest, token: str) -> HttpResponse:
+        request._disable_google_integrations = True
+        identity = consume_access_link_token(token)
+        if identity is None:
+            messages.error(
+                request,
+                _("This secure link is no longer valid. Request a new one."),
+            )
+            return _private_response(redirect("reservations:manage_access"))
+
+        reference, email = identity
+        reservation = (
+            Reservation.objects.select_related("booking_intent")
+            .filter(
+                public_reference=reference,
+                booking_intent__guest_email__iexact=email,
+            )
+            .first()
+        )
+        if reservation is None or reservation.booking_intent is None:
+            messages.error(
+                request,
+                _("This secure link is no longer valid. Request a new one."),
+            )
+            return _private_response(redirect("reservations:manage_access"))
+
+        grant_reservation_access(request, reservation.public_reference)
+        if (
+            request.user.is_authenticated
+            and request.user.email
+            and request.user.email.casefold() == reservation.booking_intent.guest_email.casefold()
+            and reservation.booking_intent.customer_id != request.user.pk
+        ):
+            BookingIntent.objects.filter(pk=reservation.booking_intent_id).update(
+                customer=request.user
+            )
+        try:
+            from apps.notifications.services.audit import record_audit
+
+            record_audit(
+                action="reservation.management_accessed",
+                object_type="Reservation",
+                object_reference=reservation.public_reference,
+                summary="Customer management session opened.",
+                request=request,
+                metadata={"source": "email_access_link"},
+            )
+        except DatabaseError:
+            logger.warning("Reservation management audit could not be recorded.")
+        messages.success(request, _("Welcome back. Your booking is ready to manage."))
+        return _private_response(
+            redirect("reservations:manage", public_reference=reservation.public_reference)
         )
 
 
