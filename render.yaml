@@ -80,19 +80,17 @@ services:
           name: lsa-cache
           property: connectionString
 
-      # --- Pre-launch safety ---------------------------------------------
-      # This account now owns the production infrastructure, but the public
-      # domain and live credentials remain on the previous account until the
-      # handover.  Keep every external effect off so the generated onrender.com
-      # URL is a safe operational preview, not a second live booking channel.
-      # These flags are enabled only in the final launch checkpoint after the
-      # production credentials and custom domain have been verified together.
+      # --- UAT safety -----------------------------------------------------
+      # The public domain is now served from this account.  UAT connects only
+      # to test payments and read-only availability synchronisation.
+      # UAT: HyperPay's test gateway is safe to exercise without charging cards.
+      # Live payments remain a separate, explicit launch decision.
       - key: HYPERPAY_ENABLED
-        value: "False"
+        value: "True"
       - key: HYPERPAY_ENVIRONMENT
-        value: production
+        value: test
       - key: HYPERPAY_BASE_URL
-        value: https://eu-prod.oppwa.com/
+        value: https://eu-test.oppwa.com/
       - key: HYPERPAY_ENTITY_ID
         sync: false
       - key: HYPERPAY_ACCESS_TOKEN
@@ -148,7 +146,7 @@ services:
       # the lsa-beat service dispatches them and lsa-worker runs them. Each task
       # takes a Redis lock, so a slow run is skipped rather than overlapped.
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_REVIEW_SYNC_ENABLED
         value: "False"
       - key: TRUSTINDEX_REVIEW_SYNC_ENABLED
@@ -179,7 +177,7 @@ services:
       # Google Workspace carries the transactional messages. The dedicated app
       # password remains a dashboard secret and is shared with the worker below.
       - key: EMAIL_DELIVERY_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
@@ -228,13 +226,13 @@ services:
       - key: APPLE_PRIVATE_KEY
         sync: false
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
-        value: "False"
+        value: "True"
       - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
-        value: "False"
+        value: "True"
       - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
-        value: "False"
+        value: "True"
 
       # --- Site ---------------------------------------------------------
       # Public origin of the service. Not a secret, so it lives in the blueprint
@@ -249,7 +247,7 @@ services:
       # Lets the admin "sync now" actions hand work to the worker instead of
       # blocking a request thread. Requires lsa-worker to be running.
       - key: CELERY_SYNC_DISPATCH_ENABLED
-        value: "False"
+        value: "True"
 
   # Executes the queued tasks. Kept separate from the scheduler so it can be
   # scaled up later without ever running two schedulers.
@@ -320,7 +318,7 @@ services:
           name: luxury-smart-apartments
           envVarKey: HOSTAWAY_ACCESS_TOKEN
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
-        value: "False"
+        value: "True"
       - key: HOSTAWAY_REVIEW_SYNC_ENABLED
         value: "False"
       - key: TRUSTINDEX_REVIEW_SYNC_ENABLED
@@ -388,7 +386,7 @@ services:
         value: "False"
 
       - key: EMAIL_DELIVERY_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
@@ -415,13 +413,13 @@ services:
       - key: OPERATIONS_EMAIL
         value: saeed@luxurysmartapartments.com
       - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
-        value: "False"
+        value: "True"
       - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
-        value: "False"
+        value: "True"
       - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_TASK_SCHEDULE_ENABLED
-        value: "False"
+        value: "True"
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
       - key: SITE_BASE_URL
@@ -429,7 +427,7 @@ services:
       - key: SITE_CANONICAL_URL
         value: https://luxurysmartapartments.com
       - key: CELERY_SYNC_DISPATCH_ENABLED
-        value: "False"
+        value: "True"
 
   # The single scheduler. Exactly one instance must ever run: a second beat
   # would dispatch every scheduled task twice.
