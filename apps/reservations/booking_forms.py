@@ -82,7 +82,6 @@ class GuestDetailsForm(forms.Form):
         label=_("Postal code"),
         regex=r"^[A-Za-z0-9]{1,16}$",
         max_length=16,
-        required=False,
         widget=forms.TextInput(
             attrs={"autocomplete": "postal-code", "dir": "ltr", "inputmode": "text"}
         ),

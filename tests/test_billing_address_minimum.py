@@ -17,6 +17,7 @@ BASE = {
     "billing_city": "Riyadh",
     "billing_state": "Riyadh",
     "billing_country": "SA",
+    "billing_postcode": "12345",
     "special_requests": "",
     "terms_accepted": "on",
     "privacy_accepted": "on",
@@ -31,11 +32,11 @@ def form(**overrides: object) -> GuestDetailsForm:
 # --- what the payment journey actually demands ------------------------------
 
 
-def test_a_booking_completes_without_an_optional_postcode() -> None:
-    submitted = form()
+def test_a_postcode_is_required_before_payment() -> None:
+    submitted = form(billing_postcode="")
 
-    assert submitted.is_valid(), submitted.errors
-    assert submitted.cleaned_data["billing_postcode"] == ""
+    assert submitted.is_valid() is False
+    assert "billing_postcode" in submitted.errors
 
 
 def test_the_street_address_is_required_before_payment() -> None:
@@ -190,4 +191,5 @@ def test_the_review_page_uses_direct_entry_address_fields() -> None:
     assert "data-draft-form" in content
     assert "billing_street1" in content
     assert "Street address</label>" in content
-    assert "billing_postcode" not in content
+    assert 'name="billing_postcode"' in content
+    assert 'Postal code</label>' in content

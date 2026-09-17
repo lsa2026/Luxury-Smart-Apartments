@@ -262,6 +262,11 @@
                                 {{ guest_form.billing_state }}
                                 {% for error in guest_form.billing_state.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
+                            <div class="form-field guest-journey__field--postcode{% if guest_form.billing_postcode.errors %} form-field--error{% endif %}" data-journey-field>
+                                <label for="{{ guest_form.billing_postcode.id_for_label }}">{{ guest_form.billing_postcode.label }}</label>
+                                {{ guest_form.billing_postcode }}
+                                {% for error in guest_form.billing_postcode.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            </div>
                         </div>
 
                         {% if not stay_policy.is_empty %}

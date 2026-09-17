@@ -126,7 +126,8 @@ def test_quote_page_is_rtl_session_owned_and_contains_no_internal_ids() -> None:
     assert "المدينة" in content
     assert "المنطقة أو المحافظة" in content
     assert "الدولة" in content
-    assert "الرمز البريدي" not in content
+    assert "الرمز البريدي" in content
+    assert 'name="billing_postcode"' in content
     assert "الفوترة" not in content
 
 
