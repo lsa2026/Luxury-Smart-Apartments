@@ -22,10 +22,7 @@
   <p class="lsa-admin-login__intro">هذا المركز خاص بمالك الأعمال المحدد فقط. توثيق الهوية لا يمنح صلاحيات الإدارة بمفرده.</p>
 
   {% if google_sign_in_enabled %}
-  <form method="post" action="{% provider_login_url 'google' process='login' next=next %}" class="lsa-admin-login__google">
-    {% csrf_token %}
-    <button type="submit">المتابعة ببريد الأعمال عبر Google</button>
-  </form>
+  <a href="{% provider_login_url 'google' process='login' next=next %}" class="lsa-admin-login__google">المتابعة ببريد الأعمال عبر Google</a>
   <p class="lsa-admin-login__or">أو استخدم وسيلة الاسترداد المعتمدة لاحقًا.</p>
   {% endif %}
 

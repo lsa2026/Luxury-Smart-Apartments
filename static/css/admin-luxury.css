@@ -522,7 +522,6 @@ html.lsa-command-open body { overflow: hidden; }
 
 /* The operational owner signs in through a verified identity, not a shared password. */
 .lsa-admin-login__intro { margin: 0 0 1rem; color: var(--body-fg); font-size: .86rem; line-height: 1.65; }
-.lsa-admin-login__google { margin: 0 0 .85rem; }
-.lsa-admin-login__google button { width: 100%; min-height: 2.8rem; border: 0; color: #fff; background: #0d6c58; border-radius: .5rem; cursor: pointer; font: inherit; font-weight: 700; }
-.lsa-admin-login__google button:hover,.lsa-admin-login__google button:focus-visible { background: #064a3b; }
+.lsa-admin-login__google { display: grid; width: 100%; min-height: 2.8rem; box-sizing: border-box; place-items: center; margin: 0 0 .85rem; color: #fff; border: 0; border-radius: .5rem; background: #0d6c58; cursor: pointer; font: inherit; font-weight: 700; text-decoration: none; }
+.lsa-admin-login__google:hover,.lsa-admin-login__google:focus-visible { color: #fff; background: #064a3b; }
 .lsa-admin-login__or { margin: 0 0 1rem; color: var(--body-quiet-color); font-size: .78rem; text-align: center; }

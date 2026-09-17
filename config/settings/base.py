@@ -174,7 +174,6 @@ ACCOUNT_UNIQUE_EMAIL = True
 SOCIALACCOUNT_ADAPTER = "apps.accounts.social_adapters.LuxurySocialAccountAdapter"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
-SOCIALACCOUNT_LOGIN_ON_GET = False
 SOCIALACCOUNT_STORE_TOKENS = False
 
 LANGUAGE_CODE = "ar"
@@ -586,6 +585,12 @@ APPLE_TEAM_ID = env("APPLE_TEAM_ID", default="").strip()
 APPLE_PRIVATE_KEY = env("APPLE_PRIVATE_KEY", default="").replace("\\n", "\n").strip()
 
 SOCIALACCOUNT_PROVIDERS: dict[str, dict] = {}
+# The private owner sign-in begins from a normal navigation link rather than a
+# form POST. Some mobile browsers and embedded web views suppress the latter
+# on Django's admin login screen. allauth still protects the OAuth return flow
+# with its state and PKCE checks, while the account adapter grants staff access
+# only to the verified operations-owner email.
+SOCIALACCOUNT_LOGIN_ON_GET = GOOGLE_SIGN_IN_ENABLED
 if GOOGLE_SIGN_IN_ENABLED:
     if not GOOGLE_OAUTH_CLIENT_ID or not GOOGLE_OAUTH_CLIENT_SECRET:
         raise ImproperlyConfigured(
