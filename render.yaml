@@ -177,7 +177,7 @@ services:
       # Google Workspace carries the transactional messages. The dedicated app
       # password remains a dashboard secret and is shared with the worker below.
       - key: EMAIL_DELIVERY_ENABLED
-        value: "True"
+        value: "False"
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
