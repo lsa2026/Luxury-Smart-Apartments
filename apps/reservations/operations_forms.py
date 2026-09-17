@@ -210,6 +210,15 @@ class CancellationRejectionForm(CancellationDecisionForm):
         return value
 
 
+class CancellationExecutionForm(forms.Form):
+    """One explicit owner confirmation before a live cancellation is sent."""
+
+    confirm_external_cancellation = forms.BooleanField(
+        label="أؤكد إرسال الإلغاء إلى Hostaway بعد مراجعة الاسترداد",
+        error_messages={"required": "أكد الإلغاء الخارجي قبل المتابعة."},
+    )
+
+
 class RefundDecisionForm(forms.Form):
     """Records an owner-approved full or partial refund without moving money."""
 

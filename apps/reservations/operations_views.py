@@ -28,6 +28,7 @@ from .models import (
 )
 from .operations_forms import (
     CancellationDecisionForm,
+    CancellationExecutionForm,
     CancellationRejectionForm,
     ManualBookingAvailabilityForm,
     ManualBookingCancelForm,
@@ -38,6 +39,7 @@ from .operations_forms import (
     RefundSettlementForm,
 )
 from .services.refunds import cancellation_refund
+from .services.automatic_modifications import execute_automatic_modification
 
 
 def _require_owner(request: HttpRequest) -> None:
@@ -337,6 +339,7 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
     )
     approval_form = CancellationDecisionForm()
     rejection_form = CancellationRejectionForm()
+    execution_form = CancellationExecutionForm()
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "approve":
@@ -386,6 +389,26 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                     )
                     messages.success(request, "رُفض الطلب محليًا مع حفظ سبب القرار في سجل التدقيق.")
                     return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
+        elif action == "execute_external":
+            execution_form = CancellationExecutionForm(request.POST)
+            if execution_form.is_valid():
+                if cancellation.status != BookingModificationRequest.Status.READY_FOR_HOSTAWAY:
+                    messages.error(request, "لا يمكن تنفيذ الإلغاء الخارجي في حالته الحالية.")
+                else:
+                    outcome = execute_automatic_modification(cancellation)
+                    if outcome.code == "completed":
+                        record_audit(
+                            request=request,
+                            action="cancellation.executed_hostaway",
+                            object_type="BookingModificationRequest",
+                            object_reference=cancellation.public_reference,
+                            summary="Hostaway confirmed the cancellation.",
+                            metadata={"estimated_refund": format(cancellation_refund(cancellation.reservation).amount, "f")},
+                        )
+                        messages.success(request, "أكدت Hostaway الإلغاء. أصبح الاسترداد جاهزًا للمراجعة والإرسال.")
+                    else:
+                        messages.error(request, f"لم يكتمل الإلغاء الخارجي ({outcome.code}).")
+                    return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
 
     estimated_refund = cancellation_refund(cancellation.reservation)
     audit_entries = list(
@@ -406,6 +429,7 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
             "refunds": cancellation.refund_obligations.all(),
             "approval_form": approval_form,
             "rejection_form": rejection_form,
+            "execution_form": execution_form,
             "audit_entries": audit_entries,
         },
     )

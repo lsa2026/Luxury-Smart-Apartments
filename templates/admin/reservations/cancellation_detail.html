@@ -38,7 +38,7 @@
     </form>
   </section>
   {% elif cancellation.status == "ready_for_hostaway" %}
-  <section class="lsa-panel"><h2>بانتظار التنفيذ الخارجي</h2><p>تم اعتماد الطلب داخل المركز. سنضيف خطوة التنفيذ الفعلية بعد مراجعة إعدادات Hostaway وتشغيلها في مرحلة مستقلة محمية.</p></section>
+  <section class="lsa-panel"><h2>تنفيذ الإلغاء الخارجي</h2><p>سيُرسل الإلغاء إلى Hostaway أولًا. عند تأكيده فقط يُنشأ استرداد <span dir="ltr">{{ estimated_refund.amount }} {{ estimated_refund.currency }}</span> للمراجعة والإرسال عبر HyperPay.</p><form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><div class="form-row">{{ execution_form.confirm_external_cancellation }} {{ execution_form.confirm_external_cancellation.label_tag }}{{ execution_form.confirm_external_cancellation.errors }}</div><button class="deletelink" type="submit">تنفيذ الإلغاء في Hostaway</button></form></section>
   {% endif %}
 
   {% if refunds %}
