@@ -36,8 +36,9 @@ def execute_automatic_modification(
 ) -> AutomaticModificationOutcome:
     """Approve and execute a safe modification without an administrative hop.
 
-    Positive differences require a matching verified payment. Price decreases
-    remain an explicit exception until an automated refund workflow exists.
+    Positive differences require a matching verified payment. A price decrease
+    is refunded to the original payment method only after Hostaway confirms the
+    amended reservation.
     """
 
     automatic_cancellation = (
@@ -112,12 +113,7 @@ def execute_automatic_modification(
     refund_code = None
     if execution.code == "completed":
         refund = _record_refund_if_owed(execution.request)
-        if (
-            refund is not None
-            and execution.request.request_type
-            == BookingModificationRequest.RequestType.CANCEL_RESERVATION
-            and settings.BOOKING_AUTOMATIC_REFUND_ENABLED
-        ):
+        if refund is not None and settings.BOOKING_AUTOMATIC_REFUND_ENABLED:
             refund_code = _submit_automatic_refund(refund, service=refund_service)
     return AutomaticModificationOutcome(
         execution.code,
