@@ -183,6 +183,27 @@ def test_checkout_creation_persists_unique_traceable_identifiers() -> None:
     assert client.payload["amount"] == "1250.00"
 
 
+@override_settings(
+    **(
+        HYPERPAY_SETTINGS
+        | {
+            "HYPERPAY_ENVIRONMENT": "production",
+            "HYPERPAY_BASE_URL": "https://eu-prod.oppwa.com/",
+            "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": True,
+            "HOSTAWAY_LIVE_BOOKING_ENABLED": False,
+        }
+    )
+)
+def test_production_checkout_refuses_to_charge_when_live_hostaway_creation_is_disabled() -> None:
+    client = HyperPayStub()
+
+    with pytest.raises(HyperPayCheckoutError, match="hostaway_live_booking_disabled"):
+        HyperPayService(client=client).create_checkout(payable_intent())
+
+    assert client.checkout_calls == 0
+    assert PaymentAttempt.objects.count() == 0
+
+
 @override_settings(**(HYPERPAY_SETTINGS | {"HOSTAWAY_LIVE_BOOKING_ENABLED": True}))
 def test_checkout_refuses_to_charge_without_verified_listing_map_id() -> None:
     intent = payable_intent()

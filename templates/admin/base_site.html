@@ -5,7 +5,7 @@
 
 {% block extrastyle %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260918-5">
+  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260918-6">
 {% endblock %}
 
 {% block extrahead %}
@@ -16,22 +16,20 @@
 {% block header %}
   <header id="header" class="lsa-shell-header">
     <div class="lsa-shell-header__inner">
+      <div class="lsa-admin-page-title" aria-current="page">
+        <span>مساحة الإدارة</span>
+        <strong>إدارة الحجوزات</strong>
+      </div>
       <div id="branding" class="lsa-admin-brand">
         <a href="{% url 'notifications:hub' %}" class="lsa-admin-brand__logo" aria-label="Luxury Living · إدارة الحجوزات">
           <img src="{% static 'images/brand/luxury-living-lockup-dark.svg' %}" alt="Luxury Living">
         </a>
-        <span class="lsa-admin-brand__eyebrow">إدارة الحجوزات</span>
       </div>
 
       {% if user.is_authenticated %}
-        <nav class="lsa-primary-nav" aria-label="{% trans "Primary navigation" %}">
-          {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:hub' %}">إدارة الحجوزات</a>{% endif %}
-        </nav>
-
         <div class="lsa-header-actions">
           <a href="{% url 'core:home' %}" target="_blank" class="lsa-icon-action" title="{% trans "View the platform" %}" aria-label="{% trans "View the platform" %}">↗</a>
           <span class="lsa-admin-language" aria-label="العربية">العربية</span>
-          {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:hub' %}" class="lsa-booking-action">إدارة الحجوزات</a>{% endif %}
 
           <details class="lsa-user-menu">
             <summary aria-label="{% trans "Administration account" %}"><span>{{ user.get_short_name|default:user.get_username|slice:":1"|upper }}</span><i>{{ user.get_short_name|default:user.get_username }}</i></summary>

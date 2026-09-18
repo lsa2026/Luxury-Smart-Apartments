@@ -167,6 +167,14 @@ class HyperPayService:
         self.close()
 
     def create_checkout(self, intent: BookingIntent) -> CheckoutSession:
+        # A production card charge is only safe when the same journey can
+        # create the corresponding live Hostaway reservation.  A deployment
+        # can otherwise collect money and leave an orphaned local record.
+        if (
+            settings.HYPERPAY_ENVIRONMENT == "production"
+            and not settings.HOSTAWAY_LIVE_BOOKING_ENABLED
+        ):
+            raise HyperPayCheckoutError("hostaway_live_booking_disabled")
         if (
             settings.HOSTAWAY_LIVE_BOOKING_ENABLED
             and intent.property.hostaway_listing_map_id is None
