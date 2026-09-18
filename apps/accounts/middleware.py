@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
 
 from .access import is_operations_owner
 
@@ -32,4 +32,25 @@ class OwnerOnlyAdminMiddleware:
             and not is_operations_owner(user)
         ):
             raise PermissionDenied
+        return self.get_response(request)
+
+
+class GoogleOnlyAdminLoginMiddleware:
+    """Keep the private operations entrance limited to Google identity proof.
+
+    Guest sign-in lives at ``/login/`` and ``/accounts/login/`` and is never
+    inspected here.  This only rejects the legacy password POST endpoint used
+    by Django's administration when Google sign-in has been enabled.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        if (
+            settings.GOOGLE_SIGN_IN_ENABLED
+            and request.path == "/admin/login/"
+            and request.method == "POST"
+        ):
+            return HttpResponseNotAllowed(["GET"])
         return self.get_response(request)

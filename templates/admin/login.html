@@ -23,19 +23,9 @@
 
   {% if google_sign_in_enabled %}
   <a href="{% provider_login_url 'google' process='login' next=next %}" class="lsa-admin-login__google">المتابعة ببريد الأعمال عبر Google</a>
-  <p class="lsa-admin-login__or">أو استخدم وسيلة الاسترداد المعتمدة لاحقًا.</p>
+  <p class="lsa-admin-login__or">دخول الإدارة يتم عبر حساب Google الخاص بالأعمال فقط.</p>
+  {% else %}
+  <p class="errornote">تسجيل الدخول عبر Google غير مهيأ حاليًا.</p>
   {% endif %}
-
-  {% if user.is_authenticated %}
-  <p class="errornote">{% blocktranslate trimmed %}You are authenticated as {{ username }}, but are not authorized to access this page. Would you like to login to a different account?{% endblocktranslate %}</p>
-  {% endif %}
-
-  <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
-    <div class="form-row">{{ form.username.errors }}{{ form.username.label_tag }} {{ form.username }}</div>
-    <div class="form-row">{{ form.password.errors }}{{ form.password.label_tag }} {{ form.password }}<input type="hidden" name="next" value="{{ next }}"></div>
-    {% url 'admin_password_reset' as password_reset_url %}
-    {% if password_reset_url %}<div class="password-reset-link"><a href="{{ password_reset_url }}">{% translate 'Forgotten your login credentials?' %}</a></div>{% endif %}
-    <div class="submit-row"><input type="submit" value="{% translate 'Log in' %}"></div>
-  </form>
 </div>
 {% endblock %}

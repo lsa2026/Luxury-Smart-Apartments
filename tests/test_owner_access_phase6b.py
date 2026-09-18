@@ -104,6 +104,32 @@ def test_owner_provisioning_can_revoke_legacy_administration_roles(db):
     assert legacy_admin.is_superuser is False
 
 
+@override_settings(GOOGLE_SIGN_IN_ENABLED=True)
+def test_admin_login_only_exposes_google_and_rejects_legacy_password_posts(db):
+    from allauth.socialaccount.models import SocialApp
+
+    SocialApp.objects.create(
+        provider="google",
+        name="Test Google",
+        client_id="test-client-id",
+        secret="test-client-secret",
+    )
+    client = Client()
+
+    page = client.get(reverse("admin:login"))
+
+    assert page.status_code == 200
+    assert "المتابعة ببريد الأعمال عبر Google" in page.content.decode()
+    assert 'name="username"' not in page.content.decode()
+    assert client.post(reverse("admin:login"), {"username": "owner", "password": "pw"}).status_code == 405
+
+
+def test_google_only_admin_protection_does_not_touch_guest_sign_in(db):
+    response = Client().get(reverse("accounts:login"))
+
+    assert response.status_code == 200
+
+
 @override_settings(
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,

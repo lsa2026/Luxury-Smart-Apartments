@@ -531,8 +531,12 @@ html.lsa-command-open body { overflow: hidden; }
 /* The sign-in screen deliberately uses the same navy, gold and ivory palette
    as the public Luxury Living website; it is not a separate product. */
 body.login { min-height: 100vh; background: radial-gradient(circle at 18% 8%, rgba(217,181,47,.12), transparent 26rem), linear-gradient(145deg, #f6f1e8, #ece6d9); }
-body.login #header { border-bottom: 1px solid rgba(217,181,47,.32); }
-body.login #content { display: grid; min-height: calc(100vh - 78px); box-sizing: border-box; place-items: center; padding: clamp(28px, 6vw, 72px) 18px; }
+body.login #header,body.login .lsa-shell-header { min-height: 132px !important; padding: 0 18px !important; border-bottom: 1px solid rgba(217,181,47,.45); background: #0d1a3f !important; }
+body.login .lsa-shell-header__inner { min-height: 132px; justify-content: center; }
+body.login .lsa-admin-brand { flex-direction: column; justify-content: center; gap: 7px; text-align: center; }
+body.login .lsa-admin-brand__logo { width: 250px; }
+body.login .lsa-admin-brand__eyebrow { color: #d9b52f; font-size: 11px; letter-spacing: .08em; }
+body.login #content { display: grid; min-height: calc(100vh - 132px); box-sizing: border-box; place-items: center; padding: clamp(28px, 6vw, 72px) 18px; }
 body.login #content-main { width: min(100%, 470px); padding: clamp(24px, 5vw, 38px); box-sizing: border-box; border: 1px solid rgba(199,161,91,.4); border-radius: 22px; background: rgba(255,253,248,.96); box-shadow: 0 24px 65px rgba(13,26,63,.15); direction: rtl; }
 body.login #content-main .form-row { padding: 0; margin: 0 0 16px; border: 0; }
 body.login #content-main .form-row label { display: block; margin: 0 0 7px; color: #14245a; font-size: 13px; font-weight: 750; }
@@ -544,7 +548,7 @@ body.login #content-main .submit-row input:hover { background: #0d1a3f; }
 body.login #content-main .password-reset-link { margin: -4px 0 0; font-size: 12px; }
 body.login #content-main .password-reset-link a { color: #0d6c58; }
 body.login .errornote { border-radius: 10px; }
-@media (max-width: 767px) { .lsa-admin-brand__logo { width: 146px; }.lsa-admin-brand__eyebrow { display: none; } body.login #content { min-height: calc(100vh - 68px); padding: 28px 14px; } body.login #content-main { border-radius: 18px; } }
+@media (max-width: 767px) { .lsa-admin-brand__logo { width: 146px; }.lsa-admin-brand__eyebrow { display: none; } body.login .lsa-shell-header__inner { min-height: 106px; } body.login #header,body.login .lsa-shell-header { min-height: 106px !important; } body.login .lsa-admin-brand__logo { width: 205px; } body.login .lsa-admin-brand__eyebrow { display: block; font-size: 10px; } body.login #content { min-height: calc(100vh - 106px); padding: 28px 14px; } body.login #content-main { border-radius: 18px; } }
 
 /* Keep language choice available in the operations console, just as it is on
    the guest site.  It submits immediately and returns the owner to the
