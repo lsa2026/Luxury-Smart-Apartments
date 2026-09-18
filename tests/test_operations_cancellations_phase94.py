@@ -170,6 +170,8 @@ def test_booking_management_list_is_owner_only_and_names_the_guest_first():
     assert response.status_code == 200
     assert reservation.booking_intent.guest_first_name in response.content.decode()
     assert reverse("notifications:booking_detail", args=[reservation.pk]) in response.content.decode()
+    assert 'class="lsa-booking-list__guest"' in response.content.decode()
+    assert ">إدارة<" not in response.content.decode()
 
 
 def test_owner_change_execution_can_approve_a_partial_or_zero_refund():

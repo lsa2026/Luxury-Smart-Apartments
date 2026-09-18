@@ -16,10 +16,13 @@
   </section>
   <section class="lsa-panel">
     <h2>تعديل التواريخ أو عدد الضيوف</h2>
-    <p class="help">يفحص النظام التوفر والسعر من Hostaway قبل إنشاء أي طلب. إذا زاد السعر، يبقى الحجز دون تغيير حتى يسدد الضيف فرق السعر.</p>
-    <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="quote_change">
-      {% for field in date_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
-      <button class="default" type="submit">فحص التوفر والسعر</button>
+    <p class="help">غيّر التواريخ أو عدد الضيوف، ثم افحص السعر قبل تأكيد أي تعديل.</p>
+    <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="quote_change">
+      <div class="lsa-owner-form__grid">
+        {% for field in date_form %}{% if field.name != "reason" %}<label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
+      </div>
+      {% for field in date_form %}{% if field.name == "reason" %}<label class="lsa-owner-field lsa-owner-field--note"><span>ملاحظة للتعديل <small>اختيارية</small></span>{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
+      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">فحص السعر والتوفر</button>
     </form>
   </section>
   {% if pending_adjustments %}
@@ -38,7 +41,7 @@
   <section class="lsa-panel lsa-owner-action">
     <h2>تنفيذ تعديل مع استرداد</h2>
     <p>اعتمد صفرًا أو مبلغًا جزئيًا أو كامل فرق النقص حتى <b dir="ltr">{{ ready_adjustment.refund_amount }} {{ ready_adjustment.currency }}</b>. لن يرسل الموقع استردادًا إلا بعد نجاح التعديل في Hostaway.</p>
-    <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_adjustment"><input type="hidden" name="modification_id" value="{{ ready_adjustment.pk }}">
+    <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_adjustment"><input type="hidden" name="modification_id" value="{{ ready_adjustment.pk }}">
       {% for field in execution_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
       <button class="default" type="submit">تنفيذ التعديل وقرار الاسترداد</button>
     </form>
@@ -46,8 +49,8 @@
   {% endif %}
   <section class="lsa-panel lsa-manual-booking__delete">
     <h2>إلغاء الحجز</h2>
-    <p class="help">يفتح قرار الإلغاء؛ هناك تختار صفرًا أو جزءًا أو كامل المبلغ قبل التنفيذ الخارجي.</p>
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><label>ملاحظة اختيارية<textarea name="reason" rows="2"></textarea></label><p><button class="deletelink" type="submit">بدء الإلغاء</button></p></form>
+    <p class="help">اختر مبلغ الاسترداد في الخطوة التالية: لا شيء، جزء من المبلغ، أو كامل المبلغ.</p>
+    <form method="post" class="lsa-owner-form lsa-owner-cancellation">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><label class="lsa-owner-field lsa-owner-field--note"><span>ملاحظة <small>اختيارية</small></span><textarea name="reason" rows="2" placeholder="أي توضيح داخلي للحجز"></textarea></label><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">بدء إلغاء الحجز</button></form>
   </section>
 </main>
 {% endblock %}

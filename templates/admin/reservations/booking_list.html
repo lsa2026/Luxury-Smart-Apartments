@@ -18,17 +18,29 @@
   </section>
   <section class="lsa-panel">
     {% if bookings %}
-    <div class="lsa-table-scroll"><table>
-      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>القيمة</th><th></th></tr></thead>
+    <div class="lsa-table-scroll lsa-booking-list__table"><table>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>القيمة</th></tr></thead>
       <tbody>{% for booking in bookings %}<tr>
-        <td><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}—{% endif %}</b><br><small dir="ltr">{{ booking.booking_intent.guest_phone|default:"" }}</small></td>
+        <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small dir="ltr">{{ booking.booking_intent.guest_phone|default:"" }}</small></a></td>
         <td>{{ booking.property|default:"—" }}</td>
         <td dir="ltr">{{ booking.check_in }} → {{ booking.check_out }}</td>
         <td>{{ booking.get_normalized_status_display }}</td>
         <td dir="ltr">{{ booking.total_price }} {{ booking.currency }}</td>
-        <td><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' booking.pk %}">إدارة</a></td>
       </tr>{% endfor %}</tbody>
     </table></div>
+    <div class="lsa-booking-list__cards">
+      {% for booking in bookings %}
+      <a class="lsa-booking-card" href="{% url 'notifications:booking_detail' booking.pk %}">
+        <div class="lsa-booking-card__top">
+          <div><strong>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</strong><small dir="ltr">{{ booking.booking_intent.guest_phone|default:"" }}</small></div>
+          <span>{{ booking.get_normalized_status_display }}</span>
+        </div>
+        <p>{{ booking.property|default:"—" }}</p>
+        <div class="lsa-booking-card__facts"><span><small>الإقامة</small><b dir="ltr">{{ booking.check_in }} → {{ booking.check_out }}</b></span><span><small>القيمة</small><b dir="ltr">{{ booking.total_price }} {{ booking.currency }}</b></span></div>
+        <em>فتح الحجز ←</em>
+      </a>
+      {% endfor %}
+    </div>
     {% else %}<p class="help">لا توجد حجوزات مطابقة.</p>{% endif %}
   </section>
 </main>
