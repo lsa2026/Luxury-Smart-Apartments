@@ -709,6 +709,7 @@ class BookingModificationRequest(models.Model):
         UNAVAILABLE = "unavailable", _("Unavailable")
         FAILED = "failed", _("Failure")
         UNKNOWN = "unknown", _("Result unconfirmed")
+        SUPERSEDED = "superseded", _("Replaced by a newer request")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_reference = models.CharField(

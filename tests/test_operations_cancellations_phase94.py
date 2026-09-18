@@ -17,7 +17,7 @@ from apps.reservations.services.refunds import (
     cancellation_refund,
     record_obligation,
 )
-from tests.test_booking_modifications_phase6 import confirmed_reservation
+from tests.test_booking_modifications_phase6 import create_extension, confirmed_reservation
 
 pytestmark = pytest.mark.django_db
 
@@ -222,6 +222,25 @@ def test_cancelled_booking_is_hidden_from_the_operational_booking_list():
 
     assert response.status_code == 200
     assert reservation.booking_intent.guest_first_name not in response.content.decode()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_latest_change_requires_owner_final_price_before_next_action():
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+    client = Client()
+    client.force_login(owner())
+
+    response = client.get(reverse("notifications:booking_detail", args=[reservation.pk]))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "اعتماد السعر النهائي" in content
+    assert "إرسال طلب تكوين رابط الدفع إلى أسيل" not in content
 
 
 def test_owner_change_execution_can_approve_a_partial_or_zero_refund():

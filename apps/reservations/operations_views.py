@@ -50,6 +50,7 @@ from .operations_forms import (
     ManualBookingCancelForm,
     ManualBookingDeleteForm,
     ManualBookingFinalizeForm,
+    OwnerFinalPriceForm,
     OwnerModificationExecutionForm,
     RefundDecisionForm,
     RefundGatewaySubmitForm,
@@ -292,14 +293,41 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "new_guests": reservation.guests,
         }
     )
-    pending_adjustments = list(reservation.modification_requests.exclude(
-        request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
-    ).order_by("-requested_at")[:10])
+    pending_adjustments = list(
+        reservation.modification_requests.filter(
+            status__in={
+                BookingModificationRequest.Status.DRAFT,
+                BookingModificationRequest.Status.PENDING_REVALIDATION,
+                BookingModificationRequest.Status.AWAITING_CUSTOMER_APPROVAL,
+                BookingModificationRequest.Status.AWAITING_PAYMENT,
+                BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL,
+                BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+                BookingModificationRequest.Status.PRICE_CHANGED,
+                BookingModificationRequest.Status.UNAVAILABLE,
+                BookingModificationRequest.Status.FAILED,
+            }
+        )
+        .exclude(request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION)
+        .order_by("-requested_at")[:1]
+    )
+    current_adjustment = pending_adjustments[0] if pending_adjustments else None
+    final_price_confirmed = bool(
+        current_adjustment
+        and current_adjustment.quote_snapshot.get("owner_final_total") is not None
+    )
+    final_price_form = (
+        OwnerFinalPriceForm(
+            initial={"final_total_price": current_adjustment.new_total}
+        )
+        if current_adjustment is not None
+        else None
+    )
     execution_form = None
     ready_adjustment = next(
         (
             item
             for item in pending_adjustments
+            if final_price_confirmed
             if item.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
             and item.price_difference <= 0
         ),
@@ -317,6 +345,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         (
             item
             for item in pending_adjustments
+            if final_price_confirmed
             if item.price_difference > 0
             and item.status
             in {
@@ -359,13 +388,14 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                     if outcome.request.price_difference > 0:
                         messages.success(
                             request,
-                            "تم فحص التوفر وتثبيت فرق السعر. رابط الدفع اليدوي سيُرسل للضيف "
-                            "عند تفعيل واجهة HyperPay المخصصة للروابط.",
+                            "تم فحص التوفر والسعر من Hostaway. أدخل الآن السعر النهائي المتفق عليه "
+                            "ليظهر الإجراء التالي.",
                         )
                     else:
                         messages.success(
                             request,
-                            "تم فحص التوفر وتثبيت فرق الاسترداد. اختر مبلغ الاسترداد ثم أكّد التنفيذ.",
+                            "تم فحص التوفر والسعر من Hostaway. أدخل الآن السعر النهائي المتفق عليه "
+                            "قبل تنفيذ التعديل.",
                         )
                     return redirect("notifications:booking_detail", reservation_id=reservation.pk)
                 if outcome.code == "reservation_not_confirmed":
@@ -390,6 +420,42 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 if outcome.request is not None:
                     return redirect("notifications:cancellation_detail", request_id=outcome.request.pk)
                 messages.error(request, f"تعذر تجهيز الإلغاء الآن ({outcome.code}).")
+        elif action == "set_final_price":
+            adjustment = get_object_or_404(
+                BookingModificationRequest,
+                pk=request.POST.get("modification_id"),
+                reservation=reservation,
+            )
+            final_price_form = OwnerFinalPriceForm(request.POST)
+            if final_price_form.is_valid():
+                with ModificationService() as service:
+                    outcome = service.set_owner_final_total(
+                        adjustment,
+                        final_total=final_price_form.cleaned_data["final_total_price"],
+                    )
+                if outcome.code == "priced":
+                    record_audit(
+                        request=request,
+                        action="owner_booking.final_price_set",
+                        object_type="BookingModificationRequest",
+                        object_reference=adjustment.public_reference,
+                        summary="Owner set the final price for the latest booking change.",
+                        metadata={
+                            "final_total": format(outcome.request.new_total, "f"),
+                            "price_difference": format(
+                                outcome.request.price_difference, "f"
+                            ),
+                        },
+                    )
+                    messages.success(
+                        request,
+                        "تم اعتماد السعر النهائي. سيظهر الآن الإجراء التالي حسب الفرق.",
+                    )
+                    return redirect(
+                        "notifications:booking_detail",
+                        reservation_id=reservation.pk,
+                    )
+                messages.error(request, f"تعذر اعتماد السعر النهائي ({outcome.code}).")
         elif action == "execute_adjustment":
             adjustment = get_object_or_404(
                 BookingModificationRequest.objects.select_related("reservation"),
@@ -479,6 +545,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "increase_adjustment": increase_adjustment,
             "increase_delivery": increase_delivery,
             "has_successful_payment": has_successful_payment,
+            "current_adjustment": current_adjustment,
+            "final_price_form": final_price_form,
+            "final_price_confirmed": final_price_confirmed,
         },
     )
 

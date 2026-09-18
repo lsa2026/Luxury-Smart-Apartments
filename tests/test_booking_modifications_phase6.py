@@ -933,3 +933,54 @@ def test_local_cancellation_request_flag_can_disable_intake() -> None:
     )
     assert outcome.code == "cancellation_requests_disabled"
     assert BookingModificationRequest.objects.count() == 0
+
+
+@override_settings(BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False)
+def test_owner_final_price_controls_the_difference_while_preserving_hostaway_quote():
+    reservation = confirmed_reservation()
+    outcome = create_extension(reservation)
+    modification = outcome.request
+    assert modification is not None
+
+    priced = ModificationService().set_owner_final_total(
+        modification,
+        final_total=Decimal("700.00"),
+    )
+
+    assert priced.code == "priced"
+    assert priced.request is not None
+    priced.request.refresh_from_db()
+    assert priced.request.new_total == Decimal("700.0000")
+    assert priced.request.price_difference == Decimal("199.7500")
+    assert priced.request.quote_snapshot["system_total"] == "650.25"
+    assert priced.request.quote_snapshot["owner_final_total"] == "700.0000"
+    assert priced.request.status == BookingModificationRequest.Status.AWAITING_PAYMENT
+
+
+@override_settings(BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False)
+def test_owner_final_price_allows_admin_to_execute_a_decrease_without_a_second_approval():
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+
+    priced = ModificationService().set_owner_final_total(
+        modification,
+        final_total=Decimal("400.00"),
+    )
+
+    assert priced.code == "priced"
+    assert priced.request is not None
+    assert priced.request.price_difference == Decimal("-100.2500")
+    assert priced.request.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+
+
+def test_a_new_change_supersedes_older_open_change_requests():
+    reservation = confirmed_reservation()
+    first = create_extension(reservation, added_nights=2).request
+    second = create_extension(reservation, added_nights=3).request
+
+    assert first is not None
+    assert second is not None
+    first.refresh_from_db()
+    assert first.status == BookingModificationRequest.Status.SUPERSEDED
+    assert second.status == BookingModificationRequest.Status.AWAITING_PAYMENT

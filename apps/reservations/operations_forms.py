@@ -167,6 +167,20 @@ class CancellationRejectionForm(CancellationDecisionForm):
         return value
 
 
+class OwnerFinalPriceForm(forms.Form):
+    """The owner chooses the final amount after the live quote is shown."""
+
+    final_total_price = forms.DecimalField(
+        label="السعر النهائي المعتمد",
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        widget=forms.NumberInput(
+            attrs={"step": "0.01", "min": "0", "inputmode": "decimal"}
+        ),
+    )
+
+
 class CancellationExecutionForm(forms.Form):
     """Amount-only decision for the owner; the red action button is the confirmation."""
 

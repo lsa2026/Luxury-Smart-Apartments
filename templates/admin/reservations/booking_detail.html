@@ -26,13 +26,30 @@
   </section>
   {% if pending_adjustments %}
   <section class="lsa-panel">
-    <h2>طلبات التعديل</h2>
+    <h2>طلب التعديل الحالي</h2>
     {% for item in pending_adjustments %}
       <div class="lsa-owner-request">
         <b>{{ item.get_request_type_display }}</b> · <span dir="ltr">{{ item.old_check_in }} → {{ item.new_check_in|default:item.old_check_in }} / {{ item.old_check_out }} → {{ item.new_check_out|default:item.old_check_out }}</span><br>
-        <span>فرق السعر: <b dir="ltr">{{ item.price_difference|floatformat:2 }} {{ item.currency }}</b> · {{ item.get_status_display }}</span>
+        {% if item.quote_snapshot.owner_final_total %}
+          <span>السعر النهائي: <b dir="ltr">{{ item.new_total|floatformat:2 }} {{ item.currency }}</b> · الفرق: <b dir="ltr">{{ item.price_difference|floatformat:2 }} {{ item.currency }}</b> · {{ item.get_status_display }}</span>
+        {% else %}
+          <span>السعر المحسوب من Hostaway: <b dir="ltr">{{ item.new_total|floatformat:2 }} {{ item.currency }}</b> · بانتظار السعر النهائي</span>
+        {% endif %}
       </div>
     {% endfor %}
+  </section>
+  {% endif %}
+  {% if current_adjustment and final_price_form and not final_price_confirmed %}
+  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
+    <h2>اعتماد السعر النهائي</h2>
+    <p>السعر المحسوب من Hostaway للفترة الجديدة هو <b dir="ltr">{{ current_adjustment.new_total|floatformat:2 }} {{ current_adjustment.currency }}</b>. أدخل السعر النهائي الذي اتفقت عليه مع الضيف، ثم سيحدد النظام هل يلزم تحصيل فرق أو استرداد.</p>
+    <form method="post" class="lsa-owner-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="set_final_price">
+      <input type="hidden" name="modification_id" value="{{ current_adjustment.pk }}">
+      <div class="form-row">{{ final_price_form.final_total_price.label_tag }}{{ final_price_form.final_total_price }}{{ final_price_form.final_total_price.errors }}</div>
+      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">اعتماد السعر ومتابعة التعديل</button>
+    </form>
   </section>
   {% endif %}
   {% if ready_adjustment and execution_form %}
