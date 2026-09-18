@@ -103,3 +103,59 @@ def test_purchase_machine_amount_is_not_localized(language):
         )
     assert 'data-analytics-value="1090.0"' in html
     assert 'data-analytics-value="1090,0"' not in html
+
+
+@override_settings(
+    **REFUND_SETTINGS,
+    BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED=True,
+    BOOKING_AUTOMATIC_CANCELLATION_ENABLED=True,
+    BOOKING_AUTOMATIC_REFUND_ENABLED=True,
+    HOSTAWAY_LIVE_CANCELLATION_ENABLED=True,
+)
+def test_partial_refund_then_live_cancellation_orchestration_and_duplicate_protection():
+    from apps.integrations.hostaway.reservation_validators import HostawayReservationSnapshot
+    from apps.reservations.services.automatic_modifications import execute_automatic_modification
+    from apps.reservations.services.hostaway_modifications import HostawayModificationService
+    from tests.test_booking_modifications_phase6 import WriteClientStub
+
+    request, payment, prior = partially_refunded_booking()
+    request.status = request.Status.READY_FOR_HOSTAWAY
+    request.save(update_fields=["status"])
+    reservation = request.reservation
+    snapshot = HostawayReservationSnapshot(
+        reservation_id=reservation.hostaway_reservation_id,
+        listing_map_id=reservation.hostaway_listing_map_id,
+        channel_id=2000,
+        status="cancelled",
+        check_in=reservation.check_in,
+        check_out=reservation.check_out,
+        guests=reservation.guests,
+        currency="SAR",
+        total_price=reservation.total_price,
+        payment_status="paid",
+        source="LuxurySmartApartments",
+        updated_at=timezone.now(),
+    )
+    hostaway = HostawayModificationService(client=WriteClientStub(snapshot=snapshot))
+    stub = RefundStub({"id": "final-auto-refund", "result": {"code": "000.100.110"}})
+    hyperpay = HyperPayRefundService(client=stub)
+    invalid = execute_automatic_modification(
+        request,
+        service=hostaway,
+        refund_service=hyperpay,
+        approved_refund_amount=Decimal("1090"),
+    )
+    assert invalid.code == "payment_changed_reprice_required"
+    assert stub.calls == []
+    outcome = execute_automatic_modification(
+        request,
+        service=hostaway,
+        refund_service=hyperpay,
+        approved_refund_amount=Decimal("1080"),
+    )
+    assert outcome.code == "completed"
+    assert outcome.refund_code == "refund.hyperpay_completed"
+    assert stub.calls[0][1]["amount"] == "1080.00"
+    repeated = execute_automatic_modification(request, service=hostaway, refund_service=hyperpay)
+    assert repeated.code == "already_completed"
+    assert len(stub.calls) == 1
