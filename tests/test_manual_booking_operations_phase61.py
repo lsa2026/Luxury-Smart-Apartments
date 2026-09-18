@@ -25,6 +25,7 @@ from apps.reservations.models import (
     ManualBookingDraft,
     Reservation,
 )
+from apps.reservations.operations_forms import ManualBookingFinalizeForm
 from tests.test_booking_models_services import make_availability, make_property
 
 pytestmark = pytest.mark.django_db
@@ -202,7 +203,7 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
-def test_owner_can_cancel_a_manual_draft_and_see_its_audit_history():
+def test_retired_draft_disposal_route_redirects_without_changing_booking_setup():
     property_obj = make_property()
     actor = owner()
     creation = create_manual_booking_draft(
@@ -218,27 +219,19 @@ def test_owner_can_cancel_a_manual_draft_and_see_its_audit_history():
     client = Client()
     client.force_login(actor)
 
-    response = client.post(
-        reverse("notifications:manual_booking_disposal", args=[draft.pk]),
-        {"action": "cancel", "confirm_cancellation": "on"},
-    )
+    response = client.post(reverse("notifications:manual_booking_disposal", args=[draft.pk]))
 
     assert response.status_code == 302
+    assert response["Location"] == reverse("notifications:booking_list")
     draft.refresh_from_db()
-    assert draft.status == ManualBookingDraft.Status.CANCELLED
-    assert AuditLog.objects.filter(
-        action="manual_booking.cancelled",
-        object_reference=draft.public_reference,
-    ).exists()
-    page = client.get(reverse("notifications:manual_booking_disposal", args=[draft.pk]))
-    assert "قبل المتابعة" in page.content.decode()
+    assert draft.status == ManualBookingDraft.Status.QUOTED
 
 
 @override_settings(
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
-def test_owner_can_find_manual_drafts_by_guest_name():
+def test_retired_draft_list_redirects_to_the_single_booking_workspace():
     property_obj = make_property()
     actor = owner()
     creation = create_manual_booking_draft(
@@ -259,17 +252,15 @@ def test_owner_can_find_manual_drafts_by_guest_name():
     client.force_login(actor)
     page = client.get(reverse("notifications:manual_booking_list"), {"q": "Aseel"})
 
-    assert page.status_code == 200
-    assert "Aseel Hafez" in page.content.decode()
-    assert 'class="lsa-booking-list__guest"' in page.content.decode()
-    assert 'class="lsa-manual-draft-list__cards"' in page.content.decode()
+    assert page.status_code == 302
+    assert page["Location"] == reverse("notifications:booking_list")
 
 
 @override_settings(
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
-def test_owner_can_permanently_delete_an_uncharged_manual_draft():
+def test_retired_draft_disposal_never_deletes_an_in_progress_booking_setup():
     property_obj = make_property()
     actor = owner()
     creation = create_manual_booking_draft(
@@ -282,23 +273,13 @@ def test_owner_can_permanently_delete_an_uncharged_manual_draft():
     )
     assert creation.draft is not None
     draft = creation.draft
-    quote_id = draft.quote_id
-    public_reference = draft.public_reference
-
     client = Client()
     client.force_login(actor)
-    response = client.post(
-        reverse("notifications:manual_booking_disposal", args=[draft.pk]),
-        {"action": "delete", "confirm_deletion": "on"},
-    )
+    response = client.post(reverse("notifications:manual_booking_disposal", args=[draft.pk]))
 
     assert response.status_code == 302
-    assert not ManualBookingDraft.objects.filter(pk=draft.pk).exists()
-    assert not BookingQuote.objects.filter(pk=quote_id).exists()
-    assert AuditLog.objects.filter(
-        action="manual_booking.deleted",
-        object_reference=public_reference,
-    ).exists()
+    assert response["Location"] == reverse("notifications:booking_list")
+    assert ManualBookingDraft.objects.filter(pk=draft.pk).exists()
 
 
 @override_settings(
@@ -350,6 +331,38 @@ def test_manual_draft_can_be_rechecked_without_creating_a_reservation():
     assert rechecked.draft is not None
     assert rechecked.draft.status == ManualBookingDraft.Status.QUOTED
     assert Reservation.objects.count() == 0
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_new_booking_form_uses_full_width_email_and_two_decimal_owner_price():
+    property_obj = make_property()
+    actor = owner()
+    available = make_availability(property_obj, total=Decimal("8883.0000"))
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=available.quote.check_in,
+        check_out=available.quote.check_out,
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+    assert creation.draft is not None
+
+    form = ManualBookingFinalizeForm(draft=creation.draft)
+    assert form.fields["final_total_price"].decimal_places == 2
+    assert form["final_total_price"].value() == Decimal("8883.00")
+    assert "lsa-manual-booking__email-input" in form["guest_email"].as_widget()
+
+    client = Client()
+    client.force_login(actor)
+    page = client.get(reverse("notifications:manual_booking_detail", args=[creation.draft.pk]))
+    content = page.content.decode()
+    assert "إتمام حجز جديد" in content
+    assert "سجل العملية" in content
+    assert "سجل المسودة" not in content
 
 
 @override_settings(
@@ -485,8 +498,12 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
             guest_email=draft.guest_email,
             guest_phone=draft.guest_phone,
             guest_country_code="SA",
-            billing_street1="Not provided", billing_city="Not provided", billing_state="Not provided",
-            billing_country="SA", billing_postcode="Not provided", language="ar",
+            billing_street1="Not provided",
+            billing_city="Not provided",
+            billing_state="Not provided",
+            billing_country="SA",
+            billing_postcode="Not provided",
+            language="ar",
             idempotency_key="phase61-accounting-request-key-000000000000000000000000",
             session_key_hash=draft.quote.session_key_hash,
             terms_accepted_at=timezone.now(), privacy_accepted_at=timezone.now(),
@@ -501,8 +518,6 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
         guests=draft.guests, currency=draft.currency, total_price=draft.final_total_price,
         hostaway_reservation_id=88001, payment_status="unpaid", confirmed_at=timezone.now(),
     )
-    draft.status = ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
-    draft.save(update_fields=["status", "updated_at"])
     monkeypatch.setattr(
         "apps.reservations.operations_views.create_manual_booking_in_hostaway",
         lambda **_kwargs: ManualBookingHostawayCreation("already_created", draft, reservation),
@@ -520,7 +535,7 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
     )
 
     assert response.status_code == 302
-    assert response["Location"] == reverse("notifications:manual_booking_detail", args=[draft.pk])
+    assert response["Location"] == reverse("notifications:booking_list")
     assert AuditLog.objects.filter(action="manual_booking.accounting_whatsapp_sent").exists()
 
 
@@ -528,7 +543,7 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
-def test_cancellation_workspace_lists_manual_drafts_and_links_to_disposal():
+def test_cancellation_workspace_does_not_list_booking_setups():
     property_obj = make_property()
     actor = owner()
     creation = create_manual_booking_draft(
@@ -551,9 +566,9 @@ def test_cancellation_workspace_lists_manual_drafts_and_links_to_disposal():
 
     content = page.content.decode()
     assert page.status_code == 200
-    assert "مسودات الحجز اليدوي" in content
-    assert "Aseel Hafez" in content
-    assert reverse("notifications:manual_booking_disposal", args=[draft.pk]) in content
+    assert "مسودات الحجز اليدوي" not in content
+    assert "Aseel Hafez" not in content
+    assert reverse("notifications:manual_booking_disposal", args=[draft.pk]) not in content
 
 
 @override_settings(

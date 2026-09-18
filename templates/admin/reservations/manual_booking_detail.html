@@ -5,11 +5,11 @@
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
-      <span class="lsa-kicker"><i></i> المرحلة 9.2 · {% if draft.status == "booked_awaiting_payment" %}حجز في Hostaway بانتظار الدفع{% else %}مسودة داخلية · {{ draft.get_status_display }}{% endif %}</span>
-      <h1>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}حجز {{ draft.property }}{% endif %}</h1>
+      <span class="lsa-kicker"><i></i> حجز جديد · {% if draft.status == "booked_awaiting_payment" %}حجز في Hostaway بانتظار الدفع{% else %}قيد الإعداد · {{ draft.get_status_display }}{% endif %}</span>
+      <h1>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}إتمام حجز جديد{% endif %}</h1>
       <p>{% if draft.guest_first_name or draft.guest_last_name %}<b>الضيف:</b> {{ draft.guest_first_name }} {{ draft.guest_last_name }} · {% endif %}<span dir="ltr">{{ draft.public_reference }} · {{ draft.check_in }} → {{ draft.check_out }}</span> · {{ draft.guests }} ضيوف</p>
     </div>
-    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:manual_booking_list' %}">كل المسودات</a>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">كل الحجوزات</a>
   </section>
   <section class="lsa-panel">
     <h2>السعر الموثق</h2>
@@ -57,7 +57,7 @@
           {% endif %}
           <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' reservation.pk %}">فتح وإدارة الحجز</a>
         {% else %}
-          <p>يجري التحقق من مرجع الحجز. لا تحذف المسودة أو تعيد إنشاءها.</p>
+          <p>يجري التحقق من مرجع الحجز. أعد فتح قائمة الحجوزات بعد لحظات.</p>
         {% endif %}
       </section>
     {% elif draft.status == "quoted" %}
@@ -79,18 +79,22 @@
         <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit lsa-manual-booking__finalize" type="submit"><span aria-hidden="true">✓</span> اعتماد بيانات الضيف وتجهيز الدفع</button>
       </form>
     {% else %}
-      <p class="help">هذه المسودة {{ draft.get_status_display }}، ولذلك لا يمكن تعديلها أو متابعتها للدفع.</p>
+      <p class="help">هذا الحجز قيد الإعداد حالته {{ draft.get_status_display }}، ولذلك لا يمكن تعديله أو متابعته للدفع الآن.</p>
     {% endif %}
   </section>
-  <section class="lsa-panel">
-    <h2>سجل المسودة</h2>
+  <section class="lsa-panel lsa-operation-log">
+    <h2>سجل العملية</h2>
     {% if audit_entries %}
-      <table>
-        <thead><tr><th>الوقت</th><th>الإجراء</th><th>بواسطة</th></tr></thead>
-        <tbody>{% for entry in audit_entries %}<tr><td dir="ltr">{{ entry.created_at }}</td><td>{{ entry.display_summary }}</td><td>{% if entry.actor_user %}{{ entry.actor_user.get_full_name|default:entry.actor_user.username }}{% else %}النظام{% endif %}</td></tr>{% endfor %}</tbody>
-      </table>
+      <div class="lsa-operation-log__rows">
+        {% for entry in audit_entries %}
+        <article class="lsa-operation-log__row">
+          <p>{{ entry.display_summary }}</p>
+          <div><span>{% if entry.actor_user %}{{ entry.actor_user.get_full_name|default:entry.actor_user.username }}{% else %}النظام{% endif %}</span><time dir="ltr">{{ entry.created_at }}</time></div>
+        </article>
+        {% endfor %}
+      </div>
     {% else %}
-      <p>لا توجد أحداث مسجلة لهذه المسودة بعد.</p>
+      <p>لا توجد أحداث مسجلة لهذا الحجز بعد.</p>
     {% endif %}
   </section>
 </main>

@@ -46,7 +46,7 @@ PAYMENT_STATUS_LABELS = {
 
 @admin.register(ManualBookingDraft)
 class ManualBookingDraftAdmin(ModelAdmin):
-    """Read-only backup view; creation stays in the guided operations screen."""
+    """Internal state only; operators use the guided booking screen."""
 
     list_display = (
         "guest_name",
@@ -105,6 +105,14 @@ class ManualBookingDraftAdmin(ModelAdmin):
         return f"{obj.guest_first_name} {obj.guest_last_name}".strip() or "—"
 
     def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_module_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_view_permission(
+        self, request: HttpRequest, obj: ManualBookingDraft | None = None
+    ) -> bool:
         return False
 
     def has_delete_permission(

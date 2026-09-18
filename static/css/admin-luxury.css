@@ -647,4 +647,16 @@ body.login .errornote { border-radius: 10px; }
 .lsa-refund-choice__presets button { min-height: 48px; padding: 8px 12px; color: #214b3d; border: 1px solid #d4bd88; border-radius: 10px; background: #fffdf8; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
 .lsa-refund-choice__presets button:hover { border-color: #98732f; background: #fff2d4; }
 .lsa-owner-action--payment { border-color: #d8c287; background: #fffaf0; }.lsa-owner-action--payment h2 { color: #755820; }.lsa-owner-action--cancel { border-color: #e4b8b5; }
+.lsa-operations-screen .module.aligned { overflow: visible; border: 0; background: transparent; }
+.lsa-operations-screen .module.aligned .form-row { display: grid; grid-template-columns: minmax(120px, 170px) minmax(0, 1fr); gap: 8px 18px; padding: 13px 0; border: 0; }
+.lsa-operations-screen .module.aligned .form-row label { grid-column: 1; width: auto; padding: 10px 0 0; text-align: right; }
+.lsa-operations-screen .module.aligned .form-row input { grid-column: 2; width: 100%; min-width: 0; min-height: 48px; box-sizing: border-box; padding: 10px 13px; }
+.lsa-operations-screen .module.aligned .form-row .help,.lsa-operations-screen .module.aligned .form-row .errorlist { grid-column: 2; margin: 0; }
+.lsa-manual-booking__email-input { direction: ltr; text-align: left; letter-spacing: .01em; }
+.lsa-manual-booking__price-input { direction: ltr; text-align: left; font-variant-numeric: tabular-nums; }
+.lsa-operation-log__rows { display: grid; gap: 9px; }
+.lsa-operation-log__row { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,.65fr); gap: 12px; align-items: center; padding: 13px 14px; border: 1px solid var(--lsa-line); border-radius: 12px; background: #fffdf8; }
+.lsa-operation-log__row p { margin: 0; color: var(--lsa-ink); font-size: 13px; font-weight: 700; line-height: 1.65; }
+.lsa-operation-log__row > div { display: flex; justify-content: space-between; gap: 10px; color: var(--lsa-muted); font-size: 11px; }.lsa-operation-log__row time { white-space: nowrap; }
 @media (max-width: 767px) { .lsa-booking-list-screen .lsa-page-head .lsa-btn { width: 100%; margin-top: 14px; }.lsa-refund-choice__presets { grid-template-columns: 1fr; }.lsa-booking-status { min-width: 0; font-size: 11px; } }
+@media (max-width: 767px) { .lsa-operations-screen .module.aligned .form-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 0; }.lsa-operations-screen .module.aligned .form-row label,.lsa-operations-screen .module.aligned .form-row input,.lsa-operations-screen .module.aligned .form-row .help,.lsa-operations-screen .module.aligned .form-row .errorlist { grid-column: 1; }.lsa-operations-screen .module.aligned .form-row label { padding: 0; }.lsa-operations-screen .module.aligned .form-row input { min-height: 52px; font-size: 16px; }.lsa-operation-log__row { grid-template-columns: 1fr; gap: 10px; padding: 14px; }.lsa-operation-log__row > div { padding-top: 9px; border-top: 1px solid var(--lsa-line); }.lsa-operation-log__row time { font-size: 10px; } }

@@ -223,7 +223,9 @@ def finalize_manual_booking_draft(
             draft.save(update_fields=["status", "updated_at"])
             return ManualBookingDraftFinalization("quote_expired", draft)
 
-        final_total = Decimal(final_total_price)
+        # Owner-entered totals use two currency decimals. The original Hostaway
+        # quote remains untouched for audit, even if that provider uses 4 places.
+        final_total = Decimal(final_total_price).quantize(Decimal("0.01"))
         is_manual_price = final_total != draft.system_total_price
 
         if is_manual_price:

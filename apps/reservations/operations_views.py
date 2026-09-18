@@ -1,4 +1,4 @@
-"""Owner-only operations screens for preparing manual booking drafts."""
+"""Owner-only operations screens for preparing a new booking."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -36,7 +35,6 @@ from .manual_bookings import (
 )
 from .models import (
     BookingModificationRequest,
-    BookingQuote,
     ManualBookingDraft,
     RefundObligation,
     Reservation,
@@ -47,8 +45,6 @@ from .operations_forms import (
     CancellationExecutionForm,
     CancellationRejectionForm,
     ManualBookingAvailabilityForm,
-    ManualBookingCancelForm,
-    ManualBookingDeleteForm,
     ManualBookingFinalizeForm,
     OwnerFinalPriceForm,
     OwnerModificationExecutionForm,
@@ -71,15 +67,13 @@ def _require_owner(request: HttpRequest) -> None:
 
 _MANUAL_DRAFT_AUDIT_LABELS = {
     "manual_booking.availability_checked": "تم فحص التوفر وتثبيت سعر النظام.",
-    "manual_booking.rechecked": "أُعيد فحص التوفر والسعر من Hostaway لهذه المسودة.",
+    "manual_booking.rechecked": "أُعيد فحص التوفر والسعر من Hostaway لهذا الحجز.",
     "manual_booking.ready_for_payment": "تم اعتماد بيانات الضيف والسعر النهائي.",
     "manual_booking.hostaway_created": "أُنشئ الحجز في Hostaway وهو بانتظار الدفع.",
     "manual_booking.accounting_whatsapp_sent": (
         "أُرسل طلب رابط الدفع تلقائيًا إلى المحاسبة عبر WhatsApp."
     ),
     "manual_booking.accounting_whatsapp_failed": "تعذر إرسال طلب رابط الدفع تلقائيًا إلى المحاسبة.",
-    "manual_booking.cancelled": "تم إلغاء المسودة الداخلية قبل الدفع.",
-    "manual_booking.deleted": "حُذفت المسودة نهائيًا قبل الدفع.",
 }
 
 _CANCELLATION_AUDIT_LABELS = {
@@ -117,7 +111,7 @@ def _available_manual_properties(
     The owner begins by answering a guest's date enquiry, so every result must
     include Hostaway's current period total and the derived nightly average.
     Saving the selected offer still rechecks live availability and price before
-    it creates a local draft.
+    it prepares the internal booking state.
     """
 
     available: list[dict[str, str | int]] = []
@@ -177,42 +171,10 @@ def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
 
 @staff_member_required
 def manual_booking_list(request: HttpRequest) -> HttpResponse:
-    _require_owner(request)
-    ManualBookingDraft.objects.filter(
-        status__in=(
-            ManualBookingDraft.Status.QUOTED,
-            ManualBookingDraft.Status.READY_FOR_PAYMENT,
-        ),
-        expires_at__lt=timezone.now(),
-    ).update(status=ManualBookingDraft.Status.EXPIRED)
+    """Retire the draft inbox; real stays live only in the booking list."""
 
-    status = request.GET.get("status", "")
-    query = request.GET.get("q", "").strip()
-    drafts = ManualBookingDraft.objects.select_related("property")
-    if status in ManualBookingDraft.Status.values:
-        drafts = drafts.filter(status=status)
-    if query:
-        drafts = drafts.filter(
-            Q(guest_first_name__icontains=query)
-            | Q(guest_last_name__icontains=query)
-            | Q(guest_email__icontains=query)
-            | Q(public_reference__icontains=query)
-            | Q(property__name_ar__icontains=query)
-            | Q(property__name_en__icontains=query)
-            | Q(property__name_fr__icontains=query)
-        )
-    drafts = drafts.order_by("-created_at")[:50]
-    return render(
-        request,
-        "admin/reservations/manual_booking_list.html",
-        {
-            "title": "مسودات الحجز اليدوي",
-            "drafts": drafts,
-            "status": status,
-            "query": query,
-            "status_options": ManualBookingDraft.Status.choices,
-        },
-    )
+    _require_owner(request)
+    return redirect("notifications:booking_list")
 
 
 @staff_member_required
@@ -593,7 +555,7 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
             if creation.code == "currency_unavailable":
                 form.add_error(
                     None,
-                    "تعذّر تثبيت تحويل العملة لهذه المسودة. لم يُحفظ أي حجز.",
+                    "تعذّر تثبيت تحويل العملة لهذا الحجز. لم يُحفظ أي حجز.",
                 )
             else:
                 form.add_error(
@@ -606,7 +568,7 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
         request,
         "admin/reservations/manual_booking_create.html",
         {
-            "title": "حجز يدوي جديد",
+            "title": "حجز جديد",
             "form": form,
             "calendar_urls": _calendar_urls(form),
         },
@@ -620,6 +582,12 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         ManualBookingDraft.objects.select_related("property", "quote"),
         pk=draft_id,
     )
+    reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
+    if (
+        draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+        and reservation is not None
+    ):
+        return redirect("notifications:booking_detail", reservation_id=reservation.pk)
     form = ManualBookingFinalizeForm(draft=draft)
     if request.method == "POST":
         action = request.POST.get("action")
@@ -631,12 +599,12 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     action="manual_booking.rechecked",
                     object_type="ManualBookingDraft",
                     object_reference=result.draft.public_reference,
-                    summary="Manual booking draft availability and price were rechecked.",
+                    summary="New booking availability and price were rechecked.",
                     metadata={"source": "hostaway", "status": result.draft.status},
                 )
                 messages.success(
                     request,
-                    "المسودة ما زالت متاحة. حُدّث السعر من Hostaway وأصبحت جاهزة للمراجعة من جديد.",
+                    "الحجز ما زال متاحًا. حُدّث السعر من Hostaway وأصبح جاهزًا للمراجعة من جديد.",
                 )
                 return redirect("notifications:manual_booking_detail", draft_id=draft.pk)
             if result.code == "unavailable":
@@ -647,7 +615,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             elif result.code == "currency_unavailable":
                 messages.error(request, "التوفر موجود لكن تعذر تثبيت السعر بالعملة المطلوبة الآن.")
             else:
-                messages.error(request, "لا يمكن إعادة فحص هذه المسودة في حالتها الحالية.")
+                messages.error(request, "لا يمكن إعادة فحص الحجز في حالته الحالية.")
         elif action == "create_hostaway_and_request_payment":
             created = create_manual_booking_in_hostaway(draft_id=draft.pk)
             if created.code in {"created", "already_created"} and created.reservation is not None:
@@ -690,10 +658,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                             "رابط الدفع إلى أسيل. لم يُنشأ حجز مكرر؛ راجع سجل التسليم."
                         ),
                     )
-                    return redirect(
-                        "notifications:manual_booking_detail",
-                        draft_id=created.draft.pk,
-                    )
+                    return redirect("notifications:booking_list")
                 if delivery_result.code == "sent":
                     record_audit(
                         request=request,
@@ -744,10 +709,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                             "إلى أسيل. راجع سجل التسليم قبل أي متابعة يدوية."
                         ),
                     )
-                return redirect(
-                    "notifications:manual_booking_detail",
-                    draft_id=created.draft.pk,
-                )
+                return redirect("notifications:booking_list")
             if created.code == "quote_expired":
                 messages.error(
                     request, "انتهت صلاحية السعر. أعد فحص التوفر والسعر قبل إنشاء الحجز."
@@ -774,7 +736,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                         action="manual_booking.ready_for_payment",
                         object_type="ManualBookingDraft",
                         object_reference=finalized.draft.public_reference,
-                        summary="Manual booking draft prepared for the later payment-link stage.",
+                        summary="New booking data prepared for the payment-link stage.",
                         metadata={
                             "source": finalized.draft.price_source,
                             "status": finalized.draft.status,
@@ -782,7 +744,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     )
                     messages.success(
                         request,
-                        "حُفظت المسودة وهي جاهزة للتأكيد في Hostaway ثم طلب رابط الدفع.",
+                        "حُفظت بيانات الحجز وهي جاهزة للتأكيد في Hostaway ثم طلب رابط الدفع.",
                     )
                     return redirect(
                         "notifications:manual_booking_detail",
@@ -796,7 +758,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                 elif finalized.code == "currency_unavailable":
                     form.add_error(None, "تعذّر تثبيت تحويل العملة. لم تُحفظ التعديلات.")
                 else:
-                    form.add_error(None, "تعذّر حفظ المسودة. لم يُنفذ أي إجراء خارجي.")
+                    form.add_error(None, "تعذّر حفظ بيانات الحجز. لم يُنفذ أي إجراء خارجي.")
     audit_entries = list(
         AuditLog.objects.filter(
             object_type="ManualBookingDraft",
@@ -805,7 +767,6 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     )
     for entry in audit_entries:
         entry.display_summary = _MANUAL_DRAFT_AUDIT_LABELS.get(entry.action, entry.summary)
-    reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
     accounting_delivery = (
         WhatsAppDelivery.objects.filter(reservation=reservation).first()
         if reservation is not None
@@ -815,7 +776,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         request,
         "admin/reservations/manual_booking_detail.html",
         {
-            "title": "مسودة حجز يدوي",
+            "title": "إتمام حجز جديد",
             "draft": draft,
             "form": form,
             "audit_entries": audit_entries,
@@ -828,83 +789,15 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
 
 @staff_member_required
 def manual_booking_disposal(request: HttpRequest, draft_id: str) -> HttpResponse:
-    """Cancel or remove a local manual draft from the cancellation workspace."""
+    """Retired compatibility endpoint for historic draft URLs."""
 
+    del draft_id
     _require_owner(request)
-    draft = get_object_or_404(
-        ManualBookingDraft.objects.select_related("property", "quote"),
-        pk=draft_id,
-    )
-    reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
-    if draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT:
-        if reservation is not None:
-            messages.info(request, "أصبحت هذه المسودة حجزًا في Hostaway. أدره من صفحة الحجز.")
-            return redirect("notifications:booking_detail", reservation_id=reservation.pk)
-        messages.error(request, "هذه المسودة مرتبطة بحجز مؤكد، ولا يمكن حذفها من هنا.")
-        return redirect("notifications:booking_list")
-    cancel_form = ManualBookingCancelForm()
-    delete_form = ManualBookingDeleteForm()
-    if request.method == "POST":
-        action = request.POST.get("action")
-        if action == "cancel":
-            cancel_form = ManualBookingCancelForm(request.POST)
-            if cancel_form.is_valid():
-                if draft.status not in {
-                    ManualBookingDraft.Status.QUOTED,
-                    ManualBookingDraft.Status.READY_FOR_PAYMENT,
-                }:
-                    messages.error(request, "لا يمكن إلغاء هذه المسودة في حالتها الحالية.")
-                else:
-                    draft.status = ManualBookingDraft.Status.CANCELLED
-                    draft.save(update_fields=["status", "updated_at"])
-                    record_audit(
-                        request=request,
-                        action="manual_booking.cancelled",
-                        object_type="ManualBookingDraft",
-                        object_reference=draft.public_reference,
-                        summary="Manual booking draft cancelled before payment.",
-                        metadata={"status": draft.status},
-                    )
-                    messages.success(
-                        request,
-                        "أُلغيت المسودة الداخلية. لم يُلغَ حجز في Hostaway ولم يُنفذ أي استرجاع.",
-                    )
-                    return redirect("notifications:cancellation_list")
-        elif action == "delete":
-            delete_form = ManualBookingDeleteForm(request.POST)
-            if delete_form.is_valid():
-                public_reference = draft.public_reference
-                quote_id = draft.quote_id
-                with transaction.atomic():
-                    record_audit(
-                        request=request,
-                        action="manual_booking.deleted",
-                        object_type="ManualBookingDraft",
-                        object_reference=public_reference,
-                        summary="Manual booking draft permanently deleted before payment.",
-                        metadata={"status": draft.status},
-                    )
-                    draft.delete()
-                    BookingQuote.objects.filter(
-                        pk=quote_id,
-                        booking_intent__isnull=True,
-                    ).delete()
-                messages.success(
-                    request,
-                    "حُذفت المسودة نهائيًا من القائمة. بقي سجل تدقيق مختصر لحماية المتابعة.",
-                )
-                return redirect("notifications:cancellation_list")
-
-    return render(
+    messages.info(
         request,
-        "admin/reservations/manual_booking_disposal.html",
-        {
-            "title": "إلغاء أو حذف مسودة",
-            "draft": draft,
-            "cancel_form": cancel_form,
-            "delete_form": delete_form,
-        },
+        "لم تعد هناك قائمة مستقلة للحجوزات قيد الإعداد. راجع الحجوزات من هذه الصفحة.",
     )
+    return redirect("notifications:booking_list")
 
 
 @staff_member_required

@@ -11,10 +11,10 @@
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
       <span class="lsa-kicker"><i></i> فحص حي من Hostaway</span>
-      <h1>حجز يدوي جديد</h1>
+      <h1>إنشاء حجز جديد</h1>
       <p>اختر التواريخ أولًا، ثم راجع كل الشقق المتاحة مع إجمالي الفترة ومتوسط سعر الليلة قبل اختيار الشقة المناسبة للضيف.</p>
     </div>
-    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:manual_booking_list' %}">كل المسودات</a>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">كل الحجوزات</a>
   </section>
   <section class="lsa-panel">
     <form method="post" class="lsa-manual-booking-form" data-manual-property-filter data-available-properties-url="{% url 'notifications:manual_booking_available_properties' %}" novalidate>
@@ -43,14 +43,14 @@
           <div hidden>{{ form.property.label_tag }}{{ form.property }}</div>
           {{ form.property.errors }}
           <small class="help" data-manual-property-status aria-live="polite">اختر تاريخي الوصول والمغادرة لعرض الشقق والأسعار المتاحة.</small>
-          <small class="help" data-calendar-property-summary>الأسعار المعروضة حية من Hostaway، ويُعاد التحقق منها عند حفظ المسودة.</small>
+          <small class="help" data-calendar-property-summary>الأسعار المعروضة حية من Hostaway، ويُعاد التحقق منها قبل تأكيد الحجز.</small>
         </div>
       </div>
-      <p class="help">نستخدم ضيفًا واحدًا افتراضيًا في هذه المرحلة؛ لا تُنشأ مسودة ولا حجز في Hostaway قبل اختيار شقة والمتابعة.</p>
+      <p class="help">نستخدم ضيفًا واحدًا افتراضيًا في هذه المرحلة؛ لا يُنشأ حجز في Hostaway قبل اختيار شقة ومتابعة التأكيد.</p>
       <button class="lsa-btn lsa-btn--gold lsa-manual-booking-form__submit" type="submit">متابعة بهذه الشقة</button>
 
       {{ calendar_urls|json_script:"manual-booking-calendar-urls" }}
-      <dialog class="lsa-manual-booking-calendar" data-luxury-calendar data-calendar-availability-map-id="manual-booking-calendar-urls" data-choose-label="اختر التاريخ" data-arrival-label="الوصول" data-departure-label="المغادرة" data-arrival-help="اختر يوم الوصول." data-departure-help="اختر يوم المغادرة." data-selected-help="التواريخ جاهزة لعرض الوحدات المتاحة." data-night-label="ليلة" data-nights-label="ليالٍ" data-unavailable-label="غير متاح" data-calendar-loading-label="يتم تحميل التوفر المباشر…" data-calendar-ready-label="الأيام غير المتاحة موضحة في التقويم." data-calendar-fallback-label="سيُعاد فحص التوفر قبل حفظ المسودة." data-calendar-no-property-label="اختر التواريخ أولًا، ثم ستظهر الوحدات المتاحة." aria-label="اختر تواريخ الإقامة">
+      <dialog class="lsa-manual-booking-calendar" data-luxury-calendar data-calendar-availability-map-id="manual-booking-calendar-urls" data-choose-label="اختر التاريخ" data-arrival-label="الوصول" data-departure-label="المغادرة" data-arrival-help="اختر يوم الوصول." data-departure-help="اختر يوم المغادرة." data-selected-help="التواريخ جاهزة لعرض الوحدات المتاحة." data-night-label="ليلة" data-nights-label="ليالٍ" data-unavailable-label="غير متاح" data-calendar-loading-label="يتم تحميل التوفر المباشر…" data-calendar-ready-label="الأيام غير المتاحة موضحة في التقويم." data-calendar-fallback-label="سيُعاد فحص التوفر قبل تأكيد الحجز." data-calendar-no-property-label="اختر التواريخ أولًا، ثم ستظهر الوحدات المتاحة." aria-label="اختر تواريخ الإقامة">
         <div class="lsa-manual-booking-calendar__header">
           <div><span>التوفر المباشر</span><h2>اختر تواريخ الإقامة</h2><p data-calendar-help>اختر يوم الوصول من الأيام المتاحة.</p></div>
           <button type="button" data-calendar-close aria-label="إغلاق التقويم">×</button>

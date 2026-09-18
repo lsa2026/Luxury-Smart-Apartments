@@ -68,7 +68,18 @@ class ManualBookingAvailabilityForm(forms.Form):
 class ManualBookingFinalizeForm(forms.Form):
     guest_first_name = forms.CharField(label="الاسم الأول", max_length=100)
     guest_last_name = forms.CharField(label="اسم العائلة", max_length=100)
-    guest_email = forms.EmailField(label="البريد الإلكتروني", max_length=254)
+    guest_email = forms.EmailField(
+        label="البريد الإلكتروني",
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                "class": "lsa-manual-booking__email-input",
+                "dir": "ltr",
+                "inputmode": "email",
+                "autocomplete": "email",
+            }
+        ),
+    )
     guest_phone = forms.CharField(
         label="رقم الجوال",
         max_length=32,
@@ -77,9 +88,16 @@ class ManualBookingFinalizeForm(forms.Form):
     final_total_price = forms.DecimalField(
         label="السعر النهائي",
         max_digits=14,
-        decimal_places=4,
+        decimal_places=2,
         min_value=Decimal("0"),
-        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+        widget=forms.NumberInput(
+            attrs={
+                "class": "lsa-manual-booking__price-input",
+                "step": "0.01",
+                "min": "0",
+                "inputmode": "decimal",
+            }
+        ),
     )
 
     def __init__(
@@ -94,7 +112,7 @@ class ManualBookingFinalizeForm(forms.Form):
         if not self.is_bound:
             self.initial.update(
                 {
-                    "final_total_price": draft.final_total_price,
+                    "final_total_price": draft.final_total_price.quantize(Decimal("0.01")),
                     "guest_first_name": draft.guest_first_name,
                     "guest_last_name": draft.guest_last_name,
                     "guest_email": draft.guest_email,
