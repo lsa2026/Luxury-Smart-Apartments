@@ -974,6 +974,32 @@ def test_owner_final_price_allows_admin_to_execute_a_decrease_without_a_second_a
     assert priced.request.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
 
 
+@override_settings(
+    BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False,
+    HOSTAWAY_LIVE_MODIFICATION_ENABLED=True,
+    HOSTAWAY_LIVE_EXTENSION_ENABLED=True,
+)
+def test_owner_override_executes_a_decrease_when_global_automation_is_disabled():
+    reservation = confirmed_reservation()
+    modification = create_extension(reservation).request
+    assert modification is not None
+    ModificationService().set_owner_final_total(
+        modification,
+        final_total=Decimal("400.00"),
+    )
+    modification.refresh_from_db()
+    client = WriteClientStub(snapshot=updated_snapshot(modification))
+
+    outcome = execute_automatic_modification(
+        modification,
+        service=HostawayModificationService(client=client),
+        owner_override=True,
+    )
+
+    assert outcome.code == "completed"
+    assert outcome.request.status == BookingModificationRequest.Status.COMPLETED
+
+
 def test_a_new_change_supersedes_older_open_change_requests():
     reservation = confirmed_reservation()
     first = create_extension(reservation, added_nights=2).request

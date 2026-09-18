@@ -40,6 +40,7 @@ def execute_automatic_modification(
     refund_service: "HyperPayRefundService | None" = None,
     approved_refund_amount: Decimal | None = None,
     refund_decision_note: str = "",
+    owner_override: bool = False,
 ) -> AutomaticModificationOutcome:
     """Approve and execute a safe modification without an administrative hop.
 
@@ -52,7 +53,11 @@ def execute_automatic_modification(
         modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION
         and settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
     )
-    if not (settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL or automatic_cancellation):
+    if not (
+        settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+        or automatic_cancellation
+        or (owner_override and modification.price_difference <= 0)
+    ):
         # A successful difference payment must never leave the request claiming
         # that payment is still due when automatic execution is intentionally off.
         if modification.status == BookingModificationRequest.Status.AWAITING_PAYMENT:

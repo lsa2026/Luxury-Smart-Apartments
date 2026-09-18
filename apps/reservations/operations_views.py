@@ -476,6 +476,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                     adjustment,
                     approved_refund_amount=execution_form.cleaned_data["approved_refund_amount"],
                     refund_decision_note="",
+                    owner_override=True,
                 )
                 if outcome.code == "completed":
                     messages.success(
