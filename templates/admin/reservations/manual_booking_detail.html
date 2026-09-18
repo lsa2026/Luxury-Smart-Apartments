@@ -76,7 +76,7 @@
           {% endfor %}
         </fieldset>
         <p class="help">يمكنك اعتماد السعر أو تعديله مباشرة؛ يبقى سعر Hostaway الأصلي محفوظًا للمراجعة.</p>
-        <button class="default" type="submit">حفظ المسودة وتجهيزها للدفع</button>
+        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit lsa-manual-booking__finalize" type="submit"><span aria-hidden="true">✓</span> اعتماد بيانات الضيف وتجهيز الدفع</button>
       </form>
     {% else %}
       <p class="help">هذه المسودة {{ draft.get_status_display }}، ولذلك لا يمكن تعديلها أو متابعتها للدفع.</p>

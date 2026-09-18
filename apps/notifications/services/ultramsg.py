@@ -108,7 +108,6 @@ def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliv
     with transaction.atomic():
         reservation = (
             Reservation.objects.select_for_update()
-            .select_related("booking_intent", "property")
             .filter(pk=reservation_id)
             .first()
         )
