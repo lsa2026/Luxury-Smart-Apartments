@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from apps.notifications.models import WhatsAppDelivery
-from apps.reservations.models import Reservation
+from apps.reservations.models import BookingModificationRequest, Reservation
 
 
 class UltraMsgError(Exception):
@@ -115,6 +115,7 @@ def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliv
             raise ValueError("Reservation was not found.")
         delivery, created = WhatsAppDelivery.objects.get_or_create(
             reservation=reservation,
+            modification_request=None,
             defaults={
                 "message_type": "manual_payment_link_request",
                 "recipient_masked": _mask_phone(settings.ACCOUNTING_WHATSAPP_NUMBER),
@@ -144,11 +145,66 @@ def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliv
         delivery.attempt_count = 1
         delivery.save(update_fields=["status", "attempt_count", "updated_at"])
 
+    return _send_delivery(delivery=delivery, body=_manual_payment_message(reservation))
+
+
+def send_modification_payment_link_request(*, modification_id: object) -> WhatsAppDeliveryResult:
+    """Ask accounting for a manual link when a confirmed change costs more."""
+
+    with transaction.atomic():
+        modification = (
+            BookingModificationRequest.objects.select_for_update()
+            .select_related("reservation", "reservation__booking_intent", "reservation__property")
+            .filter(pk=modification_id)
+            .first()
+        )
+        if modification is None:
+            raise ValueError("Modification request was not found.")
+        if modification.price_difference <= 0:
+            raise ValueError("A payment link is only needed for a positive difference.")
+        delivery, created = WhatsAppDelivery.objects.get_or_create(
+            modification_request=modification,
+            defaults={
+                "message_type": "modification_payment_link_request",
+                "recipient_masked": _mask_phone(settings.ACCOUNTING_WHATSAPP_NUMBER),
+                "recipient_reference": "accounting",
+                "provider": "ultramsg",
+                "idempotency_key": f"modification-payment-link:{modification.public_reference}",
+                "status": (
+                    WhatsAppDelivery.Status.QUEUED
+                    if settings.ULTRAMSG_ENABLED
+                    else WhatsAppDelivery.Status.DISABLED
+                ),
+                "queued_at": timezone.now(),
+                "last_error_code": "" if settings.ULTRAMSG_ENABLED else "ultramsg_disabled",
+            },
+        )
+        if not created:
+            if delivery.status == WhatsAppDelivery.Status.SENT:
+                return WhatsAppDeliveryResult("already_sent", delivery)
+            if delivery.status == WhatsAppDelivery.Status.FAILED:
+                return WhatsAppDeliveryResult("previously_failed", delivery)
+            if delivery.status == WhatsAppDelivery.Status.DISABLED:
+                return WhatsAppDeliveryResult("disabled", delivery)
+            return WhatsAppDeliveryResult("already_requested", delivery)
+        if delivery.status == WhatsAppDelivery.Status.DISABLED:
+            return WhatsAppDeliveryResult("disabled", delivery)
+        delivery.status = WhatsAppDelivery.Status.SENDING
+        delivery.attempt_count = 1
+        delivery.save(update_fields=["status", "attempt_count", "updated_at"])
+
+    return _send_delivery(
+        delivery=delivery,
+        body=_modification_payment_message(modification),
+    )
+
+
+def _send_delivery(*, delivery: WhatsAppDelivery, body: str) -> WhatsAppDeliveryResult:
     try:
         with UltraMsgClient() as client:
             response = client.send_text(
                 recipient=_accounting_recipient(),
-                body=_manual_payment_message(reservation),
+                body=body,
                 reference_id=delivery.idempotency_key,
             )
     except UltraMsgConfigurationError:
@@ -240,5 +296,31 @@ def _manual_payment_message(reservation: Reservation) -> str:
             f"رقم حجز Hostaway: {hostaway_id}",
             f"رابط Hostaway: {hostaway_url}",
             "يرجى إنشاء رابط HyperPay اليدوي وإرساله للضيف بعد المراجعة.",
+        )
+    )
+
+
+def _modification_payment_message(modification: BookingModificationRequest) -> str:
+    reservation = modification.reservation
+    intent = reservation.booking_intent
+    guest_name = _clean(f"{intent.guest_first_name} {intent.guest_last_name}") or "غير مسجل"
+    hostaway_id = reservation.hostaway_reservation_id
+    hostaway_url = f"https://dashboard.hostaway.com/reservations/{hostaway_id}"
+    difference = Decimal(modification.price_difference).quantize(Decimal("0.01"))
+    new_total = Decimal(modification.new_total or 0).quantize(Decimal("0.01"))
+    return "\n".join(
+        (
+            "طلب إنشاء رابط دفع يدوي لفرق تعديل حجز",
+            f"الضيف: {guest_name}",
+            f"جوال الضيف: {_clean(intent.guest_phone, limit=40)}",
+            f"البريد: {_clean(intent.guest_email, limit=254)}",
+            f"الوحدة: {_clean(reservation.property)}",
+            f"الفترة الجديدة: {modification.new_check_in} إلى {modification.new_check_out}",
+            f"الإجمالي الجديد: {new_total:,.2f} {modification.currency}",
+            f"فرق الزيادة المطلوب تحصيله: {difference:,.2f} {modification.currency}",
+            f"مرجع التعديل: {modification.public_reference}",
+            f"رقم حجز Hostaway: {hostaway_id}",
+            f"رابط Hostaway: {hostaway_url}",
+            "يرجى إنشاء رابط HyperPay اليدوي لفرق التعديل وإرساله للضيف بعد المراجعة.",
         )
     )

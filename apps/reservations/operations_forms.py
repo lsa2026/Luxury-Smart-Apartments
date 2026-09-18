@@ -168,12 +168,7 @@ class CancellationRejectionForm(CancellationDecisionForm):
 
 
 class CancellationExecutionForm(forms.Form):
-    """One explicit owner confirmation before a live cancellation is sent."""
-
-    confirm_external_cancellation = forms.BooleanField(
-        label="أؤكد إلغاء الحجز وإرسال الاسترداد إلى وسيلة الدفع الأصلية",
-        error_messages={"required": "أكد الإلغاء الخارجي قبل المتابعة."},
-    )
+    """Amount-only decision for the owner; the red action button is the confirmation."""
 
     approved_refund_amount = forms.DecimalField(
         label="مبلغ الاسترداد المعتمد",
@@ -182,37 +177,19 @@ class CancellationExecutionForm(forms.Form):
         min_value=Decimal("0"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
-    refund_decision_note = forms.CharField(
-        label="ملاحظة القرار",
-        max_length=500,
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-    )
-
     def __init__(self, *args: object, maximum_amount: Decimal, **kwargs: object) -> None:
         self.maximum_amount = maximum_amount
         super().__init__(*args, **kwargs)
         if not self.is_bound:
             self.initial["approved_refund_amount"] = maximum_amount
 
-    def clean_refund_decision_note(self) -> str:
-        return _clean_text(self.cleaned_data["refund_decision_note"])
-
     def clean(self) -> dict[str, object]:
         cleaned = super().clean()
         amount = cleaned.get("approved_refund_amount")
-        note = cleaned.get("refund_decision_note")
         if amount is not None and amount > self.maximum_amount:
             self.add_error(
                 "approved_refund_amount",
                 "لا يمكن أن يتجاوز الاسترداد مبلغ الحجز المدفوع.",
-            )
-        if amount is not None and amount != self.maximum_amount and (
-            not isinstance(note, str) or len(note) < 10
-        ):
-            self.add_error(
-                "refund_decision_note",
-                "اشرح سبب الاسترداد الجزئي أو الصفري بوضوح (10 أحرف على الأقل).",
             )
         return cleaned
 

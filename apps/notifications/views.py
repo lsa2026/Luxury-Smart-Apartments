@@ -13,7 +13,6 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from apps.accounts.access import require_operations_owner
-from apps.core.admin_dashboard import dashboard_payload
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
 from apps.notifications.exports import report_rows, write_csv
 from apps.notifications.health import readiness_status
@@ -122,23 +121,12 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
 
 @staff_member_required
 def operations_hub(request: HttpRequest) -> HttpResponse:
-    """Private, read-only foundation for the reservations operations centre.
-
-    It intentionally reuses the local dashboard aggregates instead of calling
-    Hostaway, HyperPay, or a messaging provider.  Phase 6.0 is a safe place to
-    understand the work queue; later phases add the deliberately confirmed
-    actions for manual bookings, payment links, and refunds.
-    """
+    """Open the focused reservations workspace from every admin entry point."""
 
     _require_operations_permission(request)
-    return render(
-        request,
-        "admin/notifications/operations_hub.html",
-        {
-            "title": "مركز العمليات",
-            "dashboard": dashboard_payload(request),
-        },
-    )
+    from apps.reservations.operations_views import booking_list
+
+    return booking_list(request)
 
 
 @staff_member_required

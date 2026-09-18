@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -20,6 +20,8 @@ from apps.accounts.access import require_operations_owner
 from apps.notifications.models import AuditLog, WhatsAppDelivery
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.ultramsg import send_manual_payment_link_request
+from apps.notifications.services.ultramsg import send_modification_payment_link_request
+from apps.payments.models import PaymentAttempt
 from apps.payments.hyperpay.refunds import HyperPayRefundService
 from apps.properties.models import Property
 
@@ -210,11 +212,30 @@ def manual_booking_list(request: HttpRequest) -> HttpResponse:
 
 @staff_member_required
 def booking_list(request: HttpRequest) -> HttpResponse:
-    """Owner's concise list of website bookings, led by the guest name."""
+    """The single owner workspace for paid, awaiting-payment, and cancelled stays."""
 
     _require_owner(request)
     query = request.GET.get("q", "").strip()
-    bookings = Reservation.objects.select_related("property", "booking_intent").order_by("-created_at")
+    successful_original_payment = PaymentAttempt.objects.filter(
+        booking_intent_id=OuterRef("booking_intent_id"),
+        modification_request__isnull=True,
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at__isnull=False,
+    )
+    bookings = (
+        Reservation.objects.filter(booking_intent__isnull=False)
+        .exclude(
+            normalized_status__in=(
+                Reservation.Status.CREATE_FAILED,
+                Reservation.Status.CREATE_UNKNOWN,
+                Reservation.Status.DECLINED,
+                Reservation.Status.EXPIRED,
+            )
+        )
+        .select_related("property", "booking_intent")
+        .annotate(admin_has_paid=Exists(successful_original_payment))
+        .order_by("-created_at")
+    )
     if query:
         bookings = bookings.filter(
             Q(booking_intent__guest_first_name__icontains=query)
@@ -225,10 +246,25 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             | Q(property__name_ar__icontains=query)
             | Q(property__name_en__icontains=query)
         )
+    bookings = list(bookings[:100])
+    for booking in bookings:
+        payment_status = (booking.payment_status or "").strip().casefold()
+        booking.admin_status_code = (
+            "cancelled"
+            if booking.normalized_status == Reservation.Status.CANCELLED
+            else "completed"
+            if booking.admin_has_paid or payment_status in {"paid", "partially_paid", "refunded"}
+            else "awaiting_payment"
+        )
+        booking.admin_status_label = {
+            "completed": "مكتمل ومدفوع",
+            "awaiting_payment": "مؤكد بانتظار الدفع",
+            "cancelled": "ملغى",
+        }[booking.admin_status_code]
     return render(
         request,
         "admin/reservations/booking_list.html",
-        {"title": "إدارة الحجوزات", "bookings": bookings[:100], "query": query},
+        {"title": "إدارة الحجوزات", "bookings": bookings, "query": query},
     )
 
 
@@ -248,9 +284,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "new_guests": reservation.guests,
         }
     )
-    pending_adjustments = reservation.modification_requests.exclude(
+    pending_adjustments = list(reservation.modification_requests.exclude(
         request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
-    ).order_by("-requested_at")[:10]
+    ).order_by("-requested_at")[:10])
     execution_form = None
     ready_adjustment = next(
         (
@@ -265,6 +301,24 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         execution_form = OwnerModificationExecutionForm(
             maximum_amount=ready_adjustment.refund_amount
         )
+    increase_adjustment = next(
+        (
+            item
+            for item in pending_adjustments
+            if item.price_difference > 0
+            and item.status
+            in {
+                BookingModificationRequest.Status.AWAITING_PAYMENT,
+                BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+            }
+        ),
+        None,
+    )
+    increase_delivery = (
+        WhatsAppDelivery.objects.filter(modification_request=increase_adjustment).first()
+        if increase_adjustment is not None
+        else None
+    )
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -341,7 +395,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 outcome = execute_automatic_modification(
                     adjustment,
                     approved_refund_amount=execution_form.cleaned_data["approved_refund_amount"],
-                    refund_decision_note=execution_form.cleaned_data["refund_decision_note"],
+                    refund_decision_note="",
                 )
                 if outcome.code == "completed":
                     messages.success(
@@ -350,6 +404,41 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                     )
                     return redirect("notifications:booking_detail", reservation_id=reservation.pk)
                 messages.error(request, f"لم يكتمل التعديل الخارجي ({outcome.code}).")
+        elif action == "send_modification_payment_link_request":
+            adjustment = get_object_or_404(
+                BookingModificationRequest,
+                pk=request.POST.get("modification_id"),
+                reservation=reservation,
+            )
+            if adjustment.price_difference <= 0:
+                messages.error(request, "لا يوجد فرق زيادة يحتاج إلى رابط دفع.")
+            elif adjustment.status not in {
+                BookingModificationRequest.Status.AWAITING_PAYMENT,
+                BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+            }:
+                messages.error(request, "لم يعد طلب التعديل في حالة تسمح بطلب رابط دفع.")
+            else:
+                delivery_result = send_modification_payment_link_request(
+                    modification_id=adjustment.pk,
+                )
+                if delivery_result.code == "sent":
+                    record_audit(
+                        request=request,
+                        action="modification.accounting_whatsapp_sent",
+                        object_type="BookingModificationRequest",
+                        object_reference=adjustment.public_reference,
+                        summary="The accounting payment-link request for a price increase was sent through UltraMsg.",
+                        metadata={"price_difference": format(adjustment.price_difference, "f")},
+                    )
+                    messages.success(request, "أُرسل طلب إنشاء رابط فرق التعديل إلى أسيل عبر WhatsApp.")
+                elif delivery_result.code == "already_sent":
+                    messages.info(request, "سبق إرسال طلب رابط فرق التعديل إلى أسيل؛ لم تُرسل رسالة مكررة.")
+                elif delivery_result.code == "already_requested":
+                    messages.info(request, "طلب رابط فرق التعديل قيد الإرسال بالفعل إلى أسيل.")
+                elif delivery_result.code == "previously_failed":
+                    messages.error(request, "فشل طلب الرابط السابق؛ راجع سجل التسليم قبل أي متابعة.")
+                else:
+                    messages.error(request, "تعذر إرسال طلب رابط فرق التعديل إلى أسيل.")
 
     return render(
         request,
@@ -361,6 +450,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "pending_adjustments": pending_adjustments,
             "ready_adjustment": ready_adjustment,
             "execution_form": execution_form,
+            "increase_adjustment": increase_adjustment,
+            "increase_delivery": increase_delivery,
         },
     )
 
@@ -684,49 +775,10 @@ def manual_booking_disposal(request: HttpRequest, draft_id: str) -> HttpResponse
 
 @staff_member_required
 def cancellation_list(request: HttpRequest) -> HttpResponse:
-    """Owner queue for cancellation decisions, with no provider call on GET."""
+    """Keep the legacy URL inside the one reservations workspace."""
 
     _require_owner(request)
-    status = request.GET.get("status", "")
-    query = request.GET.get("q", "").strip()
-    cancellations = BookingModificationRequest.objects.filter(
-        request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
-    ).select_related("reservation__property", "reservation__booking_intent")
-    if status in BookingModificationRequest.Status.values:
-        cancellations = cancellations.filter(status=status)
-    if query:
-        cancellations = cancellations.filter(
-            Q(reservation__booking_intent__guest_first_name__icontains=query)
-            | Q(reservation__booking_intent__guest_last_name__icontains=query)
-            | Q(reservation__booking_intent__guest_email__icontains=query)
-            | Q(public_reference__icontains=query)
-            | Q(reservation__public_reference__icontains=query)
-        )
-    manual_drafts = ManualBookingDraft.objects.select_related("property").exclude(
-        status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
-    )
-    if query:
-        manual_drafts = manual_drafts.filter(
-            Q(guest_first_name__icontains=query)
-            | Q(guest_last_name__icontains=query)
-            | Q(guest_email__icontains=query)
-            | Q(guest_phone__icontains=query)
-            | Q(public_reference__icontains=query)
-            | Q(property__name_ar__icontains=query)
-            | Q(property__name_en__icontains=query)
-        )
-    return render(
-        request,
-        "admin/reservations/cancellation_list.html",
-        {
-            "title": "طلبات الإلغاء والاسترداد",
-            "cancellations": cancellations.order_by("-requested_at")[:100],
-            "manual_drafts": manual_drafts.order_by("-created_at")[:100],
-            "status": status,
-            "query": query,
-            "status_options": BookingModificationRequest.Status.choices,
-        },
-    )
+    return booking_list(request)
 
 
 @staff_member_required
@@ -808,9 +860,7 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                         approved_refund_amount=execution_form.cleaned_data[
                             "approved_refund_amount"
                         ],
-                        refund_decision_note=execution_form.cleaned_data[
-                            "refund_decision_note"
-                        ],
+                        refund_decision_note="",
                     )
                     if outcome.code == "completed":
                         record_audit(

@@ -168,6 +168,16 @@ class WhatsAppDelivery(models.Model):
         "reservations.Reservation",
         on_delete=models.PROTECT,
         related_name="accounting_whatsapp_delivery",
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    modification_request = models.OneToOneField(
+        "reservations.BookingModificationRequest",
+        on_delete=models.PROTECT,
+        related_name="accounting_whatsapp_delivery",
+        null=True,
+        blank=True,
         editable=False,
     )
     recipient_masked = models.CharField(max_length=40, editable=False)
@@ -189,6 +199,12 @@ class WhatsAppDelivery(models.Model):
         indexes = [
             models.Index(fields=["status", "queued_at"]),
             models.Index(fields=["message_type", "-created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(reservation__isnull=False) | Q(modification_request__isnull=False),
+                name="whatsapp_delivery_has_subject",
+            ),
         ]
         verbose_name = _("WhatsApp delivery")
         verbose_name_plural = _("WhatsApp deliveries")

@@ -629,3 +629,22 @@ body.login .errornote { border-radius: 10px; }
 .lsa-cancellation-list__cards { display: none; }
 .lsa-manual-payment-next { display: grid; gap: 10px; margin-top: 22px; padding: 18px; border: 1px solid #dbc993; border-radius: 15px; background: #fffaf0; }.lsa-manual-payment-next > span { color: #9b7533; font-size: 10px; font-weight: 800; letter-spacing: .08em; }.lsa-manual-payment-next h2,.lsa-manual-payment-next p { margin: 0; }.lsa-manual-payment-next h2 { color: var(--lsa-ink); font-size: 20px; }.lsa-manual-payment-next p { color: var(--lsa-muted); font-size: 12px; line-height: 1.7; }.lsa-manual-payment-next > .lsa-btn { width: 100%; min-height: 48px; box-sizing: border-box; text-align: center; }.lsa-manual-payment-next__coming { padding: 11px 12px; color: #6c5b38; border-radius: 10px; background: #f4ecdc; font-size: 11px; line-height: 1.7; }
 @media (max-width: 767px) { .lsa-manual-booking-form__submit { width: 100%; min-height: 54px; }.lsa-manual-offers { grid-template-columns: 1fr; }.lsa-manual-offer { min-height: 122px; padding: 17px; }.lsa-manual-offer__name { font-size: 15px; }.lsa-manual-draft-list__table,.lsa-cancellation-list__table { display: none; }.lsa-manual-draft-list__cards,.lsa-cancellation-list__cards { display: grid; gap: 12px; }.lsa-manual-draft-search { display: grid; grid-template-columns: 1fr; gap: 10px; }.lsa-manual-draft-search label { display: grid; gap: 6px; }.lsa-manual-draft-search button { min-height: 42px; } }
+
+/* The reservations page is intentionally a single, compact decision surface. */
+.lsa-booking-list-screen .lsa-page-head__actions { align-items: center; }
+.lsa-booking-list-screen .lsa-page-head .lsa-btn { min-height: 50px; padding-inline: 22px; font-size: 14px; box-shadow: 0 10px 22px rgba(185,145,70,.2); }
+.lsa-booking-list__search { padding-block: 13px; }
+.lsa-booking-list__panel { overflow: hidden; }
+.lsa-booking-list__table table { min-width: 650px; }
+.lsa-booking-list__table th,.lsa-booking-list__table td { padding: 14px 16px; }
+.lsa-booking-list__guest b { font-size: 14px; }.lsa-booking-list__guest small { font-size: 11px; }
+.lsa-booking-status { display: inline-flex; min-width: 120px; justify-content: center; padding: 7px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.lsa-booking-status--completed { color: #216b4f; background: #e2f3e9; }
+.lsa-booking-status--awaiting_payment { color: #7a5a1d; background: #fbefcf; }
+.lsa-booking-status--cancelled { color: #8f403f; background: #f9e3e0; }
+.lsa-refund-choice { display: grid; gap: 12px; margin-top: 15px; padding: 16px; border: 1px solid #ddcfb3; border-radius: 14px; background: #fffaf0; }
+.lsa-refund-choice__presets { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.lsa-refund-choice__presets button { min-height: 48px; padding: 8px 12px; color: #214b3d; border: 1px solid #d4bd88; border-radius: 10px; background: #fffdf8; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
+.lsa-refund-choice__presets button:hover { border-color: #98732f; background: #fff2d4; }
+.lsa-owner-action--payment { border-color: #d8c287; background: #fffaf0; }.lsa-owner-action--payment h2 { color: #755820; }.lsa-owner-action--cancel { border-color: #e4b8b5; }
+@media (max-width: 767px) { .lsa-booking-list-screen .lsa-page-head .lsa-btn { width: 100%; margin-top: 14px; }.lsa-refund-choice__presets { grid-template-columns: 1fr; }.lsa-booking-status { min-width: 0; font-size: 11px; } }

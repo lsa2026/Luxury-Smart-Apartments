@@ -6,7 +6,7 @@
     <div>
       <span class="lsa-kicker"><i></i> إدارة حجز</span>
       <h1>{% if reservation.booking_intent %}{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}{% else %}حجز قائم{% endif %}</h1>
-      <p>{{ reservation.property|default:"—" }} · <span dir="ltr">{{ reservation.check_in }} → {{ reservation.check_out }}</span> · <span dir="ltr">{{ reservation.total_price }} {{ reservation.currency }}</span></p>
+      <p>{{ reservation.property|default:"—" }} · <span dir="ltr">{{ reservation.check_in }} → {{ reservation.check_out }}</span> · <span dir="ltr">{{ reservation.total_price|floatformat:2 }} {{ reservation.currency }}</span></p>
     </div>
     <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">كل الحجوزات</a>
   </section>
@@ -21,7 +21,6 @@
       <div class="lsa-owner-form__grid">
         {% for field in date_form %}{% if field.name != "reason" %}<label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
       </div>
-      {% for field in date_form %}{% if field.name == "reason" %}<label class="lsa-owner-field lsa-owner-field--note"><span>ملاحظة للتعديل <small>اختيارية</small></span>{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
       <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">فحص السعر والتوفر</button>
     </form>
   </section>
@@ -31,8 +30,7 @@
     {% for item in pending_adjustments %}
       <div class="lsa-owner-request">
         <b>{{ item.get_request_type_display }}</b> · <span dir="ltr">{{ item.old_check_in }} → {{ item.new_check_in|default:item.old_check_in }} / {{ item.old_check_out }} → {{ item.new_check_out|default:item.old_check_out }}</span><br>
-        <span>فرق السعر: <b dir="ltr">{{ item.price_difference }} {{ item.currency }}</b> · {{ item.get_status_display }}</span>
-        {% if item.price_difference > 0 and item.status == "awaiting_payment" %}<p class="help">فرق السعر جاهز. سيتم ربط زر إرسال رابط الدفع عبر WhatsApp فور اعتماد واجهة HyperPay المخصصة.</p>{% endif %}
+        <span>فرق السعر: <b dir="ltr">{{ item.price_difference|floatformat:2 }} {{ item.currency }}</b> · {{ item.get_status_display }}</span>
       </div>
     {% endfor %}
   </section>
@@ -47,10 +45,24 @@
     </form>
   </section>
   {% endif %}
+  {% if increase_adjustment %}
+  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
+    <h2>فرق زيادة يحتاج إلى دفع</h2>
+    <p>الإجمالي الجديد <b dir="ltr">{{ increase_adjustment.new_total|floatformat:2 }} {{ increase_adjustment.currency }}</b>، والفرق المطلوب تحصيله <b dir="ltr">{{ increase_adjustment.price_difference|floatformat:2 }} {{ increase_adjustment.currency }}</b>.</p>
+    {% if increase_delivery and increase_delivery.status == "sent" %}
+      <p class="help">تم إرسال طلب إنشاء رابط الدفع إلى أسيل. لن تُرسل رسالة أخرى لهذا التعديل.</p>
+    {% elif increase_delivery and increase_delivery.status == "failed" %}
+      <p class="help">تعذر إرسال الطلب سابقًا. راجع سجل WhatsApp قبل إعادة المحاولة يدويًا.</p>
+    {% else %}
+      <form method="post" class="lsa-owner-form">{% csrf_token %}<input type="hidden" name="action" value="send_modification_payment_link_request"><input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}"><button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إرسال طلب تكوين رابط الدفع إلى أسيل</button></form>
+    {% endif %}
+    <p class="help">بعد تسجيل الدفع في HyperPay يُنفّذ التعديل على Hostaway وفق مسار التعديل المعتمد.</p>
+  </section>
+  {% endif %}
   <section class="lsa-panel lsa-manual-booking__delete">
     <h2>إلغاء الحجز</h2>
-    <p class="help">اختر مبلغ الاسترداد في الخطوة التالية: لا شيء، جزء من المبلغ، أو كامل المبلغ.</p>
-    <form method="post" class="lsa-owner-form lsa-owner-cancellation">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><label class="lsa-owner-field lsa-owner-field--note"><span>ملاحظة <small>اختيارية</small></span><textarea name="reason" rows="2" placeholder="أي توضيح داخلي للحجز"></textarea></label><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">بدء إلغاء الحجز</button></form>
+    <p class="help">اضغط الإلغاء ثم اختر كامل المبلغ أو صفرًا أو مبلغًا مخصصًا. لا يلزم إدخال سبب.</p>
+    <form method="post" class="lsa-owner-form lsa-owner-cancellation">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز</button></form>
   </section>
 </main>
 {% endblock %}
