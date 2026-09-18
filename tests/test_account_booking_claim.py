@@ -132,6 +132,93 @@ def test_the_attached_booking_then_appears_on_the_dashboard() -> None:
     assert reservation.public_reference in content
 
 
+def test_dashboard_groups_only_the_signed_in_guests_booking_history() -> None:
+    guest = User.objects.create_user(
+        username="guest@example.invalid",
+        email="guest@example.invalid",
+        password="Correct-Horse-Battery-2026",
+    )
+    another_guest = User.objects.create_user(
+        username="other@example.invalid",
+        email="other@example.invalid",
+        password="Correct-Horse-Battery-2026",
+    )
+    upcoming = make_reservation("LSA-UPCOMING")
+    past = make_reservation("LSA-PAST")
+    cancelled = make_reservation("LSA-CANCELLED")
+    hidden = make_reservation("LSA-OTHER")
+    for reservation in (upcoming, past, cancelled):
+        reservation.booking_intent.customer = guest
+        reservation.booking_intent.save(update_fields=["customer"])
+    hidden.booking_intent.customer = another_guest
+    hidden.booking_intent.save(update_fields=["customer"])
+    past.check_in = timezone.localdate() - timezone.timedelta(days=5)
+    past.check_out = timezone.localdate() - timezone.timedelta(days=3)
+    past.save(update_fields=["check_in", "check_out"])
+    cancelled.normalized_status = Reservation.Status.CANCELLED
+    cancelled.cancelled_at = timezone.now()
+    cancelled.save(update_fields=["normalized_status", "cancelled_at"])
+
+    client = Client()
+    assert client.login(username=guest.username, password="Correct-Horse-Battery-2026")
+    response = client.get("/my-bookings/")
+
+    assert response.status_code == 200
+    assert list(response.context["upcoming_reservations"]) == [upcoming]
+    assert list(response.context["past_reservations"]) == [past]
+    assert list(response.context["cancelled_reservations"]) == [cancelled]
+    assert hidden.public_reference not in response.content.decode()
+
+
+def test_guest_can_save_contact_and_residence_details_from_dashboard() -> None:
+    guest = User.objects.create_user(
+        username="guest@example.invalid",
+        email="guest@example.invalid",
+        password="Correct-Horse-Battery-2026",
+    )
+    client = Client()
+    assert client.login(username=guest.username, password="Correct-Horse-Battery-2026")
+
+    response = client.post(
+        "/my-bookings/",
+        {
+            "first_name": "Layla",
+            "last_name": "Guest",
+            "phone": "+966 50 123 4567",
+            "residence_address_line1": "King Fahd Road 1",
+            "residence_city": "Riyadh",
+            "residence_region": "Riyadh Region",
+            "residence_postal_code": "12211",
+            "residence_country": "Saudi Arabia",
+        },
+    )
+
+    assert response.status_code == 302
+    guest.refresh_from_db()
+    profile = profile_for(guest)
+    assert guest.first_name == "Layla"
+    assert guest.last_name == "Guest"
+    assert profile.phone == "+966501234567"
+    assert profile.residence_city == "Riyadh"
+    assert profile.residence_country == "Saudi Arabia"
+
+
+def test_guest_profile_rejects_an_ambiguous_phone_number() -> None:
+    guest = User.objects.create_user(
+        username="guest@example.invalid",
+        email="guest@example.invalid",
+        password="Correct-Horse-Battery-2026",
+    )
+    client = Client()
+    assert client.login(username=guest.username, password="Correct-Horse-Battery-2026")
+
+    response = client.post("/my-bookings/", {"phone": "0501234567"})
+
+    assert response.status_code == 200
+    assert "phone" in response.context["profile_form"].errors
+    assert profile_for(guest).phone == ""
+
+
 def test_a_matching_email_alone_never_attaches_a_booking() -> None:
     """The security case: registering with a guest's address proves nothing."""
     reservation = make_reservation()

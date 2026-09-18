@@ -35,6 +35,29 @@ class CustomerProfile(models.Model):
         blank=True,
         verbose_name=_("Verification sent at"),
     )
+    # Contact and residence information belongs to the guest's profile rather
+    # than to an individual stay.  This keeps a returning guest in control of
+    # their current details and avoids copying personal data across bookings.
+    phone = models.CharField(max_length=32, blank=True, verbose_name=_("Phone number"))
+    residence_address_line1 = models.CharField(
+        max_length=250,
+        blank=True,
+        verbose_name=_("Residence address"),
+    )
+    residence_city = models.CharField(max_length=120, blank=True, verbose_name=_("Residence city"))
+    residence_region = models.CharField(
+        max_length=120, blank=True, verbose_name=_("Residence region")
+    )
+    residence_postal_code = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name=_("Residence postal code"),
+    )
+    residence_country = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Residence country"),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -6,36 +6,72 @@
 {% block content %}
 <header class="page-hero page-hero--compact account-hero">
     <div class="container account-hero__inner">
-        <div><p class="eyebrow">{% trans "Private account" %}</p><h1>{% trans "My bookings" %}</h1><p>{% trans "Welcome" %} {{ request.user.first_name|default:request.user.email }}</p></div>
+        <div>
+            <p class="eyebrow">{% trans "Private account" %}</p>
+            <h1>{% trans "My bookings" %}</h1>
+            <p>{% trans "Welcome" %} {{ request.user.first_name|default:request.user.email }}</p>
+        </div>
         <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="button button--ghost" type="submit">{% trans "Sign out" %}</button></form>
     </div>
 </header>
+
 <section class="section container account-dashboard">
-    {% if reservations %}
-    <div class="booking-list">
-        {% for reservation in reservations %}
-        <article class="booking-list-card">
-            <div class="booking-list-card__heading">
-                <div><p class="eyebrow">{% trans "Booking" %}</p><h2>{{ reservation.property|localized_property_name }}</h2></div>
-                <span class="status-pill status-pill--{{ reservation.normalized_status|reservation_status_tone }}">{{ reservation.normalized_status|localized_reservation_status }}</span>
+    <div class="guest-profile-layout">
+        <article class="guest-profile-card">
+            <div class="guest-profile-card__heading">
+                <div>
+                    <p class="eyebrow">ملف الضيف</p>
+                    <h2>بياناتك ومكان إقامتك</h2>
+                    <p>حدّث بياناتك لتبقى حجوزاتك وخدماتك المستقبلية في مكان واحد.</p>
+                </div>
+                <span class="guest-profile-card__badge">حساب خاص</span>
             </div>
-            {% if reservation.is_test %}<p class="sandbox-chip">{% trans "Test booking — no live booking" %}</p>{% endif %}
-            <p class="payment-state{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %} payment-state--paid{% endif %}">
-                <span aria-hidden="true">{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %}✓{% else %}◷{% endif %}</span>
-                {{ reservation.payment_status|localized_payment_status }}
-            </p>
-            <dl class="quote-summary">
-                <div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|localized_date }}</dd></div>
-                <div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|localized_date }}</dd></div>
-                <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests|localized_number }}</dd></div>
-                <div><dt>{% trans "Total" %}</dt><dd>{{ reservation.total_price|format_money:reservation.currency }}</dd></div>
-            </dl>
-            <a class="button" href="{% url 'reservations:manage' reservation.public_reference %}">{% trans "Manage booking" %}</a>
+            <form method="post" class="guest-profile-form" novalidate>
+                {% csrf_token %}
+                {% if profile_form.non_field_errors %}<div class="form-errors">{{ profile_form.non_field_errors }}</div>{% endif %}
+                <div class="guest-profile-form__grid">
+                    <div class="field-group"><label for="{{ profile_form.first_name.id_for_label }}">{{ profile_form.first_name.label }}</label>{{ profile_form.first_name }}{{ profile_form.first_name.errors }}</div>
+                    <div class="field-group"><label for="{{ profile_form.last_name.id_for_label }}">{{ profile_form.last_name.label }}</label>{{ profile_form.last_name }}{{ profile_form.last_name.errors }}</div>
+                    <div class="field-group">
+                        <label for="account-email">{% trans "Email" %}</label>
+                        <input id="account-email" type="email" value="{{ request.user.email }}" autocomplete="email" readonly aria-describedby="account-email-help">
+                        <small id="account-email-help" class="helptext">بريد الدخول محمي؛ يتطلب تغييره التحقق من البريد الجديد.</small>
+                    </div>
+                    <div class="field-group"><label for="{{ profile_form.phone.id_for_label }}">{{ profile_form.phone.label }}</label>{{ profile_form.phone }}{{ profile_form.phone.errors }}</div>
+                    <div class="field-group guest-profile-form__full"><label for="{{ profile_form.residence_address_line1.id_for_label }}">{{ profile_form.residence_address_line1.label }}</label>{{ profile_form.residence_address_line1 }}{{ profile_form.residence_address_line1.errors }}</div>
+                    <div class="field-group"><label for="{{ profile_form.residence_city.id_for_label }}">{{ profile_form.residence_city.label }}</label>{{ profile_form.residence_city }}{{ profile_form.residence_city.errors }}</div>
+                    <div class="field-group"><label for="{{ profile_form.residence_region.id_for_label }}">{{ profile_form.residence_region.label }}</label>{{ profile_form.residence_region }}{{ profile_form.residence_region.errors }}</div>
+                    <div class="field-group"><label for="{{ profile_form.residence_postal_code.id_for_label }}">{{ profile_form.residence_postal_code.label }}</label>{{ profile_form.residence_postal_code }}{{ profile_form.residence_postal_code.errors }}</div>
+                    <div class="field-group"><label for="{{ profile_form.residence_country.id_for_label }}">{{ profile_form.residence_country.label }}</label>{{ profile_form.residence_country }}{{ profile_form.residence_country.errors }}</div>
+                </div>
+                <button class="button" type="submit">حفظ بياناتي</button>
+            </form>
         </article>
-        {% endfor %}
+
+        <aside class="loyalty-preview" aria-label="برنامج الولاء قريبًا">
+            <p class="eyebrow">قريبًا</p>
+            <h2>برنامج الولاء</h2>
+            <p>سيُبنى رصيدك ومزاياك على إقاماتك المؤكدة. لا توجد نقاط أو خصومات صورية قبل إطلاق البرنامج.</p>
+        </aside>
     </div>
-    {% else %}
-    <div class="empty-state account-empty"><p class="eyebrow">{% trans "No bookings yet" %}</p><h2>{% trans "Your next stay starts here" %}</h2><p>{% trans "Bookings made while signed in will appear here automatically." %}</p><a class="button" href="{% url 'properties:list' %}#property-search">{% trans "Explore apartments" %}</a></div>
-    {% endif %}
+
+    <section class="account-booking-section" aria-labelledby="upcoming-bookings-heading">
+        <div class="account-section-heading"><div><p class="eyebrow">إقاماتك</p><h2 id="upcoming-bookings-heading">الحجوزات القادمة والحالية</h2></div><span>{{ upcoming_reservations|length }}</span></div>
+        {% if upcoming_reservations %}
+            <div class="booking-list">{% for reservation in upcoming_reservations %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>
+        {% else %}
+            <div class="empty-state account-empty"><p class="eyebrow">لا توجد إقامة قادمة</p><h3>إقامتك التالية تبدأ من هنا</h3><p>تظهر الحجوزات التي تُنشأ بحسابك هنا تلقائيًا.</p><a class="button" href="{% url 'properties:list' %}#property-search">{% trans "Explore apartments" %}</a></div>
+        {% endif %}
+    </section>
+
+    <section class="account-booking-section" aria-labelledby="past-bookings-heading">
+        <div class="account-section-heading"><div><p class="eyebrow">السجل</p><h2 id="past-bookings-heading">الإقامات السابقة</h2></div><span>{{ past_reservations|length }}</span></div>
+        {% if past_reservations %}<div class="booking-list">{% for reservation in past_reservations %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>{% else %}<p class="account-section-empty">لا توجد إقامات مكتملة بعد.</p>{% endif %}
+    </section>
+
+    <section class="account-booking-section" aria-labelledby="cancelled-bookings-heading">
+        <div class="account-section-heading account-section-heading--cancelled"><div><p class="eyebrow">السجل</p><h2 id="cancelled-bookings-heading">الحجوزات الملغاة</h2></div><span>{{ cancelled_reservations|length }}</span></div>
+        {% if cancelled_reservations %}<div class="booking-list">{% for reservation in cancelled_reservations %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>{% else %}<p class="account-section-empty">لا توجد حجوزات ملغاة.</p>{% endif %}
+    </section>
 </section>
 {% endblock %}

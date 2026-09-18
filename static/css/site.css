@@ -1909,6 +1909,87 @@ h2 {
     gap: 1.25rem;
 }
 
+.guest-profile-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(15rem, 0.65fr);
+    align-items: start;
+    gap: 1.25rem;
+    margin-block-end: clamp(2.5rem, 6vw, 5rem);
+}
+
+.guest-profile-card,
+.loyalty-preview {
+    min-width: 0;
+    padding: clamp(1.35rem, 4vw, 2.5rem);
+    border: 1px solid rgb(215 173 98 / 24%);
+    border-radius: clamp(1.1rem, 2vw, 1.75rem);
+    box-shadow: 0 24px 70px rgb(21 13 54 / 10%);
+}
+
+.guest-profile-card { background: linear-gradient(145deg, #fff, #fbf8f1); }
+
+.guest-profile-card__heading,
+.account-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.guest-profile-card__heading h2,
+.loyalty-preview h2,
+.account-section-heading h2 { margin: 0; }
+
+.guest-profile-card__heading p:not(.eyebrow),
+.loyalty-preview p:not(.eyebrow) { color: var(--color-muted); }
+
+.guest-profile-card__badge,
+.account-section-heading > span {
+    display: inline-grid;
+    min-width: 2.3rem;
+    min-height: 2.3rem;
+    padding: 0.45rem 0.7rem;
+    place-items: center;
+    color: #6b4b0f;
+    background: #fff4d4;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.guest-profile-form { margin-block-start: 1.75rem; }
+
+.guest-profile-form__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-block-end: 1.25rem;
+}
+
+.guest-profile-form__full { grid-column: 1 / -1; }
+
+.loyalty-preview {
+    color: #fff;
+    background:
+        radial-gradient(circle at 100% 0%, rgb(215 173 98 / 26%), transparent 42%),
+        linear-gradient(145deg, #160d39, #082f2e);
+}
+
+.loyalty-preview .eyebrow { color: #d7ad62; }
+.loyalty-preview p:not(.eyebrow) { color: rgb(255 255 255 / 75%); }
+
+.account-booking-section { margin-block: clamp(2.25rem, 5vw, 4.25rem); }
+.account-section-heading { margin-block-end: 1.15rem; }
+.account-section-heading--cancelled > span { color: #9c2f2f; background: #fff0ef; }
+
+.account-section-empty {
+    padding: 1rem 1.15rem;
+    color: var(--color-muted);
+    background: #fbf8f1;
+    border-radius: var(--radius-sm);
+}
+
 .booking-list-card .button {
     width: 100%;
 }
@@ -2030,7 +2111,9 @@ h2 {
 
 @media (max-width: 48rem) {
     .booking-list,
-    .sandbox-checkout-grid {
+    .sandbox-checkout-grid,
+    .guest-profile-layout,
+    .guest-profile-form__grid {
         grid-template-columns: 1fr;
     }
 
@@ -2044,6 +2127,8 @@ h2 {
     .account-hero__inner .button {
         width: 100%;
     }
+
+    .guest-profile-form__full { grid-column: auto; }
 }
 
 @media (max-width: 36rem) {

@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
@@ -17,9 +16,10 @@ from apps.reservations.security import is_rate_limited
 
 from .emails import queue_verification_email, queue_welcome_email
 from .forms import (
+    CustomerProfileForm,
     CustomerRegistrationForm,
-    EmailVerificationCodeForm,
     EmailCodeRequestForm,
+    EmailVerificationCodeForm,
 )
 from .models import profile_for
 from .services import (
@@ -297,12 +297,56 @@ class LogoutView(View):
 
 @login_required(login_url="accounts:login")
 def dashboard(request: HttpRequest) -> HttpResponse:
-    reservations = (
-        Reservation.objects.select_related("property", "booking_intent")
-        .filter(booking_intent__customer=request.user)
-        .order_by("-created_at")
+    profile = profile_for(request.user)
+    profile_form = CustomerProfileForm(user=request.user, profile=profile)
+    if request.method == "POST":
+        profile_form = CustomerProfileForm(request.POST, user=request.user, profile=profile)
+        if profile_form.is_valid():
+            request.user.first_name = profile_form.cleaned_data["first_name"]
+            request.user.last_name = profile_form.cleaned_data["last_name"]
+            request.user.save(update_fields=["first_name", "last_name"])
+            for field in (
+                "phone",
+                "residence_address_line1",
+                "residence_city",
+                "residence_region",
+                "residence_postal_code",
+                "residence_country",
+            ):
+                setattr(profile, field, profile_form.cleaned_data[field])
+            profile.save()
+            messages.success(request, _("Your guest profile has been saved."))
+            return redirect("accounts:dashboard")
+
+    reservations = Reservation.objects.select_related("property", "booking_intent").filter(
+        booking_intent__customer=request.user
     )
-    return render(request, "accounts/dashboard.html", {"reservations": reservations})
+    today = timezone.localdate()
+    closed_statuses = Reservation.CLOSED_STATUSES
+    upcoming_reservations = (
+        reservations.exclude(normalized_status__in=closed_statuses)
+        .filter(check_out__gte=today)
+        .order_by("check_in", "created_at")
+    )
+    past_reservations = (
+        reservations.exclude(normalized_status__in=closed_statuses)
+        .filter(check_out__lt=today)
+        .order_by("-check_out", "-created_at")
+    )
+    cancelled_reservations = reservations.filter(
+        normalized_status=Reservation.Status.CANCELLED,
+    ).order_by("-cancelled_at", "-created_at")
+    return render(
+        request,
+        "accounts/dashboard.html",
+        {
+            "profile": profile,
+            "profile_form": profile_form,
+            "upcoming_reservations": upcoming_reservations,
+            "past_reservations": past_reservations,
+            "cancelled_reservations": cancelled_reservations,
+        },
+    )
 
 
 def verify_email(request: HttpRequest, token: str) -> HttpResponse:
@@ -367,16 +411,20 @@ def verify_email_code(request: HttpRequest) -> HttpResponse:
     profile = profile_for(user)
     copy = _verification_copy(request)
     form = EmailVerificationCodeForm(request.POST)
-    if is_rate_limited(
-        request,
-        scope="account-email-verification-code",
-        requests=5,
-        window=settings.ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS,
-    ) or not form.is_valid() or not verification_code_is_valid(
-        user_pk=user.pk,
-        email=user.email,
-        issued_at=profile.verification_sent_at,
-        submitted_code=form.cleaned_data.get("code", ""),
+    if (
+        is_rate_limited(
+            request,
+            scope="account-email-verification-code",
+            requests=5,
+            window=settings.ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS,
+        )
+        or not form.is_valid()
+        or not verification_code_is_valid(
+            user_pk=user.pk,
+            email=user.email,
+            issued_at=profile.verification_sent_at,
+            submitted_code=form.cleaned_data.get("code", ""),
+        )
     ):
         if "code" not in form.errors:
             form.add_error("code", copy["invalid"])
