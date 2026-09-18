@@ -167,7 +167,10 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
     )
     assert creation.draft is not None
 
+    captured: dict[str, object] = {}
+
     def fake_create(*, property_obj, check_in, check_out, guests, actor):
+        captured["guests"] = guests
         return creation
 
     monkeypatch.setattr(
@@ -182,7 +185,6 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
             "property": property_obj.pk,
             "check_in": available.quote.check_in.isoformat(),
             "check_out": available.quote.check_out.isoformat(),
-            "guests": available.quote.guests,
         },
     )
 
@@ -191,6 +193,7 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
     assert audit.actor_user == actor
     assert audit.object_reference == creation.draft.public_reference
     assert "guest" not in audit.summary.casefold()
+    assert captured["guests"] == 1
 
 
 @override_settings(
@@ -314,6 +317,8 @@ def test_manual_booking_create_screen_exposes_live_calendar_for_each_property():
     assert "data-luxury-calendar" in content
     assert "data-calendar-property-select" in content
     assert "data-manual-property-filter" in content
+    assert "عدد الضيوف" not in content
+    assert "data-manual-property-results" in content
 
 
 @override_settings(
@@ -391,14 +396,23 @@ def test_ready_manual_draft_exposes_a_reviewed_accounting_whatsapp_request():
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
-def test_manual_property_picker_returns_calendar_confirmed_choices(monkeypatch):
+def test_manual_property_picker_returns_live_priced_choices(monkeypatch):
     actor = owner()
     property_obj = make_property()
     client = Client()
     client.force_login(actor)
     monkeypatch.setattr(
         "apps.reservations.operations_views._available_manual_properties",
-        lambda **_kwargs: [{"id": str(property_obj.pk), "name": "وحدة متاحة"}],
+        lambda **_kwargs: [
+            {
+                "id": str(property_obj.pk),
+                "name": "وحدة متاحة",
+                "total_price": "1500.0000",
+                "currency": "SAR",
+                "nights": 2,
+                "average_nightly_price": "750.0000",
+            }
+        ],
     )
 
     response = client.get(
@@ -406,9 +420,9 @@ def test_manual_property_picker_returns_calendar_confirmed_choices(monkeypatch):
         {
             "check_in": (timezone.localdate() + timedelta(days=10)).isoformat(),
             "check_out": (timezone.localdate() + timedelta(days=12)).isoformat(),
-            "guests": "2",
         },
     )
 
     assert response.status_code == 200
-    assert response.json()["properties"] == [{"id": str(property_obj.pk), "name": "وحدة متاحة"}]
+    assert response.json()["properties"][0]["total_price"] == "1500.0000"
+    assert response.json()["properties"][0]["average_nightly_price"] == "750.0000"

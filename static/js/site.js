@@ -944,43 +944,115 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
     const propertyInput = form.querySelector("[data-calendar-property-select]");
     const arrivalInput = form.querySelector("input[name='check_in']");
     const departureInput = form.querySelector("input[name='check_out']");
-    const guestsInput = form.querySelector("input[name='guests']");
     const status = form.querySelector("[data-manual-property-status]");
+    const results = form.querySelector("[data-manual-property-results]");
     const submitButton = form.querySelector(".lsa-manual-booking-form__submit");
     const endpoint = form.dataset.availablePropertiesUrl || "";
     let requestNumber = 0;
 
-    if (!(propertyInput instanceof HTMLSelectElement) || !arrivalInput || !departureInput || !guestsInput || !endpoint) {
+    if (!(propertyInput instanceof HTMLSelectElement) || !arrivalInput || !departureInput || !results || !endpoint) {
         return;
     }
 
-    function setPlaceholder(label, disabled = true) {
+    function setPlaceholder(label, disabled = true, detail = "") {
         propertyInput.replaceChildren(new Option(label, ""));
         propertyInput.disabled = disabled;
         if (submitButton) submitButton.disabled = true;
+        results.replaceChildren();
+        const empty = document.createElement("p");
+        empty.className = "lsa-manual-offers__empty";
+        empty.textContent = detail || label;
+        results.append(empty);
     }
 
     function hasCompleteStay() {
         return arrivalInput.value
             && departureInput.value
-            && departureInput.value > arrivalInput.value
-            && Number(guestsInput.value) >= 1;
+            && departureInput.value > arrivalInput.value;
+    }
+
+    function formatPrice(value, currency) {
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) return `${value} ${currency}`;
+        try {
+            return new Intl.NumberFormat(document.documentElement.lang || "ar", {
+                style: "currency",
+                currency: currency || "SAR",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(numericValue);
+        } catch (_error) {
+            return `${numericValue.toFixed(2)} ${currency}`;
+        }
+    }
+
+    function selectProperty(propertyId) {
+        propertyInput.value = propertyId;
+        results.querySelectorAll("[data-manual-property-choice]").forEach((card) => {
+            const selected = card.dataset.manualPropertyChoice === propertyId;
+            card.classList.toggle("is-selected", selected);
+            card.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+        if (submitButton) submitButton.disabled = !propertyId;
+    }
+
+    function displayOffers(properties, previousSelection) {
+        results.replaceChildren();
+        properties.forEach((property) => {
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "lsa-manual-offer";
+            card.dataset.manualPropertyChoice = String(property.id);
+            card.setAttribute("aria-pressed", "false");
+
+            const name = document.createElement("strong");
+            name.className = "lsa-manual-offer__name";
+            name.textContent = property.name;
+            card.append(name);
+
+            const prices = document.createElement("span");
+            prices.className = "lsa-manual-offer__prices";
+            const total = document.createElement("span");
+            const totalLabel = document.createElement("small");
+            totalLabel.textContent = "إجمالي الفترة";
+            const totalValue = document.createElement("strong");
+            totalValue.textContent = formatPrice(property.total_price, property.currency);
+            total.append(totalLabel, totalValue);
+            const average = document.createElement("span");
+            const averageLabel = document.createElement("small");
+            averageLabel.textContent = "متوسط الليلة";
+            const averageValue = document.createElement("strong");
+            averageValue.textContent = formatPrice(property.average_nightly_price, property.currency);
+            average.append(averageLabel, averageValue);
+            prices.append(total, average);
+            card.append(prices);
+
+            const nights = document.createElement("small");
+            nights.className = "lsa-manual-offer__nights";
+            nights.textContent = `${property.nights} ${Number(property.nights) === 1 ? "ليلة" : "ليالٍ"}`;
+            card.append(nights);
+            card.addEventListener("click", () => selectProperty(String(property.id)));
+            results.append(card);
+        });
+        if (previousSelection && properties.some((property) => String(property.id) === previousSelection)) {
+            selectProperty(previousSelection);
+        }
     }
 
     async function refreshAvailableProperties() {
         const currentRequest = ++requestNumber;
         if (!hasCompleteStay()) {
-            setPlaceholder("اختر التواريخ أولًا");
-            if (status) status.textContent = "اختر التواريخ وعدد الضيوف أولًا لعرض الوحدات المتاحة.";
+            setPlaceholder("اختر التواريخ أولًا", true, "اختر تاريخي الوصول والمغادرة لعرض جميع الشقق المتاحة وأسعارها.");
+            if (status) status.textContent = "اختر تاريخي الوصول والمغادرة أولًا لعرض الشقق والأسعار المتاحة.";
             return;
         }
 
-        setPlaceholder("يتم فحص الوحدات المتاحة…");
-        if (status) status.textContent = "يتم فحص تقويم Hostaway للوحدات المتاحة…";
+        const previousSelection = propertyInput.value;
+        setPlaceholder("يتم فحص الشقق والأسعار…", true, "يتم فحص التوفر والسعر الحالي لكل شقة في Hostaway…");
+        if (status) status.textContent = "يتم فحص التوفر والسعر الحالي لكل شقة في Hostaway…";
         const url = new URL(endpoint, window.location.origin);
         url.searchParams.set("check_in", arrivalInput.value);
         url.searchParams.set("check_out", departureInput.value);
-        url.searchParams.set("guests", guestsInput.value);
 
         try {
             const response = await fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } });
@@ -988,20 +1060,21 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
             if (currentRequest !== requestNumber) return;
             const properties = Array.isArray(payload.properties) ? payload.properties : [];
             if (!response.ok || !properties.length) {
-                setPlaceholder("لا توجد وحدة متاحة لهذه التواريخ");
+                setPlaceholder("لا توجد شقق متاحة لهذه التواريخ");
                 if (status) status.textContent = response.ok
-                    ? "لا توجد وحدة متاحة لهذه التواريخ وعدد الضيوف. جرّب تواريخ أخرى."
-                    : "تعذر فحص الوحدات الآن. حاول مرة أخرى بعد قليل.";
+                    ? "لا توجد شقق متاحة أو قابلة للتسعير لهذه التواريخ. جرّب تواريخ أخرى."
+                    : "تعذر فحص الشقق والأسعار الآن. حاول مرة أخرى بعد قليل.";
                 return;
             }
-            propertyInput.replaceChildren(new Option("اختر الوحدة المتاحة", ""));
+            propertyInput.replaceChildren(new Option("اختر الشقة من العروض", ""));
             properties.forEach((property) => propertyInput.add(new Option(property.name, property.id)));
             propertyInput.disabled = false;
             if (submitButton) submitButton.disabled = true;
-            if (status) status.textContent = `تم العثور على ${properties.length} وحدة متاحة. اختر الوحدة لإكمال الفحص والسعر.`;
+            displayOffers(properties, previousSelection);
+            if (status) status.textContent = `تم العثور على ${properties.length} شقق متاحة مع أسعارها. اختر الشقة التي وافق عليها الضيف.`;
         } catch (_error) {
             if (currentRequest !== requestNumber) return;
-            setPlaceholder("تعذر فحص الوحدات الآن");
+            setPlaceholder("تعذر فحص الشقق الآن");
             if (status) status.textContent = "تعذر الاتصال بـ Hostaway الآن. حاول مرة أخرى بعد قليل.";
         }
     }
@@ -1011,9 +1084,9 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
     } else {
         setPlaceholder("اختر التواريخ أولًا");
     }
-    [arrivalInput, departureInput, guestsInput].forEach((input) => input.addEventListener("change", refreshAvailableProperties));
+    [arrivalInput, departureInput].forEach((input) => input.addEventListener("change", refreshAvailableProperties));
     propertyInput.addEventListener("change", () => {
-        if (submitButton) submitButton.disabled = !propertyInput.value;
+        selectProperty(propertyInput.value);
     });
 });
 

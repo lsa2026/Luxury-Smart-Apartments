@@ -12,7 +12,7 @@
     <div>
       <span class="lsa-kicker"><i></i> فحص حي من Hostaway</span>
       <h1>حجز يدوي جديد</h1>
-      <p>ابدأ بالتواريخ وعدد الضيوف، ثم اختر من الوحدات المتاحة فعليًا في Hostaway. لن تُنشأ مسودة قبل نجاح فحص التوفر والسعر.</p>
+      <p>اختر التواريخ أولًا، ثم راجع كل الشقق المتاحة مع إجمالي الفترة ومتوسط سعر الليلة قبل اختيار الشقة المناسبة للضيف.</p>
     </div>
     <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:manual_booking_list' %}">كل المسودات</a>
   </section>
@@ -35,24 +35,19 @@
             </button>
             {{ field.errors }}
           </div>
-          {% elif field.name == "guests" %}
-          <div class="form-row lsa-manual-booking-form__guests">
-            {{ field.label_tag }}
-            {{ field }}
-            {{ field.errors }}
-          </div>
           {% endif %}
         {% endfor %}
-        <div class="form-row lsa-manual-booking-form__property">
-          {{ form.property.label_tag }}
-          {{ form.property }}
+        <div class="form-row lsa-manual-booking-form__property" data-manual-property-results-wrap>
+          <span class="lsa-manual-offers__label">الشقق المتاحة لهذه الفترة</span>
+          <div class="lsa-manual-offers" data-manual-property-results aria-live="polite"></div>
+          <div hidden>{{ form.property.label_tag }}{{ form.property }}</div>
           {{ form.property.errors }}
-          <small class="help" data-manual-property-status aria-live="polite">اختر التواريخ وعدد الضيوف أولًا لعرض الوحدات المتاحة.</small>
-          <small class="help" data-calendar-property-summary>يمكنك مراجعة تقويم الوحدة بعد اختيارها.</small>
+          <small class="help" data-manual-property-status aria-live="polite">اختر تاريخي الوصول والمغادرة لعرض الشقق والأسعار المتاحة.</small>
+          <small class="help" data-calendar-property-summary>الأسعار المعروضة حية من Hostaway، ويُعاد التحقق منها عند حفظ المسودة.</small>
         </div>
       </div>
-      <p class="help">مصدر الحقيقة هو Hostaway: تُعرض الوحدات المتاحة بعد اختيار التواريخ، ويُعاد فحص التوفر والسعر قبل حفظ المسودة.</p>
-      <button class="lsa-btn lsa-btn--gold lsa-manual-booking-form__submit" type="submit">فحص التوفر والسعر</button>
+      <p class="help">نستخدم ضيفًا واحدًا افتراضيًا في هذه المرحلة؛ لا تُنشأ مسودة ولا حجز في Hostaway قبل اختيار شقة والمتابعة.</p>
+      <button class="lsa-btn lsa-btn--gold lsa-manual-booking-form__submit" type="submit">متابعة بهذه الشقة</button>
 
       {{ calendar_urls|json_script:"manual-booking-calendar-urls" }}
       <dialog class="lsa-manual-booking-calendar" data-luxury-calendar data-calendar-availability-map-id="manual-booking-calendar-urls" data-choose-label="اختر التاريخ" data-arrival-label="الوصول" data-departure-label="المغادرة" data-arrival-help="اختر يوم الوصول." data-departure-help="اختر يوم المغادرة." data-selected-help="التواريخ جاهزة لعرض الوحدات المتاحة." data-night-label="ليلة" data-nights-label="ليالٍ" data-unavailable-label="غير متاح" data-calendar-loading-label="يتم تحميل التوفر المباشر…" data-calendar-ready-label="الأيام غير المتاحة موضحة في التقويم." data-calendar-fallback-label="سيُعاد فحص التوفر قبل حفظ المسودة." data-calendar-no-property-label="اختر التواريخ أولًا، ثم ستظهر الوحدات المتاحة." aria-label="اختر تواريخ الإقامة">

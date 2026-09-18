@@ -28,14 +28,14 @@ from .manual_bookings import (
     finalize_manual_booking_draft,
     recheck_manual_booking_draft,
 )
-from .modification_forms import DateChangeRequestForm
 from .models import (
     BookingModificationRequest,
     BookingQuote,
     ManualBookingDraft,
-    Reservation,
     RefundObligation,
+    Reservation,
 )
+from .modification_forms import DateChangeRequestForm
 from .operations_forms import (
     CancellationDecisionForm,
     CancellationExecutionForm,
@@ -50,7 +50,7 @@ from .operations_forms import (
     RefundSettlementForm,
 )
 from .services.automatic_modifications import execute_automatic_modification
-from .services.availability import AVAILABLE, AvailabilityService, evaluate_calendar
+from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.modifications import ModificationService
 from .services.refunds import cancellation_refund
 
@@ -136,45 +136,46 @@ def _available_manual_properties(
     *,
     check_in: date,
     check_out: date,
-    guests: int,
-) -> list[dict[str, str]]:
-    """Return calendar-confirmed property choices for the date-first picker.
+) -> list[dict[str, str | int]]:
+    """Return live, priced offers for the date-first owner flow.
 
-    The final draft save still verifies availability and authoritative pricing
-    for the selected property before it creates or updates any local draft.
+    The owner begins by answering a guest's date enquiry, so every result must
+    include Hostaway's current period total and the derived nightly average.
+    Saving the selected offer still rechecks live availability and price before
+    it creates a local draft.
     """
 
-    available: list[dict[str, str]] = []
+    available: list[dict[str, str | int]] = []
     properties = Property.objects.filter(
         is_visible=True,
         hostaway_is_active=True,
     ).order_by("city_ar", "name_ar", "name_en")
     with AvailabilityService() as service:
         for property_obj in properties:
-            if (
-                property_obj.person_capacity is not None
-                and guests > property_obj.person_capacity
-            ):
-                continue
-            try:
-                calendar = service.fetch_calendar(
-                    property_obj=property_obj,
-                    start_date=check_in,
-                    end_date=check_out,
-                    bypass_cache=False,
-                )
-            except Exception:
-                # Never offer a unit whose live calendar cannot be read.
-                continue
-            if (
-                evaluate_calendar(
-                    calendar.document.days,
+            availability = service.check(
+                AvailabilityRequest(
+                    property=property_obj,
                     check_in=check_in,
                     check_out=check_out,
-                )
-                == AVAILABLE
-            ):
-                available.append({"id": str(property_obj.pk), "name": str(property_obj)})
+                    guests=1,
+                ),
+                bypass_cache=False,
+            )
+            quote = availability.quote
+            if not availability.is_available or quote is None or quote.nights < 1:
+                continue
+            available.append(
+                {
+                    "id": str(property_obj.pk),
+                    "name": str(property_obj),
+                    "total_price": format(quote.total_price, "f"),
+                    "currency": quote.currency,
+                    "nights": quote.nights,
+                    "average_nightly_price": format(
+                        quote.total_price / Decimal(quote.nights), "f"
+                    ),
+                }
+            )
     return available
 
 
@@ -186,10 +187,9 @@ def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
     try:
         check_in = date.fromisoformat(request.GET["check_in"])
         check_out = date.fromisoformat(request.GET["check_out"])
-        guests = int(request.GET.get("guests", "1"))
     except (KeyError, TypeError, ValueError):
         return JsonResponse({"detail": "invalid_stay"}, status=400)
-    if check_in < timezone.localdate() or check_out <= check_in or guests < 1:
+    if check_in < timezone.localdate() or check_out <= check_in:
         return JsonResponse({"detail": "invalid_stay"}, status=400)
 
     return JsonResponse(
@@ -197,7 +197,6 @@ def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
             "properties": _available_manual_properties(
                 check_in=check_in,
                 check_out=check_out,
-                guests=guests,
             )
         }
     )
@@ -410,7 +409,7 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
                 property_obj=form.cleaned_data["property"],
                 check_in=form.cleaned_data["check_in"],
                 check_out=form.cleaned_data["check_out"],
-                guests=form.cleaned_data["guests"],
+                guests=1,
                 actor=request.user,
             )
             if creation.draft is not None:

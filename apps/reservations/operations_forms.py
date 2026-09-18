@@ -33,7 +33,6 @@ class ManualBookingAvailabilityForm(forms.Form):
         label="تاريخ المغادرة",
         widget=forms.DateInput(attrs={"type": "date"}),
     )
-    guests = forms.IntegerField(label="عدد الضيوف", min_value=1, initial=1)
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
@@ -57,21 +56,12 @@ class ManualBookingAvailabilityForm(forms.Form):
 
     def clean(self) -> dict[str, object]:
         cleaned = super().clean()
-        property_obj = cleaned.get("property")
         check_in = cleaned.get("check_in")
         check_out = cleaned.get("check_out")
-        guests = cleaned.get("guests")
         if check_in and check_in < timezone.localdate():
             self.add_error("check_in", "لا يمكن أن يكون الوصول في تاريخ مضى.")
         if check_in and check_out and check_out <= check_in:
             self.add_error("check_out", "يجب أن يكون تاريخ المغادرة بعد تاريخ الوصول.")
-        if (
-            property_obj
-            and guests
-            and property_obj.person_capacity
-            and guests > property_obj.person_capacity
-        ):
-            self.add_error("guests", "عدد الضيوف يتجاوز السعة المعتمدة لهذه الوحدة.")
         return cleaned
 
 
