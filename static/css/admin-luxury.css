@@ -58,12 +58,12 @@ html[data-theme="dark"] {
 }
 
 body { font-family: var(--font-family-primary); background: var(--body-bg); }
-#header { min-height: 76px; padding: 0 32px; background: var(--header-bg); box-shadow: 0 8px 30px rgba(3, 18, 14, .18); }
+#header { min-height: 76px; padding: 0 32px; background: linear-gradient(112deg, #0d1a3f 0%, #14245a 65%, #0d6c58 145%); box-shadow: 0 8px 30px rgba(13, 26, 63, .2); }
 #branding { display: flex; align-items: center; }
 .lsa-admin-brand { display: flex; align-items: center; gap: 13px; }
-.lsa-admin-brand__mark { display: grid; place-items: center; width: 42px; height: 42px; color: #10241f !important; background: linear-gradient(135deg, #e7d4a9, #ae8949); border-radius: 50%; font: 800 12px Georgia, serif; letter-spacing: .12em; box-shadow: inset 0 0 0 1px rgba(255,255,255,.5); }
-.lsa-admin-brand__name { display: block; color: #fff !important; font: 600 16px Georgia, "Times New Roman", serif; letter-spacing: .025em; }
-.lsa-admin-brand__eyebrow { display: block; margin-top: 2px; color: #b9c9c4; font-size: 10px; letter-spacing: .12em; }
+.lsa-admin-brand__logo { display: block; width: 178px; line-height: 0; }
+.lsa-admin-brand__logo img { display: block; width: 100%; height: auto; }
+.lsa-admin-brand__eyebrow { display: block; color: #d9b52f; font-size: 10px; font-weight: 700; letter-spacing: .1em; white-space: nowrap; }
 .lsa-admin-nav { display: flex; align-items: center; gap: 5px; margin-inline-start: 40px; }
 .lsa-admin-nav a { padding: 10px 13px; border-radius: 9px; color: #d8e2df !important; font-size: 12px; font-weight: 600; }
 .lsa-admin-nav a:hover { background: rgba(255,255,255,.08); color: #fff !important; }
@@ -167,7 +167,7 @@ input[type=text], input[type=password], input[type=email], input[type=url], inpu
 /* Unified administration shell */
 html.lsa-command-open,
 html.lsa-command-open body { overflow: hidden; }
-.lsa-shell-header { display: block !important; min-height: 78px !important; height: auto !important; padding: 0 30px !important; box-sizing: border-box; background: #0b211d !important; }
+.lsa-shell-header { display: block !important; min-height: 78px !important; height: auto !important; padding: 0 30px !important; box-sizing: border-box; border-bottom: 1px solid rgba(217,181,47,.32); background: linear-gradient(112deg, #0d1a3f 0%, #14245a 65%, #0d6c58 145%) !important; }
 .lsa-shell-header__inner { display: flex; align-items: center; width: 100%; min-height: 78px; margin: 0 auto; }
 .lsa-shell-header #branding { flex: 0 0 auto; }
 .lsa-primary-nav { display: flex; align-items: center; gap: 3px; margin-inline: clamp(18px, 3vw, 48px) auto; }
@@ -527,6 +527,24 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-admin-login__google { display: grid; width: 100%; min-height: 2.8rem; box-sizing: border-box; place-items: center; margin: 0 0 .85rem; color: #fff; border: 0; border-radius: .5rem; background: #0d6c58; cursor: pointer; font: inherit; font-weight: 700; text-decoration: none; }
 .lsa-admin-login__google:hover,.lsa-admin-login__google:focus-visible { color: #fff; background: #064a3b; }
 .lsa-admin-login__or { margin: 0 0 1rem; color: var(--body-quiet-color); font-size: .78rem; text-align: center; }
+
+/* The sign-in screen deliberately uses the same navy, gold and ivory palette
+   as the public Luxury Living website; it is not a separate product. */
+body.login { min-height: 100vh; background: radial-gradient(circle at 18% 8%, rgba(217,181,47,.12), transparent 26rem), linear-gradient(145deg, #f6f1e8, #ece6d9); }
+body.login #header { border-bottom: 1px solid rgba(217,181,47,.32); }
+body.login #content { display: grid; min-height: calc(100vh - 78px); box-sizing: border-box; place-items: center; padding: clamp(28px, 6vw, 72px) 18px; }
+body.login #content-main { width: min(100%, 470px); padding: clamp(24px, 5vw, 38px); box-sizing: border-box; border: 1px solid rgba(199,161,91,.4); border-radius: 22px; background: rgba(255,253,248,.96); box-shadow: 0 24px 65px rgba(13,26,63,.15); direction: rtl; }
+body.login #content-main .form-row { padding: 0; margin: 0 0 16px; border: 0; }
+body.login #content-main .form-row label { display: block; margin: 0 0 7px; color: #14245a; font-size: 13px; font-weight: 750; }
+body.login #content-main input[type="text"],body.login #content-main input[type="password"] { width: 100%; min-height: 46px; box-sizing: border-box; color: #172d51; border: 1px solid #d9cfbd; border-radius: 10px; background: #fffdf8; }
+body.login #content-main input:focus { border-color: #c7a15b; outline: 3px solid rgba(199,161,91,.17); }
+body.login #content-main .submit-row { margin: 20px 0 0; padding: 0; border: 0; background: transparent; text-align: center; }
+body.login #content-main .submit-row input { min-width: 132px; min-height: 44px; color: #fff; border-radius: 10px; background: #14245a; font-weight: 750; }
+body.login #content-main .submit-row input:hover { background: #0d1a3f; }
+body.login #content-main .password-reset-link { margin: -4px 0 0; font-size: 12px; }
+body.login #content-main .password-reset-link a { color: #0d6c58; }
+body.login .errornote { border-radius: 10px; }
+@media (max-width: 767px) { .lsa-admin-brand__logo { width: 146px; }.lsa-admin-brand__eyebrow { display: none; } body.login #content { min-height: calc(100vh - 68px); padding: 28px 14px; } body.login #content-main { border-radius: 18px; } }
 
 /* Keep language choice available in the operations console, just as it is on
    the guest site.  It submits immediately and returns the owner to the
