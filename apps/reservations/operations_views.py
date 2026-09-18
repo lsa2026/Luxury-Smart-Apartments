@@ -460,8 +460,6 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         ManualBookingDraft.objects.select_related("property", "quote"),
         pk=draft_id,
     )
-    cancel_form = ManualBookingCancelForm()
-    delete_form = ManualBookingDeleteForm()
     form = ManualBookingFinalizeForm(draft=draft)
     if request.method == "POST":
         action = request.POST.get("action")
@@ -490,54 +488,6 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                 messages.error(request, "التوفر موجود لكن تعذر تثبيت السعر بالعملة المطلوبة الآن.")
             else:
                 messages.error(request, "لا يمكن إعادة فحص هذه المسودة في حالتها الحالية.")
-        elif action == "cancel":
-            cancel_form = ManualBookingCancelForm(request.POST)
-            if cancel_form.is_valid():
-                if draft.status not in {
-                    ManualBookingDraft.Status.QUOTED,
-                    ManualBookingDraft.Status.READY_FOR_PAYMENT,
-                }:
-                    messages.error(request, "لا يمكن إلغاء هذه المسودة في حالتها الحالية.")
-                else:
-                    draft.status = ManualBookingDraft.Status.CANCELLED
-                    draft.save(update_fields=["status", "updated_at"])
-                    record_audit(
-                        request=request,
-                        action="manual_booking.cancelled",
-                        object_type="ManualBookingDraft",
-                        object_reference=draft.public_reference,
-                        summary="Manual booking draft cancelled before payment.",
-                        metadata={"status": draft.status},
-                    )
-                    messages.success(
-                        request,
-                        "أُلغيت المسودة الداخلية. لم يُلغَ حجز في Hostaway ولم يُنفذ أي استرجاع.",
-                    )
-                    return redirect("notifications:manual_booking_detail", draft_id=draft.pk)
-        elif action == "delete":
-            delete_form = ManualBookingDeleteForm(request.POST)
-            if delete_form.is_valid():
-                public_reference = draft.public_reference
-                quote_id = draft.quote_id
-                with transaction.atomic():
-                    record_audit(
-                        request=request,
-                        action="manual_booking.deleted",
-                        object_type="ManualBookingDraft",
-                        object_reference=public_reference,
-                        summary="Manual booking draft permanently deleted before payment.",
-                        metadata={"status": draft.status},
-                    )
-                    draft.delete()
-                    BookingQuote.objects.filter(
-                        pk=quote_id,
-                        booking_intent__isnull=True,
-                    ).delete()
-                messages.success(
-                    request,
-                    "حُذفت المسودة نهائيًا من القائمة. بقي سجل تدقيق مختصر لحماية المتابعة.",
-                )
-                return redirect("notifications:manual_booking_list")
         else:
             form = ManualBookingFinalizeForm(request.POST, draft=draft)
             if form.is_valid():
@@ -591,11 +541,83 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "title": "مسودة حجز يدوي",
             "draft": draft,
             "form": form,
-            "cancel_form": cancel_form,
-            "delete_form": delete_form,
             "audit_entries": audit_entries,
             "accounting_whatsapp_name": settings.ACCOUNTING_WHATSAPP_NAME or "المحاسبة",
             "accounting_payment_request_url": _accounting_payment_request_url(draft),
+        },
+    )
+
+
+@staff_member_required
+def manual_booking_disposal(request: HttpRequest, draft_id: str) -> HttpResponse:
+    """Cancel or remove a local manual draft from the cancellation workspace."""
+
+    _require_owner(request)
+    draft = get_object_or_404(
+        ManualBookingDraft.objects.select_related("property", "quote"),
+        pk=draft_id,
+    )
+    cancel_form = ManualBookingCancelForm()
+    delete_form = ManualBookingDeleteForm()
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "cancel":
+            cancel_form = ManualBookingCancelForm(request.POST)
+            if cancel_form.is_valid():
+                if draft.status not in {
+                    ManualBookingDraft.Status.QUOTED,
+                    ManualBookingDraft.Status.READY_FOR_PAYMENT,
+                }:
+                    messages.error(request, "لا يمكن إلغاء هذه المسودة في حالتها الحالية.")
+                else:
+                    draft.status = ManualBookingDraft.Status.CANCELLED
+                    draft.save(update_fields=["status", "updated_at"])
+                    record_audit(
+                        request=request,
+                        action="manual_booking.cancelled",
+                        object_type="ManualBookingDraft",
+                        object_reference=draft.public_reference,
+                        summary="Manual booking draft cancelled before payment.",
+                        metadata={"status": draft.status},
+                    )
+                    messages.success(
+                        request,
+                        "أُلغيت المسودة الداخلية. لم يُلغَ حجز في Hostaway ولم يُنفذ أي استرجاع.",
+                    )
+                    return redirect("notifications:cancellation_list")
+        elif action == "delete":
+            delete_form = ManualBookingDeleteForm(request.POST)
+            if delete_form.is_valid():
+                public_reference = draft.public_reference
+                quote_id = draft.quote_id
+                with transaction.atomic():
+                    record_audit(
+                        request=request,
+                        action="manual_booking.deleted",
+                        object_type="ManualBookingDraft",
+                        object_reference=public_reference,
+                        summary="Manual booking draft permanently deleted before payment.",
+                        metadata={"status": draft.status},
+                    )
+                    draft.delete()
+                    BookingQuote.objects.filter(
+                        pk=quote_id,
+                        booking_intent__isnull=True,
+                    ).delete()
+                messages.success(
+                    request,
+                    "حُذفت المسودة نهائيًا من القائمة. بقي سجل تدقيق مختصر لحماية المتابعة.",
+                )
+                return redirect("notifications:cancellation_list")
+
+    return render(
+        request,
+        "admin/reservations/manual_booking_disposal.html",
+        {
+            "title": "إلغاء أو حذف مسودة",
+            "draft": draft,
+            "cancel_form": cancel_form,
+            "delete_form": delete_form,
         },
     )
 
@@ -620,12 +642,24 @@ def cancellation_list(request: HttpRequest) -> HttpResponse:
             | Q(public_reference__icontains=query)
             | Q(reservation__public_reference__icontains=query)
         )
+    manual_drafts = ManualBookingDraft.objects.select_related("property")
+    if query:
+        manual_drafts = manual_drafts.filter(
+            Q(guest_first_name__icontains=query)
+            | Q(guest_last_name__icontains=query)
+            | Q(guest_email__icontains=query)
+            | Q(guest_phone__icontains=query)
+            | Q(public_reference__icontains=query)
+            | Q(property__name_ar__icontains=query)
+            | Q(property__name_en__icontains=query)
+        )
     return render(
         request,
         "admin/reservations/cancellation_list.html",
         {
             "title": "طلبات الإلغاء والاسترداد",
             "cancellations": cancellations.order_by("-requested_at")[:100],
+            "manual_drafts": manual_drafts.order_by("-created_at")[:100],
             "status": status,
             "query": query,
             "status_options": BookingModificationRequest.Status.choices,

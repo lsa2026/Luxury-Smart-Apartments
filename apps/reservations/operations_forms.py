@@ -81,18 +81,6 @@ class ManualBookingFinalizeForm(forms.Form):
         min_value=Decimal("0"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
-    price_override_reason = forms.CharField(
-        label="سبب تعديل السعر",
-        max_length=500,
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
-    )
-    special_requests = forms.CharField(
-        label="ملاحظات تشغيلية",
-        max_length=1000,
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 4}),
-    )
 
     def __init__(
         self,
@@ -111,8 +99,6 @@ class ManualBookingFinalizeForm(forms.Form):
                     "guest_last_name": draft.guest_last_name,
                     "guest_email": draft.guest_email,
                     "guest_phone": draft.guest_phone,
-                    "price_override_reason": draft.price_override_reason,
-                    "special_requests": draft.special_requests,
                 }
             )
 
@@ -138,25 +124,6 @@ class ManualBookingFinalizeForm(forms.Form):
             raise forms.ValidationError(
                 "أدخل رقمًا دوليًا صالحًا يبدأ بعلامة +، مثل +966500000000."
             ) from exc
-
-    def clean_price_override_reason(self) -> str:
-        return _clean_text(self.cleaned_data["price_override_reason"])
-
-    def clean_special_requests(self) -> str:
-        return _clean_text(self.cleaned_data["special_requests"])
-
-    def clean(self) -> dict[str, object]:
-        cleaned = super().clean()
-        final_price = cleaned.get("final_total_price")
-        reason = cleaned.get("price_override_reason")
-        if final_price is not None and final_price != self.draft.system_total_price:
-            if not isinstance(reason, str) or len(reason) < 10:
-                self.add_error(
-                    "price_override_reason",
-                    "عند تعديل سعر Hostaway اكتب سببًا واضحًا لا يقل عن 10 أحرف.",
-                )
-        return cleaned
-
 
 class ManualBookingCancelForm(forms.Form):
     """Require an explicit acknowledgement before cancelling a local draft."""

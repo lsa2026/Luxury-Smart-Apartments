@@ -290,8 +290,6 @@ class ManualBookingDraft(models.Model):
         if self.final_total_price != self.system_total_price:
             if self.price_source != self.PriceSource.MANUAL_OVERRIDE:
                 errors["price_source"] = "A different final price requires a manual adjustment."
-            if len(self.price_override_reason.strip()) < 10:
-                errors["price_override_reason"] = "Explain every manual price adjustment."
         elif self.price_source != self.PriceSource.SYSTEM:
             errors["price_source"] = "An unchanged price must use the system price source."
         if self.status == self.Status.READY_FOR_PAYMENT:

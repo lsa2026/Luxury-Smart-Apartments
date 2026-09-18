@@ -18,7 +18,7 @@
       <span class="lsa-booking-console__number">1</span>
       <div>
         <h2>حجز جديد</h2>
-        <p>اختر الوحدة والتواريخ والضيف، افحص التوفر، ثم ثبّت السعر النهائي.</p>
+        <p>اختر التواريخ أولًا، ثم راجع كل الوحدات المتاحة وأسعارها قبل اختيار الشقة والضيف.</p>
         <small>بعد تثبيت السعر تُجهز المسودة لمرحلة رابط الدفع. إنشاء الرابط وإرساله يبدأان بعد تفعيل واجهة HyperPay المخصصة.</small>
       </div>
       <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">إنشاء حجز جديد</a>
@@ -38,8 +38,8 @@
       <span class="lsa-booking-console__number">3</span>
       <div>
         <h2>إلغاء واسترداد</h2>
-        <p>اختر طلب الإلغاء، حدّد مبلغ الاسترداد الكامل أو الجزئي، ثم أكّد التنفيذ مرة واحدة.</p>
-        <small>يتم الإلغاء في Hostaway والاسترداد إلى البطاقة عبر HyperPay من داخل الموقع.</small>
+        <p>أدر طلبات الإلغاء والاسترداد، أو افتح مسودة يدوية لإلغائها أو حذفها من مكانها الصحيح.</p>
+        <small>تُنفذ الحجوزات المؤكدة عبر Hostaway وHyperPay، أما المسودة اليدوية فلا يترتب عليها إجراء خارجي.</small>
       </div>
       <a class="lsa-btn lsa-btn--danger" href="{% url 'notifications:cancellation_list' %}">إدارة الإلغاءات</a>
     </article>

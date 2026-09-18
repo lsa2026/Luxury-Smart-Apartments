@@ -209,9 +209,6 @@ def finalize_manual_booking_draft(
 
         final_total = Decimal(final_total_price)
         is_manual_price = final_total != draft.system_total_price
-        reason = str(guest_data.get("price_override_reason") or "").strip()
-        if is_manual_price and len(reason) < 10:
-            return ManualBookingDraftFinalization("override_reason_required", draft)
 
         if is_manual_price:
             try:
@@ -234,19 +231,18 @@ def finalize_manual_booking_draft(
             exchange_rate_snapshot = dict(draft.quote.exchange_rate_snapshot)
             selected_display_currency = draft.quote.selected_display_currency
             price_source = ManualBookingDraft.PriceSource.SYSTEM
-            reason = ""
 
         draft.guest_first_name = str(guest_data["guest_first_name"])
         draft.guest_last_name = str(guest_data["guest_last_name"])
         draft.guest_email = str(guest_data["guest_email"])
         draft.guest_phone = str(guest_data["guest_phone"])
-        draft.special_requests = str(guest_data.get("special_requests") or "")
+        draft.special_requests = ""
         draft.final_total_price = final_total
         draft.payment_amount_sar = payment_amount_sar
         draft.selected_display_currency = selected_display_currency
         draft.exchange_rate_snapshot = exchange_rate_snapshot
         draft.price_source = price_source
-        draft.price_override_reason = reason
+        draft.price_override_reason = ""
         draft.status = ManualBookingDraft.Status.READY_FOR_PAYMENT
         draft.full_clean()
         draft.save()

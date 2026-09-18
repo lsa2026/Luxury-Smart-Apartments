@@ -82,7 +82,7 @@ def test_manual_draft_uses_a_live_quote_but_creates_no_reservation_or_provider_o
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
-def test_manual_price_override_requires_reason_and_preserves_system_price():
+def test_manual_price_override_is_allowed_without_a_reason_and_preserves_system_price():
     property_obj = make_property()
     actor = owner()
     available = make_availability(property_obj, total=Decimal("500.25"))
@@ -96,19 +96,6 @@ def test_manual_price_override_requires_reason_and_preserves_system_price():
     )
     assert creation.draft is not None
 
-    rejected = finalize_manual_booking_draft(
-        draft_id=creation.draft.pk,
-        guest_data={
-            "guest_first_name": "Test",
-            "guest_last_name": "Guest",
-            "guest_email": "guest@example.invalid",
-            "guest_phone": "+966500000000",
-            "price_override_reason": "",
-        },
-        final_total_price=Decimal("450.00"),
-    )
-    assert rejected.code == "override_reason_required"
-
     finalized = finalize_manual_booking_draft(
         draft_id=creation.draft.pk,
         guest_data={
@@ -116,8 +103,6 @@ def test_manual_price_override_requires_reason_and_preserves_system_price():
             "guest_last_name": "Guest",
             "guest_email": "guest@example.invalid",
             "guest_phone": "+966500000000",
-            "price_override_reason": "تعويض الضيف عن مشكلة موثقة في الزيارة السابقة.",
-            "special_requests": "Synthetic test data",
         },
         final_total_price=Decimal("450.00"),
     )
@@ -128,6 +113,8 @@ def test_manual_price_override_requires_reason_and_preserves_system_price():
     assert finalized.draft.system_total_price == Decimal("500.2500")
     assert finalized.draft.final_total_price == Decimal("450.0000")
     assert finalized.draft.price_source == ManualBookingDraft.PriceSource.MANUAL_OVERRIDE
+    assert finalized.draft.price_override_reason == ""
+    assert finalized.draft.special_requests == ""
     assert finalized.draft.payment_amount_sar == Decimal("450.00")
     assert Reservation.objects.count() == 0
 
@@ -217,7 +204,7 @@ def test_owner_can_cancel_a_manual_draft_and_see_its_audit_history():
     client.force_login(actor)
 
     response = client.post(
-        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        reverse("notifications:manual_booking_disposal", args=[draft.pk]),
         {"action": "cancel", "confirm_cancellation": "on"},
     )
 
@@ -228,8 +215,8 @@ def test_owner_can_cancel_a_manual_draft_and_see_its_audit_history():
         action="manual_booking.cancelled",
         object_reference=draft.public_reference,
     ).exists()
-    page = client.get(reverse("notifications:manual_booking_detail", args=[draft.pk]))
-    assert "تم إلغاء المسودة الداخلية قبل الدفع." in page.content.decode()
+    page = client.get(reverse("notifications:manual_booking_disposal", args=[draft.pk]))
+    assert "قبل المتابعة" in page.content.decode()
 
 
 @override_settings(
@@ -286,7 +273,7 @@ def test_owner_can_permanently_delete_an_uncharged_manual_draft():
     client = Client()
     client.force_login(actor)
     response = client.post(
-        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        reverse("notifications:manual_booking_disposal", args=[draft.pk]),
         {"action": "delete", "confirm_deletion": "on"},
     )
 
@@ -376,8 +363,6 @@ def test_ready_manual_draft_exposes_a_reviewed_accounting_whatsapp_request():
             "guest_last_name": "Guest",
             "guest_email": "guest@example.invalid",
             "guest_phone": "+966500000000",
-            "price_override_reason": "",
-            "special_requests": "",
         },
         final_total_price=available.quote.total_price,
     )
@@ -390,6 +375,42 @@ def test_ready_manual_draft_exposes_a_reviewed_accounting_whatsapp_request():
     content = page.content.decode()
     assert "إرسال طلب رابط الدفع للمحاسبة" in content
     assert "wa.me/966597193102?text=" in content
+    assert "سبب تعديل السعر" not in content
+    assert "ملاحظات تشغيلية" not in content
+    assert "إلغاء المسودة" not in content
+    assert "حذف المسودة نهائيًا" not in content
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_cancellation_workspace_lists_manual_drafts_and_links_to_disposal():
+    property_obj = make_property()
+    actor = owner()
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=timezone.localdate() + timedelta(days=10),
+        check_out=timezone.localdate() + timedelta(days=12),
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(make_availability(property_obj)),
+    )
+    assert creation.draft is not None
+    draft = creation.draft
+    draft.guest_first_name = "Aseel"
+    draft.guest_last_name = "Hafez"
+    draft.save(update_fields=["guest_first_name", "guest_last_name", "updated_at"])
+
+    client = Client()
+    client.force_login(actor)
+    page = client.get(reverse("notifications:cancellation_list"))
+
+    content = page.content.decode()
+    assert page.status_code == 200
+    assert "مسودات الحجز اليدوي" in content
+    assert "Aseel Hafez" in content
+    assert reverse("notifications:manual_booking_disposal", args=[draft.pk]) in content
 
 
 @override_settings(

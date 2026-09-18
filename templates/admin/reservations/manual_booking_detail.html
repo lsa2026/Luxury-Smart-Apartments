@@ -24,7 +24,6 @@
     {% endif %}
     {% if draft.status == "ready_for_payment" %}
       <p><b>السعر المعتمد:</b> <span dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</span></p>
-      {% if draft.price_override_reason %}<p><b>سبب التعديل:</b> {{ draft.price_override_reason }}</p>{% endif %}
       <section class="lsa-manual-payment-next">
         <span>الخطوة التالية</span><h2>رابط الدفع</h2>
         {% if accounting_payment_request_url %}
@@ -50,7 +49,7 @@
           </div>
           {% endfor %}
         </fieldset>
-        <p class="help">عند تغيير السعر، يطلب النظام سببًا واضحًا ويحتفظ بالسعر الأصلي من Hostaway للمراجعة.</p>
+        <p class="help">يمكنك اعتماد السعر أو تعديله مباشرة؛ يبقى سعر Hostaway الأصلي محفوظًا للمراجعة.</p>
         <button class="default" type="submit">حفظ المسودة وتجهيزها للدفع</button>
       </form>
     {% else %}
@@ -67,30 +66,6 @@
     {% else %}
       <p>لا توجد أحداث مسجلة لهذه المسودة بعد.</p>
     {% endif %}
-  </section>
-  {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
-  <section class="lsa-panel">
-    <h2>إلغاء المسودة</h2>
-    <p class="help">هذا يلغي المسودة الداخلية فقط؛ لا يلغي حجزًا خارجيًا ولا ينفذ استرجاعًا.</p>
-    <form method="post" novalidate>
-      {% csrf_token %}
-      <input type="hidden" name="action" value="cancel">
-      {{ cancel_form.confirm_cancellation }} {{ cancel_form.confirm_cancellation.label_tag }}
-      {{ cancel_form.confirm_cancellation.errors }}
-      <p><button type="submit">إلغاء المسودة</button></p>
-    </form>
-  </section>
-  {% endif %}
-  <section class="lsa-panel lsa-manual-booking__delete">
-    <h2>حذف المسودة نهائيًا</h2>
-    <p class="help">يزيل هذا المسودة وسعرها المؤقت من القائمة فقط. لا يستخدم للحجوزات المؤكدة ولا ينفذ أي استرجاع.</p>
-    <form method="post" novalidate>
-      {% csrf_token %}
-      <input type="hidden" name="action" value="delete">
-      {{ delete_form.confirm_deletion }} {{ delete_form.confirm_deletion.label_tag }}
-      {{ delete_form.confirm_deletion.errors }}
-      <p><button class="deletelink" type="submit">حذف المسودة نهائيًا</button></p>
-    </form>
   </section>
 </main>
 {% endblock %}

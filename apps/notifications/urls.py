@@ -46,6 +46,11 @@ urlpatterns = [
         name="cancellation_list",
     ),
     path(
+        "admin/operations/cancellations/manual-drafts/<uuid:draft_id>/",
+        operations_views.manual_booking_disposal,
+        name="manual_booking_disposal",
+    ),
+    path(
         "admin/operations/cancellations/<uuid:request_id>/",
         operations_views.cancellation_detail,
         name="cancellation_detail",

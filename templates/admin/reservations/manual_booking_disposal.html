@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> المسودات اليدوية</span>
+      <h1>إلغاء أو حذف مسودة</h1>
+      <p><b>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}ضيف لم تُسجل بياناته بعد{% endif %}</b> · {{ draft.property }} · <span dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</span></p>
+    </div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:cancellation_list' %}">العودة للإلغاءات</a>
+  </section>
+
+  <section class="lsa-panel">
+    <h2>قبل المتابعة</h2>
+    <p class="help">هذه مسودة محلية فقط. لا يوجد حجز مؤكد في Hostaway ولا دفعة أو استرداد في HyperPay مرتبطان بها.</p>
+  </section>
+
+  {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
+  <section class="lsa-panel">
+    <h2>إلغاء المسودة</h2>
+    <p class="help">يوقف متابعة هذه المسودة مع الاحتفاظ بها في السجل، دون أي إجراء خارجي.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="cancel">
+      {{ cancel_form.confirm_cancellation }} {{ cancel_form.confirm_cancellation.label_tag }}
+      {{ cancel_form.confirm_cancellation.errors }}
+      <p><button class="lsa-btn lsa-btn--danger" type="submit">إلغاء المسودة</button></p>
+    </form>
+  </section>
+  {% endif %}
+
+  <section class="lsa-panel lsa-manual-booking__delete">
+    <h2>حذف المسودة نهائيًا</h2>
+    <p class="help">يزيل المسودة وسعرها المؤقت من القائمة فقط. يبقى سجل تدقيق مختصر للمتابعة، ولا ينفذ أي إلغاء أو استرداد خارجي.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      {{ delete_form.confirm_deletion }} {{ delete_form.confirm_deletion.label_tag }}
+      {{ delete_form.confirm_deletion.errors }}
+      <p><button class="deletelink" type="submit">حذف المسودة نهائيًا</button></p>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -23,6 +23,38 @@
   </section>
 
   <section class="lsa-panel">
+    <h2>مسودات الحجز اليدوي</h2>
+    <p class="help">افتح المسودة لإلغائها أو حذفها. هذه المسودات لا تمثل حجزًا مؤكدًا أو دفعة أو استردادًا خارجيًا.</p>
+    {% if manual_drafts %}
+    <div class="lsa-table-scroll lsa-manual-draft-list__table"><table>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>وقت الإنشاء</th></tr></thead>
+      <tbody>
+        {% for draft in manual_drafts %}
+        <tr>
+          <td><a class="lsa-booking-list__guest" href="{% url 'notifications:manual_booking_disposal' draft.pk %}"><b>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}ضيف لم تُسجل بياناته بعد{% endif %}</b><small>{{ draft.guest_email }}</small></a></td>
+          <td>{{ draft.property }}</td>
+          <td dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</td>
+          <td>{{ draft.get_status_display }}</td>
+          <td dir="ltr">{{ draft.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table></div>
+    <div class="lsa-manual-draft-list__cards">
+      {% for draft in manual_drafts %}
+      <a class="lsa-booking-card" href="{% url 'notifications:manual_booking_disposal' draft.pk %}">
+        <div class="lsa-booking-card__top"><div><strong>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}ضيف لم تُسجل بياناته بعد{% endif %}</strong><small>{{ draft.guest_email }}</small></div><span>{{ draft.get_status_display }}</span></div>
+        <p>{{ draft.property }}</p>
+        <div class="lsa-booking-card__facts"><span><small>الإقامة</small><b dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</b></span><span><small>الإنشاء</small><b dir="ltr">{{ draft.created_at }}</b></span></div>
+        <em>فتح المسودة ←</em>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}<p class="help">لا توجد مسودات يدوية مطابقة حاليًا.</p>{% endif %}
+  </section>
+
+  <section class="lsa-panel">
+    <h2>طلبات الإلغاء والاسترداد</h2>
     {% if cancellations %}
     <div class="lsa-table-scroll lsa-cancellation-list__table"><table>
       <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>وقت الطلب</th></tr></thead>
