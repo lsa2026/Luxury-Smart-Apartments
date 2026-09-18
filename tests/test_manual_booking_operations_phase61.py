@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -12,8 +13,8 @@ from django.utils import timezone
 from apps.notifications.models import AuditLog
 from apps.reservations.manual_bookings import (
     ManualBookingHostawayCreation,
-    create_manual_booking_in_hostaway,
     create_manual_booking_draft,
+    create_manual_booking_in_hostaway,
     finalize_manual_booking_draft,
     recheck_manual_booking_draft,
 )
@@ -433,8 +434,8 @@ def test_ready_manual_draft_requires_hostaway_confirmation_before_the_accounting
     page = client.get(reverse("notifications:manual_booking_detail", args=[creation.draft.pk]))
 
     content = page.content.decode()
-    assert "تأكيد الحجز في Hostaway وفتح طلب رابط الدفع" in content
-    assert "wa.me/966597193102?text=" not in content
+    assert "تأكيد الحجز في Hostaway وإرسال الطلب للمحاسبة" in content
+    assert "لا تُرسل الرسالة تلقائيًا" not in content
     assert "سبب تعديل السعر" not in content
     assert "ملاحظات تشغيلية" not in content
     assert "إلغاء المسودة" not in content
@@ -447,7 +448,7 @@ def test_ready_manual_draft_requires_hostaway_confirmation_before_the_accounting
     ACCOUNTING_WHATSAPP_NAME="Aseel Hafez",
     ACCOUNTING_WHATSAPP_NUMBER="+966597193102",
 )
-def test_owner_confirms_hostaway_booking_then_opens_the_reviewed_accounting_request(monkeypatch):
+def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monkeypatch):
     property_obj = make_property()
     actor = owner()
     creation = create_manual_booking_draft(
@@ -506,6 +507,10 @@ def test_owner_confirms_hostaway_booking_then_opens_the_reviewed_accounting_requ
         "apps.reservations.operations_views.create_manual_booking_in_hostaway",
         lambda **_kwargs: ManualBookingHostawayCreation("already_created", draft, reservation),
     )
+    monkeypatch.setattr(
+        "apps.reservations.operations_views.send_manual_payment_link_request",
+        lambda **_kwargs: SimpleNamespace(code="sent"),
+    )
     client = Client()
     client.force_login(actor)
 
@@ -515,8 +520,8 @@ def test_owner_confirms_hostaway_booking_then_opens_the_reviewed_accounting_requ
     )
 
     assert response.status_code == 302
-    assert response["Location"].startswith("https://wa.me/966597193102?text=")
-    assert AuditLog.objects.filter(action="manual_booking.hostaway_created").exists()
+    assert response["Location"] == reverse("notifications:manual_booking_detail", args=[draft.pk])
+    assert AuditLog.objects.filter(action="manual_booking.accounting_whatsapp_sent").exists()
 
 
 @override_settings(

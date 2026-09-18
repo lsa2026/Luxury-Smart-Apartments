@@ -3,7 +3,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .models import AuditLog, EmailDelivery, Notification
+from .models import AuditLog, EmailDelivery, Notification, WhatsAppDelivery
 
 
 @admin.register(Notification)
@@ -96,6 +96,39 @@ class EmailDeliveryAdmin(admin.ModelAdmin):
         self,
         request: HttpRequest,
         obj: EmailDelivery | None = None,
+    ) -> bool:
+        return False
+
+
+@admin.register(WhatsAppDelivery)
+class WhatsAppDeliveryAdmin(admin.ModelAdmin):
+    list_display = (
+        "message_type",
+        "recipient_masked",
+        "status",
+        "provider",
+        "attempt_count",
+        "queued_at",
+        "sent_at",
+    )
+    list_filter = ("message_type", "status", "provider", "created_at")
+    search_fields = ("recipient_masked", "idempotency_key", "last_error_code")
+    readonly_fields = tuple(field.name for field in WhatsAppDelivery._meta.fields)
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(
+        self,
+        request: HttpRequest,
+        obj: WhatsAppDelivery | None = None,
+    ) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: WhatsAppDelivery | None = None,
     ) -> bool:
         return False
 

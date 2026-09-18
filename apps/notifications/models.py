@@ -147,6 +147,56 @@ class EmailDelivery(models.Model):
         return f"{self.message_type} — {self.status}"
 
 
+class WhatsAppDelivery(models.Model):
+    """One auditable, non-repeatable operational WhatsApp delivery.
+
+    The message body deliberately is not retained because it contains the
+    guest details needed by the accountant.  The linked reservation and the
+    provider's message identifier are enough to prove the operational action.
+    """
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", _("Queued")
+        SENDING = "sending", _("Sending")
+        SENT = "sent", pgettext_lazy("WhatsAppDelivery", "Sent")
+        FAILED = "failed", _("Failure")
+        DISABLED = "disabled", _("Disabled")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message_type = models.CharField(max_length=80)
+    reservation = models.OneToOneField(
+        "reservations.Reservation",
+        on_delete=models.PROTECT,
+        related_name="accounting_whatsapp_delivery",
+        editable=False,
+    )
+    recipient_masked = models.CharField(max_length=40, editable=False)
+    recipient_reference = models.CharField(max_length=100, editable=False)
+    provider = models.CharField(max_length=80, default="ultramsg", editable=False)
+    provider_message_id = models.CharField(max_length=255, blank=True, editable=False)
+    idempotency_key = models.CharField(max_length=100, unique=True, editable=False)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    last_error_code = models.CharField(max_length=100, blank=True)
+    queued_at = models.DateTimeField()
+    sent_at = models.DateTimeField(null=True, blank=True)
+    failed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "queued_at"]),
+            models.Index(fields=["message_type", "-created_at"]),
+        ]
+        verbose_name = _("WhatsApp delivery")
+        verbose_name_plural = _("WhatsApp deliveries")
+
+    def __str__(self) -> str:
+        return f"{self.message_type} — {self.status}"
+
+
 class AuditLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor_user = models.ForeignKey(

@@ -5,7 +5,6 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal
-from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib import messages
@@ -18,14 +17,15 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.access import require_operations_owner
-from apps.notifications.models import AuditLog
+from apps.notifications.models import AuditLog, WhatsAppDelivery
 from apps.notifications.services.audit import record_audit
+from apps.notifications.services.ultramsg import send_manual_payment_link_request
 from apps.payments.hyperpay.refunds import HyperPayRefundService
 from apps.properties.models import Property
 
 from .manual_bookings import (
-    create_manual_booking_in_hostaway,
     create_manual_booking_draft,
+    create_manual_booking_in_hostaway,
     finalize_manual_booking_draft,
     recheck_manual_booking_draft,
 )
@@ -65,6 +65,10 @@ _MANUAL_DRAFT_AUDIT_LABELS = {
     "manual_booking.rechecked": "أُعيد فحص التوفر والسعر من Hostaway لهذه المسودة.",
     "manual_booking.ready_for_payment": "تم اعتماد بيانات الضيف والسعر النهائي.",
     "manual_booking.hostaway_created": "أُنشئ الحجز في Hostaway وهو بانتظار الدفع.",
+    "manual_booking.accounting_whatsapp_sent": (
+        "أُرسل طلب رابط الدفع تلقائيًا إلى المحاسبة عبر WhatsApp."
+    ),
+    "manual_booking.accounting_whatsapp_failed": "تعذر إرسال طلب رابط الدفع تلقائيًا إلى المحاسبة.",
     "manual_booking.cancelled": "تم إلغاء المسودة الداخلية قبل الدفع.",
     "manual_booking.deleted": "حُذفت المسودة نهائيًا قبل الدفع.",
 }
@@ -92,57 +96,6 @@ def _calendar_urls(form: ManualBookingAvailabilityForm) -> dict[str, str]:
         )
         for property_obj in form.fields["property"].queryset.only("id", "slug")
     }
-
-
-def _whatsapp_digits(raw_number: str) -> str:
-    """Normalise a configured operations number for a wa.me deep link."""
-
-    digits = "".join(character for character in raw_number if character.isdigit())
-    if digits.startswith("00"):
-        digits = digits[2:]
-    elif digits.startswith("0"):
-        digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{digits.lstrip('0')}"
-    elif (
-        digits
-        and not digits.startswith(settings.WHATSAPP_DEFAULT_COUNTRY_CODE)
-        and len(digits) <= 9
-    ):
-        digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{digits}"
-    return digits
-
-
-def _accounting_payment_request_url(
-    draft: ManualBookingDraft,
-    reservation: Reservation | None = None,
-) -> str:
-    """Prepare, but never send, the reviewed accounting WhatsApp request."""
-
-    digits = _whatsapp_digits(settings.ACCOUNTING_WHATSAPP_NUMBER)
-    if not digits:
-        return ""
-    guest_name = f"{draft.guest_first_name} {draft.guest_last_name}".strip() or "غير مسجل"
-    message = "\n".join(
-        (
-            "طلب إنشاء رابط دفع يدوي",
-            f"الضيف: {guest_name}",
-            f"جوال الضيف: {draft.guest_phone}",
-            f"البريد: {draft.guest_email}",
-            f"الوحدة: {draft.property}",
-            f"الإقامة: {draft.check_in} إلى {draft.check_out}",
-            f"المبلغ: {draft.final_total_price:,.2f} {draft.currency}",
-            f"مرجع المسودة: {draft.public_reference}",
-            *(
-                (
-                    f"مرجع الحجز في الموقع: {reservation.public_reference}",
-                    f"رقم حجز Hostaway: {reservation.hostaway_reservation_id}",
-                )
-                if reservation is not None
-                else ()
-            ),
-            "يرجى إنشاء رابط HyperPay اليدوي وإرساله للضيف بعد المراجعة.",
-        )
-    )
-    return f"https://wa.me/{digits}?text={quote(message)}"
 
 
 def _available_manual_properties(
@@ -504,27 +457,70 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         elif action == "create_hostaway_and_request_payment":
             created = create_manual_booking_in_hostaway(draft_id=draft.pk)
             if created.code in {"created", "already_created"} and created.reservation is not None:
-                record_audit(
-                    request=request,
-                    action="manual_booking.hostaway_created",
-                    object_type="ManualBookingDraft",
-                    object_reference=draft.public_reference,
-                    summary="Owner-approved manual booking was created in Hostaway before payment.",
-                    metadata={
-                        "hostaway_reservation_id": created.reservation.hostaway_reservation_id,
-                        "reservation_reference": created.reservation.public_reference,
-                    },
+                if created.code == "created":
+                    record_audit(
+                        request=request,
+                        action="manual_booking.hostaway_created",
+                        object_type="ManualBookingDraft",
+                        object_reference=draft.public_reference,
+                        summary=(
+                            "Owner-approved manual booking was created in Hostaway before payment."
+                        ),
+                        metadata={"status": "awaiting_payment"},
+                    )
+                delivery_result = send_manual_payment_link_request(
+                    reservation_id=created.reservation.pk,
                 )
-                messages.success(
-                    request,
-                    "تم إنشاء الحجز في Hostaway وهو بانتظار الدفع. ستفتح الآن رسالة طلب رابط الدفع للمحاسبة للمراجعة قبل الإرسال.",
-                )
-                payment_request_url = _accounting_payment_request_url(
-                    created.draft,
-                    created.reservation,
-                )
-                if payment_request_url:
-                    return redirect(payment_request_url)
+                if delivery_result.code == "sent":
+                    record_audit(
+                        request=request,
+                        action="manual_booking.accounting_whatsapp_sent",
+                        object_type="ManualBookingDraft",
+                        object_reference=draft.public_reference,
+                        summary="The accounting payment-link request was sent through UltraMsg.",
+                        metadata={"status": "sent"},
+                    )
+                    messages.success(
+                        request,
+                        (
+                            "تم إنشاء الحجز في Hostaway وهو بانتظار الدفع، وأُرسل طلب رابط "
+                            "الدفع تلقائيًا إلى أسيل عبر WhatsApp."
+                        ),
+                    )
+                elif delivery_result.code == "already_sent":
+                    messages.info(
+                        request,
+                        (
+                            "الحجز موجود في Hostaway بانتظار الدفع. سبق إرسال طلب رابط الدفع "
+                            "إلى أسيل، ولذلك لم تُرسل رسالة مكررة."
+                        ),
+                    )
+                elif delivery_result.code == "already_requested":
+                    messages.info(
+                        request,
+                        "طلب رابط الدفع قيد الإرسال بالفعل إلى أسيل؛ لم تُرسل رسالة إضافية.",
+                    )
+                elif delivery_result.code == "previously_failed":
+                    messages.error(
+                        request,
+                        "فشل طلب رابط الدفع السابق. لم يُعاد الإرسال تلقائيًا لتجنب تكرار الرسالة.",
+                    )
+                else:
+                    record_audit(
+                        request=request,
+                        action="manual_booking.accounting_whatsapp_failed",
+                        object_type="ManualBookingDraft",
+                        object_reference=draft.public_reference,
+                        summary="The automatic accounting payment-link request was not delivered.",
+                        metadata={"status": delivery_result.code},
+                    )
+                    messages.error(
+                        request,
+                        (
+                            "تم إنشاء الحجز في Hostaway، لكن تعذر إرسال طلب رابط الدفع تلقائيًا "
+                            "إلى أسيل. راجع سجل التسليم قبل أي متابعة يدوية."
+                        ),
+                    )
                 return redirect(
                     "notifications:manual_booking_detail",
                     draft_id=created.draft.pk,
@@ -585,6 +581,11 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     for entry in audit_entries:
         entry.display_summary = _MANUAL_DRAFT_AUDIT_LABELS.get(entry.action, entry.summary)
     reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
+    accounting_delivery = (
+        WhatsAppDelivery.objects.filter(reservation=reservation).first()
+        if reservation is not None
+        else None
+    )
     return render(
         request,
         "admin/reservations/manual_booking_detail.html",
@@ -595,11 +596,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "audit_entries": audit_entries,
             "accounting_whatsapp_name": settings.ACCOUNTING_WHATSAPP_NAME or "المحاسبة",
             "reservation": reservation,
-            "accounting_payment_request_url": (
-                _accounting_payment_request_url(draft, reservation)
-                if reservation is not None
-                else ""
-            ),
+            "accounting_delivery": accounting_delivery,
         },
     )
 

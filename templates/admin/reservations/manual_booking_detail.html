@@ -27,10 +27,10 @@
       <p><b>السعر المعتمد:</b> {{ draft.final_total_price|format_money:draft.currency }}</p>
       <section class="lsa-manual-payment-next">
         <span>الخطوة التالية</span><h2>رابط الدفع</h2>
-        <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم تُفتح رسالة WhatsApp جاهزة إلى {{ accounting_whatsapp_name }} لطلب رابط الدفع. لا تُرسل الرسالة تلقائيًا.</p>
+        <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم يُرسل الموقع طلبًا تلقائيًا عبر WhatsApp إلى {{ accounting_whatsapp_name }} يتضمن بيانات الحجز ورابط Hostaway.</p>
         <form method="post" novalidate>
           {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
-          <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز في Hostaway وفتح طلب رابط الدفع</button>
+          <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز في Hostaway وإرسال الطلب للمحاسبة</button>
         </form>
         <div class="lsa-manual-payment-next__coming"><b>قريبًا:</b> إنشاء رابط HyperPay اليدوي وإرساله للضيف مباشرة من هذه الصفحة بعد اعتماد الواجهة من فريق HyperPay.</div>
       </section>
@@ -40,8 +40,22 @@
         {% if reservation %}
           <p>تم إنشاء الحجز في Hostaway لحجز الموعد. لا توجد دفعة مسجلة بعد، ولذلك لا يُرسل تأكيد الحجز إلى الضيف إلا بعد إثبات الدفع.</p>
           <p><b>مرجع Hostaway:</b> <span dir="ltr">{{ reservation.hostaway_reservation_id }}</span></p>
+          {% if accounting_delivery %}
+            {% if accounting_delivery.status == "sent" %}
+              <p><b>طلب رابط الدفع:</b> أُرسل تلقائيًا إلى {{ accounting_whatsapp_name }} عبر WhatsApp.</p>
+            {% elif accounting_delivery.status == "failed" %}
+              <p><b>طلب رابط الدفع:</b> تعذر إرساله تلقائيًا. راجع سجل التسليم قبل أي متابعة يدوية.</p>
+            {% else %}
+              <p><b>طلب رابط الدفع:</b> حالته {{ accounting_delivery.get_status_display }}.</p>
+            {% endif %}
+          {% else %}
+            <p><b>طلب رابط الدفع:</b> لم يُرسل بعد.</p>
+            <form method="post" novalidate>
+              {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
+              <button class="lsa-btn lsa-btn--gold" type="submit">إرسال طلب رابط الدفع للمحاسبة</button>
+            </form>
+          {% endif %}
           <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' reservation.pk %}">فتح وإدارة الحجز</a>
-          {% if accounting_payment_request_url %}<a class="lsa-btn lsa-btn--gold" href="{{ accounting_payment_request_url }}" target="_blank" rel="noopener">فتح طلب رابط الدفع للمحاسبة</a>{% endif %}
         {% else %}
           <p>يجري التحقق من مرجع الحجز. لا تحذف المسودة أو تعيد إنشاءها.</p>
         {% endif %}

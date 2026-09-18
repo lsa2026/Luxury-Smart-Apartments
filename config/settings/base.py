@@ -562,6 +562,30 @@ WHATSAPP_DEFAULT_COUNTRY_CODE = env("WHATSAPP_DEFAULT_COUNTRY_CODE", default="96
 # Kept separate from the public guest-support WhatsApp number.
 ACCOUNTING_WHATSAPP_NAME = env("ACCOUNTING_WHATSAPP_NAME", default="").strip()
 ACCOUNTING_WHATSAPP_NUMBER = env("ACCOUNTING_WHATSAPP_NUMBER", default="").strip()
+# UltraMsg is used only for the private accounting alert that follows a
+# confirmed owner-created Hostaway booking.  It is deliberately off until the
+# deployment has the instance credentials; the public WhatsApp support button
+# never uses these values.
+ULTRAMSG_ENABLED = strict_bool("ULTRAMSG_ENABLED")
+ULTRAMSG_API_BASE_URL = env(
+    "ULTRAMSG_API_BASE_URL", default="https://api.ultramsg.com"
+).rstrip("/")
+ULTRAMSG_INSTANCE_ID = env("ULTRAMSG_INSTANCE_ID", default="").strip()
+ULTRAMSG_TOKEN = env("ULTRAMSG_TOKEN", default="").strip()
+ULTRAMSG_CONNECT_TIMEOUT = 5.0
+ULTRAMSG_READ_TIMEOUT = 20.0
+if ULTRAMSG_ENABLED:
+    parsed_ultramsg_url = urlparse(ULTRAMSG_API_BASE_URL)
+    if (
+        parsed_ultramsg_url.scheme != "https"
+        or parsed_ultramsg_url.hostname != "api.ultramsg.com"
+        or not ULTRAMSG_INSTANCE_ID
+        or not ULTRAMSG_TOKEN
+        or not ACCOUNTING_WHATSAPP_NUMBER
+    ):
+        raise ImproperlyConfigured(
+            "UltraMsg needs its approved HTTPS API URL, instance ID, token, and accounting number."
+        )
 
 NOTIFICATIONS_ENABLED = strict_bool("NOTIFICATIONS_ENABLED", True)
 ADMIN_NOTIFICATION_EMAIL_ENABLED = strict_bool("ADMIN_NOTIFICATION_EMAIL_ENABLED")

@@ -260,6 +260,20 @@ services:
         value: https://luxurysmartapartments.com
       - key: EMAIL_BRAND_NAME
         value: Luxury Smart Apartments
+      # Private alert for Aseel after an owner confirms a manual Hostaway
+      # reservation.  The credentials remain dashboard-only secrets.
+      - key: ACCOUNTING_WHATSAPP_NAME
+        value: Aseel Hafez
+      - key: ACCOUNTING_WHATSAPP_NUMBER
+        value: "+966597193102"
+      - key: ULTRAMSG_ENABLED
+        value: "True"
+      - key: ULTRAMSG_API_BASE_URL
+        value: https://api.ultramsg.com
+      - key: ULTRAMSG_INSTANCE_ID
+        sync: false
+      - key: ULTRAMSG_TOKEN
+        sync: false
       # Lets the admin "sync now" actions hand work to the worker instead of
       # blocking a request thread. Requires lsa-worker to be running.
       - key: CELERY_SYNC_DISPATCH_ENABLED
