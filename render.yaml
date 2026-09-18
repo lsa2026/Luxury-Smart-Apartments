@@ -136,25 +136,24 @@ services:
       # Creation is refused outright when this is missing.
       - key: HOSTAWAY_DIRECT_CHANNEL_ID
         value: "2000"
-      # Extensions and date/guest changes apply themselves once the guest has
-      # paid any difference. payments.E108 refuses to boot unless all three of
-      # these agree, so they move together.
+      # Runtime opt-ins are managed in Render, not reset by Blueprint syncs.
+      # Enable all three together for live modification workflows (E108).
       - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
-        value: "False"
+        sync: false
       - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
-        value: "False"
+        sync: false
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
-        value: "False"
+        sync: false
       # Cancellations apply themselves too. What the guest is owed comes from the
       # CancellationPolicyTier table the administration maintains, is written down
       # as a RefundObligation, and is deducted from reported income until someone
       # transfers it. An empty tier table refunds nothing automatically.
       - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
-        value: "False"
+        sync: false
       - key: BOOKING_AUTOMATIC_REFUND_ENABLED
-        value: "False"
+        sync: false
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
-        value: "False"
+        sync: false
       # Working days quoted to the guest for the bank transfer.
       - key: BOOKING_REFUND_WORKING_DAYS
         value: "5"
@@ -373,17 +372,17 @@ services:
       - key: HOSTAWAY_DIRECT_CHANNEL_ID
         value: "2000"
       - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
-        value: "False"
+        sync: false
       - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
-        value: "False"
+        sync: false
       - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
-        value: "False"
+        sync: false
       - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
-        value: "False"
+        sync: false
       - key: BOOKING_AUTOMATIC_REFUND_ENABLED
-        value: "False"
+        sync: false
       - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
-        value: "False"
+        sync: false
       # Working days quoted to the guest for the bank transfer.
       - key: BOOKING_REFUND_WORKING_DAYS
         value: "5"

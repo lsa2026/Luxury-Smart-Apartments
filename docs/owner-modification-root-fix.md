@@ -55,3 +55,23 @@ refund across multiple captures. An unsupported/refused/ambiguous provider
 operation must remain visible for reconciliation, never reported as success or
 blindly retried. Production smoke checks are read-only; provider calls are tested
 with controlled responses rather than sending live financial transactions.
+
+## Deployment opt-in follow-up (2026-09-18)
+
+The first live retry no longer raised 500, but correctly stopped before the
+Hostaway write with `hostaway_live_modification_disabled`. The production web
+service still had all three modification/extension/automatic-approval flags set
+to `False`. UltraMsg was already enabled. This was a missing deployment step,
+not a WhatsApp timeout. With the owner's approval, these three web-service
+opt-ins are set to `True` together. No existing booking is resubmitted as a test.
+
+The Blueprint now uses `sync: false` for these runtime-managed opt-ins, so a
+future Blueprint sync cannot overwrite the operator's chosen values with the
+old hardcoded `False`. New services must explicitly configure the opt-ins;
+application defaults remain fail-closed. A deployment regression test covers
+both the web and shared Celery definitions. Existing cancellation/refund and
+unavailable manual-payment-link settings are not changed by this follow-up.
+Cancellation/refund opt-ins also use `sync: false` to preserve their existing
+production values when this Blueprint is synced, rather than resetting the
+already-working cancellation path. See Render's documented behavior:
+https://render.com/docs/blueprint-spec#prompting-for-secret-values
