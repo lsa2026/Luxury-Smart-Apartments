@@ -613,5 +613,8 @@ body.login .errornote { border-radius: 10px; }
 
 /* The manual flow starts with dates; Hostaway then supplies the usable units. */
 .lsa-manual-booking-form__property { margin-top: 4px; }.lsa-manual-booking-form__property select:disabled { color: var(--lsa-muted); background: #f4f0e8; cursor: wait; }
+.lsa-manual-booking-form__submit { display: block; width: min(100%, 330px); min-height: 48px; margin: 18px 0 0; font-size: 14px; font-weight: 800; text-align: center; }
+.lsa-manual-booking-form__submit:disabled { opacity: .52; cursor: not-allowed; }
 .lsa-manual-draft-list__cards { display: none; }
-@media (max-width: 767px) { .lsa-manual-draft-list__table { display: none; }.lsa-manual-draft-list__cards { display: grid; gap: 12px; }.lsa-manual-draft-search { display: grid; grid-template-columns: 1fr; gap: 10px; }.lsa-manual-draft-search label { display: grid; gap: 6px; }.lsa-manual-draft-search button { min-height: 42px; } }
+.lsa-cancellation-list__cards { display: none; }
+@media (max-width: 767px) { .lsa-manual-booking-form__submit { width: 100%; min-height: 54px; }.lsa-manual-draft-list__table,.lsa-cancellation-list__table { display: none; }.lsa-manual-draft-list__cards,.lsa-cancellation-list__cards { display: grid; gap: 12px; }.lsa-manual-draft-search { display: grid; grid-template-columns: 1fr; gap: 10px; }.lsa-manual-draft-search label { display: grid; gap: 6px; }.lsa-manual-draft-search button { min-height: 42px; } }

@@ -946,6 +946,7 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
     const departureInput = form.querySelector("input[name='check_out']");
     const guestsInput = form.querySelector("input[name='guests']");
     const status = form.querySelector("[data-manual-property-status]");
+    const submitButton = form.querySelector(".lsa-manual-booking-form__submit");
     const endpoint = form.dataset.availablePropertiesUrl || "";
     let requestNumber = 0;
 
@@ -956,6 +957,7 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
     function setPlaceholder(label, disabled = true) {
         propertyInput.replaceChildren(new Option(label, ""));
         propertyInput.disabled = disabled;
+        if (submitButton) submitButton.disabled = true;
     }
 
     function hasCompleteStay() {
@@ -995,6 +997,7 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
             propertyInput.replaceChildren(new Option("اختر الوحدة المتاحة", ""));
             properties.forEach((property) => propertyInput.add(new Option(property.name, property.id)));
             propertyInput.disabled = false;
+            if (submitButton) submitButton.disabled = true;
             if (status) status.textContent = `تم العثور على ${properties.length} وحدة متاحة. اختر الوحدة لإكمال الفحص والسعر.`;
         } catch (_error) {
             if (currentRequest !== requestNumber) return;
@@ -1003,8 +1006,15 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
         }
     }
 
-    setPlaceholder("اختر التواريخ أولًا");
+    if (hasCompleteStay()) {
+        void refreshAvailableProperties();
+    } else {
+        setPlaceholder("اختر التواريخ أولًا");
+    }
     [arrivalInput, departureInput, guestsInput].forEach((input) => input.addEventListener("change", refreshAvailableProperties));
+    propertyInput.addEventListener("change", () => {
+        if (submitButton) submitButton.disabled = !propertyInput.value;
+    });
 });
 
 document.querySelectorAll("[data-management-calendar]").forEach((calendar) => {

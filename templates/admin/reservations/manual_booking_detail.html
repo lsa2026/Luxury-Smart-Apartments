@@ -25,7 +25,7 @@
     {% if draft.status == "ready_for_payment" %}
       <p><b>السعر المعتمد:</b> <span dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</span></p>
       {% if draft.price_override_reason %}<p><b>سبب التعديل:</b> {{ draft.price_override_reason }}</p>{% endif %}
-      <p class="help">المسودة جاهزة للمرحلة التالية فقط. لم يُنشأ رابط دفع أو حجز خارجي.</p>
+      <p class="help">المسودة جاهزة لمرحلة رابط الدفع. لم يُنشأ رابط أو حجز خارجي بعد؛ يتطلب ذلك تفعيل واجهة HyperPay المخصصة للروابط اليدوية.</p>
     {% elif draft.status == "quoted" %}
       <form method="post" novalidate>
         {% csrf_token %}

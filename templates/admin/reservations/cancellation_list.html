@@ -24,21 +24,30 @@
 
   <section class="lsa-panel">
     {% if cancellations %}
-    <div class="lsa-table-scroll"><table>
-      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>وقت الطلب</th><th></th></tr></thead>
+    <div class="lsa-table-scroll lsa-cancellation-list__table"><table>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>وقت الطلب</th></tr></thead>
       <tbody>
         {% for item in cancellations %}
         <tr>
-          <td><b>{% if item.reservation.booking_intent %}{{ item.reservation.booking_intent.guest_first_name }} {{ item.reservation.booking_intent.guest_last_name }}{% else %}—{% endif %}</b><br><small>{{ item.reservation.booking_intent.guest_email|default:"" }}</small></td>
+          <td><a class="lsa-booking-list__guest" href="{% url 'notifications:cancellation_detail' item.pk %}"><b>{% if item.reservation.booking_intent %}{{ item.reservation.booking_intent.guest_first_name }} {{ item.reservation.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>{{ item.reservation.booking_intent.guest_email|default:"" }}</small></a></td>
           <td>{{ item.reservation.property|default:"—" }}</td>
           <td dir="ltr">{{ item.old_check_in }} → {{ item.old_check_out }}</td>
           <td>{{ item.get_status_display }}</td>
           <td dir="ltr">{{ item.requested_at }}</td>
-          <td><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:cancellation_detail' item.pk %}">مراجعة</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table></div>
+    <div class="lsa-cancellation-list__cards">
+      {% for item in cancellations %}
+      <a class="lsa-booking-card" href="{% url 'notifications:cancellation_detail' item.pk %}">
+        <div class="lsa-booking-card__top"><div><strong>{% if item.reservation.booking_intent %}{{ item.reservation.booking_intent.guest_first_name }} {{ item.reservation.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</strong><small>{{ item.reservation.booking_intent.guest_email|default:"" }}</small></div><span>{{ item.get_status_display }}</span></div>
+        <p>{{ item.reservation.property|default:"—" }}</p>
+        <div class="lsa-booking-card__facts"><span><small>الإقامة</small><b dir="ltr">{{ item.old_check_in }} → {{ item.old_check_out }}</b></span><span><small>وقت الطلب</small><b dir="ltr">{{ item.requested_at }}</b></span></div>
+        <em>فتح طلب الإلغاء ←</em>
+      </a>
+      {% endfor %}
+    </div>
     {% else %}<p class="help">لا توجد طلبات إلغاء مطابقة حاليًا.</p>{% endif %}
   </section>
 </main>
