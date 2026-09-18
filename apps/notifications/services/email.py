@@ -288,6 +288,11 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "en": "Booking cancellation and refund request",
         "fr": "Annulation et demande de remboursement",
     },
+    "modification_refund_admin_alert": {
+        "ar": "تعديل حجز وطلب استرداد فرق السعر",
+        "en": "Booking change and price-difference refund request",
+        "fr": "Modification de réservation et remboursement de la différence",
+    },
     "reservation_modified": {
         "ar": "تم تعديل الحجز",
         "en": "Reservation updated",
@@ -342,6 +347,7 @@ TEMPLATE_GROUPS = {
     "reservation_cancelled": "reservation",
     "refund_submitted": "reservation",
     "cancellation_refund_admin_alert": "operations",
+    "modification_refund_admin_alert": "operations",
     "reservation_modified": "modification",
     "reservation_access_link": "account",
     "daily_operations_summary": "operations",
@@ -817,7 +823,10 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)
-        if delivery.message_type == "cancellation_refund_admin_alert":
+        if delivery.message_type in {
+            "cancellation_refund_admin_alert",
+            "modification_refund_admin_alert",
+        }:
             from apps.reservations.models import RefundObligation
 
             refund = RefundObligation.objects.select_related("reservation__booking_intent").get(

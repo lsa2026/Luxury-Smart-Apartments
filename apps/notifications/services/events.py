@@ -284,18 +284,22 @@ def handle_refund_submitted(obligation_id: object) -> None:
                 language=intent.language,
                 idempotency_key=f"refund-submitted:{refund.public_reference}:{state}",
             )
+        admin_alert_type = {
+            RefundObligation.Reason.CANCELLATION: "cancellation_refund_admin_alert",
+            RefundObligation.Reason.MODIFICATION_DECREASE: "modification_refund_admin_alert",
+        }.get(refund.reason)
         if (
-            refund.reason == RefundObligation.Reason.CANCELLATION
+            admin_alert_type
             and settings.ADMIN_NOTIFICATION_EMAIL_ENABLED
             and settings.OPERATIONS_EMAIL
         ):
             queue_email(
-                message_type="cancellation_refund_admin_alert",
+                message_type=admin_alert_type,
                 recipient=settings.OPERATIONS_EMAIL,
                 recipient_source="operations",
                 recipient_reference=refund.public_reference,
                 language="ar",
-                idempotency_key=f"cancellation-refund-admin:{refund.public_reference}:{state}",
+                idempotency_key=f"{admin_alert_type}:{refund.public_reference}:{state}",
             )
     except (DatabaseError, KeyError, ObjectDoesNotExist, ValueError) as exc:
         logger.error("Refund guest email queue failed code=%s", type(exc).__name__)

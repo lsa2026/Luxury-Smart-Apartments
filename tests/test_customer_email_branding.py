@@ -1,5 +1,5 @@
-from unittest.mock import patch
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from django.core import mail
@@ -330,3 +330,28 @@ def test_submitted_refund_queues_a_clear_guest_notification() -> None:
     assert queue.call_args.kwargs["message_type"] == "refund_submitted"
     assert queue.call_args.kwargs["recipient"] == reservation.booking_intent.guest_email
     assert queue.call_args.kwargs["recipient_source"] == "refund"
+
+
+@override_settings(
+    MODIFICATION_NOTIFICATION_EMAIL_ENABLED=True,
+    ADMIN_NOTIFICATION_EMAIL_ENABLED=True,
+    OPERATIONS_EMAIL="operations@example.invalid",
+)
+def test_submitted_price_decrease_refund_alerts_operations() -> None:
+    reservation = confirmed_reservation()
+    refund = record_obligation(
+        reservation,
+        reason=RefundObligation.Reason.MODIFICATION_DECREASE,
+        computation=RefundComputation(Decimal("125.0000"), "SAR"),
+    )
+    assert refund is not None
+    refund.status = RefundObligation.Status.PROCESSING
+    refund.save(update_fields=["status", "updated_at"])
+
+    with patch("apps.notifications.services.events.queue_email") as queue:
+        handle_refund_submitted(refund.pk)
+
+    queued_types = [call.kwargs["message_type"] for call in queue.call_args_list]
+    assert queued_types == ["refund_submitted", "modification_refund_admin_alert"]
+    assert queue.call_args_list[1].kwargs["recipient"] == "operations@example.invalid"
+    assert queue.call_args_list[1].kwargs["recipient_source"] == "operations"
