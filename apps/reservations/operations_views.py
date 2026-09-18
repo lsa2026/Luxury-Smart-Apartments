@@ -235,6 +235,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
                 Reservation.Status.CREATE_UNKNOWN,
                 Reservation.Status.DECLINED,
                 Reservation.Status.EXPIRED,
+                Reservation.Status.CANCELLED,
             )
         )
         .select_related("property", "booking_intent")
@@ -440,14 +441,26 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                         action="modification.accounting_whatsapp_sent",
                         object_type="BookingModificationRequest",
                         object_reference=adjustment.public_reference,
-                        summary="The accounting payment-link request for a price increase was sent through UltraMsg.",
+                        summary=(
+                            "The accounting payment-link request for a price increase was sent "
+                            "through UltraMsg."
+                        ),
                         metadata={"price_difference": format(adjustment.price_difference, "f")},
                     )
-                    messages.success(request, "أُرسل طلب إنشاء رابط فرق التعديل إلى أسيل عبر WhatsApp.")
+                    messages.success(
+                        request,
+                        "أُرسل طلب إنشاء رابط فرق التعديل إلى أسيل عبر WhatsApp.",
+                    )
+                    return redirect("notifications:booking_list")
                 elif delivery_result.code == "already_sent":
-                    messages.info(request, "سبق إرسال طلب رابط فرق التعديل إلى أسيل؛ لم تُرسل رسالة مكررة.")
+                    messages.info(
+                        request,
+                        "سبق إرسال طلب رابط فرق التعديل إلى أسيل؛ لم تُرسل رسالة مكررة.",
+                    )
+                    return redirect("notifications:booking_list")
                 elif delivery_result.code == "already_requested":
                     messages.info(request, "طلب رابط فرق التعديل قيد الإرسال بالفعل إلى أسيل.")
+                    return redirect("notifications:booking_list")
                 elif delivery_result.code == "previously_failed":
                     messages.error(request, "فشل طلب الرابط السابق؛ راجع سجل التسليم قبل أي متابعة.")
                 else:

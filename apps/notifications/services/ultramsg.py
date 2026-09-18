@@ -169,7 +169,6 @@ def send_modification_payment_link_request(*, modification_id: object) -> WhatsA
     with transaction.atomic():
         modification = (
             BookingModificationRequest.objects.select_for_update()
-            .select_related("reservation", "reservation__booking_intent", "reservation__property")
             .filter(pk=modification_id)
             .first()
         )
@@ -208,10 +207,25 @@ def send_modification_payment_link_request(*, modification_id: object) -> WhatsA
         delivery.attempt_count = 1
         delivery.save(update_fields=["status", "attempt_count", "updated_at"])
 
-    return _send_delivery(
-        delivery=delivery,
-        body=_modification_payment_message(modification),
+    # Do not hold a row lock across nullable joins. PostgreSQL rejects
+    # `FOR UPDATE` on the nullable side of the booking_intent join. The
+    # modification itself is locked above; its related data can be read after
+    # the transaction has committed.
+    modification = (
+        BookingModificationRequest.objects.select_related(
+            "reservation", "reservation__booking_intent", "reservation__property"
+        ).get(pk=modification.pk)
     )
+    try:
+        body = _modification_payment_message(modification)
+    except Exception:
+        logger.exception(
+            "Could not build the UltraMsg modification-payment message for modification %s.",
+            modification.pk,
+        )
+        return _finish_failure(delivery.pk, "failed", "message_build_failed")
+
+    return _send_delivery(delivery=delivery, body=body)
 
 
 def _send_delivery(*, delivery: WhatsAppDelivery, body: str) -> WhatsAppDeliveryResult:

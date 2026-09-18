@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.notifications.models import AuditLog
-from apps.reservations.models import BookingModificationRequest, RefundObligation
+from apps.reservations.models import BookingModificationRequest, RefundObligation, Reservation
 from apps.reservations.operations_forms import OwnerModificationExecutionForm
 from apps.reservations.services.refunds import (
     RefundComputation,
@@ -205,6 +205,23 @@ def test_booking_management_list_is_owner_only_and_names_the_guest_first():
     assert reverse("notifications:booking_detail", args=[reservation.pk]) in response.content.decode()
     assert 'class="lsa-booking-list__guest"' in response.content.decode()
     assert ">إدارة<" not in response.content.decode()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_cancelled_booking_is_hidden_from_the_operational_booking_list():
+    reservation = confirmed_reservation()
+    reservation.normalized_status = Reservation.Status.CANCELLED
+    reservation.save(update_fields=["normalized_status", "updated_at"])
+    client = Client()
+    client.force_login(owner())
+
+    response = client.get(reverse("notifications:booking_list"))
+
+    assert response.status_code == 200
+    assert reservation.booking_intent.guest_first_name not in response.content.decode()
 
 
 def test_owner_change_execution_can_approve_a_partial_or_zero_refund():
