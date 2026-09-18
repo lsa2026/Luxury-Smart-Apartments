@@ -20,10 +20,12 @@ from django.utils import timezone
 from apps.accounts.access import require_operations_owner
 from apps.notifications.models import AuditLog, WhatsAppDelivery
 from apps.notifications.services.audit import record_audit
-from apps.notifications.services.ultramsg import send_manual_payment_link_request
-from apps.notifications.services.ultramsg import send_modification_payment_link_request
-from apps.payments.models import PaymentAttempt
+from apps.notifications.services.ultramsg import (
+    send_manual_payment_link_request,
+    send_modification_payment_link_request,
+)
 from apps.payments.hyperpay.refunds import HyperPayRefundService
+from apps.payments.models import PaymentAttempt
 from apps.properties.models import Property
 
 from .manual_bookings import (
@@ -56,8 +58,7 @@ from .operations_forms import (
 from .services.automatic_modifications import execute_automatic_modification
 from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.modifications import ModificationService
-from .services.refunds import cancellation_refund
-
+from .services.refunds import cancellation_refund, successful_original_payment_amount
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +282,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
     )
     intent = reservation.booking_intent
+    original_payment_amount = successful_original_payment_amount(reservation)
+    has_successful_payment = original_payment_amount is not None and original_payment_amount > 0
     date_form = DateChangeRequestForm(
         initial={
             "new_check_in": reservation.check_in,
@@ -303,7 +306,11 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
     )
     if ready_adjustment is not None:
         execution_form = OwnerModificationExecutionForm(
-            maximum_amount=ready_adjustment.refund_amount
+            maximum_amount=(
+                ready_adjustment.refund_amount
+                if has_successful_payment
+                else Decimal("0")
+            )
         )
     increase_adjustment = next(
         (
@@ -390,7 +397,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             )
             execution_form = OwnerModificationExecutionForm(
                 request.POST,
-                maximum_amount=adjustment.refund_amount,
+                maximum_amount=(
+                    adjustment.refund_amount if has_successful_payment else Decimal("0")
+                ),
             )
             if execution_form.is_valid() and (
                 adjustment.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
@@ -456,6 +465,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "execution_form": execution_form,
             "increase_adjustment": increase_adjustment,
             "increase_delivery": increase_delivery,
+            "has_successful_payment": has_successful_payment,
         },
     )
 
@@ -828,6 +838,8 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
     )
     approval_form = CancellationDecisionForm()
     rejection_form = CancellationRejectionForm()
+    original_payment_amount = successful_original_payment_amount(cancellation.reservation)
+    has_successful_payment = original_payment_amount is not None and original_payment_amount > 0
     estimated_refund = cancellation_refund(cancellation.reservation)
     execution_form = CancellationExecutionForm(maximum_amount=estimated_refund.amount)
     if request.method == "POST":
@@ -947,6 +959,8 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
             "title": "مراجعة طلب الإلغاء",
             "cancellation": cancellation,
             "estimated_refund": estimated_refund,
+            "has_successful_payment": has_successful_payment,
+            "original_payment_amount": original_payment_amount,
             "refunds": cancellation.refund_obligations.all(),
             "approval_form": approval_form,
             "rejection_form": rejection_form,

@@ -13,7 +13,12 @@ from apps.payments.models import PaymentAttempt
 
 from ..models import BookingModificationRequest, RefundObligation
 from .hostaway_modifications import HostawayModificationService, ModificationExecution
-from .refunds import RefundComputation, cancellation_refund, record_obligation
+from .refunds import (
+    RefundComputation,
+    cancellation_refund,
+    record_obligation,
+    successful_original_payment_amount,
+)
 
 if TYPE_CHECKING:
     from apps.payments.hyperpay.refunds import HyperPayRefundService
@@ -146,12 +151,17 @@ def _record_refund_if_owed(
         computation = cancellation_refund(reservation)
         reason = RefundObligation.Reason.CANCELLATION
     elif modification.price_difference < 0:
+        original_payment = successful_original_payment_amount(reservation)
+        if original_payment is None:
+            return None
+        refundable_difference = min(abs(modification.price_difference), original_payment)
         computation = RefundComputation(
-            amount=abs(modification.price_difference),
+            amount=refundable_difference,
             currency=modification.currency,
             detail={
                 "old_total": format(modification.old_total, "f"),
                 "new_total": format(modification.new_total or Decimal("0"), "f"),
+                "original_payment_ceiling": format(original_payment, "f"),
                 "source": "modification_price_difference",
             },
         )

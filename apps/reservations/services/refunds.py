@@ -60,7 +60,7 @@ def _cleaning_fee(reservation: Reservation) -> Decimal:
     return max(total, Decimal("0"))
 
 
-def _successful_original_payment(reservation: Reservation) -> Decimal | None:
+def successful_original_payment_amount(reservation: Reservation) -> Decimal | None:
     """Return the card amount actually collected for the original stay.
 
     Hostaway's reservation total can differ from the amount that made it
@@ -101,7 +101,7 @@ def cancellation_refund(
     moment = at or timezone.now()
     if settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED:
         arrival = check_in_datetime(reservation.property, reservation.check_in)
-        original_payment = _successful_original_payment(reservation)
+        original_payment = successful_original_payment_amount(reservation)
         if moment < arrival and original_payment is not None:
             return RefundComputation(
                 _quantize(original_payment),
@@ -127,6 +127,11 @@ def cancellation_refund(
         "policy_code": policy,
         "stay_total": format(reservation.total_price, "f"),
     }
+
+    original_payment = successful_original_payment_amount(reservation)
+    if original_payment is None:
+        detail["reason"] = "unpaid"
+        return RefundComputation(Decimal("0"), currency, detail)
 
     if not policy:
         detail["reason"] = "no_policy_on_property"
@@ -157,9 +162,7 @@ def cancellation_refund(
     if not tier.refunds_cleaning_fee:
         cleaning = min(_cleaning_fee(reservation), base)
         base -= cleaning
-    original_payment = _successful_original_payment(reservation)
-    if original_payment is not None:
-        base = min(base, original_payment)
+    base = min(base, original_payment)
     amount = _quantize(base * percentage / Decimal("100"))
     detail.update(
         {

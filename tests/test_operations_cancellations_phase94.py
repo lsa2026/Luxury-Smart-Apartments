@@ -12,7 +12,11 @@ from django.utils import timezone
 from apps.notifications.models import AuditLog
 from apps.reservations.models import BookingModificationRequest, RefundObligation
 from apps.reservations.operations_forms import OwnerModificationExecutionForm
-from apps.reservations.services.refunds import RefundComputation, record_obligation
+from apps.reservations.services.refunds import (
+    RefundComputation,
+    cancellation_refund,
+    record_obligation,
+)
 from tests.test_booking_modifications_phase6 import confirmed_reservation
 
 pytestmark = pytest.mark.django_db
@@ -86,6 +90,34 @@ def test_owner_approval_prepares_but_does_not_send_a_cancellation():
     assert AuditLog.objects.filter(
         action="cancellation.approved_locally", object_reference=request.public_reference
     ).exists()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_unpaid_cancellation_shows_cancel_only_without_refund_choices():
+    request = cancellation_request()
+    client = Client()
+    client.force_login(owner())
+
+    response = client.get(reverse("notifications:cancellation_detail", args=[request.pk]))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "لم تُسجّل دفعة ناجحة لهذا الحجز" in content
+    assert "إلغاء الحجز فقط" in content
+    assert "استرداد كامل" not in content
+    assert "إرسال الاسترداد إلى HyperPay" not in content
+
+
+def test_unpaid_cancellation_computes_zero_refund():
+    request = cancellation_request()
+
+    computation = cancellation_refund(request.reservation)
+
+    assert computation.amount == Decimal("0")
+    assert computation.detail["reason"] == "unpaid"
 
 
 @override_settings(

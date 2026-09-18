@@ -37,11 +37,21 @@
   {% endif %}
   {% if ready_adjustment and execution_form %}
   <section class="lsa-panel lsa-owner-action">
-    <h2>تنفيذ تعديل مع استرداد</h2>
-    <p>اعتمد صفرًا أو مبلغًا جزئيًا أو كامل فرق النقص حتى <b dir="ltr">{{ ready_adjustment.refund_amount }} {{ ready_adjustment.currency }}</b>. لن يرسل الموقع استردادًا إلا بعد نجاح التعديل في Hostaway.</p>
+    <h2>تنفيذ التعديل{% if has_successful_payment %} مع استرداد{% endif %}</h2>
+    {% if has_successful_payment %}
+      <p>اعتمد صفرًا أو مبلغًا جزئيًا أو كامل فرق النقص حتى <b dir="ltr">{{ ready_adjustment.refund_amount }} {{ ready_adjustment.currency }}</b>. لن يرسل الموقع استردادًا إلا بعد نجاح التعديل في Hostaway.</p>
+    {% else %}
+      <p>هذا الحجز غير مدفوع. سينفذ النظام تعديل التواريخ أو الضيوف فقط، ولن ينشئ أي استرداد.</p>
+    {% endif %}
     <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_adjustment"><input type="hidden" name="modification_id" value="{{ ready_adjustment.pk }}">
-      {% for field in execution_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
-      <button class="default" type="submit">تنفيذ التعديل وقرار الاسترداد</button>
+      {% if has_successful_payment %}
+        {% for field in execution_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+        <button class="default" type="submit">تنفيذ التعديل وقرار الاسترداد</button>
+      {% else %}
+        <input type="hidden" name="approved_refund_amount" value="0">
+        <div class="form-row">{{ execution_form.confirm_external_modification.label_tag }}{{ execution_form.confirm_external_modification }}{{ execution_form.confirm_external_modification.errors }}</div>
+        <button class="default" type="submit">تنفيذ التعديل فقط</button>
+      {% endif %}
     </form>
   </section>
   {% endif %}
