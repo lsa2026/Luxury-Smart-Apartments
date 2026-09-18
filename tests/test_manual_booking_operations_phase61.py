@@ -13,6 +13,7 @@ from apps.notifications.models import AuditLog
 from apps.reservations.manual_bookings import (
     create_manual_booking_draft,
     finalize_manual_booking_draft,
+    recheck_manual_booking_draft,
 )
 from apps.reservations.models import (
     BookingQuote,
@@ -255,6 +256,8 @@ def test_owner_can_find_manual_drafts_by_guest_name():
 
     assert page.status_code == 200
     assert "Aseel Hafez" in page.content.decode()
+    assert 'class="lsa-booking-list__guest"' in page.content.decode()
+    assert 'class="lsa-manual-draft-list__cards"' in page.content.decode()
 
 
 @override_settings(
@@ -310,3 +313,60 @@ def test_manual_booking_create_screen_exposes_live_calendar_for_each_property():
     assert 'id="manual-booking-calendar-urls"' in content
     assert "data-luxury-calendar" in content
     assert "data-calendar-property-select" in content
+    assert "data-manual-property-filter" in content
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_manual_draft_can_be_rechecked_without_creating_a_reservation():
+    property_obj = make_property()
+    actor = owner()
+    available = make_availability(property_obj)
+    initial = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=available.quote.check_in,
+        check_out=available.quote.check_out,
+        guests=2,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+    assert initial.draft is not None
+    rechecked = recheck_manual_booking_draft(
+        draft_id=initial.draft.pk,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+
+    assert rechecked.code == "rechecked"
+    assert rechecked.draft is not None
+    assert rechecked.draft.status == ManualBookingDraft.Status.QUOTED
+    assert Reservation.objects.count() == 0
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_manual_property_picker_returns_calendar_confirmed_choices(monkeypatch):
+    actor = owner()
+    property_obj = make_property()
+    client = Client()
+    client.force_login(actor)
+    monkeypatch.setattr(
+        "apps.reservations.operations_views._available_manual_properties",
+        lambda **_kwargs: [{"id": str(property_obj.pk), "name": "وحدة متاحة"}],
+    )
+
+    response = client.get(
+        reverse("notifications:manual_booking_available_properties"),
+        {
+            "check_in": (timezone.localdate() + timedelta(days=10)).isoformat(),
+            "check_out": (timezone.localdate() + timedelta(days=12)).isoformat(),
+            "guests": "2",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["properties"] == [{"id": str(property_obj.pk), "name": "وحدة متاحة"}]

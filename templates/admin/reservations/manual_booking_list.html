@@ -11,7 +11,7 @@
     <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">إنشاء مسودة حجز</a>
   </section>
   <section class="lsa-panel">
-    <form method="get" class="lsa-inline-form" aria-label="البحث في مسودات الحجز">
+    <form method="get" class="lsa-inline-form lsa-manual-draft-search" aria-label="البحث في مسودات الحجز">
       <label>بحث بالضيف أو الوحدة أو المرجع <input type="search" name="q" value="{{ query }}"></label>
       <label>الحالة
         <select name="status">
@@ -22,22 +22,31 @@
       <button type="submit">بحث</button>
     </form>
     {% if drafts %}
-    <table>
+    <div class="lsa-table-scroll lsa-manual-draft-list__table"><table>
       <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>السعر النهائي</th><th>الحالة</th><th>المرجع</th><th></th></tr></thead>
       <tbody>
       {% for draft in drafts %}
       <tr>
-        <td>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}لم تُسجل بيانات الضيف بعد{% endif %}</td>
+        <td><a class="lsa-booking-list__guest" href="{% url 'notifications:manual_booking_detail' draft.pk %}"><b>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}لم تُسجل بيانات الضيف بعد{% endif %}</b><small>فتح المسودة</small></a></td>
         <td>{{ draft.property }}</td>
         <td dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</td>
         <td dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</td>
         <td>{{ draft.get_status_display }}</td>
         <td dir="ltr">{{ draft.public_reference }}</td>
-        <td><a href="{% url 'notifications:manual_booking_detail' draft.pk %}">فتح</a></td>
       </tr>
       {% endfor %}
       </tbody>
-    </table>
+    </table></div>
+    <div class="lsa-manual-draft-list__cards">
+      {% for draft in drafts %}
+      <a class="lsa-booking-card" href="{% url 'notifications:manual_booking_detail' draft.pk %}">
+        <div class="lsa-booking-card__top"><div><strong>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}مسودة بلا بيانات ضيف{% endif %}</strong><small>{{ draft.get_status_display }}</small></div><span>{{ draft.currency }}</span></div>
+        <p>{{ draft.property }}</p>
+        <div class="lsa-booking-card__facts"><span><small>الإقامة</small><b dir="ltr">{{ draft.check_in }} → {{ draft.check_out }}</b></span><span><small>السعر</small><b dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</b></span></div>
+        <em>فتح المسودة وتعديلها أو حذفها ←</em>
+      </a>
+      {% endfor %}
+    </div>
     {% else %}
     <p>لا توجد مسودات بعد.</p>
     {% endif %}

@@ -21,6 +21,11 @@ urlpatterns = [
         name="manual_booking_create",
     ),
     path(
+        "admin/operations/manual-bookings/available-properties/",
+        operations_views.manual_booking_available_properties,
+        name="manual_booking_available_properties",
+    ),
+    path(
         "admin/operations/bookings/",
         operations_views.booking_list,
         name="booking_list",

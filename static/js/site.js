@@ -565,7 +565,9 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
     async function loadVisibleCalendarAvailability() {
         if (!calendarAvailabilityUrl || !displayMonth) {
             if (availabilityStatus) {
-                availabilityStatus.textContent = availabilityFallbackLabel;
+                availabilityStatus.textContent = calendarAvailabilityUrl
+                    ? availabilityFallbackLabel
+                    : noPropertyLabel;
             }
             return;
         }
@@ -712,24 +714,18 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
         const nextUrl = String(calendarAvailabilityMap[propertyInput.value] || "");
         const changed = calendarAvailabilityUrl !== nextUrl;
         calendarAvailabilityUrl = nextUrl;
-        if (changed) {
+        if (changed && calendarAvailabilityUrl) {
             availabilityByDate.clear();
             requestedAvailabilityWindows.clear();
-            arrivalInput.value = "";
-            departureInput.value = "";
-            departureInput.min = initialDepartureMinimum;
-            activeField = "check_in";
-            dispatchDateChange(arrivalInput);
-            dispatchDateChange(departureInput);
         }
         const selectedOption = propertyInput.selectedOptions[0];
         const hasProperty = Boolean(calendarAvailabilityUrl);
-        arrivalTrigger.disabled = !hasProperty;
-        departureTrigger.disabled = !hasProperty;
+        arrivalTrigger.disabled = false;
+        departureTrigger.disabled = false;
         if (propertySummary) {
             propertySummary.textContent = hasProperty && selectedOption
                 ? `تقويم التوفر المباشر: ${selectedOption.textContent.trim()}`
-                : noPropertyLabel;
+                : "ابدأ باختيار التواريخ، ثم اختر وحدة من النتائج المتاحة.";
         }
         if (!hasProperty && availabilityStatus) {
             availabilityStatus.textContent = noPropertyLabel;
@@ -942,6 +938,73 @@ document.querySelectorAll("[data-luxury-calendar]").forEach((calendar) => {
         updateSelectionSummary();
     });
     departureInput.addEventListener("change", updateSelectionSummary);
+});
+
+document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
+    const propertyInput = form.querySelector("[data-calendar-property-select]");
+    const arrivalInput = form.querySelector("input[name='check_in']");
+    const departureInput = form.querySelector("input[name='check_out']");
+    const guestsInput = form.querySelector("input[name='guests']");
+    const status = form.querySelector("[data-manual-property-status]");
+    const endpoint = form.dataset.availablePropertiesUrl || "";
+    let requestNumber = 0;
+
+    if (!(propertyInput instanceof HTMLSelectElement) || !arrivalInput || !departureInput || !guestsInput || !endpoint) {
+        return;
+    }
+
+    function setPlaceholder(label, disabled = true) {
+        propertyInput.replaceChildren(new Option(label, ""));
+        propertyInput.disabled = disabled;
+    }
+
+    function hasCompleteStay() {
+        return arrivalInput.value
+            && departureInput.value
+            && departureInput.value > arrivalInput.value
+            && Number(guestsInput.value) >= 1;
+    }
+
+    async function refreshAvailableProperties() {
+        const currentRequest = ++requestNumber;
+        if (!hasCompleteStay()) {
+            setPlaceholder("اختر التواريخ أولًا");
+            if (status) status.textContent = "اختر التواريخ وعدد الضيوف أولًا لعرض الوحدات المتاحة.";
+            return;
+        }
+
+        setPlaceholder("يتم فحص الوحدات المتاحة…");
+        if (status) status.textContent = "يتم فحص تقويم Hostaway للوحدات المتاحة…";
+        const url = new URL(endpoint, window.location.origin);
+        url.searchParams.set("check_in", arrivalInput.value);
+        url.searchParams.set("check_out", departureInput.value);
+        url.searchParams.set("guests", guestsInput.value);
+
+        try {
+            const response = await fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } });
+            const payload = await response.json();
+            if (currentRequest !== requestNumber) return;
+            const properties = Array.isArray(payload.properties) ? payload.properties : [];
+            if (!response.ok || !properties.length) {
+                setPlaceholder("لا توجد وحدة متاحة لهذه التواريخ");
+                if (status) status.textContent = response.ok
+                    ? "لا توجد وحدة متاحة لهذه التواريخ وعدد الضيوف. جرّب تواريخ أخرى."
+                    : "تعذر فحص الوحدات الآن. حاول مرة أخرى بعد قليل.";
+                return;
+            }
+            propertyInput.replaceChildren(new Option("اختر الوحدة المتاحة", ""));
+            properties.forEach((property) => propertyInput.add(new Option(property.name, property.id)));
+            propertyInput.disabled = false;
+            if (status) status.textContent = `تم العثور على ${properties.length} وحدة متاحة. اختر الوحدة لإكمال الفحص والسعر.`;
+        } catch (_error) {
+            if (currentRequest !== requestNumber) return;
+            setPlaceholder("تعذر فحص الوحدات الآن");
+            if (status) status.textContent = "تعذر الاتصال بـ Hostaway الآن. حاول مرة أخرى بعد قليل.";
+        }
+    }
+
+    setPlaceholder("اختر التواريخ أولًا");
+    [arrivalInput, departureInput, guestsInput].forEach((input) => input.addEventListener("change", refreshAvailableProperties));
 });
 
 document.querySelectorAll("[data-management-calendar]").forEach((calendar) => {

@@ -15,6 +15,13 @@
     <p><b>سعر Hostaway عند الفحص:</b> <span dir="ltr">{{ draft.system_total_price }} {{ draft.currency }}</span></p>
     <p><b>فحص التوفر:</b> <span dir="ltr">{{ draft.availability_checked_at }}</span></p>
     <p><b>صلاحية السعر:</b> <span dir="ltr">{{ draft.expires_at }}</span></p>
+    {% if draft.status != "cancelled" %}
+    <form method="post" class="lsa-owner-form" novalidate>
+      {% csrf_token %}<input type="hidden" name="action" value="recheck">
+      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إعادة فحص التوفر والسعر</button>
+    </form>
+    <p class="help">تعيد هذه الخطوة التحقق من الوحدة والتواريخ وعدد الضيوف في Hostaway. المسودة لا تحفظ الوحدة ولا تنشئ حجزًا.</p>
+    {% endif %}
     {% if draft.status == "ready_for_payment" %}
       <p><b>السعر المعتمد:</b> <span dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</span></p>
       {% if draft.price_override_reason %}<p><b>سبب التعديل:</b> {{ draft.price_override_reason }}</p>{% endif %}

@@ -32,6 +32,13 @@ class ManualBookingDraftFinalization:
     draft: ManualBookingDraft | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ManualBookingDraftRecheck:
+    code: str
+    availability: AvailabilityResult
+    draft: ManualBookingDraft | None = None
+
+
 def _owner_quote_hash(actor: object) -> str:
     material = f"{getattr(actor, 'pk', 'owner')}:{secrets.token_urlsafe(24)}"
     return salted_hmac("manual-booking-draft.v1", material).hexdigest()
@@ -94,6 +101,82 @@ def create_manual_booking_draft(
     except (CurrencyError, ValueError):
         return ManualBookingDraftCreation("currency_unavailable", availability)
     return ManualBookingDraftCreation("created", availability, draft)
+
+
+def recheck_manual_booking_draft(
+    *,
+    draft_id: object,
+    actor: object,
+    availability_service: AvailabilityService | None = None,
+) -> ManualBookingDraftRecheck:
+    """Revalidate one saved draft without treating it as a held reservation.
+
+    A manual draft never reserves inventory.  Rechecking therefore asks
+    Hostaway again for the draft's saved property, dates and guest count, then
+    replaces its expired quote only when the stay is still genuinely available.
+    """
+
+    draft = ManualBookingDraft.objects.select_related("property").filter(pk=draft_id).first()
+    if draft is None:
+        unavailable = AvailabilityResult(False, "unavailable_dates", "", "", 0)
+        return ManualBookingDraftRecheck("not_found", unavailable)
+    if draft.status == ManualBookingDraft.Status.CANCELLED:
+        unavailable = AvailabilityResult(False, "unavailable_dates", "", "", draft.nights)
+        return ManualBookingDraftRecheck("not_recheckable", unavailable, draft)
+
+    request = AvailabilityRequest(
+        property=draft.property,
+        check_in=draft.check_in,
+        check_out=draft.check_out,
+        guests=draft.guests,
+    )
+    if availability_service is None:
+        with AvailabilityService() as service:
+            availability = service.check(request, bypass_cache=True)
+    else:
+        availability = availability_service.check(request, bypass_cache=True)
+    if not availability.is_available or availability.quote is None:
+        return ManualBookingDraftRecheck("unavailable", availability, draft)
+
+    try:
+        with transaction.atomic():
+            locked = (
+                ManualBookingDraft.objects.select_for_update()
+                .select_related("quote", "property")
+                .filter(pk=draft_id)
+                .first()
+            )
+            if locked is None:
+                return ManualBookingDraftRecheck("not_found", availability)
+            if locked.status == ManualBookingDraft.Status.CANCELLED:
+                return ManualBookingDraftRecheck("not_recheckable", availability, locked)
+            previous_quote = locked.quote
+            quote = create_quote_for_property(
+                availability,
+                property_obj=locked.property,
+                session_hash=_owner_quote_hash(actor),
+                selected_display_currency=availability.quote.currency,
+            )
+            locked.quote = quote
+            locked.currency = quote.currency
+            locked.system_total_price = quote.total_price
+            locked.final_total_price = quote.total_price
+            locked.payment_amount_sar = quote.payment_amount_sar
+            locked.selected_display_currency = quote.selected_display_currency
+            locked.exchange_rate_snapshot = dict(quote.exchange_rate_snapshot)
+            locked.price_source = ManualBookingDraft.PriceSource.SYSTEM
+            locked.price_override_reason = ""
+            locked.status = ManualBookingDraft.Status.QUOTED
+            locked.availability_checked_at = timezone.now()
+            locked.expires_at = quote.expires_at
+            locked.full_clean()
+            locked.save()
+            previous_quote.status = BookingQuote.Status.INVALIDATED
+            previous_quote.invalidated_at = timezone.now()
+            previous_quote.save(update_fields=["status", "invalidated_at", "updated_at"])
+    except (CurrencyError, ValueError):
+        return ManualBookingDraftRecheck("currency_unavailable", availability, draft)
+    return ManualBookingDraftRecheck("rechecked", availability, locked)
 
 
 def finalize_manual_booking_draft(

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -18,8 +19,13 @@ from apps.accounts.access import require_operations_owner
 from apps.notifications.models import AuditLog
 from apps.notifications.services.audit import record_audit
 from apps.payments.hyperpay.refunds import HyperPayRefundService
+from apps.properties.models import Property
 
-from .manual_bookings import create_manual_booking_draft, finalize_manual_booking_draft
+from .manual_bookings import (
+    create_manual_booking_draft,
+    finalize_manual_booking_draft,
+    recheck_manual_booking_draft,
+)
 from .modification_forms import DateChangeRequestForm
 from .models import (
     BookingModificationRequest,
@@ -42,6 +48,7 @@ from .operations_forms import (
     RefundSettlementForm,
 )
 from .services.automatic_modifications import execute_automatic_modification
+from .services.availability import AVAILABLE, AvailabilityService, evaluate_calendar
 from .services.modifications import ModificationService
 from .services.refunds import cancellation_refund
 
@@ -52,6 +59,7 @@ def _require_owner(request: HttpRequest) -> None:
 
 _MANUAL_DRAFT_AUDIT_LABELS = {
     "manual_booking.availability_checked": "تم فحص التوفر وتثبيت سعر النظام.",
+    "manual_booking.rechecked": "أُعيد فحص التوفر والسعر من Hostaway لهذه المسودة.",
     "manual_booking.ready_for_payment": "تم اعتماد بيانات الضيف والسعر النهائي.",
     "manual_booking.cancelled": "تم إلغاء المسودة الداخلية قبل الدفع.",
     "manual_booking.deleted": "حُذفت المسودة نهائيًا قبل الدفع.",
@@ -80,6 +88,77 @@ def _calendar_urls(form: ManualBookingAvailabilityForm) -> dict[str, str]:
         )
         for property_obj in form.fields["property"].queryset.only("id", "slug")
     }
+
+
+def _available_manual_properties(
+    *,
+    check_in: date,
+    check_out: date,
+    guests: int,
+) -> list[dict[str, str]]:
+    """Return calendar-confirmed property choices for the date-first picker.
+
+    The final draft save still verifies availability and authoritative pricing
+    for the selected property before it creates or updates any local draft.
+    """
+
+    available: list[dict[str, str]] = []
+    properties = Property.objects.filter(
+        is_visible=True,
+        hostaway_is_active=True,
+    ).order_by("city_ar", "name_ar", "name_en")
+    with AvailabilityService() as service:
+        for property_obj in properties:
+            if (
+                property_obj.person_capacity is not None
+                and guests > property_obj.person_capacity
+            ):
+                continue
+            try:
+                calendar = service.fetch_calendar(
+                    property_obj=property_obj,
+                    start_date=check_in,
+                    end_date=check_out,
+                    bypass_cache=False,
+                )
+            except Exception:
+                # Never offer a unit whose live calendar cannot be read.
+                continue
+            if (
+                evaluate_calendar(
+                    calendar.document.days,
+                    check_in=check_in,
+                    check_out=check_out,
+                )
+                == AVAILABLE
+            ):
+                available.append({"id": str(property_obj.pk), "name": str(property_obj)})
+    return available
+
+
+@staff_member_required
+def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
+    """Owner-only endpoint for the date-first manual-booking property picker."""
+
+    _require_owner(request)
+    try:
+        check_in = date.fromisoformat(request.GET["check_in"])
+        check_out = date.fromisoformat(request.GET["check_out"])
+        guests = int(request.GET.get("guests", "1"))
+    except (KeyError, TypeError, ValueError):
+        return JsonResponse({"detail": "invalid_stay"}, status=400)
+    if check_in < timezone.localdate() or check_out <= check_in or guests < 1:
+        return JsonResponse({"detail": "invalid_stay"}, status=400)
+
+    return JsonResponse(
+        {
+            "properties": _available_manual_properties(
+                check_in=check_in,
+                check_out=check_out,
+                guests=guests,
+            )
+        }
+    )
 
 
 @staff_member_required
@@ -216,7 +295,14 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                             "تم فحص التوفر وتثبيت فرق الاسترداد. اختر مبلغ الاسترداد ثم أكّد التنفيذ.",
                         )
                     return redirect("notifications:booking_detail", reservation_id=reservation.pk)
-                messages.error(request, f"تعذر تسعير التعديل الآن ({outcome.code}). لم يتغير الحجز.")
+                if outcome.code == "reservation_not_confirmed":
+                    messages.error(
+                        request,
+                        "لا يمكن تعديل هذا الحجز الآن لأنه لم يُؤكد في Hostaway بعد. "
+                        "يمكنك تعديله بعد أن تصبح حالته «مؤكد» فقط.",
+                    )
+                else:
+                    messages.error(request, "تعذر تسعير التعديل الآن. لم يتغير الحجز.")
         elif action == "start_cancellation":
             if intent is None:
                 messages.error(request, "لا توجد بيانات دفع مرتبطة بهذا الحجز.")
@@ -338,7 +424,32 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     form = ManualBookingFinalizeForm(draft=draft)
     if request.method == "POST":
         action = request.POST.get("action")
-        if action == "cancel":
+        if action == "recheck":
+            result = recheck_manual_booking_draft(draft_id=draft.pk, actor=request.user)
+            if result.code == "rechecked" and result.draft is not None:
+                record_audit(
+                    request=request,
+                    action="manual_booking.rechecked",
+                    object_type="ManualBookingDraft",
+                    object_reference=result.draft.public_reference,
+                    summary="Manual booking draft availability and price were rechecked.",
+                    metadata={"source": "hostaway", "status": result.draft.status},
+                )
+                messages.success(
+                    request,
+                    "المسودة ما زالت متاحة. حُدّث السعر من Hostaway وأصبحت جاهزة للمراجعة من جديد.",
+                )
+                return redirect("notifications:manual_booking_detail", draft_id=draft.pk)
+            if result.code == "unavailable":
+                messages.error(
+                    request,
+                    "لم تعد هذه الوحدة متاحة بهذه التواريخ أو عدد الضيوف. لم يُنشأ أي حجز.",
+                )
+            elif result.code == "currency_unavailable":
+                messages.error(request, "التوفر موجود لكن تعذر تثبيت السعر بالعملة المطلوبة الآن.")
+            else:
+                messages.error(request, "لا يمكن إعادة فحص هذه المسودة في حالتها الحالية.")
+        elif action == "cancel":
             cancel_form = ManualBookingCancelForm(request.POST)
             if cancel_form.is_valid():
                 if draft.status not in {
