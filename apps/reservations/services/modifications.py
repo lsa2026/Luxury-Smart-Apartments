@@ -616,8 +616,15 @@ def _base_blocker(
     *,
     owner_override: bool = False,
 ) -> str:
-    if reservation.normalized_status != Reservation.Status.CONFIRMED and not (
-        owner_override and reservation.normalized_status == Reservation.Status.MODIFIED
+    orphaned_paid_reservation = (
+        owner_override
+        and reservation.normalized_status == Reservation.Status.READY_FOR_HOSTAWAY
+        and reservation.hostaway_reservation_id is None
+    )
+    if (
+        reservation.normalized_status != Reservation.Status.CONFIRMED
+        and not (owner_override and reservation.normalized_status == Reservation.Status.MODIFIED)
+        and not orphaned_paid_reservation
     ):
         return "reservation_not_confirmed"
     if reservation.source_type != Reservation.SourceType.DIRECT_WEBSITE:

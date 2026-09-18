@@ -137,6 +137,14 @@ def execute_automatic_modification(
             locked.approved_at = now
             locked.save(update_fields=["status", "approved_at", "updated_at"])
 
+    if _is_orphaned_paid_cancellation(locked):
+        return _refund_orphaned_paid_reservation(
+            locked,
+            refund_service=refund_service,
+            approved_refund_amount=approved_refund_amount,
+            refund_decision_note=refund_decision_note,
+        )
+
     if service is not None:
         execution = service.execute(locked)
     else:
@@ -159,6 +167,143 @@ def execute_automatic_modification(
         refund=refund,
         refund_code=refund_code,
     )
+
+
+def _is_orphaned_paid_cancellation(modification: BookingModificationRequest) -> bool:
+    """Whether payment succeeded but no Hostaway booking was ever created.
+
+    This deliberately has no Hostaway cancellation branch: a missing external
+    identifier means there is nothing to cancel there.  The only safe remedy is
+    returning the card payment and closing the local record after the gateway
+    accepts that return.
+    """
+
+    reservation = modification.reservation
+    return (
+        modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+        and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
+        and reservation.normalized_status == Reservation.Status.READY_FOR_HOSTAWAY
+        and reservation.hostaway_reservation_id is None
+    )
+
+
+def _refund_orphaned_paid_reservation(
+    modification: BookingModificationRequest,
+    *,
+    refund_service: "HyperPayRefundService | None",
+    approved_refund_amount: Decimal | None,
+    refund_decision_note: str,
+) -> AutomaticModificationOutcome:
+    """Refund an orphaned local charge without making a fictional Hostaway call."""
+
+    if not settings.BOOKING_AUTOMATIC_REFUND_ENABLED:
+        return AutomaticModificationOutcome("automatic_refund_disabled", modification)
+
+    with transaction.atomic():
+        reservation = Reservation.objects.select_for_update().get(pk=modification.reservation_id)
+        locked = (
+            BookingModificationRequest.objects.select_for_update()
+            .select_related("reservation")
+            .get(pk=modification.pk)
+        )
+        if locked.status == BookingModificationRequest.Status.COMPLETED:
+            return AutomaticModificationOutcome("already_completed", locked)
+        if not _is_orphaned_paid_cancellation(locked):
+            return AutomaticModificationOutcome("orphaned_reservation_changed", locked)
+
+        computation = cancellation_refund(reservation)
+        if computation.amount <= Decimal("0"):
+            return AutomaticModificationOutcome("original_payment_not_found", locked)
+        amount = (
+            computation.amount
+            if approved_refund_amount is None
+            else Decimal(approved_refund_amount)
+        )
+        if amount != computation.amount:
+            # An orphaned charge never created a stay, so it must be returned in
+            # full; partial/zero cancellation choices would leave a guest charged
+            # for a booking that does not exist in the channel manager.
+            return AutomaticModificationOutcome("orphaned_refund_must_be_full", locked)
+
+        refund = (
+            RefundObligation.objects.select_for_update()
+            .filter(
+                modification_request=locked,
+                reason=RefundObligation.Reason.CANCELLATION,
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        if refund is None:
+            detail = dict(computation.detail)
+            detail.update(
+                {
+                    "source": "orphaned_local_paid_reservation",
+                    "hostaway_reservation_id": None,
+                    "operator_refund_decision": {
+                        "calculated_amount": format(computation.amount, "f"),
+                        "approved_amount": format(amount, "f"),
+                        "note": refund_decision_note.strip()[:500],
+                    },
+                }
+            )
+            refund = record_obligation(
+                reservation,
+                reason=RefundObligation.Reason.CANCELLATION,
+                computation=RefundComputation(
+                    amount=amount, currency=computation.currency, detail=detail
+                ),
+                modification=locked,
+            )
+        if refund is None:
+            return AutomaticModificationOutcome("original_payment_not_found", locked)
+        if refund.status == RefundObligation.Status.TRANSFERRED:
+            _complete_orphaned_local_cancellation(locked.pk)
+            locked.refresh_from_db()
+            return AutomaticModificationOutcome(
+                "orphaned_refunded", locked, refund=refund, refund_code="refund.hyperpay_completed"
+            )
+        if refund.status == RefundObligation.Status.PROCESSING:
+            return AutomaticModificationOutcome("orphaned_refund_pending", locked, refund=refund)
+
+    refund_code = _submit_automatic_refund(refund, service=refund_service)
+    if refund_code in {"refund.hyperpay_completed", "refund.hyperpay_submitted"}:
+        _complete_orphaned_local_cancellation(locked.pk)
+        locked.refresh_from_db()
+        return AutomaticModificationOutcome(
+            "orphaned_refunded", locked, refund=refund, refund_code=refund_code
+        )
+    return AutomaticModificationOutcome(
+        "orphaned_refund_not_accepted", locked, refund=refund, refund_code=refund_code
+    )
+
+
+def _complete_orphaned_local_cancellation(modification_id: object) -> None:
+    """Close only the local record after HyperPay accepts the full refund."""
+
+    with transaction.atomic():
+        locked = (
+            BookingModificationRequest.objects.select_for_update()
+            .select_related("reservation")
+            .get(pk=modification_id)
+        )
+        reservation = Reservation.objects.select_for_update().get(pk=locked.reservation_id)
+        if locked.status == BookingModificationRequest.Status.COMPLETED:
+            return
+        now = timezone.now()
+        reservation.normalized_status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = now
+        reservation.confirmed_at = None
+        reservation.hostaway_status = "not_created"
+        reservation.last_synced_at = now
+        reservation.full_clean()
+        reservation.save()
+        locked.status = BookingModificationRequest.Status.COMPLETED
+        locked.completed_at = now
+        locked.save(update_fields=["status", "completed_at", "updated_at"])
+        from apps.notifications.services.events import handle_modification_completed
+
+        transaction.on_commit(lambda: handle_modification_completed(locked.pk))
 
 
 def _record_refund_if_owed(

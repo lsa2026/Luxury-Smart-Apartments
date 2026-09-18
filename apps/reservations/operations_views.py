@@ -86,6 +86,9 @@ _CANCELLATION_AUDIT_LABELS = {
     "refund.hyperpay_review": "نتيجة الاسترداد غير مؤكدة وتحتاج مراجعة قبل أي إعادة محاولة.",
     "refund.marked_transferred": "سُجل تحويل الاسترداد للضيف.",
     "refund.cancelled_by_owner": "أغلق استحقاق الاسترداد دون تحويل.",
+    "cancellation.orphaned_payment_refunded": (
+        "لم يوجد حجز في Hostaway؛ قبلت HyperPay إعادة كامل المبلغ وأُغلق السجل المحلي."
+    ),
 }
 
 
@@ -891,13 +894,24 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                         ],
                         refund_decision_note="",
                     )
-                    if outcome.code == "completed":
+                    if outcome.code in {"completed", "orphaned_refunded"}:
+                        is_orphaned_refund = outcome.code == "orphaned_refunded"
                         record_audit(
                             request=request,
-                            action="cancellation.executed_hostaway",
+                            action=(
+                                "cancellation.orphaned_payment_refunded"
+                                if is_orphaned_refund
+                                else "cancellation.executed_hostaway"
+                            ),
                             object_type="BookingModificationRequest",
                             object_reference=cancellation.public_reference,
-                            summary="Hostaway confirmed the cancellation.",
+                            summary=(
+                                "No Hostaway reservation existed; HyperPay accepted "
+                                "the full refund "
+                                "and the local record was closed."
+                                if is_orphaned_refund
+                                else "Hostaway confirmed the cancellation."
+                            ),
                             metadata={
                                 "approved_refund": format(
                                     execution_form.cleaned_data["approved_refund_amount"], "f"
@@ -905,7 +919,25 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                                 "refund_result": outcome.refund_code,
                             },
                         )
-                        if outcome.refund_code == "refund.hyperpay_completed":
+                        if (
+                            is_orphaned_refund
+                            and outcome.refund_code == "refund.hyperpay_completed"
+                        ):
+                            messages.success(
+                                request,
+                                "لم يوجد حجز في Hostaway لهذا السجل. أكدت HyperPay إعادة كامل "
+                                "المبلغ إلى بطاقة الضيف، وأُغلق السجل المحلي.",
+                            )
+                        elif (
+                            is_orphaned_refund
+                            and outcome.refund_code == "refund.hyperpay_submitted"
+                        ):
+                            messages.success(
+                                request,
+                                "لم يوجد حجز في Hostaway لهذا السجل. قبلت HyperPay طلب إعادة "
+                                "كامل المبلغ، وأُغلق السجل المحلي.",
+                            )
+                        elif outcome.refund_code == "refund.hyperpay_completed":
                             messages.success(
                                 request,
                                 "أكدت Hostaway الإلغاء، وأكدت HyperPay إعادة المبلغ "
@@ -924,6 +956,11 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                             )
                         else:
                             messages.success(request, "أكدت Hostaway إلغاء الحجز.")
+                    elif outcome.code == "orphaned_refund_must_be_full":
+                        messages.error(
+                            request,
+                            "هذا السجل لم يُنشأ في Hostaway، لذا يجب إعادة كامل المبلغ المدفوع فقط.",
+                        )
                     else:
                         messages.error(request, f"لم يكتمل الإلغاء الخارجي ({outcome.code}).")
                     return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
