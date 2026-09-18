@@ -1,6 +1,7 @@
 """Local-only reservation modification requests with live revalidation."""
 
 import re
+import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
@@ -24,6 +25,7 @@ from .availability import (
 )
 from .booking import sanitized_components
 from .host_policy import check_in_datetime, policy_blocker
+from .owner_settlement import settlement_blocker, settlement_for
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,6 +129,7 @@ class ModificationService:
             session_hash=session_hash,
             reason=reason,
             quote=quote,
+            owner_override=owner_override,
         )
 
     def create_change_quote(
@@ -182,6 +185,7 @@ class ModificationService:
             session_hash=session_hash,
             reason=reason,
             quote=result.quote,
+            owner_override=owner_override,
         )
 
     def set_owner_final_total(
@@ -197,10 +201,11 @@ class ModificationService:
         payment revalidation can still detect a live pricing change.
         """
 
-        final_total = Decimal(final_total).quantize(Decimal("0.0001"))
+        final_total = Decimal(final_total).quantize(Decimal("0.01"))
         with transaction.atomic():
+            Reservation.objects.select_for_update().get(pk=modification.reservation_id)
             locked = (
-                BookingModificationRequest.objects.select_for_update()
+                BookingModificationRequest.objects.select_for_update(of=("self",))
                 .select_related("reservation", "reservation__booking_intent")
                 .filter(pk=modification.pk)
                 .first()
@@ -209,24 +214,48 @@ class ModificationService:
                 return ModificationCreation("not_found")
             if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
                 return ModificationCreation("not_price_editable", locked)
-            if locked.status in {
-                BookingModificationRequest.Status.COMPLETED,
-                BookingModificationRequest.Status.PROCESSING,
-                BookingModificationRequest.Status.SUPERSEDED,
-            }:
+            if (
+                locked.status
+                not in {
+                    BookingModificationRequest.Status.AWAITING_PAYMENT,
+                    BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL,
+                    BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+                }
+                or locked.hostaway_operations.exists()
+            ):
                 return ModificationCreation("not_price_editable", locked)
+            latest = (
+                locked.reservation.modification_requests.exclude(
+                    request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
+                )
+                .order_by("-requested_at", "-pk")
+                .first()
+            )
+            if latest is None or latest.pk != locked.pk:
+                return ModificationCreation("modification_superseded", locked)
+            if (
+                locked.reservation.check_in != locked.old_check_in
+                or locked.reservation.check_out != locked.old_check_out
+                or locked.reservation.total_price != locked.old_total
+                or locked.reservation.guests != locked.old_guests
+            ):
+                return ModificationCreation("reservation_changed", locked)
             if locked.is_expired:
                 return ModificationCreation("expired", locked)
             if final_total < Decimal("0"):
                 return ModificationCreation("invalid_price", locked)
 
             system_total = _system_total_from_snapshot(locked)
+            blocker = settlement_blocker(locked.reservation)
+            if blocker:
+                return ModificationCreation(blocker, locked)
             difference = final_total - locked.old_total
-            status = _status_for_difference(difference)
+            settlement = settlement_for(locked.reservation, final_total)
+            status = BookingModificationRequest.Status.READY_FOR_HOSTAWAY
 
             payment_amount_sar = None
             fx_snapshot: dict[str, object] = {}
-            if difference > 0:
+            if settlement.due > 0:
                 display_currency = (
                     locked.reservation.booking_intent.selected_display_currency
                     if locked.reservation.booking_intent_id
@@ -235,7 +264,7 @@ class ModificationService:
                 )
                 try:
                     currency_quote = self.currency_service.create_quote(
-                        source_amount=difference,
+                        source_amount=settlement.due,
                         source_currency=locked.currency,
                         display_currency=display_currency,
                         quote_created_at=timezone.now(),
@@ -249,6 +278,11 @@ class ModificationService:
             snapshot = dict(locked.quote_snapshot)
             snapshot["system_total"] = format(system_total, "f")
             snapshot["owner_final_total"] = format(final_total, "f")
+            snapshot["owner_settlement"] = {
+                "paid": format(settlement.paid, "f"),
+                "due": format(settlement.due, "f"),
+                "refund": format(settlement.refund, "f"),
+            }
             snapshot["fx"] = fx_snapshot
             locked.new_total = final_total
             locked.price_difference = difference
@@ -388,8 +422,7 @@ class ModificationService:
         system_total = _system_total_from_snapshot(modification)
         if (
             quote.total_price != system_total
-            or modification.new_total - reservation.total_price
-            != modification.price_difference
+            or modification.new_total - reservation.total_price != modification.price_difference
         ):
             return ModificationRevalidation("price_changed", quote)
         return ModificationRevalidation("ready", quote)
@@ -405,6 +438,7 @@ class ModificationService:
         session_hash: str,
         reason: str,
         quote: object,
+        owner_override: bool = False,
     ) -> ModificationCreation:
         if quote.currency != reservation.currency:
             return ModificationCreation("currency_changed")
@@ -417,6 +451,8 @@ class ModificationService:
             new_guests,
             session_hash,
         )
+        if owner_override:
+            key = uuid.uuid4().hex
         existing = BookingModificationRequest.objects.filter(idempotency_key=key).first()
         if existing:
             return ModificationCreation("idempotent", existing)
@@ -506,6 +542,20 @@ class ModificationService:
         )
         request.full_clean()
         with transaction.atomic():
+            current_reservation = Reservation.objects.select_for_update().get(pk=reservation.pk)
+            if (
+                current_reservation.check_in != reservation.check_in
+                or current_reservation.check_out != reservation.check_out
+                or current_reservation.total_price != reservation.total_price
+            ):
+                return ModificationCreation("reservation_changed")
+            if reservation.modification_requests.filter(
+                status__in=[
+                    BookingModificationRequest.Status.PROCESSING,
+                    BookingModificationRequest.Status.UNKNOWN,
+                ]
+            ).exists():
+                return ModificationCreation("modification_in_progress")
             _supersede_open_change_requests(reservation)
             request.save(force_insert=True)
             from apps.notifications.services.events import handle_modification_created
@@ -524,17 +574,13 @@ def _system_total_from_snapshot(modification: BookingModificationRequest) -> Dec
     raw_total = modification.quote_snapshot.get("system_total")
     if raw_total is None:
         return Decimal(
-            modification.new_total
-            if modification.new_total is not None
-            else modification.old_total
+            modification.new_total if modification.new_total is not None else modification.old_total
         )
     try:
         return Decimal(str(raw_total))
     except (InvalidOperation, TypeError, ValueError):
         return Decimal(
-            modification.new_total
-            if modification.new_total is not None
-            else modification.old_total
+            modification.new_total if modification.new_total is not None else modification.old_total
         )
 
 
@@ -570,7 +616,9 @@ def _base_blocker(
     *,
     owner_override: bool = False,
 ) -> str:
-    if reservation.normalized_status != Reservation.Status.CONFIRMED:
+    if reservation.normalized_status != Reservation.Status.CONFIRMED and not (
+        owner_override and reservation.normalized_status == Reservation.Status.MODIFIED
+    ):
         return "reservation_not_confirmed"
     if reservation.source_type != Reservation.SourceType.DIRECT_WEBSITE:
         return "external_channel_requires_admin"

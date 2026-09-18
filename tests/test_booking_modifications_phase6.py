@@ -953,8 +953,9 @@ def test_owner_final_price_controls_the_difference_while_preserving_hostaway_quo
     assert priced.request.new_total == Decimal("700.0000")
     assert priced.request.price_difference == Decimal("199.7500")
     assert priced.request.quote_snapshot["system_total"] == "650.25"
-    assert priced.request.quote_snapshot["owner_final_total"] == "700.0000"
-    assert priced.request.status == BookingModificationRequest.Status.AWAITING_PAYMENT
+    assert priced.request.quote_snapshot["owner_final_total"] == "700.00"
+    assert priced.request.payment_amount_sar == Decimal("700.00")
+    assert priced.request.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
 
 
 @override_settings(BOOKING_AUTOMATIC_MODIFICATION_APPROVAL=False)

@@ -91,13 +91,16 @@ class UltraMsgClient:
             raise UltraMsgResponseError()
         if str(document.get("sent", "")).casefold() in {"false", "0", "no"}:
             raise UltraMsgResponseError()
+        if str(document.get("sent", "")).casefold() not in {"true", "1", "yes"}:
+            # An ambiguous response is not proof of delivery and must not be retried blindly.
+            raise UltraMsgConnectionError()
         return document
 
 
 @dataclass(frozen=True, slots=True)
 class WhatsAppDeliveryResult:
     code: str
-    delivery: WhatsAppDelivery
+    delivery: WhatsAppDelivery | None
 
 
 def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliveryResult:
@@ -109,11 +112,7 @@ def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliv
     """
 
     with transaction.atomic():
-        reservation = (
-            Reservation.objects.select_for_update()
-            .filter(pk=reservation_id)
-            .first()
-        )
+        reservation = Reservation.objects.select_for_update().filter(pk=reservation_id).first()
         if reservation is None:
             raise ValueError("Reservation was not found.")
         delivery, created = WhatsAppDelivery.objects.get_or_create(
@@ -174,7 +173,16 @@ def send_modification_payment_link_request(*, modification_id: object) -> WhatsA
         )
         if modification is None:
             raise ValueError("Modification request was not found.")
-        if modification.price_difference <= 0:
+        from apps.reservations.services.owner_settlement import owner_change_blocker, settlement_for
+
+        owner_priced = modification.quote_snapshot.get("owner_final_total") is not None
+        if owner_priced:
+            blocker = owner_change_blocker(modification, completed=True)
+            if blocker or modification.status != BookingModificationRequest.Status.COMPLETED:
+                return WhatsAppDeliveryResult(blocker or "hostaway_confirmation_required", None)
+            if settlement_for(modification.reservation, modification.new_total).due <= 0:
+                return WhatsAppDeliveryResult("nothing_due", None)
+        elif modification.price_difference <= 0:
             raise ValueError("A payment link is only needed for a positive difference.")
         delivery, created = WhatsAppDelivery.objects.get_or_create(
             modification_request=modification,
@@ -211,11 +219,9 @@ def send_modification_payment_link_request(*, modification_id: object) -> WhatsA
     # `FOR UPDATE` on the nullable side of the booking_intent join. The
     # modification itself is locked above; its related data can be read after
     # the transaction has committed.
-    modification = (
-        BookingModificationRequest.objects.select_related(
-            "reservation", "reservation__booking_intent", "reservation__property"
-        ).get(pk=modification.pk)
-    )
+    modification = BookingModificationRequest.objects.select_related(
+        "reservation", "reservation__booking_intent", "reservation__property"
+    ).get(pk=modification.pk)
     try:
         body = _modification_payment_message(modification)
     except Exception:
@@ -282,9 +288,7 @@ def _finish_failure(
 
 def _accounting_recipient() -> str:
     digits = "".join(
-        character
-        for character in settings.ACCOUNTING_WHATSAPP_NUMBER
-        if character.isdigit()
+        character for character in settings.ACCOUNTING_WHATSAPP_NUMBER if character.isdigit()
     )
     if digits.startswith("00"):
         digits = digits[2:]
@@ -336,6 +340,12 @@ def _modification_payment_message(modification: BookingModificationRequest) -> s
     hostaway_id = reservation.hostaway_reservation_id
     hostaway_url = f"https://dashboard.hostaway.com/reservations/{hostaway_id}"
     difference = Decimal(modification.price_difference).quantize(Decimal("0.01"))
+    if modification.quote_snapshot.get("owner_final_total") is not None:
+        from apps.reservations.services.owner_settlement import settlement_for
+
+        difference = settlement_for(reservation, modification.new_total).due.quantize(
+            Decimal("0.01")
+        )
     new_total = Decimal(modification.new_total or 0).quantize(Decimal("0.01"))
     return "\n".join(
         (
@@ -346,7 +356,7 @@ def _modification_payment_message(modification: BookingModificationRequest) -> s
             f"الوحدة: {_clean(reservation.property)}",
             f"الفترة الجديدة: {modification.new_check_in} إلى {modification.new_check_out}",
             f"الإجمالي الجديد: {new_total:,.2f} {modification.currency}",
-            f"فرق الزيادة المطلوب تحصيله: {difference:,.2f} {modification.currency}",
+            f"المبلغ المتبقي المطلوب تحصيله: {difference:,.2f} {modification.currency}",
             f"مرجع التعديل: {modification.public_reference}",
             f"رقم حجز Hostaway: {hostaway_id}",
             f"رابط Hostaway: {hostaway_url}",

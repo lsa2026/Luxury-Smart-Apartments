@@ -5,8 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.test import Client
-from django.test import override_settings
+from django.test import Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -78,10 +77,13 @@ def test_message_build_failure_is_recorded_without_turning_booking_flow_into_500
     reservation.hostaway_reservation_id = 66436725
     reservation.save(update_fields=["hostaway_reservation_id", "updated_at"])
 
-    with patch(
-        "apps.notifications.services.ultramsg._manual_payment_message",
-        side_effect=RuntimeError("unexpected message data"),
-    ), patch("apps.notifications.services.ultramsg.UltraMsgClient.send_text") as send:
+    with (
+        patch(
+            "apps.notifications.services.ultramsg._manual_payment_message",
+            side_effect=RuntimeError("unexpected message data"),
+        ),
+        patch("apps.notifications.services.ultramsg.UltraMsgClient.send_text") as send,
+    ):
         result = send_manual_payment_link_request(reservation_id=reservation.pk)
 
     assert result.code == "failed"
@@ -116,7 +118,7 @@ def test_modification_payment_request_does_not_lock_nullable_booking_joins():
         price_difference=50,
         currency=reservation.currency,
         quote_snapshot={},
-        idempotency_key="ultramsg-modification-regression-" + "x" * 32,
+        idempotency_key="ultramsg-modification-regression-1",
         session_key_hash="ultramsg-modification-session-hash",
         expires_at=timezone.now() + timedelta(days=1),
     )
@@ -145,7 +147,8 @@ def test_successful_modification_request_returns_to_booking_list():
     modification = BookingModificationRequest.objects.create(
         reservation=reservation,
         request_type=BookingModificationRequest.RequestType.CHANGE_DATES,
-        status=BookingModificationRequest.Status.AWAITING_PAYMENT,
+        status=BookingModificationRequest.Status.COMPLETED,
+        completed_at=timezone.now(),
         old_check_in=reservation.check_in,
         old_check_out=reservation.check_out,
         new_check_in=reservation.check_in,
@@ -156,11 +159,15 @@ def test_successful_modification_request_returns_to_booking_list():
         new_total=reservation.total_price + 50,
         price_difference=50,
         currency=reservation.currency,
-        quote_snapshot={},
+        quote_snapshot={"owner_final_total": str(reservation.total_price + 50)},
         idempotency_key="ultramsg-modification-redirect-" + "x" * 32,
         session_key_hash="ultramsg-modification-redirect-session",
         expires_at=timezone.now() + timedelta(days=1),
     )
+    reservation.check_out = modification.new_check_out
+    reservation.total_price = modification.new_total
+    reservation.normalized_status = "modified"
+    reservation.save(update_fields=["check_out", "total_price", "normalized_status"])
     user = get_user_model().objects.create_superuser(
         username="ultramsg-operations-owner",
         email="owner@example.invalid",

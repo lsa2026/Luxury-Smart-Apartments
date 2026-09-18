@@ -57,6 +57,11 @@ class HyperPayRefundService:
 
         with transaction.atomic():
             locked, payment = self._prepare(refund.pk)
+            try:
+                amount = format_hyperpay_amount(locked.amount)
+            except ValueError as exc:
+                # Validate before recording a submission: no request was sent.
+                raise HyperPayRefundError("refund_amount_not_supported") from exc
             self._record_submission(locked, payment)
 
         try:
@@ -67,7 +72,7 @@ class HyperPayRefundService:
                     payment.provider_payment_id or "",
                     {
                         "entityId": settings.HYPERPAY_ENTITY_ID,
-                        "amount": format_hyperpay_amount(locked.amount),
+                        "amount": amount,
                         "currency": locked.currency,
                         "paymentType": "RF",
                     },
@@ -90,7 +95,7 @@ class HyperPayRefundService:
     @staticmethod
     def _prepare(refund_id: object) -> tuple[RefundObligation, PaymentAttempt]:
         refund = (
-            RefundObligation.objects.select_for_update()
+            RefundObligation.objects.select_for_update(of=("self",))
             .select_related("reservation__booking_intent")
             .get(pk=refund_id)
         )
@@ -107,7 +112,11 @@ class HyperPayRefundService:
                 booking_intent=intent,
                 modification_request__isnull=True,
                 provider=HYPERPAY_PROVIDER,
-                status=PaymentAttempt.Status.SUCCEEDED,
+                status__in=[
+                    PaymentAttempt.Status.SUCCEEDED,
+                    PaymentAttempt.Status.PARTIALLY_REFUNDED,
+                ],
+                currency=refund.currency,
             )
             .exclude(provider_payment_id__isnull=True)
             .exclude(provider_payment_id="")
@@ -221,8 +230,12 @@ class HyperPayRefundService:
                 refund.calculation = calculation
                 refund.save(
                     update_fields=[
-                        "status", "transfer_reference", "transferred_at", "transferred_by",
-                        "calculation", "updated_at",
+                        "status",
+                        "transfer_reference",
+                        "transferred_at",
+                        "transferred_by",
+                        "calculation",
+                        "updated_at",
                     ]
                 )
                 total = HyperPayRefundService._total_confirmed(payment)
@@ -240,7 +253,8 @@ class HyperPayRefundService:
                     "refund.hyperpay_completed",
                     "HyperPay confirmed the refund.",
                     {
-                        "amount": format(refund.amount, "f"), "currency": refund.currency,
+                        "amount": format(refund.amount, "f"),
+                        "currency": refund.currency,
                         "provider_refund_id": provider_refund_id[:255],
                     },
                     "أكدت HyperPay الاسترداد وسُجلت العملية في مركز التشغيل.",
@@ -257,7 +271,8 @@ class HyperPayRefundService:
                     "refund.hyperpay_submitted",
                     "HyperPay accepted the refund and it is pending.",
                     {
-                        "amount": format(refund.amount, "f"), "currency": refund.currency,
+                        "amount": format(refund.amount, "f"),
+                        "currency": refund.currency,
                         "provider_refund_id": provider_refund_id[:255],
                     },
                     "استلمت HyperPay طلب الاسترداد وهو قيد المعالجة؛ لا تعِد إرساله.",

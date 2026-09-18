@@ -282,7 +282,7 @@ class HyperPayService:
         self._revalidate_modification(modification)
         with transaction.atomic():
             locked = (
-                BookingModificationRequest.objects.select_for_update()
+                BookingModificationRequest.objects.select_for_update(of=("self",))
                 .select_related("reservation__booking_intent")
                 .get(pk=modification.pk)
             )

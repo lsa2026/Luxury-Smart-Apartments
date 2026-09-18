@@ -10,6 +10,41 @@ permissions:
   contents: read
 
 jobs:
+  postgres-booking-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: lsa_test
+          POSTGRES_PASSWORD: ci-test-only
+          POSTGRES_DB: lsa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lsa_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DATABASE_URL: postgresql://lsa_test:ci-test-only@127.0.0.1:5432/lsa_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install ".[dev]"
+      - name: Test booking writes on the production database engine
+        run: >-
+          pytest tests/test_owner_modification_workflow.py
+          tests/test_booking_modifications_phase6.py
+          tests/test_ultramsg_accounting_notifications.py
+          tests/test_hyperpay_refunds_phase94.py
+          tests/test_hyperpay.py
+          tests/test_automatic_cancellation_refunds.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

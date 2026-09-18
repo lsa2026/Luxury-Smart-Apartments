@@ -33,6 +33,8 @@ from ..models import (
     HostawayModificationOperation,
     Reservation,
 )
+from .owner_settlement import owner_change_blocker
+from .reservation_payloads import _override_price_details
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,10 +131,10 @@ class HostawayModificationService:
                 code="hostaway_reconciliation_mismatch",
             )
         with transaction.atomic():
+            locked_reservation = Reservation.objects.select_for_update().get(pk=reservation.pk)
             locked_request = BookingModificationRequest.objects.select_for_update().get(
                 pk=modification.pk
             )
-            locked_reservation = Reservation.objects.select_for_update().get(pk=reservation.pk)
             locked_operation = HostawayModificationOperation.objects.select_for_update().get(
                 pk=operation.pk
             )
@@ -229,6 +231,7 @@ def _prepare_operation(
         ),
     ).hexdigest()
     with transaction.atomic():
+        Reservation.objects.select_for_update().get(pk=modification.reservation_id)
         locked = BookingModificationRequest.objects.select_for_update().get(pk=modification.pk)
         operation, created = (
             HostawayModificationOperation.objects.select_for_update().get_or_create(
@@ -252,6 +255,13 @@ def _prepare_operation(
             or operation.attempt_count > 0
         ):
             return operation, False
+        if locked.quote_snapshot.get("owner_final_total") is not None:
+            blocker = owner_change_blocker(locked)
+            if blocker:
+                operation.status = HostawayModificationOperation.Status.BLOCKED
+                operation.error_code = blocker
+                operation.save(update_fields=["status", "error_code", "updated_at"])
+                return operation, False
         operation.status = HostawayModificationOperation.Status.IN_PROGRESS
         operation.attempt_count += 1
         operation.started_at = timezone.now()
@@ -280,6 +290,12 @@ def _build_update_request(
     if not isinstance(components, list) or not components:
         raise ValueError("price_components_missing")
     finance_fields = tuple(_finance_field(item) for item in components)
+    if modification.quote_snapshot.get("owner_final_total") is not None:
+        finance_fields = _override_price_details(
+            finance_fields=finance_fields,
+            current_total=Decimal(str(modification.quote_snapshot["system_total"])),
+            final_total=modification.new_total,
+        )
     return HostawayReservationUpdateRequest(
         listing_map_id=reservation.hostaway_listing_map_id,
         check_in=modification.new_check_in,

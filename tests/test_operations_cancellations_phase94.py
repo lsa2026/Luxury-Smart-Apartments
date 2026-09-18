@@ -66,8 +66,8 @@ def test_only_owner_can_open_cancellation_queue_and_the_guest_name_is_primary():
     content = page.content.decode()
     assert page.status_code == 200
     assert request.reservation.booking_intent.guest_first_name in content
-    assert reverse("notifications:cancellation_detail", args=[request.pk]) in content
-    assert 'class="lsa-cancellation-list__cards"' in content
+    assert reverse("notifications:booking_detail", args=[request.reservation_id]) in content
+    assert 'class="lsa-booking-list__cards"' in content
 
 
 @override_settings(

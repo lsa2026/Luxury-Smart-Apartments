@@ -54,28 +54,28 @@
   {% endif %}
   {% if ready_adjustment and execution_form %}
   <section class="lsa-panel lsa-owner-action">
-    <h2>تنفيذ التعديل{% if has_successful_payment %} مع استرداد{% endif %}</h2>
-    {% if has_successful_payment %}
-      <p>اعتمد صفرًا أو مبلغًا جزئيًا أو كامل فرق النقص حتى <b dir="ltr">{{ ready_adjustment.refund_amount }} {{ ready_adjustment.currency }}</b>. لن يرسل الموقع استردادًا إلا بعد نجاح التعديل في Hostaway.</p>
+    <h2>تأكيد التعديل{% if settlement.refund %} والاسترداد{% endif %}</h2>
+    {% if settlement.refund %}
+      <p>المدفوع الصافي <b dir="ltr">{{ settlement.paid|floatformat:2 }} {{ ready_adjustment.currency }}</b>. مبلغ الاسترداد المتاح <b dir="ltr">{{ settlement.refund|floatformat:2 }} {{ ready_adjustment.currency }}</b>. لن يُرسل الاسترداد إلا بعد نجاح التعديل في Hostaway.</p>
     {% else %}
-      <p>هذا الحجز غير مدفوع. سينفذ النظام تعديل التواريخ أو الضيوف فقط، ولن ينشئ أي استرداد.</p>
+      <p>لا يوجد مبلغ إضافي للتحصيل أو الاسترداد. سيُثبت السعر النهائي والتواريخ في Hostaway.</p>
     {% endif %}
     <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_adjustment"><input type="hidden" name="modification_id" value="{{ ready_adjustment.pk }}">
-      {% if has_successful_payment %}
+      {% if settlement.refund %}
         {% for field in execution_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
-        <button class="default" type="submit">تنفيذ التعديل وقرار الاسترداد</button>
+        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">تأكيد التعديل والاسترداد</button>
       {% else %}
         <input type="hidden" name="approved_refund_amount" value="0">
         <div class="form-row">{{ execution_form.confirm_external_modification.label_tag }}{{ execution_form.confirm_external_modification }}{{ execution_form.confirm_external_modification.errors }}</div>
-        <button class="default" type="submit">تنفيذ التعديل فقط</button>
+        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">تأكيد التعديل</button>
       {% endif %}
     </form>
   </section>
   {% endif %}
   {% if increase_adjustment %}
   <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
-    <h2>فرق زيادة يحتاج إلى دفع</h2>
-    <p>الإجمالي الجديد <b dir="ltr">{{ increase_adjustment.new_total|floatformat:2 }} {{ increase_adjustment.currency }}</b>، والفرق المطلوب تحصيله <b dir="ltr">{{ increase_adjustment.price_difference|floatformat:2 }} {{ increase_adjustment.currency }}</b>.</p>
+    <h2>تأكيد التعديل وطلب رابط الدفع</h2>
+    <p>السعر النهائي <b dir="ltr">{{ increase_adjustment.new_total|floatformat:2 }} {{ increase_adjustment.currency }}</b> · المدفوع الصافي <b dir="ltr">{{ settlement.paid|floatformat:2 }} {{ increase_adjustment.currency }}</b> · المتبقي للدفع <b dir="ltr">{{ settlement.due|floatformat:2 }} {{ increase_adjustment.currency }}</b>.</p>
     {% if increase_delivery and increase_delivery.status == "sent" %}
       <p class="help">تم إرسال طلب إنشاء رابط الدفع إلى أسيل. لن تُرسل رسالة أخرى لهذا التعديل.</p>
     {% elif increase_delivery and increase_delivery.status == "failed" %}
@@ -83,7 +83,7 @@
     {% else %}
       <form method="post" class="lsa-owner-form">{% csrf_token %}<input type="hidden" name="action" value="send_modification_payment_link_request"><input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}"><button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إرسال طلب تكوين رابط الدفع إلى أسيل</button></form>
     {% endif %}
-    <p class="help">بعد تسجيل الدفع في HyperPay يُنفّذ التعديل على Hostaway وفق مسار التعديل المعتمد.</p>
+    <p class="help">يُثبت التعديل في Hostaway أولًا، ثم يُرسل إلى أسيل طلب إنشاء رابط للمبلغ المتبقي. الحجز يبقى مؤكدًا بانتظار الدفع.</p>
   </section>
   {% endif %}
   <section class="lsa-panel lsa-manual-booking__delete">

@@ -11,8 +11,9 @@ from django.utils import timezone
 from apps.payments.currency import PAYMENT_CURRENCY
 from apps.payments.models import PaymentAttempt
 
-from ..models import BookingModificationRequest, RefundObligation
+from ..models import BookingModificationRequest, RefundObligation, Reservation
 from .hostaway_modifications import HostawayModificationService, ModificationExecution
+from .owner_settlement import owner_change_blocker, settlement_for
 from .refunds import (
     RefundComputation,
     cancellation_refund,
@@ -54,9 +55,7 @@ def execute_automatic_modification(
         and settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
     )
     if not (
-        settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
-        or automatic_cancellation
-        or (owner_override and modification.price_difference <= 0)
+        settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL or automatic_cancellation or owner_override
     ):
         # A successful difference payment must never leave the request claiming
         # that payment is still due when automatic execution is intentionally off.
@@ -77,17 +76,32 @@ def execute_automatic_modification(
         return AutomaticModificationOutcome("automatic_approval_disabled", modification)
 
     with transaction.atomic():
+        Reservation.objects.select_for_update().get(pk=modification.reservation_id)
         locked = (
             BookingModificationRequest.objects.select_for_update()
             .select_related("reservation")
             .get(pk=modification.pk)
         )
+        if owner_override:
+            blocker = owner_change_blocker(locked, completed=True)
+            if blocker:
+                return AutomaticModificationOutcome(blocker, locked)
         if locked.status == BookingModificationRequest.Status.COMPLETED:
             return AutomaticModificationOutcome("already_completed", locked)
+        if owner_override:
+            settlement = settlement_for(locked.reservation, locked.new_total)
+            preview = locked.quote_snapshot.get("owner_settlement", {})
+            if preview and Decimal(preview["paid"]) != settlement.paid:
+                return AutomaticModificationOutcome("payment_changed_reprice_required", locked)
+            if (
+                approved_refund_amount is not None
+                and not Decimal("0") <= approved_refund_amount <= settlement.refund
+            ):
+                return AutomaticModificationOutcome("invalid_refund_amount", locked)
         if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
             if not settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED:
                 return AutomaticModificationOutcome("automatic_cancellation_disabled", locked)
-        elif locked.price_difference > 0:
+        elif locked.price_difference > 0 and not owner_override:
             paid = PaymentAttempt.objects.filter(
                 modification_request=locked,
                 status=PaymentAttempt.Status.SUCCEEDED,
@@ -155,6 +169,20 @@ def _record_refund_if_owed(
     if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
         computation = cancellation_refund(reservation)
         reason = RefundObligation.Reason.CANCELLATION
+    elif modification.quote_snapshot.get("owner_settlement") is not None:
+        settlement = settlement_for(reservation, modification.new_total)
+        if settlement.refund <= 0:
+            return None
+        computation = RefundComputation(
+            amount=settlement.refund,
+            currency=modification.currency,
+            detail={
+                "source": "owner_final_total_vs_net_paid",
+                "net_paid": format(settlement.paid, "f"),
+                "new_total": format(modification.new_total, "f"),
+            },
+        )
+        reason = RefundObligation.Reason.MODIFICATION_DECREASE
     elif modification.price_difference < 0:
         original_payment = successful_original_payment_amount(reservation)
         if original_payment is None:

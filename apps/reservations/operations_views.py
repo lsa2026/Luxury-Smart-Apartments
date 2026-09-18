@@ -59,6 +59,7 @@ from .operations_forms import (
 from .services.automatic_modifications import execute_automatic_modification
 from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.modifications import ModificationService
+from .services.owner_settlement import owner_change_blocker, settlement_for
 from .services.refunds import cancellation_refund, successful_original_payment_amount
 
 logger = logging.getLogger(__name__)
@@ -145,9 +146,7 @@ def _available_manual_properties(
                     "total_price": format(quote.total_price, "f"),
                     "currency": quote.currency,
                     "nights": quote.nights,
-                    "average_nightly_price": format(
-                        quote.total_price / Decimal(quote.nights), "f"
-                    ),
+                    "average_nightly_price": format(quote.total_price / Decimal(quote.nights), "f"),
                 }
             )
     return available
@@ -284,8 +283,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
     )
     intent = reservation.booking_intent
-    original_payment_amount = successful_original_payment_amount(reservation)
-    has_successful_payment = original_payment_amount is not None and original_payment_amount > 0
+    has_successful_payment = settlement_for(reservation, reservation.total_price).paid > 0
     date_form = DateChangeRequestForm(
         initial={
             "new_check_in": reservation.check_in,
@@ -294,19 +292,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         }
     )
     pending_adjustments = list(
-        reservation.modification_requests.filter(
-            status__in={
-                BookingModificationRequest.Status.DRAFT,
-                BookingModificationRequest.Status.PENDING_REVALIDATION,
-                BookingModificationRequest.Status.AWAITING_CUSTOMER_APPROVAL,
-                BookingModificationRequest.Status.AWAITING_PAYMENT,
-                BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL,
-                BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
-                BookingModificationRequest.Status.PRICE_CHANGED,
-                BookingModificationRequest.Status.UNAVAILABLE,
-                BookingModificationRequest.Status.FAILED,
-            }
-        )
+        reservation.modification_requests.all()
         .exclude(request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION)
         .order_by("-requested_at")[:1]
     )
@@ -316,41 +302,39 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         and current_adjustment.quote_snapshot.get("owner_final_total") is not None
     )
     final_price_form = (
-        OwnerFinalPriceForm(
-            initial={"final_total_price": current_adjustment.new_total}
-        )
+        OwnerFinalPriceForm(initial={"final_total_price": current_adjustment.new_total})
         if current_adjustment is not None
         else None
     )
     execution_form = None
+    settlement = (
+        settlement_for(reservation, current_adjustment.new_total) if final_price_confirmed else None
+    )
     ready_adjustment = next(
         (
             item
             for item in pending_adjustments
             if final_price_confirmed
             if item.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
-            and item.price_difference <= 0
+            and settlement.due == 0
         ),
         None,
     )
     if ready_adjustment is not None:
         execution_form = OwnerModificationExecutionForm(
-            maximum_amount=(
-                ready_adjustment.refund_amount
-                if has_successful_payment
-                else Decimal("0")
-            )
+            maximum_amount=(settlement.refund if has_successful_payment else Decimal("0"))
         )
     increase_adjustment = next(
         (
             item
             for item in pending_adjustments
             if final_price_confirmed
-            if item.price_difference > 0
+            if settlement.due > 0
             and item.status
             in {
                 BookingModificationRequest.Status.AWAITING_PAYMENT,
                 BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
+                BookingModificationRequest.Status.COMPLETED,
             }
         ),
         None,
@@ -383,7 +367,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                         object_type="BookingModificationRequest",
                         object_reference=outcome.request.public_reference,
                         summary="Owner checked Hostaway availability and priced a booking change.",
-                        metadata={"price_difference": format(outcome.request.price_difference, "f")},
+                        metadata={
+                            "price_difference": format(outcome.request.price_difference, "f")
+                        },
                     )
                     if outcome.request.price_difference > 0:
                         messages.success(
@@ -418,7 +404,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                         owner_override=True,
                     )
                 if outcome.request is not None:
-                    return redirect("notifications:cancellation_detail", request_id=outcome.request.pk)
+                    return redirect(
+                        "notifications:cancellation_detail", request_id=outcome.request.pk
+                    )
                 messages.error(request, f"تعذر تجهيز الإلغاء الآن ({outcome.code}).")
         elif action == "set_final_price":
             adjustment = get_object_or_404(
@@ -442,9 +430,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                         summary="Owner set the final price for the latest booking change.",
                         metadata={
                             "final_total": format(outcome.request.new_total, "f"),
-                            "price_difference": format(
-                                outcome.request.price_difference, "f"
-                            ),
+                            "price_difference": format(outcome.request.price_difference, "f"),
                         },
                     )
                     messages.success(
@@ -464,13 +450,11 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             )
             execution_form = OwnerModificationExecutionForm(
                 request.POST,
-                maximum_amount=(
-                    adjustment.refund_amount if has_successful_payment else Decimal("0")
-                ),
+                maximum_amount=settlement_for(reservation, adjustment.new_total).refund,
             )
             if execution_form.is_valid() and (
                 adjustment.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
-                and adjustment.price_difference <= 0
+                and settlement_for(reservation, adjustment.new_total).due == 0
             ):
                 outcome = execute_automatic_modification(
                     adjustment,
@@ -479,11 +463,22 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                     owner_override=True,
                 )
                 if outcome.code == "completed":
-                    messages.success(
-                        request,
-                        "أكدت Hostaway تعديل الحجز. أُرسل قرار الاسترداد إلى HyperPay عند وجود مبلغ.",
-                    )
-                    return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+                    if outcome.refund is None:
+                        messages.success(request, "أكدت Hostaway تعديل الحجز. لا يوجد استرداد.")
+                    elif outcome.refund_code in {
+                        "refund.hyperpay_completed",
+                        "refund.hyperpay_submitted",
+                    }:
+                        messages.success(
+                            request, "أكدت Hostaway التعديل، وقبلت HyperPay طلب الاسترداد."
+                        )
+                    else:
+                        messages.warning(
+                            request,
+                            "تم التعديل في Hostaway، لكن الاسترداد لم يتأكد ويحتاج متابعة. "
+                            "لم نعد تنفيذ التعديل.",
+                        )
+                    return redirect("notifications:booking_list")
                 messages.error(request, f"لم يكتمل التعديل الخارجي ({outcome.code}).")
         elif action == "send_modification_payment_link_request":
             adjustment = get_object_or_404(
@@ -491,14 +486,21 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 pk=request.POST.get("modification_id"),
                 reservation=reservation,
             )
-            if adjustment.price_difference <= 0:
-                messages.error(request, "لا يوجد فرق زيادة يحتاج إلى رابط دفع.")
-            elif adjustment.status not in {
-                BookingModificationRequest.Status.AWAITING_PAYMENT,
-                BookingModificationRequest.Status.READY_FOR_HOSTAWAY,
-            }:
-                messages.error(request, "لم يعد طلب التعديل في حالة تسمح بطلب رابط دفع.")
+            blocker = owner_change_blocker(adjustment, completed=True)
+            if blocker:
+                messages.error(
+                    request,
+                    f"لا يمكن إرسال الطلب ({blocker}). أعد فحص السعر واعتماد التعديل الحالي.",
+                )
+            elif settlement_for(reservation, adjustment.new_total).due <= 0:
+                messages.error(request, "لا يوجد مبلغ متبقٍ يحتاج إلى رابط دفع.")
             else:
+                outcome = execute_automatic_modification(adjustment, owner_override=True)
+                if outcome.code not in {"completed", "already_completed"}:
+                    messages.error(
+                        request, f"لم يتأكد التعديل في Hostaway ({outcome.code})؛ لم يُرسل طلب دفع."
+                    )
+                    return redirect("notifications:booking_detail", reservation_id=reservation.pk)
                 delivery_result = send_modification_payment_link_request(
                     modification_id=adjustment.pk,
                 )
@@ -516,7 +518,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                     )
                     messages.success(
                         request,
-                        "أُرسل طلب إنشاء رابط فرق التعديل إلى أسيل عبر WhatsApp.",
+                        "تأكد التعديل في Hostaway وأُرسل طلب إنشاء رابط المبلغ المتبقي "
+                        "إلى أسيل عبر WhatsApp.",
                     )
                     return redirect("notifications:booking_list")
                 elif delivery_result.code == "already_sent":
@@ -529,7 +532,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                     messages.info(request, "طلب رابط فرق التعديل قيد الإرسال بالفعل إلى أسيل.")
                     return redirect("notifications:booking_list")
                 elif delivery_result.code == "previously_failed":
-                    messages.error(request, "فشل طلب الرابط السابق؛ راجع سجل التسليم قبل أي متابعة.")
+                    messages.error(
+                        request, "فشل طلب الرابط السابق؛ راجع سجل التسليم قبل أي متابعة."
+                    )
                 else:
                     messages.error(request, "تعذر إرسال طلب رابط فرق التعديل إلى أسيل.")
 
@@ -549,6 +554,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "current_adjustment": current_adjustment,
             "final_price_form": final_price_form,
             "final_price_confirmed": final_price_confirmed,
+            "settlement": settlement,
         },
     )
 
@@ -743,13 +749,16 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     draft_id=created.draft.pk,
                 )
             if created.code == "quote_expired":
-                messages.error(request, "انتهت صلاحية السعر. أعد فحص التوفر والسعر قبل إنشاء الحجز.")
+                messages.error(
+                    request, "انتهت صلاحية السعر. أعد فحص التوفر والسعر قبل إنشاء الحجز."
+                )
             elif created.code == "availability_lost":
                 messages.error(request, "لم تعد الوحدة متاحة. لم يُنشأ حجز في Hostaway.")
             else:
                 messages.error(
                     request,
-                    "تعذر إنشاء الحجز في Hostaway الآن. لم يُفتح طلب الدفع؛ أعد المحاولة بعد مراجعة التوفر.",
+                    "تعذر إنشاء الحجز في Hostaway الآن. لم يُفتح طلب الدفع؛ "
+                    "أعد المحاولة بعد مراجعة التوفر.",
                 )
         else:
             form = ManualBookingFinalizeForm(request.POST, draft=draft)
@@ -790,10 +799,9 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     form.add_error(None, "تعذّر حفظ المسودة. لم يُنفذ أي إجراء خارجي.")
     audit_entries = list(
         AuditLog.objects.filter(
-        object_type="ManualBookingDraft",
-        object_reference=draft.public_reference,
-        )
-        .select_related("actor_user")[:20]
+            object_type="ManualBookingDraft",
+            object_reference=draft.public_reference,
+        ).select_related("actor_user")[:20]
     )
     for entry in audit_entries:
         entry.display_summary = _MANUAL_DRAFT_AUDIT_LABELS.get(entry.action, entry.summary)
