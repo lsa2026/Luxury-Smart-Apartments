@@ -167,13 +167,17 @@ input[type=text], input[type=password], input[type=email], input[type=url], inpu
 /* Unified administration shell */
 html.lsa-command-open,
 html.lsa-command-open body { overflow: hidden; }
-.lsa-shell-header { display: block !important; min-height: 78px !important; height: auto !important; padding: 0 30px !important; box-sizing: border-box; border-bottom: 1px solid rgba(217,181,47,.32); background: linear-gradient(112deg, #0d1a3f 0%, #14245a 65%, #0d6c58 145%) !important; }
-.lsa-shell-header__inner { display: flex; align-items: center; width: 100%; min-height: 78px; margin: 0 auto; }
+.lsa-shell-header { position: relative; display: block !important; min-height: 78px !important; height: auto !important; padding: 0 30px !important; box-sizing: border-box; overflow: hidden; border-bottom: 1px solid rgba(217,181,47,.32); background: linear-gradient(112deg, #0a1736 0%, #14245a 58%, #0d6c58 145%) !important; }
+.lsa-shell-header::after { position: absolute; right: 30px; bottom: 0; left: 30px; height: 1px; background: linear-gradient(90deg, transparent, rgba(217,181,47,.72), transparent); content: ""; }
+.lsa-shell-header__inner { position: relative; z-index: 1; display: flex; align-items: center; width: 100%; min-height: 78px; margin: 0 auto; }
 .lsa-shell-header #branding { flex: 0 0 auto; }
+.lsa-admin-brand { gap: 11px; }
+.lsa-admin-brand__logo { width: 184px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.08); border-radius: 13px; background: rgba(3,11,32,.19); box-shadow: inset 0 1px rgba(255,255,255,.06); }
+.lsa-admin-brand__eyebrow { padding-inline-start: 11px; border-inline-start: 1px solid rgba(217,181,47,.48); color: #e0c77f; font-size: 10px; letter-spacing: .08em; }
 .lsa-primary-nav { display: flex; align-items: center; gap: 3px; margin-inline: clamp(18px, 3vw, 48px) auto; }
 .lsa-primary-nav a { position: relative; padding: 11px 12px; color: #cbd9d5 !important; border-radius: 9px; font-size: 11px; font-weight: 700; }
 .lsa-primary-nav a:hover { color: #fff !important; background: rgba(255,255,255,.07); }
-.lsa-header-actions { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.lsa-header-actions { display: flex; align-items: center; gap: 9px; margin-inline-start: auto; }
 .lsa-booking-action { display: flex; min-height: 38px; align-items: center; padding: 0 14px; color: #1d342b !important; border-radius: 10px; background: linear-gradient(135deg,#e1c789,#c59d53); font-size: 11px; font-weight: 800; }
 .lsa-booking-action:hover { filter: brightness(1.05); }
 .lsa-icon-action,.lsa-command__trigger { display: flex; align-items: center; justify-content: center; min-height: 38px; color: #dce6e2 !important; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; background: rgba(255,255,255,.045); }
@@ -432,13 +436,17 @@ html.lsa-command-open body { overflow: hidden; }
   #changelist-filter { position: static; width: auto; margin-top: 14px; }
 }
 @media (max-width: 767px) {
-  .lsa-shell-header { min-height: 66px !important; padding: 0 12px !important; }
-  .lsa-shell-header__inner { min-height: 66px; }
+  .lsa-shell-header { min-height: 68px !important; padding: 0 14px !important; }
+  .lsa-shell-header::after { right: 14px; left: 14px; }
+  .lsa-shell-header__inner { min-height: 68px; }
+  .lsa-admin-brand__logo { width: 132px; padding: 5px 7px; border-radius: 10px; }
+  .lsa-admin-brand__eyebrow,.lsa-primary-nav,.lsa-booking-action,.lsa-icon-action { display: none; }
+  .lsa-header-actions { gap: 8px; }
   .lsa-admin-brand__mark { width: 36px; height: 36px; font-size: 10px; }
   .lsa-admin-brand__name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .lsa-booking-action { min-height: 36px; padding: 0 10px; font-size: 10px; white-space: nowrap; }
   .lsa-user-menu > summary i,.lsa-icon-action { display: none; }
-  .lsa-user-menu > summary { padding: 3px; }
+  .lsa-user-menu > summary { min-height: 38px; padding: 3px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05); }
+  .lsa-user-menu > summary span { width: 32px; height: 32px; }
   .lsa-command__panel { top: 0; right: 0; width: 100vw; max-height: 100dvh; height: 100dvh; padding: 18px 14px; border: 0; border-radius: 0; transform: none; }
   .lsa-command__groups { gap: 9px; }
   .lsa-command__group { padding: 10px; }
@@ -552,8 +560,8 @@ body.login .errornote { border-radius: 10px; }
 
 /* The owner console is Arabic-only; this is a quiet language indicator, not a
    control that suggests an untranslated operation screen is available. */
-.lsa-admin-language { flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; padding: 0 16px; color: #fff; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: rgba(255,255,255,.06); font-size: 11px; font-weight: 700; }
-@media (max-width: 700px) { .lsa-admin-language { min-height: 36px; padding: 0 12px; font-size: 10px; } }
+.lsa-admin-language { flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; padding: 0 16px; color: #f7edcf; border: 1px solid rgba(217,181,47,.34); border-radius: 12px; background: rgba(255,255,255,.055); font-size: 11px; font-weight: 700; }
+@media (max-width: 700px) { .lsa-admin-language { min-height: 36px; padding: 0 13px; border-radius: 10px; font-size: 10px; } }
 
 /* A deliberately small, touch-friendly operations entrance. */
 .lsa-booking-console { max-width: 1120px; }

@@ -5,7 +5,7 @@
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
-      <span class="lsa-kicker"><i></i> المرحلة 9.2 · مسودة داخلية · {{ draft.get_status_display }}</span>
+      <span class="lsa-kicker"><i></i> المرحلة 9.2 · {% if draft.status == "booked_awaiting_payment" %}حجز في Hostaway بانتظار الدفع{% else %}مسودة داخلية · {{ draft.get_status_display }}{% endif %}</span>
       <h1>{% if draft.guest_first_name or draft.guest_last_name %}{{ draft.guest_first_name }} {{ draft.guest_last_name }}{% else %}حجز {{ draft.property }}{% endif %}</h1>
       <p>{% if draft.guest_first_name or draft.guest_last_name %}<b>الضيف:</b> {{ draft.guest_first_name }} {{ draft.guest_last_name }} · {% endif %}<span dir="ltr">{{ draft.public_reference }} · {{ draft.check_in }} → {{ draft.check_out }}</span> · {{ draft.guests }} ضيوف</p>
     </div>
@@ -38,7 +38,7 @@
       <section class="lsa-manual-payment-next">
         <span>حجز مؤكد</span><h2>بانتظار الدفع</h2>
         {% if reservation %}
-          <p>تم إنشاء الحجز في Hostaway لحجز الموعد. لا توجد دفعة مسجلة بعد.</p>
+          <p>تم إنشاء الحجز في Hostaway لحجز الموعد. لا توجد دفعة مسجلة بعد، ولذلك لا يُرسل تأكيد الحجز إلى الضيف إلا بعد إثبات الدفع.</p>
           <p><b>مرجع Hostaway:</b> <span dir="ltr">{{ reservation.hostaway_reservation_id }}</span></p>
           <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' reservation.pk %}">فتح وإدارة الحجز</a>
           {% if accounting_payment_request_url %}<a class="lsa-btn lsa-btn--gold" href="{{ accounting_payment_request_url }}" target="_blank" rel="noopener">فتح طلب رابط الدفع للمحاسبة</a>{% endif %}

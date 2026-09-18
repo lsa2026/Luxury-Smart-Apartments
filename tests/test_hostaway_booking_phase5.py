@@ -27,6 +27,7 @@ from apps.integrations.hostaway.reservation_validators import (
     normalize_hostaway_reservation_status,
 )
 from apps.integrations.tasks import reconcile_paid_hostaway_reservations_task
+from apps.notifications.models import EmailDelivery
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingIntent,
@@ -347,6 +348,10 @@ def test_owner_manual_booking_can_create_before_payment_and_remains_unpaid() -> 
     assert reservation.hostaway_reservation_id == 77001
     assert reservation.payment_status == "unpaid"
     assert intent.status == BookingIntent.Status.AWAITING_PAYMENT
+    assert not EmailDelivery.objects.filter(
+        recipient_reference=reservation.public_reference,
+        message_type="reservation_confirmed",
+    ).exists()
 
 
 @pytest.mark.parametrize(
