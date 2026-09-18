@@ -18,6 +18,9 @@
     {% if has_successful_payment %}
       <p><b>أقصى مبلغ متاح للاسترداد:</b> <strong dir="ltr">{{ estimated_refund.amount|floatformat:2 }} {{ estimated_refund.currency }}</strong></p>
       <p class="help">هذا هو المبلغ المدفوع المسجل للحجز. يمكنك إرجاعه كاملًا أو صفرًا أو إدخال أي مبلغ أقل منه.</p>
+    {% elif original_payment_amount != None %}
+      <p><b>حالة الدفع:</b> توجد دفعة ناجحة لهذا الحجز، ولا يوجد مبلغ متبقٍ متاح للاسترداد.</p>
+      <p class="help">المبالغ المستردة أو قيد الاسترداد محسوبة بالفعل. راجع حالة كل عملية في سجل الاسترداد أدناه.</p>
     {% else %}
       <p><b>حالة الدفع:</b> لم تُسجّل دفعة ناجحة لهذا الحجز.</p>
       <p class="help">سيتم إلغاء الحجز فقط، ولن يُنشأ طلب استرداد أو يُرسل أي مبلغ إلى HyperPay.</p>
@@ -37,7 +40,7 @@
       <p>سيُلغي النظام الحجز في Hostaway أولًا، وبعد تأكيده فقط يرسل المبلغ الذي اخترته إلى HyperPay.</p>
       <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><div class="lsa-refund-choice"><b>المبلغ المعتمد</b><div class="lsa-refund-choice__presets"><button type="button" onclick="this.form.approved_refund_amount.value='{{ estimated_refund.amount|unlocalize }}'">استرداد كامل · <span dir="ltr">{{ estimated_refund.amount|floatformat:2 }} {{ estimated_refund.currency }}</span></button><button type="button" onclick="this.form.approved_refund_amount.value='0'">بدون استرداد · <span dir="ltr">0.00 {{ estimated_refund.currency }}</span></button></div><label class="lsa-owner-field"><span>مبلغ مخصص</span>{{ execution_form.approved_refund_amount }}{{ execution_form.approved_refund_amount.errors }}</label></div><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز وتنفيذ الاسترداد</button></form>
     {% else %}
-      <p>سيُلغي النظام الحجز في Hostaway فقط؛ لا توجد دفعة ناجحة مرتبطة به، لذلك لا يوجد استرداد.</p>
+      <p>سيُلغي النظام الحجز في Hostaway فقط؛ لا يوجد مبلغ متبقٍ متاح للاسترداد.</p>
       <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><input type="hidden" name="approved_refund_amount" value="0"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز فقط</button></form>
     {% endif %}
   </section>

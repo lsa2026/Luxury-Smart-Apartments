@@ -76,6 +76,15 @@ def test_final_refund_returns_only_1080_and_never_repeats_prior_10():
     payment.refresh_from_db()
     assert payment.status == PaymentAttempt.Status.REFUNDED
     assert cancellation_refund(request.reservation).amount == 0
+    request.status = request.Status.COMPLETED
+    request.save(update_fields=["status"])
+    client = Client()
+    client.force_login(owner())
+    response = client.get(reverse("notifications:cancellation_detail", args=[request.pk]))
+    html = response.content.decode()
+    assert "لم تُسجّل دفعة ناجحة" not in html
+    assert "لا يوجد مبلغ متبقٍ متاح للاسترداد" in html
+    assert 'value="execute_external"' not in html
     from apps.payments.hyperpay.exceptions import HyperPayRefundError
 
     with pytest.raises(HyperPayRefundError):
