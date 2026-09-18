@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from django.utils import timezone
 
+from apps.accounts.models import profile_for
+from apps.accounts.tokens import make_verification_code
 from apps.properties.models import Property
 from apps.reservations.models import BookingIntent, BookingQuote, Reservation
 from apps.reservations.security import grant_reservation_access
@@ -19,8 +21,6 @@ REGISTRATION = {
     "first_name": "Guest",
     "last_name": "Example",
     "email": "guest@example.invalid",
-    "password1": "Correct-Horse-Battery-2026",
-    "password2": "Correct-Horse-Battery-2026",
     "accept_terms": "on",
 }
 
@@ -97,6 +97,14 @@ def client_holding(reservation: Reservation) -> Client:
     return client
 
 
+def confirm_pending_email_code(client: Client, email: str = "guest@example.invalid") -> None:
+    user = User.objects.get(email=email)
+    profile = profile_for(user)
+    code = make_verification_code(user.pk, user.email, profile.verification_sent_at)
+    response = client.post("/account/confirm/code/", {"code": code})
+    assert response.status_code == 302
+
+
 def test_registering_from_a_proven_session_attaches_the_booking() -> None:
     reservation = make_reservation()
     client = client_holding(reservation)
@@ -104,10 +112,10 @@ def test_registering_from_a_proven_session_attaches_the_booking() -> None:
     response = client.post(
         "/register/",
         {**REGISTRATION, "claim": reservation.public_reference},
-        follow=True,
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 302
+    confirm_pending_email_code(client)
     reservation.booking_intent.refresh_from_db()
     assert reservation.booking_intent.customer is not None
     assert reservation.booking_intent.customer.email == "guest@example.invalid"
@@ -117,6 +125,7 @@ def test_the_attached_booking_then_appears_on_the_dashboard() -> None:
     reservation = make_reservation()
     client = client_holding(reservation)
     client.post("/register/", {**REGISTRATION, "claim": reservation.public_reference})
+    confirm_pending_email_code(client)
 
     content = client.get("/my-bookings/").content.decode()
 
@@ -153,7 +162,7 @@ def test_a_forged_reference_is_ignored_even_from_a_proven_session() -> None:
 
 def test_signing_in_attaches_the_booking_for_an_existing_account() -> None:
     reservation = make_reservation()
-    User.objects.create_user(
+    user = User.objects.create_user(
         username="guest@example.invalid",
         email="guest@example.invalid",
         password="Correct-Horse-Battery-2026",
@@ -163,12 +172,12 @@ def test_signing_in_attaches_the_booking_for_an_existing_account() -> None:
     client.post(
         "/login/",
         {
-            "username": "guest@example.invalid",
-            "password": "Correct-Horse-Battery-2026",
+            "email": "guest@example.invalid",
             "claim": reservation.public_reference,
         },
-        follow=True,
     )
+    assert user.pk
+    confirm_pending_email_code(client)
 
     reservation.booking_intent.refresh_from_db()
     assert reservation.booking_intent.customer is not None

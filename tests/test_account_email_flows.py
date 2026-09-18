@@ -25,8 +25,6 @@ REGISTRATION = {
     "first_name": "Nora",
     "last_name": "Example",
     "email": "nora@example.invalid",
-    "password1": "Correct-Horse-Battery-2026",
-    "password2": "Correct-Horse-Battery-2026",
     "accept_terms": "on",
 }
 
@@ -209,11 +207,29 @@ def test_the_reset_pages_are_reachable() -> None:
     assert client.get("/account/reset/done/").status_code == 200
 
 
-def test_login_page_links_to_password_reset() -> None:
+def test_login_page_uses_a_single_email_field_for_code_access() -> None:
     response = Client().get("/login/")
 
     assert response.status_code == 200
-    assert 'href="/account/reset/"' in response.content.decode()
+    content = response.content.decode()
+    assert 'autocomplete="email"' in content
+    assert 'autocomplete="current-password"' not in content
+
+
+def test_an_existing_guest_can_sign_in_with_an_email_code() -> None:
+    user = make_user()
+    profile_for(user).mark_verified()
+    client = Client()
+
+    response = client.post("/login/", {"email": user.email})
+
+    assert response.url == "/account/confirm/"
+    profile = profile_for(user)
+    code = make_verification_code(user.pk, user.email, profile.verification_sent_at)
+    response = client.post("/account/confirm/code/", {"code": code})
+
+    assert response.url == "/my-bookings/"
+    assert client.get("/my-bookings/").status_code == 200
 
 
 # --- template coverage ------------------------------------------------------

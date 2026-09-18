@@ -7,6 +7,8 @@ from django.test import Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.models import profile_for
+from apps.accounts.tokens import make_verification_code
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import (
     BookingIntent,
@@ -43,8 +45,6 @@ def test_customer_can_register_sign_in_and_open_empty_dashboard() -> None:
             "first_name": "Test",
             "last_name": "Guest",
             "email": "Customer@Example.invalid",
-            "password1": "Correct-Horse-Battery-2026",
-            "password2": "Correct-Horse-Battery-2026",
             "accept_terms": "on",
         },
     )
@@ -52,6 +52,9 @@ def test_customer_can_register_sign_in_and_open_empty_dashboard() -> None:
     assert response.url == "/account/confirm/"
     user = get_user_model().objects.get()
     assert user.email == "customer@example.invalid"
+    profile = profile_for(user)
+    code = make_verification_code(user.pk, user.email, profile.verification_sent_at)
+    assert client.post("/account/confirm/code/", {"code": code}).status_code == 302
     dashboard = client.get("/my-bookings/")
     assert dashboard.status_code == 200
 
@@ -67,11 +70,11 @@ def test_account_fields_and_french_copy_are_customer_ready() -> None:
     assert "Se connecter" in login_content
     assert "Toutes vos réservations au même endroit" in login_content
     assert 'autocomplete="email"' in login_content
-    assert 'autocomplete="current-password"' in login_content
+    assert 'autocomplete="current-password"' not in login_content
     assert "Créer un compte" in register_content
     assert 'autocomplete="given-name"' in register_content
     assert 'autocomplete="family-name"' in register_content
-    assert register_content.count('autocomplete="new-password"') == 2
+    assert 'autocomplete="new-password"' not in register_content
     assert 'data-close-label="Fermer le menu"' in register_content
 
 

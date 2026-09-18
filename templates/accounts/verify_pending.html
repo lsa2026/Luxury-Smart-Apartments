@@ -10,6 +10,7 @@
 {% block panel_body %}
 <div class="auth-note">
     <p><span aria-hidden="true">◆</span>{{ verification_copy.hint }}</p>
+    <p>{{ pending_email }}</p>
 </div>
 
 <form method="post" action="{% url 'accounts:verify_email_code' %}" class="auth-form">
