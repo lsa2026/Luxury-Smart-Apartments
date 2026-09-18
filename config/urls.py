@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.accounts.views import LoginView
 from apps.core.admin_views import customer_overview
 from apps.core.seo import robots_txt, sitemap_xml
 from apps.core.views import service_worker
@@ -13,6 +14,9 @@ from apps.notifications.views import admin_landing
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
+    # Some providers and old links use allauth's conventional login URL.
+    # Route it to our branded customer view rather than allauth's plain page.
+    path("accounts/login/", LoginView.as_view(), name="branded_account_login"),
     path("accounts/", include("allauth.urls")),
     path("", include("apps.accounts.urls")),
     path("payments/", include("apps.payments.urls")),

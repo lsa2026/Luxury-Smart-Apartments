@@ -40,6 +40,14 @@ def make_user(email: str = "nora@example.invalid") -> User:
     )
 
 
+def test_the_accounts_login_route_uses_the_branded_guest_sign_in_page() -> None:
+    response = Client().get("/accounts/login/")
+
+    assert response.status_code == 200
+    assert b'auth-stage auth-stage--compact' in response.content
+    assert b'Luxury Smart Apartments' in response.content
+
+
 # --- verification -----------------------------------------------------------
 
 
