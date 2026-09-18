@@ -348,6 +348,48 @@ def test_manual_draft_can_be_rechecked_without_creating_a_reservation():
 @override_settings(
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+    ACCOUNTING_WHATSAPP_NAME="Aseel Hafez",
+    ACCOUNTING_WHATSAPP_NUMBER="+966597193102",
+)
+def test_ready_manual_draft_exposes_a_reviewed_accounting_whatsapp_request():
+    property_obj = make_property()
+    actor = owner()
+    available = make_availability(property_obj)
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=available.quote.check_in,
+        check_out=available.quote.check_out,
+        guests=available.quote.guests,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+    assert creation.draft is not None
+    finalized = finalize_manual_booking_draft(
+        draft_id=creation.draft.pk,
+        guest_data={
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "guest@example.invalid",
+            "guest_phone": "+966500000000",
+            "price_override_reason": "",
+            "special_requests": "",
+        },
+        final_total_price=available.quote.total_price,
+    )
+    assert finalized.draft is not None
+    client = Client()
+    client.force_login(actor)
+
+    page = client.get(reverse("notifications:manual_booking_detail", args=[creation.draft.pk]))
+
+    content = page.content.decode()
+    assert "إرسال طلب رابط الدفع للمحاسبة" in content
+    assert "wa.me/966597193102?text=" in content
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
 )
 def test_manual_property_picker_returns_calendar_confirmed_choices(monkeypatch):
     actor = owner()

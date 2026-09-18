@@ -25,7 +25,16 @@
     {% if draft.status == "ready_for_payment" %}
       <p><b>السعر المعتمد:</b> <span dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</span></p>
       {% if draft.price_override_reason %}<p><b>سبب التعديل:</b> {{ draft.price_override_reason }}</p>{% endif %}
-      <p class="help">المسودة جاهزة لمرحلة رابط الدفع. لم يُنشأ رابط أو حجز خارجي بعد؛ يتطلب ذلك تفعيل واجهة HyperPay المخصصة للروابط اليدوية.</p>
+      <section class="lsa-manual-payment-next">
+        <span>الخطوة التالية</span><h2>رابط الدفع</h2>
+        {% if accounting_payment_request_url %}
+          <p>أرسل طلب إنشاء الرابط إلى {{ accounting_whatsapp_name }}. ستُفتح رسالة WhatsApp جاهزة للمراجعة؛ لا تُرسل تلقائيًا.</p>
+          <a class="lsa-btn lsa-btn--gold" href="{{ accounting_payment_request_url }}" target="_blank" rel="noopener">إرسال طلب رابط الدفع للمحاسبة</a>
+        {% else %}
+          <p>أضف رقم واتساب المحاسبة في إعدادات التشغيل لتفعيل طلب الرابط اليدوي.</p>
+        {% endif %}
+        <div class="lsa-manual-payment-next__coming"><b>قريبًا:</b> إنشاء رابط HyperPay اليدوي وإرساله للضيف مباشرة من هذه الصفحة بعد اعتماد الواجهة من فريق HyperPay.</div>
+      </section>
     {% elif draft.status == "quoted" %}
       <form method="post" novalidate>
         {% csrf_token %}

@@ -5,7 +5,9 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal
+from urllib.parse import quote
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
@@ -88,6 +90,46 @@ def _calendar_urls(form: ManualBookingAvailabilityForm) -> dict[str, str]:
         )
         for property_obj in form.fields["property"].queryset.only("id", "slug")
     }
+
+
+def _whatsapp_digits(raw_number: str) -> str:
+    """Normalise a configured operations number for a wa.me deep link."""
+
+    digits = "".join(character for character in raw_number if character.isdigit())
+    if digits.startswith("00"):
+        digits = digits[2:]
+    elif digits.startswith("0"):
+        digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{digits.lstrip('0')}"
+    elif (
+        digits
+        and not digits.startswith(settings.WHATSAPP_DEFAULT_COUNTRY_CODE)
+        and len(digits) <= 9
+    ):
+        digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{digits}"
+    return digits
+
+
+def _accounting_payment_request_url(draft: ManualBookingDraft) -> str:
+    """Prepare, but never send, the reviewed accounting WhatsApp request."""
+
+    digits = _whatsapp_digits(settings.ACCOUNTING_WHATSAPP_NUMBER)
+    if not digits:
+        return ""
+    guest_name = f"{draft.guest_first_name} {draft.guest_last_name}".strip() or "غير مسجل"
+    message = "\n".join(
+        (
+            "طلب إنشاء رابط دفع يدوي",
+            f"الضيف: {guest_name}",
+            f"جوال الضيف: {draft.guest_phone}",
+            f"البريد: {draft.guest_email}",
+            f"الوحدة: {draft.property}",
+            f"الإقامة: {draft.check_in} إلى {draft.check_out}",
+            f"المبلغ: {draft.final_total_price} {draft.currency}",
+            f"مرجع المسودة: {draft.public_reference}",
+            "يرجى إنشاء رابط HyperPay اليدوي وإرساله للضيف بعد المراجعة.",
+        )
+    )
+    return f"https://wa.me/{digits}?text={quote(message)}"
 
 
 def _available_manual_properties(
@@ -553,6 +595,8 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "cancel_form": cancel_form,
             "delete_form": delete_form,
             "audit_entries": audit_entries,
+            "accounting_whatsapp_name": settings.ACCOUNTING_WHATSAPP_NAME or "المحاسبة",
+            "accounting_payment_request_url": _accounting_payment_request_url(draft),
         },
     )
 

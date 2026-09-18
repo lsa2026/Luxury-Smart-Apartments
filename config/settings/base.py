@@ -558,6 +558,10 @@ ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS = optional_positive_int(
 # Fallback used by the floating WhatsApp button when SiteSetting has no number.
 WHATSAPP_CONTACT_NUMBER = env("WHATSAPP_CONTACT_NUMBER", default="+966501205651").strip()
 WHATSAPP_DEFAULT_COUNTRY_CODE = env("WHATSAPP_DEFAULT_COUNTRY_CODE", default="966").strip()
+# Private operations recipient for a reviewed manual-payment-link request.
+# Kept separate from the public guest-support WhatsApp number.
+ACCOUNTING_WHATSAPP_NAME = env("ACCOUNTING_WHATSAPP_NAME", default="").strip()
+ACCOUNTING_WHATSAPP_NUMBER = env("ACCOUNTING_WHATSAPP_NUMBER", default="").strip()
 
 NOTIFICATIONS_ENABLED = strict_bool("NOTIFICATIONS_ENABLED", True)
 ADMIN_NOTIFICATION_EMAIL_ENABLED = strict_bool("ADMIN_NOTIFICATION_EMAIL_ENABLED")
