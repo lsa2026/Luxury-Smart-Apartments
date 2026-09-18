@@ -49,7 +49,7 @@ def test_customer_can_register_sign_in_and_open_empty_dashboard() -> None:
         },
     )
     assert response.status_code == 302
-    assert response.url == "/my-bookings/"
+    assert response.url == "/account/confirm/"
     user = get_user_model().objects.get()
     assert user.email == "customer@example.invalid"
     dashboard = client.get("/my-bookings/")

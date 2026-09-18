@@ -159,7 +159,7 @@ def _email_brand_context(language: str) -> dict[str, str]:
     site_url = f"{settings.SITE_BASE_URL.rstrip('/')}/"
     site_base_url = settings.SITE_BASE_URL.rstrip("/")
     configured_logo = settings.EMAIL_LOGO_URL.strip()
-    logo_url = urljoin(site_url, configured_logo or "static/images/logo.jpeg")
+    logo_url = urljoin(site_url, configured_logo or "static/images/brand/apple-touch-icon.png")
     return {
         "brand_name": brand_name,
         "tagline": tagline,
@@ -475,11 +475,11 @@ MESSAGES: dict[str, dict[str, str]] = {
         "fr": "Utilisez ce lien sécurisé pour ouvrir et gérer votre réservation. Il est temporaire et utilisable une seule fois.",
     },
     "account_verify_email": {
-        "ar": "تأكيد بريدك يحمي حسابك ويتيح لنا إرسال تفاصيل إقامتك إليك.",
-        "en": "Confirming your address protects your account and lets us send your stay details.",
+        "ar": "أدخل رمز التحقق أدناه لتأكيد بريدك وحماية حسابك.",
+        "en": "Enter the verification code below to confirm your email and protect your account.",
         "fr": (
-            "Confirmer votre adresse protège votre compte et nous permet de vous "
-            "envoyer les détails de votre séjour."
+            "Saisissez le code de vérification ci-dessous pour confirmer votre adresse "
+            "e-mail et protéger votre compte."
         ),
     },
     "account_password_reset": {
@@ -564,19 +564,14 @@ def queue_email(
 
 
 def _account_links(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
-    """Resolve an account recipient and mint its link at send time.
-
-    The token is generated here rather than when the row is queued, so its
-    lifetime starts when the message actually leaves. A queue that backs up
-    therefore delays the email instead of delivering a link that is already
-    half expired.
-    """
+    """Resolve an account recipient and add its short-lived verification code."""
     from django.contrib.auth import get_user_model
     from django.contrib.auth.tokens import default_token_generator
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
 
-    from apps.accounts.tokens import make_verification_token
+    from apps.accounts.models import profile_for
+    from apps.accounts.tokens import make_verification_code
 
     user = get_user_model().objects.filter(pk=int(delivery.recipient_reference)).first()
     if user is None or not user.email:
@@ -589,9 +584,17 @@ def _account_links(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         "dashboard_url": f"{base}/my-bookings/",
     }
     if delivery.message_type == "account_verify_email":
-        token = make_verification_token(user.pk, user.email)
-        context["action_url"] = f"{base}/account/verify/{token}/"
-        context["expires_in_days"] = 3
+        profile = profile_for(user)
+        if profile.verification_sent_at is None:
+            raise EmailProviderError("verification_not_available", permanent=True)
+        context["verification_code"] = make_verification_code(
+            user.pk,
+            user.email,
+            profile.verification_sent_at,
+        )
+        context["expires_in_minutes"] = int(
+            settings.ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS / 60
+        )
     elif delivery.message_type == "account_password_reset":
         uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)

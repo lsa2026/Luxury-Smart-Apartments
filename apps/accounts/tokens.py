@@ -1,4 +1,4 @@
-"""Signed, expiring tokens for email verification.
+"""Codes and signed links used to prove a guest controls an email address.
 
 Password reset keeps Django's own generator, which invalidates a link as soon as
 the password changes. Verification needs different properties, so it is signed
@@ -13,9 +13,38 @@ separately here:
 
 from django.conf import settings
 from django.core import signing
+from django.utils.crypto import constant_time_compare, salted_hmac
 
 VERIFICATION_SALT = "accounts.email-verification.v1"
 VERIFICATION_MAX_AGE_SECONDS = 3 * 24 * 60 * 60
+
+
+def make_verification_code(user_pk: int, email: str, issued_at: object) -> str:
+    """Derive a six-digit code without storing a reusable secret in the database."""
+    timestamp = int(issued_at.timestamp())  # type: ignore[union-attr]
+    payload = f"{int(user_pk)}:{(email or '').strip().casefold()}:{timestamp}"
+    digest = salted_hmac("accounts.email-verification-code.v1", payload).hexdigest()
+    return f"{int(digest[:12], 16) % 1_000_000:06d}"
+
+
+def verification_code_is_valid(
+    *,
+    user_pk: int,
+    email: str,
+    issued_at: object | None,
+    submitted_code: str,
+) -> bool:
+    """Accept only the current, short-lived code sent to this exact address."""
+    if issued_at is None:
+        return False
+    from django.utils import timezone
+
+    if (
+        timezone.now() - issued_at
+    ).total_seconds() > settings.ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS:
+        return False
+    expected = make_verification_code(user_pk, email, issued_at)
+    return constant_time_compare(expected, submitted_code.strip())
 
 
 def make_verification_token(user_pk: int, email: str) -> str:

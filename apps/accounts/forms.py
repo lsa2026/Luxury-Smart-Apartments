@@ -78,3 +78,24 @@ class CustomerAuthenticationForm(AuthenticationForm):
 
     def clean_username(self) -> str:
         return self.cleaned_data["username"].strip().casefold()
+
+
+class EmailVerificationCodeForm(forms.Form):
+    code = forms.CharField(
+        max_length=6,
+        min_length=6,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "one-time-code",
+                "inputmode": "numeric",
+                "pattern": "[0-9]*",
+                "dir": "ltr",
+            }
+        ),
+    )
+
+    def clean_code(self) -> str:
+        code = self.cleaned_data["code"].strip().replace(" ", "")
+        if not code.isdigit() or len(code) != 6:
+            raise forms.ValidationError(_("Enter the six-digit code from your email."))
+        return code

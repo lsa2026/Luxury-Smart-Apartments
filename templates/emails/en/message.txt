@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if verification_code %}
+Verification code: {{ verification_code }}
+Enter the code within {{ expires_in_minutes }} minutes.
+{% endif %}
 
 {% if property_name %}Property: {{ property_name }}{% endif %}
 {% if refund_amount %}Refund sent to the original payment method: {{ refund_amount }}{% if refund_status %}

@@ -13,7 +13,7 @@ from allauth.account.models import EmailAddress
 from allauth.core.context import request_context
 
 from apps.accounts.models import CustomerProfile, profile_for
-from apps.accounts.tokens import make_verification_token, read_verification_token
+from apps.accounts.tokens import make_verification_code, make_verification_token, read_verification_token
 from apps.notifications.models import EmailDelivery
 from apps.notifications.services.email import TEMPLATE_GROUPS
 
@@ -66,6 +66,31 @@ def test_a_new_account_starts_unverified() -> None:
 
     profile = CustomerProfile.objects.get(user__email="nora@example.invalid")
     assert profile.is_email_verified is False
+
+
+def test_the_six_digit_email_code_confirms_a_new_account() -> None:
+    client = Client()
+    response = client.post("/register/", REGISTRATION)
+
+    assert response.url == "/account/confirm/"
+    user = User.objects.get(email="nora@example.invalid")
+    profile = profile_for(user)
+    code = make_verification_code(user.pk, user.email, profile.verification_sent_at)
+
+    response = client.post("/account/confirm/code/", {"code": code})
+
+    assert response.url == "/my-bookings/"
+    assert profile_for(user).is_email_verified is True
+
+
+def test_an_incorrect_email_code_does_not_confirm_the_account() -> None:
+    client = Client()
+    client.post("/register/", REGISTRATION)
+
+    response = client.post("/account/confirm/code/", {"code": "000000"})
+
+    assert response.status_code == 400
+    assert CustomerProfile.objects.get(user__email="nora@example.invalid").is_email_verified is False
 
 
 def test_opening_the_link_confirms_the_address() -> None:

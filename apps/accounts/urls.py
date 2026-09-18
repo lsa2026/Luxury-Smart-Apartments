@@ -9,6 +9,7 @@ from .views import (
     dashboard,
     resend_verification,
     verify_email,
+    verify_email_code,
     verify_pending,
 )
 
@@ -20,6 +21,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("my-bookings/", dashboard, name="dashboard"),
     path("account/confirm/", verify_pending, name="verify_pending"),
+    path("account/confirm/code/", verify_email_code, name="verify_email_code"),
     path("account/confirm/resend/", resend_verification, name="resend_verification"),
     path("account/verify/<str:token>/", verify_email, name="verify_email"),
     # Django's own reset views, given this project's forms and templates. The

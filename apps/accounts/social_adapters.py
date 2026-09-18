@@ -23,24 +23,32 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
         return user
 
     def pre_social_login(self, request, sociallogin):  # type: ignore[no-untyped-def]
-        """Attach verified Google identity to the one operations owner only.
+        """Attach a verified Google identity to the matching existing account.
 
-        Google supplies an explicit verified-email claim. Neither a claimed
-        email value nor an Apple identity is sufficient to create staff access.
+        Google may prove a guest's mailbox, but only the configured business
+        address receives operations access. A guest who already registered with
+        email/password keeps one account when they later choose Google.
         """
 
         super().pre_social_login(request, sociallogin)
         if sociallogin.account.provider != "google":
             return
 
-        owner_email = self._verified_owner_email(sociallogin)
-        if not owner_email:
+        verified_email = self._verified_google_email(sociallogin)
+        if not verified_email:
             return
 
         with transaction.atomic():
-            owner = self._get_or_create_owner(owner_email)
+            if verified_email == self._operations_owner_email():
+                user = self._get_or_create_owner(verified_email)
+            else:
+                user = get_user_model().objects.filter(email__iexact=verified_email).first()
+            if user is None:
+                return
             if not sociallogin.is_existing:
-                sociallogin.connect(request, owner)
+                sociallogin.connect(request, user)
+            profile_for(user).mark_verified()
+            claim_reservations_for_verified_email(user)
 
     def save_user(self, request, sociallogin, form=None):  # type: ignore[no-untyped-def]
         """Provider-verified guest emails unlock the same booking dashboard."""
@@ -56,16 +64,17 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
         return user
 
     @staticmethod
-    def _verified_owner_email(sociallogin):  # type: ignore[no-untyped-def]
+    def _verified_google_email(sociallogin):  # type: ignore[no-untyped-def]
+        for address in sociallogin.email_addresses:
+            if address.verified:
+                return normalize_email(address.email)
+        return ""
+
+    @staticmethod
+    def _operations_owner_email() -> str:
         from django.conf import settings
 
-        for address in sociallogin.email_addresses:
-            if (
-                address.verified
-                and normalize_email(address.email) == settings.OPERATIONS_OWNER_EMAIL
-            ):
-                return settings.OPERATIONS_OWNER_EMAIL
-        return ""
+        return settings.OPERATIONS_OWNER_EMAIL
 
     @staticmethod
     def _get_or_create_owner(email: str):

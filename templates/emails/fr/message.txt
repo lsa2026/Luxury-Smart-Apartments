@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if verification_code %}
+Code de vérification : {{ verification_code }}
+Saisissez le code dans les {{ expires_in_minutes }} minutes.
+{% endif %}
 
 {% if property_name %}Logement : {{ property_name }}{% endif %}
 {% if refund_amount %}Remboursement envoyé vers le moyen de paiement d’origine : {{ refund_amount }}{% if refund_status %}

@@ -544,6 +544,9 @@ EMAIL_BRAND_NAME = env(
 SITE_BASE_URL = env("SITE_BASE_URL", default=SITE_CANONICAL_URL).rstrip("/")
 EMAIL_LOGO_URL = env("EMAIL_LOGO_URL", default="").strip()
 EMAIL_CONTACT_PHONE = env("EMAIL_CONTACT_PHONE", default="").strip()
+ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS = optional_positive_int(
+    "ACCOUNT_EMAIL_VERIFICATION_CODE_MAX_AGE_SECONDS", 15 * 60
+)
 
 # Fallback used by the floating WhatsApp button when SiteSetting has no number.
 WHATSAPP_CONTACT_NUMBER = env("WHATSAPP_CONTACT_NUMBER", default="+966501205651").strip()

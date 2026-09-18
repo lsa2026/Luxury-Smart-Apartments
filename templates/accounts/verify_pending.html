@@ -5,17 +5,34 @@
 {% block aside_heading %}{% trans "Confirm your email address" %}{% endblock %}
 {% block aside_copy %}{% trans "A confirmed address is how we send your booking details and how you recover your account." %}{% endblock %}
 {% block panel_eyebrow %}{% trans "Confirmation" %}{% endblock %}
-{% block panel_heading %}{% trans "Check your inbox" %}{% endblock %}
-{% block panel_copy %}{% blocktrans with email=request.user.email %}We sent a confirmation link to {{ email }}. It stays valid for three days.{% endblocktrans %}{% endblock %}
+{% block panel_heading %}{{ verification_copy.title }}{% endblock %}
+{% block panel_copy %}{{ verification_copy.instructions }}{% endblock %}
 {% block panel_body %}
 <div class="auth-note">
-    <p><span aria-hidden="true">◆</span>{% trans "Nothing arrived? Look in the spam folder before asking for another link." %}</p>
+    <p><span aria-hidden="true">◆</span>{{ verification_copy.hint }}</p>
 </div>
+
+<form method="post" action="{% url 'accounts:verify_email_code' %}" class="auth-form">
+    {% csrf_token %}
+    <fieldset class="auth-fieldset">
+        <legend><i aria-hidden="true">01</i>{{ verification_copy.code_label }}</legend>
+        <div class="auth-fieldset__grid auth-fieldset__grid--single">
+            <div class="field-group">
+                <label for="{{ verification_form.code.id_for_label }}">{{ verification_copy.code_label }}</label>
+                {{ verification_form.code }}
+                {{ verification_form.code.errors }}
+            </div>
+        </div>
+    </fieldset>
+    <button class="button button--gold auth-form__submit" type="submit">
+        {{ verification_copy.submit }}<span aria-hidden="true">↗</span>
+    </button>
+</form>
 
 <form method="post" action="{% url 'accounts:resend_verification' %}" class="auth-form">
     {% csrf_token %}
     <button class="button button--gold auth-form__submit" type="submit">
-        {% trans "Send the link again" %}<span aria-hidden="true">↗</span>
+        {{ verification_copy.resend }}<span aria-hidden="true">↗</span>
     </button>
 </form>
 
