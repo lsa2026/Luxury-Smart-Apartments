@@ -23,9 +23,11 @@ function run(value, consent = true, previouslyPushed = false) {
 }
 test('valid purchase contains real amount, currency and booking ID once', () => {
     const result = run('1090.0');
-    const event = result.context.window.dataLayer[0];
+    const event = result.context.window.dataLayer.find(e => e.event === 'purchase');
     assert.equal(event.value,1090); assert.equal(event.currency,'SAR');
     assert.equal(event.transaction_id,'test-booking'); assert.equal(result.acknowledgements,1);
+    assert.equal(event.ecommerce.value,1090);
+    assert.equal(event.ecommerce.transaction_id,'test-booking');
     result.consent();
     assert.equal(result.context.window.dataLayer.filter(e=>e.event==='purchase').length,1);
 });

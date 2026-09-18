@@ -99,7 +99,14 @@
             return false;
         }
         window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({event: eventName, ...clean});
+        // GA4's GTM "Send Ecommerce data" reads ecommerce.*, while our Ads
+        // variables read the explicit top-level transaction fields.
+        if (eventName === "purchase") {
+            window.dataLayer.push({ecommerce: null});
+            window.dataLayer.push({event: eventName, ...clean, ecommerce: {...clean}});
+        } else {
+            window.dataLayer.push({event: eventName, ...clean});
+        }
         return clean;
     }
 
