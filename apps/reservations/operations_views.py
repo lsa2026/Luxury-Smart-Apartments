@@ -186,7 +186,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     successful_original_payment = PaymentAttempt.objects.filter(
         booking_intent_id=OuterRef("booking_intent_id"),
         modification_request__isnull=True,
-        status=PaymentAttempt.Status.SUCCEEDED,
+        status__in=[PaymentAttempt.Status.SUCCEEDED, PaymentAttempt.Status.PARTIALLY_REFUNDED],
         verified_at__isnull=False,
     )
     bookings = (

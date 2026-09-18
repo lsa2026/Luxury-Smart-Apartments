@@ -59,6 +59,13 @@
         if (Object.keys(payload).some((key) => forbiddenKeys.has(key.toLowerCase()))) {
             return null;
         }
+        if (eventName === "purchase" && (
+            typeof payload.transaction_id !== "string" || !payload.transaction_id.trim()
+            || !Number.isFinite(payload.value) || payload.value <= 0
+            || !/^[A-Z]{3}$/.test(payload.currency || "")
+        )) {
+            return null;
+        }
         const clean = {};
         Object.entries(payload).forEach(([key, value]) => {
             if (!schema.has(key)) {
@@ -68,7 +75,8 @@
                 clean.items = value.slice(0, 20).map(cleanItem).filter(
                     (item) => Object.keys(item).length,
                 );
-            } else if (["string", "number", "boolean"].includes(typeof value)) {
+            } else if (["string", "number", "boolean"].includes(typeof value)
+                && (typeof value !== "number" || Number.isFinite(value))) {
                 clean[key] = typeof value === "string" ? value.slice(0, 200) : value;
             }
         });
@@ -167,8 +175,19 @@
         });
     }
     const purchase = document.querySelector("[data-analytics-purchase-event]");
-    if (purchase) {
+    let purchasePushed = false;
+    function emitPurchase() {
+        if (!purchase || purchasePushed) {
+            return;
+        }
         const transactionId = purchase.dataset.analyticsTransactionId;
+        try {
+            if (window.sessionStorage.getItem(`lsa:purchase:${transactionId}`) === "pushed") {
+                return;
+            }
+        } catch (error) {
+            // Server receipts still prevent emission on a later acknowledged load.
+        }
         const item = cleanItem({
             item_id: purchase.dataset.analyticsItemId,
             item_name: purchase.dataset.analyticsItemName,
@@ -186,9 +205,11 @@
             items: Object.keys(item).length ? [item] : [],
         });
         if (pushed) {
+            purchasePushed = true;
             acknowledgePurchaseReceipt(purchase, transactionId);
         }
     }
+    emitPurchase();
     document.querySelectorAll("[data-analytics-event]").forEach((element) => {
         const eventName = element.dataset.analyticsEvent;
         const trigger = element.matches("form") ? "submit" : (
@@ -212,6 +233,7 @@
         }
     });
     document.addEventListener("lsa:consent-updated", (event) => {
+        emitPurchase();
         pushEvent("cookie_consent_updated", {
             analytics: event.detail.analytics,
             marketing: event.detail.marketing,

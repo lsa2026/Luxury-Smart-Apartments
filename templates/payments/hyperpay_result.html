@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n presentation %}
+{% load i18n l10n presentation %}
 {% block title %}{% trans "Payment result" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
@@ -10,7 +10,7 @@
         data-analytics-purchase-event
         data-analytics-transaction-id="{{ purchase_event.transaction_id }}"
         data-analytics-currency="{{ purchase_event.currency }}"
-        data-analytics-value="{{ purchase_event.value }}"
+        data-analytics-value="{{ purchase_event.value|unlocalize }}"
         data-analytics-item-id="{{ purchase_event.items.0.item_id }}"
         data-analytics-item-name="{{ purchase_event.items.0.item_name }}"
         data-analytics-item-brand="{{ purchase_event.items.0.item_brand }}"

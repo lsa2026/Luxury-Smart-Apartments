@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n presentation currency %}
+{% load i18n l10n presentation currency %}
 
 {% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
@@ -11,7 +11,7 @@
     data-analytics-event="{% if quote_is_usable %}quote_created{% else %}quote_expired{% endif %}"
     data-analytics-reason="{% if not quote_is_usable %}expired{% endif %}"
     data-analytics-currency="{{ quote.currency }}"
-    data-analytics-value="{{ quote.total_price }}"
+    data-analytics-value="{{ quote.total_price|unlocalize }}"
     data-analytics-nights="{{ quote.nights }}"
     data-analytics-guests="{{ quote.guests }}"
 >
@@ -147,7 +147,7 @@
                     data-submit-once
                     data-analytics-event="begin_checkout"
                     data-analytics-currency="{{ quote.currency }}"
-                    data-analytics-value="{{ quote.total_price }}"
+                    data-analytics-value="{{ quote.total_price|unlocalize }}"
                     data-analytics-nights="{{ quote.nights }}"
                     data-analytics-guests="{{ quote.guests }}"
                     novalidate

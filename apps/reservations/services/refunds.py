@@ -61,11 +61,12 @@ def _cleaning_fee(reservation: Reservation) -> Decimal:
 
 
 def successful_original_payment_amount(reservation: Reservation) -> Decimal | None:
-    """Return the card amount actually collected for the original stay.
+    """Return the remaining refundable balance of the original collection.
 
     Hostaway's reservation total can differ from the amount that made it
     through the payment gateway. A refund must never be created for more than
-    the original successful card payment.
+    the original successful card payment less earlier completed/in-flight refunds.
+    A partial refund changes the payment status, not whether money was collected.
     """
     intent = reservation.booking_intent
     if intent is None:
@@ -73,18 +74,39 @@ def successful_original_payment_amount(reservation: Reservation) -> Decimal | No
 
     from apps.payments.models import PaymentAttempt
 
-    amount = (
+    payment = (
         PaymentAttempt.objects.filter(
             booking_intent=intent,
             modification_request__isnull=True,
-            status=PaymentAttempt.Status.SUCCEEDED,
+            status__in=[
+                PaymentAttempt.Status.SUCCEEDED,
+                PaymentAttempt.Status.PARTIALLY_REFUNDED,
+                PaymentAttempt.Status.REFUNDED,
+            ],
             currency=reservation.currency,
         )
         .order_by("-verified_at", "-created_at")
-        .values_list("amount", flat=True)
         .first()
     )
-    return Decimal(amount) if amount is not None else None
+    if payment is None:
+        return None
+    if payment.status == PaymentAttempt.Status.REFUNDED:
+        return Decimal("0")
+    returned = Decimal("0")
+    for refund in reservation.refund_obligations.filter(
+        currency=reservation.currency,
+        status__in=[RefundObligation.Status.PROCESSING, RefundObligation.Status.TRANSFERRED],
+    ):
+        detail = (
+            refund.calculation.get("hyperpay_refund", {})
+            if isinstance(refund.calculation, dict)
+            else {}
+        )
+        payment_id = detail.get("original_payment_id") if isinstance(detail, dict) else None
+        # Legacy/manual refunds with no allocation reduce the balance conservatively.
+        if not payment_id or payment_id == payment.provider_payment_id:
+            returned += refund.amount
+    return max(Decimal(payment.amount) - returned, Decimal("0"))
 
 
 def cancellation_refund(

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n presentation currency %}
+{% load i18n l10n presentation currency %}
 {% block title %}{% trans "Review booking request" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
@@ -8,7 +8,7 @@
     class="section container narrow"
     data-analytics-event="booking_intent_created"
     data-analytics-currency="{{ intent.currency }}"
-    data-analytics-value="{{ intent.total_price }}"
+    data-analytics-value="{{ intent.total_price|unlocalize }}"
 >
     {% include "includes/progress_indicator.html" with step=3 %}
     <div class="section-heading"><p class="eyebrow">{% trans "Local booking request" %}</p><h1>{% trans "Review your request" %}</h1></div>

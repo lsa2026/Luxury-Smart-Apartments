@@ -101,6 +101,13 @@ def execute_automatic_modification(
         if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
             if not settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED:
                 return AutomaticModificationOutcome("automatic_cancellation_disabled", locked)
+            # Recheck under the reservation lock, before making any external change.
+            ceiling = cancellation_refund(locked.reservation).amount
+            if (
+                approved_refund_amount is not None
+                and not Decimal("0") <= approved_refund_amount <= ceiling
+            ):
+                return AutomaticModificationOutcome("payment_changed_reprice_required", locked)
         elif locked.price_difference > 0 and not owner_override:
             paid = PaymentAttempt.objects.filter(
                 modification_request=locked,

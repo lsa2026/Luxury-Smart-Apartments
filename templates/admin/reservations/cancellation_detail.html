@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+{% load l10n %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -34,7 +35,7 @@
     <h2>إلغاء الحجز{% if has_successful_payment %} واسترداد المبلغ{% endif %}</h2>
     {% if has_successful_payment %}
       <p>سيُلغي النظام الحجز في Hostaway أولًا، وبعد تأكيده فقط يرسل المبلغ الذي اخترته إلى HyperPay.</p>
-      <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><div class="lsa-refund-choice"><b>المبلغ المعتمد</b><div class="lsa-refund-choice__presets"><button type="button" onclick="this.form.approved_refund_amount.value='{{ estimated_refund.amount }}'">استرداد كامل · <span dir="ltr">{{ estimated_refund.amount|floatformat:2 }} {{ estimated_refund.currency }}</span></button><button type="button" onclick="this.form.approved_refund_amount.value='0'">بدون استرداد · <span dir="ltr">0.00 {{ estimated_refund.currency }}</span></button></div><label class="lsa-owner-field"><span>مبلغ مخصص</span>{{ execution_form.approved_refund_amount }}{{ execution_form.approved_refund_amount.errors }}</label></div><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز وتنفيذ الاسترداد</button></form>
+      <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><div class="lsa-refund-choice"><b>المبلغ المعتمد</b><div class="lsa-refund-choice__presets"><button type="button" onclick="this.form.approved_refund_amount.value='{{ estimated_refund.amount|unlocalize }}'">استرداد كامل · <span dir="ltr">{{ estimated_refund.amount|floatformat:2 }} {{ estimated_refund.currency }}</span></button><button type="button" onclick="this.form.approved_refund_amount.value='0'">بدون استرداد · <span dir="ltr">0.00 {{ estimated_refund.currency }}</span></button></div><label class="lsa-owner-field"><span>مبلغ مخصص</span>{{ execution_form.approved_refund_amount }}{{ execution_form.approved_refund_amount.errors }}</label></div><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز وتنفيذ الاسترداد</button></form>
     {% else %}
       <p>سيُلغي النظام الحجز في Hostaway فقط؛ لا توجد دفعة ناجحة مرتبطة به، لذلك لا يوجد استرداد.</p>
       <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><input type="hidden" name="approved_refund_amount" value="0"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز فقط</button></form>
