@@ -164,3 +164,60 @@ def test_automatic_price_decrease_refunds_only_after_hostaway_confirms():
     assert outcome.refund is not None
     outcome.refund.refresh_from_db()
     assert outcome.refund.status == RefundObligation.Status.TRANSFERRED
+
+
+@override_settings(
+    **{
+        **REFUND_SETTINGS,
+        "HYPERPAY_ENVIRONMENT": "production",
+        "HYPERPAY_BASE_URL": "https://eu-prod.oppwa.com/",
+        "HYPERPAY_REFUNDS_PRODUCTION_ENABLED": True,
+        "BOOKING_AUTOMATIC_MODIFICATION_APPROVAL": True,
+        "BOOKING_AUTOMATIC_REFUND_ENABLED": True,
+        "HOSTAWAY_LIVE_MODIFICATION_ENABLED": True,
+        "HOSTAWAY_LIVE_EXTENSION_ENABLED": True,
+    }
+)
+def test_owner_can_choose_a_partial_price_decrease_refund_before_submission():
+    reservation = confirmed_reservation()
+    reservation.total_price = Decimal("1000.0000")
+    reservation.save(update_fields=["total_price", "updated_at"])
+    PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        provider="hyperpay",
+        provider_payment_id="original-payment-owner-decrease",
+        amount=reservation.total_price,
+        currency="SAR",
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key="owner-decrease-original-payment-000000000001",
+    )
+    new_check_out = reservation.check_out + timedelta(days=1)
+    modification = ModificationService(
+        availability_service=ModificationAvailabilityStub(
+            reservation,
+            quote=price_quote(reservation, check_out=new_check_out, total=Decimal("800.0000")),
+        )
+    ).create_change_quote(
+        reservation,
+        new_check_in=reservation.check_in,
+        new_check_out=new_check_out,
+        new_guests=reservation.guests,
+        session_hash=reservation.booking_intent.session_key_hash,
+    ).request
+    assert modification is not None
+    outcome = execute_automatic_modification(
+        modification,
+        service=HostawayModificationService(client=WriteClientStub(snapshot=updated_snapshot(modification))),
+        refund_service=HyperPayRefundService(
+            client=RefundStub({"id": "owner-decrease-refund-123", "result": {"code": "000.100.110"}})
+        ),
+        approved_refund_amount=Decimal("75.0000"),
+        refund_decision_note="اتفاق واضح مع الضيف على استرداد جزئي.",
+    )
+
+    assert outcome.code == "completed"
+    assert outcome.refund is not None
+    outcome.refund.refresh_from_db()
+    assert outcome.refund.amount == Decimal("75.0000")
+    assert outcome.refund.calculation["operator_refund_decision"]["approved_amount"] == "75.0000"

@@ -71,8 +71,9 @@ class ModificationService:
         new_check_out: date,
         session_hash: str,
         reason: str = "",
+        owner_override: bool = False,
     ) -> ModificationCreation:
-        blocker = _base_blocker(reservation, session_hash)
+        blocker = _base_blocker(reservation, session_hash, owner_override=owner_override)
         if blocker:
             return ModificationCreation(blocker)
         if (
@@ -137,8 +138,9 @@ class ModificationService:
         new_guests: int,
         session_hash: str,
         reason: str = "",
+        owner_override: bool = False,
     ) -> ModificationCreation:
-        blocker = _base_blocker(reservation, session_hash)
+        blocker = _base_blocker(reservation, session_hash, owner_override=owner_override)
         if blocker:
             return ModificationCreation(blocker)
         if new_check_out <= new_check_in:
@@ -188,10 +190,11 @@ class ModificationService:
         *,
         session_hash: str,
         reason: str = "",
+        owner_override: bool = False,
     ) -> ModificationCreation:
         if not settings.BOOKING_CANCELLATION_REQUEST_ENABLED:
             return ModificationCreation("cancellation_requests_disabled")
-        blocker = _base_blocker(reservation, session_hash)
+        blocker = _base_blocker(reservation, session_hash, owner_override=owner_override)
         if blocker:
             return ModificationCreation(blocker)
         key = _idempotency_key(
@@ -422,14 +425,22 @@ class ModificationService:
         return ModificationCreation("created", request)
 
 
-def _base_blocker(reservation: Reservation, session_hash: str) -> str:
+def _base_blocker(
+    reservation: Reservation,
+    session_hash: str,
+    *,
+    owner_override: bool = False,
+) -> str:
     if reservation.normalized_status != Reservation.Status.CONFIRMED:
         return "reservation_not_confirmed"
     if reservation.source_type != Reservation.SourceType.DIRECT_WEBSITE:
         return "external_channel_requires_admin"
     if reservation.booking_intent_id is None or reservation.property_id is None:
         return "direct_reservation_context_missing"
-    if not constant_time_compare(reservation.booking_intent.session_key_hash, session_hash):
+    if not owner_override and not constant_time_compare(
+        reservation.booking_intent.session_key_hash,
+        session_hash,
+    ):
         return "not_found"
     return ""
 

@@ -33,6 +33,8 @@ def execute_automatic_modification(
     *,
     service: HostawayModificationService | None = None,
     refund_service: "HyperPayRefundService | None" = None,
+    approved_refund_amount: Decimal | None = None,
+    refund_decision_note: str = "",
 ) -> AutomaticModificationOutcome:
     """Approve and execute a safe modification without an administrative hop.
 
@@ -112,7 +114,11 @@ def execute_automatic_modification(
     refund = None
     refund_code = None
     if execution.code == "completed":
-        refund = _record_refund_if_owed(execution.request)
+        refund = _record_refund_if_owed(
+            execution.request,
+            approved_refund_amount=approved_refund_amount,
+            refund_decision_note=refund_decision_note,
+        )
         if refund is not None and settings.BOOKING_AUTOMATIC_REFUND_ENABLED:
             refund_code = _submit_automatic_refund(refund, service=refund_service)
     return AutomaticModificationOutcome(
@@ -124,7 +130,12 @@ def execute_automatic_modification(
     )
 
 
-def _record_refund_if_owed(modification: BookingModificationRequest) -> RefundObligation | None:
+def _record_refund_if_owed(
+    modification: BookingModificationRequest,
+    *,
+    approved_refund_amount: Decimal | None = None,
+    refund_decision_note: str = "",
+) -> RefundObligation | None:
     """Write down what the guest is owed, only after Hostaway accepted the change.
 
     Recording first would risk a debt for a change that never happened; recording
@@ -147,6 +158,23 @@ def _record_refund_if_owed(modification: BookingModificationRequest) -> RefundOb
         reason = RefundObligation.Reason.MODIFICATION_DECREASE
     else:
         return None
+    if approved_refund_amount is not None:
+        requested_amount = Decimal(approved_refund_amount)
+        if requested_amount < Decimal("0") or requested_amount > computation.amount:
+            # The caller validates the owner's form. This guard keeps a direct
+            # service invocation from refunding more than the verified amount.
+            return None
+        detail = dict(computation.detail)
+        detail["operator_refund_decision"] = {
+            "calculated_amount": format(computation.amount, "f"),
+            "approved_amount": format(requested_amount, "f"),
+            "note": refund_decision_note.strip()[:500],
+        }
+        computation = RefundComputation(
+            amount=requested_amount,
+            currency=computation.currency,
+            detail=detail,
+        )
     return record_obligation(
         reservation,
         reason=reason,

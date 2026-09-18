@@ -21,6 +21,16 @@ urlpatterns = [
         name="manual_booking_create",
     ),
     path(
+        "admin/operations/bookings/",
+        operations_views.booking_list,
+        name="booking_list",
+    ),
+    path(
+        "admin/operations/bookings/<uuid:reservation_id>/",
+        operations_views.booking_detail,
+        name="booking_detail",
+    ),
+    path(
         "admin/operations/manual-bookings/<uuid:draft_id>/",
         operations_views.manual_booking_detail,
         name="manual_booking_detail",

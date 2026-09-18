@@ -20,10 +20,12 @@ from apps.notifications.services.audit import record_audit
 from apps.payments.hyperpay.refunds import HyperPayRefundService
 
 from .manual_bookings import create_manual_booking_draft, finalize_manual_booking_draft
+from .modification_forms import DateChangeRequestForm
 from .models import (
     BookingModificationRequest,
     BookingQuote,
     ManualBookingDraft,
+    Reservation,
     RefundObligation,
 )
 from .operations_forms import (
@@ -34,11 +36,13 @@ from .operations_forms import (
     ManualBookingCancelForm,
     ManualBookingDeleteForm,
     ManualBookingFinalizeForm,
+    OwnerModificationExecutionForm,
     RefundDecisionForm,
     RefundGatewaySubmitForm,
     RefundSettlementForm,
 )
 from .services.automatic_modifications import execute_automatic_modification
+from .services.modifications import ModificationService
 from .services.refunds import cancellation_refund
 
 
@@ -114,6 +118,156 @@ def manual_booking_list(request: HttpRequest) -> HttpResponse:
             "status": status,
             "query": query,
             "status_options": ManualBookingDraft.Status.choices,
+        },
+    )
+
+
+@staff_member_required
+def booking_list(request: HttpRequest) -> HttpResponse:
+    """Owner's concise list of website bookings, led by the guest name."""
+
+    _require_owner(request)
+    query = request.GET.get("q", "").strip()
+    bookings = Reservation.objects.select_related("property", "booking_intent").order_by("-created_at")
+    if query:
+        bookings = bookings.filter(
+            Q(booking_intent__guest_first_name__icontains=query)
+            | Q(booking_intent__guest_last_name__icontains=query)
+            | Q(booking_intent__guest_email__icontains=query)
+            | Q(booking_intent__guest_phone__icontains=query)
+            | Q(public_reference__icontains=query)
+            | Q(property__name_ar__icontains=query)
+            | Q(property__name_en__icontains=query)
+        )
+    return render(
+        request,
+        "admin/reservations/booking_list.html",
+        {"title": "إدارة الحجوزات", "bookings": bookings[:100], "query": query},
+    )
+
+
+@staff_member_required
+def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
+    """One owner-only place to price, modify, or begin a cancellation."""
+
+    _require_owner(request)
+    reservation = get_object_or_404(
+        Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
+    )
+    intent = reservation.booking_intent
+    date_form = DateChangeRequestForm(
+        initial={
+            "new_check_in": reservation.check_in,
+            "new_check_out": reservation.check_out,
+            "new_guests": reservation.guests,
+        }
+    )
+    pending_adjustments = reservation.modification_requests.exclude(
+        request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
+    ).order_by("-requested_at")[:10]
+    execution_form = None
+    ready_adjustment = next(
+        (
+            item
+            for item in pending_adjustments
+            if item.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+            and item.price_difference <= 0
+        ),
+        None,
+    )
+    if ready_adjustment is not None:
+        execution_form = OwnerModificationExecutionForm(
+            maximum_amount=ready_adjustment.refund_amount
+        )
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "quote_change":
+            date_form = DateChangeRequestForm(request.POST)
+            if date_form.is_valid() and intent is not None:
+                with ModificationService() as service:
+                    outcome = service.create_change_quote(
+                        reservation,
+                        new_check_in=date_form.cleaned_data["new_check_in"],
+                        new_check_out=date_form.cleaned_data["new_check_out"],
+                        new_guests=date_form.cleaned_data["new_guests"],
+                        session_hash=f"owner:{request.user.pk}",
+                        reason=date_form.cleaned_data.get("reason", ""),
+                        owner_override=True,
+                    )
+                if outcome.request is not None:
+                    record_audit(
+                        request=request,
+                        action="owner_booking.change_priced",
+                        object_type="BookingModificationRequest",
+                        object_reference=outcome.request.public_reference,
+                        summary="Owner checked Hostaway availability and priced a booking change.",
+                        metadata={"price_difference": format(outcome.request.price_difference, "f")},
+                    )
+                    if outcome.request.price_difference > 0:
+                        messages.success(
+                            request,
+                            "تم فحص التوفر وتثبيت فرق السعر. رابط الدفع اليدوي سيُرسل للضيف "
+                            "عند تفعيل واجهة HyperPay المخصصة للروابط.",
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            "تم فحص التوفر وتثبيت فرق الاسترداد. اختر مبلغ الاسترداد ثم أكّد التنفيذ.",
+                        )
+                    return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+                messages.error(request, f"تعذر تسعير التعديل الآن ({outcome.code}). لم يتغير الحجز.")
+        elif action == "start_cancellation":
+            if intent is None:
+                messages.error(request, "لا توجد بيانات دفع مرتبطة بهذا الحجز.")
+            else:
+                with ModificationService() as service:
+                    outcome = service.create_cancellation_request(
+                        reservation,
+                        session_hash=f"owner:{request.user.pk}",
+                        reason=request.POST.get("reason", ""),
+                        owner_override=True,
+                    )
+                if outcome.request is not None:
+                    return redirect("notifications:cancellation_detail", request_id=outcome.request.pk)
+                messages.error(request, f"تعذر تجهيز الإلغاء الآن ({outcome.code}).")
+        elif action == "execute_adjustment":
+            adjustment = get_object_or_404(
+                BookingModificationRequest.objects.select_related("reservation"),
+                pk=request.POST.get("modification_id"),
+                reservation=reservation,
+            )
+            execution_form = OwnerModificationExecutionForm(
+                request.POST,
+                maximum_amount=adjustment.refund_amount,
+            )
+            if execution_form.is_valid() and (
+                adjustment.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+                and adjustment.price_difference <= 0
+            ):
+                outcome = execute_automatic_modification(
+                    adjustment,
+                    approved_refund_amount=execution_form.cleaned_data["approved_refund_amount"],
+                    refund_decision_note=execution_form.cleaned_data["refund_decision_note"],
+                )
+                if outcome.code == "completed":
+                    messages.success(
+                        request,
+                        "أكدت Hostaway تعديل الحجز. أُرسل قرار الاسترداد إلى HyperPay عند وجود مبلغ.",
+                    )
+                    return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+                messages.error(request, f"لم يكتمل التعديل الخارجي ({outcome.code}).")
+
+    return render(
+        request,
+        "admin/reservations/booking_detail.html",
+        {
+            "title": "إدارة الحجز",
+            "reservation": reservation,
+            "date_form": date_form,
+            "pending_adjustments": pending_adjustments,
+            "ready_adjustment": ready_adjustment,
+            "execution_form": execution_form,
         },
     )
 
@@ -339,7 +493,8 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
     )
     approval_form = CancellationDecisionForm()
     rejection_form = CancellationRejectionForm()
-    execution_form = CancellationExecutionForm()
+    estimated_refund = cancellation_refund(cancellation.reservation)
+    execution_form = CancellationExecutionForm(maximum_amount=estimated_refund.amount)
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "approve":
@@ -390,12 +545,23 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                     messages.success(request, "رُفض الطلب محليًا مع حفظ سبب القرار في سجل التدقيق.")
                     return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
         elif action == "execute_external":
-            execution_form = CancellationExecutionForm(request.POST)
+            execution_form = CancellationExecutionForm(
+                request.POST,
+                maximum_amount=estimated_refund.amount,
+            )
             if execution_form.is_valid():
                 if cancellation.status != BookingModificationRequest.Status.READY_FOR_HOSTAWAY:
                     messages.error(request, "لا يمكن تنفيذ الإلغاء الخارجي في حالته الحالية.")
                 else:
-                    outcome = execute_automatic_modification(cancellation)
+                    outcome = execute_automatic_modification(
+                        cancellation,
+                        approved_refund_amount=execution_form.cleaned_data[
+                            "approved_refund_amount"
+                        ],
+                        refund_decision_note=execution_form.cleaned_data[
+                            "refund_decision_note"
+                        ],
+                    )
                     if outcome.code == "completed":
                         record_audit(
                             request=request,
@@ -404,9 +570,8 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                             object_reference=cancellation.public_reference,
                             summary="Hostaway confirmed the cancellation.",
                             metadata={
-                                "estimated_refund": format(
-                                    cancellation_refund(cancellation.reservation).amount,
-                                    "f",
+                                "approved_refund": format(
+                                    execution_form.cleaned_data["approved_refund_amount"], "f"
                                 ),
                                 "refund_result": outcome.refund_code,
                             },
@@ -434,7 +599,6 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                         messages.error(request, f"لم يكتمل الإلغاء الخارجي ({outcome.code}).")
                     return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
 
-    estimated_refund = cancellation_refund(cancellation.reservation)
     audit_entries = list(
         AuditLog.objects.filter(
             object_type="BookingModificationRequest",

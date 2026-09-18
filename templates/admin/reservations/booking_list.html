@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div>
+      <span class="lsa-kicker"><i></i> إدارة الحجوزات</span>
+      <h1>الحجوزات القائمة</h1>
+      <p>ابحث باسم الضيف أو جواله، ثم افتح الحجز لتعديل التواريخ أو إلغائه.</p>
+    </div>
+    <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">حجز جديد</a>
+  </section>
+  <section class="lsa-panel">
+    <form method="get" class="lsa-inline-form" aria-label="البحث في الحجوزات">
+      <label>بحث باسم الضيف أو الجوال أو البريد<input type="search" name="q" value="{{ query }}" autocomplete="off"></label>
+      <button type="submit">بحث</button>
+    </form>
+  </section>
+  <section class="lsa-panel">
+    {% if bookings %}
+    <div class="lsa-table-scroll"><table>
+      <thead><tr><th>الضيف</th><th>الوحدة</th><th>الإقامة</th><th>الحالة</th><th>القيمة</th><th></th></tr></thead>
+      <tbody>{% for booking in bookings %}<tr>
+        <td><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}—{% endif %}</b><br><small dir="ltr">{{ booking.booking_intent.guest_phone|default:"" }}</small></td>
+        <td>{{ booking.property|default:"—" }}</td>
+        <td dir="ltr">{{ booking.check_in }} → {{ booking.check_out }}</td>
+        <td>{{ booking.get_normalized_status_display }}</td>
+        <td dir="ltr">{{ booking.total_price }} {{ booking.currency }}</td>
+        <td><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' booking.pk %}">إدارة</a></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="help">لا توجد حجوزات مطابقة.</p>{% endif %}
+  </section>
+</main>
+{% endblock %}

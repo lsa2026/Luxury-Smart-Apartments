@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from apps.notifications.models import AuditLog
 from apps.reservations.models import BookingModificationRequest, RefundObligation
+from apps.reservations.operations_forms import OwnerModificationExecutionForm
 from apps.reservations.services.refunds import RefundComputation, record_obligation
 from tests.test_booking_modifications_phase6 import confirmed_reservation
 
@@ -153,3 +154,32 @@ def test_owner_can_approve_partial_refund_then_record_an_external_transfer():
     assert AuditLog.objects.filter(
         action="refund.marked_transferred", object_reference=refund.public_reference
     ).exists()
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_booking_management_list_is_owner_only_and_names_the_guest_first():
+    reservation = confirmed_reservation()
+    client = Client()
+    client.force_login(owner())
+
+    response = client.get(reverse("notifications:booking_list"))
+
+    assert response.status_code == 200
+    assert reservation.booking_intent.guest_first_name in response.content.decode()
+    assert reverse("notifications:booking_detail", args=[reservation.pk]) in response.content.decode()
+
+
+def test_owner_change_execution_can_approve_a_partial_or_zero_refund():
+    form = OwnerModificationExecutionForm(
+        {
+            "approved_refund_amount": "0.00",
+            "refund_decision_note": "اتفاق مكتوب مع الضيف بعد مراجعة تفاصيل الإقامة.",
+            "confirm_external_modification": "on",
+        },
+        maximum_amount=Decimal("100.00"),
+    )
+
+    assert form.is_valid()

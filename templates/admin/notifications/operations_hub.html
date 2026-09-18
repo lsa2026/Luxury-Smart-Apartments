@@ -19,7 +19,7 @@
       <div>
         <h2>حجز جديد</h2>
         <p>اختر الوحدة والتواريخ والضيف، افحص التوفر، ثم ثبّت السعر النهائي.</p>
-        <small>رابط الدفع اليدوي عبر WhatsApp سيُضاف هنا فور تأكيد واجهة روابط HyperPay.</small>
+        <small>سيُجهز رابط الدفع للضيف؛ إرسال WhatsApp الآلي يُفعّل فور اعتماد واجهة HyperPay.</small>
       </div>
       <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">إنشاء حجز جديد</a>
     </article>
@@ -31,7 +31,7 @@
         <p>ابحث باسم الضيف أو رقمه، ثم راجع التواريخ والسعر وحالة الدفع قبل اعتماد أي فرق.</p>
         <small>تظهر جميع حجوزات الموقع في مكان واحد لتسهيل الوصول إلى الحجز الصحيح.</small>
       </div>
-      <a class="lsa-btn lsa-btn--ghost" href="{% url 'admin_customers' %}">البحث عن حجز</a>
+      <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">عرض وإدارة الحجوزات</a>
     </article>
 
     <article class="lsa-booking-console__card lsa-booking-console__card--critical">
