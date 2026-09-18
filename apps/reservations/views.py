@@ -55,6 +55,7 @@ from .services.availability import (
 )
 from .services.booking import consume_revalidated_quote
 from .services.modifications import ModificationService
+from .services.host_policy import check_in_datetime
 from .services.refunds import cancellation_refund
 from .services.stay_policy import stay_policy_for
 from .signing import (
@@ -669,6 +670,14 @@ def _management_context(
         and settings.BOOKING_AUTOMATIC_REFUND_ENABLED
         and settings.HYPERPAY_ENVIRONMENT == "production"
     )
+    can_cancel = (
+        reservation.normalized_status == Reservation.Status.CONFIRMED
+        and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
+        and (
+            not settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED
+            or timezone.now() < check_in_datetime(reservation.property, reservation.check_in)
+        )
+    )
     context: dict[str, object] = {
         "reservation": reservation,
         "cover_image": cover_image,
@@ -678,6 +687,8 @@ def _management_context(
             reservation.normalized_status == Reservation.Status.CONFIRMED
             and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
         ),
+        "can_cancel": can_cancel,
+        "launch_flexible_cancellation": settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED,
         "stay_is_active": reservation.normalized_status in Reservation.ACTIVE_STATUSES,
         "stay_is_closed": reservation.normalized_status in Reservation.CLOSED_STATUSES,
         "extension_form": ExtensionRequestForm(),
@@ -1007,6 +1018,9 @@ MODIFICATION_REFUSAL_MESSAGES = {
     "pricing_unavailable": _("A price for these dates could not be prepared."),
     "cancellation_requests_disabled": _(
         "Cancellation requests are unavailable right now. Please contact guest support."
+    ),
+    "cancellation_after_check_in_not_allowed": _(
+        "This booking can no longer be cancelled online because the stay has started."
     ),
     "external_channel_requires_admin": _(
         "Please complete changes through the booking platform or contact management."

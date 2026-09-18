@@ -269,22 +269,34 @@ def handle_refund_submitted(obligation_id: object) -> None:
             "reservation__booking_intent"
         ).get(pk=obligation_id)
         intent = refund.reservation.booking_intent
-        if (
-            intent is None
-            or refund.status
-            not in {RefundObligation.Status.PROCESSING, RefundObligation.Status.TRANSFERRED}
-            or not settings.MODIFICATION_NOTIFICATION_EMAIL_ENABLED
-        ):
+        if intent is None or refund.status not in {
+            RefundObligation.Status.PROCESSING,
+            RefundObligation.Status.TRANSFERRED,
+        }:
             return
         state = "confirmed" if refund.status == RefundObligation.Status.TRANSFERRED else "pending"
-        queue_email(
-            message_type="refund_submitted",
-            recipient=intent.guest_email,
-            recipient_source="refund",
-            recipient_reference=refund.public_reference,
-            language=intent.language,
-            idempotency_key=f"refund-submitted:{refund.public_reference}:{state}",
-        )
+        if settings.MODIFICATION_NOTIFICATION_EMAIL_ENABLED:
+            queue_email(
+                message_type="refund_submitted",
+                recipient=intent.guest_email,
+                recipient_source="refund",
+                recipient_reference=refund.public_reference,
+                language=intent.language,
+                idempotency_key=f"refund-submitted:{refund.public_reference}:{state}",
+            )
+        if (
+            refund.reason == RefundObligation.Reason.CANCELLATION
+            and settings.ADMIN_NOTIFICATION_EMAIL_ENABLED
+            and settings.OPERATIONS_EMAIL
+        ):
+            queue_email(
+                message_type="cancellation_refund_admin_alert",
+                recipient=settings.OPERATIONS_EMAIL,
+                recipient_source="operations",
+                recipient_reference=refund.public_reference,
+                language="ar",
+                idempotency_key=f"cancellation-refund-admin:{refund.public_reference}:{state}",
+            )
     except (DatabaseError, KeyError, ObjectDoesNotExist, ValueError) as exc:
         logger.error("Refund guest email queue failed code=%s", type(exc).__name__)
 

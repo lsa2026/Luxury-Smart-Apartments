@@ -13,6 +13,7 @@ from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
+from django.conf import settings
 from django.db import DatabaseError
 from django.utils import timezone
 
@@ -97,10 +98,31 @@ def cancellation_refund(
     numbers have not been decided yet, which must never be read as "refund all".
     """
     currency = reservation.currency
+    moment = at or timezone.now()
+    if settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED:
+        arrival = check_in_datetime(reservation.property, reservation.check_in)
+        original_payment = _successful_original_payment(reservation)
+        if moment < arrival and original_payment is not None:
+            return RefundComputation(
+                _quantize(original_payment),
+                currency,
+                {
+                    "policy_code": "launch_flexible_full_refund",
+                    "refund_percentage": "100",
+                    "hours_before_check_in": round((arrival - moment).total_seconds() / 3600, 2),
+                    "original_payment_ceiling": format(original_payment, "f"),
+                    "source": "launch_flexible_cancellation_policy",
+                },
+            )
+        return RefundComputation(
+            Decimal("0"),
+            currency,
+            {"policy_code": "launch_flexible_full_refund", "reason": "after_check_in_or_unpaid"},
+        )
+
     policy = ""
     if reservation.property is not None:
         policy = (reservation.property.cancellation_policy or "").strip()
-    moment = at or timezone.now()
     detail: dict[str, Any] = {
         "policy_code": policy,
         "stay_total": format(reservation.total_price, "f"),

@@ -1,2 +1,2 @@
 {% extends "emails/en/base.html" %}
-{% block content %}<h1>{{ heading }}</h1><p>{{ message }}</p><p><a href="{{ site_base_url }}/admin/operations/">Open operations dashboard</a></p>{% endblock %}
+{% block content %}<h1>{{ heading }}</h1><p>{{ message }}</p>{% if reservation_reference %}<p><strong>Reference:</strong> {{ reservation_reference }}<br><strong>Guest:</strong> {{ guest_name }}<br><strong>Refund:</strong> {{ refund_amount }}</p>{% endif %}<p><a href="{{ site_base_url }}/admin/operations/">Open operations dashboard</a></p>{% endblock %}

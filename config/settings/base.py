@@ -413,6 +413,12 @@ BOOKING_AUTOMATIC_CANCELLATION_ENABLED = strict_bool("BOOKING_AUTOMATIC_CANCELLA
 # an additional, production-only opt-in for returning an eligible cancellation
 # refund to the original HyperPay payment method automatically.
 BOOKING_AUTOMATIC_REFUND_ENABLED = strict_bool("BOOKING_AUTOMATIC_REFUND_ENABLED")
+# Launch policy: every direct website booking can be cancelled in full up to
+# the listed check-in time. A later phase may switch this off and use the
+# per-property refund tiers again without changing the guest workflow.
+BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED = strict_bool(
+    "BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED"
+)
 # Working days the guest is told a bank transfer takes. Shown wherever a
 # refund is promised, so the promise is changed in one place.
 BOOKING_REFUND_WORKING_DAYS = optional_positive_int("BOOKING_REFUND_WORKING_DAYS", 5)

@@ -283,6 +283,11 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "en": "Your refund was sent to your payment method",
         "fr": "Votre remboursement a été envoyé vers votre moyen de paiement",
     },
+    "cancellation_refund_admin_alert": {
+        "ar": "إلغاء حجز وطلب استرداد جديد",
+        "en": "Booking cancellation and refund request",
+        "fr": "Annulation et demande de remboursement",
+    },
     "reservation_modified": {
         "ar": "تم تعديل الحجز",
         "en": "Reservation updated",
@@ -336,6 +341,7 @@ TEMPLATE_GROUPS = {
     "reservation_unknown": "reservation",
     "reservation_cancelled": "reservation",
     "refund_submitted": "reservation",
+    "cancellation_refund_admin_alert": "operations",
     "reservation_modified": "modification",
     "reservation_access_link": "account",
     "daily_operations_summary": "operations",
@@ -463,6 +469,11 @@ MESSAGES: dict[str, dict[str, str]] = {
             "Nous avons envoyé le remboursement vers le moyen de paiement d’origine. "
             "Son affichage dépend du délai de votre émetteur de carte."
         ),
+    },
+    "cancellation_refund_admin_alert": {
+        "ar": "ألغى ضيف حجزه قبل الوصول وتم قبول طلب استرداد المبلغ. راجع التفاصيل في مركز التشغيل.",
+        "en": "A guest cancelled before check-in and the refund request was accepted. Review the details in Operations.",
+        "fr": "Un client a annulé avant son arrivée et la demande de remboursement a été acceptée.",
     },
     "reservation_modified": {
         "ar": "تم تعديل الحجز بعد التحقق من الحالة النهائية.",
@@ -806,6 +817,20 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)
+        if delivery.message_type == "cancellation_refund_admin_alert":
+            from apps.reservations.models import RefundObligation
+
+            refund = RefundObligation.objects.select_related("reservation__booking_intent").get(
+                public_reference=delivery.recipient_reference
+            )
+            intent = refund.reservation.booking_intent
+            return settings.OPERATIONS_EMAIL, {
+                "reservation_reference": refund.reservation.public_reference,
+                "guest_name": (
+                    f"{intent.guest_first_name} {intent.guest_last_name}".strip() if intent else ""
+                ),
+                "refund_amount": _format_money(refund.amount, refund.currency, delivery.language),
+            }
         return settings.OPERATIONS_EMAIL, {}
     if delivery.recipient_source == "support":
         if not settings.SUPPORT_EMAIL:

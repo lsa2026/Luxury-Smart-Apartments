@@ -75,6 +75,11 @@ class ModificationService:
         blocker = _base_blocker(reservation, session_hash)
         if blocker:
             return ModificationCreation(blocker)
+        if (
+            settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED
+            and timezone.now() >= check_in_datetime(reservation.property, reservation.check_in)
+        ):
+            return ModificationCreation("cancellation_after_check_in_not_allowed")
         if new_check_out <= reservation.check_out:
             return ModificationCreation("extension_must_add_nights")
         added_nights = (new_check_out - reservation.check_out).days

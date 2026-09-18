@@ -378,6 +378,7 @@
                     <button class="button" type="submit">{% trans "Check guest change" %}</button>
                 </form>
             </details>
+            {% if can_cancel %}
             <details class="booking-action-card booking-action-card--danger">
                 <summary>
                     <span class="booking-action-card__icon" aria-hidden="true">
@@ -391,7 +392,12 @@
                     </i>
                 </summary>
                 <form method="post" action="{% url 'reservations:modification_create' reservation.public_reference 'cancel' %}" data-submit-once>
-                    {% if reservation.property.cancellation_policy %}
+                    {% if launch_flexible_cancellation %}
+                    <p class="booking-policy-note">
+                        <span aria-hidden="true">◆</span>
+                        {% trans "For this launch period, you may cancel before check-in for a full refund to your original payment method." %}
+                    </p>
+                    {% elif reservation.property.cancellation_policy %}
                     <p class="booking-policy-note">
                         <span aria-hidden="true">◆</span>
                         {% blocktrans with policy=reservation.property.cancellation_policy|localized_cancellation_policy %}Host policy for this property: {{ policy }}.{% endblocktrans %}
@@ -411,6 +417,7 @@
                     <button class="button button--secondary" type="submit">{% if automatic_cancellation_enabled %}{% trans "Cancel booking and process refund" %}{% else %}{% trans "Send for review" %}{% endif %}</button>
                 </form>
             </details>
+            {% endif %}
         </div>
     </section>
     {% endif %}
