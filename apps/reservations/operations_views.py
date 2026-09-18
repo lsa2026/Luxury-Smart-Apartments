@@ -24,6 +24,7 @@ from apps.payments.hyperpay.refunds import HyperPayRefundService
 from apps.properties.models import Property
 
 from .manual_bookings import (
+    create_manual_booking_in_hostaway,
     create_manual_booking_draft,
     finalize_manual_booking_draft,
     recheck_manual_booking_draft,
@@ -63,6 +64,7 @@ _MANUAL_DRAFT_AUDIT_LABELS = {
     "manual_booking.availability_checked": "تم فحص التوفر وتثبيت سعر النظام.",
     "manual_booking.rechecked": "أُعيد فحص التوفر والسعر من Hostaway لهذه المسودة.",
     "manual_booking.ready_for_payment": "تم اعتماد بيانات الضيف والسعر النهائي.",
+    "manual_booking.hostaway_created": "أُنشئ الحجز في Hostaway وهو بانتظار الدفع.",
     "manual_booking.cancelled": "تم إلغاء المسودة الداخلية قبل الدفع.",
     "manual_booking.deleted": "حُذفت المسودة نهائيًا قبل الدفع.",
 }
@@ -109,7 +111,10 @@ def _whatsapp_digits(raw_number: str) -> str:
     return digits
 
 
-def _accounting_payment_request_url(draft: ManualBookingDraft) -> str:
+def _accounting_payment_request_url(
+    draft: ManualBookingDraft,
+    reservation: Reservation | None = None,
+) -> str:
     """Prepare, but never send, the reviewed accounting WhatsApp request."""
 
     digits = _whatsapp_digits(settings.ACCOUNTING_WHATSAPP_NUMBER)
@@ -124,8 +129,16 @@ def _accounting_payment_request_url(draft: ManualBookingDraft) -> str:
             f"البريد: {draft.guest_email}",
             f"الوحدة: {draft.property}",
             f"الإقامة: {draft.check_in} إلى {draft.check_out}",
-            f"المبلغ: {draft.final_total_price} {draft.currency}",
+            f"المبلغ: {draft.final_total_price:,.2f} {draft.currency}",
             f"مرجع المسودة: {draft.public_reference}",
+            *(
+                (
+                    f"مرجع الحجز في الموقع: {reservation.public_reference}",
+                    f"رقم حجز Hostaway: {reservation.hostaway_reservation_id}",
+                )
+                if reservation is not None
+                else ()
+            ),
             "يرجى إنشاء رابط HyperPay اليدوي وإرساله للضيف بعد المراجعة.",
         )
     )
@@ -488,6 +501,43 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                 messages.error(request, "التوفر موجود لكن تعذر تثبيت السعر بالعملة المطلوبة الآن.")
             else:
                 messages.error(request, "لا يمكن إعادة فحص هذه المسودة في حالتها الحالية.")
+        elif action == "create_hostaway_and_request_payment":
+            created = create_manual_booking_in_hostaway(draft_id=draft.pk)
+            if created.code in {"created", "already_created"} and created.reservation is not None:
+                record_audit(
+                    request=request,
+                    action="manual_booking.hostaway_created",
+                    object_type="ManualBookingDraft",
+                    object_reference=draft.public_reference,
+                    summary="Owner-approved manual booking was created in Hostaway before payment.",
+                    metadata={
+                        "hostaway_reservation_id": created.reservation.hostaway_reservation_id,
+                        "reservation_reference": created.reservation.public_reference,
+                    },
+                )
+                messages.success(
+                    request,
+                    "تم إنشاء الحجز في Hostaway وهو بانتظار الدفع. ستفتح الآن رسالة طلب رابط الدفع للمحاسبة للمراجعة قبل الإرسال.",
+                )
+                payment_request_url = _accounting_payment_request_url(
+                    created.draft,
+                    created.reservation,
+                )
+                if payment_request_url:
+                    return redirect(payment_request_url)
+                return redirect(
+                    "notifications:manual_booking_detail",
+                    draft_id=created.draft.pk,
+                )
+            if created.code == "quote_expired":
+                messages.error(request, "انتهت صلاحية السعر. أعد فحص التوفر والسعر قبل إنشاء الحجز.")
+            elif created.code == "availability_lost":
+                messages.error(request, "لم تعد الوحدة متاحة. لم يُنشأ حجز في Hostaway.")
+            else:
+                messages.error(
+                    request,
+                    "تعذر إنشاء الحجز في Hostaway الآن. لم يُفتح طلب الدفع؛ أعد المحاولة بعد مراجعة التوفر.",
+                )
         else:
             form = ManualBookingFinalizeForm(request.POST, draft=draft)
             if form.is_valid():
@@ -510,7 +560,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     )
                     messages.success(
                         request,
-                        "حُفظت المسودة. لم يُرسل رابط دفع ولم يُنشأ حجز في Hostaway بعد.",
+                        "حُفظت المسودة وهي جاهزة للتأكيد في Hostaway ثم طلب رابط الدفع.",
                     )
                     return redirect(
                         "notifications:manual_booking_detail",
@@ -534,6 +584,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     )
     for entry in audit_entries:
         entry.display_summary = _MANUAL_DRAFT_AUDIT_LABELS.get(entry.action, entry.summary)
+    reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
     return render(
         request,
         "admin/reservations/manual_booking_detail.html",
@@ -543,7 +594,12 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "form": form,
             "audit_entries": audit_entries,
             "accounting_whatsapp_name": settings.ACCOUNTING_WHATSAPP_NAME or "المحاسبة",
-            "accounting_payment_request_url": _accounting_payment_request_url(draft),
+            "reservation": reservation,
+            "accounting_payment_request_url": (
+                _accounting_payment_request_url(draft, reservation)
+                if reservation is not None
+                else ""
+            ),
         },
     )
 
@@ -557,6 +613,13 @@ def manual_booking_disposal(request: HttpRequest, draft_id: str) -> HttpResponse
         ManualBookingDraft.objects.select_related("property", "quote"),
         pk=draft_id,
     )
+    reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
+    if draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT:
+        if reservation is not None:
+            messages.info(request, "أصبحت هذه المسودة حجزًا في Hostaway. أدره من صفحة الحجز.")
+            return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+        messages.error(request, "هذه المسودة مرتبطة بحجز مؤكد، ولا يمكن حذفها من هنا.")
+        return redirect("notifications:booking_list")
     cancel_form = ManualBookingCancelForm()
     delete_form = ManualBookingDeleteForm()
     if request.method == "POST":
@@ -642,7 +705,9 @@ def cancellation_list(request: HttpRequest) -> HttpResponse:
             | Q(public_reference__icontains=query)
             | Q(reservation__public_reference__icontains=query)
         )
-    manual_drafts = ManualBookingDraft.objects.select_related("property")
+    manual_drafts = ManualBookingDraft.objects.select_related("property").exclude(
+        status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+    )
     if query:
         manual_drafts = manual_drafts.filter(
             Q(guest_first_name__icontains=query)

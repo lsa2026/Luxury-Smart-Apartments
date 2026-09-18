@@ -550,15 +550,10 @@ body.login #content-main .password-reset-link a { color: #0d6c58; }
 body.login .errornote { border-radius: 10px; }
 @media (max-width: 767px) { .lsa-admin-brand__logo { width: 146px; }.lsa-admin-brand__eyebrow { display: none; } body.login .lsa-shell-header__inner { min-height: 106px; } body.login #header,body.login .lsa-shell-header { min-height: 106px !important; } body.login .lsa-admin-brand__logo { width: 205px; } body.login .lsa-admin-brand__eyebrow { display: block; font-size: 10px; } body.login #content { min-height: calc(100vh - 106px); padding: 28px 14px; } body.login #content-main { border-radius: 18px; } }
 
-/* Keep language choice available in the operations console, just as it is on
-   the guest site.  It submits immediately and returns the owner to the
-   current screen. */
-.lsa-admin-language { flex: 0 0 auto; }
-.lsa-admin-language .language-switcher { margin: 0; }
-.lsa-admin-language select { min-height: 40px; padding: 0 34px 0 13px; color: #fff; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: rgba(255,255,255,.06); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
-.lsa-admin-language select:hover,.lsa-admin-language select:focus { border-color: rgba(218,190,126,.85); outline: none; }
-.lsa-admin-language select option { color: #183b30; background: #fffdf8; }
-@media (max-width: 700px) { .lsa-admin-language select { min-width: 0; max-width: 94px; padding-right: 25px; font-size: 10px; } }
+/* The owner console is Arabic-only; this is a quiet language indicator, not a
+   control that suggests an untranslated operation screen is available. */
+.lsa-admin-language { flex: 0 0 auto; min-height: 40px; display: inline-flex; align-items: center; padding: 0 16px; color: #fff; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; background: rgba(255,255,255,.06); font-size: 11px; font-weight: 700; }
+@media (max-width: 700px) { .lsa-admin-language { min-height: 36px; padding: 0 12px; font-size: 10px; } }
 
 /* A deliberately small, touch-friendly operations entrance. */
 .lsa-booking-console { max-width: 1120px; }

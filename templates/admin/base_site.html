@@ -5,7 +5,7 @@
 
 {% block extrastyle %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260918-2">
+  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20260918-3">
 {% endblock %}
 
 {% block extrahead %}
@@ -30,9 +30,7 @@
 
         <div class="lsa-header-actions">
           <a href="{% url 'core:home' %}" target="_blank" class="lsa-icon-action" title="{% trans "View the platform" %}" aria-label="{% trans "View the platform" %}">↗</a>
-          <div class="lsa-admin-language" aria-label="{% trans "Language" %}">
-            {% include "includes/language_switcher.html" %}
-          </div>
+          <span class="lsa-admin-language" aria-label="العربية">العربية</span>
           {% if perms.notifications.manage_notification_center or user.is_superuser %}<a href="{% url 'notifications:hub' %}" class="lsa-booking-action">إدارة الحجوزات</a>{% endif %}
 
           <details class="lsa-user-menu">

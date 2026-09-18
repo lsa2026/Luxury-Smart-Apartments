@@ -11,11 +11,14 @@ from django.utils import timezone
 
 from apps.notifications.models import AuditLog
 from apps.reservations.manual_bookings import (
+    ManualBookingHostawayCreation,
+    create_manual_booking_in_hostaway,
     create_manual_booking_draft,
     finalize_manual_booking_draft,
     recheck_manual_booking_draft,
 )
 from apps.reservations.models import (
+    BookingIntent,
     BookingQuote,
     HostawayReservationOperation,
     ManualBookingDraft,
@@ -36,6 +39,17 @@ class FakeAvailabilityService:
     def check(self, request, *, bypass_cache=False):
         self.requests.append((request, bypass_cache))
         return self.result
+
+
+class FakeManualHostawayBookingService:
+    def create_manual_reservation_before_payment(self, reservation):
+        reservation.hostaway_reservation_id = 88001
+        reservation.hostaway_status = "new"
+        reservation.payment_status = "unpaid"
+        reservation.normalized_status = Reservation.Status.CONFIRMED
+        reservation.confirmed_at = timezone.now()
+        reservation.save()
+        return type("Outcome", (), {"code": "confirmed", "reservation": reservation})()
 
 
 def owner():
@@ -340,10 +354,56 @@ def test_manual_draft_can_be_rechecked_without_creating_a_reservation():
 @override_settings(
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+)
+def test_ready_manual_draft_creates_an_unpaid_hostaway_booking_before_payment():
+    property_obj = make_property()
+    actor = owner()
+    available = make_availability(property_obj, total=Decimal("500.25"))
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=available.quote.check_in,
+        check_out=available.quote.check_out,
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+    assert creation.draft is not None
+    finalized = finalize_manual_booking_draft(
+        draft_id=creation.draft.pk,
+        guest_data={
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "guest@example.invalid",
+            "guest_phone": "+966500000000",
+        },
+        final_total_price=Decimal("450.00"),
+    )
+    assert finalized.draft is not None
+
+    created = create_manual_booking_in_hostaway(
+        draft_id=finalized.draft.pk,
+        booking_service=FakeManualHostawayBookingService(),
+    )
+
+    assert created.code == "created"
+    assert created.reservation is not None
+    assert created.reservation.hostaway_reservation_id == 88001
+    assert created.reservation.payment_status == "unpaid"
+    assert created.reservation.normalized_status == Reservation.Status.CONFIRMED
+    assert created.draft is not None
+    assert created.draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+    intent = BookingIntent.objects.get(quote=creation.draft.quote)
+    assert intent.total_price == Decimal("450.0000")
+    assert intent.status == BookingIntent.Status.AWAITING_PAYMENT
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
     ACCOUNTING_WHATSAPP_NAME="Aseel Hafez",
     ACCOUNTING_WHATSAPP_NUMBER="+966597193102",
 )
-def test_ready_manual_draft_exposes_a_reviewed_accounting_whatsapp_request():
+def test_ready_manual_draft_requires_hostaway_confirmation_before_the_accounting_request():
     property_obj = make_property()
     actor = owner()
     available = make_availability(property_obj)
@@ -373,12 +433,90 @@ def test_ready_manual_draft_exposes_a_reviewed_accounting_whatsapp_request():
     page = client.get(reverse("notifications:manual_booking_detail", args=[creation.draft.pk]))
 
     content = page.content.decode()
-    assert "إرسال طلب رابط الدفع للمحاسبة" in content
-    assert "wa.me/966597193102?text=" in content
+    assert "تأكيد الحجز في Hostaway وفتح طلب رابط الدفع" in content
+    assert "wa.me/966597193102?text=" not in content
     assert "سبب تعديل السعر" not in content
     assert "ملاحظات تشغيلية" not in content
     assert "إلغاء المسودة" not in content
     assert "حذف المسودة نهائيًا" not in content
+
+
+@override_settings(
+    OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
+    OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
+    ACCOUNTING_WHATSAPP_NAME="Aseel Hafez",
+    ACCOUNTING_WHATSAPP_NUMBER="+966597193102",
+)
+def test_owner_confirms_hostaway_booking_then_opens_the_reviewed_accounting_request(monkeypatch):
+    property_obj = make_property()
+    actor = owner()
+    creation = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=timezone.localdate() + timedelta(days=10),
+        check_out=timezone.localdate() + timedelta(days=12),
+        guests=1,
+        actor=actor,
+        availability_service=FakeAvailabilityService(make_availability(property_obj)),
+    )
+    assert creation.draft is not None
+    draft = creation.draft
+    draft.status = ManualBookingDraft.Status.READY_FOR_PAYMENT
+    draft.guest_first_name = "Test"
+    draft.guest_last_name = "Guest"
+    draft.guest_email = "guest@example.invalid"
+    draft.guest_phone = "+966500000000"
+    draft.save()
+    reservation = Reservation.objects.create(
+        booking_intent=BookingIntent.objects.create(
+            quote=draft.quote,
+            property=property_obj,
+            check_in=draft.check_in,
+            check_out=draft.check_out,
+            nights=draft.nights,
+            guests=draft.guests,
+            currency=draft.currency,
+            total_price=draft.final_total_price,
+            payment_amount_sar=draft.payment_amount_sar,
+            selected_display_currency=draft.selected_display_currency,
+            exchange_rate_snapshot=draft.exchange_rate_snapshot,
+            guest_first_name=draft.guest_first_name,
+            guest_last_name=draft.guest_last_name,
+            guest_email=draft.guest_email,
+            guest_phone=draft.guest_phone,
+            guest_country_code="SA",
+            billing_street1="Not provided", billing_city="Not provided", billing_state="Not provided",
+            billing_country="SA", billing_postcode="Not provided", language="ar",
+            idempotency_key="phase61-accounting-request-key-000000000000000000000000",
+            session_key_hash=draft.quote.session_key_hash,
+            terms_accepted_at=timezone.now(), privacy_accepted_at=timezone.now(),
+            expires_at=timezone.now() + timedelta(days=10),
+        ),
+        property=property_obj,
+        hostaway_listing_id=property_obj.hostaway_listing_id,
+        hostaway_listing_map_id=property_obj.hostaway_listing_map_id,
+        source_type=Reservation.SourceType.DIRECT_WEBSITE,
+        normalized_status=Reservation.Status.CONFIRMED,
+        check_in=draft.check_in, check_out=draft.check_out, nights=draft.nights,
+        guests=draft.guests, currency=draft.currency, total_price=draft.final_total_price,
+        hostaway_reservation_id=88001, payment_status="unpaid", confirmed_at=timezone.now(),
+    )
+    draft.status = ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+    draft.save(update_fields=["status", "updated_at"])
+    monkeypatch.setattr(
+        "apps.reservations.operations_views.create_manual_booking_in_hostaway",
+        lambda **_kwargs: ManualBookingHostawayCreation("already_created", draft, reservation),
+    )
+    client = Client()
+    client.force_login(actor)
+
+    response = client.post(
+        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        {"action": "create_hostaway_and_request_payment"},
+    )
+
+    assert response.status_code == 302
+    assert response["Location"].startswith("https://wa.me/966597193102?text=")
+    assert AuditLog.objects.filter(action="manual_booking.hostaway_created").exists()
 
 
 @override_settings(

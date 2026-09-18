@@ -151,11 +151,12 @@ class BookingQuote(models.Model):
 
 
 class ManualBookingDraft(models.Model):
-    """An owner-created booking draft; it never creates a Hostaway reservation."""
+    """An owner-created draft which can become one unpaid Hostaway booking."""
 
     class Status(models.TextChoices):
         QUOTED = "quoted", _("Quoted")
         READY_FOR_PAYMENT = "ready_for_payment", _("Ready for payment")
+        BOOKED_AWAITING_PAYMENT = "booked_awaiting_payment", _("Booked — awaiting payment")
         EXPIRED = "expired", pgettext_lazy("ManualBookingDraft", "Expired")
         CANCELLED = "cancelled", pgettext_lazy("ManualBookingDraft", "Cancelled")
 

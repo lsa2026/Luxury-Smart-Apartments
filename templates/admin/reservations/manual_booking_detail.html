@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+{% load presentation %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -12,27 +13,38 @@
   </section>
   <section class="lsa-panel">
     <h2>السعر الموثق</h2>
-    <p><b>سعر Hostaway عند الفحص:</b> <span dir="ltr">{{ draft.system_total_price }} {{ draft.currency }}</span></p>
+    <p><b>سعر Hostaway عند الفحص:</b> {{ draft.system_total_price|format_money:draft.currency }}</p>
     <p><b>فحص التوفر:</b> <span dir="ltr">{{ draft.availability_checked_at }}</span></p>
     <p><b>صلاحية السعر:</b> <span dir="ltr">{{ draft.expires_at }}</span></p>
-    {% if draft.status != "cancelled" %}
+    {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
     <form method="post" class="lsa-owner-form" novalidate>
       {% csrf_token %}<input type="hidden" name="action" value="recheck">
       <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إعادة فحص التوفر والسعر</button>
     </form>
-    <p class="help">تعيد هذه الخطوة التحقق من الوحدة والتواريخ وعدد الضيوف في Hostaway. المسودة لا تحفظ الوحدة ولا تنشئ حجزًا.</p>
+    <p class="help">تعيد هذه الخطوة التحقق من الوحدة والتواريخ في Hostaway. لا يُنشأ حجز إلا عند تأكيده في الخطوة التالية.</p>
     {% endif %}
     {% if draft.status == "ready_for_payment" %}
-      <p><b>السعر المعتمد:</b> <span dir="ltr">{{ draft.final_total_price }} {{ draft.currency }}</span></p>
+      <p><b>السعر المعتمد:</b> {{ draft.final_total_price|format_money:draft.currency }}</p>
       <section class="lsa-manual-payment-next">
         <span>الخطوة التالية</span><h2>رابط الدفع</h2>
-        {% if accounting_payment_request_url %}
-          <p>أرسل طلب إنشاء الرابط إلى {{ accounting_whatsapp_name }}. ستُفتح رسالة WhatsApp جاهزة للمراجعة؛ لا تُرسل تلقائيًا.</p>
-          <a class="lsa-btn lsa-btn--gold" href="{{ accounting_payment_request_url }}" target="_blank" rel="noopener">إرسال طلب رابط الدفع للمحاسبة</a>
-        {% else %}
-          <p>أضف رقم واتساب المحاسبة في إعدادات التشغيل لتفعيل طلب الرابط اليدوي.</p>
-        {% endif %}
+        <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم تُفتح رسالة WhatsApp جاهزة إلى {{ accounting_whatsapp_name }} لطلب رابط الدفع. لا تُرسل الرسالة تلقائيًا.</p>
+        <form method="post" novalidate>
+          {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
+          <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز في Hostaway وفتح طلب رابط الدفع</button>
+        </form>
         <div class="lsa-manual-payment-next__coming"><b>قريبًا:</b> إنشاء رابط HyperPay اليدوي وإرساله للضيف مباشرة من هذه الصفحة بعد اعتماد الواجهة من فريق HyperPay.</div>
+      </section>
+    {% elif draft.status == "booked_awaiting_payment" %}
+      <section class="lsa-manual-payment-next">
+        <span>حجز مؤكد</span><h2>بانتظار الدفع</h2>
+        {% if reservation %}
+          <p>تم إنشاء الحجز في Hostaway لحجز الموعد. لا توجد دفعة مسجلة بعد.</p>
+          <p><b>مرجع Hostaway:</b> <span dir="ltr">{{ reservation.hostaway_reservation_id }}</span></p>
+          <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' reservation.pk %}">فتح وإدارة الحجز</a>
+          {% if accounting_payment_request_url %}<a class="lsa-btn lsa-btn--gold" href="{{ accounting_payment_request_url }}" target="_blank" rel="noopener">فتح طلب رابط الدفع للمحاسبة</a>{% endif %}
+        {% else %}
+          <p>يجري التحقق من مرجع الحجز. لا تحذف المسودة أو تعيد إنشاءها.</p>
+        {% endif %}
       </section>
     {% elif draft.status == "quoted" %}
       <form method="post" novalidate>

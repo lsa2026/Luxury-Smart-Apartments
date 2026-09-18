@@ -229,7 +229,11 @@ class CreateClientStub:
         pass
 
 
-def create_result(reservation: Reservation) -> HostawayReservationCreateResult:
+def create_result(
+    reservation: Reservation,
+    *,
+    payment_status: str = "paid",
+) -> HostawayReservationCreateResult:
     return HostawayReservationCreateResult(
         HostawayReservationSnapshot(
             reservation_id=77001,
@@ -241,7 +245,7 @@ def create_result(reservation: Reservation) -> HostawayReservationCreateResult:
             guests=reservation.guests,
             currency=reservation.currency,
             total_price=reservation.total_price,
-            payment_status="paid",
+            payment_status=payment_status,
             source="LuxurySmartApartments",
             updated_at=timezone.now(),
         )
@@ -319,6 +323,30 @@ def test_successful_payment_is_required() -> None:
     assert outcome.code == "successful_payment_required"
     assert client.calls == 0
     assert PaymentAttempt.objects.count() == 0
+
+
+@override_settings(
+    HOSTAWAY_LIVE_BOOKING_ENABLED=True,
+    HOSTAWAY_DIRECT_CHANNEL_ID=2000,
+)
+def test_owner_manual_booking_can_create_before_payment_and_remains_unpaid() -> None:
+    intent = make_intent()
+    reservation = prepare_local_reservation(intent)
+    availability = AvailabilityStub(complete_availability(intent))
+    client = CreateClientStub(create_result(reservation, payment_status=""))
+
+    outcome = HostawayBookingService(
+        client=client,
+        availability_service=availability,
+    ).create_manual_reservation_before_payment(reservation)
+
+    assert outcome.code == "confirmed"
+    assert client.calls == 1
+    reservation.refresh_from_db()
+    intent.refresh_from_db()
+    assert reservation.hostaway_reservation_id == 77001
+    assert reservation.payment_status == "unpaid"
+    assert intent.status == BookingIntent.Status.AWAITING_PAYMENT
 
 
 @pytest.mark.parametrize(
@@ -404,6 +432,25 @@ def test_payload_preserves_null_is_mandatory_from_hostaway_quote() -> None:
     )
 
     assert request.to_payload()["financeField"][0]["isMandatory"] is None
+
+
+@override_settings(HOSTAWAY_DIRECT_CHANNEL_ID=2000)
+def test_owner_manual_price_is_sent_as_an_explicit_hostaway_override() -> None:
+    intent = make_intent(listing_map_id=9001)
+    reservation = prepare_local_reservation(intent)
+    reservation.total_price = Decimal("450.00")
+    availability = complete_availability(intent)
+
+    request = build_hostaway_reservation_request(
+        reservation,
+        current_quote=availability.quote,
+        allow_manual_price_override=True,
+    )
+
+    payload = request.to_payload()
+    assert payload["totalPrice"] == 450.0
+    assert payload["financeField"][0]["total"] == 450.0
+    assert payload["financeField"][0]["isOverriddenByUser"] == 1
 
 
 @override_settings(

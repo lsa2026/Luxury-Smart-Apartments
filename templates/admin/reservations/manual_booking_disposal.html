@@ -11,10 +11,17 @@
     <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:cancellation_list' %}">العودة للإلغاءات</a>
   </section>
 
+  {% if draft.status == "booked_awaiting_payment" %}
+  <section class="lsa-panel">
+    <h2>أصبحت حجزًا مؤكدًا</h2>
+    <p class="help">هذه المسودة مرتبطة الآن بحجز في Hostaway، ولذلك لا يمكن إلغاؤها أو حذفها كمسودة. استخدم إدارة الحجز.</p>
+  </section>
+  {% else %}
   <section class="lsa-panel">
     <h2>قبل المتابعة</h2>
     <p class="help">هذه مسودة محلية فقط. لا يوجد حجز مؤكد في Hostaway ولا دفعة أو استرداد في HyperPay مرتبطان بها.</p>
   </section>
+  {% endif %}
 
   {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
   <section class="lsa-panel">

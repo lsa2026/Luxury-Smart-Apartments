@@ -23,6 +23,7 @@ from apps.integrations.hostaway.exceptions import (
 )
 from apps.integrations.hostaway.reservation_validators import (
     merge_hostaway_payment_status,
+    normalize_hostaway_reservation_status,
 )
 from apps.payments.currency import PAYMENT_CURRENCY
 from apps.payments.models import PaymentAttempt
@@ -113,25 +114,59 @@ class HostawayBookingService:
         self,
         reservation: Reservation,
     ) -> ReservationCreationOutcome:
+        """Create a paid website reservation after gateway verification."""
+
+        return self._create_hostaway_reservation(
+            reservation,
+            require_successful_payment=True,
+            allow_manual_price_override=False,
+        )
+
+    def create_manual_reservation_before_payment(
+        self,
+        reservation: Reservation,
+    ) -> ReservationCreationOutcome:
+        """Create an owner-approved booking in Hostaway before its manual payment.
+
+        This intentionally exists separately from the public checkout path:
+        the owner has chosen the final price and will request a payment link
+        after Hostaway has blocked the stay.  No payment is claimed or created
+        by this method.
+        """
+
+        return self._create_hostaway_reservation(
+            reservation,
+            require_successful_payment=False,
+            allow_manual_price_override=True,
+        )
+
+    def _create_hostaway_reservation(
+        self,
+        reservation: Reservation,
+        *,
+        require_successful_payment: bool,
+        allow_manual_price_override: bool,
+    ) -> ReservationCreationOutcome:
         if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
             return self._block(reservation, "hostaway_live_booking_disabled")
         intent = reservation.booking_intent
         if intent is None:
             return self._block(reservation, "booking_intent_missing")
-        payment = (
-            PaymentAttempt.objects.filter(
-                booking_intent=intent,
-                status=PaymentAttempt.Status.SUCCEEDED,
-                amount=intent.payment_amount_sar,
-                currency=PAYMENT_CURRENCY,
+        if require_successful_payment:
+            payment = (
+                PaymentAttempt.objects.filter(
+                    booking_intent=intent,
+                    status=PaymentAttempt.Status.SUCCEEDED,
+                    amount=intent.payment_amount_sar,
+                    currency=PAYMENT_CURRENCY,
+                )
+                .order_by("-created_at")
+                .first()
             )
-            .order_by("-created_at")
-            .first()
-        )
-        if payment is None:
-            return self._block(reservation, "successful_payment_required")
-        if payment.provider == "hyperpay" and settings.HYPERPAY_ENVIRONMENT == "test":
-            return self._block(reservation, "test_payment_live_write_blocked")
+            if payment is None:
+                return self._block(reservation, "successful_payment_required")
+            if payment.provider == "hyperpay" and settings.HYPERPAY_ENVIRONMENT == "test":
+                return self._block(reservation, "test_payment_live_write_blocked")
         if reservation.property is None or reservation.property.hostaway_listing_map_id is None:
             return self._block(reservation, "listing_map_id_not_verified")
         if settings.HOSTAWAY_DIRECT_CHANNEL_ID is None:
@@ -154,6 +189,7 @@ class HostawayBookingService:
             request = build_hostaway_reservation_request(
                 reservation,
                 current_quote=availability.quote,
+                allow_manual_price_override=allow_manual_price_override,
             )
         except ValueError as exc:
             return self._fail_without_post(reservation, str(exc))
@@ -220,12 +256,23 @@ class HostawayBookingService:
             locked_reservation.hostaway_listing_map_id = snapshot.listing_map_id
             locked_reservation.channel_id = snapshot.channel_id or request.channel_id
             locked_reservation.hostaway_status = snapshot.status
-            locked_reservation.payment_status = merge_hostaway_payment_status(
-                locked_reservation.payment_status,
-                snapshot.payment_status,
+            locked_reservation.payment_status = (
+                merge_hostaway_payment_status(
+                    locked_reservation.payment_status,
+                    snapshot.payment_status,
+                )
+                if require_successful_payment
+                else (snapshot.payment_status or "unpaid")
             )
-            locked_reservation.normalized_status = Reservation.Status.CONFIRMED
-            locked_reservation.confirmed_at = now
+            normalized_status = (
+                Reservation.Status.CONFIRMED
+                if require_successful_payment
+                else normalize_hostaway_reservation_status(snapshot.status)
+            )
+            locked_reservation.normalized_status = normalized_status
+            locked_reservation.confirmed_at = (
+                now if normalized_status == Reservation.Status.CONFIRMED else None
+            )
             locked_reservation.source_updated_at = snapshot.updated_at
             locked_reservation.last_synced_at = now
             locked_reservation.full_clean()
@@ -235,13 +282,14 @@ class HostawayBookingService:
             locked_operation.completed_at = now
             locked_operation.error_code = ""
             locked_operation.save()
-            BookingIntent.objects.filter(pk=intent.pk).update(
-                status=BookingIntent.Status.COMPLETED,
-                updated_at=now,
-            )
-            from apps.notifications.services.events import handle_reservation_confirmed
+            if require_successful_payment:
+                BookingIntent.objects.filter(pk=intent.pk).update(
+                    status=BookingIntent.Status.COMPLETED,
+                    updated_at=now,
+                )
+                from apps.notifications.services.events import handle_reservation_confirmed
 
-            transaction.on_commit(lambda: handle_reservation_confirmed(locked_reservation.pk))
+                transaction.on_commit(lambda: handle_reservation_confirmed(locked_reservation.pk))
         reservation.refresh_from_db()
         operation.refresh_from_db()
         logger.info(
@@ -251,7 +299,13 @@ class HostawayBookingService:
             reservation.public_reference[:8],
             round((monotonic() - request_started) * 1000),
         )
-        return ReservationCreationOutcome("confirmed", reservation, operation)
+        return ReservationCreationOutcome(
+            "confirmed"
+            if reservation.normalized_status == Reservation.Status.CONFIRMED
+            else "awaiting_payment",
+            reservation,
+            operation,
+        )
 
     @staticmethod
     def _block(reservation: Reservation, code: str) -> ReservationCreationOutcome:

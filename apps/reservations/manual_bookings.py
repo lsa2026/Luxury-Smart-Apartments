@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 from dataclasses import dataclass
+from datetime import datetime, time
 from decimal import Decimal
 from typing import Any
 
@@ -11,11 +12,13 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 
+from apps.core.phone_numbers import normalize_phone_number
 from apps.payments.currency import CurrencyError, CurrencyService
 
-from .models import BookingQuote, ManualBookingDraft
+from .models import BookingIntent, BookingQuote, ManualBookingDraft, Reservation
 from .services.availability import AvailabilityRequest, AvailabilityResult, AvailabilityService
 from .services.booking import create_quote_for_property
+from .services.hostaway_booking import HostawayBookingService, prepare_local_reservation
 from .signing import verify_quote_fingerprint
 
 
@@ -37,6 +40,13 @@ class ManualBookingDraftRecheck:
     code: str
     availability: AvailabilityResult
     draft: ManualBookingDraft | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ManualBookingHostawayCreation:
+    code: str
+    draft: ManualBookingDraft | None = None
+    reservation: Reservation | None = None
 
 
 def _owner_quote_hash(actor: object) -> str:
@@ -120,7 +130,10 @@ def recheck_manual_booking_draft(
     if draft is None:
         unavailable = AvailabilityResult(False, "unavailable_dates", "", "", 0)
         return ManualBookingDraftRecheck("not_found", unavailable)
-    if draft.status == ManualBookingDraft.Status.CANCELLED:
+    if draft.status in {
+        ManualBookingDraft.Status.CANCELLED,
+        ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+    }:
         unavailable = AvailabilityResult(False, "unavailable_dates", "", "", draft.nights)
         return ManualBookingDraftRecheck("not_recheckable", unavailable, draft)
 
@@ -148,7 +161,10 @@ def recheck_manual_booking_draft(
             )
             if locked is None:
                 return ManualBookingDraftRecheck("not_found", availability)
-            if locked.status == ManualBookingDraft.Status.CANCELLED:
+            if locked.status in {
+                ManualBookingDraft.Status.CANCELLED,
+                ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+            }:
                 return ManualBookingDraftRecheck("not_recheckable", availability, locked)
             previous_quote = locked.quote
             quote = create_quote_for_property(
@@ -247,3 +263,115 @@ def finalize_manual_booking_draft(
         draft.full_clean()
         draft.save()
     return ManualBookingDraftFinalization("ready_for_payment", draft)
+
+
+def create_manual_booking_in_hostaway(
+    *,
+    draft_id: object,
+    booking_service: HostawayBookingService | None = None,
+) -> ManualBookingHostawayCreation:
+    """Create the owner-approved stay before a manual payment link is issued.
+
+    The real Hostaway reservation blocks the dates.  The booking remains unpaid
+    locally and in Hostaway; this function never creates a HyperPay charge or
+    marks the guest as paid.
+    """
+
+    with transaction.atomic():
+        draft = (
+            ManualBookingDraft.objects.select_for_update()
+            .select_related("quote", "property")
+            .filter(pk=draft_id)
+            .first()
+        )
+        if draft is None:
+            return ManualBookingHostawayCreation("not_found")
+        if draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT:
+            reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
+            return ManualBookingHostawayCreation("already_created", draft, reservation)
+        if draft.status != ManualBookingDraft.Status.READY_FOR_PAYMENT:
+            return ManualBookingHostawayCreation("not_ready", draft)
+        if (
+            draft.quote.status != BookingQuote.Status.ACTIVE
+            or draft.quote.is_expired
+            or not verify_quote_fingerprint(draft.quote)
+        ):
+            draft.status = ManualBookingDraft.Status.EXPIRED
+            draft.save(update_fields=["status", "updated_at"])
+            return ManualBookingHostawayCreation("quote_expired", draft)
+
+        intent = BookingIntent.objects.filter(quote=draft.quote).first()
+        if intent is None:
+            now = timezone.now()
+            intent = BookingIntent(
+                quote=draft.quote,
+                property=draft.property,
+                check_in=draft.check_in,
+                check_out=draft.check_out,
+                nights=draft.nights,
+                guests=draft.guests,
+                currency=draft.currency,
+                total_price=draft.final_total_price,
+                payment_amount_sar=draft.payment_amount_sar,
+                selected_display_currency=draft.selected_display_currency,
+                exchange_rate_snapshot=dict(draft.exchange_rate_snapshot),
+                guest_first_name=draft.guest_first_name,
+                guest_last_name=draft.guest_last_name,
+                guest_email=draft.guest_email,
+                guest_phone=draft.guest_phone,
+                guest_country_code=_guest_country_code(draft.guest_phone),
+                billing_street1="Not provided",
+                billing_city="Not provided",
+                billing_state="Not provided",
+                billing_country=_guest_country_code(draft.guest_phone),
+                billing_postcode="Not provided",
+                language="ar",
+                special_requests="",
+                status=BookingIntent.Status.AWAITING_PAYMENT,
+                idempotency_key=_manual_intent_idempotency_key(draft),
+                session_key_hash=draft.quote.session_key_hash,
+                terms_accepted_at=now,
+                privacy_accepted_at=now,
+                marketing_consent=False,
+                # A confirmed manual booking stays payable until check-in; it
+                # must not inherit the public checkout's 30-minute expiry.
+                expires_at=timezone.make_aware(datetime.combine(draft.check_in, time.min)),
+            )
+            intent.full_clean(validate_unique=False, validate_constraints=False)
+            intent.save(force_insert=True)
+            draft.quote.status = BookingQuote.Status.CONSUMED
+            draft.quote.consumed_at = now
+            draft.quote.save(update_fields=["status", "consumed_at", "updated_at"])
+        reservation = prepare_local_reservation(intent)
+
+    if booking_service is None:
+        with HostawayBookingService() as service:
+            outcome = service.create_manual_reservation_before_payment(reservation)
+    else:
+        outcome = booking_service.create_manual_reservation_before_payment(reservation)
+
+    if outcome.code not in {"confirmed", "awaiting_payment", "already_confirmed"}:
+        return ManualBookingHostawayCreation(outcome.code, draft, outcome.reservation)
+
+    with transaction.atomic():
+        locked = ManualBookingDraft.objects.select_for_update().get(pk=draft.pk)
+        locked.status = ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+        locked.save(update_fields=["status", "updated_at"])
+    outcome.reservation.refresh_from_db()
+    return ManualBookingHostawayCreation("created", locked, outcome.reservation)
+
+
+def _manual_intent_idempotency_key(draft: ManualBookingDraft) -> str:
+    return salted_hmac("manual-booking-intent.v1", str(draft.pk)).hexdigest()
+
+
+def _guest_country_code(phone: str) -> str:
+    """Derive the ISO country from the required E.164 phone, defaulting to SA."""
+
+    try:
+        import phonenumbers
+
+        parsed = phonenumbers.parse(normalize_phone_number(phone), None)
+        return phonenumbers.region_code_for_number(parsed) or "SA"
+    except (ImportError, ValueError):
+        return "SA"
