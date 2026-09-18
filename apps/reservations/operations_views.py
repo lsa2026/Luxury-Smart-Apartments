@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal
@@ -56,6 +57,9 @@ from .services.automatic_modifications import execute_automatic_modification
 from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.modifications import ModificationService
 from .services.refunds import cancellation_refund
+
+
+logger = logging.getLogger(__name__)
 
 
 def _require_owner(request: HttpRequest) -> None:
@@ -559,9 +563,38 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                         ),
                         metadata={"status": "awaiting_payment"},
                     )
-                delivery_result = send_manual_payment_link_request(
-                    reservation_id=created.reservation.pk,
-                )
+                try:
+                    delivery_result = send_manual_payment_link_request(
+                        reservation_id=created.reservation.pk,
+                    )
+                except Exception:
+                    # Hostaway creation is authoritative and has already
+                    # happened. Do not turn a delivery-side failure into a
+                    # misleading 500 or encourage a duplicate booking retry.
+                    logger.exception(
+                        "Manual Hostaway booking %s was created but the accounting WhatsApp "
+                        "request raised an unexpected error.",
+                        created.reservation.pk,
+                    )
+                    record_audit(
+                        request=request,
+                        action="manual_booking.accounting_whatsapp_failed",
+                        object_type="ManualBookingDraft",
+                        object_reference=draft.public_reference,
+                        summary="The accounting WhatsApp request raised an unexpected error.",
+                        metadata={"status": "unexpected_error"},
+                    )
+                    messages.error(
+                        request,
+                        (
+                            "تم إنشاء الحجز في Hostaway بانتظار الدفع، لكن تعذر إرسال طلب "
+                            "رابط الدفع إلى أسيل. لم يُنشأ حجز مكرر؛ راجع سجل التسليم."
+                        ),
+                    )
+                    return redirect(
+                        "notifications:manual_booking_detail",
+                        draft_id=created.draft.pk,
+                    )
                 if delivery_result.code == "sent":
                     record_audit(
                         request=request,

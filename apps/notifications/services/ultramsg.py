@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -14,6 +15,8 @@ from django.utils.html import strip_tags
 
 from apps.notifications.models import WhatsAppDelivery
 from apps.reservations.models import BookingModificationRequest, Reservation
+
+logger = logging.getLogger(__name__)
 
 
 class UltraMsgError(Exception):
@@ -74,7 +77,7 @@ class UltraMsgClient:
                     "referenceId": reference_id,
                 },
             )
-        except (httpx.TimeoutException, httpx.NetworkError) as exc:
+        except httpx.HTTPError as exc:
             raise UltraMsgConnectionError() from exc
         if response.status_code >= 500:
             raise UltraMsgConnectionError()
@@ -145,7 +148,19 @@ def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliv
         delivery.attempt_count = 1
         delivery.save(update_fields=["status", "attempt_count", "updated_at"])
 
-    return _send_delivery(delivery=delivery, body=_manual_payment_message(reservation))
+    try:
+        body = _manual_payment_message(reservation)
+    except Exception:
+        # The booking is already authoritative in Hostaway. Keep the delivery
+        # row auditable and return an operational failure instead of turning a
+        # successful booking into a generic HTTP 500 page.
+        logger.exception(
+            "Could not build the UltraMsg manual-payment message for reservation %s.",
+            reservation.pk,
+        )
+        return _finish_failure(delivery.pk, "failed", "message_build_failed")
+
+    return _send_delivery(delivery=delivery, body=body)
 
 
 def send_modification_payment_link_request(*, modification_id: object) -> WhatsAppDeliveryResult:

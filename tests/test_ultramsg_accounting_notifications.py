@@ -55,3 +55,27 @@ def test_disabled_ultramsg_never_attempts_an_accounting_delivery():
     assert result.code == "disabled"
     assert send.call_count == 0
     assert result.delivery.status == WhatsAppDelivery.Status.DISABLED
+
+
+@override_settings(
+    ULTRAMSG_ENABLED=True,
+    ULTRAMSG_API_BASE_URL="https://api.ultramsg.com",
+    ULTRAMSG_INSTANCE_ID="instance-test",
+    ULTRAMSG_TOKEN="test-token",
+    ACCOUNTING_WHATSAPP_NUMBER="+966597193102",
+)
+def test_message_build_failure_is_recorded_without_turning_booking_flow_into_500():
+    reservation = make_reservation("LSA-ULTRAMSG-3")
+    reservation.hostaway_reservation_id = 66436725
+    reservation.save(update_fields=["hostaway_reservation_id", "updated_at"])
+
+    with patch(
+        "apps.notifications.services.ultramsg._manual_payment_message",
+        side_effect=RuntimeError("unexpected message data"),
+    ), patch("apps.notifications.services.ultramsg.UltraMsgClient.send_text") as send:
+        result = send_manual_payment_link_request(reservation_id=reservation.pk)
+
+    assert result.code == "failed"
+    assert result.delivery.status == WhatsAppDelivery.Status.FAILED
+    assert result.delivery.last_error_code == "message_build_failed"
+    assert send.call_count == 0
