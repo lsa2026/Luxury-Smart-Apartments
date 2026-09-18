@@ -89,6 +89,9 @@ _CANCELLATION_AUDIT_LABELS = {
     "cancellation.orphaned_payment_refunded": (
         "لم يوجد حجز في Hostaway؛ قبلت HyperPay إعادة كامل المبلغ وأُغلق السجل المحلي."
     ),
+    "cancellation.orphaned_test_payment_cancelled": (
+        "كان السجل تجربة HyperPay فقط بلا خصم فعلي؛ أُغلق محليًا دون استرداد."
+    ),
 }
 
 
@@ -827,7 +830,30 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
     rejection_form = CancellationRejectionForm()
     original_payment_amount = successful_original_payment_amount(cancellation.reservation)
     has_successful_payment = original_payment_amount is not None and original_payment_amount > 0
+    test_mode_payment = (
+        PaymentAttempt.objects.filter(
+            booking_intent=cancellation.reservation.booking_intent,
+            modification_request__isnull=True,
+            provider="hyperpay",
+            status__in=[PaymentAttempt.Status.SUCCEEDED, PaymentAttempt.Status.PARTIALLY_REFUNDED],
+        )
+        .filter(
+            Q(provider_result_code="000.100.112")
+            | Q(provider_result_description__icontains="connector test mode")
+            | Q(provider_checkout_id__icontains=".uat")
+        )
+        .exists()
+    )
+    if test_mode_payment:
+        has_successful_payment = False
+        original_payment_amount = Decimal("0")
     estimated_refund = cancellation_refund(cancellation.reservation)
+    if test_mode_payment:
+        estimated_refund = estimated_refund.__class__(
+            amount=Decimal("0"),
+            currency=cancellation.reservation.currency,
+            detail={"reason": "hyperpay_connector_test_mode_no_capture"},
+        )
     execution_form = CancellationExecutionForm(maximum_amount=estimated_refund.amount)
     if request.method == "POST":
         action = request.POST.get("action")
@@ -894,14 +920,23 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                         ],
                         refund_decision_note="",
                     )
-                    if outcome.code in {"completed", "orphaned_refunded"}:
+                    if outcome.code in {
+                        "completed",
+                        "orphaned_refunded",
+                        "orphaned_test_payment_cancelled",
+                    }:
                         is_orphaned_refund = outcome.code == "orphaned_refunded"
+                        is_orphaned_test = outcome.code == "orphaned_test_payment_cancelled"
                         record_audit(
                             request=request,
                             action=(
                                 "cancellation.orphaned_payment_refunded"
                                 if is_orphaned_refund
-                                else "cancellation.executed_hostaway"
+                                else (
+                                    "cancellation.orphaned_test_payment_cancelled"
+                                    if is_orphaned_test
+                                    else "cancellation.executed_hostaway"
+                                )
                             ),
                             object_type="BookingModificationRequest",
                             object_reference=cancellation.public_reference,
@@ -910,7 +945,12 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                                 "the full refund "
                                 "and the local record was closed."
                                 if is_orphaned_refund
-                                else "Hostaway confirmed the cancellation."
+                                else (
+                                    "The local payment was a HyperPay connector test transaction; "
+                                    "no money was captured and the local record was closed."
+                                    if is_orphaned_test
+                                    else "Hostaway confirmed the cancellation."
+                                )
                             ),
                             metadata={
                                 "approved_refund": format(
@@ -919,7 +959,13 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
                                 "refund_result": outcome.refund_code,
                             },
                         )
-                        if (
+                        if is_orphaned_test:
+                            messages.success(
+                                request,
+                                "كانت هذه عملية اختبار في HyperPay بلا خصم فعلي. لم يُرسل "
+                                "استرداد، وأُغلق السجل المحلي.",
+                            )
+                        elif (
                             is_orphaned_refund
                             and outcome.refund_code == "refund.hyperpay_completed"
                         ):
@@ -982,6 +1028,7 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
             "estimated_refund": estimated_refund,
             "has_successful_payment": has_successful_payment,
             "original_payment_amount": original_payment_amount,
+            "test_mode_payment": test_mode_payment,
             "refunds": cancellation.refund_obligations.all(),
             "approval_form": approval_form,
             "rejection_form": rejection_form,

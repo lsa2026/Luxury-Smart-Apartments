@@ -232,6 +232,67 @@ def test_orphaned_paid_reservation_cannot_keep_a_partial_charge():
 
 
 @override_settings(
+    BOOKING_AUTOMATIC_CANCELLATION_ENABLED=True,
+    BOOKING_AUTOMATIC_REFUND_ENABLED=True,
+    BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED=True,
+)
+def test_orphaned_hyperpay_connector_test_record_closes_without_a_refund():
+    reservation = confirmed_reservation()
+    reservation.normalized_status = reservation.Status.READY_FOR_HOSTAWAY
+    reservation.hostaway_reservation_id = None
+    reservation.confirmed_at = None
+    reservation.save(
+        update_fields=[
+            "normalized_status",
+            "hostaway_reservation_id",
+            "confirmed_at",
+            "updated_at",
+        ]
+    )
+    payment = PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        provider="hyperpay",
+        provider_checkout_id="checkout.uat01-vm-tx01",
+        provider_payment_id="orphaned-connector-test-payment",
+        provider_result_code="000.100.112",
+        provider_result_description=(
+            "Request successfully processed in Merchant in Connector Test Mode"
+        ),
+        amount=reservation.total_price,
+        currency="SAR",
+        status=PaymentAttempt.Status.SUCCEEDED,
+        verified_at=timezone.now(),
+        idempotency_key="orphaned-connector-test-payment-000000000001",
+    )
+    modification = (
+        ModificationService()
+        .create_cancellation_request(
+            reservation,
+            session_hash="owner:test",
+            owner_override=True,
+        )
+        .request
+    )
+    assert modification is not None
+
+    outcome = execute_automatic_modification(
+        modification,
+        approved_refund_amount=reservation.total_price,
+    )
+
+    reservation.refresh_from_db()
+    payment.refresh_from_db()
+    modification.refresh_from_db()
+    assert outcome.code == "orphaned_test_payment_cancelled"
+    assert outcome.refund is None
+    assert reservation.normalized_status == reservation.Status.CANCELLED
+    assert payment.status == PaymentAttempt.Status.CANCELLED
+    assert payment.failure_code == "hyperpay_connector_test_mode_no_capture"
+    assert modification.status == modification.Status.COMPLETED
+    assert RefundObligation.objects.filter(reservation=reservation).count() == 0
+
+
+@override_settings(
     **{
         **REFUND_SETTINGS,
         "HYPERPAY_ENVIRONMENT": "production",

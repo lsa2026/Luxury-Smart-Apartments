@@ -210,6 +210,10 @@ def _refund_orphaned_paid_reservation(
             return AutomaticModificationOutcome("already_completed", locked)
         if not _is_orphaned_paid_cancellation(locked):
             return AutomaticModificationOutcome("orphaned_reservation_changed", locked)
+        if _is_hyperpay_connector_test_payment(reservation):
+            _complete_orphaned_test_payment_cancellation(locked.pk)
+            locked.refresh_from_db()
+            return AutomaticModificationOutcome("orphaned_test_payment_cancelled", locked)
 
         computation = cancellation_refund(reservation)
         if computation.amount <= Decimal("0"):
@@ -276,6 +280,82 @@ def _refund_orphaned_paid_reservation(
     return AutomaticModificationOutcome(
         "orphaned_refund_not_accepted", locked, refund=refund, refund_code=refund_code
     )
+
+
+def _is_hyperpay_connector_test_payment(reservation: Reservation) -> bool:
+    """Recognise HyperPay's connector/UAT approval without treating it as money."""
+
+    payment = (
+        PaymentAttempt.objects.filter(
+            booking_intent=reservation.booking_intent,
+            modification_request__isnull=True,
+            provider="hyperpay",
+            status__in=[
+                PaymentAttempt.Status.SUCCEEDED,
+                PaymentAttempt.Status.PARTIALLY_REFUNDED,
+            ],
+        )
+        .order_by("-verified_at", "-created_at")
+        .first()
+    )
+    if payment is None:
+        return False
+    description = (payment.provider_result_description or "").casefold()
+    checkout = (payment.provider_checkout_id or "").casefold()
+    return (
+        payment.provider_result_code == "000.100.112"
+        or "connector test mode" in description
+        or ".uat" in checkout
+    )
+
+
+def _complete_orphaned_test_payment_cancellation(modification_id: object) -> None:
+    """Close a connector-test record without issuing a non-existent refund."""
+
+    with transaction.atomic():
+        locked = (
+            BookingModificationRequest.objects.select_for_update()
+            .select_related("reservation__booking_intent")
+            .get(pk=modification_id)
+        )
+        reservation = Reservation.objects.select_for_update().get(pk=locked.reservation_id)
+        if locked.status == BookingModificationRequest.Status.COMPLETED:
+            return
+        PaymentAttempt.objects.select_for_update().filter(
+            booking_intent=reservation.booking_intent,
+            modification_request__isnull=True,
+            provider="hyperpay",
+            status__in=[
+                PaymentAttempt.Status.SUCCEEDED,
+                PaymentAttempt.Status.PARTIALLY_REFUNDED,
+            ],
+        ).update(
+            status=PaymentAttempt.Status.CANCELLED,
+            failure_code="hyperpay_connector_test_mode_no_capture",
+            updated_at=timezone.now(),
+        )
+        RefundObligation.objects.select_for_update().filter(
+            modification_request=locked,
+            status=RefundObligation.Status.DUE,
+        ).update(
+            status=RefundObligation.Status.CANCELLED,
+            note="No money was captured: HyperPay connector test transaction.",
+            updated_at=timezone.now(),
+        )
+        now = timezone.now()
+        reservation.normalized_status = Reservation.Status.CANCELLED
+        reservation.cancelled_at = now
+        reservation.confirmed_at = None
+        reservation.hostaway_status = "not_created"
+        reservation.last_synced_at = now
+        reservation.full_clean()
+        reservation.save()
+        locked.status = BookingModificationRequest.Status.COMPLETED
+        locked.completed_at = now
+        locked.save(update_fields=["status", "completed_at", "updated_at"])
+        from apps.notifications.services.events import handle_modification_completed
+
+        transaction.on_commit(lambda: handle_modification_completed(locked.pk))
 
 
 def _complete_orphaned_local_cancellation(modification_id: object) -> None:

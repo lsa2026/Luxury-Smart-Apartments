@@ -15,7 +15,10 @@
   <section class="lsa-panel">
     <h2>بيانات الطلب</h2>
     <p><b>البريد:</b> <span dir="ltr">{{ cancellation.reservation.booking_intent.guest_email|default:"—" }}</span> · <b>الجوال:</b> <span dir="ltr">{{ cancellation.reservation.booking_intent.guest_phone|default:"—" }}</span></p>
-    {% if has_successful_payment %}
+    {% if test_mode_payment %}
+      <p><b>حالة الدفع:</b> هذه عملية اختبار في HyperPay؛ لم يُخصم مبلغ فعلي من البطاقة.</p>
+      <p class="help">لا يوجد مبلغ قابل للاسترداد، ولن يُرسل طلب إلى Hostaway لأنه لا يوجد حجز خارجي.</p>
+    {% elif has_successful_payment %}
       <p><b>أقصى مبلغ متاح للاسترداد:</b> <strong dir="ltr">{{ estimated_refund.amount|floatformat:2 }} {{ estimated_refund.currency }}</strong></p>
       <p class="help">هذا هو المبلغ المدفوع المسجل للحجز. يمكنك إرجاعه كاملًا أو صفرًا أو إدخال أي مبلغ أقل منه.</p>
     {% elif original_payment_amount != None %}
@@ -36,7 +39,10 @@
   {% elif cancellation.status == "ready_for_hostaway" %}
   <section class="lsa-panel lsa-owner-action lsa-owner-action--cancel">
     <h2>إلغاء الحجز{% if has_successful_payment %} واسترداد المبلغ{% endif %}</h2>
-    {% if has_successful_payment %}
+    {% if test_mode_payment %}
+      <p>لم يُنشأ حجز في Hostaway ولم تُخصم البطاقة. سيُغلق هذا السجل المحلي فقط، دون استرداد.</p>
+      <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><input type="hidden" name="approved_refund_amount" value="0"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إغلاق سجل الاختبار</button></form>
+    {% elif has_successful_payment %}
       <p>سيُلغي النظام الحجز في Hostaway أولًا، وبعد تأكيده فقط يرسل المبلغ الذي اخترته إلى HyperPay.</p>
       <form method="post" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_external"><div class="lsa-refund-choice"><b>المبلغ المعتمد</b><div class="lsa-refund-choice__presets"><button type="button" onclick="this.form.approved_refund_amount.value='{{ estimated_refund.amount|unlocalize }}'">استرداد كامل · <span dir="ltr">{{ estimated_refund.amount|floatformat:2 }} {{ estimated_refund.currency }}</span></button><button type="button" onclick="this.form.approved_refund_amount.value='0'">بدون استرداد · <span dir="ltr">0.00 {{ estimated_refund.currency }}</span></button></div><label class="lsa-owner-field"><span>مبلغ مخصص</span>{{ execution_form.approved_refund_amount }}{{ execution_form.approved_refund_amount.errors }}</label></div><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز وتنفيذ الاسترداد</button></form>
     {% else %}
