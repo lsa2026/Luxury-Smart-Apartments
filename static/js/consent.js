@@ -49,6 +49,18 @@
         }
     }
 
+    function updateGoogleConsent(choice) {
+        if (!consentModeEnabled) {
+            return;
+        }
+        window.gtag("consent", "update", {
+            analytics_storage: choice.analytics ? "granted" : "denied",
+            ad_storage: choice.marketing ? "granted" : "denied",
+            ad_user_data: choice.marketing ? "granted" : "denied",
+            ad_personalization: choice.marketing ? "granted" : "denied",
+        });
+    }
+
     function writeConsent(choice) {
         const value = {
             version,
@@ -69,25 +81,46 @@
         return value;
     }
 
+    function loadTagManager() {
+        if (
+            !googleEnabled
+            || body.dataset.gtmEnabled !== "true"
+            || !/^GTM-[A-Z0-9]{4,}$/.test(body.dataset.gtmContainerId || "")
+        ) {
+            return false;
+        }
+        const id = body.dataset.gtmContainerId;
+        if (!document.querySelector("script[data-lsa-google-script='gtm']")) {
+            window.dataLayer.push({"gtm.start": Date.now(), event: "gtm.js"});
+            const script = document.createElement("script");
+            script.async = true;
+            script.dataset.lsaGoogleScript = "gtm";
+            script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
+            document.head.append(script);
+        }
+        return true;
+    }
+
+    // Apply a returning visitor's saved preference before Google Tag Manager loads.
+    const stored = parseConsent();
+    if (stored) {
+        updateGoogleConsent(stored);
+    }
+
+    // Consent Mode remains denied for a new visitor, while the container is
+    // available for Google Ads tag diagnostics and cookieless consent signals.
+    loadTagManager();
+
     function loadGoogle(choice) {
         if (!googleEnabled) {
             return;
         }
         const gtmEnabled = body.dataset.gtmEnabled === "true";
         const ga4Enabled = body.dataset.ga4Enabled === "true";
-        if (!choice.analytics && !choice.marketing) {
+        if (gtmEnabled && loadTagManager()) {
             return;
         }
-        if (gtmEnabled && /^GTM-[A-Z0-9]{4,}$/.test(body.dataset.gtmContainerId || "")) {
-            const id = body.dataset.gtmContainerId;
-            if (!document.querySelector("script[data-lsa-google-script='gtm']")) {
-                window.dataLayer.push({"gtm.start": Date.now(), event: "gtm.js"});
-                const script = document.createElement("script");
-                script.async = true;
-                script.dataset.lsaGoogleScript = "gtm";
-                script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
-                document.head.append(script);
-            }
+        if (!choice.analytics && !choice.marketing) {
             return;
         }
         if (
@@ -108,14 +141,7 @@
     }
 
     function applyConsent(choice, emitUpdate) {
-        if (consentModeEnabled) {
-            window.gtag("consent", "update", {
-                analytics_storage: choice.analytics ? "granted" : "denied",
-                ad_storage: choice.marketing ? "granted" : "denied",
-                ad_user_data: choice.marketing ? "granted" : "denied",
-                ad_personalization: choice.marketing ? "granted" : "denied",
-            });
-        }
+        updateGoogleConsent(choice);
         loadGoogle(choice);
         if (emitUpdate) {
             document.dispatchEvent(new CustomEvent("lsa:consent-updated", {detail: choice}));
@@ -196,9 +222,8 @@
         }
     });
 
-    const stored = parseConsent();
     if (stored) {
-        applyConsent(stored, false);
+        loadGoogle(stored);
     } else if (consentEnabled && banner) {
         banner.hidden = false;
     }
