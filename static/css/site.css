@@ -13438,3 +13438,143 @@ body.splash-active .whatsapp-fab {
         width: 3.5rem;
     }
 }
+
+/* Header layout revision: reserve a real center column for the lockup on
+   mobile, and give desktop navigation its own row so it cannot collide with
+   the approved logo or the locale controls. */
+.header-inner {
+    display: block;
+    min-height: 0;
+    padding-block: 0.5rem 0;
+}
+
+.header-top {
+    display: grid;
+    min-height: 8rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.header-top > .brand {
+    position: relative;
+    z-index: 1;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    transform: none;
+}
+
+.header-top > .brand .brand-wordmark {
+    width: clamp(22rem, 32vw, 30rem);
+}
+
+.header-top > .header-actions {
+    z-index: 2;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+}
+
+html[dir="rtl"] .header-top > .header-actions {
+    grid-column: 1;
+    justify-self: start;
+}
+
+.header-top + .desktop-nav {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(0.65rem, 1.6vw, 1.35rem);
+    padding-block: 0.35rem 0.6rem;
+    border-top: 1px solid rgb(255 255 255 / 12%);
+}
+
+.header-top + .desktop-nav a {
+    padding-block: 0.6rem 0.5rem;
+    font-size: 0.88rem;
+}
+
+.header-top + .desktop-nav a::after {
+    inset-block-end: 0.18rem;
+}
+
+@media (max-width: 48rem) {
+    .header-inner {
+        position: relative;
+        padding: 0 0.75rem;
+    }
+
+    .header-top {
+        min-height: 5.6rem;
+        grid-template-columns: clamp(5.75rem, 24vw, 7.25rem) minmax(0, 1fr) 3rem;
+        column-gap: 0.25rem;
+    }
+
+    .header-top > .brand {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        justify-self: stretch;
+    }
+
+    .header-top > .brand .brand-wordmark {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        gap: 0.1rem;
+    }
+
+    .header-top > .brand .brand-wordmark__word {
+        min-width: 0;
+        font-size: clamp(0.92rem, 3.9vw, 1.45rem);
+        letter-spacing: 0;
+    }
+
+    .header-top > .brand .brand-wordmark .brand-wordmark__monogram {
+        width: clamp(3.25rem, 15vw, 4.65rem);
+    }
+
+    .header-top > .header-actions {
+        position: static;
+        display: flex;
+        width: 100%;
+        grid-column: 1 / -1;
+        grid-row: 1;
+        justify-content: space-between;
+        gap: 0;
+        margin: 0;
+        pointer-events: none;
+    }
+
+    html[dir="rtl"] .header-top > .header-actions {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+    }
+
+    .header-top > .header-actions > .currency-selector,
+    .header-top > .header-actions > .button {
+        display: none;
+    }
+
+    .header-top > .header-actions .language-switcher,
+    .header-top > .header-actions .menu-toggle {
+        position: static;
+        pointer-events: auto;
+    }
+
+    .header-top > .header-actions .language-switcher select {
+        width: clamp(5.75rem, 24vw, 7.25rem);
+        padding-inline: 0.45rem 1.35rem;
+        font-size: 0.78rem;
+    }
+
+    .header-top + .desktop-nav {
+        display: none;
+    }
+
+    .mobile-nav {
+        inset-block-start: 5.6rem;
+    }
+}
