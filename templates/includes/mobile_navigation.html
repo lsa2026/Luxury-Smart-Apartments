@@ -2,9 +2,11 @@
 <div class="mobile-nav" id="mobile-navigation" hidden data-mobile-nav>
     <div class="mobile-nav__panel" role="dialog" aria-modal="true" aria-label="{% trans 'Mobile navigation' %}">
         <div class="mobile-nav__heading">
-            <span class="mobile-nav__wordmark" aria-hidden="true">
-                <img src="{% static 'images/brand/luxury-living-lockup-dark.svg' %}" alt="" width="640" height="150">
-            </span>
+            <a class="mobile-nav__wordmark" href="{% url 'core:home' %}" aria-label="{% trans 'Luxury Smart Apartments home' %}">
+                <span class="brand-wordmark__word">LUXURY</span>
+                <img class="brand-wordmark__monogram" src="{% static 'images/brand/luxury-living-monogram-ll-dark.svg' %}" alt="" width="116" height="116">
+                <span class="brand-wordmark__word">LIVING</span>
+            </a>
             <button type="button" data-menu-close aria-label="{% trans 'Close menu' %}">×</button>
         </div>
         <nav aria-label="{% trans 'Mobile navigation' %}">

@@ -2,8 +2,10 @@
 <header class="site-header" data-site-header>
     <div class="container header-inner">
         <a class="brand" href="{% url 'core:home' %}" aria-label="{% trans 'Luxury Smart Apartments home' %}">
-            <span class="brand-wordmark" aria-hidden="true">
-                <img src="{% static 'images/brand/luxury-living-lockup-dark.svg' %}" alt="" width="640" height="150">
+            <span class="brand-wordmark" dir="ltr" aria-hidden="true">
+                <span class="brand-wordmark__word">LUXURY</span>
+                <img class="brand-wordmark__monogram" src="{% static 'images/brand/luxury-living-monogram-ll-dark.svg' %}" alt="" width="116" height="116">
+                <span class="brand-wordmark__word">LIVING</span>
             </span>
         </a>
         <nav class="desktop-nav" aria-label="{% trans 'Primary navigation' %}">
