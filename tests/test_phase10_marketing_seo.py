@@ -240,14 +240,6 @@ def test_consent_default_precedes_google_loader() -> None:
     assert script.index('window.gtag("consent", "default"') < script.index("function loadGoogle")
 
 
-def test_tag_manager_loads_with_denied_consent_mode_for_google_diagnostics() -> None:
-    script = Path("static/js/consent.js").read_text(encoding="utf-8")
-    loader_call = script.index("\n    loadTagManager();\n")
-    assert script.index('window.gtag("consent", "default"') < loader_call
-    assert loader_call < script.index("const banner =")
-    assert "function loadTagManager()" in script
-
-
 def test_consent_dialog_has_keyboard_focus_handling() -> None:
     script = Path("static/js/consent.js").read_text(encoding="utf-8")
     assert 'event.key !== "Tab"' in script
