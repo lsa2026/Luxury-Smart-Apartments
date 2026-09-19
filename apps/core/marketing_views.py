@@ -112,7 +112,11 @@ def validate_marketing_component(request: HttpRequest, component: str) -> HttpRe
 
 @require_POST
 def acknowledge_purchase_event(request: HttpRequest) -> HttpResponse:
-    """Atomically close the one-time browser bridge after it pushes a purchase."""
+    """Close the bridge after GTM processing, not merely a dataLayer enqueue.
+
+    EMITTED records browser dispatch, never confirmed Google receipt/attribution.
+    The signed endpoint is idempotent so an interrupted acknowledgement can retry.
+    """
     token = request.POST.get("receipt_token", "")
     try:
         payload = signing.loads(

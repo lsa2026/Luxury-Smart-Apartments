@@ -83,7 +83,7 @@
         return clean;
     }
 
-    function pushEvent(eventName, payload) {
+    function pushEvent(eventName, payload, onProcessed) {
         const clean = sanitize(eventName, payload);
         if (!clean) {
             return false;
@@ -105,28 +105,47 @@
         // variables read the explicit top-level transaction fields.
         if (eventName === "purchase") {
             window.dataLayer.push({ecommerce: null});
-            window.dataLayer.push({event: eventName, ...clean, ecommerce: {...clean}});
+            const event = {event: eventName, ...clean, ecommerce: {...clean}};
+            if (typeof onProcessed === "function") {
+                event.eventCallback = (containerId) => {
+                    if (/^GTM-[A-Z0-9]{4,}$/.test(containerId || "")
+                        && containerId === body.dataset.gtmContainerId) {
+                        onProcessed();
+                    }
+                };
+                // No eventTimeout: a timeout must never close a purchase receipt.
+                // This callback confirms GTM processing, NOT Google Ads attribution
+                // or server-side receipt of the conversion.
+            }
+            window.dataLayer.push(event);
         } else {
             window.dataLayer.push({event: eventName, ...clean});
         }
         return clean;
     }
 
+    let acknowledgementInFlight = false;
+    let acknowledgementAttempts = 0;
+    let acknowledgementTimer = null;
     function acknowledgePurchaseReceipt(element, transactionId) {
         const token = element.dataset.analyticsReceiptToken;
         const url = element.dataset.analyticsReceiptUrl;
-        if (!token || !url || !transactionId) {
+        if (!token || !url || !transactionId || acknowledgementInFlight
+            || acknowledgementAttempts >= 3) {
             return;
         }
-        const storageKey = `lsa:purchase:${transactionId}`;
+        const storageKey = `lsa:purchase:v2:${transactionId}`;
         try {
-            if (window.sessionStorage.getItem(storageKey) === "pushed") {
+            if (window.sessionStorage.getItem(storageKey) === "acknowledged") {
                 return;
             }
-            window.sessionStorage.setItem(storageKey, "pushed");
         } catch (error) {
             // Storage can be unavailable in privacy modes; the server receipt remains the fallback.
         }
+        acknowledgementInFlight = true;
+        acknowledgementAttempts += 1;
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
         fetch(url, {
             method: "POST",
             credentials: "same-origin",
@@ -135,8 +154,28 @@
                 "X-CSRFToken": element.dataset.analyticsReceiptCsrf || "",
             },
             body: new URLSearchParams({receipt_token: token}),
+            signal: controller.signal,
+            keepalive: true,
+        }).then((response) => {
+            if (!response.ok) {
+                throw new Error("Purchase acknowledgement failed");
+            }
+            try {
+                window.sessionStorage.setItem(storageKey, "acknowledged");
+            } catch (error) {
+                // The server receipt now prevents emission on a later page load.
+            }
         }).catch(() => {
-            // A later result-page load can safely retry the signed acknowledgement.
+            // Retry only the acknowledgement, never the already processed purchase.
+            if (acknowledgementAttempts < 3) {
+                acknowledgementTimer = window.setTimeout(() => {
+                    acknowledgementTimer = null;
+                    acknowledgePurchaseReceipt(element, transactionId);
+                }, acknowledgementAttempts * 2000);
+            }
+        }).finally(() => {
+            window.clearTimeout(timeout);
+            acknowledgementInFlight = false;
         });
     }
 
@@ -185,29 +224,69 @@
     }
     const purchase = document.querySelector("[data-analytics-purchase-event]");
     let purchasePushed = false;
+    let purchaseProcessed = false;
     function emitPurchase() {
-        if (!purchase || purchasePushed) {
+        if (!purchase) {
             return;
         }
         const transactionId = purchase.dataset.analyticsTransactionId;
+        const storageKey = `lsa:purchase:v2:${transactionId}`;
         try {
-            if (window.sessionStorage.getItem(`lsa:purchase:${transactionId}`) === "pushed") {
+            const status = window.sessionStorage.getItem(storageKey);
+            if (status === "acknowledged") {
                 return;
+            }
+            if (status === "processed") {
+                purchaseProcessed = true;
             }
         } catch (error) {
             // Server receipts still prevent emission on a later acknowledged load.
         }
+        if (purchaseProcessed) {
+            acknowledgePurchaseReceipt(purchase, transactionId);
+            return;
+        }
+        if (purchasePushed) {
+            return;
+        }
+        // Set before push: GTM can invoke callbacks synchronously.
+        purchasePushed = true;
         const pushed = pushEvent("purchase", {
             transaction_id: transactionId,
             value: Number(purchase.dataset.analyticsValue || 0),
             currency: purchase.dataset.analyticsCurrency,
-        });
-        if (pushed) {
-            purchasePushed = true;
+        }, () => {
+            if (purchaseProcessed) {
+                return;
+            }
+            purchaseProcessed = true;
+            try {
+                window.sessionStorage.setItem(storageKey, "processed");
+            } catch (error) {
+                // The server receipt remains the cross-page fallback.
+            }
             acknowledgePurchaseReceipt(purchase, transactionId);
+        });
+        if (!pushed) {
+            purchasePushed = false;
         }
     }
     emitPurchase();
+    window.addEventListener("online", () => {
+        if (!purchase) {
+            return;
+        }
+        if (purchasePushed && !purchaseProcessed) {
+            // The original dataLayer event stays queued; do not enqueue it twice.
+            window.LSAConsent?.loadPurchaseTracker?.();
+        }
+        if (purchaseProcessed && !acknowledgementInFlight) {
+            window.clearTimeout(acknowledgementTimer);
+            acknowledgementTimer = null;
+            acknowledgementAttempts = 0;
+            acknowledgePurchaseReceipt(purchase, purchase.dataset.analyticsTransactionId);
+        }
+    });
     document.querySelectorAll("[data-analytics-event]").forEach((element) => {
         const eventName = element.dataset.analyticsEvent;
         const trigger = element.matches("form") ? "submit" : (

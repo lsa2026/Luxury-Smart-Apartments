@@ -69,6 +69,8 @@
         return value;
     }
 
+    let tagManagerAttempts = 0;
+    let tagManagerStarted = false;
     function loadTagManager() {
         const gtmEnabled = body.dataset.gtmEnabled === "true";
         if (
@@ -80,11 +82,24 @@
         }
         const id = body.dataset.gtmContainerId;
         if (!document.querySelector("script[data-lsa-google-script='gtm']")) {
-            window.dataLayer.push({"gtm.start": Date.now(), event: "gtm.js"});
+            if (tagManagerAttempts >= 3) {
+                return false;
+            }
+            tagManagerAttempts += 1;
+            if (!tagManagerStarted) {
+                window.dataLayer.push({"gtm.start": Date.now(), event: "gtm.js"});
+                tagManagerStarted = true;
+            }
             const script = document.createElement("script");
             script.async = true;
             script.dataset.lsaGoogleScript = "gtm";
             script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
+            script.onerror = () => {
+                script.remove();
+                if (tagManagerAttempts < 3) {
+                    window.setTimeout(loadTagManager, tagManagerAttempts * 2000);
+                }
+            };
             document.head.append(script);
         }
         return true;
