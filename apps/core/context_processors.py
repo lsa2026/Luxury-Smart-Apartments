@@ -153,6 +153,7 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         "footer_cities": footer_cities,
         "current_year": datetime.now(tz=timezone.get_current_timezone()).year,
         "canonical_url": (f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"),
+        "site_base_url": settings.SITE_CANONICAL_URL,
         "hreflang_ar_url": language_urls["ar"],
         "hreflang_en_url": language_urls["en"],
         "hreflang_fr_url": language_urls["fr"],

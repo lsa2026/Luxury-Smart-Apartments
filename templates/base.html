@@ -25,7 +25,15 @@
     {% if LANGUAGE_CODE != 'ar' %}<meta property="og:locale:alternate" content="ar_SA">{% endif %}
     {% if LANGUAGE_CODE != 'en' %}<meta property="og:locale:alternate" content="en_US">{% endif %}
     {% if LANGUAGE_CODE != 'fr' %}<meta property="og:locale:alternate" content="fr_FR">{% endif %}
-    {% block og_image %}{% endblock %}
+    {% block og_image %}
+    {% static 'images/brand/luxury-living-social-share.png' as social_share_image_path %}
+    <meta property="og:image" content="{{ site_base_url }}{{ social_share_image_path }}">
+    <meta property="og:image:secure_url" content="{{ site_base_url }}{{ social_share_image_path }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:image" content="{{ site_base_url }}{{ social_share_image_path }}">
+    {% endblock %}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{% block twitter_title %}{% trans 'Luxury Smart Apartments' %}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{% trans 'Luxury smart stays in Riyadh and Marrakech.' %}{% endblock %}">

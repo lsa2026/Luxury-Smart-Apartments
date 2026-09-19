@@ -4,7 +4,24 @@
 {% block meta_description %}{{ property|localized_property_meta_description|truncatechars:155 }}{% endblock %}
 {% block og_title %}{{ property|localized_property_seo_title }}{% endblock %}
 {% block twitter_title %}{{ property|localized_property_seo_title }}{% endblock %}
-{% block og_image %}{% if gallery_images %}<meta property="og:image" content="{{ gallery_images.0.display_url }}"><meta property="og:image:width" content="960"><meta property="og:image:height" content="640"><meta name="twitter:image" content="{{ gallery_images.0.display_url }}">{% endif %}{% endblock %}
+{% block og_image %}
+{% if gallery_images %}
+<meta property="og:image" content="{{ gallery_images.0.display_url }}">
+<meta property="og:image:secure_url" content="{{ gallery_images.0.display_url }}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="960">
+<meta property="og:image:height" content="640">
+<meta name="twitter:image" content="{{ gallery_images.0.display_url }}">
+{% else %}
+{% static 'images/brand/luxury-living-social-share.png' as social_share_image_path %}
+<meta property="og:image" content="{{ site_base_url }}{{ social_share_image_path }}">
+<meta property="og:image:secure_url" content="{{ site_base_url }}{{ social_share_image_path }}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="{{ site_base_url }}{{ social_share_image_path }}">
+{% endif %}
+{% endblock %}
 {% block structured_data %}{% json_ld property_structured_data csp_nonce %}{% json_ld breadcrumb_structured_data csp_nonce %}{% endblock %}
 {% block extra_head %}
 {% if public_location_map %}
