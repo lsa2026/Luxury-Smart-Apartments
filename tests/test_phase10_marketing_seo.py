@@ -339,10 +339,22 @@ def test_purchase_browser_bridge_uses_only_safe_booking_fields() -> None:
     assert "[data-analytics-purchase-event]" in script
     assert 'pushEvent("purchase"' in script
     assert "analyticsTransactionId" in script
-    assert "analyticsItemId" in script
+    assert "loadPurchaseTracker" in script
+    assert "sessionStorage" in script
     assert "analyticsEmail" not in script
     assert "analyticsPhone" not in script
     assert "analyticsGuestName" not in script
+
+
+def test_denied_consent_allows_only_verified_anonymous_purchase_bridge() -> None:
+    consent_script = Path("static/js/consent.js").read_text(encoding="utf-8")
+    result_template = Path("templates/payments/hyperpay_result.html").read_text(encoding="utf-8")
+    marketing_module = Path("apps/core/marketing.py").read_text(encoding="utf-8")
+    assert "function loadPurchaseTracker()" in consent_script
+    assert 'eventName === "purchase"' in Path("static/js/analytics.js").read_text(encoding="utf-8")
+    assert '"transaction_id": reference_hash' in marketing_module
+    assert "data-analytics-transaction-id" in result_template
+    assert "data-analytics-item-id" not in result_template
 
 
 def test_purchase_is_not_prepared_for_unpaid_attempt() -> None:

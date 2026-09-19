@@ -69,25 +69,41 @@
         return value;
     }
 
+    function loadTagManager() {
+        const gtmEnabled = body.dataset.gtmEnabled === "true";
+        if (
+            !googleEnabled
+            || !gtmEnabled
+            || !/^GTM-[A-Z0-9]{4,}$/.test(body.dataset.gtmContainerId || "")
+        ) {
+            return false;
+        }
+        const id = body.dataset.gtmContainerId;
+        if (!document.querySelector("script[data-lsa-google-script='gtm']")) {
+            window.dataLayer.push({"gtm.start": Date.now(), event: "gtm.js"});
+            const script = document.createElement("script");
+            script.async = true;
+            script.dataset.lsaGoogleScript = "gtm";
+            script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
+            document.head.append(script);
+        }
+        return true;
+    }
+
+    function loadPurchaseTracker() {
+        // A denied visitor reaches this path only after a verified purchase.
+        return loadTagManager();
+    }
+
     function loadGoogle(choice) {
         if (!googleEnabled) {
             return;
         }
-        const gtmEnabled = body.dataset.gtmEnabled === "true";
         const ga4Enabled = body.dataset.ga4Enabled === "true";
         if (!choice.analytics && !choice.marketing) {
             return;
         }
-        if (gtmEnabled && /^GTM-[A-Z0-9]{4,}$/.test(body.dataset.gtmContainerId || "")) {
-            const id = body.dataset.gtmContainerId;
-            if (!document.querySelector("script[data-lsa-google-script='gtm']")) {
-                window.dataLayer.push({"gtm.start": Date.now(), event: "gtm.js"});
-                const script = document.createElement("script");
-                script.async = true;
-                script.dataset.lsaGoogleScript = "gtm";
-                script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
-                document.head.append(script);
-            }
+        if (loadTagManager()) {
             return;
         }
         if (
@@ -202,5 +218,5 @@
     } else if (consentEnabled && banner) {
         banner.hidden = false;
     }
-    window.LSAConsent = {applyConsent, parseConsent, openSettings};
+    window.LSAConsent = {applyConsent, loadPurchaseTracker, parseConsent, openSettings};
 }());

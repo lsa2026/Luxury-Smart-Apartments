@@ -95,7 +95,9 @@
             return false;
         }
         const consent = window.LSAConsent?.parseConsent();
-        if (!consent?.analytics) {
+        const anonymousPurchase = eventName === "purchase"
+            && window.LSAConsent?.loadPurchaseTracker?.();
+        if (!consent?.analytics && !anonymousPurchase) {
             return false;
         }
         window.dataLayer = window.dataLayer || [];
@@ -195,21 +197,10 @@
         } catch (error) {
             // Server receipts still prevent emission on a later acknowledged load.
         }
-        const item = cleanItem({
-            item_id: purchase.dataset.analyticsItemId,
-            item_name: purchase.dataset.analyticsItemName,
-            item_brand: purchase.dataset.analyticsItemBrand,
-            item_category: purchase.dataset.analyticsItemCategory,
-            item_category2: purchase.dataset.analyticsItemCity,
-            quantity: 1,
-            currency: purchase.dataset.analyticsCurrency,
-            price: Number(purchase.dataset.analyticsValue || 0),
-        });
         const pushed = pushEvent("purchase", {
             transaction_id: transactionId,
             value: Number(purchase.dataset.analyticsValue || 0),
             currency: purchase.dataset.analyticsCurrency,
-            items: Object.keys(item).length ? [item] : [],
         });
         if (pushed) {
             purchasePushed = true;

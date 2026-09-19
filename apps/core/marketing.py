@@ -195,12 +195,10 @@ def prepare_purchase_event(
     payload = sanitize_analytics_event(
         "purchase",
         {
-            "transaction_id": reservation.public_reference,
+            # Expose only an opaque, non-reversible identifier to the browser.
+            "transaction_id": reference_hash,
             "value": reservation.total_price,
             "currency": reservation.currency,
-            "items": [property_analytics_item(reservation.property)]
-            if reservation.property
-            else [],
         },
     )
     return payload, receipt
