@@ -10325,13 +10325,13 @@ h2 {
 }
 
 @media (max-width: 48rem) {
-    /* Keep the brand as the visual anchor on phones while leaving the menu
-       controls reachable at the edge of the header. */
+    /* Keep the brand as the visual anchor. Logical inline edges deliberately
+       swap the language and menu controls for RTL without changing markup. */
     .header-inner {
         position: relative;
-        min-height: 5.25rem;
+        min-height: 5.6rem;
         justify-content: center;
-        padding-inline: 4.6rem;
+        padding-inline: 5rem;
     }
 
     .brand {
@@ -10341,15 +10341,18 @@ h2 {
     }
 
     .brand-wordmark {
-        width: 10.25rem;
+        width: clamp(10.75rem, 42vw, 13rem);
         min-width: 0;
     }
 
     .header-actions {
         position: absolute;
-        inset-inline-end: 0;
-        gap: 0.35rem;
+        inset-inline: 0;
+        justify-content: space-between;
+        width: 100%;
+        gap: 0;
         margin: 0;
+        pointer-events: none;
     }
 
     .header-actions > .currency-selector {
@@ -10362,13 +10365,25 @@ h2 {
         font-size: 0.8rem;
     }
 
+    .header-actions .language-switcher {
+        position: absolute;
+        inset-inline-start: 0;
+        pointer-events: auto;
+    }
+
     .menu-toggle {
         width: 2.75rem;
         min-height: 2.75rem;
+        pointer-events: auto;
+    }
+
+    .header-actions .menu-toggle {
+        position: absolute;
+        inset-inline-end: 0;
     }
 
     .mobile-nav {
-        inset-block-start: 5.25rem;
+        inset-block-start: 5.6rem;
         background: rgb(13 26 63 / 86%);
     }
 
