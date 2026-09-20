@@ -11937,7 +11937,7 @@ a.contact-channel:hover {
 }
 
 /* Floating WhatsApp contact button: fixed to the inline end, RTL-aware, and
-   lifted above the consent banner while that banner is on screen. */
+   lifted above fixed bottom actions by the runtime clearance calculation. */
 .whatsapp-fab {
     --whatsapp-fab-size: 3.2rem;
 

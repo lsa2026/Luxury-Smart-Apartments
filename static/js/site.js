@@ -1834,29 +1834,45 @@ if (checkoutMethods.length) {
     });
 }
 
-// Floating WhatsApp button. It keeps clear of the consent banner, which shares
-// the bottom of the viewport and can wrap to several lines on narrow screens.
+// Floating WhatsApp button. Keep it clear of every fixed element that can occupy
+// the bottom of the viewport, including the mobile booking CTA and consent banner.
 const whatsappFab = document.querySelector("[data-whatsapp-fab]");
 if (whatsappFab) {
-    const consentBanner = document.querySelector("[data-consent-banner]");
+    const bottomObstacles = [
+        document.querySelector("[data-consent-banner]"),
+        document.querySelector("[data-mobile-booking-cta]"),
+    ].filter(Boolean);
 
-    if (consentBanner) {
-        const syncOffset = () => {
-            const clear = consentBanner.hidden ? 0 : consentBanner.offsetHeight + 12;
-            whatsappFab.style.setProperty("--whatsapp-fab-offset", `${clear}px`);
-        };
+    const syncOffset = () => {
+        const viewportHeight = window.innerHeight;
+        const gap = 12;
+        const clear = bottomObstacles.reduce((maximum, obstacle) => {
+            if (obstacle.hidden || getComputedStyle(obstacle).display === "none") {
+                return maximum;
+            }
 
-        syncOffset();
-        new MutationObserver(syncOffset).observe(consentBanner, {
+            const rect = obstacle.getBoundingClientRect();
+            if (rect.bottom <= 0 || rect.top >= viewportHeight) {
+                return maximum;
+            }
+
+            return Math.max(maximum, viewportHeight - rect.top + gap);
+        }, 0);
+
+        whatsappFab.style.setProperty("--whatsapp-fab-offset", `${Math.ceil(clear)}px`);
+    };
+
+    syncOffset();
+    bottomObstacles.forEach((obstacle) => {
+        new MutationObserver(syncOffset).observe(obstacle, {
             attributes: true,
-            attributeFilter: ["hidden"],
+            attributeFilter: ["class", "hidden", "style"],
         });
         if ("ResizeObserver" in window) {
-            new ResizeObserver(syncOffset).observe(consentBanner);
-        } else {
-            window.addEventListener("resize", syncOffset);
+            new ResizeObserver(syncOffset).observe(obstacle);
         }
-    }
+    });
+    window.addEventListener("resize", syncOffset, { passive: true });
 }
 
 // Password visibility toggles on the account forms. The button ships pressed=false
