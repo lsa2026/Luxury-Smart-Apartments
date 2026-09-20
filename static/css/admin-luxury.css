@@ -164,26 +164,25 @@ input[type=text], input[type=password], input[type=email], input[type=url], inpu
 @media (max-width: 1100px) { .lsa-stat-grid { grid-template-columns: repeat(2, 1fr); }.lsa-dashboard-grid { grid-template-columns: 1fr; }.lsa-admin-nav { display: none; } }
 @media (max-width: 767px) { #header { min-height: 68px; padding: 0 16px; } #content { padding: 16px 12px; }.lsa-admin-brand__name { font-size: 13px; }.lsa-admin-brand__eyebrow { display: none; }.lsa-hero,.lsa-page-head { display: block; padding: 25px 22px; }.lsa-hero__actions { margin-top: 20px; }.lsa-stat-grid,.lsa-quick-grid { grid-template-columns: 1fr; }.lsa-stat { min-height: 116px; }.lsa-filter-bar { align-items: stretch; flex-direction: column; }.lsa-search { min-width: 0; }.lsa-chart { gap: 8px; padding-inline: 0; }.lsa-panel { padding: 16px; }.lsa-table { min-width: 760px; }.aligned .form-row > div:not(.form-multiline) > .flex-container { grid-template-columns: 1fr; gap: 5px; }.aligned .form-row label { padding-top: 0; }.aligned .form-row .help, .aligned .form-row div.help { grid-column: 1; } }
 
-/* Unified administration shell — matches the approved RTL Figma header:
-   operational context on the right, official transparent lockup centred,
-   and account controls on the left. */
+/* Unified administration shell — the approved Figma responsive header:
+   Arabic menu on the left, transparent lockup centred, language on the right. */
 html.lsa-command-open,
 html.lsa-command-open body { overflow: hidden; }
-.lsa-shell-header { position: relative; display: block !important; min-height: 96px !important; height: auto !important; padding: 0 clamp(22px,3vw,52px) !important; box-sizing: border-box; overflow: visible; isolation: isolate; border-bottom: 1px solid rgba(217,181,47,.32); background: linear-gradient(112deg, #0a1736 0%, #14245a 58%, #0d6c58 145%) !important; }
+.lsa-shell-header { position: relative; display: block !important; min-height: 150px !important; height: auto !important; padding: 0 clamp(22px,3vw,52px) !important; box-sizing: border-box; overflow: visible; isolation: isolate; border-bottom: 1px solid rgba(217,181,47,.32); background: #0d1a3f !important; }
 .lsa-shell-header::before { position: absolute; z-index: -1; top: -120px; left: 50%; width: 420px; height: 260px; border-radius: 50%; background: radial-gradient(ellipse,rgba(217,181,47,.12),transparent 68%); content: ""; transform: translateX(-50%); }
 .lsa-shell-header::after { position: absolute; right: 30px; bottom: 0; left: 30px; height: 1px; background: linear-gradient(90deg, transparent, rgba(217,181,47,.72), transparent); content: ""; }
-.lsa-shell-header__inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(240px,1fr) auto minmax(240px,1fr); min-height: 96px; align-items: center; width: min(100%,1540px); margin: 0 auto; direction: ltr; }
+.lsa-shell-header__inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(240px,1fr) auto minmax(240px,1fr); min-height: 150px; align-items: center; width: min(100%,1540px); margin: 0 auto; direction: ltr; }
 .lsa-shell-header #branding { grid-column: 2; position: static; display: flex; justify-content: center; transform: none; }
 .lsa-admin-brand { display: flex; align-items: center; }
-.lsa-admin-brand__logo { display: block; width: clamp(220px,18vw,286px); padding: 0; line-height: 0; }
-.lsa-admin-page-title { grid-column: 3; justify-self: end; display: grid; gap: 5px; color: #fff; line-height: 1; direction: rtl; text-align: right; }
-.lsa-admin-page-title span { color: #d9b56d; font-size: 9px; font-weight: 800; letter-spacing: .08em; }
-.lsa-admin-page-title strong { font-size: 16px; font-weight: 800; }
+.lsa-admin-brand__logo { display: inline-flex; width: clamp(360px,46vw,640px); height: 150px; align-items: center; justify-content: center; gap: 18px; overflow: clip; color: #fff !important; text-decoration: none; }
+.lsa-admin-brand__logo span { color: #fff; font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif; font-size: clamp(38px,4vw,58px); font-weight: 600; letter-spacing: 1.2px; line-height: 72px; white-space: nowrap; }
+.lsa-admin-brand__logo img { display: block; width: 116px; height: 116px; flex: 0 0 116px; max-width: none; }
 .lsa-primary-nav { display: flex; align-items: center; gap: 3px; margin-inline: clamp(18px, 3vw, 48px) auto; }
 .lsa-primary-nav a { position: relative; padding: 11px 12px; color: #cbd9d5 !important; border-radius: 9px; font-size: 11px; font-weight: 700; }
 .lsa-primary-nav a:hover { color: #fff !important; background: rgba(255,255,255,.07); }
-.lsa-header-utilities { grid-column: 1; justify-self: start; display: flex; align-items: center; gap: 10px; direction: ltr; }
-.lsa-header-actions { position: static; display: flex; align-items: center; gap: 9px; }
+.lsa-header-utilities { display: contents; }
+.lsa-header-actions { grid-column: 1; justify-self: start; position: static; display: flex; align-items: center; gap: 9px; direction: ltr; }
+.lsa-admin-language { grid-column: 3; justify-self: end; }
 .lsa-booking-action { display: flex; min-height: 38px; align-items: center; padding: 0 14px; color: #1d342b !important; border-radius: 10px; background: linear-gradient(135deg,#e1c789,#c59d53); font-size: 11px; font-weight: 800; }
 .lsa-booking-action:hover { filter: brightness(1.05); }
 .lsa-icon-action,.lsa-command__trigger { display: flex; align-items: center; justify-content: center; min-height: 38px; color: #dce6e2 !important; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; background: rgba(255,255,255,.045); }
@@ -443,13 +442,13 @@ html.lsa-command-open body { overflow: hidden; }
   #changelist-filter { position: static; width: auto; margin-top: 14px; }
 }
 @media (max-width: 767px) {
-  .lsa-shell-header { min-height: 78px !important; padding: 0 14px !important; }
+  .lsa-shell-header { min-height: 116px !important; padding: 0 14px !important; }
   .lsa-shell-header::after { right: 14px; left: 14px; }
-  .lsa-shell-header__inner { grid-template-columns: minmax(44px,1fr) auto minmax(44px,1fr); min-height: 78px; }
-  .lsa-admin-brand__logo { width: clamp(154px,44vw,188px); }
-  .lsa-admin-page-title { display: none; }
+  .lsa-shell-header__inner { grid-template-columns: minmax(44px,1fr) auto minmax(44px,1fr); min-height: 116px; }
+  .lsa-admin-brand__logo { width: clamp(176px,54vw,250px); height: 116px; gap: 7px; }
+  .lsa-admin-brand__logo span { font-size: clamp(25px,7vw,34px); letter-spacing: .6px; line-height: 1; }
+  .lsa-admin-brand__logo img { width: clamp(48px,14vw,70px); height: clamp(48px,14vw,70px); flex-basis: clamp(48px,14vw,70px); }
   .lsa-primary-nav,.lsa-booking-action,.lsa-icon-action { display: none; }
-  .lsa-header-utilities { display: contents; }
   .lsa-header-actions { grid-column: 1; justify-self: start; gap: 8px; }
   .lsa-admin-language { grid-column: 3; justify-self: end; }
   .lsa-admin-brand__mark { width: 36px; height: 36px; font-size: 10px; }
@@ -461,7 +460,7 @@ html.lsa-command-open body { overflow: hidden; }
   .lsa-command__panel { top: 0; right: 0; width: 100vw; max-height: 100dvh; height: 100dvh; padding: 18px 14px; border: 0; border-radius: 0; transform: none; }
   .lsa-command__groups { gap: 9px; }
   .lsa-command__group { padding: 10px; }
-  .lsa-user-menu__panel { position: fixed; top: 63px; left: 10px; }
+  .lsa-user-menu__panel { position: fixed; top: 101px; left: 10px; }
   .lsa-admin-footer { display: grid; gap: 4px; padding: 16px 14px 24px; }
   .lsa-hero__actions,.lsa-page-head__actions { flex-wrap: wrap; }
   .lsa-hero__actions .lsa-btn { flex: 1 1 120px; }
@@ -555,7 +554,9 @@ body.login .lsa-shell-header__inner { display: flex; min-height: 132px; justify-
 body.login .lsa-admin-page-title { display: none; }
 body.login .lsa-shell-header #branding { display: flex; position: static; transform: none; }
 body.login .lsa-admin-brand { flex-direction: column; justify-content: center; gap: 7px; text-align: center; }
-body.login .lsa-admin-brand__logo { width: 250px; }
+body.login .lsa-admin-brand__logo { width: min(500px,70vw); height: 132px; }
+body.login .lsa-admin-brand__logo span { font-size: clamp(30px,4vw,50px); }
+body.login .lsa-admin-brand__logo img { width: 96px; height: 96px; flex-basis: 96px; }
 body.login .lsa-admin-brand__eyebrow { color: #d9b52f; font-size: 11px; letter-spacing: .08em; }
 body.login #content { display: grid; min-height: calc(100vh - 132px); box-sizing: border-box; place-items: center; padding: clamp(28px, 6vw, 72px) 18px; }
 body.login #content-main { width: min(100%, 470px); padding: clamp(24px, 5vw, 38px); box-sizing: border-box; border: 1px solid rgba(199,161,91,.4); border-radius: 22px; background: rgba(255,253,248,.96); box-shadow: 0 24px 65px rgba(13,26,63,.15); direction: rtl; }
@@ -569,7 +570,7 @@ body.login #content-main .submit-row input:hover { background: #0d1a3f; }
 body.login #content-main .password-reset-link { margin: -4px 0 0; font-size: 12px; }
 body.login #content-main .password-reset-link a { color: #0d6c58; }
 body.login .errornote { border-radius: 10px; }
-@media (max-width: 767px) { .lsa-admin-brand__eyebrow { display: none; } body.login .lsa-shell-header__inner { min-height: 106px; } body.login #header,body.login .lsa-shell-header { min-height: 106px !important; } body.login .lsa-admin-brand__logo { width: 205px; } body.login .lsa-admin-brand__eyebrow { display: block; font-size: 10px; } body.login #content { min-height: calc(100vh - 106px); padding: 28px 14px; } body.login #content-main { border-radius: 18px; } }
+@media (max-width: 767px) { .lsa-admin-brand__eyebrow { display: none; } body.login .lsa-shell-header__inner { min-height: 106px; } body.login #header,body.login .lsa-shell-header { min-height: 106px !important; } body.login .lsa-admin-brand__logo { width: 205px; height: 106px; gap: 4px; } body.login .lsa-admin-brand__logo span { font-size: 22px; } body.login .lsa-admin-brand__logo img { width: 48px; height: 48px; flex-basis: 48px; } body.login .lsa-admin-brand__eyebrow { display: block; font-size: 10px; } body.login #content { min-height: calc(100vh - 106px); padding: 28px 14px; } body.login #content-main { border-radius: 18px; } }
 
 /* The owner console is Arabic-only; this is a quiet language indicator, not a
    control that suggests an untranslated operation screen is available. */

@@ -16,13 +16,11 @@
 {% block header %}
   <header id="header" class="lsa-shell-header">
     <div class="lsa-shell-header__inner" dir="rtl">
-      <div class="lsa-admin-page-title" aria-current="page">
-        <span>مساحة الإدارة</span>
-        <strong>إدارة الحجوزات</strong>
-      </div>
       <div id="branding" class="lsa-admin-brand">
         <a href="{% url 'notifications:hub' %}" class="lsa-admin-brand__logo" aria-label="Luxury Living · إدارة الحجوزات">
-          <img src="{% static 'images/brand/luxury-living-lockup-dark.svg' %}" alt="Luxury Living">
+          <span aria-hidden="true">LUXURY</span>
+          <img src="{% static 'images/brand/luxury-living-monogram-ll-dark.svg' %}" alt="">
+          <span aria-hidden="true">LIVING</span>
         </a>
       </div>
 
