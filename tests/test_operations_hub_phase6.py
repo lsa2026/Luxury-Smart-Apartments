@@ -34,4 +34,4 @@ def test_operations_hub_is_private_and_does_not_call_providers(db):
     assert "إدارة الحجوزات" in content
     assert "إنشاء حجز جديد" in content
     assert "البحث عن حجز" in content
-    assert "إدارة الإلغاءات" in content
+    assert "الحجوزات المدفوعة، المؤكدة بانتظار الدفع، والملغاة." in content

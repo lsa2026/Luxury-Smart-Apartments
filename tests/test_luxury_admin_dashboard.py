@@ -23,7 +23,9 @@ def test_administration_landing_opens_focused_booking_workspace(client, django_u
     assert "luxury-living-lockup-dark.svg" in body
     assert "إدارة الحجوزات" in body
     assert "إنشاء حجز جديد" in body
-    assert "إدارة الإلغاءات" in body
+    assert "الحجوزات المدفوعة، المؤكدة بانتظار الدفع، والملغاة." in body
+    assert "lsa-header-utilities" in body
+    assert "lsa-user-menu__menu-icon" in body
     assert "أولويات تحتاج قرارًا" not in body
 
 
