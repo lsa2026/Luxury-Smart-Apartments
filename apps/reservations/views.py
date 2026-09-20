@@ -649,7 +649,9 @@ def _owned_modification(
     return modification
 
 
-def _private_response(response: HttpResponse) -> HttpResponse:
+def _private_response(response: HttpResponse, *, status: int | None = None) -> HttpResponse:
+    if status is not None:
+        response.status_code = status
     response["Cache-Control"] = "no-store"
     # Keep booking data private while allowing same-origin CSRF origin checks in Chrome.
     response["Referrer-Policy"] = "same-origin"

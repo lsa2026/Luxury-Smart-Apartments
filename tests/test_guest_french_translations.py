@@ -138,11 +138,6 @@ def test_language_switch_preserves_unprefixed_routes_and_french_placeholders():
 
 
 @pytest.mark.django_db
-@pytest.mark.xfail(
-    strict=True,
-    raises=TypeError,
-    reason="Existing invalid access POST passes status to _private_response; fix pending approval.",
-)
 def test_invalid_access_post_returns_validation_page_not_server_error():
     client = Client()
     client.cookies[settings.LANGUAGE_COOKIE_NAME] = "fr"
