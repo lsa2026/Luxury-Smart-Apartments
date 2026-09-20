@@ -15,6 +15,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy
 from django.views import View
 
 from apps.payments.currency import selected_currency
@@ -54,8 +55,8 @@ from .services.availability import (
     resolve_day_inventory,
 )
 from .services.booking import consume_revalidated_quote
-from .services.modifications import ModificationService
 from .services.host_policy import check_in_datetime
+from .services.modifications import ModificationService
 from .services.refunds import cancellation_refund
 from .services.stay_policy import stay_policy_for
 from .signing import (
@@ -993,36 +994,38 @@ class ReservationManageView(View):
 # What the guest is told when a change request is refused. Anything absent falls
 # back to the neutral sentence below, so a new internal code never leaks out.
 MODIFICATION_REFUSAL_MESSAGES = {
-    "minimum_stay_not_met": _(
+    "minimum_stay_not_met": gettext_lazy(
         "The stay would be shorter than the minimum nights this property allows."
     ),
-    "maximum_stay_exceeded": _(
+    "maximum_stay_exceeded": gettext_lazy(
         "The stay would be longer than the maximum nights this property allows."
     ),
-    "same_day_change_not_allowed": _("This property does not accept a stay that starts today."),
-    "arrival_lead_time_not_met": _(
+    "same_day_change_not_allowed": gettext_lazy(
+        "This property does not accept a stay that starts today."
+    ),
+    "arrival_lead_time_not_met": gettext_lazy(
         "This change is too close to the arrival time to be requested online."
     ),
-    "closed_on_arrival": _("The property does not accept arrivals on that date."),
-    "closed_on_departure": _("The property does not accept departures on that date."),
-    "capacity_exceeded": _("The guest count exceeds this property's capacity."),
-    "unavailable_dates": _("The requested dates are no longer available."),
-    "inventory_conflict": _("The requested dates are no longer available."),
-    "past_check_in": _("Check-in cannot be in the past."),
-    "invalid_dates": _("The stay dates are invalid."),
-    "extension_must_add_nights": _("An extension has to add at least one night."),
-    "extension_limit_exceeded": _("This extension is longer than we can take online."),
-    "hostaway_temporarily_unavailable": _(
+    "closed_on_arrival": gettext_lazy("The property does not accept arrivals on that date."),
+    "closed_on_departure": gettext_lazy("The property does not accept departures on that date."),
+    "capacity_exceeded": gettext_lazy("The guest count exceeds this property's capacity."),
+    "unavailable_dates": gettext_lazy("The requested dates are no longer available."),
+    "inventory_conflict": gettext_lazy("The requested dates are no longer available."),
+    "past_check_in": gettext_lazy("Check-in cannot be in the past."),
+    "invalid_dates": gettext_lazy("The stay dates are invalid."),
+    "extension_must_add_nights": gettext_lazy("An extension has to add at least one night."),
+    "extension_limit_exceeded": gettext_lazy("This extension is longer than we can take online."),
+    "hostaway_temporarily_unavailable": gettext_lazy(
         "Live availability could not be reached. Please try again shortly."
     ),
-    "pricing_unavailable": _("A price for these dates could not be prepared."),
-    "cancellation_requests_disabled": _(
+    "pricing_unavailable": gettext_lazy("A price for these dates could not be prepared."),
+    "cancellation_requests_disabled": gettext_lazy(
         "Cancellation requests are unavailable right now. Please contact guest support."
     ),
-    "cancellation_after_check_in_not_allowed": _(
+    "cancellation_after_check_in_not_allowed": gettext_lazy(
         "This booking can no longer be cancelled online because the stay has started."
     ),
-    "external_channel_requires_admin": _(
+    "external_channel_requires_admin": gettext_lazy(
         "Please complete changes through the booking platform or contact management."
     ),
 }

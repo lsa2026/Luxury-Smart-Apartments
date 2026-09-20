@@ -18,6 +18,61 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
+#. Guest account and booking-management copy.
+msgid "Guest profile"
+msgstr "ملف الضيف"
+
+msgid "Your details and home address"
+msgstr "بياناتك ومكان إقامتك"
+
+msgid "Keep your details up to date for your bookings and future services."
+msgstr "حدّث بياناتك لتبقى حجوزاتك وخدماتك المستقبلية في مكان واحد."
+
+msgid "Your sign-in email is protected; changing it requires verifying the new address."
+msgstr "بريد الدخول محمي؛ يتطلب تغييره التحقق من البريد الجديد."
+
+msgid "Save my details"
+msgstr "حفظ بياناتي"
+
+msgid "Loyalty programme coming soon"
+msgstr "برنامج الولاء قريبًا"
+
+msgid "Loyalty programme"
+msgstr "برنامج الولاء"
+
+msgid "Your rewards and benefits will be based on confirmed stays. No points or discounts are awarded before the programme launches."
+msgstr "سيُبنى رصيدك ومزاياك على إقاماتك المؤكدة. لا توجد نقاط أو خصومات صورية قبل إطلاق البرنامج."
+
+msgid "Your stays"
+msgstr "إقاماتك"
+
+msgid "Upcoming and current bookings"
+msgstr "الحجوزات القادمة والحالية"
+
+msgid "No upcoming stay"
+msgstr "لا توجد إقامة قادمة"
+
+msgid "Bookings made with your account appear here automatically."
+msgstr "تظهر الحجوزات التي تُنشأ بحسابك هنا تلقائيًا."
+
+msgid "History"
+msgstr "السجل"
+
+msgid "Past stays"
+msgstr "الإقامات السابقة"
+
+msgid "No completed stays yet."
+msgstr "لا توجد إقامات مكتملة بعد."
+
+msgid "Cancelled bookings"
+msgstr "الحجوزات الملغاة"
+
+msgid "No cancelled bookings."
+msgstr "لا توجد حجوزات ملغاة."
+
+msgid "Use your last name and mobile number to receive a secure link at your booking email address."
+msgstr "أدخل اسم العائلة ورقم الجوال لتصلك رسالة برابط آمن على بريد الحجز."
+
 #: .\apps\accounts\apps.py:8
 msgid "Accounts"
 msgstr "الحسابات"

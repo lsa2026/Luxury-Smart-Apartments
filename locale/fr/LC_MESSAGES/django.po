@@ -18,6 +18,172 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
+#. Guest account and booking-management copy.
+msgid "Guest profile"
+msgstr "Profil du voyageur"
+
+msgid "Your details and home address"
+msgstr "Vos coordonnées et votre adresse"
+
+msgid "Keep your details up to date for your bookings and future services."
+msgstr "Mettez vos coordonnées à jour pour vos réservations et vos futurs services."
+
+msgid "Your sign-in email is protected; changing it requires verifying the new address."
+msgstr "Votre adresse e-mail de connexion est protégée ; toute modification nécessite la vérification de la nouvelle adresse."
+
+msgid "Save my details"
+msgstr "Enregistrer mes coordonnées"
+
+msgid "Loyalty programme coming soon"
+msgstr "Programme de fidélité bientôt disponible"
+
+msgid "Loyalty programme"
+msgstr "Programme de fidélité"
+
+msgid "Your rewards and benefits will be based on confirmed stays. No points or discounts are awarded before the programme launches."
+msgstr "Vos récompenses et avantages seront liés à vos séjours confirmés. Aucun point ni aucune réduction ne sont attribués avant le lancement du programme."
+
+msgid "Your stays"
+msgstr "Vos séjours"
+
+msgid "Upcoming and current bookings"
+msgstr "Réservations à venir et en cours"
+
+msgid "No upcoming stay"
+msgstr "Aucun séjour à venir"
+
+msgid "Bookings made with your account appear here automatically."
+msgstr "Les réservations effectuées avec votre compte apparaissent ici automatiquement."
+
+msgid "History"
+msgstr "Historique"
+
+msgid "Past stays"
+msgstr "Séjours passés"
+
+msgid "No completed stays yet."
+msgstr "Aucun séjour terminé pour le moment."
+
+msgid "Cancelled bookings"
+msgstr "Réservations annulées"
+
+msgid "No cancelled bookings."
+msgstr "Aucune réservation annulée."
+
+msgid "Use your last name and mobile number to receive a secure link at your booking email address."
+msgstr "Saisissez votre nom de famille et votre numéro de mobile pour recevoir un lien sécurisé à l’adresse e-mail utilisée lors de la réservation."
+
+msgid "Create your account once, then confirm your email with a simple code."
+msgstr "Créez votre compte, puis confirmez votre adresse e-mail à l’aide d’un code."
+
+msgid "It takes a minute. We will verify your email with a six-digit code."
+msgstr "Cela ne prend qu’une minute. Nous vérifierons votre adresse e-mail à l’aide d’un code à six chiffres."
+
+msgid "Test booking — no live booking"
+msgstr "Réservation de test — aucune réservation réelle"
+
+msgid "Other secure sign-in options"
+msgstr "Autres options de connexion sécurisée"
+
+msgid "Or continue with"
+msgstr "Ou continuer avec"
+
+msgid "Continue with Google"
+msgstr "Continuer avec Google"
+
+msgid "Continue with Apple"
+msgstr "Continuer avec Apple"
+
+msgid "A provider confirms your identity; it never grants administrative access on its own."
+msgstr "Le fournisseur confirme votre identité ; cela ne confère jamais, à lui seul, un accès à l’administration."
+
+msgid "This is a local test record. No live reservation or change was created."
+msgstr "Il s’agit d’un test local. Aucune réservation ni modification réelle n’a été effectuée."
+
+msgid "Cancel securely and return any eligible refund"
+msgstr "Annuler en toute sécurité et obtenir le remboursement éventuel"
+
+msgid "For this launch period, you may cancel before check-in for a full refund to your original payment method."
+msgstr "Pendant cette période de lancement, vous pouvez annuler avant l’arrivée et obtenir un remboursement intégral sur votre moyen de paiement initial."
+
+msgid "Cancel booking and process refund"
+msgstr "Annuler la réservation et procéder au remboursement"
+
+msgid "The eligible refund is %(amount)s %(currency)s and is returned to the original payment method after the cancellation is confirmed."
+msgstr "Le montant remboursable est de %(amount)s %(currency)s. Il sera reversé sur le moyen de paiement initial après confirmation de l’annulation."
+
+msgid "Booking cancelled"
+msgstr "Réservation annulée"
+
+msgid "Your cancellation was confirmed in the reservation system."
+msgstr "Votre annulation a été confirmée dans le système de réservation."
+
+msgid "Refund status"
+msgstr "État du remboursement"
+
+msgid "Pay the difference locally without financial or live-booking activity."
+msgstr "Testez le paiement de la différence en local, sans transaction financière ni réservation réelle."
+
+msgid "%(amount)s %(currency)s · %(status)s"
+msgstr "%(amount)s %(currency)s · %(status)s"
+
+msgid "Residence address"
+msgstr "Adresse de résidence"
+
+msgid "Region"
+msgstr "Région"
+
+msgid "Country of residence"
+msgstr "Pays de résidence"
+
+msgid "This business address signs in through the secure owner verification route."
+msgstr "Cette adresse professionnelle utilise la procédure de connexion sécurisée réservée au propriétaire."
+
+msgid "Enter the six-digit code from your email."
+msgstr "Saisissez le code à six chiffres reçu par e-mail."
+
+msgid "Enter a valid mobile number in international format, starting with +."
+msgstr "Saisissez un numéro de mobile valide au format international, commençant par +."
+
+msgid "For example: +966 50 000 0000"
+msgstr "Par exemple : +966 50 000 0000"
+
+msgid "Your guest profile has been saved."
+msgstr "Votre profil voyageur a été enregistré."
+
+msgid "Enter a valid international phone number."
+msgstr "Saisissez un numéro de téléphone international valide."
+
+msgid "As entered when booking"
+msgstr "Tel qu’indiqué lors de la réservation"
+
+msgid "This booking can no longer be cancelled online because the stay has started."
+msgstr "Cette réservation ne peut plus être annulée en ligne, car le séjour a commencé."
+
+msgid "If the details match a booking, a secure link will arrive shortly."
+msgstr "Si les informations correspondent à une réservation, vous recevrez prochainement un lien sécurisé."
+
+msgid "This secure link is no longer valid. Request a new one."
+msgstr "Ce lien sécurisé n’est plus valide. Demandez-en un nouveau."
+
+msgid "The cancellation could not be completed. Your booking has not been changed."
+msgstr "L’annulation n’a pas pu être effectuée. Votre réservation n’a pas été modifiée."
+
+msgid "Your booking was cancelled and your refund was sent to the original payment method."
+msgstr "Votre réservation a été annulée et votre remboursement a été envoyé vers le moyen de paiement initial."
+
+msgid "Your booking was cancelled and your refund has been submitted to the payment provider."
+msgstr "Votre réservation a été annulée et votre demande de remboursement a été transmise au prestataire de paiement."
+
+msgid "Your booking was cancelled. The refund needs a final review before it can be sent."
+msgstr "Votre réservation a été annulée. Le remboursement nécessite une dernière vérification avant son envoi."
+
+msgid "I understand that the booking will be cancelled and any eligible refund will be returned to the original payment method."
+msgstr "Je comprends que la réservation sera annulée et que tout montant remboursable sera reversé sur le moyen de paiement initial."
+
+msgid "Processing with payment provider"
+msgstr "En cours de traitement auprès du prestataire de paiement"
+
 #: .\apps\accounts\apps.py:8
 msgid "Accounts"
 msgstr "Comptes"
@@ -79,26 +245,17 @@ msgstr "Centre clients"
 msgid "Customer profiles"
 msgstr "Clients"
 
-#: .\apps\accounts\password_reset.py:47
-#, fuzzy
-#| msgid "Show password"
 msgid "New password"
-msgstr "Afficher le mot de passe"
+msgstr "Nouveau mot de passe"
 
-#: .\apps\accounts\password_reset.py:48
-#, fuzzy
-#| msgid "Change password"
 msgid "Confirm the new password"
-msgstr "Changer le mot de passe"
+msgstr "Confirmer le nouveau mot de passe"
 
-#: .\apps\accounts\views.py:55
-#, python-format
 msgid "Booking %(reference)s is now saved to your account."
-msgstr ""
+msgstr "La réservation %(reference)s est maintenant enregistrée dans votre compte."
 
-#: .\apps\accounts\views.py:111
 msgid "Your account is ready. Check your inbox to confirm your email address."
-msgstr ""
+msgstr "Votre compte est prêt. Consultez votre boîte de réception pour confirmer votre adresse e-mail."
 
 #: .\apps\accounts\views.py:113
 msgid "Your account is ready."
@@ -112,21 +269,14 @@ msgstr "Heureux de vous revoir."
 msgid "You have signed out securely."
 msgstr "Vous avez été déconnecté en toute sécurité."
 
-#: .\apps\accounts\views.py:188 .\apps\accounts\views.py:199
-#, fuzzy
-#| msgid "This quote is no longer valid. Please request a new one."
 msgid "This confirmation link is no longer valid. Request a new one."
-msgstr "Ce devis n’est plus valide. Veuillez en demander un nouveau."
+msgstr "Ce lien de confirmation n’est plus valide. Demandez-en un nouveau."
 
-#: .\apps\accounts\views.py:207
-#, fuzzy
-#| msgid "Creation result unconfirmed"
 msgid "Your email address is confirmed."
-msgstr "Résultat de création non confirmé"
+msgstr "Votre adresse e-mail est confirmée."
 
-#: .\apps\accounts\views.py:236
 msgid "You have asked for several links recently. Please wait a few minutes."
-msgstr ""
+msgstr "Vous avez demandé plusieurs liens récemment. Veuillez patienter quelques minutes."
 
 #: .\apps\accounts\views.py:240
 msgid "A new confirmation email is on its way."
@@ -3257,8 +3407,6 @@ msgid "Transferred"
 msgstr "Viré"
 
 #: .\apps\reservations\models.py:806
-#, fuzzy
-#| msgid "Cancelled"
 msgctxt "RefundObligation"
 msgid "Cancelled"
 msgstr "Annulée"
@@ -3389,9 +3537,6 @@ msgstr "Le logement n'accepte pas d'arrivée à cette date."
 msgid "The property does not accept departures on that date."
 msgstr "Le logement n'accepte pas de départ à cette date."
 
-#: .\apps\reservations\views.py:764
-#, fuzzy
-#| msgid "Guest count exceeds this property's capacity."
 msgid "The guest count exceeds this property's capacity."
 msgstr "Le nombre de voyageurs dépasse la capacité de ce logement."
 
@@ -3522,19 +3667,15 @@ msgstr "Riyad"
 msgid "Marrakech"
 msgstr "Marrakech"
 
-#: .\templates\accounts\_auth_base.html:29
-#, fuzzy
-#| msgid "Create your account"
 msgid "Your account"
-msgstr "Créez votre compte"
+msgstr "Votre compte"
 
 #: .\templates\accounts\_auth_base.html:30 .\templates\accounts\login.html:34
 msgid "Your bookings, in one place"
 msgstr "Toutes vos réservations au même endroit"
 
-#: .\templates\accounts\_auth_base.html:31
 msgid "Follow your stay, change your dates, and book faster next time."
-msgstr ""
+msgstr "Consultez votre séjour, modifiez vos dates et réservez plus rapidement la prochaine fois."
 
 #: .\templates\accounts\_auth_base.html:34 .\templates\accounts\login.html:68
 #: .\templates\accounts\register.html:68
@@ -3587,7 +3728,6 @@ msgstr "Gérer la réservation"
 msgid "No bookings yet"
 msgstr "Aucune réservation pour le moment"
 
-#: .\templates\accounts\dashboard.html:38
 msgid "Your next stay starts here"
 msgstr "Votre prochain séjour commence ici"
 
@@ -3703,162 +3843,86 @@ msgstr "Première visite ?"
 msgid "Create account"
 msgstr "Créer un compte"
 
-#: .\templates\accounts\password_reset.html:3
-#: .\templates\accounts\password_reset.html:8
-#, fuzzy
-#| msgid "Forgot your password?"
 msgid "Reset your password"
-msgstr "Mot de passe oublié ?"
+msgstr "Réinitialiser votre mot de passe"
 
-#: .\templates\accounts\password_reset.html:4
-#: .\templates\accounts\password_reset_confirm.html:4
-#: .\templates\accounts\password_reset_done.html:4
 msgid "Account recovery"
-msgstr ""
+msgstr "Récupération du compte"
 
-#: .\templates\accounts\password_reset.html:5
-#, fuzzy
-#| msgid "Back to my booking"
 msgid "Back to your bookings"
-msgstr "Retour à ma réservation"
+msgstr "Retrouvez vos réservations"
 
-#: .\templates\accounts\password_reset.html:6
-msgid ""
-"Give us the email you booked with and we will send a link to set a new "
-"password."
-msgstr ""
+msgid "Give us the email you booked with and we will send a link to set a new password."
+msgstr "Indiquez l’adresse e-mail utilisée lors de la réservation. Nous vous enverrons un lien pour définir un nouveau mot de passe."
 
-#: .\templates\accounts\password_reset.html:7
-#: .\templates\accounts\password_reset_complete.html:7
-#: .\templates\accounts\password_reset_confirm.html:7
-#: .\templates\accounts\password_reset_done.html:7
-#, fuzzy
-#| msgid "Show password"
 msgid "Password"
-msgstr "Afficher le mot de passe"
+msgstr "Mot de passe"
 
-#: .\templates\accounts\password_reset.html:9
 msgid "Enter your email address and we will send you a link."
-msgstr ""
+msgstr "Saisissez votre adresse e-mail pour recevoir un lien."
 
-#: .\templates\accounts\password_reset.html:21
-#, fuzzy
-#| msgid "Short link"
 msgid "Send the link"
-msgstr "Lien court"
+msgstr "Envoyer le lien"
 
-#: .\templates\accounts\password_reset.html:26
-#: .\templates\accounts\password_reset_done.html:16
-#, fuzzy
-#| msgid "Back to diagnostics"
 msgid "Back to sign in"
-msgstr "Retour au diagnostic"
+msgstr "Retour à la connexion"
 
-#: .\templates\accounts\password_reset_complete.html:3
-#, fuzzy
-#| msgctxt "admin field label"
-#| msgid "Last updated"
 msgid "Password updated"
-msgstr "Dernière mise à jour"
+msgstr "Mot de passe mis à jour"
 
-#: .\templates\accounts\password_reset_complete.html:4
-#, fuzzy
-#| msgid "All severities"
 msgid "All set"
-msgstr "Tous les niveaux de priorité"
+msgstr "Tout est prêt"
 
-#: .\templates\accounts\password_reset_complete.html:5
-#: .\templates\accounts\password_reset_complete.html:8
-#, fuzzy
-#| msgid "Your price quote"
 msgid "Your password is updated"
-msgstr "Votre devis"
+msgstr "Votre mot de passe a été mis à jour"
 
-#: .\templates\accounts\password_reset_complete.html:6
-#, fuzzy
-#| msgid "Open your bookings from anywhere, in your language."
 msgid "Sign in and your bookings are waiting where you left them."
-msgstr "Consultez vos réservations partout, dans votre langue."
+msgstr "Connectez-vous pour retrouver vos réservations."
 
-#: .\templates\accounts\password_reset_complete.html:9
 msgid "You can sign in with your new password now."
-msgstr ""
+msgstr "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
 
-#: .\templates\accounts\password_reset_confirm.html:3
-#: .\templates\accounts\password_reset_confirm.html:8
-#, fuzzy
-#| msgid "Change password"
 msgid "Set a new password"
-msgstr "Changer le mot de passe"
+msgstr "Définir un nouveau mot de passe"
 
-#: .\templates\accounts\password_reset_confirm.html:5
-#, fuzzy
-#| msgid "Change password"
 msgid "Choose a new password"
-msgstr "Changer le mot de passe"
+msgstr "Choisir un nouveau mot de passe"
 
-#: .\templates\accounts\password_reset_confirm.html:6
-msgid ""
-"Pick something long and unique. A password manager remembers it for you."
-msgstr ""
+msgid "Pick something long and unique. A password manager remembers it for you."
+msgstr "Choisissez un mot de passe long et unique. Un gestionnaire de mots de passe peut le mémoriser pour vous."
 
-#: .\templates\accounts\password_reset_confirm.html:8
-#, fuzzy
-#| msgid "This field is required."
 msgid "This link has expired"
-msgstr "Ce champ est obligatoire."
+msgstr "Ce lien a expiré"
 
-#: .\templates\accounts\password_reset_confirm.html:9
-#, fuzzy
-#| msgid "Choose the new departure day for your extended stay"
 msgid "Choose a new password for your account."
-msgstr "Choisissez le nouveau jour de départ pour prolonger votre séjour"
+msgstr "Choisissez un nouveau mot de passe pour votre compte."
 
-#: .\templates\accounts\password_reset_confirm.html:9
-msgid ""
-"For your safety a reset link can be used only once, and only for a short "
-"time."
-msgstr ""
+msgid "For your safety a reset link can be used only once, and only for a short time."
+msgstr "Pour votre sécurité, un lien de réinitialisation n’est utilisable qu’une seule fois et pendant une durée limitée."
 
-#: .\templates\accounts\password_reset_confirm.html:59
-#, fuzzy
-#| msgid "Show password"
 msgid "Save the new password"
-msgstr "Afficher le mot de passe"
+msgstr "Enregistrer le nouveau mot de passe"
 
-#: .\templates\accounts\password_reset_confirm.html:64
 msgid "Request a fresh link and it will arrive within a minute."
-msgstr ""
+msgstr "Demandez un nouveau lien ; il vous parviendra sous une minute."
 
-#: .\templates\accounts\password_reset_confirm.html:67
-#, fuzzy
-#| msgid "Request cancellation"
 msgid "Request a new link"
-msgstr "Demander l’annulation"
+msgstr "Demander un nouveau lien"
 
-#: .\templates\accounts\password_reset_done.html:3
-#: .\templates\accounts\password_reset_done.html:8
-#: .\templates\accounts\verify_pending.html:8
 msgid "Check your inbox"
-msgstr ""
+msgstr "Consultez votre boîte de réception"
 
-#: .\templates\accounts\password_reset_done.html:5
 msgid "The link is on its way"
-msgstr ""
+msgstr "Le lien est en cours d’envoi"
 
-#: .\templates\accounts\password_reset_done.html:6
 msgid "Open it from any device; it works wherever you read your email."
-msgstr ""
+msgstr "Ouvrez-le sur l’appareil de votre choix, depuis votre messagerie."
 
-#: .\templates\accounts\password_reset_done.html:9
-msgid ""
-"If an account exists for that address, a link to set a new password is on "
-"its way."
-msgstr ""
+msgid "If an account exists for that address, a link to set a new password is on its way."
+msgstr "Si un compte est associé à cette adresse, un lien pour définir un nouveau mot de passe est en cours d’envoi."
 
-#: .\templates\accounts\password_reset_done.html:12
 msgid "The link expires shortly for your safety. Ask for another if it lapses."
-msgstr ""
+msgstr "Pour votre sécurité, le lien expire rapidement. Demandez-en un nouveau si nécessaire."
 
 #: .\templates\accounts\register.html:33
 msgid "Your private space"
@@ -3904,27 +3968,17 @@ msgstr "Qui séjourne"
 msgid "Already have an account?"
 msgstr "Vous avez déjà un compte ?"
 
-#: .\templates\accounts\verify_pending.html:3
-#, fuzzy
-#| msgid "Confirmation"
 msgid "Confirm your email"
-msgstr "Confirmation"
+msgstr "Confirmez votre adresse e-mail"
 
-#: .\templates\accounts\verify_pending.html:4
 msgid "One step left"
-msgstr ""
+msgstr "Encore une étape"
 
-#: .\templates\accounts\verify_pending.html:5
-#, fuzzy
-#| msgid "Email address"
 msgid "Confirm your email address"
-msgstr "Adresse e-mail"
+msgstr "Confirmez votre adresse e-mail"
 
-#: .\templates\accounts\verify_pending.html:6
-msgid ""
-"A confirmed address is how we send your booking details and how you recover "
-"your account."
-msgstr ""
+msgid "A confirmed address is how we send your booking details and how you recover your account."
+msgstr "Une adresse e-mail vérifiée permet de recevoir les détails de vos réservations et de récupérer votre compte."
 
 #: .\templates\accounts\verify_pending.html:7
 #: .\templates\includes\progress_indicator.html:8
@@ -3948,11 +4002,8 @@ msgstr ""
 msgid "Send the link again"
 msgstr "Ouvrir l’élément lié ←"
 
-#: .\templates\accounts\verify_pending.html:23
-#, fuzzy
-#| msgid "Continue booking"
 msgid "Continue to my bookings"
-msgstr "Poursuivre la réservation"
+msgstr "Accéder à mes réservations"
 
 #: .\templates\admin\base_site.html:4
 msgid "Luxury Smart Apartments administration"
