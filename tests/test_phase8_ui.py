@@ -235,9 +235,9 @@ def test_currency_selector_marks_the_persisted_currency_as_current() -> None:
 @pytest.mark.parametrize(
     ("language", "expected"),
     [
-        ("ar", [("", "كل المدن"), ("Riyadh", "الرياض"), ("Marrakesh", "مراكش")]),
-        ("en", [("", "All cities"), ("Riyadh", "Riyadh"), ("Marrakesh", "Marrakech")]),
-        ("fr", [("", "Toutes les villes"), ("Riyadh", "Riyad"), ("Marrakesh", "Marrakech")]),
+        ("ar", [("", "كل المدن"), ("Riyadh", "الرياض"), ("Marrakech", "مراكش")]),
+        ("en", [("", "All cities"), ("Riyadh", "Riyadh"), ("Marrakech", "Marrakech")]),
+        ("fr", [("", "Toutes les villes"), ("Riyadh", "Riyad"), ("Marrakech", "Marrakech")]),
     ],
 )
 def test_availability_filter_has_only_supported_cities(
@@ -273,9 +273,16 @@ def test_availability_filter_exposes_city_capacity_and_readable_dates() -> None:
     content = Client().get("/ar/").content.decode()
 
     assert f'value="{riyadh.pk}" data-city="Riyadh" data-capacity="4"' in content
-    assert f'value="{marrakech.pk}" data-city="Marrakesh" data-capacity="4"' in content
+    assert f'value="{marrakech.pk}" data-city="Marrakech" data-capacity="4"' in content
     assert content.count('type="date"') == 2
     assert content.count('dir="ltr" lang="en-CA"') == 2
+
+
+def test_marrakech_links_use_the_public_spelling() -> None:
+    content = Client().get("/en/").content.decode()
+
+    assert "?city=Marrakech" in content
+    assert "?city=Marrakesh" not in content
 
 
 @pytest.mark.parametrize(

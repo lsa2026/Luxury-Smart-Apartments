@@ -379,7 +379,7 @@ def make_hero_image(
 def test_home_page_shows_the_nominated_photo_for_each_city() -> None:
     riyadh = make_property(101)
     marrakesh = make_property(102)
-    marrakesh.city = "Marrakesh"
+    marrakesh.city = "Marrakech"
     marrakesh.city_ar = "مراكش"
     marrakesh.save(update_fields=["city", "city_ar"])
     make_hero_image(riyadh, "https://example.invalid/riyadh-hero.jpg")

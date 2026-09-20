@@ -3,7 +3,10 @@
 from typing import Final
 
 RIYADH: Final = "Riyadh"
-MARRAKECH: Final = "Marrakesh"
+# Keep the public city code aligned with the spelling used in guest-facing copy,
+# slugs, metadata, and search URLs. ``marrakesh`` remains an accepted legacy
+# input below so old links and synced records continue to resolve safely.
+MARRAKECH: Final = "Marrakech"
 
 SUPPORTED_CITY_ROWS: Final = (
     {
@@ -31,7 +34,7 @@ _CITY_ALIASES: Final = {
     "irqah, riyad": RIYADH,
     "عرقة": RIYADH,
     "عرقة, الرياض": RIYADH,
-    # Marrakech spelling variants.
+    # Marrakech spelling variants, including the legacy spelling.
     "marrakesh": MARRAKECH,
     "marrakech": MARRAKECH,
     "مراكش": MARRAKECH,
