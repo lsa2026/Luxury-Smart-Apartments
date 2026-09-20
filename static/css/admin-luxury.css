@@ -172,7 +172,7 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-shell-header::before { position: absolute; z-index: -1; top: -120px; left: 50%; width: 420px; height: 260px; border-radius: 50%; background: radial-gradient(ellipse,rgba(217,181,47,.12),transparent 68%); content: ""; transform: translateX(-50%); }
 .lsa-shell-header::after { position: absolute; right: 30px; bottom: 0; left: 30px; height: 1px; background: linear-gradient(90deg, transparent, rgba(217,181,47,.72), transparent); content: ""; }
 .lsa-shell-header__inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(240px,1fr) auto minmax(240px,1fr); min-height: 150px; align-items: center; width: min(100%,1540px); margin: 0 auto; direction: ltr; }
-.lsa-shell-header #branding { grid-column: 2; position: static; display: flex; justify-content: center; transform: none; }
+.lsa-shell-header #branding { grid-column: 2; grid-row: 1; position: static; display: flex; justify-content: center; transform: none; }
 .lsa-admin-brand { display: flex; align-items: center; }
 .lsa-admin-brand__logo { display: inline-flex; width: clamp(360px,46vw,640px); height: 150px; align-items: center; justify-content: center; gap: 18px; overflow: clip; color: #fff !important; text-decoration: none; }
 .lsa-admin-brand__logo span { color: #fff; font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif; font-size: clamp(38px,4vw,58px); font-weight: 600; letter-spacing: 1.2px; line-height: 72px; white-space: nowrap; }
@@ -181,8 +181,8 @@ html.lsa-command-open body { overflow: hidden; }
 .lsa-primary-nav a { position: relative; padding: 11px 12px; color: #cbd9d5 !important; border-radius: 9px; font-size: 11px; font-weight: 700; }
 .lsa-primary-nav a:hover { color: #fff !important; background: rgba(255,255,255,.07); }
 .lsa-header-utilities { display: contents; }
-.lsa-header-actions { grid-column: 1; justify-self: start; position: static; display: flex; align-items: center; gap: 9px; direction: ltr; }
-.lsa-admin-language { grid-column: 3; justify-self: end; }
+.lsa-header-actions { grid-column: 1; grid-row: 1; align-self: center; justify-self: start; position: static; display: flex; align-items: center; gap: 9px; direction: ltr; }
+.lsa-admin-language { grid-column: 3; grid-row: 1; align-self: center; justify-self: end; }
 .lsa-booking-action { display: flex; min-height: 38px; align-items: center; padding: 0 14px; color: #1d342b !important; border-radius: 10px; background: linear-gradient(135deg,#e1c789,#c59d53); font-size: 11px; font-weight: 800; }
 .lsa-booking-action:hover { filter: brightness(1.05); }
 .lsa-icon-action,.lsa-command__trigger { display: flex; align-items: center; justify-content: center; min-height: 38px; color: #dce6e2 !important; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; background: rgba(255,255,255,.045); }
