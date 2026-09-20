@@ -37,7 +37,7 @@ services:
       - luxurysmartapartments.com
       - www.luxurysmartapartments.com
     healthCheckPath: /health/live/
-    buildCommand: ./build.sh
+    buildCommand: ./build.sh --require-owner-login
     startCommand: >-
       gunicorn config.wsgi:application
       --bind 0.0.0.0:$PORT
@@ -225,7 +225,8 @@ services:
       - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED
         value: "True"
       - key: GOOGLE_SIGN_IN_ENABLED
-        value: "False"
+        # Preserve the live owner-login setting across Blueprint syncs.
+        sync: false
       - key: GOOGLE_OAUTH_CLIENT_ID
         sync: false
       - key: GOOGLE_OAUTH_CLIENT_SECRET

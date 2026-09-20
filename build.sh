@@ -8,6 +8,12 @@ set -o pipefail
 pip install --upgrade pip
 pip install .
 
+# Production web must retain its only owner entrance. Run before migrations or
+# release data writes; staging and workers do not require Google credentials.
+if [[ "${1:-}" == "--require-owner-login" ]]; then
+    python manage.py check_owner_login
+fi
+
 # Compiled catalogs (.mo) are committed, so gettext is not needed at build time.
 python manage.py collectstatic --no-input
 python manage.py migrate --no-input
