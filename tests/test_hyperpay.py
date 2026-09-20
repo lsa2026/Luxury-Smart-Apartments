@@ -644,8 +644,13 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
     content = response.content.decode()
     assert response.status_code == 200
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
-    assert content.index('data-brands="MADA"') < content.index('data-brands="VISA MASTER"')
+    assert content.index('data-brands="MADA APPLEPAY"') < content.index('data-brands="VISA MASTER"')
     assert 'paymentTarget: "_top"' in content
+    assert 'displayName: "Luxury Smart Apartments"' in content
+    assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
+    assert 'countryCode: "SA"' in content
+    assert 'version: 3' in content
+    assert '-webkit-appearance: -apple-pay-button' in content
     assert 'integrity="sha384-YWJj"' in content
     assert "test-access-token-secret" not in content
     csp = response.headers["Content-Security-Policy"]
