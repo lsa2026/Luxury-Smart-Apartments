@@ -36,6 +36,11 @@ urlpatterns = [
         name="apple_pay_domain_association",
     ),
     path(
+        ".well-known/apple-developer-merchantid-domain-association",
+        apple_pay_domain_association,
+        name="apple_pay_domain_association_extensionless",
+    ),
+    path(
         "properties/search-availability/",
         AvailabilitySearchView.as_view(),
         name="legacy_search_availability",

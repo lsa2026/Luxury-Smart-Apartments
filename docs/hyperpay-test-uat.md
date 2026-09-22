@@ -114,7 +114,10 @@ HyperPay's own Apple certificates.) Add that file to the UAT Render web service
 as a Secret File named `apple_pay_domain_association`. The app serves its bytes
 unchanged at the Apple Developer verification path:
 
-`https://<uat-domain>/.well-known/apple-developer-merchantid-domain-association.txt`
+`https://<uat-domain>/.well-known/apple-developer-merchantid-domain-association`
+
+The `.txt` path is also served for compatibility with Apple's troubleshooting
+documentation and older integrations.
 
 Verify that this URL returns HTTP 200 and the exact Apple-provided body before
 testing. Never fabricate the file or use production certificates in UAT. A
