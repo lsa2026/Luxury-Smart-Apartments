@@ -5,9 +5,9 @@
 # email, webhook, or custom-domain settings.
 
 databases:
-  - name: lsa-staging-postgres
-    databaseName: lsa_staging
-    user: lsa_staging
+  - name: lsa-applepay-uat-postgres
+    databaseName: lsa_applepay_uat
+    user: lsa_applepay_uat
     plan: free
     region: frankfurt
     postgresMajorVersion: "17"
@@ -15,7 +15,7 @@ databases:
 
 services:
   - type: keyvalue
-    name: lsa-staging-cache
+    name: lsa-applepay-uat-cache
     plan: free
     region: frankfurt
     ipAllowList: []
@@ -23,7 +23,7 @@ services:
     persistenceMode: off
 
   - type: web
-    name: lsa-staging-web
+    name: lsa-applepay-uat-web
     runtime: python
     plan: free
     region: frankfurt
@@ -55,17 +55,17 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: lsa-staging-postgres
+          name: lsa-applepay-uat-postgres
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: lsa-staging-cache
+          name: lsa-applepay-uat-cache
           property: connectionString
       - key: CACHE_URL
         fromService:
           type: keyvalue
-          name: lsa-staging-cache
+          name: lsa-applepay-uat-cache
           property: connectionString
 
       # Keep every external side effect off in the preview.
