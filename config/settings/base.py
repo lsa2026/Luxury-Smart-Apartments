@@ -337,7 +337,18 @@ HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
 )
 HYPERPAY_CONNECT_TIMEOUT = 5.0
 HYPERPAY_READ_TIMEOUT = 20.0
-HYPERPAY_ALLOWED_BRANDS = ("MADA", "VISA", "MASTER")
+_hyperpay_default_brands = ["MADA", "VISA", "MASTER"]
+if HYPERPAY_ENVIRONMENT == "test":
+    _hyperpay_default_brands.append("APPLEPAY")
+HYPERPAY_ALLOWED_BRANDS = tuple(
+    brand.strip().upper()
+    for brand in env.list("HYPERPAY_ALLOWED_BRANDS", default=_hyperpay_default_brands)
+    if brand.strip()
+)
+APPLE_PAY_DOMAIN_ASSOCIATION_FILE = env(
+    "APPLE_PAY_DOMAIN_ASSOCIATION_FILE",
+    default="/etc/secrets/apple_pay_domain_association",
+).strip()
 HYPERPAY_APPROVED_BASE_URLS = {
     "test": "https://eu-test.oppwa.com/",
     "production": "https://eu-prod.oppwa.com/",

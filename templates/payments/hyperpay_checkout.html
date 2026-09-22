@@ -96,7 +96,11 @@ var wpwlOptions = {
                 aria-labelledby="method-tab-mada"
                 data-checkout-panel="mada"
             >
-                <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA APPLEPAY"></form>
+                <form
+                    action="{{ result_url }}"
+                    class="paymentWidgets"
+                    data-brands="MADA{% if apple_pay_allowed %} APPLEPAY{% endif %}"
+                ></form>
             </div>
             <div
                 class="checkout__panel"

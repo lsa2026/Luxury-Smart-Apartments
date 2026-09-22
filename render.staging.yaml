@@ -27,7 +27,7 @@ services:
     runtime: python
     plan: free
     region: frankfurt
-    branch: main
+    branch: fix/apple-pay-uat-readiness
     autoDeploy: true
     healthCheckPath: /health/live/
     buildCommand: ./build.sh

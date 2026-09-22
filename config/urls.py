@@ -11,6 +11,7 @@ from apps.core.admin_views import customer_overview
 from apps.core.seo import robots_txt, sitemap_xml
 from apps.core.views import service_worker
 from apps.notifications.views import admin_landing
+from apps.payments.apple_pay_domain import apple_pay_domain_association
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
@@ -29,6 +30,11 @@ urlpatterns = [
     path("service-worker.js", service_worker, name="service_worker"),
     path("sitemap.xml", sitemap_xml, name="sitemap"),
     path("robots.txt", robots_txt, name="robots"),
+    path(
+        ".well-known/apple-developer-merchantid-domain-association.txt",
+        apple_pay_domain_association,
+        name="apple_pay_domain_association",
+    ),
     path(
         "properties/search-availability/",
         AvailabilitySearchView.as_view(),

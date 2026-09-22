@@ -13,8 +13,10 @@ HyperPay's hosted form.
 The return URL is not proof of payment. It triggers a server-to-server GET to
 `/v1/checkouts/{checkoutId}/payment`, using the checkout ID already stored in the
 database. Amount, SAR currency, DB payment type, merchant transaction ID, entity
-ID when returned, and the MADA/VISA/MASTER brand allowlist are checked before a
-payment can become `succeeded`.
+ID when returned, and the payment-brand allowlist is checked before a payment
+can become `succeeded`. Apple Pay is allowlisted by default in TEST only;
+production keeps it hidden and unaccepted until an explicit go-live
+configuration after HyperPay confirms the production entity.
 
 After verified success, the existing local reservation preparation and
 `HostawayBookingService` are used. The service revalidates live availability and
@@ -88,6 +90,42 @@ is permitted for styles on this payment route only; it remains absent from
 ordinary public pages. No `unsafe-eval`, global CSRF exemption, or site-wide
 secure-header relaxation is introduced.
 
+## Apple Pay TEST/UAT
+
+Do not switch the production Render service from `production` to `test`. Run
+Apple Pay on a separate UAT service with the test base URL and test entity/token,
+an isolated database, and `HOSTAWAY_LIVE_BOOKING_ENABLED=false`. Keep all live
+Hostaway write flags off in UAT. The checkout builder sends `testMode=EXTERNAL`
+and `customParameters[3DS2_enrolled]=true` only when
+`HYPERPAY_ENVIRONMENT=test`; it omits them in production.
+
+The checkout page renders `APPLEPAY`, applies the native Apple Pay button CSS,
+and sets the requested Saudi country/network options. A verified HyperPay
+response with `paymentBrand=APPLEPAY` is accepted only after its stored checkout,
+amount, currency, payment type, transaction ID, and entity are also verified
+server-to-server.
+
+Confirm HyperPay has loaded the payment-processing and merchant-identity
+certificates into the TEST entity and enabled Apple Pay there. Because this
+integration uses the merchant's own Apple certificates, register the site domain
+in Apple Developer and host the exact domain-verification file downloaded from
+Apple. (HyperPay says domain-file hosting is optional for UAT only when using
+HyperPay's own Apple certificates.) Add that file to the UAT Render web service
+as a Secret File named `apple_pay_domain_association`. The app serves its bytes
+unchanged at the Apple Developer verification path:
+
+`https://<uat-domain>/.well-known/apple-developer-merchantid-domain-association.txt`
+
+Verify that this URL returns HTTP 200 and the exact Apple-provided body before
+testing. Never fabricate the file or use production certificates in UAT. A
+Sandbox tester account is for device-side payment testing; the Apple Developer
+merchant ID and its certificates are separate configuration items.
+
+The UAT acceptance test is: the sheet stays open, a sandbox payment succeeds,
+HyperPay reports `APPLEPAY`, the server verifies it, the local test reservation
+is created exactly once, and no real Hostaway reservation or live card charge
+occurs. Capture provider result codes and internal IDs only; never PAN/CVV.
+
 ## HyperPay-provided TEST cards
 
 Use these only in HyperPay TEST/UAT; never use real card details:
@@ -103,6 +141,7 @@ Use these only in HyperPay TEST/UAT; never use real card details:
 
 | Scenario | Expected payment | Booking | Hostaway | UI |
 |---|---|---|---|---|
+| Apple Pay TEST success | `succeeded` with `paymentBrand=APPLEPAY` | one local UAT reservation | no live writes | sheet remains open, then verified result |
 | Visa success | `succeeded` | pending then confirmed | exactly one create after verification | confirmed, or operationally pending |
 | Mastercard success | `succeeded` | pending then confirmed | exactly one create after verification | confirmed, or operationally pending |
 | MADA success | `succeeded` | pending then confirmed | exactly one create after verification | confirmed, or operationally pending |
@@ -120,8 +159,15 @@ Do not record PAN or CVV.
 
 ## Known limitations and production migration
 
-- Apple Pay is not implemented; it is waiting for HyperPay configuration.
-- Only MADA, VISA, and MASTER are enabled.
+- Apple Pay is implemented in checkout and server-side brand verification, but
+  is not production-ready until HyperPay confirms the production entity and
+  certificates and a separate UAT pass succeeds.
+- TEST defaults to MADA, VISA, MASTER, and `APPLEPAY`; production defaults to
+  MADA, VISA, and MASTER. Add `APPLEPAY` to the production
+  `HYPERPAY_ALLOWED_BRANDS` setting only after the provider confirms readiness
+  and the separate UAT pass succeeds. Do not enable `APPLEPAYTKN` unless HyperPay
+  confirms acquirer-side token decryption and the widget is changed to request
+  that brand.
 - Payment type is DB. PA/CP and automated refund behavior are not implemented.
 - TEST checkout rejects fractional SAR totals as required for this UAT setup.
 - A verified charge followed by lost Hostaway availability requires manual

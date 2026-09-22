@@ -61,7 +61,7 @@ HYPERPAY_SETTINGS = {
     "HYPERPAY_ACCESS_TOKEN": "test-access-token-secret",
     "HYPERPAY_CURRENCY": "SAR",
     "HYPERPAY_PAYMENT_TYPE": "DB",
-    "HYPERPAY_ALLOWED_BRANDS": ("MADA", "VISA", "MASTER"),
+    "HYPERPAY_ALLOWED_BRANDS": ("MADA", "VISA", "MASTER", "APPLEPAY"),
     "HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED": False,
 }
 
@@ -368,7 +368,10 @@ def test_paid_modification_never_returns_to_pay_button_after_revalidation_error(
 
 
 @override_settings(**HYPERPAY_SETTINGS, HOSTAWAY_LIVE_BOOKING_ENABLED=False)
-def test_verified_success_creates_one_local_reservation_without_duplicate() -> None:
+@pytest.mark.parametrize("payment_brand", ["MADA", "APPLEPAY"])
+def test_verified_success_creates_one_local_reservation_without_duplicate(
+    payment_brand: str,
+) -> None:
     intent = payable_intent()
     client = HyperPayStub()
     checkout = HyperPayService(client=client).create_checkout(intent)
@@ -377,7 +380,7 @@ def test_verified_success_creates_one_local_reservation_without_duplicate() -> N
         "amount": "1250.00",
         "currency": "SAR",
         "paymentType": "DB",
-        "paymentBrand": "MADA",
+        "paymentBrand": payment_brand,
         "merchantTransactionId": checkout.attempt.merchant_transaction_id,
         "entityId": "test-entity-id",
         "result": {"code": "000.100.110", "description": "Test success"},
@@ -618,8 +621,19 @@ class ResultViewServiceStub:
         return self.outcome
 
 
+@pytest.mark.parametrize(
+    ("allowed_brands", "mada_brands"),
+    [
+        (("MADA", "VISA", "MASTER", "APPLEPAY"), "MADA APPLEPAY"),
+        (("MADA", "VISA", "MASTER"), "MADA"),
+    ],
+)
 @override_settings(**HYPERPAY_SETTINGS)
-def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> None:
+def test_widget_page_orders_mada_and_never_exposes_access_token(
+    monkeypatch,
+    allowed_brands: tuple[str, ...],
+    mada_brands: str,
+) -> None:
     client = Client()
     intent = payable_intent()
     own_intent(client, intent)
@@ -640,11 +654,16 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
         "sha384-YWJj",
     )
     monkeypatch.setattr(HyperPayBookingCheckoutView, "service_class", CheckoutViewServiceStub)
-    response = client.post(reverse("payments:hyperpay_booking", args=[intent.public_reference]))
+    with override_settings(HYPERPAY_ALLOWED_BRANDS=allowed_brands):
+        response = client.post(
+            reverse("payments:hyperpay_booking", args=[intent.public_reference])
+        )
     content = response.content.decode()
     assert response.status_code == 200
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
-    assert content.index('data-brands="MADA APPLEPAY"') < content.index('data-brands="VISA MASTER"')
+    assert content.index(f'data-brands="{mada_brands}"') < content.index(
+        'data-brands="VISA MASTER"'
+    )
     assert 'paymentTarget: "_top"' in content
     assert 'displayName: "Luxury Smart Apartments"' in content
     assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
