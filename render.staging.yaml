@@ -8,24 +8,19 @@ databases:
   - name: lsa-applepay-uat-postgres
     databaseName: lsa_applepay_uat
     user: lsa_applepay_uat
-    plan: free
+    # A separate paid database is required because Render permits only one
+    # active Free Postgres database per workspace.
+    plan: basic-256mb
     region: frankfurt
     postgresMajorVersion: "17"
     ipAllowList: []
 
 services:
-  - type: keyvalue
-    name: lsa-applepay-uat-cache
-    plan: free
-    region: frankfurt
-    ipAllowList: []
-    maxmemoryPolicy: allkeys-lru
-    persistenceMode: off
-
   - type: web
     name: lsa-applepay-uat-web
     runtime: python
-    plan: free
+    # Keep this isolated from the existing Free staging service-hour quota.
+    plan: starter
     region: frankfurt
     branch: fix/apple-pay-uat-readiness
     autoDeploy: true
@@ -56,16 +51,6 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: lsa-applepay-uat-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: lsa-applepay-uat-cache
-          property: connectionString
-      - key: CACHE_URL
-        fromService:
-          type: keyvalue
-          name: lsa-applepay-uat-cache
           property: connectionString
 
       # Keep every external side effect off in the preview.
