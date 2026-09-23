@@ -668,7 +668,7 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     assert 'displayName: "Luxury Smart Apartments"' in content
     assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
     assert 'countryCode: "SA"' in content
-    assert 'version: 3' in content
+    assert 'version: 5' in content
     assert '-webkit-appearance: -apple-pay-button' in content
     assert 'integrity="sha384-YWJj"' in content
     assert "test-access-token-secret" not in content
