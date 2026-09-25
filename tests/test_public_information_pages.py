@@ -85,4 +85,34 @@ def test_footer_uses_layered_luxury_layout_and_dashboard_contact_details() -> No
     assert 'class="footer-lower"' in content
     assert "saeed@luxurysmartapartments.com" in content
     assert "+966501205651" in content
-    assert "css/site.css?v=41" in content
+    assert "css/site.css?v=45" in content
+
+
+@pytest.mark.parametrize(
+    ("url", "heading", "city_label", "cta"),
+    [
+        ("/ar/about/", "إقامات ذكية", "وجهتان مختارتان بعناية", "استكشف الشقق"),
+        ("/en/about/", "Smart stays", "Two destinations, chosen with care", "Explore apartments"),
+        (
+            "/fr/about/",
+            "Des séjours intelligents",
+            "Deux destinations choisies",
+            "Découvrir les appartements",
+        ),
+    ],
+)
+def test_about_page_uses_the_dedicated_trilingual_experience(
+    url: str,
+    heading: str,
+    city_label: str,
+    cta: str,
+) -> None:
+    content = Client().get(url).content.decode()
+
+    assert heading in content
+    assert city_label in content
+    assert cta in content
+    assert 'class="about-collage"' in content
+    assert content.count("images/about/apartment-") >= 12
+    assert "9.5/10" in content
+    assert "4.7/5" in content

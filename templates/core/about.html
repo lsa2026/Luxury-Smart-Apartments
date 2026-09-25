@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static presentation %}
+
+{% block title %}{{ page|localized_page_title }} | Luxury Smart Apartments{% endblock %}
+{% block meta_description %}{{ page|localized_field:"meta_description" }}{% endblock %}
+{% block og_image %}
+{% static 'images/about/apartment-01-1600.webp' as about_share_image %}
+<meta property="og:image" content="{{ site_base_url }}{{ about_share_image }}">
+<meta property="og:image:secure_url" content="{{ site_base_url }}{{ about_share_image }}">
+<meta property="og:image:type" content="image/webp">
+<meta name="twitter:image" content="{{ site_base_url }}{{ about_share_image }}">
+{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <section class="about-showcase" aria-labelledby="about-page-title">
+        <div class="about-showcase__copy">
+            <div class="about-showcase__brand" dir="ltr" aria-label="Luxury Living">
+                <span>LUXURY</span>
+                <img src="{% static 'images/brand/luxury-living-monogram-ll-dark.svg' %}" alt="" width="116" height="116">
+                <span>LIVING</span>
+            </div>
+            <div class="about-showcase__rule" aria-hidden="true"></div>
+
+            {% if current_language_code == "ar" %}
+                <p class="about-showcase__eyebrow">من نحن</p>
+                <h1 id="about-page-title">إقامات ذكية،<br>بضيافة أرقى.</h1>
+                <p class="about-showcase__lead">شقق حقيقية مختارة بعناية في الرياض ومراكش، تجمع بين الراحة الحديثة والوضوح في الحجز والدعم القريب من الضيف.</p>
+            {% elif current_language_code == "fr" %}
+                <p class="about-showcase__eyebrow">À propos</p>
+                <h1 id="about-page-title">Des séjours intelligents,<br>un accueil d’exception.</h1>
+                <p class="about-showcase__lead">Des appartements authentiques soigneusement sélectionnés à Riyad et Marrakech, alliant confort moderne, réservation claire et assistance attentive.</p>
+            {% else %}
+                <p class="about-showcase__eyebrow">About us</p>
+                <h1 id="about-page-title">Smart stays,<br>elevated hospitality.</h1>
+                <p class="about-showcase__lead">Real, carefully selected apartments in Riyadh and Marrakech, combining modern comfort, clear booking and attentive guest support.</p>
+            {% endif %}
+
+            <a class="about-showcase__proof" href="{% url 'reviews:list' %}">
+                <span><strong><bdi dir="ltr">9.5/10</bdi></strong><small>Booking.com</small></span>
+                <i aria-hidden="true"></i>
+                <span><strong><bdi dir="ltr">4.7/5</bdi></strong><small>Airbnb</small></span>
+                <i aria-hidden="true"></i>
+                <span>
+                    <strong><bdi dir="ltr">60+</bdi></strong>
+                    <small>{% if current_language_code == "ar" %}تقييم ضيف موثق{% elif current_language_code == "fr" %}avis voyageurs vérifiés{% else %}verified guest reviews{% endif %}</small>
+                </span>
+            </a>
+
+            <p class="about-showcase__locations" dir="ltr">RIYADH <span aria-hidden="true">·</span> MARRAKECH</p>
+        </div>
+
+        <div class="about-collage" aria-label="{% if current_language_code == 'ar' %}مجموعة من صور شققنا الحقيقية{% elif current_language_code == 'fr' %}Sélection de photos authentiques de nos appartements{% else %}A selection of real photographs from our apartments{% endif %}">
+            <figure class="about-collage__tile about-collage__tile--1">
+                <img src="{% static 'images/about/apartment-01-960.webp' %}" srcset="{% static 'images/about/apartment-01-960.webp' %} 960w, {% static 'images/about/apartment-01-1600.webp' %} 1600w" sizes="(max-width: 52rem) 52vw, 28vw" alt="{% if current_language_code == 'ar' %}غرفة معيشة رحبة بإضاءة دافئة{% elif current_language_code == 'fr' %}Salon spacieux à l’éclairage chaleureux{% else %}Spacious living room with warm lighting{% endif %}" width="1600" height="900" fetchpriority="high" decoding="async">
+            </figure>
+            <figure class="about-collage__tile about-collage__tile--2">
+                <img src="{% static 'images/about/apartment-02-960.webp' %}" srcset="{% static 'images/about/apartment-02-960.webp' %} 960w, {% static 'images/about/apartment-02-1600.webp' %} 1600w" sizes="(max-width: 52rem) 42vw, 20vw" alt="{% if current_language_code == 'ar' %}غرفة معيشة عصرية بتفاصيل رخامية{% elif current_language_code == 'fr' %}Salon moderne aux détails en marbre{% else %}Modern living room with marble details{% endif %}" width="1600" height="1600" loading="eager" decoding="async">
+            </figure>
+            <figure class="about-collage__tile about-collage__tile--3">
+                <img src="{% static 'images/about/apartment-03-960.webp' %}" srcset="{% static 'images/about/apartment-03-960.webp' %} 960w, {% static 'images/about/apartment-03-1600.webp' %} 1600w" sizes="(max-width: 52rem) 46vw, 25vw" alt="{% if current_language_code == 'ar' %}صالة أنيقة بألوان دافئة{% elif current_language_code == 'fr' %}Salon élégant aux tons chaleureux{% else %}Elegant lounge in warm tones{% endif %}" width="1600" height="1067" loading="eager" decoding="async">
+            </figure>
+            <figure class="about-collage__tile about-collage__tile--4">
+                <img src="{% static 'images/about/apartment-04-960.webp' %}" srcset="{% static 'images/about/apartment-04-960.webp' %} 960w, {% static 'images/about/apartment-04-1600.webp' %} 1600w" sizes="(max-width: 52rem) 42vw, 22vw" alt="{% if current_language_code == 'ar' %}غرفة معيشة مشرقة واسعة{% elif current_language_code == 'fr' %}Salon lumineux et spacieux{% else %}Bright and spacious living room{% endif %}" width="1600" height="1067" loading="eager" decoding="async">
+            </figure>
+            <figure class="about-collage__tile about-collage__tile--5">
+                <img src="{% static 'images/about/apartment-05-960.webp' %}" srcset="{% static 'images/about/apartment-05-960.webp' %} 960w, {% static 'images/about/apartment-05-1600.webp' %} 1600w" sizes="(max-width: 52rem) 40vw, 20vw" alt="{% if current_language_code == 'ar' %}شقة ذكية بتصميم مفتوح{% elif current_language_code == 'fr' %}Appartement intelligent au plan ouvert{% else %}Smart apartment with an open-plan design{% endif %}" width="1600" height="1067" loading="eager" decoding="async">
+            </figure>
+            <figure class="about-collage__tile about-collage__tile--6">
+                <img src="{% static 'images/about/apartment-06-960.webp' %}" srcset="{% static 'images/about/apartment-06-960.webp' %} 960w, {% static 'images/about/apartment-06-1600.webp' %} 1600w" sizes="(max-width: 52rem) 44vw, 22vw" alt="{% if current_language_code == 'ar' %}صالة مريحة تطل على أشجار مراكش{% elif current_language_code == 'fr' %}Salon confortable avec vue sur les arbres de Marrakech{% else %}Comfortable lounge overlooking Marrakech greenery{% endif %}" width="1600" height="1067" loading="eager" decoding="async">
+            </figure>
+            <span class="about-collage__glow about-collage__glow--one" aria-hidden="true"></span>
+            <span class="about-collage__glow about-collage__glow--two" aria-hidden="true"></span>
+        </div>
+    </section>
+
+    <section class="about-story container" aria-labelledby="about-story-title">
+        <div class="about-story__intro">
+            {% if current_language_code == "ar" %}
+                <p class="eyebrow">قصتنا</p>
+                <h2 id="about-story-title">ضيافة حديثة تبدأ بالوضوح وتنتهي بإقامة تستحق التذكر.</h2>
+            {% elif current_language_code == "fr" %}
+                <p class="eyebrow">Notre histoire</p>
+                <h2 id="about-story-title">Une hospitalité moderne qui commence par la clarté et se termine par un séjour mémorable.</h2>
+            {% else %}
+                <p class="eyebrow">Our story</p>
+                <h2 id="about-story-title">Modern hospitality that begins with clarity and ends with a stay worth remembering.</h2>
+            {% endif %}
+        </div>
+        <div class="about-story__body">
+            {% if current_language_code == "ar" %}
+                <p>تأسست Luxury Smart Apartments لتقديم بديل أكثر أناقة وسهولة للإقامة التقليدية. نختار مساكن تجمع بين التصميم المريح والتقنية العملية، ونقدّم للضيف تجربة واضحة منذ البحث وحتى المغادرة.</p>
+                <p>ليست فكرتنا أن تكون كل شقة نسخة من الأخرى، بل أن تحمل كل إقامة شخصية موقعها مع الحفاظ على مستوى ثابت من العناية والنظافة وسهولة التواصل.</p>
+            {% elif current_language_code == "fr" %}
+                <p>Luxury Smart Apartments a été créée pour proposer une alternative plus élégante et plus simple à l’hébergement traditionnel. Nous sélectionnons des logements qui associent design confortable et technologie utile, avec un parcours clair de la recherche au départ.</p>
+                <p>Nos appartements ne sont pas des copies les uns des autres. Chacun reflète son environnement tout en respectant un niveau constant d’attention, de propreté et de communication.</p>
+            {% else %}
+                <p>Luxury Smart Apartments was created as a more elegant and effortless alternative to traditional accommodation. We select homes that combine comfortable design with useful technology, giving guests a clear journey from search to checkout.</p>
+                <p>Our apartments are not copies of one another. Each stay reflects its location while maintaining a consistent standard of care, cleanliness and easy communication.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="about-pillars" aria-labelledby="about-pillars-title">
+        <div class="container">
+            <div class="about-section-heading">
+                {% if current_language_code == "ar" %}
+                    <p class="eyebrow">ركائز تجربتنا</p>
+                    <h2 id="about-pillars-title">ثلاثة مبادئ في كل إقامة</h2>
+                {% elif current_language_code == "fr" %}
+                    <p class="eyebrow">Les piliers de l’expérience</p>
+                    <h2 id="about-pillars-title">Trois principes pour chaque séjour</h2>
+                {% else %}
+                    <p class="eyebrow">Our experience pillars</p>
+                    <h2 id="about-pillars-title">Three principles behind every stay</h2>
+                {% endif %}
+            </div>
+            <div class="about-pillars__grid">
+                <article><span>01</span>{% if current_language_code == "ar" %}<h3>وضوح قبل الحجز</h3><p>توفر وأسعار مباشرة، ومعلومات عملية تساعدك على اختيار الإقامة المناسبة بثقة.</p>{% elif current_language_code == "fr" %}<h3>Clarté avant de réserver</h3><p>Disponibilités, prix et informations utiles pour choisir votre séjour en toute confiance.</p>{% else %}<h3>Clarity before booking</h3><p>Live availability, pricing and practical information to help you choose with confidence.</p>{% endif %}</article>
+                <article><span>02</span>{% if current_language_code == "ar" %}<h3>راحة ذكية</h3><p>مساكن مجهزة بعناية وتقنيات عملية تجعل الوصول والإقامة أكثر سلاسة.</p>{% elif current_language_code == "fr" %}<h3>Confort intelligent</h3><p>Des logements soigneusement équipés et une technologie utile pour une arrivée et un séjour fluides.</p>{% else %}<h3>Smart comfort</h3><p>Thoughtfully equipped homes and useful technology for smoother arrivals and stays.</p>{% endif %}</article>
+                <article><span>03</span>{% if current_language_code == "ar" %}<h3>دعم قريب</h3><p>تواصل واضح ومساندة حقيقية قبل الوصول وخلال الإقامة وحتى المغادرة.</p>{% elif current_language_code == "fr" %}<h3>Une assistance attentive</h3><p>Une communication claire et une aide réelle avant l’arrivée, pendant le séjour et jusqu’au départ.</p>{% else %}<h3>Attentive support</h3><p>Clear communication and real assistance before arrival, throughout the stay and through checkout.</p>{% endif %}</article>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-destinations container" aria-labelledby="about-destinations-title">
+        <div class="about-section-heading">
+            {% if current_language_code == "ar" %}
+                <p class="eyebrow">نطاق إقاماتنا</p>
+                <h2 id="about-destinations-title">وجهتان مختارتان بعناية</h2>
+                <p>تتركز إقاماتنا حاليًا في الرياض ومراكش، ولكل مدينة مجموعتها الخاصة من الشقق وطابعها المميز.</p>
+            {% elif current_language_code == "fr" %}
+                <p class="eyebrow">Nos destinations</p>
+                <h2 id="about-destinations-title">Deux destinations choisies avec soin</h2>
+                <p>Nos séjours se trouvent actuellement à Riyad et Marrakech, chacune avec sa propre collection d’appartements et son caractère.</p>
+            {% else %}
+                <p class="eyebrow">Where we host</p>
+                <h2 id="about-destinations-title">Two destinations, chosen with care</h2>
+                <p>Our stays are currently located in Riyadh and Marrakech, each with its own apartment collection and distinct character.</p>
+            {% endif %}
+        </div>
+        <div class="about-destinations__grid">
+            <a href="{% url 'properties:list' %}?city=Riyadh"><span>01</span><div><small>SAUDI ARABIA</small><h3>{% if current_language_code == "ar" %}الرياض{% elif current_language_code == "fr" %}Riyad{% else %}Riyadh{% endif %}</h3><p>{% if current_language_code == "ar" %}طاقة عصرية وإقامات ذكية داخل المدينة.{% elif current_language_code == "fr" %}Énergie moderne et séjours intelligents au cœur de la ville.{% else %}Modern energy and smart city stays.{% endif %}</p></div><i aria-hidden="true">↗</i></a>
+            <a href="{% url 'properties:list' %}?city=Marrakech"><span>02</span><div><small>MOROCCO</small><h3>Marrakech</h3><p>{% if current_language_code == "ar" %}ضوء دافئ وراحة حديثة بطابع مراكش.{% elif current_language_code == "fr" %}Lumière chaleureuse et confort moderne au rythme de Marrakech.{% else %}Warm light and modern comfort with Marrakech character.{% endif %}</p></div><i aria-hidden="true">↗</i></a>
+        </div>
+    </section>
+
+    <section class="about-cta container" aria-labelledby="about-cta-title">
+        <div>
+            {% if current_language_code == "ar" %}
+                <p class="eyebrow">جاهز للإقامة؟</p><h2 id="about-cta-title">إقامتك القادمة تبدأ هنا.</h2><p>اختر المدينة والتواريخ، وشاهد الوحدات المتاحة وأسعارها المباشرة.</p>
+            {% elif current_language_code == "fr" %}
+                <p class="eyebrow">Prêt à séjourner ?</p><h2 id="about-cta-title">Votre prochain séjour commence ici.</h2><p>Choisissez votre ville et vos dates, puis consultez les disponibilités et les prix en direct.</p>
+            {% else %}
+                <p class="eyebrow">Ready to stay?</p><h2 id="about-cta-title">Your next stay starts here.</h2><p>Choose your city and dates, then see live availability and pricing.</p>
+            {% endif %}
+        </div>
+        <a class="button button--gold" href="{% url 'properties:list' %}#property-search">{% if current_language_code == "ar" %}استكشف الشقق{% elif current_language_code == "fr" %}Découvrir les appartements{% else %}Explore apartments{% endif %}<span aria-hidden="true">↗</span></a>
+    </section>
+</div>
+{% endblock %}

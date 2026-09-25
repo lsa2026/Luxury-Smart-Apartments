@@ -123,6 +123,7 @@ class ContentPageView(TemplateView):
 
     def get_template_names(self) -> list[str]:
         template_map = {
+            "about": "core/about.html",
             "terms": "legal/terms.html",
             "privacy": "legal/privacy.html",
             "cancellation": "legal/cancellation_policy.html",
