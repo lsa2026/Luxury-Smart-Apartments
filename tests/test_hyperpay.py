@@ -622,17 +622,17 @@ class ResultViewServiceStub:
 
 
 @pytest.mark.parametrize(
-    ("allowed_brands", "mada_brands"),
+    ("allowed_brands", "apple_pay_standalone"),
     [
-        (("MADA", "VISA", "MASTER", "APPLEPAY"), "MADA APPLEPAY"),
-        (("MADA", "VISA", "MASTER"), "MADA"),
+        (("MADA", "VISA", "MASTER", "APPLEPAY"), True),
+        (("MADA", "VISA", "MASTER"), False),
     ],
 )
 @override_settings(**HYPERPAY_SETTINGS)
-def test_widget_page_orders_mada_and_never_exposes_access_token(
+def test_widget_page_keeps_apple_pay_independent_in_uat_and_never_exposes_access_token(
     monkeypatch,
     allowed_brands: tuple[str, ...],
-    mada_brands: str,
+    apple_pay_standalone: bool,
 ) -> None:
     client = Client()
     intent = payable_intent()
@@ -661,15 +661,26 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     content = response.content.decode()
     assert response.status_code == 200
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
-    assert content.index(f'data-brands="{mada_brands}"') < content.index(
+    assert content.index('data-brands="MADA"') < content.index(
         'data-brands="VISA MASTER"'
     )
+    assert 'data-brands="MADA APPLEPAY"' not in content
     assert 'paymentTarget: "_top"' in content
     assert 'displayName: "Luxury Smart Apartments"' in content
-    assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
+    assert 'supportedNetworks: ["masterCard", "visa"]' in content
     assert 'countryCode: "SA"' in content
     assert 'version: 5' in content
     assert '-webkit-appearance: -apple-pay-button' in content
+    assert content.count('data-checkout-method="') == (3 if apple_pay_standalone else 2)
+    assert content.count('data-checkout-panel="') == (3 if apple_pay_standalone else 2)
+    if apple_pay_standalone:
+        assert 'data-checkout-method="apple-pay"' in content
+        assert 'data-brands="APPLEPAY"' in content
+        assert 'data-checkout-panel="apple-pay"' in content
+        assert 'aria-labelledby="method-tab-apple-pay"' in content
+    else:
+        assert 'data-checkout-method="apple-pay"' not in content
+        assert 'data-brands="APPLEPAY"' not in content
     assert 'integrity="sha384-YWJj"' in content
     assert "test-access-token-secret" not in content
     csp = response.headers["Content-Security-Policy"]
@@ -679,8 +690,6 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     # The hosted widget ships English labels; the locale makes it follow the page.
     assert 'locale: "ar"' in content
     # One method is shown at a time, and the payer can confirm what they are buying.
-    assert content.count('data-checkout-method="') == 2
-    assert content.count('data-checkout-panel="') == 2
     assert intent.property.display_name in content or "checkout__summary" in content
     assert content.count("checkout__total checkout__total--") == 1
     assert "checkout__total--display" in content
@@ -689,6 +698,47 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     assert "font-src 'self' data: https://eu-test.oppwa.com" in csp
     assert "unsafe-eval" not in csp
     assert "return_token=" in content
+
+
+@pytest.mark.django_db
+def test_production_keeps_existing_mada_apple_pay_widget_layout(monkeypatch) -> None:
+    client = Client()
+    intent = payable_intent()
+    own_intent(client, intent)
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="production_checkout_12345678",
+        merchant_transaction_id="LSA-production-view-123456",
+        widget_integrity="sha384-YWJj",
+        amount=intent.total_price,
+        currency="SAR",
+        status=PaymentAttempt.Status.PENDING,
+        idempotency_key="production-view-idempotency-key-12345678",
+    )
+    CheckoutViewServiceStub.checkout = CheckoutSession(
+        attempt,
+        "production_checkout_12345678",
+        "sha384-YWJj",
+    )
+    monkeypatch.setattr(HyperPayBookingCheckoutView, "service_class", CheckoutViewServiceStub)
+
+    production_settings = HYPERPAY_SETTINGS | {
+        "HYPERPAY_ENVIRONMENT": "production",
+        "HYPERPAY_BASE_URL": "https://eu-prod.oppwa.com/",
+    }
+    with override_settings(**production_settings):
+        response = client.post(
+            reverse("payments:hyperpay_booking", args=[intent.public_reference])
+        )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert 'data-brands="MADA APPLEPAY"' in content
+    assert 'data-checkout-method="apple-pay"' not in content
+    assert 'data-brands="APPLEPAY"' not in content
+    assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
+    assert 'version: 5' in content
 
 
 @override_settings(**HYPERPAY_SETTINGS)

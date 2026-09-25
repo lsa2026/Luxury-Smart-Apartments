@@ -110,6 +110,10 @@ def _render_hyperpay_checkout(
             "widget_integrity": attempt.widget_integrity,
             "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
             "apple_pay_allowed": "APPLEPAY" in settings.HYPERPAY_ALLOWED_BRANDS,
+            "apple_pay_standalone": (
+                settings.HYPERPAY_ENVIRONMENT == "test"
+                and "APPLEPAY" in settings.HYPERPAY_ALLOWED_BRANDS
+            ),
             "widget_url": (
                 f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js"
                 f"?checkoutId={attempt.provider_checkout_id}"

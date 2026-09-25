@@ -98,3 +98,86 @@ services:
         value: saeed@luxurysmartapartments.com
       - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED
         value: "True"
+
+  # Neutral, isolated checkout UAT service. The legacy service above stays
+  # intact; this service reuses the existing UAT database and keeps payment
+  # integrations disabled until the dedicated UAT environment is configured.
+  - type: web
+    name: checkout-uat-v2
+    runtime: python
+    plan: starter
+    region: frankfurt
+    branch: fix/apple-pay-uat-phase2
+    autoDeploy: true
+    healthCheckPath: /health/live/
+    buildCommand: ./build.sh
+    startCommand: >-
+      gunicorn config.wsgi:application
+      --bind 0.0.0.0:$PORT
+      --workers 2
+      --threads 2
+      --timeout 60
+      --graceful-timeout 30
+      --access-logfile -
+      --error-logfile -
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lsa-applepay-uat-postgres
+          property: connectionString
+
+      # Keep every external side effect off until a dedicated, reviewed setup.
+      - key: HYPERPAY_ENABLED
+        value: "False"
+      - key: PAYMENT_SANDBOX_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_BOOKING_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_MODIFICATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_EXTENSION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_LIVE_CANCELLATION_ENABLED
+        value: "False"
+      - key: BOOKING_AUTOMATIC_MODIFICATION_APPROVAL
+        value: "False"
+      - key: BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+        value: "False"
+      - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_RECEIVER_ENABLED
+        value: "False"
+      - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
+        value: "False"
+      - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "False"
+      - key: EMAIL_DELIVERY_ENABLED
+        value: "False"
+      - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "False"
+      - key: BOOKING_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: CONTACT_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: MODIFICATION_NOTIFICATION_EMAIL_ENABLED
+        value: "False"
+      - key: GOOGLE_INTEGRATIONS_ENABLED
+        value: "False"
+      - key: GOOGLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: APPLE_SIGN_IN_ENABLED
+        value: "False"
+      - key: OPERATIONS_OWNER_EMAIL
+        value: saeed@luxurysmartapartments.com
+      - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED
+        value: "True"
