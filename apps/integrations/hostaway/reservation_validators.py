@@ -91,6 +91,7 @@ class HostawayReservationCreateRequest:
     total_price: Decimal
     finance_fields: tuple[ReservationFinanceField, ...]
     provider: str
+    guest_locale: str = "ar"
 
     def to_payload(self) -> dict[str, Any]:
         if self.listing_map_id <= 0:
@@ -99,6 +100,9 @@ class HostawayReservationCreateRequest:
             raise ValueError("direct_channel_id_not_configured")
         if not self.finance_fields:
             raise ValueError("price_components_missing")
+        guest_locale = self.guest_locale.strip().split("-", 1)[0].casefold()
+        if guest_locale not in {"ar", "en", "fr"}:
+            raise ValueError("guest_locale_not_supported")
         return {
             "channelId": self.channel_id,
             "listingMapId": self.listing_map_id,
@@ -108,6 +112,7 @@ class HostawayReservationCreateRequest:
             "guestFirstName": self.guest_first_name[:100],
             "guestLastName": self.guest_last_name[:100],
             "guestCountry": self.guest_country_code.upper(),
+            "guestLocale": guest_locale,
             "guestEmail": self.guest_email,
             "phone": self.guest_phone,
             "numberOfGuests": self.guests,

@@ -60,6 +60,7 @@ def build_hostaway_reservation_request(
         guest_email=intent.guest_email,
         guest_phone=intent.guest_phone,
         guest_country_code=intent.guest_country_code,
+        guest_locale=intent.language,
         guests=reservation.guests,
         check_in=reservation.check_in,
         check_out=reservation.check_out,

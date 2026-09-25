@@ -403,6 +403,7 @@ def test_payload_is_documented_allowlist_and_uses_map_id() -> None:
         "guestFirstName",
         "guestLastName",
         "guestCountry",
+        "guestLocale",
         "guestEmail",
         "phone",
         "numberOfGuests",
@@ -421,6 +422,23 @@ def test_payload_is_documented_allowlist_and_uses_map_id() -> None:
     assert "doorCode" not in serialized
     assert "guestNote" not in serialized
     assert payload["financeField"][0]["isMandatory"] == 1
+    assert payload["guestLocale"] == intent.language
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+@override_settings(HOSTAWAY_DIRECT_CHANNEL_ID=2000)
+def test_payload_sends_the_booking_site_language_to_hostaway(language: str) -> None:
+    intent = make_intent(listing_map_id=9001)
+    intent.language = language
+    intent.save(update_fields=["language", "updated_at"])
+    reservation = prepare_local_reservation(intent)
+
+    request = build_hostaway_reservation_request(
+        reservation,
+        current_quote=complete_availability(intent).quote,
+    )
+
+    assert request.to_payload()["guestLocale"] == language
 
 
 @override_settings(HOSTAWAY_DIRECT_CHANNEL_ID=2000)
