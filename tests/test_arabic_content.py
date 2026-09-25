@@ -321,6 +321,25 @@ def test_the_faq_page_groups_questions_by_category() -> None:
     assert any(group["items"] for group in response.context["faq_groups"])
 
 
+def test_the_faq_page_translates_category_headings() -> None:
+    make_faq(category=FAQItem.Category.BOOKING)
+    make_faq(category=FAQItem.Category.STAY, question_en="Stay question")
+    make_faq(category=FAQItem.Category.POLICY, question_en="Policy question")
+    make_faq(category=FAQItem.Category.PROPERTY, question_en="Property question")
+
+    arabic = Client().get("/ar/faq/").content.decode()
+    french = Client().get("/fr/faq/").content.decode()
+
+    assert "الحجز والدفع" in arabic
+    assert "أثناء الإقامة" in arabic
+    assert "السياسات والإلغاء" in arabic
+    assert "عن الوحدة" in arabic
+    assert "Réservation et paiement" in french
+    assert "Pendant votre séjour" in french
+    assert "Politiques et annulation" in french
+    assert "À propos du logement" in french
+
+
 def test_a_property_question_stays_off_the_general_page() -> None:
     property_obj = make_property()
     make_faq(property=property_obj, question_ar="سؤال خاص بالوحدة")

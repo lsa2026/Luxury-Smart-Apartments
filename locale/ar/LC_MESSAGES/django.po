@@ -566,28 +566,20 @@ msgid "Content pages"
 msgstr "صفحات المحتوى"
 
 #: .\apps\core\models.py:44
-#, fuzzy
-#| msgid "Booking and payment status"
 msgid "Booking and payment"
-msgstr "حالة الحجز والدفع"
+msgstr "الحجز والدفع"
 
 #: .\apps\core\models.py:45
-#, fuzzy
-#| msgid "Find your stay"
 msgid "During your stay"
-msgstr "اعثر على إقامتك"
+msgstr "أثناء الإقامة"
 
 #: .\apps\core\models.py:46
-#, fuzzy
-#| msgid "Policies and pages"
 msgid "Policies and cancellation"
-msgstr "السياسات والصفحات"
+msgstr "السياسات والإلغاء"
 
 #: .\apps\core\models.py:47
-#, fuzzy
-#| msgid "The property"
 msgid "About the property"
-msgstr "الوحدة"
+msgstr "عن الوحدة"
 
 #: .\apps\core\models.py:57
 #, fuzzy
