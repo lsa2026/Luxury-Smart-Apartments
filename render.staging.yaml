@@ -17,7 +17,7 @@ databases:
 
 services:
   - type: web
-    name: lsa-applepay-uat-web
+    name: lsa-checkout-uat-web
     runtime: python
     # Keep this isolated from the existing Free staging service-hour quota.
     plan: starter
