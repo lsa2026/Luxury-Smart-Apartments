@@ -340,6 +340,18 @@ def test_the_faq_page_translates_category_headings() -> None:
     assert "À propos du logement" in french
 
 
+def test_the_standard_arrival_and_departure_faq_is_explicit() -> None:
+    faq = FAQItem.objects.get(question_en="What are the check-in and check-out times?")
+
+    assert "3:00 مساءً" in faq.answer_ar
+    assert "12:00 ظهرًا" in faq.answer_ar
+    assert "3:00 PM" in faq.answer_en
+    assert "12:00 PM" in faq.answer_en
+    assert "15 h" in faq.answer_fr
+    assert "12 h" in faq.answer_fr
+    assert "فقد نتمكن" in faq.answer_ar
+
+
 def test_a_property_question_stays_off_the_general_page() -> None:
     property_obj = make_property()
     make_faq(property=property_obj, question_ar="سؤال خاص بالوحدة")
