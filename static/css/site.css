@@ -14012,7 +14012,7 @@ html[dir="ltr"] .about-showcase__copy {
     }
 
     html[dir="rtl"] .about-showcase__copy {
-        padding-inline: 4.75rem 1.5rem;
+        padding-inline: 1.5rem 4.75rem;
     }
 
     .about-showcase__brand {
