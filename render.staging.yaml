@@ -53,9 +53,8 @@ services:
           name: lsa-applepay-uat-postgres
           property: connectionString
 
-      # Keep every external side effect off in the preview.
-      - key: HYPERPAY_ENABLED
-        value: "False"
+      # Preserve the existing suspended service's payment flag unchanged.
+      # Keep the flag disabled only on the new isolated checkout service below.
       - key: PAYMENT_SANDBOX_ENABLED
         value: "False"
       - key: HOSTAWAY_LIVE_BOOKING_ENABLED
