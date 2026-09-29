@@ -33,9 +33,9 @@ from apps.reservations.services.booking import consume_revalidated_quote
 from apps.reservations.signing import quote_id_from_reference, verify_quote_fingerprint
 
 from .currency import (
-    CurrencyError,
     DISPLAY_CURRENCY_SESSION_KEY,
     PAYMENT_CURRENCY,
+    CurrencyError,
     UnsupportedCurrencyError,
     normalize_currency,
     validate_payment_snapshot,
@@ -362,20 +362,22 @@ class ApplePayFastAuthorizeView(View):
             return _fast_error(
                 "Use Latin-script name and billing address in Wallet, then try again."
             )
-        form = GuestDetailsForm({
-            "guest_first_name": shipping.get("givenName", ""),
-            "guest_last_name": shipping.get("familyName", ""),
-            "guest_email": shipping.get("emailAddress", ""),
-            "guest_phone": shipping.get("phoneNumber", ""),
-            "billing_street1": street,
-            "billing_city": billing.get("locality", ""),
-            "billing_state": billing.get("administrativeArea", ""),
-            "billing_country": billing.get("countryCode", ""),
-            "billing_postcode": billing.get("postalCode", ""),
-            "terms_accepted": "on" if state.get("terms_accepted") else "",
-            "privacy_accepted": "on" if state.get("privacy_accepted") else "",
-            "idempotency_key": state["idempotency_key"],
-        })
+        form = GuestDetailsForm(
+            {
+                "guest_first_name": shipping.get("givenName", ""),
+                "guest_last_name": shipping.get("familyName", ""),
+                "guest_email": shipping.get("emailAddress", ""),
+                "guest_phone": shipping.get("phoneNumber", ""),
+                "billing_street1": street,
+                "billing_city": billing.get("locality", ""),
+                "billing_state": billing.get("administrativeArea", ""),
+                "billing_country": billing.get("countryCode", ""),
+                "billing_postcode": billing.get("postalCode", ""),
+                "terms_accepted": "on" if state.get("terms_accepted") else "",
+                "privacy_accepted": "on" if state.get("privacy_accepted") else "",
+                "idempotency_key": state["idempotency_key"],
+            }
+        )
         if not form.is_valid():
             return _fast_error("Check your name, email, phone and billing address in Wallet.")
         existing_intent = BookingIntent.objects.filter(
@@ -455,6 +457,16 @@ class ApplePayFastResultView(View):
 
     def get(self, request: HttpRequest) -> HttpResponse:
         _fast_checkout_enabled()
+        try:
+            token = signing.loads(
+                request.GET.get("return_token", ""),
+                salt="payments.apple-fast-return.v1",
+                max_age=settings.HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS,
+            )
+        except signing.BadSignature as exc:
+            raise Http404 from exc
+        if not isinstance(token, dict):
+            raise Http404
         path = request.GET.get("resourcePath", "")
         match = re.fullmatch(r"/v1/checkouts/([A-Za-z0-9._-]{8,255})/payment", path)
         if match is None:
@@ -464,9 +476,19 @@ class ApplePayFastResultView(View):
             provider="hyperpay",
             provider_checkout_id=match.group(1),
         )
-        if not _owns_intent(request, attempt.booking_intent):
+        intent = attempt.booking_intent
+        if (
+            str(intent.quote_id) != token.get("quote_id")
+            or intent.session_key_hash != token.get("owner")
+        ):
             raise Http404
-        return HyperPayResultView.as_view()(request, payment_id=attempt.pk)
+        query = urlencode(
+            {
+                "return_token": _hyperpay_return_token(attempt),
+                "resourcePath": path,
+            }
+        )
+        return redirect(f"{reverse('payments:hyperpay_result', args=[attempt.pk])}?{query}")
 
 
 class CurrencyPreferenceView(View):

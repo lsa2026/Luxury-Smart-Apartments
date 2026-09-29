@@ -175,6 +175,14 @@ def _quote_context(
     )
     if apple_pay_fast_checkout:
         request._apple_pay_fast_checkout_page = True
+    fast_return_token = (
+        signing.dumps(
+            {"quote_id": str(quote.pk), "owner": quote.session_key_hash},
+            salt="payments.apple-fast-return.v1",
+        )
+        if apple_pay_fast_checkout
+        else ""
+    )
     return {
         "quote": quote,
         "property": quote.property,
@@ -208,11 +216,15 @@ def _quote_context(
         ),
         "apple_pay_fast_checkout": apple_pay_fast_checkout,
         "apple_pay_fast_amount": (
-            format(quote.payment_amount_sar, ".2f")
-            if quote.payment_amount_sar is not None
-            else ""
+            format(quote.payment_amount_sar, ".2f") if quote.payment_amount_sar is not None else ""
         ),
         "apple_pay_fast_widget_url": f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js",
+        "apple_pay_fast_result_url": (
+            f"{reverse('payments:apple_fast_result')}?"
+            f"{urlencode({'return_token': fast_return_token})}"
+            if fast_return_token
+            else ""
+        ),
     }
 
 

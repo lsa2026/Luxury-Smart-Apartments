@@ -4,6 +4,7 @@ import json
 from decimal import Decimal
 
 import pytest
+from django.core import signing
 from django.test import Client, override_settings
 from django.urls import reverse
 
@@ -56,7 +57,8 @@ def owned_quote():
     session[SESSION_MARKER_KEY] = marker
     session.save()
     quote = make_quote(
-        make_property(), total=Decimal("500.00"),
+        make_property(),
+        total=Decimal("500.00"),
         session_hash=hash_session_marker(marker),
     )
     return client, quote, quote_reference(quote)
@@ -93,9 +95,10 @@ def test_express_checkout_appears_before_guest_form_and_csp_allows_widget():
     response = client.get(reverse("reservations:quote_detail", args=[reference]))
     html = response.content.decode()
     assert response.status_code == 200
-    assert html.index('data-fast-apple-pay') < html.index('data-guest-journey')
+    assert html.index("data-fast-apple-pay") < html.index("data-guest-journey")
     assert 'data-brands="APPLEPAY"' in html
-    assert 'https://eu-test.oppwa.com/v1/paymentWidgets.js' in html
+    assert "return_token=" in html
+    assert "https://eu-test.oppwa.com/v1/paymentWidgets.js" in html
     assert "https://eu-test.oppwa.com" in response["Content-Security-Policy"]
     assert "payment=(self)" in response["Permissions-Policy"]
     assert BookingIntent.objects.filter(quote=quote).count() == 0
@@ -157,11 +160,14 @@ def test_wallet_authorization_creates_intent_then_reuses_existing_payment(monkey
     attempt = PaymentAttempt.objects.get(booking_intent=intent)
     assert attempt.provider_checkout_id == checkout_id
     assert attempt.amount == Decimal("500.00")
-    assert client.post(
-        authorization,
-        data=json.dumps({"checkoutId": checkout_id, "payment": wallet}),
-        content_type="application/json",
-    ).status_code == 200
+    assert (
+        client.post(
+            authorization,
+            data=json.dumps({"checkoutId": checkout_id, "payment": wallet}),
+            content_type="application/json",
+        ).status_code
+        == 200
+    )
     assert PaymentAttempt.objects.filter(booking_intent=intent).count() == 1
 
 
@@ -193,19 +199,37 @@ def test_result_delegates_to_authoritative_verification(monkeypatch):
     monkeypatch.setattr(HyperPayResultView, "service_class", VerificationStub)
     result_url = reverse("payments:apple_fast_result")
     path = f"/v1/checkouts/{checkout_id}/payment"
-    assert client.get(result_url, {"resourcePath": path}).status_code == 200
+    token = signing.dumps(
+        {"quote_id": str(quote.pk), "owner": quote.session_key_hash},
+        salt="payments.apple-fast-return.v1",
+    )
+    # The payment gateway's return may be a fresh browser session. Its signed
+    # quote token must still lead to the existing authoritative result checker.
+    fresh_browser = Client()
+    assert fresh_browser.get(
+        result_url,
+        {"resourcePath": path, "return_token": token},
+        follow=True,
+    ).status_code == 200
     assert (
-        client.get(result_url, {"resourcePath": "/v1/checkouts/other/payment"}).status_code
+        fresh_browser.get(
+            result_url,
+            {"resourcePath": "/v1/checkouts/other/payment", "return_token": token},
+        ).status_code
         == 404
     )
+    assert fresh_browser.get(result_url, {"resourcePath": path}).status_code == 404
 
 
 @override_settings(**{**UAT_SETTINGS, "HYPERPAY_ENVIRONMENT": "production"})
 def test_express_checkout_is_inaccessible_on_production_connection():
     client, _, reference = owned_quote()
-    assert client.post(
-        reverse("payments:apple_fast_create", args=[reference]),
-        {"terms_accepted": "on", "privacy_accepted": "on"},
-    ).status_code == 404
+    assert (
+        client.post(
+            reverse("payments:apple_fast_create", args=[reference]),
+            {"terms_accepted": "on", "privacy_accepted": "on"},
+        ).status_code
+        == 404
+    )
     page = client.get(reverse("reservations:quote_detail", args=[reference]))
-    assert 'data-fast-apple-pay' not in page.content.decode()
+    assert "data-fast-apple-pay" not in page.content.decode()

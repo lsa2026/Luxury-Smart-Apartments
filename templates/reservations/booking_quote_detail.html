@@ -248,7 +248,7 @@ var wpwlOptions = {
                     <p><a class="text-link" href="{{ property.get_absolute_url }}#stay-policy-title" target="_blank">{% trans "Read the full stay policy" %}</a></p>
                     <p><a class="text-link" href="{% url 'core:terms' %}" target="_blank">{% trans "Terms" %}</a> · <a class="text-link" href="{% url 'core:privacy' %}" target="_blank">{% trans "Privacy" %}</a></p>
                     <p class="form-error" role="alert" data-fast-apple-error></p>
-                    <form action="{% url 'payments:apple_fast_result' %}" class="paymentWidgets" data-brands="APPLEPAY"></form>
+                    <form action="{{ apple_pay_fast_result_url }}" class="paymentWidgets" data-brands="APPLEPAY"></form>
                 </div>
                 <p class="quote-review__fast-divider">{% trans "Or enter your details to pay by card" %}</p>
                 {% endif %}
