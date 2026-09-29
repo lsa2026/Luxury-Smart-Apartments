@@ -21,6 +21,7 @@ from apps.payments.hyperpay.service import (
     VerificationOutcome,
     build_checkout_payload,
     format_test_amount,
+    merchant_transaction_id,
 )
 from apps.payments.models import PaymentAttempt
 from apps.payments.views import (
@@ -52,6 +53,17 @@ from tests.test_hostaway_booking_phase5 import (
 )
 
 pytestmark = pytest.mark.django_db
+
+@override_settings(HYPERPAY_ENVIRONMENT="test")
+def test_merchant_transaction_id_is_16_characters_in_uat() -> None:
+    identifiers = {merchant_transaction_id() for _ in range(10)}
+    assert len(identifiers) == 10
+    assert all(len(identifier) == 16 and identifier.startswith("LSA-") for identifier in identifiers)
+
+
+@override_settings(HYPERPAY_ENVIRONMENT="production")
+def test_merchant_transaction_id_keeps_production_format() -> None:
+    assert len(merchant_transaction_id()) == 36
 
 HYPERPAY_SETTINGS = {
     "HYPERPAY_ENABLED": True,
