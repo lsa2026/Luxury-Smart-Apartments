@@ -77,6 +77,9 @@ def format_hyperpay_amount(amount: Decimal) -> str:
 
 
 def merchant_transaction_id() -> str:
+    # UAT-only diagnostic for acquirer format errors; production remains unchanged.
+    if settings.HYPERPAY_ENVIRONMENT == "test":
+        return f"LSA-{secrets.token_hex(6)}"
     return f"LSA-{secrets.token_hex(16)}"
 
 
