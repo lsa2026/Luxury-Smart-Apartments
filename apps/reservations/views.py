@@ -3,6 +3,7 @@
 import logging
 import secrets
 from datetime import date, timedelta
+from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.conf import settings
@@ -153,12 +154,34 @@ def _owned_quote(request: HttpRequest, reference: str) -> BookingQuote:
     return quote
 
 
-def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, object]:
+def _quote_context(
+    request: HttpRequest,
+    quote: BookingQuote,
+    form: GuestDetailsForm,
+) -> dict[str, object]:
     cover_image = (
         PropertyImage.objects.public()
         .filter(property=quote.property)
         .order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
         .first()
+    )
+    apple_pay_fast_checkout = (
+        settings.APPLE_PAY_FAST_CHECKOUT_ENABLED
+        and settings.HYPERPAY_ENABLED
+        and settings.HYPERPAY_ENVIRONMENT == "test"
+        and "APPLEPAY" in settings.HYPERPAY_ALLOWED_BRANDS
+        and quote.payment_amount_sar is not None
+        and quote.payment_amount_sar == quote.payment_amount_sar.quantize(Decimal("1"))
+    )
+    if apple_pay_fast_checkout:
+        request._apple_pay_fast_checkout_page = True
+    fast_return_token = (
+        signing.dumps(
+            {"quote_id": str(quote.pk), "owner": quote.session_key_hash},
+            salt="payments.apple-fast-return.v1",
+        )
+        if apple_pay_fast_checkout
+        else ""
     )
     return {
         "quote": quote,
@@ -190,6 +213,17 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
                 )
             )
             else 1
+        ),
+        "apple_pay_fast_checkout": apple_pay_fast_checkout,
+        "apple_pay_fast_amount": (
+            format(quote.payment_amount_sar, ".2f") if quote.payment_amount_sar is not None else ""
+        ),
+        "apple_pay_fast_widget_url": f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js",
+        "apple_pay_fast_result_url": (
+            f"{reverse('payments:apple_fast_result')}?"
+            f"{urlencode({'return_token': fast_return_token})}"
+            if fast_return_token
+            else ""
         ),
     }
 
@@ -409,6 +443,7 @@ class BookingQuoteDetailView(View):
             request,
             "reservations/booking_quote_detail.html",
             _quote_context(
+                request,
                 quote,
                 GuestDetailsForm(
                     default_country_code=guest_country_code,
@@ -440,7 +475,7 @@ class GuestDetailsView(View):
             return render(
                 request,
                 "reservations/booking_quote_detail.html",
-                _quote_context(quote, form),
+                _quote_context(request, quote, form),
                 status=400,
             )
         if not verify_quote_fingerprint(quote):
