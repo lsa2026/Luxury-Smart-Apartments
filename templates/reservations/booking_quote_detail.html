@@ -4,6 +4,103 @@
 {% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
+{% block extra_head %}
+{% if apple_pay_fast_checkout and quote_is_usable %}
+<style nonce="{{ csp_nonce }}">
+.quote-review__fast-pay { display: grid; gap: .9rem; margin: 1.25rem 0; padding: 1.2rem; border: 1px solid rgb(190 175 151 / 56%); border-radius: 1.1rem; background: #faf8f3; }
+.quote-review__fast-pay h3, .quote-review__fast-pay p { margin: 0; }
+.quote-review__fast-pay label { display: flex; align-items: flex-start; gap: .65rem; }
+.quote-review__fast-pay .paymentWidgets, .quote-review__fast-pay .wpwl-container { min-width: 0; width: 100%; }
+.quote-review__fast-divider { margin: 1.5rem 0; text-align: center; }
+</style>
+<script nonce="{{ csp_nonce }}">
+var fastAppleCheckoutId = null;
+var wpwlOptions = {
+    locale: "{{ LANGUAGE_CODE|default:'ar' }}",
+    paymentTarget: "_top",
+    createCheckout: function () {
+        var section = document.querySelector("[data-fast-apple-pay]");
+        var terms = section.querySelector("[name='terms_accepted']");
+        var privacy = section.querySelector("[name='privacy_accepted']");
+        var error = section.querySelector("[data-fast-apple-error]");
+        if (!terms.checked || !privacy.checked) {
+            error.textContent = section.dataset.acceptMessage;
+            return false;
+        }
+        error.textContent = "";
+        var data = new FormData();
+        data.append("terms_accepted", "on");
+        data.append("privacy_accepted", "on");
+        return fetch(section.dataset.createUrl, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRFToken": section.querySelector("[name='csrfmiddlewaretoken']").value },
+            body: data
+        }).then(function (response) {
+            return response.json().then(function (body) {
+                if (!response.ok || !body.checkoutId) {
+                    throw new Error(body.error || section.dataset.failureMessage);
+                }
+                fastAppleCheckoutId = body.checkoutId;
+                return body.checkoutId;
+            });
+        }).catch(function (failure) {
+            error.textContent = failure.message || section.dataset.failureMessage;
+            return false;
+        });
+    },
+    applePay: {
+        version: 5,
+        displayName: "Luxury Smart Apartments",
+        countryCode: "SA",
+        currencyCode: "SAR",
+        merchantCapabilities: ["supports3DS"],
+        supportedNetworks: ["masterCard", "visa"],
+        total: {
+            label: "Luxury Smart Apartments",
+            amount: "{{ apple_pay_fast_amount }}"
+        },
+        requiredShippingContactFields: ["name", "email", "phone"],
+        requiredBillingContactFields: ["postalAddress"],
+        submitOnPaymentAuthorized: ["customer", "billing"],
+        onPaymentAuthorized: function (payment) {
+            var section = document.querySelector("[data-fast-apple-pay]");
+            var error = section.querySelector("[data-fast-apple-error]");
+            return fetch(section.dataset.authorizeUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": section.querySelector("[name='csrfmiddlewaretoken']").value
+                },
+                // Only contact details are sent to our server. HyperPay handles
+                // the encrypted Apple Pay token; no card data is copied here.
+                body: JSON.stringify({
+                    checkoutId: fastAppleCheckoutId,
+                    payment: {
+                        shippingContact: payment.shippingContact,
+                        billingContact: payment.billingContact
+                    }
+                })
+            }).then(function (response) {
+                return response.json().then(function (body) {
+                    if (!response.ok || !body.ready) {
+                        throw new Error(body.error || section.dataset.failureMessage);
+                    }
+                    error.textContent = "";
+                    return { status: "SUCCESS" };
+                });
+            }).catch(function (failure) {
+                error.textContent = failure.message || section.dataset.failureMessage;
+                return { status: "ABORT" };
+            });
+        }
+    }
+};
+</script>
+<script src="{{ apple_pay_fast_widget_url }}"></script>
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <section
@@ -137,6 +234,24 @@
                 </div>
 
                 {% if quote_is_usable %}
+                {% if apple_pay_fast_checkout %}
+                <div class="quote-review__fast-pay" data-fast-apple-pay
+                    data-create-url="{% url 'payments:apple_fast_create' quote_reference %}"
+                    data-authorize-url="{% url 'payments:apple_fast_authorize' quote_reference %}"
+                    data-accept-message="{% trans 'Accept the terms and privacy policy before paying.' %}"
+                    data-failure-message="{% trans 'Apple Pay could not start. Nothing was charged.' %}">
+                    <h3>{% trans "Pay faster with Apple Pay" %}</h3>
+                    <p>{% trans "Choose Apple Pay now. Confirm your contact and billing details in Wallet; no card number is entered on this site." %}</p>
+                    {% csrf_token %}
+                    <label><input type="checkbox" name="terms_accepted" required> {% trans "I accept the booking terms, cancellation policy and house rules." %}</label>
+                    <label><input type="checkbox" name="privacy_accepted" required> {% trans "I accept the privacy policy." %}</label>
+                    <p><a class="text-link" href="{{ property.get_absolute_url }}#stay-policy-title" target="_blank">{% trans "Read the full stay policy" %}</a></p>
+                    <p><a class="text-link" href="{% url 'core:terms' %}" target="_blank">{% trans "Terms" %}</a> · <a class="text-link" href="{% url 'core:privacy' %}" target="_blank">{% trans "Privacy" %}</a></p>
+                    <p class="form-error" role="alert" data-fast-apple-error></p>
+                    <form action="{% url 'payments:apple_fast_result' %}" class="paymentWidgets" data-brands="APPLEPAY"></form>
+                </div>
+                <p class="quote-review__fast-divider">{% trans "Or enter your details to pay by card" %}</p>
+                {% endif %}
                 <form
                     class="quote-review__form guest-journey"
                     method="post"

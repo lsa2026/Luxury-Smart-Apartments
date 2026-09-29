@@ -157,7 +157,10 @@ class SecurityHeadersMiddleware:
             script_sources.append("https://cdn.trustindex.io")
             connect_sources.append("https://cdn.trustindex.io")
             style_sources = f"{style_sources} 'unsafe-inline' https://cdn.trustindex.io"
-        hyperpay_page = settings.HYPERPAY_ENABLED and request.path.startswith("/payments/hyperpay/")
+        hyperpay_page = settings.HYPERPAY_ENABLED and (
+            request.path.startswith("/payments/hyperpay/")
+            or getattr(request, "_apple_pay_fast_checkout_page", False)
+        )
         if hyperpay_page:
             script_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)
             connect_sources.append(settings.HYPERPAY_WIDGET_ORIGIN)

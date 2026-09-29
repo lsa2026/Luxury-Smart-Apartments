@@ -345,6 +345,12 @@ HYPERPAY_ALLOWED_BRANDS = tuple(
     for brand in env.list("HYPERPAY_ALLOWED_BRANDS", default=_hyperpay_default_brands)
     if brand.strip()
 )
+# The guest-data-free Apple Pay journey is experimental and cannot be enabled
+# on the production payment connection by a stale Render environment value.
+APPLE_PAY_FAST_CHECKOUT_ENABLED = (
+    HYPERPAY_ENVIRONMENT == "test"
+    and strict_bool("APPLE_PAY_FAST_CHECKOUT_ENABLED")
+)
 APPLE_PAY_DOMAIN_ASSOCIATION_FILE = env(
     "APPLE_PAY_DOMAIN_ASSOCIATION_FILE",
     default="/etc/secrets/apple_pay_domain_association",

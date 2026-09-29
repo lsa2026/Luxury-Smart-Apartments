@@ -1,11 +1,14 @@
 """Owned payment pages for HyperPay TEST and the local development sandbox."""
 
+import json
+import re
+import secrets
 from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
 from django.core import signing
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -16,17 +19,30 @@ from django.views import View
 from apps.accounts.services import claimable_reference
 from apps.core.marketing import prepare_purchase_event, purchase_receipt_token
 from apps.properties.models import PropertyImage
-from apps.reservations.models import BookingIntent, BookingModificationRequest
-from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
+from apps.reservations.booking_forms import GuestDetailsForm
+from apps.reservations.models import BookingIntent, BookingModificationRequest, BookingQuote
+from apps.reservations.security import (
+    grant_reservation_access, is_rate_limited, session_can_manage,
+    session_key_hash, session_owns,
+)
+from apps.reservations.services.availability import AvailabilityRequest, AvailabilityService
+from apps.reservations.services.booking import consume_revalidated_quote
+from apps.reservations.signing import quote_id_from_reference, verify_quote_fingerprint
 
 from .currency import (
+    CurrencyError,
     DISPLAY_CURRENCY_SESSION_KEY,
+    PAYMENT_CURRENCY,
     UnsupportedCurrencyError,
     normalize_currency,
+    validate_payment_snapshot,
 )
+from .hyperpay.client import HyperPayClient
 from .hyperpay.exceptions import HyperPayError
-from .hyperpay.result_codes import HyperPayStatus
-from .hyperpay.service import HyperPayService
+from .hyperpay.result_codes import HyperPayStatus, map_result_code
+from .hyperpay.service import (
+    HyperPayService, format_hyperpay_amount, merchant_transaction_id,
+)
 from .models import PaymentAttempt
 from .services import simulate_booking, simulate_modification
 
@@ -138,6 +154,280 @@ def _existing_checkout(**filters: object) -> PaymentAttempt | None:
         .order_by("-created_at")
         .first()
     )
+
+
+def _fast_checkout_enabled() -> None:
+    if not (
+        settings.APPLE_PAY_FAST_CHECKOUT_ENABLED
+        and settings.HYPERPAY_ENABLED
+        and settings.HYPERPAY_ENVIRONMENT == "test"
+        and "APPLEPAY" in settings.HYPERPAY_ALLOWED_BRANDS
+    ):
+        raise Http404
+
+
+def _fast_quote(request: HttpRequest, reference: str) -> BookingQuote:
+    try:
+        quote = BookingQuote.objects.select_related("property").get(
+            pk=quote_id_from_reference(reference)
+        )
+    except (signing.BadSignature, ValueError, BookingQuote.DoesNotExist) as exc:
+        raise Http404 from exc
+    if not session_owns(request, quote.session_key_hash):
+        raise Http404
+    return quote
+
+
+def _fast_session_key(quote: BookingQuote) -> str:
+    return f"apple_fast_checkout_v1_{quote.pk}"
+
+
+def _fast_error(message: str, *, status: int = 400) -> JsonResponse:
+    return JsonResponse({"error": message}, status=status)
+
+
+def _fast_ready_quote(quote: BookingQuote) -> bool:
+    return (
+        quote.status == BookingQuote.Status.ACTIVE
+        and not quote.is_expired
+        and verify_quote_fingerprint(quote)
+        and quote.payment_amount_sar is not None
+    )
+
+
+def _fast_revalidate(quote: BookingQuote) -> object:
+    with AvailabilityService() as service:
+        result = service.check(
+            AvailabilityRequest(
+                property=quote.property,
+                check_in=quote.check_in,
+                check_out=quote.check_out,
+                guests=quote.guests,
+            ),
+            bypass_cache=True,
+        )
+    latest = result.quote
+    if not (
+        result.is_available
+        and latest is not None
+        and latest.listing_id == quote.hostaway_listing_id
+        and latest.check_in == quote.check_in
+        and latest.check_out == quote.check_out
+        and latest.guests == quote.guests
+        and latest.currency == quote.currency
+        and latest.total_price == quote.total_price
+    ):
+        raise ValueError("quote_changed")
+    return result
+
+
+class ApplePayFastCreateView(View):
+    """Create a TEST checkout after quote revalidation, before collecting PII."""
+
+    http_method_names = ["post"]
+    client_class = HyperPayClient
+
+    def post(self, request: HttpRequest, reference: str) -> HttpResponse:
+        _fast_checkout_enabled()
+        if is_rate_limited(
+            request,
+            scope="apple-fast-create",
+            requests=settings.BOOKING_INTENT_RATE_LIMIT_REQUESTS,
+            window=settings.BOOKING_INTENT_RATE_LIMIT_WINDOW,
+        ):
+            return _fast_error("Please wait and try again.", status=429)
+        quote = _fast_quote(request, reference)
+        if request.POST.get("terms_accepted") != "on" or request.POST.get("privacy_accepted") != "on":
+            return _fast_error("Accept the booking terms and privacy policy first.")
+        if not _fast_ready_quote(quote):
+            return _fast_error("This price has expired. Check availability again.", status=409)
+        if settings.HOSTAWAY_LIVE_BOOKING_ENABLED and quote.property.hostaway_listing_map_id is None:
+            return _fast_error("This property cannot be booked at present.", status=409)
+        try:
+            validate_payment_snapshot(
+                source_amount=quote.total_price,
+                source_currency=quote.currency,
+                payment_amount_sar=quote.payment_amount_sar,
+                snapshot=quote.exchange_rate_snapshot,
+            )
+            _fast_revalidate(quote)
+            amount = format_hyperpay_amount(quote.payment_amount_sar)
+        except (ValueError, CurrencyError, HyperPayError):
+            return _fast_error("The price or availability changed. Please start a new search.", status=409)
+        state = request.session.get(_fast_session_key(quote))
+        if isinstance(state, dict) and state.get("checkout_id"):
+            return JsonResponse({"checkoutId": state["checkout_id"]})
+        merchant_id = merchant_transaction_id()
+        payload = {
+            "entityId": settings.HYPERPAY_ENTITY_ID,
+            "amount": amount,
+            "currency": PAYMENT_CURRENCY,
+            "paymentType": settings.HYPERPAY_PAYMENT_TYPE,
+            "merchantTransactionId": merchant_id,
+            "integrity": "true",
+            "testMode": "EXTERNAL",
+            "customParameters[3DS2_enrolled]": "true",
+        }
+        try:
+            with self.client_class() as client:
+                response = client.create_checkout(payload)
+        except HyperPayError:
+            return _fast_error("Secure payment could not be started. Nothing was charged.", status=503)
+        checkout_id = response.get("id")
+        integrity = response.get("integrity")
+        result = response.get("result")
+        result_code = result.get("code") if isinstance(result, dict) else ""
+        if not (
+            isinstance(checkout_id, str)
+            and re.fullmatch(r"[A-Za-z0-9._-]{8,255}", checkout_id)
+            and isinstance(integrity, str)
+            and re.fullmatch(r"sha(?:256|384|512)-[A-Za-z0-9+/=]+", integrity)
+            and map_result_code(result_code) is HyperPayStatus.PENDING
+        ):
+            return _fast_error("Secure payment could not be started. Nothing was charged.", status=503)
+        request.session[_fast_session_key(quote)] = {
+            "checkout_id": checkout_id,
+            "integrity": integrity,
+            "merchant_id": merchant_id,
+            "idempotency_key": secrets.token_urlsafe(32),
+            "amount": amount,
+            "terms_accepted": True,
+            "privacy_accepted": True,
+        }
+        return JsonResponse({"checkoutId": checkout_id})
+
+
+class ApplePayFastAuthorizeView(View):
+    """Attach Wallet contact details to a revalidated booking before charge."""
+
+    http_method_names = ["post"]
+
+    def post(self, request: HttpRequest, reference: str) -> HttpResponse:
+        _fast_checkout_enabled()
+        quote = _fast_quote(request, reference)
+        state = request.session.get(_fast_session_key(quote))
+        if not isinstance(state, dict) or not state.get("checkout_id"):
+            return _fast_error("The payment session expired. Please start again.", status=409)
+        if len(request.body) > 8192:
+            return _fast_error("Contact information is too long.")
+        try:
+            data = json.loads(request.body)
+        except (TypeError, ValueError):
+            return _fast_error("Contact information is missing.")
+        if not isinstance(data, dict) or data.get("checkoutId") != state["checkout_id"]:
+            return _fast_error("The payment session does not match.", status=409)
+        payment = data.get("payment")
+        if not isinstance(payment, dict):
+            return _fast_error("Apple Pay contact information is missing.")
+        shipping = payment.get("shippingContact")
+        billing = payment.get("billingContact")
+        if not isinstance(shipping, dict) or not isinstance(billing, dict):
+            return _fast_error("Add contact and billing details in Wallet before paying.")
+        lines = billing.get("addressLines")
+        street = lines[0] if isinstance(lines, list) and lines and isinstance(lines[0], str) else ""
+        # The TEST MPGS connector rejects non-Latin-1 billing.address values.
+        address_parts = (
+            street,
+            billing.get("locality"),
+            billing.get("administrativeArea"),
+            shipping.get("givenName"),
+            shipping.get("familyName"),
+        )
+        if any(not isinstance(value, str) or not value.isprintable() or
+               any(ord(character) > 255 for character in value) for value in address_parts):
+            return _fast_error("Use Latin-script name and billing address in Wallet, then try again.")
+        form = GuestDetailsForm({
+            "guest_first_name": shipping.get("givenName", ""),
+            "guest_last_name": shipping.get("familyName", ""),
+            "guest_email": shipping.get("emailAddress", ""),
+            "guest_phone": shipping.get("phoneNumber", ""),
+            "billing_street1": street,
+            "billing_city": billing.get("locality", ""),
+            "billing_state": billing.get("administrativeArea", ""),
+            "billing_country": billing.get("countryCode", ""),
+            "billing_postcode": billing.get("postalCode", ""),
+            "terms_accepted": "on" if state.get("terms_accepted") else "",
+            "privacy_accepted": "on" if state.get("privacy_accepted") else "",
+            "idempotency_key": state["idempotency_key"],
+        })
+        if not form.is_valid():
+            return _fast_error("Check your name, email, phone and billing address in Wallet.")
+        existing_intent = BookingIntent.objects.filter(
+            quote=quote,
+            idempotency_key=state["idempotency_key"],
+        ).first()
+        if not existing_intent and not _fast_ready_quote(quote):
+            return _fast_error("This price has expired. Please start a new search.", status=409)
+        if existing_intent is None:
+            try:
+                revalidated = _fast_revalidate(quote)
+            except (ValueError, HyperPayError):
+                return _fast_error("The price or availability changed. Nothing was charged.", status=409)
+            fields = form.cleaned_data
+            outcome = consume_revalidated_quote(
+                quote_id=quote.pk,
+                session_hash=session_key_hash(request),
+                idempotency_key=state["idempotency_key"],
+                guest_data={
+                    "guest_first_name": fields["guest_first_name"],
+                    "guest_last_name": fields["guest_last_name"],
+                    "guest_email": fields["guest_email"],
+                    "guest_phone": fields["guest_phone"],
+                    "guest_country_code": fields["billing_country"],
+                    "billing_street1": fields["billing_street1"],
+                    "billing_city": fields["billing_city"],
+                    "billing_state": fields["billing_state"],
+                    "billing_country": fields["billing_country"],
+                    "billing_postcode": fields["billing_postcode"],
+                    "language": request.LANGUAGE_CODE.split("-")[0] if hasattr(request, "LANGUAGE_CODE") else "ar",
+                    "special_requests": "",
+                    "marketing_consent": False,
+                },
+                revalidated=revalidated,
+            )
+            if outcome.intent is None:
+                return _fast_error("The booking price or availability changed. Nothing was charged.", status=409)
+            intent = outcome.intent
+        else:
+            intent = existing_intent
+        attempt, created = PaymentAttempt.objects.get_or_create(
+            booking_intent=intent,
+            provider="hyperpay",
+            provider_checkout_id=state["checkout_id"],
+            defaults={
+                "provider_reference": state["checkout_id"],
+                "merchant_transaction_id": state["merchant_id"],
+                "widget_integrity": state["integrity"],
+                "amount": intent.payment_amount_sar,
+                "currency": PAYMENT_CURRENCY,
+                "status": PaymentAttempt.Status.PENDING,
+                "idempotency_key": secrets.token_urlsafe(32),
+            },
+        )
+        if not created and attempt.status not in (PaymentAttempt.Status.CREATED, PaymentAttempt.Status.PENDING):
+            return _fast_error("This payment has already been processed.", status=409)
+        return JsonResponse({"ready": True})
+
+
+class ApplePayFastResultView(View):
+    """Resolve the widget's checkout to the owned payment verification flow."""
+
+    http_method_names = ["get"]
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        _fast_checkout_enabled()
+        path = request.GET.get("resourcePath", "")
+        match = re.fullmatch(r"/v1/checkouts/([A-Za-z0-9._-]{8,255})/payment", path)
+        if match is None:
+            raise Http404
+        attempt = get_object_or_404(
+            PaymentAttempt.objects.select_related("booking_intent"),
+            provider="hyperpay",
+            provider_checkout_id=match.group(1),
+        )
+        if not _owns_intent(request, attempt.booking_intent):
+            raise Http404
+        return HyperPayResultView.as_view()(request, payment_id=attempt.pk)
 
 
 class CurrencyPreferenceView(View):
