@@ -22,8 +22,11 @@ from apps.properties.models import PropertyImage
 from apps.reservations.booking_forms import GuestDetailsForm
 from apps.reservations.models import BookingIntent, BookingModificationRequest, BookingQuote
 from apps.reservations.security import (
-    grant_reservation_access, is_rate_limited, session_can_manage,
-    session_key_hash, session_owns,
+    grant_reservation_access,
+    is_rate_limited,
+    session_can_manage,
+    session_key_hash,
+    session_owns,
 )
 from apps.reservations.services.availability import AvailabilityRequest, AvailabilityService
 from apps.reservations.services.booking import consume_revalidated_quote
@@ -41,7 +44,9 @@ from .hyperpay.client import HyperPayClient
 from .hyperpay.exceptions import HyperPayError
 from .hyperpay.result_codes import HyperPayStatus, map_result_code
 from .hyperpay.service import (
-    HyperPayService, format_hyperpay_amount, merchant_transaction_id,
+    HyperPayService,
+    format_hyperpay_amount,
+    merchant_transaction_id,
 )
 from .models import PaymentAttempt
 from .services import simulate_booking, simulate_modification
@@ -237,11 +242,17 @@ class ApplePayFastCreateView(View):
         ):
             return _fast_error("Please wait and try again.", status=429)
         quote = _fast_quote(request, reference)
-        if request.POST.get("terms_accepted") != "on" or request.POST.get("privacy_accepted") != "on":
+        if (
+            request.POST.get("terms_accepted") != "on"
+            or request.POST.get("privacy_accepted") != "on"
+        ):
             return _fast_error("Accept the booking terms and privacy policy first.")
         if not _fast_ready_quote(quote):
             return _fast_error("This price has expired. Check availability again.", status=409)
-        if settings.HOSTAWAY_LIVE_BOOKING_ENABLED and quote.property.hostaway_listing_map_id is None:
+        if (
+            settings.HOSTAWAY_LIVE_BOOKING_ENABLED
+            and quote.property.hostaway_listing_map_id is None
+        ):
             return _fast_error("This property cannot be booked at present.", status=409)
         try:
             validate_payment_snapshot(
@@ -253,7 +264,10 @@ class ApplePayFastCreateView(View):
             _fast_revalidate(quote)
             amount = format_hyperpay_amount(quote.payment_amount_sar)
         except (ValueError, CurrencyError, HyperPayError):
-            return _fast_error("The price or availability changed. Please start a new search.", status=409)
+            return _fast_error(
+                "The price or availability changed. Please start a new search.",
+                status=409,
+            )
         state = request.session.get(_fast_session_key(quote))
         if isinstance(state, dict) and state.get("checkout_id"):
             return JsonResponse({"checkoutId": state["checkout_id"]})
@@ -272,7 +286,10 @@ class ApplePayFastCreateView(View):
             with self.client_class() as client:
                 response = client.create_checkout(payload)
         except HyperPayError:
-            return _fast_error("Secure payment could not be started. Nothing was charged.", status=503)
+            return _fast_error(
+                "Secure payment could not be started. Nothing was charged.",
+                status=503,
+            )
         checkout_id = response.get("id")
         integrity = response.get("integrity")
         result = response.get("result")
@@ -284,7 +301,10 @@ class ApplePayFastCreateView(View):
             and re.fullmatch(r"sha(?:256|384|512)-[A-Za-z0-9+/=]+", integrity)
             and map_result_code(result_code) is HyperPayStatus.PENDING
         ):
-            return _fast_error("Secure payment could not be started. Nothing was charged.", status=503)
+            return _fast_error(
+                "Secure payment could not be started. Nothing was charged.",
+                status=503,
+            )
         request.session[_fast_session_key(quote)] = {
             "checkout_id": checkout_id,
             "integrity": integrity,
@@ -333,9 +353,15 @@ class ApplePayFastAuthorizeView(View):
             shipping.get("givenName"),
             shipping.get("familyName"),
         )
-        if any(not isinstance(value, str) or not value.isprintable() or
-               any(ord(character) > 255 for character in value) for value in address_parts):
-            return _fast_error("Use Latin-script name and billing address in Wallet, then try again.")
+        if any(
+            not isinstance(value, str)
+            or not value.isprintable()
+            or any(ord(character) > 255 for character in value)
+            for value in address_parts
+        ):
+            return _fast_error(
+                "Use Latin-script name and billing address in Wallet, then try again."
+            )
         form = GuestDetailsForm({
             "guest_first_name": shipping.get("givenName", ""),
             "guest_last_name": shipping.get("familyName", ""),
@@ -362,7 +388,10 @@ class ApplePayFastAuthorizeView(View):
             try:
                 revalidated = _fast_revalidate(quote)
             except (ValueError, HyperPayError):
-                return _fast_error("The price or availability changed. Nothing was charged.", status=409)
+                return _fast_error(
+                    "The price or availability changed. Nothing was charged.",
+                    status=409,
+                )
             fields = form.cleaned_data
             outcome = consume_revalidated_quote(
                 quote_id=quote.pk,
@@ -379,14 +408,21 @@ class ApplePayFastAuthorizeView(View):
                     "billing_state": fields["billing_state"],
                     "billing_country": fields["billing_country"],
                     "billing_postcode": fields["billing_postcode"],
-                    "language": request.LANGUAGE_CODE.split("-")[0] if hasattr(request, "LANGUAGE_CODE") else "ar",
+                    "language": (
+                        request.LANGUAGE_CODE.split("-")[0]
+                        if hasattr(request, "LANGUAGE_CODE")
+                        else "ar"
+                    ),
                     "special_requests": "",
                     "marketing_consent": False,
                 },
                 revalidated=revalidated,
             )
             if outcome.intent is None:
-                return _fast_error("The booking price or availability changed. Nothing was charged.", status=409)
+                return _fast_error(
+                    "The booking price or availability changed. Nothing was charged.",
+                    status=409,
+                )
             intent = outcome.intent
         else:
             intent = existing_intent
@@ -404,7 +440,10 @@ class ApplePayFastAuthorizeView(View):
                 "idempotency_key": secrets.token_urlsafe(32),
             },
         )
-        if not created and attempt.status not in (PaymentAttempt.Status.CREATED, PaymentAttempt.Status.PENDING):
+        if not created and attempt.status not in (
+            PaymentAttempt.Status.CREATED,
+            PaymentAttempt.Status.PENDING,
+        ):
             return _fast_error("This payment has already been processed.", status=409)
         return JsonResponse({"ready": True})
 

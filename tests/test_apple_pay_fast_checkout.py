@@ -194,7 +194,10 @@ def test_result_delegates_to_authoritative_verification(monkeypatch):
     result_url = reverse("payments:apple_fast_result")
     path = f"/v1/checkouts/{checkout_id}/payment"
     assert client.get(result_url, {"resourcePath": path}).status_code == 200
-    assert client.get(result_url, {"resourcePath": "/v1/checkouts/other/payment"}).status_code == 404
+    assert (
+        client.get(result_url, {"resourcePath": "/v1/checkouts/other/payment"}).status_code
+        == 404
+    )
 
 
 @override_settings(**{**UAT_SETTINGS, "HYPERPAY_ENVIRONMENT": "production"})

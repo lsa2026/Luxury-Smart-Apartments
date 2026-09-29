@@ -154,7 +154,11 @@ def _owned_quote(request: HttpRequest, reference: str) -> BookingQuote:
     return quote
 
 
-def _quote_context(request: HttpRequest, quote: BookingQuote, form: GuestDetailsForm) -> dict[str, object]:
+def _quote_context(
+    request: HttpRequest,
+    quote: BookingQuote,
+    form: GuestDetailsForm,
+) -> dict[str, object]:
     cover_image = (
         PropertyImage.objects.public()
         .filter(property=quote.property)
