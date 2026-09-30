@@ -339,10 +339,14 @@
         }
         // Set before push: GTM can invoke callbacks synchronously.
         purchasePushed = true;
+        const value = Number(purchase.dataset.analyticsValue || 0);
+        const currency = purchase.dataset.analyticsCurrency;
+        const purchasedItem = propertyItem(purchase);
         const pushed = pushEvent("purchase", {
             transaction_id: transactionId,
-            value: Number(purchase.dataset.analyticsValue || 0),
-            currency: purchase.dataset.analyticsCurrency,
+            value,
+            currency,
+            ...(purchasedItem ? {items: [{...purchasedItem, price: value, currency}]} : {}),
             ...propertyContext(purchase),
         }, () => {
             if (purchaseProcessed) {

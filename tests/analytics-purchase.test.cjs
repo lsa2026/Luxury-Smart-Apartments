@@ -34,6 +34,11 @@ test('valid purchase contains real amount, currency and booking ID once', () => 
     assert.equal(event.ecommerce.value,1090);
     assert.equal(event.ecommerce.transaction_id,'test-booking');
     assert.equal(event.ecommerce.property_id,undefined);
+    assert.equal(event.ecommerce.items.length,1);
+    assert.equal(event.ecommerce.items[0].item_id,'test-apartment');
+    assert.equal(event.ecommerce.items[0].item_name,'Test Apartment');
+    assert.equal(event.ecommerce.items[0].price,1090);
+    assert.equal(event.ecommerce.items[0].currency,'SAR');
     result.consent();
     assert.equal(result.context.window.dataLayer.filter(e=>e.event==='purchase').length,1);
 });

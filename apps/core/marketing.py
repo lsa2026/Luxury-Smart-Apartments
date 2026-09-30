@@ -218,6 +218,22 @@ def prepare_purchase_event(
     )
     if not created and receipt.status == MarketingEventReceipt.Status.EMITTED:
         return None, receipt
+    property_obj = (
+        reservation.property
+        if reservation.property_id
+        else reservation.booking_intent.property
+        if reservation.booking_intent_id
+        else None
+    )
+    purchased_item = (
+        property_analytics_item(
+            property_obj,
+            price=reservation.total_price,
+            currency=reservation.currency,
+        )
+        if property_obj is not None
+        else None
+    )
     payload = sanitize_analytics_event(
         "purchase",
         {
@@ -225,6 +241,16 @@ def prepare_purchase_event(
             "transaction_id": reference_hash,
             "value": reservation.total_price,
             "currency": reservation.currency,
+            "page_language": (translation.get_language() or "ar").split("-")[0],
+            **(
+                {
+                    "property_id": purchased_item["item_id"],
+                    "property_name": purchased_item.get("item_name", ""),
+                    "items": [purchased_item],
+                }
+                if purchased_item and purchased_item.get("item_id")
+                else {}
+            ),
         },
     )
     return payload, receipt
