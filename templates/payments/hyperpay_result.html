@@ -18,7 +18,7 @@
         data-analytics-property-city="{{ purchased_item.item_category2 }}"
         data-analytics-property-type="{{ purchased_item.item_category3 }}"
         {% endif %}
-        data-analytics-page-language="{{ current_language_code }}"
+        data-analytics-page-language="{{ purchase_event.page_language }}"
         data-analytics-receipt-token="{{ purchase_receipt_token }}"
         data-analytics-receipt-csrf="{{ purchase_receipt_csrf_token }}"
         data-analytics-receipt-url="{% url 'marketing:purchase_acknowledge' %}"

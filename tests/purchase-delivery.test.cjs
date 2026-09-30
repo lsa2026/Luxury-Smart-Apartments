@@ -103,7 +103,9 @@ test('verified purchase with denied consent does not grant consent or prematurel
         for(const name of ['analytics_storage','ad_storage','ad_user_data','ad_personalization'])
             assert.equal(e[2][name],'denied');
     }
-    assert.deepEqual(Object.keys(r.purchases[0].ecommerce).sort(),['currency','transaction_id','value']);
+    assert.deepEqual(Object.keys(r.purchases[0].ecommerce).sort(),['currency','items','transaction_id','value']);
+    assert.equal(r.purchases[0].ecommerce.items[0].item_id,'test-apartment');
+    assert.equal(r.purchases[0].ecommerce.items[0].price,1090);
     assert.equal(r.purchases[0].property_id,'test-apartment');
     assert.equal(r.purchases[0].page_language,'en');
 });
