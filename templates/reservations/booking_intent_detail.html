@@ -9,6 +9,10 @@
     data-analytics-event="booking_intent_created"
     data-analytics-currency="{{ intent.currency }}"
     data-analytics-value="{{ intent.total_price|unlocalize }}"
+    data-analytics-property-id="{{ intent.property.slug }}"
+    data-analytics-property-name="{{ intent.property|localized_property_name }}"
+    data-analytics-property-city="{{ intent.property|localized_city }}"
+    data-analytics-property-type="{{ intent.property.room_type }}"
 >
     {% include "includes/progress_indicator.html" with step=3 %}
     <div class="section-heading"><p class="eyebrow">{% trans "Local booking request" %}</p><h1>{% trans "Review your request" %}</h1></div>

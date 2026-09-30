@@ -11,28 +11,46 @@ from apps.core.models import MarketingEventReceipt
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import Reservation
 
-
 PURCHASE_RECEIPT_TOKEN_SALT = "marketing.purchase-receipt.v1"
+PROPERTY_CONTEXT_FIELDS = frozenset({"property_id", "property_name", "page_language"})
 
 EVENT_SCHEMAS: dict[str, frozenset[str]] = {
-    "view_item_list": frozenset({"item_list_name", "items"}),
-    "select_item": frozenset({"item_list_name", "items"}),
-    "view_item": frozenset({"currency", "value", "items"}),
-    "view_all_reviews": frozenset({"language", "review_count", "items"}),
-    "begin_checkout": frozenset({"currency", "value", "items", "nights", "guests"}),
-    "generate_lead": frozenset({"lead_source"}),
-    "check_availability": frozenset({"city", "nights", "guests"}),
-    "availability_result": frozenset({"available", "reason_code", "city", "nights"}),
-    "quote_created": frozenset({"currency", "value", "nights", "guests", "items"}),
-    "quote_expired": frozenset({"reason_code"}),
-    "booking_intent_created": frozenset({"currency", "value", "items"}),
+    "view_item_list": frozenset({"item_list_name", "items", "page_language"}),
+    "select_item": frozenset({"item_list_name", "items"}) | PROPERTY_CONTEXT_FIELDS,
+    "view_item": frozenset({"currency", "value", "items"}) | PROPERTY_CONTEXT_FIELDS,
+    "view_all_reviews": (
+        frozenset({"language", "review_count", "items"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    "begin_checkout": (
+        frozenset({"currency", "value", "items", "nights", "guests"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    "generate_lead": frozenset({"lead_source", "page_language"}),
+    "check_availability": (
+        frozenset({"city", "nights", "guests", "items"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    "availability_result": (
+        frozenset({"available", "reason_code", "city", "nights", "items"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    "quote_created": (
+        frozenset({"currency", "value", "nights", "guests", "items"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    "quote_expired": frozenset({"reason_code", "items"}) | PROPERTY_CONTEXT_FIELDS,
+    "booking_intent_created": (frozenset({"currency", "value", "items"}) | PROPERTY_CONTEXT_FIELDS),
     "modification_request_created": frozenset({"request_type"}),
     "cancellation_request_created": frozenset({"request_type"}),
-    "contact_form_submitted": frozenset({"lead_source"}),
-    "whatsapp_click": frozenset({"lead_source", "language"}),
+    "contact_form_submitted": frozenset({"lead_source", "page_language"}),
+    "whatsapp_click": (
+        frozenset({"lead_source", "language", "contact_placement"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    "phone_click": (
+        frozenset({"lead_source", "language", "contact_placement"}) | PROPERTY_CONTEXT_FIELDS
+    ),
     "language_changed": frozenset({"language"}),
     "cookie_consent_updated": frozenset({"analytics", "marketing", "version"}),
-    "purchase": frozenset({"transaction_id", "value", "currency", "items", "tax", "coupon"}),
+    "purchase": (
+        frozenset({"transaction_id", "value", "currency", "items", "tax", "coupon"})
+        | PROPERTY_CONTEXT_FIELDS
+    ),
     "refund": frozenset({"transaction_id", "value", "currency"}),
 }
 
@@ -120,6 +138,14 @@ def sanitize_analytics_event(event_name: str, payload: dict[str, Any]) -> dict[s
                     if isinstance(item, dict) and (sanitized := sanitize_item(item))
                 ]
             continue
+        if key == "property_id":
+            value = payload[key]
+            if not isinstance(value, str) or not SLUG_PATTERN.fullmatch(value):
+                continue
+        if key == "page_language":
+            value = payload[key]
+            if not isinstance(value, str) or not re.fullmatch(r"[a-z]{2,3}", value):
+                continue
         normalized = _plain_value(payload[key])
         if normalized is not None:
             clean[key] = normalized
@@ -206,10 +232,7 @@ def prepare_purchase_event(
 
 def purchase_receipt_token(receipt: MarketingEventReceipt) -> str:
     """Issue a signed, opaque acknowledgement token for one prepared purchase."""
-    if (
-        receipt.event_name != "purchase"
-        or receipt.status != MarketingEventReceipt.Status.PREPARED
-    ):
+    if receipt.event_name != "purchase" or receipt.status != MarketingEventReceipt.Status.PREPARED:
         raise ValueError("Only prepared purchase receipts can be acknowledged.")
     return signing.dumps(
         {"receipt_id": str(receipt.pk), "event_name": receipt.event_name},

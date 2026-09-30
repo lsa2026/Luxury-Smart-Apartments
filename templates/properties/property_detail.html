@@ -179,7 +179,7 @@
                     <div><dt>{% trans "Check-out" %}</dt><dd>{{ preserved_search.check_out|localized_date }}</dd></div>
                     <div><dt>{% trans "Guests" %}</dt><dd>{{ preserved_search.guests|localized_number }}</dd></div>
                 </dl>
-                <form class="booking-selection-form" method="post" action="{% url 'reservations:quote_create' %}" data-submit-once>
+                <form class="booking-selection-form" method="post" action="{% url 'reservations:quote_create' %}" data-submit-once data-analytics-event="check_availability" data-analytics-property-id="{{ property.slug }}" data-analytics-property-name="{{ property|localized_property_name }}" data-analytics-property-city="{{ property|localized_city }}" data-analytics-property-type="{{ property.room_type }}">
                     {% csrf_token %}
                     <input type="hidden" name="city" value="{{ preserved_search.city }}">
                     <input type="hidden" name="property" value="{{ property.pk }}">

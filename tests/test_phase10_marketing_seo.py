@@ -291,8 +291,54 @@ def test_analytics_discards_unknown_payload_keys() -> None:
 def test_whatsapp_click_keeps_only_safe_attribution_fields() -> None:
     assert sanitize_analytics_event(
         "whatsapp_click",
-        {"lead_source": "floating_button", "language": "ar", "unknown": "discarded"},
-    ) == {"lead_source": "floating_button", "language": "ar"}
+        {
+            "lead_source": "floating_button",
+            "language": "ar",
+            "contact_placement": "floating_button",
+            "property_id": "darat-safa-luxury-apartment",
+            "property_name": "Darat Safa",
+            "page_language": "ar",
+            "unknown": "discarded",
+        },
+    ) == {
+        "lead_source": "floating_button",
+        "language": "ar",
+        "contact_placement": "floating_button",
+        "property_id": "darat-safa-luxury-apartment",
+        "property_name": "Darat Safa",
+        "page_language": "ar",
+    }
+
+
+def test_phone_click_keeps_only_safe_attribution_fields() -> None:
+    assert sanitize_analytics_event(
+        "phone_click",
+        {
+            "lead_source": "footer",
+            "language": "en",
+            "contact_placement": "footer",
+            "property_id": "darat-safa-luxury-apartment",
+            "page_language": "en",
+            "unknown": "discarded",
+        },
+    ) == {
+        "lead_source": "footer",
+        "language": "en",
+        "contact_placement": "footer",
+        "property_id": "darat-safa-luxury-apartment",
+        "page_language": "en",
+    }
+
+
+def test_property_context_rejects_invalid_slug_and_language() -> None:
+    assert sanitize_analytics_event(
+        "view_item",
+        {
+            "property_id": "Unsafe Property 123",
+            "property_name": "Safe public name",
+            "page_language": "english",
+        },
+    ) == {"property_name": "Safe public name"}
 
 
 def test_analytics_limits_item_count_and_item_fields() -> None:
@@ -325,6 +371,13 @@ def test_property_list_and_detail_render_safe_events(
     assert "data-analytics-item" in list_content
     assert "data-analytics-view-item" in detail_content
     assert str(property_obj.hostaway_listing_id) not in detail_content
+
+
+def test_contact_links_emit_named_phone_and_whatsapp_events() -> None:
+    content = Client().get("/ar/contact/").content.decode()
+    assert 'data-analytics-event="phone_click"' in content
+    assert 'data-analytics-event="whatsapp_click"' in content
+    assert 'data-analytics-contact-placement="contact_page"' in content
 
 
 def test_analytics_debug_source_logs_keys_not_payload() -> None:

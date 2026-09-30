@@ -12,7 +12,9 @@ function run({consent = true, storage = new Map(), results = [204], noPurchase =
     const handlers = {}, timers = new Map(), scripts = [];
     let nextTimer = 1, acknowledgements = 0;
     const purchase = {dataset: {analyticsValue:value, analyticsTransactionId:'test-booking',
-        analyticsCurrency:'SAR', analyticsReceiptToken:'signed-test', analyticsReceiptUrl:'/ack/'}};
+        analyticsCurrency:'SAR', analyticsPropertyId:'test-apartment',
+        analyticsPropertyName:'Test Apartment', analyticsPageLanguage:'en',
+        analyticsReceiptToken:'signed-test', analyticsReceiptUrl:'/ack/'}};
     const context = {console, URLSearchParams, AbortController, HTMLDialogElement:class {},
         fetch: (url, options) => {
             const response = results[Math.min(acknowledgements++,results.length-1)];
@@ -102,6 +104,8 @@ test('verified purchase with denied consent does not grant consent or prematurel
             assert.equal(e[2][name],'denied');
     }
     assert.deepEqual(Object.keys(r.purchases[0].ecommerce).sort(),['currency','transaction_id','value']);
+    assert.equal(r.purchases[0].property_id,'test-apartment');
+    assert.equal(r.purchases[0].page_language,'en');
 });
 test('GTM load failure retries loader, not purchase, with bounded attempts',()=>{
     const r=run({consent:false});r.scripts[0].onerror();r.tick(2000);

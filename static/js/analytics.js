@@ -13,25 +13,46 @@
         "item_id", "item_name", "item_brand", "item_category", "item_category2",
         "item_category3", "index", "quantity", "currency", "price",
     ]);
+    const propertyContextKeys = ["property_id", "property_name", "page_language"];
     const schemas = {
-        view_item_list: new Set(["item_list_name", "items"]),
-        select_item: new Set(["item_list_name", "items"]),
-        view_item: new Set(["currency", "value", "items"]),
-        view_all_reviews: new Set(["language", "review_count", "items"]),
-        begin_checkout: new Set(["currency", "value", "items", "nights", "guests"]),
-        generate_lead: new Set(["lead_source"]),
-        check_availability: new Set(["city", "nights", "guests"]),
-        availability_result: new Set(["available", "reason_code", "city", "nights"]),
-        quote_created: new Set(["currency", "value", "nights", "guests", "items"]),
-        quote_expired: new Set(["reason_code"]),
-        booking_intent_created: new Set(["currency", "value", "items"]),
+        view_item_list: new Set(["item_list_name", "items", "page_language"]),
+        select_item: new Set(["item_list_name", "items", ...propertyContextKeys]),
+        view_item: new Set(["currency", "value", "items", ...propertyContextKeys]),
+        view_all_reviews: new Set([
+            "language", "review_count", "items", ...propertyContextKeys,
+        ]),
+        begin_checkout: new Set([
+            "currency", "value", "items", "nights", "guests", ...propertyContextKeys,
+        ]),
+        generate_lead: new Set(["lead_source", "page_language"]),
+        check_availability: new Set([
+            "city", "nights", "guests", "items", ...propertyContextKeys,
+        ]),
+        availability_result: new Set([
+            "available", "reason_code", "city", "nights", "items", ...propertyContextKeys,
+        ]),
+        quote_created: new Set([
+            "currency", "value", "nights", "guests", "items", ...propertyContextKeys,
+        ]),
+        quote_expired: new Set(["reason_code", "items", ...propertyContextKeys]),
+        booking_intent_created: new Set([
+            "currency", "value", "items", ...propertyContextKeys,
+        ]),
         modification_request_created: new Set(["request_type"]),
         cancellation_request_created: new Set(["request_type"]),
-        contact_form_submitted: new Set(["lead_source"]),
-        whatsapp_click: new Set(["lead_source", "language"]),
+        contact_form_submitted: new Set(["lead_source", "page_language"]),
+        whatsapp_click: new Set([
+            "lead_source", "language", "contact_placement", ...propertyContextKeys,
+        ]),
+        phone_click: new Set([
+            "lead_source", "language", "contact_placement", ...propertyContextKeys,
+        ]),
         language_changed: new Set(["language"]),
         cookie_consent_updated: new Set(["analytics", "marketing", "version"]),
-        purchase: new Set(["transaction_id", "value", "currency", "items", "tax", "coupon"]),
+        purchase: new Set([
+            "transaction_id", "value", "currency", "items", "tax", "coupon",
+            ...propertyContextKeys,
+        ]),
         refund: new Set(["transaction_id", "value", "currency"]),
     };
 
@@ -71,6 +92,12 @@
             if (!schema.has(key)) {
                 return;
             }
+            if (key === "property_id" && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value))) {
+                return;
+            }
+            if (key === "page_language" && !/^[a-z]{2,3}$/.test(String(value))) {
+                return;
+            }
             if (key === "items" && Array.isArray(value)) {
                 clean.items = value.slice(0, 20).map(cleanItem).filter(
                     (item) => Object.keys(item).length,
@@ -105,7 +132,13 @@
         // variables read the explicit top-level transaction fields.
         if (eventName === "purchase") {
             window.dataLayer.push({ecommerce: null});
-            const event = {event: eventName, ...clean, ecommerce: {...clean}};
+            const ecommerce = {};
+            ["transaction_id", "value", "currency", "items", "tax", "coupon"].forEach((key) => {
+                if (Object.hasOwn(clean, key)) {
+                    ecommerce[key] = clean[key];
+                }
+            });
+            const event = {event: eventName, ...clean, ecommerce};
             if (typeof onProcessed === "function") {
                 event.eventCallback = (containerId) => {
                     if (/^GTM-[A-Z0-9]{4,}$/.test(containerId || "")
@@ -192,12 +225,62 @@
         });
     }
 
+    function pageLanguage(element) {
+        const value = element?.dataset?.analyticsPageLanguage
+            || element?.dataset?.analyticsLanguage
+            || document.documentElement?.lang
+            || "";
+        return String(value).split("-")[0].toLowerCase();
+    }
+
+    function propertyElement(element) {
+        const local = typeof element?.closest === "function"
+            ? element.closest("[data-analytics-property-id], [data-item-id]")
+            : null;
+        return local || document.querySelector("[data-analytics-view-item]");
+    }
+
+    function propertyContext(element) {
+        const source = propertyElement(element);
+        return {
+            property_id: element?.dataset?.analyticsPropertyId
+                || source?.dataset?.analyticsPropertyId
+                || source?.dataset?.itemId,
+            property_name: element?.dataset?.analyticsPropertyName
+                || source?.dataset?.analyticsPropertyName
+                || source?.dataset?.itemName,
+            page_language: pageLanguage(element),
+        };
+    }
+
+    function propertyItem(element) {
+        const source = propertyElement(element);
+        const context = propertyContext(element);
+        if (!context.property_id && !context.property_name) {
+            return null;
+        }
+        return cleanItem({
+            item_id: context.property_id,
+            item_name: context.property_name,
+            item_brand: "Luxury Smart Apartments",
+            item_category: "vacation_rental",
+            item_category2: element?.dataset?.analyticsPropertyCity
+                || source?.dataset?.analyticsPropertyCity
+                || source?.dataset?.itemCity,
+            item_category3: element?.dataset?.analyticsPropertyType
+                || source?.dataset?.analyticsPropertyType
+                || source?.dataset?.itemType,
+            quantity: 1,
+        });
+    }
+
     document.querySelectorAll("[data-analytics-list]").forEach((list) => {
         const items = [...list.querySelectorAll("[data-analytics-item]")].map(itemFromElement);
         if (items.length) {
             pushEvent("view_item_list", {
                 item_list_name: list.dataset.analyticsList,
                 items,
+                page_language: pageLanguage(list),
             });
         }
     });
@@ -207,12 +290,16 @@
             pushEvent("select_item", {
                 item_list_name: item.closest("[data-analytics-list]")?.dataset.analyticsList || "properties",
                 items: [itemFromElement(item)],
+                ...propertyContext(item),
             });
         });
     });
     const detail = document.querySelector("[data-analytics-view-item]");
     if (detail) {
-        pushEvent("view_item", {items: [itemFromElement(detail)]});
+        pushEvent("view_item", {
+            items: [itemFromElement(detail)],
+            ...propertyContext(detail),
+        });
     }
     const reviewPage = document.querySelector("[data-analytics-view-all-reviews]");
     if (reviewPage) {
@@ -220,6 +307,7 @@
             language: reviewPage.dataset.analyticsLanguage,
             review_count: Number(reviewPage.dataset.analyticsReviewCount || 0),
             items: [itemFromElement(reviewPage)],
+            ...propertyContext(reviewPage),
         });
     }
     const purchase = document.querySelector("[data-analytics-purchase-event]");
@@ -255,6 +343,7 @@
             transaction_id: transactionId,
             value: Number(purchase.dataset.analyticsValue || 0),
             currency: purchase.dataset.analyticsCurrency,
+            ...propertyContext(purchase),
         }, () => {
             if (purchaseProcessed) {
                 return;
@@ -292,17 +381,24 @@
         const trigger = element.matches("form") ? "submit" : (
             element.matches("a,button") ? "click" : null
         );
-        const emit = () => pushEvent(eventName, {
-            lead_source: element.dataset.analyticsLeadSource,
-            language: element.dataset.analyticsLanguage,
-            reason_code: element.dataset.analyticsReason,
-            available: element.dataset.analyticsAvailable === "true",
-            nights: Number(element.dataset.analyticsNights || 0),
-            guests: Number(element.dataset.analyticsGuests || 0),
-            currency: element.dataset.analyticsCurrency,
-            value: Number(element.dataset.analyticsValue || 0),
-            request_type: element.dataset.analyticsRequestType,
-        });
+        const emit = () => {
+            const item = propertyItem(element);
+            pushEvent(eventName, {
+                lead_source: element.dataset.analyticsLeadSource,
+                language: element.dataset.analyticsLanguage,
+                contact_placement: element.dataset.analyticsContactPlacement
+                    || element.dataset.analyticsLeadSource,
+                reason_code: element.dataset.analyticsReason,
+                available: element.dataset.analyticsAvailable === "true",
+                nights: Number(element.dataset.analyticsNights || 0),
+                guests: Number(element.dataset.analyticsGuests || 0),
+                currency: element.dataset.analyticsCurrency,
+                value: Number(element.dataset.analyticsValue || 0),
+                request_type: element.dataset.analyticsRequestType,
+                items: item ? [item] : undefined,
+                ...propertyContext(element),
+            });
+        };
         if (trigger) {
             element.addEventListener(trigger, emit);
         } else {
@@ -323,8 +419,9 @@
         });
     });
     if (body.dataset.pendingAnalyticsEvent === "generate_lead") {
-        pushEvent("generate_lead", {lead_source: "contact_form"});
-        pushEvent("contact_form_submitted", {lead_source: "contact_form"});
+        const page_language = pageLanguage(body);
+        pushEvent("generate_lead", {lead_source: "contact_form", page_language});
+        pushEvent("contact_form_submitted", {lead_source: "contact_form", page_language});
     }
     window.LSAAnalytics = {pushEvent, sanitize};
 }());

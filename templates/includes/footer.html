@@ -82,7 +82,7 @@
             </a>
             {% endif %}
             {% if site_setting.contact_phone %}
-            <a class="footer-contact-item" href="tel:{{ site_setting.contact_phone }}">
+            <a class="footer-contact-item" href="tel:{{ site_setting.contact_phone }}" data-analytics-event="phone_click" data-analytics-lead-source="footer" data-analytics-contact-placement="footer" data-analytics-language="{{ current_language_code }}">
                 <span class="footer-contact-item__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" focusable="false"><path d="M7.05 3.5c.5 0 .95.3 1.14.76l1.2 2.9c.18.43.1.92-.22 1.26L7.8 9.85a13.2 13.2 0 0 0 6.35 6.35l1.43-1.37c.34-.32.83-.4 1.26-.22l2.9 1.2c.46.19.76.64.76 1.14v2.3c0 .69-.56 1.25-1.25 1.25C10.55 20.5 3.5 13.45 3.5 4.75c0-.69.56-1.25 1.25-1.25h2.3Zm-.1 1.5H5.01c.13 7.65 6.34 13.86 13.99 13.99v-1.94l-2.48-1.03-1.66 1.6a.75.75 0 0 1-.77.16 14.72 14.72 0 0 1-7.87-7.87.75.75 0 0 1 .16-.77l1.6-1.66L6.95 5Z"/></svg>
                 </span>
@@ -110,7 +110,7 @@
             <nav class="footer-social" aria-label="{% trans 'Social media' %}">
                 {% if site_setting.instagram_url %}<a href="{{ site_setting.instagram_url }}" rel="noopener noreferrer" aria-label="Instagram"><span aria-hidden="true">ig</span></a>{% endif %}
                 {% if site_setting.facebook_url %}<a href="{{ site_setting.facebook_url }}" rel="noopener noreferrer" aria-label="Facebook"><span aria-hidden="true">f</span></a>{% endif %}
-                {% if site_setting.whatsapp_url %}<a href="{{ site_setting.whatsapp_url }}" rel="noopener noreferrer" aria-label="WhatsApp"><span aria-hidden="true">wa</span></a>{% endif %}
+                {% if site_setting.whatsapp_url %}<a href="{{ site_setting.whatsapp_url }}" rel="noopener noreferrer" aria-label="WhatsApp" data-analytics-event="whatsapp_click" data-analytics-lead-source="footer_social" data-analytics-contact-placement="footer_social" data-analytics-language="{{ current_language_code }}"><span aria-hidden="true">wa</span></a>{% endif %}
                 {% if site_setting.x_url %}<a href="{{ site_setting.x_url }}" rel="noopener noreferrer" aria-label="X"><span aria-hidden="true">x</span></a>{% endif %}
                 {% if site_setting.linkedin_url %}<a href="{{ site_setting.linkedin_url }}" rel="noopener noreferrer" aria-label="LinkedIn"><span aria-hidden="true">in</span></a>{% endif %}
             </nav>

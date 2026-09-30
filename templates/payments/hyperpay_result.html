@@ -6,16 +6,25 @@
 {% block content %}
 <section class="section container narrow payment-result">
     {% if purchase_event %}
+    {% with purchased_item=purchase_event.items.0 %}
     <div
         data-analytics-purchase-event
         data-analytics-transaction-id="{{ purchase_event.transaction_id }}"
         data-analytics-currency="{{ purchase_event.currency }}"
         data-analytics-value="{{ purchase_event.value|unlocalize }}"
+        {% if purchased_item %}
+        data-analytics-property-id="{{ purchased_item.item_id }}"
+        data-analytics-property-name="{{ purchased_item.item_name }}"
+        data-analytics-property-city="{{ purchased_item.item_category2 }}"
+        data-analytics-property-type="{{ purchased_item.item_category3 }}"
+        {% endif %}
+        data-analytics-page-language="{{ current_language_code }}"
         data-analytics-receipt-token="{{ purchase_receipt_token }}"
         data-analytics-receipt-csrf="{{ purchase_receipt_csrf_token }}"
         data-analytics-receipt-url="{% url 'marketing:purchase_acknowledge' %}"
         hidden
     ></div>
+    {% endwith %}
     {% endif %}
     <div class="section-heading">
         <p class="eyebrow">HyperPay</p>

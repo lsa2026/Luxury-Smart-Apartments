@@ -8,8 +8,9 @@ function run(value, consent = true, previouslyPushed = false) {
     const handlers = {};
     const storage = new Map(previouslyPushed ? [['lsa:purchase:v2:test-booking', 'acknowledged']] : []);
     const purchase = {dataset: {analyticsValue: value, analyticsTransactionId: 'test-booking',
-        analyticsCurrency: 'SAR', analyticsItemId: 'test-apartment', analyticsReceiptToken: 'test',
-        analyticsReceiptUrl: '/ack/'}};
+        analyticsCurrency: 'SAR', analyticsPropertyId: 'test-apartment',
+        analyticsPropertyName: 'Test Apartment', analyticsPageLanguage: 'en',
+        analyticsReceiptToken: 'test', analyticsReceiptUrl: '/ack/'}};
     let acknowledgements = 0;
     const context = {console, URLSearchParams, AbortController, fetch: () => {acknowledgements++; return Promise.resolve({ok:true});},
         document: {body: {dataset: {googleIntegrationsEnabled: 'true',gtmContainerId:'GTM-TEST123'}},
@@ -27,9 +28,12 @@ test('valid purchase contains real amount, currency and booking ID once', () => 
     const event = result.context.window.dataLayer.find(e => e.event === 'purchase');
     assert.equal(event.value,1090); assert.equal(event.currency,'SAR');
     assert.equal(event.transaction_id,'test-booking'); assert.equal(result.acknowledgements,0);
+    assert.equal(event.property_id,'test-apartment'); assert.equal(event.property_name,'Test Apartment');
+    assert.equal(event.page_language,'en');
     event.eventCallback('GTM-TEST123'); assert.equal(result.acknowledgements,1);
     assert.equal(event.ecommerce.value,1090);
     assert.equal(event.ecommerce.transaction_id,'test-booking');
+    assert.equal(event.ecommerce.property_id,undefined);
     result.consent();
     assert.equal(result.context.window.dataLayer.filter(e=>e.event==='purchase').length,1);
 });

@@ -11,6 +11,12 @@
     data-analytics-available="{{ availability.is_available|yesno:'true,false' }}"
     data-analytics-reason="{{ availability.reason_code }}"
     data-analytics-nights="{{ availability.nights }}"
+    {% if property %}
+    data-analytics-property-id="{{ property.slug }}"
+    data-analytics-property-name="{{ property|localized_property_name }}"
+    data-analytics-property-city="{{ property|localized_city }}"
+    data-analytics-property-type="{{ property.room_type }}"
+    {% endif %}
     {% endif %}
 >
     {% if city_search %}

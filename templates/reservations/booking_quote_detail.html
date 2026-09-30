@@ -14,6 +14,10 @@
     data-analytics-value="{{ quote.total_price|unlocalize }}"
     data-analytics-nights="{{ quote.nights }}"
     data-analytics-guests="{{ quote.guests }}"
+    data-analytics-property-id="{{ property.slug }}"
+    data-analytics-property-name="{{ property|localized_property_name }}"
+    data-analytics-property-city="{{ property|localized_city }}"
+    data-analytics-property-type="{{ property.room_type }}"
 >
     <div class="container quote-review__inner">
         {% include "includes/progress_indicator.html" with step=2 %}
@@ -150,6 +154,10 @@
                     data-analytics-value="{{ quote.total_price|unlocalize }}"
                     data-analytics-nights="{{ quote.nights }}"
                     data-analytics-guests="{{ quote.guests }}"
+                    data-analytics-property-id="{{ property.slug }}"
+                    data-analytics-property-name="{{ property|localized_property_name }}"
+                    data-analytics-property-city="{{ property|localized_city }}"
+                    data-analytics-property-type="{{ property.room_type }}"
                     novalidate
                 >
                     {% csrf_token %}
