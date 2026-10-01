@@ -161,11 +161,26 @@ services:
       # the lsa-beat service dispatches them and lsa-worker runs them. Each task
       # takes a Redis lock, so a slow run is skipped rather than overlapped.
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED
         value: "True"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR
+        value: "16"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE
+        value: "30"
+      - key: HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED
+        value: "True"
+      - key: HOSTAWAY_FINANCIAL_RECEIPTS_ENABLED
+        value: "True"
+      # Future-only cutoff is set explicitly at release, never regenerated on boot.
+      - key: HOSTAWAY_FINANCIAL_RECEIPTS_START_AT
+        sync: false
       - key: HOSTAWAY_REVIEW_SYNC_ENABLED
         value: "False"
       - key: TRUSTINDEX_REVIEW_SYNC_ENABLED
-        value: "False"
+        value: "True"
+      - key: TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES
+        value: "1440"
       - key: HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES
         value: "5"
       - key: HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES
@@ -348,11 +363,28 @@ services:
           name: luxury-smart-apartments
           envVarKey: HOSTAWAY_ACCESS_TOKEN
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED
         value: "True"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR
+        value: "16"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE
+        value: "30"
+      - key: HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED
+        value: "True"
+      - key: HOSTAWAY_FINANCIAL_RECEIPTS_ENABLED
+        value: "True"
+      - key: HOSTAWAY_FINANCIAL_RECEIPTS_START_AT
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HOSTAWAY_FINANCIAL_RECEIPTS_START_AT
       - key: HOSTAWAY_REVIEW_SYNC_ENABLED
         value: "False"
       - key: TRUSTINDEX_REVIEW_SYNC_ENABLED
-        value: "False"
+        value: "True"
+      - key: TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES
+        value: "1440"
       - key: HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES
         value: "5"
       - key: HOSTAWAY_REVIEW_SYNC_INTERVAL_MINUTES

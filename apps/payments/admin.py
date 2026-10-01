@@ -6,7 +6,31 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.templatetags.presentation import localized_money
 
-from .models import PaymentAttempt
+from .models import HostawayFinancialEntry, PaymentAttempt
+
+
+@admin.register(HostawayFinancialEntry)
+class HostawayFinancialEntryAdmin(admin.ModelAdmin):
+    list_display = ("payment_attempt", "status", "remote_charge_id", "error_code", "updated_at")
+    list_filter = ("status",)
+    readonly_fields = (
+        "payment_attempt",
+        "status",
+        "remote_charge_id",
+        "error_code",
+        "completed_at",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(PaymentAttempt)

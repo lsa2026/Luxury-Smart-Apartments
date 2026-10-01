@@ -69,6 +69,7 @@ class PaymentAttempt(models.Model):
     )
     idempotency_key = models.CharField(max_length=64, unique=True)
     failure_code = models.CharField(max_length=100, blank=True)
+    payment_brand = models.CharField(max_length=30, blank=True, editable=False)
     verified_at = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -95,3 +96,33 @@ class PaymentAttempt(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider} — {self.amount} {self.currency}"
+
+
+class HostawayFinancialEntry(models.Model):
+    """One durable receipt request per verified payment; no historical backfill."""
+
+    payment_attempt = models.OneToOneField(
+        PaymentAttempt, on_delete=models.PROTECT, related_name="hostaway_receipt"
+    )
+    status = models.CharField(
+        max_length=20,
+        default="pending",
+        choices=[
+            ("pending", "Pending"),
+            ("posting", "Posting"),
+            ("succeeded", "Recorded"),
+            ("unknown", "Unknown outcome"),
+            ("review", "Needs accounting review"),
+        ],
+    )
+    remote_charge_id = models.PositiveBigIntegerField(null=True, blank=True)
+    error_code = models.CharField(max_length=100, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Hostaway receipt {self.pk}: {self.status}"

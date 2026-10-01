@@ -403,6 +403,66 @@ class HostawayClient:
         )
         return validate_reservation_observations(payload, limit=limit)
 
+    def get_guest_charges(self, reservation_id: int) -> list[dict]:
+        _validate_reservation_id(reservation_id)
+        # Refuse truncated results rather than risking a duplicate receipt.
+        payload = self._get_json(
+            "/guestPayments/charges",
+            params=[("reservationId", reservation_id), ("limit", 100), ("offset", 0)],
+        )
+        if not isinstance(payload, dict) or payload.get("status") != "success":
+            raise HostawayResponseError("Invalid guest charges response.")
+        records = payload.get("result")
+        if not isinstance(records, list) or len(records) >= 100:
+            raise HostawayResponseError("Incomplete guest charges response.")
+        if any(
+            not isinstance(row, dict) or row.get("reservationId") != reservation_id
+            for row in records
+        ):
+            raise HostawayResponseError("Guest charges reservation mismatch.")
+        return records
+
+    def create_offline_paid_charge(
+        self,
+        reservation_id: int,
+        *,
+        title: str,
+        amount: object,
+        currency: str,
+        description: str,
+        paid_at: object,
+    ) -> dict:
+        """Documented offline receipt endpoint: it does NOT charge a card."""
+        if not settings.HOSTAWAY_FINANCIAL_RECEIPTS_ENABLED:
+            raise HostawayConfigurationError("hostaway_financial_receipts_disabled")
+        _validate_reservation_id(reservation_id)
+        payload = self._post_json(
+            f"/guestPayments/charges/{reservation_id}",
+            json_body={
+                "title": title,
+                "description": description,
+                "amount": str(amount),
+                "paymentMethod": "credit_card",
+                "status": "paid",
+                "scheduledDate": paid_at.strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+        result = payload.get("result") if isinstance(payload, dict) else None
+        from decimal import Decimal
+
+        if not isinstance(result, dict) or (
+            payload.get("status") != "success"
+            or not isinstance(result.get("id"), int)
+            or result.get("reservationId") != reservation_id
+            or result.get("status") != "paid"
+            or result.get("currency") != currency
+            or result.get("title") != title
+            or Decimal(str(result.get("amount"))) != amount
+            or result.get("paymentProvider") != "offline"
+        ):
+            raise HostawayResponseError("Offline receipt response mismatch.")
+        return result
+
     def update_reservation(
         self,
         reservation_id: int,

@@ -543,6 +543,78 @@ MESSAGES: dict[str, dict[str, str]] = {
 }
 
 
+SUBJECTS["integration_attention"] = {
+    "ar": "تنبيه: عملية مزامنة تحتاج إلى مراجعة",
+    "en": "Integration needs attention",
+    "fr": "Une synchronisation nécessite votre attention",
+}
+TEMPLATE_GROUPS["integration_attention"] = "attention"
+MESSAGES["integration_attention"] = {
+    "ar": (
+        "تعثر تحديث أو توثيق محاسبي. راجع التنبيهات وسجل المزامنة في لوحة الإدارة. "
+        "لا تُعد تنفيذ عملية دفع أو استرداد بسبب هذا التنبيه."
+    ),
+    "en": (
+        "A refresh or accounting record needs attention. Review dashboard alerts and sync history. "
+        "Do not repeat a payment or refund because of this alert."
+    ),
+    "fr": (
+        "Une mise à jour ou une écriture comptable nécessite un examen. "
+        "Consultez les alertes et l’historique. "
+        "Ne répétez aucun paiement ni remboursement à cause de cette alerte."
+    ),
+}
+SUBJECTS["hostaway_refund_accounting_attention"] = {
+    "ar": "استرداد مؤكد: سجل Hostaway المحاسبي يحتاج إلى تحديث",
+    "en": "Confirmed refund: Hostaway accounting update required",
+    "fr": "Remboursement confirmé : mise à jour comptable Hostaway requise",
+}
+TEMPLATE_GROUPS["hostaway_refund_accounting_attention"] = "attention"
+MESSAGES["hostaway_refund_accounting_attention"] = {
+    "ar": (
+        "أكد HyperPay الاسترداد. لم يُسجل الاسترداد تلقائيًا في السجل المالي لـHostaway؛ "
+        "راجع طلب الاسترداد المشار إليه ووثّق المبلغ محاسبيًا في Hostaway. "
+        "لا تنفذ استردادًا ثانيًا ولا تخصم أي مبلغ من الضيف."
+    ),
+    "en": (
+        "HyperPay confirmed the refund. It has not been automatically recorded in Hostaway's "
+        "financial ledger. Review the referenced refund request and document it in Hostaway. "
+        "Do not issue another refund or charge the guest."
+    ),
+    "fr": (
+        "HyperPay a confirmé le remboursement. Il n’a pas été enregistré automatiquement "
+        "dans le registre financier Hostaway. Examinez la demande indiquée et comptabilisez-la "
+        "dans Hostaway. Ne remboursez pas une seconde fois et ne débitez pas le voyageur."
+    ),
+}
+SUBJECTS["paid_booking_needs_review"] = {
+    "ar": "استلمنا دفعتك؛ تأكيد الحجز يحتاج إلى مراجعة",
+    "en": "Payment received; booking confirmation needs review",
+    "fr": "Paiement reçu ; confirmation de réservation en cours d’examen",
+}
+TEMPLATE_GROUPS["paid_booking_needs_review"] = "attention"
+MESSAGES["paid_booking_needs_review"] = {
+    "ar": (
+        "استلمنا دفعتك، لكن لم نتمكن من تأكيد إنشاء الحجز. "
+        "أُبلغ فريقنا لمراجعة الحجز والمبلغ المدفوع والتواصل معك. "
+        "لا تُنشئ حجزًا جديدًا ولا تدفع مرة أخرى قبل أن نؤكد لك نتيجة المراجعة. "
+        "لم يُنفذ استرداد تلقائي بسبب هذا التنبيه."
+    ),
+    "en": (
+        "We received your payment but could not confirm reservation creation. "
+        "Our team has been alerted to review the booking and payment and contact you. "
+        "Do not create another booking or pay again until we confirm the outcome. "
+        "This notice does not mean a refund has been issued."
+    ),
+    "fr": (
+        "Votre paiement a été reçu, mais la création de la réservation n’a pas pu être confirmée. "
+        "Notre équipe examinera la réservation et le paiement et vous contactera. "
+        "Ne réservez pas à nouveau et ne payez pas une seconde fois avant notre confirmation. "
+        "Ce message ne signifie pas qu’un remboursement a été effectué."
+    ),
+}
+
+
 def recipient_hmac(email: str) -> str:
     normalized = email.strip().casefold()
     return salted_hmac("email-recipient.v1", normalized).hexdigest()
@@ -847,6 +919,11 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)
+        if delivery.message_type in {
+            "integration_attention",
+            "hostaway_refund_accounting_attention",
+        }:
+            return settings.OPERATIONS_EMAIL, {"reference": delivery.recipient_reference}
         if delivery.message_type in {
             "cancellation_refund_admin_alert",
             "modification_refund_admin_alert",

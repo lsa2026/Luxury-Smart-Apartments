@@ -291,7 +291,8 @@ def test_paid_booking_recovery_backfills_identifiers_before_scanning() -> None:
 
 def test_beat_schedule_is_disabled_by_default(settings: object) -> None:
     assert settings.HOSTAWAY_AUTO_SYNC_ENABLED is False
-    assert settings.CELERY_BEAT_SCHEDULE == {}
+    assert "hostaway-properties" not in settings.CELERY_BEAT_SCHEDULE
+    assert "hostaway-paid-booking-reconciliation" not in settings.CELERY_BEAT_SCHEDULE
 
 
 def test_sync_run_succeeds_and_is_sanitized() -> None:

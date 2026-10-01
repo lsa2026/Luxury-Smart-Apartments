@@ -88,9 +88,16 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
 
     def _dispatch_sync(self, request: HttpRequest) -> None:
         action = request.POST.get("sync_action", "")
+        if action == "properties" and not settings.HOSTAWAY_AUTO_SYNC_ENABLED:
+            self.message_user(
+                request, "استيراد بيانات الشقق معطل؛ تُدار البيانات في الموقع.", messages.WARNING
+            )
+            return
         command_map = {
             "properties": "python manage.py sync_hostaway_properties",
             "properties_dry_run": "python manage.py sync_hostaway_properties --dry-run",
+            "prices": "python manage.py refresh_indicative_rates",
+            "trustindex": "python manage.py sync_trustindex_review_metrics",
         }
         command = command_map.get(action)
         if command is None:
@@ -112,11 +119,16 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
                 messages.WARNING,
             )
             return
-        from .tasks import sync_hostaway_properties_task
+        from apps.reviews.tasks import sync_trustindex_review_metrics_task
+
+        from .tasks import refresh_indicative_rates_task, sync_hostaway_properties_task
 
         dry_run = action.endswith("_dry_run")
-        task = sync_hostaway_properties_task
-        lock_name = "properties"
+        task = {
+            "prices": refresh_indicative_rates_task,
+            "trustindex": sync_trustindex_review_metrics_task,
+        }.get(action, sync_hostaway_properties_task)
+        lock_name = action if action in {"prices", "trustindex"} else "properties"
         if not cache.add(f"lsa:admin-dispatch:{lock_name}", "queued", timeout=60):
             self.message_user(
                 request,
@@ -124,7 +136,10 @@ class IntegrationSyncRunAdmin(admin.ModelAdmin):
                 messages.WARNING,
             )
             return
-        task.delay(dry_run=dry_run)
+        if action in {"prices", "trustindex"}:
+            task.delay()
+        else:
+            task.delay(dry_run=dry_run)
         self.message_user(
             request,
             _("The sync was added to the queue."),

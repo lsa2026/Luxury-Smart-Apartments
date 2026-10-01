@@ -399,6 +399,7 @@ class HyperPayService:
             attempt.provider_payment_id = _safe_optional_text(document.get("id"), 255)
             attempt.provider_result_code = _safe_text(code, 100)
             attempt.provider_result_description = _safe_text(description, 255)
+            attempt.payment_brand = _safe_text(document.get("paymentBrand"), 30)
             attempt.verified_at = timezone.now()
             attempt.status = {
                 HyperPayStatus.SUCCESS: PaymentAttempt.Status.SUCCEEDED,
@@ -427,7 +428,10 @@ class HyperPayService:
         return self._complete_success(attempt)
 
     def _complete_success(self, attempt: PaymentAttempt) -> VerificationOutcome:
+        from apps.payments.hostaway_ledger import queue_payment_receipt
+
         if attempt.modification_request_id:
+            queue_payment_receipt(attempt.pk)
             modification = BookingModificationRequest.objects.select_related("reservation").get(
                 pk=attempt.modification_request_id
             )
@@ -473,9 +477,16 @@ class HyperPayService:
         self._record_verified_booking_payment(attempt, reservation)
         reservation.refresh_from_db()
         if reservation.normalized_status == Reservation.Status.CONFIRMED:
+            queue_payment_receipt(attempt.pk)
             return VerificationOutcome(attempt, HyperPayStatus.SUCCESS, reservation)
         with HostawayBookingService() as booking_service:
             hostaway = booking_service.create_hostaway_reservation(reservation)
+        if hostaway.code in {"confirmed", "already_confirmed"}:
+            queue_payment_receipt(attempt.pk)
+        else:
+            from apps.notifications.services.events import handle_paid_booking_needs_review
+
+            handle_paid_booking_needs_review(reservation.pk)
         return VerificationOutcome(attempt, HyperPayStatus.SUCCESS, reservation, hostaway)
 
     @staticmethod

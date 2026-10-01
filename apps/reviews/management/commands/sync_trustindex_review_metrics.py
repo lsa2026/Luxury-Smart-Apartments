@@ -27,16 +27,16 @@ class Command(BaseCommand):
                 continue
             refreshed += 1
             if not dry_run:
-                property_obj.trustindex_rating = metrics.rating
-                property_obj.trustindex_review_count = metrics.review_count
-                property_obj.trustindex_synced_at = timezone.now()
-                property_obj.save(
-                    update_fields=[
-                        "trustindex_rating",
-                        "trustindex_review_count",
-                        "trustindex_synced_at",
-                    ]
-                )
+                values = {"trustindex_synced_at": timezone.now()}
+                if (
+                    property_obj.trustindex_rating != metrics.rating
+                    or property_obj.trustindex_review_count != metrics.review_count
+                ):
+                    values.update(
+                        trustindex_rating=metrics.rating,
+                        trustindex_review_count=metrics.review_count,
+                    )
+                Property.objects.filter(pk=property_obj.pk).update(**values)
             self.stdout.write(
                 f"{property_obj.hostaway_listing_id}: {metrics.rating}/5, "
                 f"{metrics.review_count} reviews"

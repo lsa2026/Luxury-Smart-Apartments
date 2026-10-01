@@ -16,6 +16,7 @@ from apps.properties.models import Property
 class IntegrationHealth:
     last_property_sync: IntegrationSyncRun | None
     last_review_sync: IntegrationSyncRun | None
+    daily_syncs: list[tuple[str, IntegrationSyncRun | None]]
     local_properties: int
     active_properties: int
     pending_review: int
@@ -52,6 +53,10 @@ def get_integration_health() -> IntegrationHealth:
         or (settings.HOSTAWAY_ACCOUNT_ID and settings.HOSTAWAY_API_SECRET)
         else "not_configured"
     )
+    try:
+        beat_observed = bool(cache.get("lsa:health:beat-observed"))
+    except (ConnectionError, OSError, TimeoutError, RedisError):
+        beat_observed = False
     return IntegrationHealth(
         last_property_sync=IntegrationSyncRun.objects.filter(
             sync_type=IntegrationSyncRun.SyncType.HOSTAWAY_PROPERTIES
@@ -73,7 +78,29 @@ def get_integration_health() -> IntegrationHealth:
         archived=Property.objects.filter(hostaway_is_active=False).count(),
         redis_status=redis_status,
         worker_status=worker_status,
-        beat_status="enabled" if settings.HOSTAWAY_AUTO_SYNC_ENABLED else "disabled",
+        beat_status=("available" if beat_observed else "not_observed")
+        if settings.CELERY_SYNC_DISPATCH_ENABLED
+        else "disabled",
+        daily_syncs=[
+            (
+                "تقويم الأسعار اليومي",
+                IntegrationSyncRun.objects.filter(
+                    sync_type=IntegrationSyncRun.SyncType.PRICE_CALENDAR
+                ).first(),
+            ),
+            (
+                "تقييمات Trustindex اليومية",
+                IntegrationSyncRun.objects.filter(
+                    sync_type=IntegrationSyncRun.SyncType.TRUSTINDEX_METRICS
+                ).first(),
+            ),
+            (
+                "حالات حجوزات الموقع فقط",
+                IntegrationSyncRun.objects.filter(
+                    sync_type=IntegrationSyncRun.SyncType.WEBSITE_RESERVATIONS
+                ).first(),
+            ),
+        ],
         authentication_status=authentication_status,
         write_flags={
             "live_booking": settings.HOSTAWAY_LIVE_BOOKING_ENABLED,

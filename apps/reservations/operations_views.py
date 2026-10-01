@@ -189,6 +189,18 @@ def booking_list(request: HttpRequest) -> HttpResponse:
 
     _require_owner(request)
     query = request.GET.get("q", "").strip()
+    if settings.HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED:
+        from apps.integrations.website_reservations import refresh_website_reservations
+
+        try:
+            result = refresh_website_reservations(limit=12, for_page=True)
+            if result["status"] == "deferred":
+                messages.warning(
+                    request, "تعذر تحديث بعض الحجوزات من Hostaway؛ البيانات المعروضة قديمة."
+                )
+        except Exception:
+            logger.exception("Owner booking status refresh failed")
+            messages.warning(request, "تعذر التحقق من آخر حالة في Hostaway الآن.")
     successful_original_payment = PaymentAttempt.objects.filter(
         booking_intent_id=OuterRef("booking_intent_id"),
         modification_request__isnull=True,

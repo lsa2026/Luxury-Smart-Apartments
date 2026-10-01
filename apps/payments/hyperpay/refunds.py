@@ -245,6 +245,12 @@ class HyperPayRefundService:
                     else PaymentAttempt.Status.PARTIALLY_REFUNDED
                 )
                 payment.save(update_fields=["status", "updated_at"])
+                from apps.payments.hostaway_ledger import flag_confirmed_refund_for_accounting
+
+                transaction.on_commit(
+                    lambda refund_id=refund.pk: flag_confirmed_refund_for_accounting(refund_id),
+                    robust=True,
+                )
                 transaction.on_commit(
                     lambda refund_id=refund.pk: _queue_guest_refund_notice(refund_id),
                     robust=True,

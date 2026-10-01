@@ -232,6 +232,7 @@ def merge_hostaway_payment_status(current: str, incoming: str) -> str:
     if current.strip().casefold() == "paid" and incoming.strip().casefold() in {
         "",
         "unknown",
+        "unpaid",
     }:
         return current
     return incoming
