@@ -70,7 +70,9 @@ def test_home_uses_active_dashboard_image_and_accessible_alt_text(tmp_path) -> N
     assert response.status_code == 200
     assert image.image.url in content
     assert "Managed Riyadh hero" in content
-    assert f'content="http://testserver{image.image.url}"' in content
+    # Social sharing now uses the approved brand artwork, independently of
+    # the dashboard's home hero; that older coupling must not be required.
+    assert "images/brand/luxury-living-social-share.png" in content
     assert "photo-1757774698963-b23f4b273adc?auto=format&amp;fit=crop&amp;w=1600" not in content
 
 

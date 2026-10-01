@@ -314,7 +314,7 @@ def _complete_orphaned_test_payment_cancellation(modification_id: object) -> Non
 
     with transaction.atomic():
         locked = (
-            BookingModificationRequest.objects.select_for_update()
+            BookingModificationRequest.objects.select_for_update(of=("self",))
             .select_related("reservation__booking_intent")
             .get(pk=modification_id)
         )

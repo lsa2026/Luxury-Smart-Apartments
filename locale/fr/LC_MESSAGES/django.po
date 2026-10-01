@@ -7646,3 +7646,46 @@ msgstr "Avis vérifiés de voyageurs recueillis sur nos plateformes de réservat
 #: templates/reviews/review_list.html
 msgid "Verified feedback from Google, Booking.com and Airbnb."
 msgstr "Avis vérifiés provenant de Google, Booking.com et Airbnb."
+
+#: templates/properties/_price_calendar.html templates/includes/property_card.html
+msgid "Available"
+msgstr "Disponible"
+
+msgid "Last updated"
+msgstr "Dernière mise à jour"
+
+msgid "View prices and availability"
+msgstr "Voir les prix et disponibilités"
+
+msgid "Loading nightly prices…"
+msgstr "Chargement des tarifs par nuit…"
+
+msgid "Daily prices are temporarily unavailable. You can still check your stay."
+msgstr "Les tarifs par nuit sont temporairement indisponibles. Vous pouvez vérifier votre séjour."
+
+msgid "Choose your departure day"
+msgstr "Choisissez votre jour de départ"
+
+msgid "Minimum nights"
+msgstr "Nombre minimum de nuits"
+
+msgid "Nightly prices"
+msgstr "Tarifs par nuit"
+
+msgid "These dates need a different stay length or contain an unavailable night."
+msgstr "Ces dates nécessitent une autre durée de séjour ou comprennent une nuit indisponible."
+
+msgid "Updated daily"
+msgstr "Mise à jour quotidienne"
+
+msgid "Nightly prices and availability"
+msgstr "Tarifs par nuit et disponibilités"
+
+msgid "Lowest available price in this month"
+msgstr "Tarif disponible le plus bas ce mois-ci"
+
+msgid "Prices are per night and updated daily. Your total, fees and current availability are confirmed in the next step."
+msgstr "Tarifs par nuit mis à jour quotidiennement. Le total, les frais et la disponibilité actuelle sont confirmés à l’étape suivante."
+
+msgid "Rated %(rating)s out of 5, %(count)s reviews"
+msgstr "Note de %(rating)s sur 5, %(count)s avis"

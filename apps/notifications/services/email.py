@@ -477,9 +477,28 @@ MESSAGES: dict[str, dict[str, str]] = {
         ),
     },
     "cancellation_refund_admin_alert": {
-        "ar": "ألغى ضيف حجزه قبل الوصول وتم قبول طلب استرداد المبلغ. راجع التفاصيل في مركز التشغيل.",
-        "en": "A guest cancelled before check-in and the refund request was accepted. Review the details in Operations.",
+        "ar": (
+            "ألغى ضيف حجزه قبل الوصول وتم قبول طلب استرداد المبلغ. راجع التفاصيل في مركز التشغيل."
+        ),
+        "en": (
+            "A guest cancelled before check-in and the refund request was accepted. "
+            "Review the details in Operations."
+        ),
         "fr": "Un client a annulé avant son arrivée et la demande de remboursement a été acceptée.",
+    },
+    "modification_refund_admin_alert": {
+        "ar": (
+            "نتج عن تعديل الحجز طلب استرداد لفرق السعر. "
+            "راجع المبلغ وحالة الاسترداد في مركز التشغيل."
+        ),
+        "en": (
+            "A booking change created a price-difference refund request. "
+            "Review the amount and refund status in Operations."
+        ),
+        "fr": (
+            "Une modification de réservation a créé une demande de remboursement "
+            "de la différence de prix. Consultez le montant et le statut dans les opérations."
+        ),
     },
     "reservation_modified": {
         "ar": "تم تعديل الحجز بعد التحقق من الحالة النهائية.",
@@ -488,8 +507,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     },
     "reservation_access_link": {
         "ar": "استخدم هذا الرابط الآمن لفتح تفاصيل حجزك وإدارتها. الرابط مؤقت ويُستخدم مرة واحدة.",
-        "en": "Use this secure link to open and manage your booking. It is temporary and works once.",
-        "fr": "Utilisez ce lien sécurisé pour ouvrir et gérer votre réservation. Il est temporaire et utilisable une seule fois.",
+        "en": (
+            "Use this secure link to open and manage your booking. It is temporary and works once."
+        ),
+        "fr": (
+            "Utilisez ce lien sécurisé pour ouvrir et gérer votre réservation. "
+            "Il est temporaire et utilisable une seule fois."
+        ),
     },
     "account_verify_email": {
         "ar": "أدخل رمز التحقق أدناه لتأكيد بريدك وحماية حسابك.",

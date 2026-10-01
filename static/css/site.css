@@ -3609,6 +3609,24 @@ input[data-iso-date] {
     color: #b4873d;
 }
 
+.property-card .card-rating--link {
+    min-height: 44px;
+    text-decoration: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.card-rating--link small { font-size: 0.65rem; font-weight: 600; }
+.card-rating--link:hover { box-shadow: 0 0 0 2px #b4873d; }
+.property-price-link { text-decoration: none; min-height: 44px; position: relative; z-index: 2; }
+.property-price-link__hint { color: #106e59; font-size: 0.65rem; text-decoration: underline; }
+.property-price-link:focus-visible, .card-rating--link:focus-visible {
+    outline: 3px solid #b4873d;
+    outline-offset: 4px;
+}
+
 .property-card .property-facts {
     display: flex;
     min-height: auto;

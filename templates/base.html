@@ -41,10 +41,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/brand/favicon-32.png' %}">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/brand/apple-touch-icon.png' %}">
     <link rel="preconnect" href="https://images.unsplash.com">
-    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=45">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v=46">
     <script src="{% static 'js/consent.js' %}?v=13" defer></script>
     <script src="{% static 'js/analytics.js' %}?v=17" defer></script>
-    <script src="{% static 'js/site.js' %}?v=26" defer></script>
+    <script src="{% static 'js/site.js' %}?v=27" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
     {% block extra_head %}{% endblock %}
@@ -104,6 +104,9 @@
     {% include "includes/footer.html" %}
     {% if cookie_consent_enabled %}{% include "includes/cookie_consent.html" %}{% endif %}
     {% include "includes/whatsapp_button.html" %}
+    {% if featured_properties or properties or similar_properties %}
+    {% include "properties/_price_calendar.html" %}
+    {% endif %}
     {% block dialogs %}{% endblock %}
 </body>
 </html>

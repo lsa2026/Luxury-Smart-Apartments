@@ -44,8 +44,8 @@ class ReservationAccessForm(forms.Form):
     def clean_phone(self) -> str:
         try:
             return normalize_phone_number(self.cleaned_data["phone"])
-        except InvalidPhoneNumber:
-            raise forms.ValidationError(_("Enter a valid international phone number."))
+        except InvalidPhoneNumber as exc:
+            raise forms.ValidationError(_("Enter a valid international phone number.")) from exc
 
 
 class LegacyReservationAccessForm(forms.Form):

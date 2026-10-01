@@ -17,7 +17,7 @@ from apps.reservations.services.refunds import (
     cancellation_refund,
     record_obligation,
 )
-from tests.test_booking_modifications_phase6 import create_extension, confirmed_reservation
+from tests.test_booking_modifications_phase6 import confirmed_reservation, create_extension
 
 pytestmark = pytest.mark.django_db
 
@@ -202,7 +202,9 @@ def test_booking_management_list_is_owner_only_and_names_the_guest_first():
 
     assert response.status_code == 200
     assert reservation.booking_intent.guest_first_name in response.content.decode()
-    assert reverse("notifications:booking_detail", args=[reservation.pk]) in response.content.decode()
+    assert (
+        reverse("notifications:booking_detail", args=[reservation.pk]) in response.content.decode()
+    )
     assert 'class="lsa-booking-list__guest"' in response.content.decode()
     assert ">إدارة<" not in response.content.decode()
 

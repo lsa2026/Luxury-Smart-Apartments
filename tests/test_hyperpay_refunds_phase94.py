@@ -105,9 +105,7 @@ def test_full_refund_marks_original_payment_refunded():
 @override_settings(**REFUND_SETTINGS)
 def test_rejected_response_leaves_refund_due_for_owner_review():
     refund, payment = prepared_refund()
-    stub = RefundStub(
-        {"id": "", "result": {"code": "800.100.100", "description": "not accepted"}}
-    )
+    stub = RefundStub({"id": "", "result": {"code": "800.100.100", "description": "not accepted"}})
 
     outcome = HyperPayRefundService(client=stub).submit(refund, operator=object())
 

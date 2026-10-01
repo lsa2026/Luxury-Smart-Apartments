@@ -3,17 +3,20 @@
 from pathlib import Path
 
 import pytest
+from allauth.account.models import EmailAddress
+from allauth.core.context import request_context
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 from django.test import Client, override_settings
 from django.test.client import RequestFactory
 
-from allauth.account.models import EmailAddress
-from allauth.core.context import request_context
-
 from apps.accounts.models import CustomerProfile, profile_for
-from apps.accounts.tokens import make_verification_code, make_verification_token, read_verification_token
+from apps.accounts.tokens import (
+    make_verification_code,
+    make_verification_token,
+    read_verification_token,
+)
 from apps.notifications.models import EmailDelivery
 from apps.notifications.services.email import TEMPLATE_GROUPS
 
@@ -42,8 +45,8 @@ def test_the_accounts_login_route_uses_the_branded_guest_sign_in_page() -> None:
     response = Client().get("/accounts/login/")
 
     assert response.status_code == 200
-    assert b'auth-stage auth-stage--compact' in response.content
-    assert b'Luxury Smart Apartments' in response.content
+    assert b"auth-stage auth-stage--compact" in response.content
+    assert b"Luxury Smart Apartments" in response.content
 
 
 # --- verification -----------------------------------------------------------
@@ -88,7 +91,9 @@ def test_an_incorrect_email_code_does_not_confirm_the_account() -> None:
     response = client.post("/account/confirm/code/", {"code": "000000"})
 
     assert response.status_code == 400
-    assert CustomerProfile.objects.get(user__email="nora@example.invalid").is_email_verified is False
+    assert (
+        CustomerProfile.objects.get(user__email="nora@example.invalid").is_email_verified is False
+    )
 
 
 def test_opening_the_link_confirms_the_address() -> None:

@@ -9,7 +9,6 @@ from apps.notifications.services.email import recipient_hmac, send_queued_email
 from apps.reservations.access_tokens import make_access_link_token
 from tests.test_account_booking_claim import make_reservation
 
-
 pytestmark = pytest.mark.django_db
 
 

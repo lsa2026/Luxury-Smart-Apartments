@@ -19,11 +19,14 @@ from django.core.management.base import BaseCommand, CommandParser
 from django.db import transaction
 from django.utils import timezone
 
+from apps.integrations.hostaway.availability_validators import CalendarDocument
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
-from apps.properties.models import Property
+from apps.properties.models import Property, PropertyPriceCalendar
+from apps.reservations.services.availability import resolve_day_inventory
 
 DEFAULT_WINDOW_DAYS = 30
+DEFAULT_CALENDAR_DAYS = 365
 
 
 class Command(BaseCommand):
@@ -32,34 +35,48 @@ class Command(BaseCommand):
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--listing-id", type=int)
         parser.add_argument("--days", type=int, default=DEFAULT_WINDOW_DAYS)
+        parser.add_argument("--calendar-days", type=int, default=DEFAULT_CALENDAR_DAYS)
         parser.add_argument("--dry-run", action="store_true")
+        parser.add_argument("--if-missing", action="store_true")
 
     def handle(self, *args: object, **options: Any) -> None:
         window_days = options["days"]
-        if window_days < 1:
-            self.stderr.write("--days must be at least 1.")
+        calendar_days = options["calendar_days"]
+        if not 1 <= window_days <= 365 or not window_days <= calendar_days <= 365:
+            self.stderr.write("Require 1 <= --days <= --calendar-days <= 365.")
             return
 
         properties = Property.objects.filter(hostaway_is_active=True).order_by("id")
+        if options["if_missing"]:
+            properties = properties.filter(price_calendar__isnull=True)
         if options["listing_id"]:
             properties = properties.filter(hostaway_listing_id=options["listing_id"])
         property_rows = list(properties)
+        if not property_rows:
+            mode = " (dry run)" if options["dry_run"] else ""
+            self.stdout.write(
+                f"Indicative rates{mode}: examined=0, updated=0, "
+                "unchanged=0, no_availability=0, failed=0"
+            )
+            return
 
         start = timezone.localdate()
         end = start + timedelta(days=window_days)
+        calendar_end = start + timedelta(days=calendar_days)
         examined = updated = unchanged = no_availability = failed = 0
-        candidates: list[tuple[Property, Decimal, str]] = []
+        candidates: list[tuple[Property, Decimal | None, str, list[dict[str, object]]]] = []
 
         with HostawayClient() as client:
             for property_obj in property_rows:
                 examined += 1
                 try:
-                    lowest = self._lowest_available_night(
-                        client,
+                    document = client.get_listing_calendar(
                         property_obj.hostaway_listing_id,
-                        start=start,
-                        end=end,
+                        start_date=start,
+                        end_date=calendar_end,
                     )
+                    lowest = self._lowest_available_night(document, start=start, end=end)
+                    days = self._public_days(document, start=start, end=calendar_end)
                 except (HostawayError, ValueError) as exc:
                     # A single unreachable listing must not blank its anchor.
                     failed += 1
@@ -70,7 +87,6 @@ class Command(BaseCommand):
 
                 if lowest is None:
                     no_availability += 1
-                    continue
                 currency = (
                     (property_obj.price_currency_override or property_obj.currency_code)
                     .strip()
@@ -82,31 +98,46 @@ class Command(BaseCommand):
                         f"listing {property_obj.hostaway_listing_id}: invalid currency"
                     )
                     continue
-                if (
+                if lowest is not None and (
                     lowest == property_obj.indicative_nightly_from
                     and currency == property_obj.indicative_currency
                 ):
                     unchanged += 1
-                    continue
-                candidates.append((property_obj, lowest, currency))
+                elif lowest is not None:
+                    updated += 1
+                candidates.append((property_obj, lowest, currency, days))
 
-        updated = len(candidates)
         aborted = failed > 0 and not options["dry_run"]
         if not options["dry_run"] and not aborted and candidates:
             priced_at = timezone.now()
-            for property_obj, lowest, currency in candidates:
-                property_obj.indicative_nightly_from = lowest
-                property_obj.indicative_currency = currency
-                property_obj.indicative_priced_at = priced_at
             with transaction.atomic():
-                Property.objects.bulk_update(
-                    [property_obj for property_obj, _lowest, _currency in candidates],
-                    fields=(
-                        "indicative_nightly_from",
-                        "indicative_currency",
-                        "indicative_priced_at",
-                    ),
-                )
+                anchors = []
+                for property_obj, lowest, currency, days in candidates:
+                    PropertyPriceCalendar.objects.update_or_create(
+                        property_id=property_obj.pk,
+                        defaults={
+                            "currency": currency,
+                            "start_date": start,
+                            "end_date": calendar_end,
+                            "days": days,
+                            "fetched_at": priced_at,
+                        },
+                    )
+                    if lowest is not None:
+                        property_obj.indicative_nightly_from = lowest
+                        property_obj.indicative_currency = currency
+                        # Successful verification, even when the amount has not changed.
+                        property_obj.indicative_priced_at = priced_at
+                        anchors.append(property_obj)
+                if anchors:
+                    Property.objects.bulk_update(
+                        anchors,
+                        fields=(
+                            "indicative_nightly_from",
+                            "indicative_currency",
+                            "indicative_priced_at",
+                        ),
+                    )
 
         mode = " (dry run)" if options["dry_run"] else ""
         result = " aborted=true" if aborted else ""
@@ -118,23 +149,42 @@ class Command(BaseCommand):
 
     def _lowest_available_night(
         self,
-        client: HostawayClient,
-        listing_id: int,
+        document: CalendarDocument,
         *,
         start: date,
         end: date,
     ) -> Decimal | None:
         """The smallest price Hostaway reports for a bookable day in the window."""
-        document = client.get_listing_calendar(
-            listing_id,
-            start_date=start,
-            end_date=end,
-        )
         prices = [
             day.price
             for day in document.days
             # Only a day Hostaway calls available can anchor a price. An unknown
             # availability is not treated as bookable.
-            if day.is_available is True and day.price is not None and day.price > 0
+            if start <= day.date <= end
+            and resolve_day_inventory(day).is_available
+            and day.price is not None
+            and day.price > 0
         ]
         return min(prices) if prices else None
+
+    @staticmethod
+    def _public_days(
+        document: CalendarDocument, *, start: date, end: date
+    ) -> list[dict[str, object]]:
+        """Allowlisted facts only: no raw Hostaway payload, notes or guest data."""
+        return [
+            {
+                "date": day.date.isoformat(),
+                "price": format(day.price, "f")
+                if day.price is not None and day.price > 0
+                else None,
+                "available": bool(resolve_day_inventory(day).is_available),
+                "arrival_available": bool(
+                    resolve_day_inventory(day).is_available and not day.closed_on_arrival
+                ),
+                "departure_available": not bool(day.closed_on_departure),
+                "minimum_stay": day.minimum_stay,
+            }
+            for day in document.days
+            if start <= day.date < end
+        ]

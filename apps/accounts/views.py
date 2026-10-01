@@ -53,7 +53,9 @@ _VERIFICATION_COPY = {
     },
     "en": {
         "title": "Enter your verification code",
-        "instructions": "We sent a six-digit code to your email. Enter it here to confirm your account.",
+        "instructions": (
+            "We sent a six-digit code to your email. Enter it here to confirm your account."
+        ),
         "code_label": "Verification code",
         "submit": "Confirm account",
         "resend": "Send a new code",
@@ -63,11 +65,17 @@ _VERIFICATION_COPY = {
     },
     "fr": {
         "title": "Saisissez votre code de vérification",
-        "instructions": "Nous avons envoyé un code à six chiffres à votre adresse e-mail. Saisissez-le pour confirmer votre compte.",
+        "instructions": (
+            "Nous avons envoyé un code à six chiffres à votre adresse e-mail. "
+            "Saisissez-le pour confirmer votre compte."
+        ),
         "code_label": "Code de vérification",
         "submit": "Confirmer le compte",
         "resend": "Envoyer un nouveau code",
-        "hint": "Le code est valable 15 minutes. Vérifiez vos courriers indésirables s’il n’est pas arrivé.",
+        "hint": (
+            "Le code est valable 15 minutes. "
+            "Vérifiez vos courriers indésirables s’il n’est pas arrivé."
+        ),
         "invalid": "Le code est incorrect ou expiré. Demandez un nouveau code et réessayez.",
         "resent": "Un nouveau code de vérification a été envoyé à votre adresse e-mail.",
     },
@@ -93,7 +101,9 @@ _EMAIL_ACCESS_COPY = {
     "fr": {
         "eyebrow": "Connexion sécurisée",
         "title": "Connectez-vous avec votre e-mail",
-        "instructions": "Nous vous enverrons un code à six chiffres. Aucun mot de passe n’est nécessaire.",
+        "instructions": (
+            "Nous vous enverrons un code à six chiffres. Aucun mot de passe n’est nécessaire."
+        ),
         "submit": "Envoyer le code de connexion",
         "unknown": "Aucun compte n’existe pour cette adresse. Créez-en un d’abord.",
         "sent": "Nous avons envoyé un code de connexion à votre adresse e-mail.",

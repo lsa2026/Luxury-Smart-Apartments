@@ -27,6 +27,12 @@ python manage.py apply_property_localizations
 python manage.py publish_hostaway_property_locations
 python manage.py apply_trustindex_widgets
 
+# Seed the new display-only calendar once, before serving the new release.
+# Existing snapshots are left to the usual daily worker, not refreshed on
+# each deployment. Provider failure preserves the old service/booking flow;
+# the UI offers the normal live quote if no daily snapshot is ready.
+python manage.py refresh_indicative_rates --if-missing
+
 # Hostaway names arrive in English.  Fill the curated Arabic/French labels for
 # existing and newly-synced amenities without overwriting dashboard wording.
 python manage.py seed_amenity_arabic_names

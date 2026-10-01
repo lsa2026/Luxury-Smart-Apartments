@@ -143,6 +143,7 @@ class ManualBookingFinalizeForm(forms.Form):
                 "أدخل رقمًا دوليًا صالحًا يبدأ بعلامة +، مثل +966500000000."
             ) from exc
 
+
 class ManualBookingCancelForm(forms.Form):
     """Require an explicit acknowledgement before cancelling a local draft."""
 
@@ -193,9 +194,7 @@ class OwnerFinalPriceForm(forms.Form):
         max_digits=14,
         decimal_places=2,
         min_value=Decimal("0"),
-        widget=forms.NumberInput(
-            attrs={"step": "0.01", "min": "0", "inputmode": "decimal"}
-        ),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0", "inputmode": "decimal"}),
     )
 
 
@@ -209,6 +208,7 @@ class CancellationExecutionForm(forms.Form):
         min_value=Decimal("0"),
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
+
     def __init__(self, *args: object, maximum_amount: Decimal, **kwargs: object) -> None:
         self.maximum_amount = maximum_amount
         super().__init__(*args, **kwargs)
@@ -266,8 +266,10 @@ class RefundDecisionForm(forms.Form):
         cleaned = super().clean()
         amount = cleaned.get("approved_amount")
         note = cleaned.get("decision_note")
-        if amount is not None and amount != self.current_amount and (
-            not isinstance(note, str) or len(note) < 10
+        if (
+            amount is not None
+            and amount != self.current_amount
+            and (not isinstance(note, str) or len(note) < 10)
         ):
             self.add_error(
                 "decision_note",

@@ -38,7 +38,7 @@ def flexible_tiers() -> None:
     )
 
 
-def priced_reservation(total: str = "1000.0000"):
+def priced_reservation(total: str = "1000.0000", *, paid: bool = False):
     reservation = confirmed_reservation()
     reservation.total_price = Decimal(total)
     reservation.currency = "SAR"
@@ -47,12 +47,22 @@ def priced_reservation(total: str = "1000.0000"):
     reservation.property.check_in_time_start = 15
     reservation.property.save()
     reservation.save()
+    if paid:
+        PaymentAttempt.objects.create(
+            booking_intent=reservation.booking_intent,
+            provider="hyperpay",
+            provider_payment_id=f"synthetic-policy-payment-{reservation.pk}",
+            amount=Decimal(total),
+            currency="SAR",
+            status=PaymentAttempt.Status.SUCCEEDED,
+            idempotency_key=f"synthetic-policy-payment-{reservation.pk}",
+        )
     return reservation
 
 
 def test_an_empty_policy_table_refunds_nothing() -> None:
     """An undecided policy must never be read as "refund everything"."""
-    reservation = priced_reservation()
+    reservation = priced_reservation(paid=True)
 
     computation = refunds.cancellation_refund(reservation)
 
@@ -62,7 +72,7 @@ def test_an_empty_policy_table_refunds_nothing() -> None:
 
 def test_the_widest_matching_tier_wins() -> None:
     flexible_tiers()
-    reservation = priced_reservation("1000.0000")
+    reservation = priced_reservation("1000.0000", paid=True)
     reservation.check_in = date(2026, 12, 20)
     reservation.check_out = date(2026, 12, 22)
     reservation.nights = 2
@@ -77,7 +87,7 @@ def test_the_widest_matching_tier_wins() -> None:
 
 def test_a_cancellation_inside_the_last_day_refunds_nothing() -> None:
     flexible_tiers()
-    reservation = priced_reservation()
+    reservation = priced_reservation(paid=True)
     reservation.check_in = date(2026, 12, 20)
     reservation.check_out = date(2026, 12, 22)
     reservation.nights = 2
@@ -97,7 +107,7 @@ def test_a_tier_can_withhold_the_cleaning_fee() -> None:
         refund_percentage=Decimal("100"),
         refunds_cleaning_fee=False,
     )
-    reservation = priced_reservation("1000.0000")
+    reservation = priced_reservation("1000.0000", paid=True)
     quote = reservation.booking_intent.quote
     quote.components = [{"type": "cleaningFee", "title": "رسوم التنظيف", "total": "150.00"}]
     quote.save()

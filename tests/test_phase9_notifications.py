@@ -576,6 +576,37 @@ def test_all_trilingual_email_messages_are_defined(message_type: str, language: 
     }
 
 
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+@override_settings(EMAIL_DELIVERY_ENABLED=True, OPERATIONS_EMAIL="ops@example.invalid")
+def test_modification_refund_alert_has_a_body_and_reaches_only_operations(language):
+    from apps.reservations.models import RefundObligation
+    from apps.reservations.services import refunds
+    from tests.test_refund_obligations import priced_reservation
+
+    reservation = priced_reservation()
+    obligation = refunds.record_obligation(
+        reservation,
+        reason=RefundObligation.Reason.MODIFICATION_DECREASE,
+        computation=refunds.RefundComputation(Decimal("20"), "SAR", {}),
+    )
+    delivery = queue_email(
+        message_type="modification_refund_admin_alert",
+        recipient="ops@example.invalid",
+        recipient_source="operations",
+        recipient_reference=str(obligation.public_reference),
+        language=language,
+        idempotency_key=f"synthetic-refund-alert-{language}",
+    )
+    provider = Mock()
+    provider.name = "synthetic"
+    provider.send.return_value = EmailSendResult(True, "sent", "synthetic-refund-alert")
+    assert send_queued_email(delivery.pk, provider=provider).sent is True
+    request = provider.send.call_args.args[0]
+    assert request.recipient == "ops@example.invalid"
+    assert request.context["message"] == MESSAGES["modification_refund_admin_alert"][language]
+    assert request.context["refund_amount"]
+
+
 @override_settings(EMAIL_DELIVERY_ENABLED=False)
 def test_email_queue_task_disabled() -> None:
     assert process_email_queue_task()["status"] == "disabled"

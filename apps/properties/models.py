@@ -338,6 +338,14 @@ class Property(models.Model):
     def get_absolute_url(self) -> str:
         return reverse("properties:detail", kwargs={"slug": self.slug})
 
+    @builtin_property
+    def reviews_url(self) -> str:
+        from .trustindex import full_review_widget_id
+
+        if not full_review_widget_id(self):
+            return f"{self.get_absolute_url()}#reviews"
+        return reverse("properties:reviews", kwargs={"slug": self.slug})
+
     @staticmethod
     def derive_hostaway_is_active(special_status: str) -> bool:
         """Derive activity without assuming future Hostaway status values."""
@@ -377,6 +385,26 @@ class Property(models.Model):
         if images is None:
             images = list(self.images.public()[:5])
         return list(images)
+
+
+class PropertyPriceCalendar(models.Model):
+    """One bounded, privacy-safe daily snapshot; never a booking authority.
+
+    Kept in its own table so listing pages do not read or transfer a year's
+    prices. Only the on-demand calendar endpoint selects this JSON document.
+    """
+
+    property = models.OneToOneField(
+        Property, on_delete=models.CASCADE, related_name="price_calendar"
+    )
+    currency = models.CharField(max_length=3)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    days = models.JSONField(default=list)
+    fetched_at = models.DateTimeField()
+
+    def __str__(self) -> str:
+        return f"Price calendar {self.property_id} ({self.currency})"
 
 
 class PropertyImageQuerySet(models.QuerySet["PropertyImage"]):

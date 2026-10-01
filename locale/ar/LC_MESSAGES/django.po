@@ -7421,3 +7421,46 @@ msgstr "مراجعات ضيوف موثقة جُمعت من منصات الحجز
 #: templates/reviews/review_list.html
 msgid "Verified feedback from Google, Booking.com and Airbnb."
 msgstr "آراء ضيوف موثقة من Google وBooking.com وAirbnb."
+
+#: templates/properties/_price_calendar.html templates/includes/property_card.html
+msgid "Available"
+msgstr "متاح"
+
+msgid "Last updated"
+msgstr "آخر تحديث"
+
+msgid "View prices and availability"
+msgstr "عرض الأسعار والتوفر"
+
+msgid "Loading nightly prices…"
+msgstr "جارٍ تحميل أسعار الليالي…"
+
+msgid "Daily prices are temporarily unavailable. You can still check your stay."
+msgstr "أسعار الليالي غير متاحة مؤقتًا. يمكنك متابعة فحص إقامتك."
+
+msgid "Choose your departure day"
+msgstr "اختر يوم المغادرة"
+
+msgid "Minimum nights"
+msgstr "الحد الأدنى لليالي"
+
+msgid "Nightly prices"
+msgstr "أسعار الليالي"
+
+msgid "These dates need a different stay length or contain an unavailable night."
+msgstr "تحتاج هذه التواريخ إلى مدة إقامة مختلفة أو تتضمن ليلة غير متاحة."
+
+msgid "Updated daily"
+msgstr "تُحدّث يوميًا"
+
+msgid "Nightly prices and availability"
+msgstr "أسعار الليالي والتوفر"
+
+msgid "Lowest available price in this month"
+msgstr "أقل سعر متاح في هذا الشهر"
+
+msgid "Prices are per night and updated daily. Your total, fees and current availability are confirmed in the next step."
+msgstr "الأسعار لكل ليلة وتُحدّث يوميًا. يُؤكّد الإجمالي والرسوم والتوفر الحالي في الخطوة التالية."
+
+msgid "Rated %(rating)s out of 5, %(count)s reviews"
+msgstr "التقييم %(rating)s من 5، %(count)s مراجعة"
