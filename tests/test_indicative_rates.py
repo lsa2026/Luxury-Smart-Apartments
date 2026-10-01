@@ -1,6 +1,6 @@
 """The "from" price anchor: how it is computed, and what it refuses to do."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
 from unittest.mock import patch
@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from django.core.management import call_command
 from django.test import Client
+from django.utils import timezone
 
 from apps.integrations.hostaway.availability_validators import CalendarDay, CalendarDocument
 from apps.integrations.hostaway.exceptions import HostawayError
@@ -36,7 +37,7 @@ def calendar(*days: tuple[bool | None, str | None]) -> CalendarDocument:
     return CalendarDocument(
         days=tuple(
             CalendarDay(
-                date=date(2026, 9, 4) + timedelta(days=offset),
+                date=timezone.localdate() + timedelta(days=offset),
                 is_available=available,
                 price=Decimal(price) if price is not None else None,
                 minimum_stay=None,

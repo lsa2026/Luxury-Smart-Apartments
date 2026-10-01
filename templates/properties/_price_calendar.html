@@ -1,0 +1,44 @@
+{% load i18n static %}
+<dialog class="price-calendar" data-price-calendar aria-labelledby="price-calendar-title"
+    data-script-url="{% static 'js/price-calendar.js' %}?v=1"
+    data-style-url="{% static 'css/price-calendar.css' %}?v=1"
+    data-loading="{% trans 'Loading nightly prices…' %}"
+    data-error="{% trans 'Daily prices are temporarily unavailable. You can still check your stay.' %}"
+    data-updated="{% trans 'Last updated' %}"
+    data-available="{% trans 'Available' %}"
+    data-unavailable="{% trans 'Unavailable' %}"
+    data-choose-arrival="{% trans 'Choose your arrival day' %}"
+    data-choose-departure="{% trans 'Choose your departure day' %}"
+    data-minimum-stay="{% trans 'Minimum nights' %}"
+    data-nightly="{% trans 'Nightly prices' %}"
+    data-today="{% trans 'Today' %}"
+    data-invalid-stay="{% trans 'These dates need a different stay length or contain an unavailable night.' %}">
+    <header class="price-calendar__header">
+        <div><p class="eyebrow">{% trans "Updated daily" %}</p>
+            <h2 id="price-calendar-title">{% trans "Nightly prices and availability" %}</h2>
+            <p data-price-property></p>
+        </div>
+        <button type="button" class="price-calendar__close" data-price-close aria-label="{% trans 'Close calendar' %}">×</button>
+    </header>
+    <div class="price-calendar__selection">
+        <span><small>{% trans "Check-in" %}</small><strong data-price-arrival>—</strong></span>
+        <span><small>{% trans "Check-out" %}</small><strong data-price-departure>—</strong></span>
+        <button type="button" data-price-clear>{% trans "Clear dates" %}</button>
+    </div>
+    <div class="price-calendar__navigation">
+        <button type="button" data-price-prev aria-label="{% trans 'Previous month' %}">‹</button>
+        <strong data-price-month-label></strong>
+        <button type="button" data-price-next aria-label="{% trans 'Next month' %}">›</button>
+    </div>
+    <div class="price-calendar__status" data-price-status role="status" aria-live="polite"></div>
+    <div class="price-calendar__months" data-price-months></div>
+    <div class="price-calendar__legend">
+        <span><i class="price-calendar__key--available" aria-hidden="true"></i>{% trans "Available" %}</span>
+        <span><i class="price-calendar__key--unavailable" aria-hidden="true"></i>{% trans "Unavailable" %}</span>
+        <span><i class="price-calendar__key--lowest" aria-hidden="true"></i>{% trans "Lowest available price in this month" %}</span>
+    </div>
+    <footer class="price-calendar__footer">
+        <small>{% trans "Prices are per night and updated daily. Your total, fees and current availability are confirmed in the next step." %}</small>
+        <a class="button button--gold" data-price-continue>{% trans "Check availability" %}</a>
+    </footer>
+</dialog>

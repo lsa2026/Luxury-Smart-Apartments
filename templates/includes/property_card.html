@@ -100,10 +100,11 @@
                 <h2><a href="{{ resolved_property_url }}">{{ property_name }}</a></h2>
             </div>
             {% if property.trustindex_rating and property.trustindex_review_count %}
-            <span class="card-rating" aria-label="{% blocktrans with rating=property.trustindex_rating|localized_decimal %}Rated {{ rating }} out of 5{% endblocktrans %}">
+            <a class="card-rating card-rating--link" href="{{ property.reviews_url }}" aria-label="{% blocktrans with rating=property.trustindex_rating|localized_decimal count=property.trustindex_review_count|localized_number %}Rated {{ rating }} out of 5, {{ count }} reviews{% endblocktrans %}">
                 <span aria-hidden="true">★</span>
-                {{ property.trustindex_rating|localized_decimal }}
-            </span>
+                <strong>{{ property.trustindex_rating|localized_decimal }}</strong>
+                <small>({{ property.trustindex_review_count|localized_number }})</small>
+            </a>
             {% endif %}
         </div>
 
@@ -151,7 +152,7 @@
                 the refresh window, shown as "from" so it is never read as the
                 price of a stay. With no anchor the original wording stands.
             {% endcomment %}
-            <span class="property-card__price-note">
+            <a class="property-card__price-note property-price-link" href="{{ resolved_property_url }}#availability" data-price-calendar-open data-price-calendar-url="{% url 'properties:price_calendar' slug=property.slug %}" data-price-calendar-name="{{ property_name }}">
                 {% if property.indicative_nightly_from %}
                 <small>{% trans "Final price depends on your dates" %}</small>
                 <strong>{% blocktrans with amount=property.indicative_nightly_from|format_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
@@ -159,7 +160,8 @@
                 <small>{% trans "Price based on dates" %}</small>
                 <strong>{% trans "Live price checks" %}</strong>
                 {% endif %}
-            </span>
+                <span class="property-price-link__hint">{% trans "View prices and availability" %} <span aria-hidden="true">▦</span></span>
+            </a>
             <a class="property-card__cta" href="{{ resolved_property_url }}">
                 {% trans "View details" %}
                 <span aria-hidden="true">←</span>

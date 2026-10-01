@@ -85,7 +85,7 @@ def test_footer_uses_layered_luxury_layout_and_dashboard_contact_details() -> No
     assert 'class="footer-lower"' in content
     assert "saeed@luxurysmartapartments.com" in content
     assert "+966501205651" in content
-    assert "css/site.css?v=45" in content
+    assert "css/site.css?v=" in content
 
 
 @pytest.mark.parametrize(

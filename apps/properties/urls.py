@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .price_calendar import PropertyPriceCalendarView
 from .views import (
     PropertyDetailView,
     PropertyGalleryView,
@@ -11,6 +12,7 @@ app_name = "properties"
 
 urlpatterns = [
     path("", PropertyListView.as_view(), name="list"),
+    path("<slug:slug>/price-calendar/", PropertyPriceCalendarView.as_view(), name="price_calendar"),
     path("<slug:slug>/gallery/", PropertyGalleryView.as_view(), name="gallery"),
     path("<slug:slug>/reviews/", PropertyReviewListView.as_view(), name="reviews"),
     path("<slug:slug>/", PropertyDetailView.as_view(), name="detail"),

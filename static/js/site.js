@@ -2,6 +2,23 @@
 
 document.documentElement.classList.add("js");
 
+// Nothing is fetched until a guest opens a property price. The existing live
+// booking calendar and quote/payment logic remain independent and unchanged.
+let priceCalendarModule;
+document.addEventListener("click", (event) => {
+    const trigger = event.target.closest?.("[data-price-calendar-open]");
+    const dialog = document.querySelector("[data-price-calendar]");
+    if (!trigger || !dialog || !dialog.showModal || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+    }
+    event.preventDefault();
+    priceCalendarModule ||= import(dialog.dataset.scriptUrl);
+    priceCalendarModule.then((module) => module.openPriceCalendar(trigger)).catch(() => {
+        priceCalendarModule = null;
+        window.location.assign(trigger.href);
+    });
+});
+
 const currencyMenus = [...document.querySelectorAll("[data-currency-menu]")];
 
 currencyMenus.forEach((menu) => {
