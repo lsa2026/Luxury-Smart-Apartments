@@ -305,6 +305,31 @@ def handle_refund_submitted(obligation_id: object) -> None:
         logger.error("Refund guest email queue failed code=%s", type(exc).__name__)
 
 
+def handle_paid_booking_needs_review(reservation_id: object) -> None:
+    from apps.integrations.monitoring import alert_operations
+    from apps.reservations.models import Reservation
+
+    reservation = Reservation.objects.select_related("booking_intent").get(pk=reservation_id)
+    intent = reservation.booking_intent
+    if not intent or reservation.payment_status != "paid":
+        return
+    alert_operations(
+        f"paid-booking-review:{reservation.pk}", reference=reservation.public_reference
+    )
+    if settings.EMAIL_DELIVERY_ENABLED:
+        try:
+            queue_email(
+                message_type="paid_booking_needs_review",
+                recipient=intent.guest_email,
+                recipient_source="reservation",
+                recipient_reference=reservation.public_reference,
+                language=intent.language,
+                idempotency_key=f"paid-booking-review:{reservation.public_reference}",
+            )
+        except Exception:
+            logger.exception("Paid booking review email queue failed")
+
+
 def handle_reservation_confirmed(reservation_id: object) -> None:
     from apps.reservations.models import Reservation
 

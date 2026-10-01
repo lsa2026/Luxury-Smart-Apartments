@@ -439,8 +439,19 @@ HOSTAWAY_REVIEW_SYNC_ENABLED = strict_bool("HOSTAWAY_REVIEW_SYNC_ENABLED")
 TRUSTINDEX_REVIEW_SYNC_ENABLED = strict_bool("TRUSTINDEX_REVIEW_SYNC_ENABLED")
 TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES = optional_positive_int(
     "TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES",
-    360,
+    1440,
 )
+# Independent jobs: property descriptions, images and amenities are website-owned.
+HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED = strict_bool("HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED")
+HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR = env.int("HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR", default=16)
+HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE = env.int("HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE", default=30)
+HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED = strict_bool("HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED")
+HOSTAWAY_FINANCIAL_RECEIPTS_ENABLED = strict_bool("HOSTAWAY_FINANCIAL_RECEIPTS_ENABLED")
+HOSTAWAY_FINANCIAL_RECEIPTS_START_AT = env("HOSTAWAY_FINANCIAL_RECEIPTS_START_AT", default="")
+if not 0 <= HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR <= 23 or not (
+    0 <= HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE <= 59
+):
+    raise ImproperlyConfigured("Invalid daily calendar sync time.")
 HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES = optional_positive_int(
     "HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES",
     1,
@@ -495,29 +506,40 @@ if HOSTAWAY_AUTO_SYNC_ENABLED:
             "task": "apps.integrations.tasks.sync_hostaway_properties_task",
             "schedule": HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES * 60,
         },
-        # Display-only anchor; daily is enough because the live quote decides
-        # every real price. Runs before the working day in Riyadh.
-        "indicative-rates": {
-            "task": "apps.integrations.tasks.refresh_indicative_rates_task",
-            "schedule": crontab(hour=5, minute=30),
-        },
-        "hostaway-webhooks": {
-            "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
-            "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
-        },
-        "hostaway-paid-booking-reconciliation": {
-            "task": "apps.integrations.tasks.reconcile_paid_hostaway_reservations_task",
-            "schedule": HOSTAWAY_BOOKING_RECONCILIATION_INTERVAL_MINUTES * 60,
-        },
-        "expire-booking-objects": {
-            "task": "apps.integrations.tasks.expire_booking_objects_task",
-            "schedule": BOOKING_EXPIRATION_INTERVAL_MINUTES * 60,
-        },
     }
+if HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED:
+    CELERY_BEAT_SCHEDULE["indicative-rates"] = {
+        "task": "apps.integrations.tasks.refresh_indicative_rates_task",
+        # After the PriceLabs default overnight queue (up to 13:00 GMT).
+        "schedule": crontab(
+            hour=HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR,
+            minute=HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE,
+        ),
+    }
+if HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED:
+    CELERY_BEAT_SCHEDULE["website-reservation-statuses"] = {
+        "task": "apps.integrations.tasks.refresh_website_reservations_task",
+        "schedule": 30 * 60,
+    }
+if HOSTAWAY_WEBHOOK_PROCESSING_ENABLED:
+    CELERY_BEAT_SCHEDULE["hostaway-webhooks"] = {
+        "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
+        "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
+    }
+CELERY_BEAT_SCHEDULE["expire-booking-objects"] = {
+    "task": "apps.integrations.tasks.expire_booking_objects_task",
+    "schedule": BOOKING_EXPIRATION_INTERVAL_MINUTES * 60,
+}
+# No automatic paid-booking creation retries: notify operations instead.
 if TRUSTINDEX_REVIEW_SYNC_ENABLED:
     CELERY_BEAT_SCHEDULE["trustindex-review-metrics"] = {
         "task": "apps.reviews.tasks.sync_trustindex_review_metrics_task",
-        "schedule": TRUSTINDEX_REVIEW_SYNC_INTERVAL_MINUTES * 60,
+        "schedule": crontab(hour=17, minute=0),
+    }
+if CELERY_SYNC_DISPATCH_ENABLED:
+    CELERY_BEAT_SCHEDULE["integration-scheduler-health"] = {
+        "task": "apps.integrations.tasks.check_sync_health_task",
+        "schedule": 5 * 60,
     }
 
 SITE_CANONICAL_URL = env("SITE_CANONICAL_URL", default="http://localhost:8000").rstrip("/")

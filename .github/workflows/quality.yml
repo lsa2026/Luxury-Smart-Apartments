@@ -47,6 +47,7 @@ jobs:
           tests/test_automatic_cancellation_refunds.py
           tests/test_property_price_calendar.py
           tests/test_indicative_rates.py
+          tests/test_sync_policy_october.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

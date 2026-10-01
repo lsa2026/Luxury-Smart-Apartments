@@ -23,12 +23,13 @@
         <li><span><i class="{% if health.authentication_status == 'configured' %}is-ok{% else %}is-warn{% endif %}"></i>{% trans "Authentication data" %}</span><b>{% if health.authentication_status == 'configured' %}{% trans "Configured" %}{% else %}{% trans "Not configured" %}{% endif %}</b></li>
         <li><span><i class="{% if health.redis_status == 'available' %}is-ok{% else %}is-warn{% endif %}"></i>Redis / Cache</span><b>{{ health.redis_status|admin_status_label }}</b></li>
         <li><span><i class="{% if health.worker_status == 'available' %}is-ok{% else %}is-warn{% endif %}"></i>{% trans "Task worker" %}</span><b>{{ health.worker_status|admin_status_label }}</b></li>
-        <li><span><i class="{% if health.beat_status == 'enabled' %}is-ok{% else %}is-neutral{% endif %}"></i>{% trans "Automatic scheduling" %}</span><b>{% if health.beat_status == 'enabled' %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</b></li>
+        <li><span><i class="{% if health.beat_status == 'available' %}is-ok{% else %}is-warn{% endif %}"></i>{% trans "Automatic scheduling" %}</span><b>{% if health.beat_status == 'available' %}تم رصد تشغيل فعلي{% elif health.beat_status == 'disabled' %}{% trans "Disabled" %}{% else %}لم يُرصد تشغيل خلال 15 دقيقة{% endif %}</b></li>
       </ul>
     </article>
     <article class="lsa-panel">
       <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Last run" %}</span><h2>{% trans "Source log" %}</h2></div></header>
       <dl class="lsa-activity-list">
+        {% for label, run in health.daily_syncs %}<div><dt>{{ label }}</dt><dd>{% if run %}<strong>{{ run.get_status_display }}</strong><small>{{ run.completed_at|date:"Y-m-d H:i" }} · {{ run.failed_count }} تعثر</small>{% else %}<strong>{% trans "No previous run" %}</strong>{% endif %}</dd></div>{% endfor %}
         <div><dt>{% trans "Properties" %}</dt><dd>{% if health.last_property_sync %}<strong>{{ health.last_property_sync.get_status_display }}</strong><small>{% blocktrans with elapsed=health.last_property_sync.started_at|timesince count_items=health.last_property_sync.fetched_count %}{{ elapsed }} ago · {{ count_items }} items{% endblocktrans %}</small>{% else %}<strong>{% trans "No previous run" %}</strong>{% endif %}</dd></div>
       </dl>
     </article>
@@ -43,7 +44,8 @@
     <header class="lsa-panel__header"><div><span class="lsa-panel__eyebrow">{% trans "Manual run" %}</span><h2>{% trans "Safe sync" %}</h2><p>{% trans "Always start with a dry run before any real sync." %}</p></div></header>
     {% if not dispatch_enabled %}<div class="lsa-callout lsa-callout--warn"><strong>{% trans "The task worker is not running" %}</strong><span>{% trans "The buttons will not run a sync now; a message will show the local command to run." %}</span></div>{% endif %}
     <form method="post" class="lsa-sync-form">{% csrf_token %}
-      <div><span>{% trans "Properties" %}</span><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="properties_dry_run">{% trans "Dry run" context "admin field label" %}</button><button class="lsa-btn lsa-btn--danger-outline" name="sync_action" value="properties">{% trans "Real sync" %}</button></div>
+      <div><span>أسماء الشقق وصورها ومرافقها تُدار في الموقع ولا تُستورد تلقائيًا.</span><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="properties_dry_run">{% trans "Dry run" context "admin field label" %}</button></div>
+      <div><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="prices">تحديث تقويم الأسعار فقط</button><button class="lsa-btn lsa-btn--subtle" name="sync_action" value="trustindex">تحديث تقييمات Trustindex فقط</button></div>
     </form>
   </section>
 </main>

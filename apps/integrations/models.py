@@ -12,6 +12,9 @@ class IntegrationSyncRun(models.Model):
     class SyncType(models.TextChoices):
         HOSTAWAY_PROPERTIES = "hostaway_properties", "Hostaway properties"
         HOSTAWAY_REVIEWS = "hostaway_reviews", "Hostaway reviews"
+        PRICE_CALENDAR = "price_calendar", "Daily price calendar"
+        TRUSTINDEX_METRICS = "trustindex_metrics", "Daily Trustindex metrics"
+        WEBSITE_RESERVATIONS = "website_reservations", "Website reservation statuses"
 
     class Status(models.TextChoices):
         RUNNING = "running", _("Running")

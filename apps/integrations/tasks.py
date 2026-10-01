@@ -49,6 +49,8 @@ def sync_hostaway_properties_task(
     dry_run: bool = False,
 ) -> dict[str, int | str]:
     """Run the read-from-Hostaway property sync once."""
+    if not settings.HOSTAWAY_AUTO_SYNC_ENABLED and not dry_run:
+        return {"status": "disabled", "fetched": 0, "created": 0, "updated": 0, "failed": 0}
     with distributed_task_lock("properties") as acquired:
         if not acquired:
             return {"status": "already_running"}
@@ -224,10 +226,34 @@ def refresh_indicative_rates_task() -> dict[str, str]:
     Daily is deliberate: the figure only has to orient a first-time visitor, and
     the live quote remains the authority for any real booking.
     """
-    from django.core.management import call_command
 
     with distributed_task_lock("indicative-rates") as acquired:
         if not acquired:
             return {"status": "already_running"}
-        call_command("refresh_indicative_rates")
+        from apps.integrations.models import IntegrationSyncRun
+        from apps.integrations.monitoring import run_display_command
+
+        return run_display_command(
+            "refresh_indicative_rates", IntegrationSyncRun.SyncType.PRICE_CALENDAR
+        )
+
+
+@shared_task(name="apps.integrations.tasks.refresh_website_reservations_task")
+def refresh_website_reservations_task() -> dict[str, int | str]:
+    from apps.integrations.website_reservations import refresh_website_reservations
+
+    with distributed_task_lock("website-reservation-statuses") as acquired:
+        if not acquired:
+            return {"status": "already_running"}
+        return refresh_website_reservations(limit=100)
+
+
+@shared_task(name="apps.integrations.tasks.check_sync_health_task")
+def check_sync_health_task() -> dict[str, str]:
+    from django.utils import timezone
+
+    from apps.integrations.monitoring import check_daily_sync_health
+
+    cache.set("lsa:health:beat-observed", timezone.now().isoformat(), timeout=15 * 60)
+    check_daily_sync_health()
     return {"status": "completed"}

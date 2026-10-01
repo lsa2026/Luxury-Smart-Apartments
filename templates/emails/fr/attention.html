@@ -1,0 +1,4 @@
+{% extends "emails/fr/base.html" %}{% block content %}
+<h1 style="color:#102d26;font-size:24px">{{ heading }}</h1><p style="color:#5e6c67;line-height:1.9">{{ message }}</p>
+{% if reference %}<p>Référence de la demande : <strong>{{ reference }}</strong></p>{% endif %}
+{% endblock %}
