@@ -329,9 +329,7 @@ HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED = strict_bool(
 # production guard prevents an otherwise harmless deployment from returning
 # real money before the sandbox flow has been accepted.
 HYPERPAY_REFUNDS_ENABLED = strict_bool("HYPERPAY_REFUNDS_ENABLED")
-HYPERPAY_REFUNDS_PRODUCTION_ENABLED = strict_bool(
-    "HYPERPAY_REFUNDS_PRODUCTION_ENABLED"
-)
+HYPERPAY_REFUNDS_PRODUCTION_ENABLED = strict_bool("HYPERPAY_REFUNDS_PRODUCTION_ENABLED")
 HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
     "HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS", default=86400
 )
@@ -567,9 +565,7 @@ ACCOUNTING_WHATSAPP_NUMBER = env("ACCOUNTING_WHATSAPP_NUMBER", default="").strip
 # deployment has the instance credentials; the public WhatsApp support button
 # never uses these values.
 ULTRAMSG_ENABLED = strict_bool("ULTRAMSG_ENABLED")
-ULTRAMSG_API_BASE_URL = env(
-    "ULTRAMSG_API_BASE_URL", default="https://api.ultramsg.com"
-).rstrip("/")
+ULTRAMSG_API_BASE_URL = env("ULTRAMSG_API_BASE_URL", default="https://api.ultramsg.com").rstrip("/")
 ULTRAMSG_INSTANCE_ID = env("ULTRAMSG_INSTANCE_ID", default="").strip()
 ULTRAMSG_TOKEN = env("ULTRAMSG_TOKEN", default="").strip()
 ULTRAMSG_CONNECT_TIMEOUT = 5.0

@@ -1114,28 +1114,32 @@ class ModificationCreateView(View):
                     messages.error(
                         request,
                         _(
-                            "The cancellation could not be completed. Your booking has not been changed."
+                            "The cancellation could not be completed. "
+                            "Your booking has not been changed."
                         ),
                     )
                 elif execution.refund_code == "refund.hyperpay_completed":
                     messages.success(
                         request,
                         _(
-                            "Your booking was cancelled and your refund was sent to the original payment method."
+                            "Your booking was cancelled and your refund was sent "
+                            "to the original payment method."
                         ),
                     )
                 elif execution.refund_code == "refund.hyperpay_submitted":
                     messages.success(
                         request,
                         _(
-                            "Your booking was cancelled and your refund has been submitted to the payment provider."
+                            "Your booking was cancelled and your refund has been "
+                            "submitted to the payment provider."
                         ),
                     )
                 elif execution.refund is not None and execution.refund_code:
                     messages.warning(
                         request,
                         _(
-                            "Your booking was cancelled. The refund needs a final review before it can be sent."
+                            "Your booking was cancelled. "
+                            "The refund needs a final review before it can be sent."
                         ),
                     )
             return _private_response(

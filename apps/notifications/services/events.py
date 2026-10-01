@@ -265,9 +265,9 @@ def handle_refund_submitted(obligation_id: object) -> None:
     from apps.reservations.models import RefundObligation
 
     try:
-        refund = RefundObligation.objects.select_related(
-            "reservation__booking_intent"
-        ).get(pk=obligation_id)
+        refund = RefundObligation.objects.select_related("reservation__booking_intent").get(
+            pk=obligation_id
+        )
         intent = refund.reservation.booking_intent
         if intent is None or refund.status not in {
             RefundObligation.Status.PROCESSING,

@@ -121,7 +121,10 @@ def test_admin_login_only_exposes_google_and_rejects_legacy_password_posts(db):
     assert page.status_code == 200
     assert "المتابعة ببريد الأعمال عبر Google" in page.content.decode()
     assert 'name="username"' not in page.content.decode()
-    assert client.post(reverse("admin:login"), {"username": "owner", "password": "pw"}).status_code == 405
+    assert (
+        client.post(reverse("admin:login"), {"username": "owner", "password": "pw"}).status_code
+        == 405
+    )
 
 
 def test_google_only_admin_protection_does_not_touch_guest_sign_in(db):

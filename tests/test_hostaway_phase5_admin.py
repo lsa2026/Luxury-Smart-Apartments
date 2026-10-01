@@ -108,15 +108,24 @@ def test_every_booking_operations_list_prioritizes_the_guest_name() -> None:
     assert ManualBookingDraftAdmin(ManualBookingDraft, site).list_display[0] == "guest_name"
     assert BookingIntentAdmin(BookingIntent, site).get_list_display(request)[0] == "guest_name_list"
     assert ReservationAdmin(Reservation, site).guest_name(reservation) == "Saeed Alghamdi"
-    assert BookingModificationRequestAdmin(
-        BookingModificationRequest, site
-    ).guest_name(SimpleNamespace(reservation=reservation)) == "Saeed Alghamdi"
-    assert HostawayModificationOperationAdmin(
-        HostawayModificationOperation, site
-    ).guest_name(SimpleNamespace(modification_request=modification)) == "Saeed Alghamdi"
-    assert RefundObligationAdmin(RefundObligation, site).guest_name_display(
-        SimpleNamespace(guest_name="Saeed Alghamdi")
-    ) == "Saeed Alghamdi"
+    assert (
+        BookingModificationRequestAdmin(BookingModificationRequest, site).guest_name(
+            SimpleNamespace(reservation=reservation)
+        )
+        == "Saeed Alghamdi"
+    )
+    assert (
+        HostawayModificationOperationAdmin(HostawayModificationOperation, site).guest_name(
+            SimpleNamespace(modification_request=modification)
+        )
+        == "Saeed Alghamdi"
+    )
+    assert (
+        RefundObligationAdmin(RefundObligation, site).guest_name_display(
+            SimpleNamespace(guest_name="Saeed Alghamdi")
+        )
+        == "Saeed Alghamdi"
+    )
     assert ManualBookingDraftAdmin(ManualBookingDraft, site).guest_name(draft) == "Saeed Alghamdi"
     payment = SimpleNamespace(booking_intent=intent, booking_intent_id="intent-id")
     payment_admin = PaymentAttemptAdmin(PaymentAttempt, site)

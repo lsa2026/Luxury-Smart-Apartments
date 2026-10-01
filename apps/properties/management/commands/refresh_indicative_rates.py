@@ -53,7 +53,11 @@ class Command(BaseCommand):
             properties = properties.filter(hostaway_listing_id=options["listing_id"])
         property_rows = list(properties)
         if not property_rows:
-            self.stdout.write("No price calendars need refreshing.")
+            mode = " (dry run)" if options["dry_run"] else ""
+            self.stdout.write(
+                f"Indicative rates{mode}: examined=0, updated=0, "
+                "unchanged=0, no_availability=0, failed=0"
+            )
             return
 
         start = timezone.localdate()

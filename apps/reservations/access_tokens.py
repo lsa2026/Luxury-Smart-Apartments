@@ -8,7 +8,6 @@ from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 
-
 ACCESS_LINK_SALT = "reservations.management-access-link.v1"
 ACCESS_LINK_MAX_AGE_SECONDS = 30 * 60
 

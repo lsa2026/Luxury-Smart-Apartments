@@ -1024,8 +1024,10 @@ class HostawayModificationOperationAdmin(ModelAdmin):
     exclude = ("request_fingerprint",)
 
     def get_queryset(self, request: HttpRequest):
-        return super().get_queryset(request).select_related(
-            "modification_request__reservation__booking_intent"
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("modification_request__reservation__booking_intent")
         )
 
     @admin.display(description=_("Guest"))

@@ -192,4 +192,4 @@ def test_the_review_page_uses_direct_entry_address_fields() -> None:
     assert "billing_street1" in content
     assert "Street address</label>" in content
     assert 'name="billing_postcode"' in content
-    assert 'Postal code</label>' in content
+    assert "Postal code</label>" in content
