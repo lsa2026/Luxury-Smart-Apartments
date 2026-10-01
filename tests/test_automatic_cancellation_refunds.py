@@ -275,8 +275,10 @@ def test_orphaned_hyperpay_connector_test_record_closes_without_a_refund():
     )
     assert modification is not None
 
+    refund_client = RefundStub({})
     outcome = execute_automatic_modification(
         modification,
+        refund_service=HyperPayRefundService(client=refund_client),
         approved_refund_amount=reservation.total_price,
     )
 
@@ -284,6 +286,7 @@ def test_orphaned_hyperpay_connector_test_record_closes_without_a_refund():
     payment.refresh_from_db()
     modification.refresh_from_db()
     assert outcome.code == "orphaned_test_payment_cancelled"
+    assert refund_client.calls == []
     assert outcome.refund is None
     assert reservation.normalized_status == reservation.Status.CANCELLED
     assert payment.status == PaymentAttempt.Status.CANCELLED
