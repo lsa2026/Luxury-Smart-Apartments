@@ -1927,9 +1927,11 @@ document.querySelectorAll("[data-image-fallback] img").forEach((image) => {
 // who steps back, or reloads after a validation error, does not retype the
 // address. Nothing is written to the server. It remains for this browser tab's
 // session so a server-side validation response or Back navigation cannot erase
-// it; the quote-specific key prevents it leaking into a different request.
+// it; the form-specific key keeps it separate from other draft forms.
 document.querySelectorAll("[data-draft-form]").forEach((form) => {
     const key = `lsa-draft:${form.dataset.draftForm}`;
+    const checkoutDraft = form.dataset.draftForm === "guest-details"
+        && ["true", "false"].includes(form.dataset.draftServerBound);
     const fields = Array.from(
         form.querySelectorAll("input[name], select[name], textarea[name]")
     ).filter((field) => !["hidden", "password", "checkbox", "radio"].includes(field.type));
@@ -1944,13 +1946,27 @@ document.querySelectorAll("[data-draft-form]").forEach((form) => {
 
     const saved = read();
     fields.forEach((field) => {
+        if (checkoutDraft && field.name === "billing_country") {
+            // Fresh GETs initialize this select to the property's country.
+            // A valid saved guest country must win on reload/language switch,
+            // but never replace the value (even blank) in a bound POST form.
+            const country = saved?.[field.name];
+            if (form.dataset.draftServerBound !== "false" || field.tagName !== "SELECT"
+                || typeof country !== "string" || !/^[A-Z]{2}$/.test(country)
+                || !Array.from(field.options).some((option) => option.value === country && !option.disabled)) return;
+            if (field.value !== country) {
+                field.value = country;
+                field.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            return;
+        }
         if (!field.value && typeof saved[field.name] === "string") {
             field.value = saved[field.name];
             field.dispatchEvent(new Event("change", { bubbles: true }));
         }
     });
 
-    form.addEventListener("input", () => {
+    function saveDraft() {
         const draft = {};
         fields.forEach((field) => {
             if (field.value) {
@@ -1962,6 +1978,10 @@ document.querySelectorAll("[data-draft-form]").forEach((form) => {
         } catch {
             // A full or disabled store simply means no draft is kept.
         }
-    });
+    }
+    form.addEventListener("input", saveDraft);
+    // A native country select need not emit input in every browser.
+    // Keep this additional listener scoped to the shared guest checkout.
+    if (checkoutDraft) form.addEventListener("change", saveDraft);
 
 });
