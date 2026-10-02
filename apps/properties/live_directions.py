@@ -107,9 +107,15 @@ class PropertyAirportRouteView(View):
             logger.warning("Airport route request rejected: abuse-control cache unavailable")
             return _reply("live_estimate_unavailable", 503)
 
-        origin_latitude, origin_longitude = (
-            float(value) for value in route.airport_origin.split(",")
-        )
+        if route.airport_place_id:
+            origin = {"placeId": route.airport_place_id}
+        else:
+            origin_latitude, origin_longitude = (
+                float(value) for value in route.airport_origin.split(",")
+            )
+            origin = {
+                "location": {"latLng": {"latitude": origin_latitude, "longitude": origin_longitude}}
+            }
         try:
             with httpx.Client(timeout=httpx.Timeout(5.0, connect=2.0)) as client:
                 response = client.post(
@@ -119,14 +125,7 @@ class PropertyAirportRouteView(View):
                         "X-Goog-FieldMask": "routes.duration,routes.distanceMeters",
                     },
                     json={
-                        "origin": {
-                            "location": {
-                                "latLng": {
-                                    "latitude": origin_latitude,
-                                    "longitude": origin_longitude,
-                                }
-                            }
-                        },
+                        "origin": origin,
                         "destination": {"placeId": route.destination_place_id},
                         "travelMode": "DRIVE",
                         "routingPreference": "TRAFFIC_AWARE",

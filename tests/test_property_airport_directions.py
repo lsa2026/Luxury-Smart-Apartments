@@ -36,6 +36,12 @@ B12_AIRPORT_URL = (
     "&destination=Luxury%20Smart%20Apartment%20B%2012"
     "&destination_place_id=ChIJVaDhVZD_Lj4RES0Nej_3-XI&travelmode=driving"
 )
+MARRAKECH_AIRPORT_URL = (
+    "https://www.google.com/maps/dir/?api=1&origin=Marrakesh%20Menara%20Airport"
+    "&destination=Luxury%20Smart%20Apartment%20at%20Nour%20Prestige%20Marrakech"
+    "&destination_place_id=ChIJ54Web3jvrw0RENTa4RVQ0uE&travelmode=driving"
+    "&origin_place_id=ChIJdcWwntDurw0R5589e1uB9cM"
+)
 EXPECTED_ROUTES = {
     315814: ("4981474889453888860", "Luxury Smart Apartment Safa 41 B1", AIRPORT_URL),
     315815: (
@@ -46,6 +52,11 @@ EXPECTED_ROUTES = {
     315816: ("11028010615766615560", "Luxury Smart Apartment E12", E12_AIRPORT_URL),
     325961: ("8271520614131583265", "Luxury Smart Apartment A11", A11_AIRPORT_URL),
     343666: ("8284924841527422225", "Luxury Smart Apartment B 12", B12_AIRPORT_URL),
+    511786: (
+        "16272156458556773392",
+        "Luxury Smart Apartment at Nour Prestige Marrakech",
+        MARRAKECH_AIRPORT_URL,
+    ),
 }
 
 
@@ -60,9 +71,10 @@ def make_property(listing_id: int = 315814) -> Property:
             315816: "شقة E12 الذكية",
             325961: "شقة A11 الذكية",
             343666: "شقة B12 الذكية",
+            511786: "شقة نور بريستيج الذكية في مراكش",
         }.get(listing_id, "شقة عرقة الذكية"),
         name_en=name,
-        city="Riyadh",
+        city="Marrakech" if listing_id == 511786 else "Riyadh",
         currency_code="SAR",
         is_visible=True,
         public_location_enabled=True,
@@ -119,7 +131,7 @@ def test_arrival_block_follows_map_with_translations_and_safe_links(
 ) -> None:
     property_obj = make_property(listing_id)
     expected_cid, _, expected_url = EXPECTED_ROUTES[listing_id]
-    if listing_id in {315815, 315816, 325961, 343666}:
+    if listing_id in {315815, 315816, 325961, 343666, 511786}:
         estimate = {
             "ar": "وقت القيادة اللحظي غير متاح حاليًا. افتح خرائط Google للحصول على الاتجاهات.",
             "en": "Live driving time is currently unavailable. Open Google Maps for directions.",
@@ -151,10 +163,12 @@ def test_arrival_block_follows_map_with_translations_and_safe_links(
     for other_listing_id, (_, _, other_url) in EXPECTED_ROUTES.items():
         if other_listing_id != listing_id:
             assert parse_qs(urlparse(other_url).query)["destination_place_id"][0] not in block
-    assert ("property-mobile-layout.css" in content) is (listing_id in {315816, 325961, 343666})
+    assert ("property-mobile-layout.css" in content) is (
+        listing_id in {315816, 325961, 343666, 511786}
+    )
 
 
-@pytest.mark.parametrize("listing_id", [11, 325731, 511786, 333333])
+@pytest.mark.parametrize("listing_id", [11, 325731, 333333])
 def test_other_properties_keep_their_existing_map_link(listing_id: int) -> None:
     property_obj = make_property(listing_id)
     response = Client().get(f"/ar/properties/{property_obj.slug}/")
@@ -223,3 +237,32 @@ def test_verified_properties_cannot_use_each_others_destination(
     property_obj = make_property(listing_id)
     property_obj.google_maps_cid = EXPECTED_ROUTES[other_listing_id][0]
     assert airport_directions(property_obj) is None
+
+
+@pytest.mark.parametrize(
+    ("language", "airport_title", "time_label"),
+    [
+        ("ar", "الوصول من مطار مراكش المنارة (RAK)", "بتوقيت مراكش"),
+        ("en", "Arriving from Marrakech Menara Airport (RAK)", "Marrakech time"),
+        ("fr", "Depuis l’aéroport de Marrakech-Ménara (RAK)", "heure de Marrakech"),
+    ],
+)
+def test_marrakech_arrival_uses_its_own_airport_and_local_time(
+    settings, language, airport_title, time_label
+):
+    settings.GOOGLE_ROUTES_ENABLED = True
+    settings.GOOGLE_ROUTES_API_KEY = "test-only-server-key"
+    marrakech, riyadh = make_property(511786), make_property(343666)
+    links = airport_directions(marrakech)
+    assert links["time_zone"] == "Africa/Casablanca"
+    assert airport_directions(riyadh)["time_zone"] == "Asia/Riyadh"
+    html = unescape(Client().get(f"/{language}/properties/{marrakech.slug}/").content.decode())
+    block = html.split('class="property-arrival"', 1)[1].split("</section>", 1)[0]
+    assert airport_title in block
+    assert time_label in block
+    assert 'data-time-zone="Africa/Casablanca"' in block
+    assert "RUH" not in block
+    assert "24.959443" not in block
+    assert "Riyadh" not in block
+    assert "الرياض" not in block
+    assert "test-only-server-key" not in html

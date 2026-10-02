@@ -29,7 +29,7 @@ export async function loadAirportEstimate(panel, request = fetch) {
         const language = document.documentElement.lang || "en";
         const number = new Intl.NumberFormat(language, {maximumFractionDigits: 1});
         const time = new Intl.DateTimeFormat(language, {
-            timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit",
+            timeZone: panel.dataset.timeZone || "Asia/Riyadh", hour: "2-digit", minute: "2-digit",
         }).format(calculated);
         status.textContent = panel.dataset.estimate
             .replace("{minutes}", number.format(result.duration_minutes))

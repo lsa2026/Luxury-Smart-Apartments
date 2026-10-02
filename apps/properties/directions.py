@@ -4,6 +4,7 @@ from urllib.parse import quote, urlencode
 from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_noop
 
 from .models import Property
 
@@ -17,6 +18,10 @@ class AirportRoute:
     drive_minutes: int | None = None
     live_traffic: bool = False
     airport_origin: str = "24.959443,46.7010829"
+    airport_place_id: str = ""
+    airport_heading: str = gettext_noop("Arriving from King Khalid International Airport (RUH)")
+    time_zone: str = "Asia/Riyadh"
+    updated_label: str = gettext_noop("Calculated at {time} (Riyadh time)")
 
 
 # Only individually reviewed routes are published. The shared presentation
@@ -53,6 +58,17 @@ VERIFIED_AIRPORT_ROUTES = {
         destination_place_id="ChIJVaDhVZD_Lj4RES0Nej_3-XI",
         live_traffic=True,
     ),
+    511786: AirportRoute(
+        google_maps_cid="16272156458556773392",
+        destination="Luxury Smart Apartment at Nour Prestige Marrakech",
+        destination_place_id="ChIJ54Web3jvrw0RENTa4RVQ0uE",
+        live_traffic=True,
+        airport_origin="Marrakesh Menara Airport",
+        airport_place_id="ChIJdcWwntDurw0R5589e1uB9cM",
+        airport_heading=gettext_noop("Arriving from Marrakech Menara Airport (RAK)"),
+        time_zone="Africa/Casablanca",
+        updated_label=gettext_noop("Calculated at {time} (Marrakech time)"),
+    ),
 }
 
 
@@ -81,8 +97,11 @@ def airport_directions(property_obj: Property) -> dict[str, object] | None:
         "travelmode": "driving",
     }
     base_url = "https://www.google.com/maps/dir/?"
+    airport_params = {"api": 1, "origin": route.airport_origin, **destination}
+    if route.airport_place_id:
+        airport_params["origin_place_id"] = route.airport_place_id
     airport_query = urlencode(
-        {"api": 1, "origin": route.airport_origin, **destination},
+        airport_params,
         quote_via=quote,
         safe=",",
     )
@@ -91,6 +110,9 @@ def airport_directions(property_obj: Property) -> dict[str, object] | None:
         "airport_url": base_url + airport_query,
         "other_origin_url": base_url + other_origin_query,
         "live_traffic": route.live_traffic,
+        "airport_heading": _(route.airport_heading),
+        "time_zone": route.time_zone,
+        "updated_label": _(route.updated_label),
     }
     if route.live_traffic:
         from .live_directions import make_route_ticket
