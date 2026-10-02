@@ -7464,3 +7464,18 @@ msgstr "الأسعار لكل ليلة وتُحدّث يوميًا. يُؤكّد
 
 msgid "Rated %(rating)s out of 5, %(count)s reviews"
 msgstr "التقييم %(rating)s من 5، %(count)s مراجعة"
+
+msgid "Arriving from King Khalid International Airport (RUH)"
+msgstr "الوصول من مطار الملك خالد الدولي (RUH)"
+
+msgid "About 45 km · Around 35 minutes by car"
+msgstr "نحو 45 كم · حوالي 35 دقيقة بالسيارة"
+
+msgid "Directions from the airport"
+msgstr "الاتجاهات من المطار"
+
+msgid "Directions from another location"
+msgstr "الوصول من مكان آخر"
+
+msgid "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."
+msgstr "المسافة ومدة القيادة تقريبيتان حسب الطريق وحركة المرور. تفتح الاتجاهات في خرائط Google."

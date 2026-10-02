@@ -14,6 +14,7 @@ from apps.reservations.services.stay_policy import stay_policy_for
 from apps.reviews.summary import rating_summary
 
 from .cities import canonical_city, supported_city_choices
+from .directions import airport_directions
 from .forms import PropertyBrowseDatesForm
 from .models import Property, PropertyAmenity, PropertyImage
 from .trustindex import full_review_widget_id
@@ -249,6 +250,7 @@ class PropertyDetailView(DetailView):
                 "similar_properties": similar,
                 "total_image_count": len(all_gallery_images),
                 "public_location_map": _public_location_map(property_obj),
+                "arrival_directions": airport_directions(property_obj),
                 "breadcrumb_items": [
                     {"label": _("Properties"), "url": reverse("properties:list")},
                     {"label": property_obj.display_name, "url": ""},

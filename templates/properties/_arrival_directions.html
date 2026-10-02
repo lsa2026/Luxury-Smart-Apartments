@@ -1,0 +1,17 @@
+{% load i18n %}
+<section class="property-arrival" aria-labelledby="airport-arrival-title">
+    <h3 id="airport-arrival-title" class="property-arrival__title">
+        <span aria-hidden="true">✈</span>
+        {% trans "Arriving from King Khalid International Airport (RUH)" %}
+    </h3>
+    <p class="property-arrival__estimate">{% trans "About 45 km · Around 35 minutes by car" %}</p>
+    <div class="property-arrival__actions">
+        <a class="button button--gold" href="{{ arrival_directions.airport_url }}" target="_blank" rel="noopener noreferrer" aria-describedby="airport-arrival-note">
+            {% trans "Directions from the airport" %}
+        </a>
+        <a class="button button--outline property-arrival__other" href="{{ arrival_directions.other_origin_url }}" target="_blank" rel="noopener noreferrer" aria-describedby="airport-arrival-note">
+            {% trans "Directions from another location" %}
+        </a>
+    </div>
+    <p id="airport-arrival-note" class="property-arrival__note">{% trans "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps." %}</p>
+</section>
