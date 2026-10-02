@@ -92,6 +92,9 @@ jobs:
       - name: Test lazy airport driving estimates
         run: node --test tests/airport-directions.test.cjs
 
+      - name: Test optional checkout address autocomplete
+        run: node --test tests/checkout-address.test.cjs
+
       - name: Run Ruff lint
         run: ruff check .
 
