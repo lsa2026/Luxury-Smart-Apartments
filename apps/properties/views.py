@@ -17,6 +17,7 @@ from .cities import canonical_city, supported_city_choices
 from .directions import airport_directions
 from .forms import PropertyBrowseDatesForm
 from .models import Property, PropertyAmenity, PropertyImage
+from .nearby import nearby_config
 from .trustindex import full_review_widget_id
 
 
@@ -251,6 +252,7 @@ class PropertyDetailView(DetailView):
                 "total_image_count": len(all_gallery_images),
                 "public_location_map": _public_location_map(property_obj),
                 "arrival_directions": airport_directions(property_obj),
+                "nearby_config": nearby_config(property_obj),
                 "breadcrumb_items": [
                     {"label": _("Properties"), "url": reverse("properties:list")},
                     {"label": property_obj.display_name, "url": ""},
@@ -285,6 +287,7 @@ class PropertyDetailView(DetailView):
             }
         )
         self.request._public_map_enabled = context["public_location_map"] is not None
+        self.request._nearby_map_enabled = context["nearby_config"] is not None
         self.request._trustindex_widget_enabled = bool(property_obj.trustindex_widget_id)
         return context
 

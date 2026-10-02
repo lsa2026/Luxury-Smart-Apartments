@@ -24,6 +24,10 @@
 {% endblock %}
 {% block structured_data %}{% json_ld property_structured_data csp_nonce %}{% json_ld breadcrumb_structured_data csp_nonce %}{% endblock %}
 {% block extra_head %}
+{% if nearby_config %}
+<link rel="stylesheet" href="{% static 'css/property-nearby.css' %}?v=1">
+<script type="module" src="{% static 'js/property-nearby.js' %}?v=1" nonce="{{ csp_nonce }}"></script>
+{% endif %}
 {% if property.hostaway_listing_id == 315816 or property.hostaway_listing_id == 325961 or property.hostaway_listing_id == 343666 or property.hostaway_listing_id == 511786 %}
 <link rel="stylesheet" href="{% static 'css/property-mobile-layout.css' %}?v=1">
 {% endif %}
@@ -235,6 +239,7 @@
 </article>
 {% endblock %}
 {% block dialogs %}
+{% if nearby_config %}{% include "properties/_nearby_dialog.html" %}{% endif %}
 {% if all_gallery_images %}
 <dialog class="lightbox lightbox--property" data-lightbox aria-label="{% trans 'Property photo viewer' %}">
     <div class="lightbox__context">

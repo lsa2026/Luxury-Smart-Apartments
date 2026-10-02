@@ -7550,3 +7550,84 @@ msgstr "تقدم خرائط Google اقتراحات عنوان الدفع الا
 
 msgid "Address code, street or neighborhood"
 msgstr "رمز العنوان، اسم الشارع أو الحي"
+
+msgid "Opening this optional map connects your browser to Google Maps. We do not request your location or store nearby search results."
+msgstr "فتح هذه الخريطة الاختيارية يربط متصفحك بخرائط Google. لا نطلب موقعك ولا نخزّن نتائج البحث القريبة."
+
+msgid "Google Maps terms"
+msgstr "شروط خرائط Google"
+
+msgid "Google privacy policy"
+msgstr "سياسة خصوصية Google"
+
+msgid "Discover nearby"
+msgstr "اكتشف ما حول الشقة"
+
+msgid "Loading the map…"
+msgstr "جارٍ تحميل الخريطة…"
+
+msgid "Choose a category to explore nearby places."
+msgstr "اختر فئة لاستكشاف الأماكن القريبة."
+
+msgid "Searching this area…"
+msgstr "جارٍ البحث في هذه المنطقة…"
+
+msgid "Results are ordered by distance from the search centre."
+msgstr "النتائج مرتبة حسب القرب من مركز البحث."
+
+msgid "No places found in this area. Try another category or move the map."
+msgstr "لم نعثر على أماكن في هذه المنطقة. جرّب فئة أخرى أو حرّك الخريطة."
+
+msgid "Nearby discovery is temporarily unavailable. Booking and directions still work."
+msgstr "استكشاف الأماكن القريبة غير متاح مؤقتًا. الحجز والاتجاهات لا يزالان يعملان."
+
+msgid "Please pause before searching again, or continue in Google Maps."
+msgstr "يرجى الانتظار قليلًا قبل البحث مجددًا، أو المتابعة في خرائط Google."
+
+msgid "Your apartment"
+msgstr "موقع شقتك"
+
+msgid "Close nearby map"
+msgstr "إغلاق خريطة الأماكن القريبة"
+
+msgid "Nearby categories"
+msgstr "فئات الأماكن القريبة"
+
+msgid "Cafés"
+msgstr "كافيهات"
+
+msgid "Restaurants"
+msgstr "مطاعم"
+
+msgid "Laundries"
+msgstr "مغاسل ملابس"
+
+msgid "Supermarkets"
+msgstr "سوبرماركت"
+
+msgid "Mosques"
+msgstr "مساجد"
+
+msgid "Gyms"
+msgstr "أندية رياضية"
+
+msgid "Bus stops"
+msgstr "مواقف باص"
+
+msgid "Metro stations"
+msgstr "محطات مترو"
+
+msgid "Back to apartment"
+msgstr "العودة إلى الشقة"
+
+msgid "Search this area"
+msgstr "ابحث في هذه المنطقة"
+
+msgid "Apartment and nearby places map"
+msgstr "خريطة الشقة والأماكن القريبة"
+
+msgid "Directions to this place"
+msgstr "الاتجاهات إلى هذا المكان"
+
+msgid "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps."
+msgstr "يبدأ البحث ضمن كيلومتر واحد من الشقة (5 كم لمحطات المترو). يستخدم البحث في هذه المنطقة الخريطة الظاهرة، بحد أقصى 10 كم (20 كم للمترو). المسافات بخط مستقيم وليست مسارات مشي. قد تكون المواقع والمداخل تقريبية. تُفتح الاتجاهات في خرائط Google."

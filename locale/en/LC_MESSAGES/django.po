@@ -7233,3 +7233,84 @@ msgstr "Enter your address code or part of your address, then choose a suggestio
 
 msgid "Address code, street or neighborhood"
 msgstr "Address code, street or neighborhood"
+
+msgid "Opening this optional map connects your browser to Google Maps. We do not request your location or store nearby search results."
+msgstr "Opening this optional map connects your browser to Google Maps. We do not request your location or store nearby search results."
+
+msgid "Google Maps terms"
+msgstr "Google Maps terms"
+
+msgid "Google privacy policy"
+msgstr "Google privacy policy"
+
+msgid "Discover nearby"
+msgstr "Discover nearby"
+
+msgid "Loading the map…"
+msgstr "Loading the map…"
+
+msgid "Choose a category to explore nearby places."
+msgstr "Choose a category to explore nearby places."
+
+msgid "Searching this area…"
+msgstr "Searching this area…"
+
+msgid "Results are ordered by distance from the search centre."
+msgstr "Results are ordered by distance from the search centre."
+
+msgid "No places found in this area. Try another category or move the map."
+msgstr "No places found in this area. Try another category or move the map."
+
+msgid "Nearby discovery is temporarily unavailable. Booking and directions still work."
+msgstr "Nearby discovery is temporarily unavailable. Booking and directions still work."
+
+msgid "Please pause before searching again, or continue in Google Maps."
+msgstr "Please pause before searching again, or continue in Google Maps."
+
+msgid "Your apartment"
+msgstr "Your apartment"
+
+msgid "Close nearby map"
+msgstr "Close nearby map"
+
+msgid "Nearby categories"
+msgstr "Nearby categories"
+
+msgid "Cafés"
+msgstr "Cafés"
+
+msgid "Restaurants"
+msgstr "Restaurants"
+
+msgid "Laundries"
+msgstr "Laundries"
+
+msgid "Supermarkets"
+msgstr "Supermarkets"
+
+msgid "Mosques"
+msgstr "Mosques"
+
+msgid "Gyms"
+msgstr "Gyms"
+
+msgid "Bus stops"
+msgstr "Bus stops"
+
+msgid "Metro stations"
+msgstr "Metro stations"
+
+msgid "Back to apartment"
+msgstr "Back to apartment"
+
+msgid "Search this area"
+msgstr "Search this area"
+
+msgid "Apartment and nearby places map"
+msgstr "Apartment and nearby places map"
+
+msgid "Directions to this place"
+msgstr "Directions to this place"
+
+msgid "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps."
+msgstr "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps."

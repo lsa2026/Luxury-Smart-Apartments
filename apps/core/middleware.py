@@ -150,6 +150,39 @@ class SecurityHeadersMiddleware:
             frame_sources.append("https://www.openstreetmap.org")
         form_action_sources = ["'self'"]
         font_sources = ["'self'"]
+        worker_sources = ["'self'"]
+        if getattr(request, "_nearby_map_enabled", False):
+            # Maps JS + Places UI Kit, only on approved opt-in property pages.
+            # Google currently requires eval/Blob workers; not enabled globally.
+            script_sources.extend(
+                [
+                    "'unsafe-eval'",
+                    "https://maps.googleapis.com",
+                    "https://maps.gstatic.com",
+                ]
+            )
+            connect_sources.extend(
+                [
+                    "https://maps.googleapis.com",
+                    "https://places.googleapis.com",
+                    "https://placewidgets.googleapis.com",
+                    "https://maps.gstatic.com",
+                    "https://www.google.com",
+                    "data:",
+                    "blob:",
+                ]
+            )
+            image_sources += (
+                " https://maps.googleapis.com https://maps.gstatic.com"
+                " https://lh3.googleusercontent.com https://lh4.googleusercontent.com"
+                " https://streetviewpixels-pa.googleapis.com"
+                " https://mt0.google.com https://mt1.google.com"
+                " https://mt2.google.com https://mt3.google.com"
+            )
+            style_sources += " https://fonts.googleapis.com"
+            font_sources.append("https://fonts.gstatic.com")
+            frame_sources.append("https://www.google.com")
+            worker_sources.append("blob:")
         if trustindex_widget_page:
             # Trustindex injects its verified-review slider and stylesheet at
             # runtime. This exception applies only to pages that render an
@@ -240,7 +273,8 @@ class SecurityHeadersMiddleware:
                 f"script-src {' '.join(script_sources)}; "
                 f"connect-src {' '.join(connect_sources)}; "
                 f"frame-src {' '.join(frame_sources)}; "
-                f"font-src {' '.join(font_sources)}"
+                f"font-src {' '.join(font_sources)}; "
+                f"worker-src {' '.join(worker_sources)}"
             ),
         )
         response.setdefault(
