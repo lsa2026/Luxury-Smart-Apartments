@@ -21,6 +21,7 @@ pytestmark = pytest.mark.django_db
     [
         (315816, "24.794822", "46.612351", "24.793941", "46.610402", "ChIJl-vqdXvjLj4RCIYB5DldC5k"),
         (325961, "24.836076", "46.748926", "24.837618", "46.748429", "ChIJsy-YIQD_Lj4RIUmilSxYynI"),
+        (343666, "24.837438", "46.748188", "24.837417", "46.748219", "ChIJVaDhVZD_Lj4RES0Nej_3-XI"),
     ],
 )
 def test_publish_reviewed_coordinates_without_changing_imported_data(
@@ -102,7 +103,7 @@ def test_invalid_public_map_correction_is_rejected_before_writes(tmp_path, latit
         _load_business_profiles()
 
 
-@pytest.mark.parametrize("listing_id", [315816, 325961])
+@pytest.mark.parametrize("listing_id", [315816, 325961, 343666])
 def test_release_fixture_changes_only_public_reviewed_coordinates(listing_id):
     path = Path(__file__).parents[1] / "apps/properties/data/release_properties.json"
     properties = [
@@ -117,4 +118,5 @@ def test_release_fixture_changes_only_public_reviewed_coordinates(listing_id):
     assert (property_data["latitude"], property_data["longitude"]) == {
         315816: ("24.794822", "46.612351"),
         325961: ("24.836076", "46.748926"),
+        343666: ("24.837438", "46.748188"),
     }[listing_id]
