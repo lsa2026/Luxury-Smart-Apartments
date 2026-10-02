@@ -48,6 +48,7 @@ def post_route(client, property_obj, ticket=None, **kwargs):
         (315815, "ChIJXY-ywnLnLj4R6TKd37VpY-M"),
         (315816, "ChIJl-vqdXvjLj4RCIYB5DldC5k"),
         (325961, "ChIJsy-YIQD_Lj4RIUmilSxYynI"),
+        (343666, "ChIJVaDhVZD_Lj4RES0Nej_3-XI"),
     ],
 )
 def test_exact_destination_traffic_time_and_no_google_content_cache(listing_id, place_id):
@@ -187,7 +188,7 @@ def test_provider_and_cache_failures_never_fabricate_success(failure):
     assert "no-store" in result["Cache-Control"]
 
 
-@pytest.mark.parametrize("listing_id", [315814, 343666, 511786])
+@pytest.mark.parametrize("listing_id", [315814, 325731, 511786])
 def test_live_estimate_is_not_enabled_for_unauthorized_properties(listing_id):
     property_obj = make_property(listing_id)
     with patch("apps.properties.live_directions.httpx.Client") as provider:
@@ -196,7 +197,7 @@ def test_live_estimate_is_not_enabled_for_unauthorized_properties(listing_id):
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
-@pytest.mark.parametrize("listing_id", [315815, 315816, 325961])
+@pytest.mark.parametrize("listing_id", [315815, 315816, 325961, 343666])
 def test_page_contains_only_lazy_server_ticket_no_api_key_no_static_darat_number(
     language, listing_id
 ):

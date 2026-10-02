@@ -31,6 +31,11 @@ A11_AIRPORT_URL = (
     "&destination=Luxury%20Smart%20Apartment%20A11"
     "&destination_place_id=ChIJsy-YIQD_Lj4RIUmilSxYynI&travelmode=driving"
 )
+B12_AIRPORT_URL = (
+    "https://www.google.com/maps/dir/?api=1&origin=24.959443,46.7010829"
+    "&destination=Luxury%20Smart%20Apartment%20B%2012"
+    "&destination_place_id=ChIJVaDhVZD_Lj4RES0Nej_3-XI&travelmode=driving"
+)
 EXPECTED_ROUTES = {
     315814: ("4981474889453888860", "Luxury Smart Apartment Safa 41 B1", AIRPORT_URL),
     315815: (
@@ -40,6 +45,7 @@ EXPECTED_ROUTES = {
     ),
     315816: ("11028010615766615560", "Luxury Smart Apartment E12", E12_AIRPORT_URL),
     325961: ("8271520614131583265", "Luxury Smart Apartment A11", A11_AIRPORT_URL),
+    343666: ("8284924841527422225", "Luxury Smart Apartment B 12", B12_AIRPORT_URL),
 }
 
 
@@ -49,9 +55,12 @@ def make_property(listing_id: int = 315814) -> Property:
         hostaway_listing_id=listing_id,
         slug=f"property-{listing_id}",
         hostaway_name=name,
-        name_ar={315815: "شقة دارة صفا", 315816: "شقة E12 الذكية", 325961: "شقة A11 الذكية"}.get(
-            listing_id, "شقة عرقة الذكية"
-        ),
+        name_ar={
+            315815: "شقة دارة صفا",
+            315816: "شقة E12 الذكية",
+            325961: "شقة A11 الذكية",
+            343666: "شقة B12 الذكية",
+        }.get(listing_id, "شقة عرقة الذكية"),
         name_en=name,
         city="Riyadh",
         currency_code="SAR",
@@ -110,7 +119,7 @@ def test_arrival_block_follows_map_with_translations_and_safe_links(
 ) -> None:
     property_obj = make_property(listing_id)
     expected_cid, _, expected_url = EXPECTED_ROUTES[listing_id]
-    if listing_id in {315815, 315816, 325961}:
+    if listing_id in {315815, 315816, 325961, 343666}:
         estimate = {
             "ar": "وقت القيادة اللحظي غير متاح حاليًا. افتح خرائط Google للحصول على الاتجاهات.",
             "en": "Live driving time is currently unavailable. Open Google Maps for directions.",
@@ -142,10 +151,10 @@ def test_arrival_block_follows_map_with_translations_and_safe_links(
     for other_listing_id, (_, _, other_url) in EXPECTED_ROUTES.items():
         if other_listing_id != listing_id:
             assert parse_qs(urlparse(other_url).query)["destination_place_id"][0] not in block
-    assert ("property-mobile-layout.css" in content) is (listing_id in {315816, 325961})
+    assert ("property-mobile-layout.css" in content) is (listing_id in {315816, 325961, 343666})
 
 
-@pytest.mark.parametrize("listing_id", [11, 343666, 511786, 333333])
+@pytest.mark.parametrize("listing_id", [11, 325731, 511786, 333333])
 def test_other_properties_keep_their_existing_map_link(listing_id: int) -> None:
     property_obj = make_property(listing_id)
     response = Client().get(f"/ar/properties/{property_obj.slug}/")

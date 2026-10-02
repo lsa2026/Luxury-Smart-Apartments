@@ -25,7 +25,9 @@
   },
   "343666": {
     "business_name": "Luxury Smart Apartment B12",
-    "google_maps_cid": "8284924841527422225"
+    "google_maps_cid": "8284924841527422225",
+    "public_location_latitude": "24.837417",
+    "public_location_longitude": "46.748219"
   },
   "511786": {
     "business_name": "Luxury Smart Apartment at Nour Prestige Marrakech",
