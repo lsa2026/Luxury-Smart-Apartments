@@ -7775,3 +7775,84 @@ msgstr "Les suggestions facultatives d’adresse de paiement sont fournies par G
 
 msgid "Address code, street or neighborhood"
 msgstr "Code d’adresse, rue ou quartier"
+
+msgid "Opening this optional map connects your browser to Google Maps. We do not request your location or store nearby search results."
+msgstr "L’ouverture de cette carte facultative connecte votre navigateur à Google Maps. Nous ne demandons pas votre position et ne conservons pas les résultats de recherche."
+
+msgid "Google Maps terms"
+msgstr "Conditions de Google Maps"
+
+msgid "Google privacy policy"
+msgstr "Règles de confidentialité de Google"
+
+msgid "Discover nearby"
+msgstr "Découvrez les environs"
+
+msgid "Loading the map…"
+msgstr "Chargement de la carte…"
+
+msgid "Choose a category to explore nearby places."
+msgstr "Choisissez une catégorie pour découvrir les lieux à proximité."
+
+msgid "Searching this area…"
+msgstr "Recherche dans cette zone…"
+
+msgid "Results are ordered by distance from the search centre."
+msgstr "Les résultats sont classés par distance depuis le centre de recherche."
+
+msgid "No places found in this area. Try another category or move the map."
+msgstr "Aucun lieu trouvé dans cette zone. Essayez une autre catégorie ou déplacez la carte."
+
+msgid "Nearby discovery is temporarily unavailable. Booking and directions still work."
+msgstr "La découverte des environs est temporairement indisponible. La réservation et les itinéraires restent accessibles."
+
+msgid "Please pause before searching again, or continue in Google Maps."
+msgstr "Veuillez patienter avant une nouvelle recherche ou continuer dans Google Maps."
+
+msgid "Your apartment"
+msgstr "Votre appartement"
+
+msgid "Close nearby map"
+msgstr "Fermer la carte des environs"
+
+msgid "Nearby categories"
+msgstr "Catégories de lieux à proximité"
+
+msgid "Cafés"
+msgstr "Cafés"
+
+msgid "Restaurants"
+msgstr "Restaurants"
+
+msgid "Laundries"
+msgstr "Blanchisseries"
+
+msgid "Supermarkets"
+msgstr "Supermarchés"
+
+msgid "Mosques"
+msgstr "Mosquées"
+
+msgid "Gyms"
+msgstr "Salles de sport"
+
+msgid "Bus stops"
+msgstr "Arrêts de bus"
+
+msgid "Metro stations"
+msgstr "Stations de métro"
+
+msgid "Back to apartment"
+msgstr "Retour à l’appartement"
+
+msgid "Search this area"
+msgstr "Rechercher dans cette zone"
+
+msgid "Apartment and nearby places map"
+msgstr "Carte de l’appartement et des lieux à proximité"
+
+msgid "Directions to this place"
+msgstr "Itinéraire vers ce lieu"
+
+msgid "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps."
+msgstr "La recherche commence dans un rayon de 1 km autour de l’appartement (5 km pour le métro). La recherche dans cette zone utilise la carte visible, jusqu’à 10 km (20 km pour le métro). Les distances sont à vol d’oiseau, pas des trajets à pied. Les emplacements et les entrées peuvent être approximatifs. Les itinéraires s’ouvrent dans Google Maps."

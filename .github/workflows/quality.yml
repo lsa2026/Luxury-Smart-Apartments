@@ -92,6 +92,9 @@ jobs:
       - name: Test lazy airport driving estimates
         run: node --test tests/airport-directions.test.cjs
 
+      - name: Test opt-in nearby discovery
+        run: node --test tests/property-nearby.test.cjs
+
       - name: Test optional checkout address autocomplete
         run: node --test tests/checkout-address.test.cjs tests/guest-draft-country.test.cjs
 

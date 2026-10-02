@@ -1,0 +1,46 @@
+{% load i18n presentation %}
+{{ nearby_config|json_script:"property-nearby-config" }}
+<dialog id="property-nearby-dialog" class="nearby-dialog" data-nearby-dialog aria-labelledby="nearby-title" aria-describedby="nearby-note"
+    data-loading="{% trans 'Loading the map…' %}"
+    data-ready="{% trans 'Choose a category to explore nearby places.' %}"
+    data-searching="{% trans 'Searching this area…' %}"
+    data-results="{% trans 'Results are ordered by distance from the search centre.' %}"
+    data-empty="{% trans 'No places found in this area. Try another category or move the map.' %}"
+    data-unavailable="{% trans 'Nearby discovery is temporarily unavailable. Booking and directions still work.' %}"
+    data-limit="{% trans 'Please pause before searching again, or continue in Google Maps.' %}"
+    data-apartment="{% trans 'Your apartment' %}">
+    <div class="nearby-dialog__body">
+        <header class="nearby-dialog__header">
+            <div><h2 id="nearby-title">{% trans "Discover nearby" %}</h2><p>{{ property|localized_property_name }}</p></div>
+            <button type="button" data-nearby-close aria-label="{% trans 'Close nearby map' %}">×</button>
+        </header>
+        <div class="nearby-categories" role="group" aria-label="{% trans 'Nearby categories' %}">
+            <button type="button" data-nearby-category="coffee" aria-pressed="false">{% trans "Cafés" %}</button>
+            <button type="button" data-nearby-category="restaurant" aria-pressed="false">{% trans "Restaurants" %}</button>
+            <button type="button" data-nearby-category="laundry" aria-pressed="false">{% trans "Laundries" %}</button>
+            <button type="button" data-nearby-category="supermarket" aria-pressed="false">{% trans "Supermarkets" %}</button>
+            <button type="button" data-nearby-category="mosque" aria-pressed="false">{% trans "Mosques" %}</button>
+            <button type="button" data-nearby-category="gym" aria-pressed="false">{% trans "Gyms" %}</button>
+            <button type="button" data-nearby-category="bus" aria-pressed="false">{% trans "Bus stops" %}</button>
+            <button type="button" data-nearby-category="metro" aria-pressed="false">{% trans "Metro stations" %}</button>
+        </div>
+        <div class="nearby-tools">
+            <button type="button" data-nearby-home>{% trans "Back to apartment" %}</button>
+            <button type="button" data-nearby-search hidden>{% trans "Search this area" %}</button>
+        </div>
+        <p class="nearby-status" data-nearby-status role="status" aria-live="polite">{% trans "Choose a category to explore nearby places." %}</p>
+        <div class="nearby-layout">
+            <div class="nearby-map" data-nearby-map role="region" aria-label="{% trans 'Apartment and nearby places map' %}"></div>
+            <div class="nearby-results" data-nearby-results></div>
+        </div>
+        <div class="nearby-selected" data-nearby-selected hidden>
+            <div data-nearby-details></div>
+            <a class="button button--gold" data-nearby-directions target="_blank" rel="noopener noreferrer">{% trans "Directions to this place" %}</a>
+        </div>
+        <p id="nearby-note" class="nearby-note">{% trans "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps." %}</p>
+        <p class="nearby-note">{% trans "Opening this optional map connects your browser to Google Maps. We do not request your location or store nearby search results." %}
+            <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">{% trans "Google Maps terms" %}</a> ·
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{% trans "Google privacy policy" %}</a>
+        </p>
+    </div>
+</dialog>

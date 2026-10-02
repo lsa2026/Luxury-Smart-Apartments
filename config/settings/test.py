@@ -22,6 +22,8 @@ os.environ["GOOGLE_ROUTES_REQUIRE_SHARED_CACHE"] = "false"
 os.environ["GOOGLE_PLACES_ENABLED"] = "false"
 os.environ["GOOGLE_PLACES_API_KEY"] = ""
 os.environ["GOOGLE_PLACES_REQUIRE_SHARED_CACHE"] = "false"
+os.environ["GOOGLE_NEARBY_ENABLED"] = "false"
+os.environ["GOOGLE_MAPS_BROWSER_API_KEY"] = ""
 # Tests exercise the operational event flow and must never inherit a local
 # choice to mute it or to route mail through a real SMTP provider.
 os.environ["NOTIFICATIONS_ENABLED"] = "true"

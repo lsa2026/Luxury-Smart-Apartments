@@ -20,6 +20,11 @@
         <a class="button button--outline property-arrival__other" href="{{ arrival_directions.other_origin_url }}" target="_blank" rel="noopener noreferrer" aria-describedby="airport-arrival-note">
             {% trans "Directions from another location" %}
         </a>
+        {% if nearby_config %}
+        <button class="button button--outline property-arrival__other property-arrival__nearby" type="button" data-nearby-open aria-haspopup="dialog" aria-controls="property-nearby-dialog">
+            {% trans "Discover nearby" %}
+        </button>
+        {% endif %}
     </div>
     <p id="airport-arrival-note" class="property-arrival__note">{% trans "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps." %}</p>
 </section>
