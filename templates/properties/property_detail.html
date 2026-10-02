@@ -30,7 +30,10 @@
 <script src="{% static 'js/property-map.js' %}?v=1" defer></script>
 {% endif %}
 {% if arrival_directions %}
-<link rel="stylesheet" href="{% static 'css/property-arrival.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/property-arrival.css' %}?v=2">
+{% if arrival_directions.live_enabled %}
+<script type="module" src="{% static 'js/airport-directions.js' %}"></script>
+{% endif %}
 {% endif %}
 {% endblock %}
 {% block content %}

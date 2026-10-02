@@ -17,5 +17,6 @@
 </header>
 <section class="section container content-page-shell">
     <article class="prose-card rich-copy structured-copy">{{ page|localized_page_body|structured_text }}</article>
+    {% block legal_service_notice %}{% endblock %}
 </section>
 {% endblock %}

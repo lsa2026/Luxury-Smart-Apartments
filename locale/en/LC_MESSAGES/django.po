@@ -7178,8 +7178,9 @@ msgstr ""
 msgid "Arriving from King Khalid International Airport (RUH)"
 msgstr "Arriving from King Khalid International Airport (RUH)"
 
-msgid "About 45 km · Around 35 minutes by car"
-msgstr "About 45 km · Around 35 minutes by car"
+#, python-format
+msgid "About %(distance)s km · Around %(duration)s minutes by car"
+msgstr "About %(distance)s km · Around %(duration)s minutes by car"
 
 msgid "Directions from the airport"
 msgstr "Directions from the airport"
@@ -7189,3 +7190,30 @@ msgstr "Directions from another location"
 
 msgid "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."
 msgstr "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."
+
+msgid "Calculating the current driving time…"
+msgstr "Calculating the current driving time…"
+
+msgid "Live driving time is currently unavailable. Open Google Maps for directions."
+msgstr "Live driving time is currently unavailable. Open Google Maps for directions."
+
+msgid "Estimated driving time now: {minutes} min · {distance} km"
+msgstr "Estimated driving time now: {minutes} min · {distance} km"
+
+msgid "Calculated at {time} (Riyadh time)"
+msgstr "Calculated at {time} (Riyadh time)"
+
+msgid "Google Maps driving estimates"
+msgstr "Google Maps driving estimates"
+
+msgid "Airport driving estimates are provided by Google Maps and depend on current traffic. They are estimates, not guaranteed arrival times."
+msgstr "Airport driving estimates are provided by Google Maps and depend on current traffic. They are estimates, not guaranteed arrival times."
+
+msgid "Google Maps Terms of Service"
+msgstr "Google Maps Terms of Service"
+
+msgid "Google Privacy Policy"
+msgstr "Google Privacy Policy"
+
+msgid "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature."
+msgstr "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature."

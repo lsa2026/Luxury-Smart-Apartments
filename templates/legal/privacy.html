@@ -1,1 +1,9 @@
 {% extends "core/content_page.html" %}
+{% load i18n %}
+{% block legal_service_notice %}
+<aside class="prose-card rich-copy">
+    <h2>{% trans "Google Maps driving estimates" %}</h2>
+    <p>{% trans "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature." %}</p>
+    <p><a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">{% trans "Google Maps Terms of Service" %}</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{% trans "Google Privacy Policy" %}</a></p>
+</aside>
+{% endblock %}

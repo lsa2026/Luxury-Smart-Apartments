@@ -7468,8 +7468,9 @@ msgstr "التقييم %(rating)s من 5، %(count)s مراجعة"
 msgid "Arriving from King Khalid International Airport (RUH)"
 msgstr "الوصول من مطار الملك خالد الدولي (RUH)"
 
-msgid "About 45 km · Around 35 minutes by car"
-msgstr "نحو 45 كم · حوالي 35 دقيقة بالسيارة"
+#, python-format
+msgid "About %(distance)s km · Around %(duration)s minutes by car"
+msgstr "نحو %(distance)s كم · حوالي %(duration)s دقيقة بالسيارة"
 
 msgid "Directions from the airport"
 msgstr "الاتجاهات من المطار"
@@ -7479,3 +7480,30 @@ msgstr "الوصول من مكان آخر"
 
 msgid "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."
 msgstr "المسافة ومدة القيادة تقريبيتان حسب الطريق وحركة المرور. تفتح الاتجاهات في خرائط Google."
+
+msgid "Calculating the current driving time…"
+msgstr "جارٍ حساب مدة القيادة حسب المرور الحالي…"
+
+msgid "Live driving time is currently unavailable. Open Google Maps for directions."
+msgstr "وقت القيادة اللحظي غير متاح حاليًا. افتح خرائط Google للحصول على الاتجاهات."
+
+msgid "Estimated driving time now: {minutes} min · {distance} km"
+msgstr "مدة القيادة المتوقعة الآن: {minutes} دقيقة · {distance} كم"
+
+msgid "Calculated at {time} (Riyadh time)"
+msgstr "آخر حساب: {time} بتوقيت الرياض"
+
+msgid "Google Maps driving estimates"
+msgstr "تقديرات القيادة من خرائط Google"
+
+msgid "Airport driving estimates are provided by Google Maps and depend on current traffic. They are estimates, not guaranteed arrival times."
+msgstr "توفر خرائط Google تقديرات القيادة من المطار بحسب حركة المرور الحالية. هذه تقديرات وليست وعدًا بوقت الوصول."
+
+msgid "Google Maps Terms of Service"
+msgstr "شروط خدمة خرائط Google"
+
+msgid "Google Privacy Policy"
+msgstr "سياسة خصوصية Google"
+
+msgid "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature."
+msgstr "لحساب مدة القيادة من المطار، يرسل خادمنا موقع المطار ووجهة العقار العامة إلى خرائط Google فقط. لا نطلب موقعك ولا نرسل بيانات التواصل أو الحجز أو الدفع الخاصة بك لهذه الميزة."
