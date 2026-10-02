@@ -7739,3 +7739,36 @@ msgstr "Depuis l’aéroport de Marrakech-Ménara (RAK)"
 
 msgid "Calculated at {time} (Marrakech time)"
 msgstr "Dernier calcul : {time} (heure de Marrakech)"
+
+msgid "Searching for your address…"
+msgstr "Recherche de votre adresse…"
+
+msgid "Choose your address, or enter it manually below."
+msgstr "Choisissez votre adresse ou saisissez-la manuellement ci-dessous."
+
+msgid "No matching address. Enter your address manually below."
+msgstr "Aucune adresse correspondante. Saisissez votre adresse manuellement ci-dessous."
+
+msgid "Address search is unavailable. Please enter your address manually below."
+msgstr "La recherche d’adresse est indisponible. Veuillez saisir votre adresse manuellement ci-dessous."
+
+msgid "Please check the filled fields and complete any missing details."
+msgstr "Veuillez vérifier les champs remplis et compléter les informations manquantes."
+
+msgid "Find your payment address (optional)"
+msgstr "Rechercher votre adresse de paiement (facultatif)"
+
+msgid "Start typing the address associated with your card. Search text is shared with Google Maps. You can always enter the address manually."
+msgstr "Commencez à saisir l’adresse associée à votre carte. Le texte de recherche est transmis à Google Maps. La saisie manuelle reste toujours possible."
+
+msgid "Address suggestions"
+msgstr "Suggestions d’adresses"
+
+msgid "Payment address suggestions"
+msgstr "Suggestions d’adresse de paiement"
+
+msgid "If you use the optional address search at checkout, your search text is sent through our server to Google Maps to show suggestions. You can instead enter your address manually. We do not send these searches or your full address to Google Analytics. The address you select and confirm is saved for your booking and payment, not the suggestion list."
+msgstr "Si vous utilisez la recherche facultative d’adresse lors de la réservation, le texte saisi est transmis par notre serveur à Google Maps pour afficher des suggestions. Vous pouvez saisir votre adresse manuellement. Nous ne transmettons ni ces recherches ni votre adresse complète à Google Analytics. L’adresse que vous choisissez et confirmez est enregistrée pour votre réservation et votre paiement, mais pas la liste des suggestions."
+
+msgid "Optional payment address suggestions are provided by Google Maps and are subject to its terms and privacy policy. Suggestions do not verify your address or guarantee payment acceptance. Please review and complete the fields using the address associated with your payment card, or enter it manually."
+msgstr "Les suggestions facultatives d’adresse de paiement sont fournies par Google Maps et soumises à ses conditions et règles de confidentialité. Elles ne vérifient pas votre adresse et ne garantissent pas l’acceptation du paiement. Vérifiez et complétez les champs avec l’adresse associée à votre carte de paiement, ou saisissez-la manuellement."

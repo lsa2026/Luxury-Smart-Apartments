@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% load i18n l10n presentation currency %}
+{% load i18n l10n presentation currency static %}
+{% block extra_head %}
+{% if address_places_enabled and quote_is_usable %}
+<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">
+<script type="module" src="{% static 'js/checkout-address.js' %}"></script>
+{% endif %}
+{% endblock %}
 
 {% block title %}{% trans "Your price quote" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
@@ -249,6 +255,7 @@
                             <p>{% if current_language_code == "ar" %}استخدم العنوان المرتبط ببطاقة الدفع، وقد يختلف عن عنوان الشقة.{% elif current_language_code == "fr" %}Saisissez l’adresse associée à la carte de paiement ; elle peut différer de l’adresse de l’appartement.{% else %}Enter the address associated with the payment card. It may differ from the apartment address.{% endif %}</p>
                         </div>
 
+                        {% if address_places_enabled %}{% include "reservations/_address_places.html" %}{% endif %}
                         <div class="quote-review__form-grid guest-journey__billing-grid">
                             <div class="form-field guest-journey__field--street{% if guest_form.billing_street1.errors %} form-field--error{% endif %}" data-journey-field>
                                 <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}</label>
