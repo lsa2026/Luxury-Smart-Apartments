@@ -7174,3 +7174,18 @@ msgstr ""
 #: templates/reviews/review_list.html
 msgid "Verified feedback from Google, Booking.com and Airbnb."
 msgstr ""
+
+msgid "Arriving from King Khalid International Airport (RUH)"
+msgstr "Arriving from King Khalid International Airport (RUH)"
+
+msgid "About 45 km · Around 35 minutes by car"
+msgstr "About 45 km · Around 35 minutes by car"
+
+msgid "Directions from the airport"
+msgstr "Directions from the airport"
+
+msgid "Directions from another location"
+msgstr "Directions from another location"
+
+msgid "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."
+msgstr "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."

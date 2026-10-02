@@ -7689,3 +7689,18 @@ msgstr "Tarifs par nuit mis à jour quotidiennement. Le total, les frais et la d
 
 msgid "Rated %(rating)s out of 5, %(count)s reviews"
 msgstr "Note de %(rating)s sur 5, %(count)s avis"
+
+msgid "Arriving from King Khalid International Airport (RUH)"
+msgstr "Depuis l’aéroport international du roi Khaled (RUH)"
+
+msgid "About 45 km · Around 35 minutes by car"
+msgstr "Environ 45 km · Environ 35 minutes en voiture"
+
+msgid "Directions from the airport"
+msgstr "Itinéraire depuis l’aéroport"
+
+msgid "Directions from another location"
+msgstr "Itinéraire depuis un autre lieu"
+
+msgid "Distance and travel time are approximate and depend on the route and traffic. Directions open in Google Maps."
+msgstr "Distance et durée approximatives, selon l’itinéraire et la circulation. L’itinéraire s’ouvre dans Google Maps."

@@ -1,0 +1,81 @@
+.property-arrival {
+    margin-block-start: 1rem;
+    padding: 1.25rem;
+    border: 1px solid rgb(215 173 98 / 28%);
+    border-radius: 1rem;
+    background: rgb(255 255 255 / 5%);
+}
+
+.property-arrival__title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin: 0;
+    color: #fff;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.property-arrival__title > span {
+    flex: 0 0 auto;
+    color: #dcbf80;
+}
+
+.property-arrival__estimate {
+    margin-block: 0.5rem 1rem;
+    color: #dcbf80;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.property-arrival__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.property-arrival__actions > .button {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.property-arrival__actions > .property-arrival__other {
+    border-color: rgb(255 255 255 / 42%);
+    color: #fff;
+    background: transparent;
+    box-shadow: none;
+}
+
+.property-arrival__actions > .property-arrival__other:hover {
+    color: #0b0725;
+    background: #fff;
+}
+
+.property-arrival__actions > .button:focus-visible {
+    outline: 3px solid #dcbf80;
+    outline-offset: 3px;
+}
+
+.property-arrival__note {
+    margin-block: 1rem 0;
+    color: rgb(255 255 255 / 76%);
+    font-size: 0.75rem;
+    line-height: 1.75;
+}
+
+@media (max-width: 600px) {
+    .property-arrival {
+        padding: 1rem;
+    }
+
+    .property-arrival__actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

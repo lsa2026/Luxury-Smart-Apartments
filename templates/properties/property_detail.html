@@ -29,6 +29,9 @@
 <script src="{% static 'vendor/leaflet/leaflet.js' %}?v=1.9.4" defer></script>
 <script src="{% static 'js/property-map.js' %}?v=1" defer></script>
 {% endif %}
+{% if arrival_directions %}
+<link rel="stylesheet" href="{% static 'css/property-arrival.css' %}?v=1">
+{% endif %}
 {% endblock %}
 {% block content %}
 <article
@@ -134,10 +137,14 @@
                     role="region"
                     aria-label="{% trans 'Interactive map showing the property location' %}"
                 ></div>
+                {% if arrival_directions %}
+                {% include "properties/_arrival_directions.html" %}
+                {% else %}
                 <a class="button button--outline location-panel__map-link" href="{{ public_location_map.external_url }}" target="_blank" rel="noopener noreferrer">
                     <span aria-hidden="true">📍</span>
                     {% trans "Open directions in Google Maps" %}
                 </a>
+                {% endif %}
                 {% else %}
                 <p>{% trans "For guest privacy and property security, the exact address is provided only through the confirmed booking process." %}</p>
                 {% endif %}
