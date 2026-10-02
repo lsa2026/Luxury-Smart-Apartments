@@ -4,7 +4,15 @@
         <span aria-hidden="true">✈</span>
         {% trans "Arriving from King Khalid International Airport (RUH)" %}
     </h3>
-    <p class="property-arrival__estimate">{% trans "About 45 km · Around 35 minutes by car" %}</p>
+    {% if arrival_directions.live_traffic %}
+    <div class="property-arrival__live"{% if arrival_directions.live_enabled %} data-airport-live data-route-url="{{ arrival_directions.route_url }}" data-route-ticket="{{ arrival_directions.route_ticket }}" data-csrf-token="{{ csrf_token }}" data-loading="{% trans 'Calculating the current driving time…' %}" data-unavailable="{% trans 'Live driving time is currently unavailable. Open Google Maps for directions.' %}" data-estimate="{% trans 'Estimated driving time now: {minutes} min · {distance} km' %}" data-updated="{% trans 'Calculated at {time} (Riyadh time)' %}"{% endif %}>
+        <p class="property-arrival__estimate" data-route-status aria-live="polite">{% trans "Live driving time is currently unavailable. Open Google Maps for directions." %}</p>
+        <p class="property-arrival__updated" data-route-updated hidden></p>
+        <span class="property-arrival__attribution" translate="no" lang="en" hidden data-route-attribution>Google Maps</span>
+    </div>
+    {% else %}
+    <p class="property-arrival__estimate">{{ arrival_directions.estimate }}</p>
+    {% endif %}
     <div class="property-arrival__actions">
         <a class="button button--gold" href="{{ arrival_directions.airport_url }}" target="_blank" rel="noopener noreferrer" aria-describedby="airport-arrival-note">
             {% trans "Directions from the airport" %}

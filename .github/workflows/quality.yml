@@ -89,6 +89,9 @@ jobs:
       - name: Test the lazy price calendar interactions
         run: node --test tests/price-calendar.test.cjs
 
+      - name: Test lazy airport driving estimates
+        run: node --test tests/airport-directions.test.cjs
+
       - name: Run Ruff lint
         run: ruff check .
 

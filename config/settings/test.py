@@ -16,6 +16,9 @@ os.environ["ULTRAMSG_TOKEN"] = ""
 os.environ["OPERATIONS_OWNER_ENFORCEMENT_ENABLED"] = "false"
 os.environ["GOOGLE_SIGN_IN_ENABLED"] = "false"
 os.environ["APPLE_SIGN_IN_ENABLED"] = "false"
+os.environ["GOOGLE_ROUTES_ENABLED"] = "false"
+os.environ["GOOGLE_ROUTES_API_KEY"] = ""
+os.environ["GOOGLE_ROUTES_REQUIRE_SHARED_CACHE"] = "false"
 # Tests exercise the operational event flow and must never inherit a local
 # choice to mute it or to route mail through a real SMTP provider.
 os.environ["NOTIFICATIONS_ENABLED"] = "true"
