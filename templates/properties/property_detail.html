@@ -24,7 +24,7 @@
 {% endblock %}
 {% block structured_data %}{% json_ld property_structured_data csp_nonce %}{% json_ld breadcrumb_structured_data csp_nonce %}{% endblock %}
 {% block extra_head %}
-{% if property.hostaway_listing_id == 315816 or property.hostaway_listing_id == 325961 or property.hostaway_listing_id == 343666 %}
+{% if property.hostaway_listing_id == 315816 or property.hostaway_listing_id == 325961 or property.hostaway_listing_id == 343666 or property.hostaway_listing_id == 511786 %}
 <link rel="stylesheet" href="{% static 'css/property-mobile-layout.css' %}?v=1">
 {% endif %}
 {% if public_location_map %}

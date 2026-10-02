@@ -54,6 +54,23 @@ test("failed or malformed response preserves links and never substitutes a stati
     }
 });
 
+test("Marrakech estimates use Casablanca local time including seasonal clock changes", async () => {
+    const {loadAirportEstimate} = await modulePromise;
+    global.document = {documentElement: {lang: "en"}};
+    for (const [instant, expected] of [
+        ["2026-10-02T06:00:00Z", "07:00"],
+        ["2026-03-01T06:00:00Z", "06:00"],
+    ]) {
+        const panel = makePanel();
+        panel.dataset.timeZone = "Africa/Casablanca";
+        await loadAirportEstimate(panel, async () => ({ok: true, json: async () => ({
+            duration_minutes: 26, distance_km: 9.6, calculated_at: instant, attribution: "Google Maps",
+        })}));
+        assert.ok(panel.elements["[data-route-updated]"].textContent.includes(expected));
+        assert.equal(panel.elements["[data-route-status]"].textContent, "Now 26 min / 9.6 km");
+    }
+});
+
 test("intersection observation does not request anything before the panel is visible", async () => {
     const {observeAirportPanel} = await modulePromise;
     global.document = {hidden: false, addEventListener() {}, removeEventListener() {}};

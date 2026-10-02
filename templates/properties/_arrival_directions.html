@@ -2,10 +2,10 @@
 <section class="property-arrival" aria-labelledby="airport-arrival-title">
     <h3 id="airport-arrival-title" class="property-arrival__title">
         <span aria-hidden="true">✈</span>
-        {% trans "Arriving from King Khalid International Airport (RUH)" %}
+        {{ arrival_directions.airport_heading }}
     </h3>
     {% if arrival_directions.live_traffic %}
-    <div class="property-arrival__live"{% if arrival_directions.live_enabled %} data-airport-live data-route-url="{{ arrival_directions.route_url }}" data-route-ticket="{{ arrival_directions.route_ticket }}" data-csrf-token="{{ csrf_token }}" data-loading="{% trans 'Calculating the current driving time…' %}" data-unavailable="{% trans 'Live driving time is currently unavailable. Open Google Maps for directions.' %}" data-estimate="{% trans 'Estimated driving time now: {minutes} min · {distance} km' %}" data-updated="{% trans 'Calculated at {time} (Riyadh time)' %}"{% endif %}>
+    <div class="property-arrival__live"{% if arrival_directions.live_enabled %} data-airport-live data-route-url="{{ arrival_directions.route_url }}" data-route-ticket="{{ arrival_directions.route_ticket }}" data-csrf-token="{{ csrf_token }}" data-loading="{% trans 'Calculating the current driving time…' %}" data-unavailable="{% trans 'Live driving time is currently unavailable. Open Google Maps for directions.' %}" data-estimate="{% trans 'Estimated driving time now: {minutes} min · {distance} km' %}" data-time-zone="{{ arrival_directions.time_zone }}" data-updated="{{ arrival_directions.updated_label }}"{% endif %}>
         <p class="property-arrival__estimate" data-route-status aria-live="polite">{% trans "Live driving time is currently unavailable. Open Google Maps for directions." %}</p>
         <p class="property-arrival__updated" data-route-updated hidden></p>
         <span class="property-arrival__attribution" translate="no" lang="en" hidden data-route-attribution>Google Maps</span>

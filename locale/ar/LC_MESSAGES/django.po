@@ -7507,3 +7507,10 @@ msgstr "سياسة خصوصية Google"
 
 msgid "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature."
 msgstr "لحساب مدة القيادة من المطار، يرسل خادمنا موقع المطار ووجهة العقار العامة إلى خرائط Google فقط. لا نطلب موقعك ولا نرسل بيانات التواصل أو الحجز أو الدفع الخاصة بك لهذه الميزة."
+
+
+msgid "Arriving from Marrakech Menara Airport (RAK)"
+msgstr "الوصول من مطار مراكش المنارة (RAK)"
+
+msgid "Calculated at {time} (Marrakech time)"
+msgstr "آخر حساب: {time} بتوقيت مراكش"

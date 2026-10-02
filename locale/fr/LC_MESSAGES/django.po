@@ -7732,3 +7732,10 @@ msgstr "Règles de confidentialité de Google"
 
 msgid "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature."
 msgstr "Pour calculer le trajet depuis l’aéroport, notre serveur transmet uniquement l’aéroport et la destination publique du logement à Google Maps. Nous ne demandons pas votre position et ne transmettons pas vos coordonnées ni vos informations de réservation ou de paiement pour cette fonctionnalité."
+
+
+msgid "Arriving from Marrakech Menara Airport (RAK)"
+msgstr "Depuis l’aéroport de Marrakech-Ménara (RAK)"
+
+msgid "Calculated at {time} (Marrakech time)"
+msgstr "Dernier calcul : {time} (heure de Marrakech)"
