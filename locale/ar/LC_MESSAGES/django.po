@@ -7530,11 +7530,11 @@ msgstr "البحث عن العنوان غير متاح. يرجى إدخال عن
 msgid "Please check the filled fields and complete any missing details."
 msgstr "يرجى مراجعة الحقول المعبأة وإكمال أي بيانات ناقصة."
 
-msgid "Find your payment address (optional)"
-msgstr "ابحث عن عنوان الدفع (اختياري)"
+msgid "Fill in your address easily"
+msgstr "عبّئ عنوانك بسهولة"
 
-msgid "Start typing the address associated with your card. Search text is shared with Google Maps. You can always enter the address manually."
-msgstr "ابدأ بكتابة العنوان المرتبط ببطاقتك. يُرسل نص البحث إلى خرائط Google. يمكنك دائمًا إدخال العنوان يدويًا."
+msgid "Enter your address code or part of your address, then choose a suggestion to fill in the available fields automatically."
+msgstr "اكتب رمز عنوانك أو جزءًا من العنوان، ثم اختر عنوانك من الاقتراحات لنعبّئ الحقول المتاحة تلقائيًا."
 
 msgid "Address suggestions"
 msgstr "اقتراحات العناوين"
@@ -7547,3 +7547,6 @@ msgstr "إذا استخدمت البحث الاختياري عن العنوان 
 
 msgid "Optional payment address suggestions are provided by Google Maps and are subject to its terms and privacy policy. Suggestions do not verify your address or guarantee payment acceptance. Please review and complete the fields using the address associated with your payment card, or enter it manually."
 msgstr "تقدم خرائط Google اقتراحات عنوان الدفع الاختيارية، وتخضع لشروطها وسياسة خصوصيتها. لا تُثبت الاقتراحات صحة عنوانك ولا تضمن قبول الدفع. يرجى مراجعة الحقول وإكمالها بالعنوان المرتبط ببطاقة الدفع أو إدخاله يدويًا."
+
+msgid "Address code, street or neighborhood"
+msgstr "رمز العنوان، اسم الشارع أو الحي"
