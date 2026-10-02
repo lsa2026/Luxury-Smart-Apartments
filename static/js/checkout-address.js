@@ -9,6 +9,9 @@ export function addressSnapshot(form) {
 }
 
 export function applyAddressFields(form, values, snapshot = addressSnapshot(form)) {
+    // A country change invalidates the whole pending selection. Do not mix
+    // one country's street/postcode with the country chosen manually later.
+    if (form.elements.billing_country?.value !== snapshot.billing_country) return 0;
     let updated = 0;
     for (const [name, max] of Object.entries(fields)) {
         const field = form.elements[name];

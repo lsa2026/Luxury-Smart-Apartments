@@ -83,6 +83,20 @@ test("international postcodes are preserved, not truncated or stripped", async (
     }
 });
 
+test("a country changed during Details prevents stale cross-country autofill", async () => {
+    const {applyAddressFields, addressSnapshot} = await api;
+    const env = setup();
+    const before = addressSnapshot(env.form);
+    env.elements.billing_country.value = "CA";
+    assert.equal(applyAddressFields(env.form, {
+        billing_street1: "10 King Street", billing_city: "London", billing_state: "England",
+        billing_country: "GB", billing_postcode: "SW1A 1AA",
+    }, before), 0);
+    assert.equal(env.elements.billing_country.value, "CA");
+    assert.equal(env.elements.billing_postcode.value, before.billing_postcode);
+    assert.equal(env.elements.billing_state.value, before.billing_state);
+});
+
 test("debounces, uses same-origin CSRF POST and keyboard selection rotates ticket", async () => {
     const {initCheckoutAddress} = await api;
     const env = setup(); const calls = [];
