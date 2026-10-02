@@ -153,6 +153,7 @@
                     action="{% url 'reservations:guest_details' quote_reference %}"
                     data-guest-journey
                     data-draft-form="guest-details"
+                    data-draft-server-bound="{{ guest_form.is_bound|yesno:'true,false' }}"
                     data-initial-step="{{ guest_form_initial_step }}"
                     data-submit-once
                     data-analytics-event="begin_checkout"

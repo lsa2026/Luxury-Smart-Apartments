@@ -364,3 +364,24 @@ def test_shared_quote_page_translated_private_search_and_manual_fields(language,
     with translation.override(language):
         token = make_address_ticket(quote)
     assert signing.loads(token, salt=_salt(quote))["language"] == language
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+@pytest.mark.parametrize("country", ["FR", "ZZ", ""])
+def test_country_draft_marker_distinguishes_fresh_page_from_submitted_form(language, country):
+    client, _quote, reference = owned_client_quote()
+    client.cookies["django_language"] = language
+    fresh = client.get(f"/reservations/quotes/{reference}/")
+    assert fresh.status_code == 200
+    assert 'data-draft-server-bound="false"' in fresh.content.decode()
+
+    # Missing required guest fields keeps this a validation response: no
+    # booking or payment is created. Even an invalid/empty submitted country
+    # must be corrected by the guest rather than replaced by an old draft.
+    submitted = client.post(
+        f"/reservations/quotes/{reference}/guest-details/",
+        {"billing_country": country},
+    )
+    assert submitted.status_code == 400
+    assert 'data-draft-server-bound="true"' in submitted.content.decode()
+    assert submitted.context["guest_form"]["billing_country"].value() == country
