@@ -1,5 +1,5 @@
-/* Loaded only by E12: keep its existing mobile header and fixed actions inside
-   the viewport without changing other properties or booking behavior. */
+/* Loaded only by reviewed property pages: keep the mobile header and fixed
+   actions inside the viewport without changing booking behavior. */
 @media (max-width: 48rem) {
     /* Decorative/third-party overflow must not expand the mobile layout
        viewport. Unlike hidden, clip does not create a new scroll container. */

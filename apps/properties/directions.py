@@ -41,6 +41,12 @@ VERIFIED_AIRPORT_ROUTES = {
         destination_place_id="ChIJl-vqdXvjLj4RCIYB5DldC5k",
         live_traffic=True,
     ),
+    325961: AirportRoute(
+        google_maps_cid="8271520614131583265",
+        destination="Luxury Smart Apartment A11",
+        destination_place_id="ChIJsy-YIQD_Lj4RIUmilSxYynI",
+        live_traffic=True,
+    ),
 }
 
 
