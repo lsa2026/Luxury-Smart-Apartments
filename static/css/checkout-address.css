@@ -1,0 +1,31 @@
+.checkout-address {
+    min-width: 0;
+    margin-block: 0 1.5rem;
+    padding: 1rem;
+    border: 1px solid #d9cba9;
+    border-radius: 1rem;
+    background: #fbf9f3;
+    overflow-wrap: anywhere;
+}
+.checkout-address[hidden], .checkout-address [hidden] { display: none !important; }
+.checkout-address label { display: block; margin-block-end: .5rem; font-weight: 600; }
+.checkout-address input {
+    display: block; width: 100%; min-width: 0; box-sizing: border-box;
+    min-height: 48px; font-size: 16px;
+}
+.checkout-address__note, .checkout-address__status { font-size: .875rem; line-height: 1.6; }
+.checkout-address__status:empty { display: none; }
+.checkout-address__results { border: 1px solid #d9cba9; border-radius: .75rem; background: #fff; margin-block-start: .5rem; }
+.checkout-address__options { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; }
+.checkout-address__options button {
+    display: block; width: 100%; min-height: 48px; padding: .8rem;
+    text-align: start; border: 0; border-block-end: 1px solid #eee7d8;
+    background: transparent; color: #123d35; cursor: pointer;
+    font: inherit; font-size: .95rem; line-height: 1.5; overflow-wrap: anywhere;
+}
+.checkout-address__options button[aria-selected="true"], .checkout-address__options button:hover { background: #f2eddf; }
+.checkout-address :focus-visible { outline: 2px solid #0b7560; outline-offset: 2px; }
+.checkout-address__attribution {
+    padding: .65rem .8rem; text-align: end; color: #5e5e5e;
+    font-family: Arial, sans-serif; font-size: 14px; font-weight: 400; white-space: nowrap;
+}

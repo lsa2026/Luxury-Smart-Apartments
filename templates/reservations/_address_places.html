@@ -1,0 +1,24 @@
+{% load i18n %}
+<div class="checkout-address" data-checkout-address hidden
+     data-address-ticket="{{ address_places_ticket }}"
+     data-address-suggestions-url="{% url 'reservations:address_suggestions' quote_reference %}"
+     data-address-details-url="{% url 'reservations:address_details' quote_reference %}"
+     data-address-loading="{% trans 'Searching for your address…' %}"
+     data-address-choose="{% trans 'Choose your address, or enter it manually below.' %}"
+     data-address-empty="{% trans 'No matching address. Enter your address manually below.' %}"
+     data-address-fallback="{% trans 'Address search is unavailable. Please enter your address manually below.' %}"
+     data-address-review="{% trans 'Please check the filled fields and complete any missing details.' %}">
+    <label for="payment-address-search">{% trans "Find your payment address (optional)" %}</label>
+    <p class="checkout-address__note" id="payment-address-help">{% trans "Start typing the address associated with your card. Search text is shared with Google Maps. You can always enter the address manually." %}</p>
+    {# No name: do not save search text in form drafts or submit it with payment. #}
+    <input id="payment-address-search" type="search" role="combobox" autocomplete="off" dir="auto"
+           maxlength="150" aria-autocomplete="list" aria-expanded="false"
+           aria-controls="payment-address-options" aria-describedby="payment-address-help"
+           data-address-search>
+    <div class="checkout-address__results" data-address-results hidden>
+        <div id="payment-address-options" class="checkout-address__options" role="listbox"
+             aria-label="{% trans 'Address suggestions' %}" data-address-options></div>
+        <div class="checkout-address__attribution" translate="no" lang="en" dir="ltr">Google Maps</div>
+    </div>
+    <p class="checkout-address__status" role="status" aria-live="polite" data-address-status></p>
+</div>

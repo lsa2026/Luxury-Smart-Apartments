@@ -7514,3 +7514,36 @@ msgstr "الوصول من مطار مراكش المنارة (RAK)"
 
 msgid "Calculated at {time} (Marrakech time)"
 msgstr "آخر حساب: {time} بتوقيت مراكش"
+
+msgid "Searching for your address…"
+msgstr "جارٍ البحث عن عنوانك…"
+
+msgid "Choose your address, or enter it manually below."
+msgstr "اختر عنوانك أو أدخله يدويًا أدناه."
+
+msgid "No matching address. Enter your address manually below."
+msgstr "لم نعثر على عنوان مطابق. أدخل عنوانك يدويًا أدناه."
+
+msgid "Address search is unavailable. Please enter your address manually below."
+msgstr "البحث عن العنوان غير متاح. يرجى إدخال عنوانك يدويًا أدناه."
+
+msgid "Please check the filled fields and complete any missing details."
+msgstr "يرجى مراجعة الحقول المعبأة وإكمال أي بيانات ناقصة."
+
+msgid "Find your payment address (optional)"
+msgstr "ابحث عن عنوان الدفع (اختياري)"
+
+msgid "Start typing the address associated with your card. Search text is shared with Google Maps. You can always enter the address manually."
+msgstr "ابدأ بكتابة العنوان المرتبط ببطاقتك. يُرسل نص البحث إلى خرائط Google. يمكنك دائمًا إدخال العنوان يدويًا."
+
+msgid "Address suggestions"
+msgstr "اقتراحات العناوين"
+
+msgid "Payment address suggestions"
+msgstr "اقتراحات عنوان الدفع"
+
+msgid "If you use the optional address search at checkout, your search text is sent through our server to Google Maps to show suggestions. You can instead enter your address manually. We do not send these searches or your full address to Google Analytics. The address you select and confirm is saved for your booking and payment, not the suggestion list."
+msgstr "إذا استخدمت البحث الاختياري عن العنوان أثناء الحجز، يُرسل نص البحث عبر خادمنا إلى خرائط Google لعرض الاقتراحات. يمكنك بدلًا من ذلك إدخال عنوانك يدويًا. لا نرسل هذه الأبحاث أو عنوانك الكامل إلى Google Analytics. يُحفظ العنوان الذي تختاره وتؤكده لأغراض حجزك والدفع، ولا تُحفظ قائمة الاقتراحات."
+
+msgid "Optional payment address suggestions are provided by Google Maps and are subject to its terms and privacy policy. Suggestions do not verify your address or guarantee payment acceptance. Please review and complete the fields using the address associated with your payment card, or enter it manually."
+msgstr "تقدم خرائط Google اقتراحات عنوان الدفع الاختيارية، وتخضع لشروطها وسياسة خصوصيتها. لا تُثبت الاقتراحات صحة عنوانك ولا تضمن قبول الدفع. يرجى مراجعة الحقول وإكمالها بالعنوان المرتبط ببطاقة الدفع أو إدخاله يدويًا."

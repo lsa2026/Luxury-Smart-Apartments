@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .address_places import CheckoutAddressDetailsView, CheckoutAddressView
 from .views import (
     AvailabilitySearchView,
     BookingIntentDetailView,
@@ -17,6 +18,16 @@ from .views import (
 app_name = "reservations"
 
 urlpatterns = [
+    path(
+        "quotes/<str:reference>/address-suggestions/",
+        CheckoutAddressView.as_view(),
+        name="address_suggestions",
+    ),
+    path(
+        "quotes/<str:reference>/address-details/",
+        CheckoutAddressDetailsView.as_view(),
+        name="address_details",
+    ),
     path(
         "calendar/<slug:slug>/",
         PropertyCalendarAvailabilityView.as_view(),

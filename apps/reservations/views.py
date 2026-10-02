@@ -154,6 +154,8 @@ def _owned_quote(request: HttpRequest, reference: str) -> BookingQuote:
 
 
 def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, object]:
+    from .address_places import make_address_ticket, places_enabled
+
     cover_image = (
         PropertyImage.objects.public()
         .filter(property=quote.property)
@@ -169,6 +171,8 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
         # guest accepts are the ones shown directly above the checkbox.
         "stay_policy": stay_policy_for(quote.property),
         "quote_reference": quote_reference(quote),
+        "address_places_enabled": places_enabled(),
+        "address_places_ticket": make_address_ticket(quote) if places_enabled() else "",
         "quote_is_usable": (
             quote.status == BookingQuote.Status.ACTIVE
             and not quote.is_expired

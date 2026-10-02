@@ -80,7 +80,9 @@ class GuestDetailsForm(forms.Form):
     )
     billing_postcode = forms.RegexField(
         label=_("Postal code"),
-        regex=r"^[A-Za-z0-9]{1,16}$",
+        # Preserve legitimate UK/Canadian spaces and US ZIP+4 / Japanese
+        # hyphens. Still reject punctuation, markup and empty postal codes.
+        regex=r"^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$",
         max_length=16,
         widget=forms.TextInput(
             attrs={"autocomplete": "postal-code", "dir": "ltr", "inputmode": "text"}

@@ -3,6 +3,7 @@
 import logging
 import re
 import secrets
+import unicodedata
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
@@ -106,20 +107,33 @@ def build_checkout_payload(
         raise ValueError("currency_not_supported")
     # /v1/checkouts itself accepts the core payment fields, but street and city
     # are mandatory inputs to the provider's 3-D Secure 2 authentication flow.
+    # HyperPay's state is AN50, unlike the human-readable billing field.
+    # Preserve the original on the intent; compact separators and Latin
+    # diacritics only for the gateway. Never delete non-Latin letters or guess
+    # a region/country code. Non-representable legacy input is left unchanged.
+    original_state = intent.billing_state.strip()
+    state = "".join(
+        char
+        for char in unicodedata.normalize("NFKD", original_state)
+        if not unicodedata.combining(char) and char not in " -"
+    )
+    gateway_state = state if re.fullmatch(r"[a-zA-Z0-9.]{1,50}", state) else original_state
     required = {
         "customer.email": intent.guest_email.strip(),
         "customer.givenName": intent.guest_first_name.strip(),
         "customer.surname": intent.guest_last_name.strip(),
         "billing.street1": intent.billing_street1.strip(),
         "billing.city": intent.billing_city.strip(),
-        "billing.state": intent.billing_state.strip(),
+        "billing.state": gateway_state,
     }
     if not all(required.values()):
         raise ValueError("required_billing_data_missing")
     # Sent when the guest supplied them, omitted rather than sent empty: a blank
     # value scores worse with the scheme than an absent field.
     optional = {
-        "billing.postcode": intent.billing_postcode.strip(),
+        # AN16 at the provider boundary. Keep SW1A 1AA / 10001-1234 intact in
+        # the guest form and booking record, but send SW1A1AA / 100011234 here.
+        "billing.postcode": re.sub(r"[ -]", "", intent.billing_postcode.strip()),
     }
     optional = {key: value for key, value in optional.items() if value}
     payload = {
