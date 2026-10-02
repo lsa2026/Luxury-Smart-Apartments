@@ -7224,3 +7224,12 @@ msgstr "Arriving from Marrakech Menara Airport (RAK)"
 
 msgid "Calculated at {time} (Marrakech time)"
 msgstr "Calculated at {time} (Marrakech time)"
+
+msgid "Fill in your address easily"
+msgstr "Fill in your address easily"
+
+msgid "Enter your address code or part of your address, then choose a suggestion to fill in the available fields automatically."
+msgstr "Enter your address code or part of your address, then choose a suggestion to fill in the available fields automatically."
+
+msgid "Address code, street or neighborhood"
+msgstr "Address code, street or neighborhood"

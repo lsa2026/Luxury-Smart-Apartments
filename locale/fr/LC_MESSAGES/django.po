@@ -7755,11 +7755,11 @@ msgstr "La recherche d’adresse est indisponible. Veuillez saisir votre adresse
 msgid "Please check the filled fields and complete any missing details."
 msgstr "Veuillez vérifier les champs remplis et compléter les informations manquantes."
 
-msgid "Find your payment address (optional)"
-msgstr "Rechercher votre adresse de paiement (facultatif)"
+msgid "Fill in your address easily"
+msgstr "Renseignez votre adresse facilement"
 
-msgid "Start typing the address associated with your card. Search text is shared with Google Maps. You can always enter the address manually."
-msgstr "Commencez à saisir l’adresse associée à votre carte. Le texte de recherche est transmis à Google Maps. La saisie manuelle reste toujours possible."
+msgid "Enter your address code or part of your address, then choose a suggestion to fill in the available fields automatically."
+msgstr "Saisissez le code de votre adresse ou une partie de celle-ci, puis choisissez une suggestion pour remplir automatiquement les champs disponibles."
 
 msgid "Address suggestions"
 msgstr "Suggestions d’adresses"
@@ -7772,3 +7772,6 @@ msgstr "Si vous utilisez la recherche facultative d’adresse lors de la réserv
 
 msgid "Optional payment address suggestions are provided by Google Maps and are subject to its terms and privacy policy. Suggestions do not verify your address or guarantee payment acceptance. Please review and complete the fields using the address associated with your payment card, or enter it manually."
 msgstr "Les suggestions facultatives d’adresse de paiement sont fournies par Google Maps et soumises à ses conditions et règles de confidentialité. Elles ne vérifient pas votre adresse et ne garantissent pas l’acceptation du paiement. Vérifiez et complétez les champs avec l’adresse associée à votre carte de paiement, ou saisissez-la manuellement."
+
+msgid "Address code, street or neighborhood"
+msgstr "Code d’adresse, rue ou quartier"

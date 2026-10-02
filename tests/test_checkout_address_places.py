@@ -342,9 +342,9 @@ def test_missing_invalid_and_overlong_components_are_not_invented_or_truncated()
 @pytest.mark.parametrize(
     ("language", "label"),
     [
-        ("ar", "ابحث عن عنوان الدفع (اختياري)"),
-        ("en", "Find your payment address (optional)"),
-        ("fr", "Rechercher votre adresse de paiement (facultatif)"),
+        ("ar", "عبّئ عنوانك بسهولة"),
+        ("en", "Fill in your address easily"),
+        ("fr", "Renseignez votre adresse facilement"),
     ],
 )
 def test_shared_quote_page_translated_private_search_and_manual_fields(language, label, google):
