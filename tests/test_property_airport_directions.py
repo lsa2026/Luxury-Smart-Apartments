@@ -21,6 +21,11 @@ DARAT_AIRPORT_URL = (
     "&destination=Darat%20Safa%20Luxury%20Smart%20Apartment%20D%20203"
     "&destination_place_id=ChIJXY-ywnLnLj4R6TKd37VpY-M&travelmode=driving"
 )
+E12_AIRPORT_URL = (
+    "https://www.google.com/maps/dir/?api=1&origin=24.959443,46.7010829"
+    "&destination=Luxury%20Smart%20Apartment%20E12"
+    "&destination_place_id=ChIJl-vqdXvjLj4RCIYB5DldC5k&travelmode=driving"
+)
 EXPECTED_ROUTES = {
     315814: ("4981474889453888860", "Luxury Smart Apartment Safa 41 B1", AIRPORT_URL),
     315815: (
@@ -28,6 +33,7 @@ EXPECTED_ROUTES = {
         "Darat Safa Luxury Smart Apartment D 203",
         DARAT_AIRPORT_URL,
     ),
+    315816: ("11028010615766615560", "Luxury Smart Apartment E12", E12_AIRPORT_URL),
 }
 
 
@@ -37,7 +43,9 @@ def make_property(listing_id: int = 315814) -> Property:
         hostaway_listing_id=listing_id,
         slug=f"property-{listing_id}",
         hostaway_name=name,
-        name_ar="شقة دارة صفا" if listing_id == 315815 else "شقة عرقة الذكية",
+        name_ar={315815: "شقة دارة صفا", 315816: "شقة E12 الذكية"}.get(
+            listing_id, "شقة عرقة الذكية"
+        ),
         name_en=name,
         city="Riyadh",
         currency_code="SAR",
@@ -49,7 +57,7 @@ def make_property(listing_id: int = 315814) -> Property:
     )
 
 
-@pytest.mark.parametrize("listing_id", [315814, 315815])
+@pytest.mark.parametrize("listing_id", EXPECTED_ROUTES)
 def test_directions_use_exact_verified_origin_and_destination(listing_id: int) -> None:
     property_obj = make_property(listing_id)
     links = airport_directions(property_obj)
@@ -67,7 +75,7 @@ def test_directions_use_exact_verified_origin_and_destination(listing_id: int) -
     }
 
 
-@pytest.mark.parametrize("listing_id", [315814, 315815])
+@pytest.mark.parametrize("listing_id", EXPECTED_ROUTES)
 @pytest.mark.parametrize(
     ("language", "estimate", "airport_label", "other_label"),
     [
@@ -96,7 +104,7 @@ def test_arrival_block_follows_map_with_translations_and_safe_links(
 ) -> None:
     property_obj = make_property(listing_id)
     expected_cid, _, expected_url = EXPECTED_ROUTES[listing_id]
-    if listing_id == 315815:
+    if listing_id in {315815, 315816}:
         estimate = {
             "ar": "وقت القيادة اللحظي غير متاح حاليًا. افتح خرائط Google للحصول على الاتجاهات.",
             "en": "Live driving time is currently unavailable. Open Google Maps for directions.",
@@ -125,12 +133,13 @@ def test_arrival_block_follows_map_with_translations_and_safe_links(
     property_obj.refresh_from_db()
     assert property_obj.currency_code == "SAR"
     assert property_obj.google_maps_cid == expected_cid
-    other_listing_id = 315815 if listing_id == 315814 else 315814
-    other_url = EXPECTED_ROUTES[other_listing_id][2]
-    assert parse_qs(urlparse(other_url).query)["destination_place_id"][0] not in block
+    for other_listing_id, (_, _, other_url) in EXPECTED_ROUTES.items():
+        if other_listing_id != listing_id:
+            assert parse_qs(urlparse(other_url).query)["destination_place_id"][0] not in block
+    assert ("property-e12-mobile.css" in content) is (listing_id == 315816)
 
 
-@pytest.mark.parametrize("listing_id", [11, 315816, 325961, 343666, 511786, 333333])
+@pytest.mark.parametrize("listing_id", [11, 325961, 343666, 511786, 333333])
 def test_other_properties_keep_their_existing_map_link(listing_id: int) -> None:
     property_obj = make_property(listing_id)
     response = Client().get(f"/ar/properties/{property_obj.slug}/")
@@ -145,7 +154,7 @@ def test_other_properties_keep_their_existing_map_link(listing_id: int) -> None:
     assert airport_directions(property_obj) is None
 
 
-@pytest.mark.parametrize("listing_id", [315814, 315815])
+@pytest.mark.parametrize("listing_id", EXPECTED_ROUTES)
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -184,9 +193,18 @@ def test_arrival_directions_fail_closed_when_location_is_not_verified(
     assert "ChIJXY-ywnLnLj4R6TKd37VpY-M" not in content
 
 
-@pytest.mark.parametrize("listing_id", [315814, 315815])
-def test_verified_properties_cannot_use_each_others_destination(listing_id: int) -> None:
+@pytest.mark.parametrize(
+    ("listing_id", "other_listing_id"),
+    [
+        (listing, other)
+        for listing in EXPECTED_ROUTES
+        for other in EXPECTED_ROUTES
+        if listing != other
+    ],
+)
+def test_verified_properties_cannot_use_each_others_destination(
+    listing_id: int, other_listing_id: int
+) -> None:
     property_obj = make_property(listing_id)
-    other_listing_id = 315815 if listing_id == 315814 else 315814
     property_obj.google_maps_cid = EXPECTED_ROUTES[other_listing_id][0]
     assert airport_directions(property_obj) is None

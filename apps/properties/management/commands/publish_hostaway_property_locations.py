@@ -1,6 +1,7 @@
 """Publish verified property locations and their Google Maps business profiles."""
 
 import json
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,7 @@ BUSINESS_PROFILE_PATH = (
 
 
 class Command(BaseCommand):
-    help = "Publish exact Hostaway coordinates with their verified Google Maps business profiles."
+    help = "Publish property locations, respecting individually reviewed public-map corrections."
 
     def add_arguments(self, parser: CommandParser) -> None:
         parser.add_argument("--dry-run", action="store_true")
@@ -56,16 +57,29 @@ class Command(BaseCommand):
         updated = 0
         for property_obj in properties:
             listing_key = str(property_obj.hostaway_listing_id)
-            google_maps_cid = business_profiles[listing_key]["google_maps_cid"]
+            profile = business_profiles[listing_key]
+            google_maps_cid = profile["google_maps_cid"]
+            # A reviewed correction changes only the website map, never the
+            # imported Hostaway coordinates or any booking information.
+            latitude = (
+                Decimal(profile["public_location_latitude"])
+                if "public_location_latitude" in profile
+                else property_obj.latitude
+            )
+            longitude = (
+                Decimal(profile["public_location_longitude"])
+                if "public_location_longitude" in profile
+                else property_obj.longitude
+            )
             changed_fields: list[str] = []
             if not property_obj.public_location_enabled:
                 property_obj.public_location_enabled = True
                 changed_fields.append("public_location_enabled")
-            if property_obj.public_location_latitude != property_obj.latitude:
-                property_obj.public_location_latitude = property_obj.latitude
+            if property_obj.public_location_latitude != latitude:
+                property_obj.public_location_latitude = latitude
                 changed_fields.append("public_location_latitude")
-            if property_obj.public_location_longitude != property_obj.longitude:
-                property_obj.public_location_longitude = property_obj.longitude
+            if property_obj.public_location_longitude != longitude:
+                property_obj.public_location_longitude = longitude
                 changed_fields.append("public_location_longitude")
             if property_obj.google_maps_cid != google_maps_cid:
                 property_obj.google_maps_cid = google_maps_cid
@@ -101,4 +115,24 @@ def _load_business_profiles() -> dict[str, dict[str, str]]:
             or not values["google_maps_cid"].isdigit()
         ):
             raise CommandError("Google Maps business profile mapping contains an invalid entry.")
+        coordinate_fields = ("public_location_latitude", "public_location_longitude")
+        coordinates = [values.get(field) for field in coordinate_fields]
+        if any(field in values for field in coordinate_fields):
+            try:
+                if not all(isinstance(value, str) for value in coordinates):
+                    raise ValueError
+                latitude, longitude = (Decimal(value) for value in coordinates)
+                if (
+                    not latitude.is_finite()
+                    or not longitude.is_finite()
+                    or not -90 <= latitude <= 90
+                    or not -180 <= longitude <= 180
+                    or latitude.as_tuple().exponent < -6
+                    or longitude.as_tuple().exponent < -6
+                ):
+                    raise ValueError
+            except (ValueError, InvalidOperation) as exc:
+                raise CommandError(
+                    "Public-map correction must be a valid coordinate pair."
+                ) from exc
     return payload

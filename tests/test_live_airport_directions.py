@@ -42,8 +42,12 @@ def post_route(client, property_obj, ticket=None, **kwargs):
     )
 
 
-def test_exact_destination_traffic_time_and_no_google_content_cache():
-    property_obj = make_property(315815)
+@pytest.mark.parametrize(
+    ("listing_id", "place_id"),
+    [(315815, "ChIJXY-ywnLnLj4R6TKd37VpY-M"), (315816, "ChIJl-vqdXvjLj4RCIYB5DldC5k")],
+)
+def test_exact_destination_traffic_time_and_no_google_content_cache(listing_id, place_id):
+    property_obj = make_property(listing_id)
     provider, _ = provider_result()
     with patch("apps.properties.live_directions.httpx.Client", return_value=provider):
         response = post_route(Client(), property_obj)
@@ -54,7 +58,7 @@ def test_exact_destination_traffic_time_and_no_google_content_cache():
     assert result["attribution"] == "Google Maps"
     assert (timezone.now() - timezone.datetime.fromisoformat(result["calculated_at"])).seconds < 5
     _, kwargs = provider.__enter__.return_value.post.call_args
-    assert kwargs["json"]["destination"] == {"placeId": "ChIJXY-ywnLnLj4R6TKd37VpY-M"}
+    assert kwargs["json"]["destination"] == {"placeId": place_id}
     assert kwargs["json"]["origin"]["location"]["latLng"] == {
         "latitude": 24.959443,
         "longitude": 46.7010829,
@@ -179,7 +183,7 @@ def test_provider_and_cache_failures_never_fabricate_success(failure):
     assert "no-store" in result["Cache-Control"]
 
 
-@pytest.mark.parametrize("listing_id", [315814, 315816, 511786])
+@pytest.mark.parametrize("listing_id", [315814, 325961, 511786])
 def test_live_estimate_is_not_enabled_for_unauthorized_properties(listing_id):
     property_obj = make_property(listing_id)
     with patch("apps.properties.live_directions.httpx.Client") as provider:
@@ -188,8 +192,11 @@ def test_live_estimate_is_not_enabled_for_unauthorized_properties(listing_id):
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
-def test_page_contains_only_lazy_server_ticket_no_api_key_no_static_darat_number(language):
-    property_obj = make_property(315815)
+@pytest.mark.parametrize("listing_id", [315815, 315816])
+def test_page_contains_only_lazy_server_ticket_no_api_key_no_static_darat_number(
+    language, listing_id
+):
+    property_obj = make_property(listing_id)
     with patch("apps.properties.live_directions.httpx.Client") as provider:
         result = Client().get(f"/{language}/properties/{property_obj.slug}/")
     provider.assert_not_called()
@@ -200,6 +207,7 @@ def test_page_contains_only_lazy_server_ticket_no_api_key_no_static_darat_number
     assert "test-only-server-key" not in content
     assert "35 km" not in content
     assert "45 km" not in content
+    assert "31.4 km" not in content
     assert "geolocation" not in content
     assert "route_ticket" in airport_directions(property_obj)
 

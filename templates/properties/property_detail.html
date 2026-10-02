@@ -24,6 +24,9 @@
 {% endblock %}
 {% block structured_data %}{% json_ld property_structured_data csp_nonce %}{% json_ld breadcrumb_structured_data csp_nonce %}{% endblock %}
 {% block extra_head %}
+{% if property.hostaway_listing_id == 315816 %}
+<link rel="stylesheet" href="{% static 'css/property-e12-mobile.css' %}?v=1">
+{% endif %}
 {% if public_location_map %}
 <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}?v=1.9.4">
 <script src="{% static 'vendor/leaflet/leaflet.js' %}?v=1.9.4" defer></script>
