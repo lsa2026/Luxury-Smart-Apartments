@@ -26,6 +26,9 @@
             <input type="checkbox" data-consent-marketing>
             <span><strong>{% trans "Marketing" %}</strong><small>{% trans "Allows advertising measurement when configured." %}</small></span>
         </label>
+        {% if google_config.gtm_enabled and google_config.ga4_enabled %}
+        {% include "includes/user_provided_data_choice.html" %}
+        {% endif %}
         <div class="consent-actions">
             <button class="button button--secondary" value="cancel" type="button" data-consent-close>{% trans "Close" %}</button>
             <button class="button" value="save" type="button" data-consent-save>{% trans "Save choices" %}</button>
