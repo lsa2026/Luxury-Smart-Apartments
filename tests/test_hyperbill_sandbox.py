@@ -409,3 +409,19 @@ def test_owner_can_check_api_login_without_invoice_or_guest_message(client):
     api.return_value.__enter__.return_value.check_connection.assert_called_once()
     api.return_value.__enter__.return_value.create_invoice.assert_not_called()
     assert HyperBillInvoice.objects.count() == 0
+
+
+def test_deployment_connection_check_never_creates_an_invoice():
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    output = StringIO()
+    with patch(
+        "apps.payments.management.commands.check_hyperbill_connection.HyperBillClient"
+    ) as api:
+        call_command("check_hyperbill_connection", stdout=output)
+    api.return_value.__enter__.return_value.check_connection.assert_called_once()
+    api.return_value.__enter__.return_value.create_invoice.assert_not_called()
+    assert "HYPERBILL_SANDBOX_API_CONNECTED" in output.getvalue()
+    assert HyperBillInvoice.objects.count() == 0

@@ -67,6 +67,8 @@ status reads; it does not create a payment or send a message.
 
 1. Publish to the UAT branch only; check build, migrations and HTTP health.
 2. Enter sandbox API credentials privately; verify API login succeeds.
+   With HYPERBILL_ENABLED=true, build.sh performs a read-only API-login check
+   and aborts the deployment on failure, preserving the previous healthy release.
    The owner booking list has a POST-only connection test: login only, no
    invoice, WhatsApp or booking creation.
 3. Enable only UAT guest link mode; allowlist the owner's test phone.

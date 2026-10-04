@@ -14,6 +14,12 @@ if [[ "${1:-}" == "--require-owner-login" ]]; then
     python manage.py check_owner_login
 fi
 
+# Opt-in UAT integration: reject invalid API credentials before releasing.
+# The check logs in only; it creates no invoice, booking, message or payment.
+if [[ "${HYPERBILL_ENABLED:-false}" == "true" ]]; then
+    python manage.py check_hyperbill_connection
+fi
+
 # Compiled catalogs (.mo) are committed, so gettext is not needed at build time.
 python manage.py collectstatic --no-input
 python manage.py migrate --no-input
