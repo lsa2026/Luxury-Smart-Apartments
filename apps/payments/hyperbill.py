@@ -40,6 +40,8 @@ def _login_rejection(response):
         return "hyperbill_login_wrong_password"
     if "unable to find user" in detail:
         return "hyperbill_login_user_not_found"
+    if "credentials do not match our records" in detail:
+        return "hyperbill_login_credentials_rejected"
     return f"hyperbill_login_rejected_http_{response.status_code}"
 
 

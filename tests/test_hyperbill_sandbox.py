@@ -432,6 +432,7 @@ def test_deployment_connection_check_never_creates_an_invoice():
     [
         ("Wrong passowrd", "hyperbill_login_wrong_password"),
         ("Unable to find user", "hyperbill_login_user_not_found"),
+        (" These credentials do not match our records. ", "hyperbill_login_credentials_rejected"),
         ("unknown synthetic private detail", "hyperbill_login_rejected_http_400"),
     ],
 )
