@@ -612,6 +612,10 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     if (
         draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
         and reservation is not None
+        and (
+            not settings.HYPERBILL_ENABLED
+            or getattr(reservation, "hyperbill_invoice", None) is not None
+        )
     ):
         return redirect("notifications:booking_detail", reservation_id=reservation.pk)
     form = ManualBookingFinalizeForm(draft=draft)

@@ -459,6 +459,12 @@ def test_pre_post_block_resumes_same_consumed_quote_intent_and_owner_price():
     assert recovered.reservation.payment_status == "unpaid"
     assert BookingIntent.objects.count() == 1
     assert Reservation.objects.count() == 1
+    client = Client()
+    client.force_login(draft.created_by)
+    with override_settings(HYPERBILL_ENABLED=True):
+        page = client.get(reverse("notifications:manual_booking_detail", args=[draft.pk]))
+    assert page.status_code == 200
+    assert "إنشاء رابط الدفع التجريبي وإرساله للضيف" in page.content.decode()
 
 
 @override_settings(
