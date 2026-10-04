@@ -109,7 +109,7 @@ services:
     branch: fix/apple-pay-uat-phase2
     autoDeploy: true
     healthCheckPath: /health/live/
-    buildCommand: ./build.sh
+    buildCommand: ./build.sh --require-owner-login
     startCommand: >-
       gunicorn config.wsgi:application
       --bind 0.0.0.0:$PORT
@@ -173,7 +173,12 @@ services:
       - key: GOOGLE_INTEGRATIONS_ENABLED
         value: "False"
       - key: GOOGLE_SIGN_IN_ENABLED
-        value: "False"
+        # Preserve the owner-approved UAT entrance across Blueprint syncs.
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
       - key: APPLE_SIGN_IN_ENABLED
         value: "False"
       - key: OPERATIONS_OWNER_EMAIL

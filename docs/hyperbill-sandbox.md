@@ -97,11 +97,26 @@ Owner actions are limited to 3 status reads or 2 first-time sends per request
 to respect the existing web timeout. A missing WhatsApp configuration allows
 safe setup and first delivery; an ambiguous network delivery never auto-retries.
 
-Live API check on 2026-10-04: HyperBill returned HTTP 200 with a rejected login;
-the documented safe classification was `hyperbill_login_credentials_rejected`
-(credentials do not match provider records). Render evidence: deployment
-dep-db195sdg1s2s739dn9n0, commit 0482077. No invoice, booking or message was
-created. The user requested connection checks only and declined UAT Google
-owner-login setup. Keep HyperBill/UltraMsg disabled pending private correction
-of the sandbox API email/password and a successful read-only login check.
-Final focused tests: 54 passed; lint passed. Main production was not deployed.
+Historical API check on 2026-10-04 initially returned a rejected login,
+`hyperbill_login_credentials_rejected` (deployment dep-db195sdg1s2s739dn9n0).
+After the user privately corrected the password and deployed
+dep-db19guqd0e5s73eo22mg, the read-only command returned
+`HYPERBILL_SANDBOX_API_CONNECTED (no invoice or message created)`.
+HyperBill and UltraMsg remain disabled; successful authentication alone is not
+invoice/WhatsApp acceptance. Final focused integration tests: 54 passed.
+
+The user subsequently approved UAT Google owner-login setup on 2026-10-04.
+The existing web-login OAuth client now includes the exact additional callback
+`https://checkout-uat-v2.onrender.com/accounts/google/login/callback/`;
+the existing production callbacks were preserved. Existing Google client
+settings were copied privately to checkout-uat-v2 and Google sign-in enabled
+(deployment dep-db19otugekts73crph00). No credentials are stored in this document.
+The checkout UAT Blueprint preserves these three operator-managed settings
+with `sync: false` and requires the owner-login preflight before migrations.
+Owner-email enforcement stays enabled. The legacy UAT service and production
+Blueprint remain unchanged. Owner sign-in was verified end-to-end: Google
+returned to the UAT operations hub as the configured business owner, and
+`check_owner_login` returned `Google owner login configuration is ready.`
+The focused owner-login/HyperBill suite passed 44 tests; lint passed.
+An approved manual-booking test remains pending; no Hostaway booking, invoice
+or message was created by this setup.

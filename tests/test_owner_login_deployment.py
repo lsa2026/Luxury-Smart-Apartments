@@ -38,6 +38,21 @@ def test_blueprint_preserves_owner_login_and_requires_preflight():
     )
 
 
+def test_uat_blueprint_preserves_approved_owner_login_without_changing_legacy():
+    blueprint = (ROOT / "render.staging.yaml").read_text(encoding="utf-8")
+    legacy, checkout = blueprint.split("    name: checkout-uat-v2\n", 1)
+    assert "buildCommand: ./build.sh --require-owner-login" in checkout
+    for key in ("GOOGLE_SIGN_IN_ENABLED", "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"):
+        entry = re.search(
+            rf"^      - key: {key}\n((?:        [^\n]*\n)+)", checkout, re.MULTILINE
+        )
+        assert entry
+        assert "sync: false" in entry[1]
+        assert "value:" not in entry[1]
+    assert '      - key: GOOGLE_SIGN_IN_ENABLED\n        value: "False"' in legacy
+    assert '      - key: OPERATIONS_OWNER_ENFORCEMENT_ENABLED\n        value: "True"' in checkout
+
+
 @override_settings(**READY)
 def test_ready_owner_login_passes_without_database():
     output = StringIO()
