@@ -1,0 +1,96 @@
+# HyperBill automated guest links — sandbox implementation, 2026-10-04
+
+## Authoritative contract
+
+Ahmad Qasem's business-email reply of 2026-10-04 supplies the sandbox base URL,
+API login, Simple Invoice creation/retrieval, empty-body POST webhook returning
+HTTP 200, Organization configuration, and production-account issuance after
+sandbox acceptance. API fields were checked against the official downloadable
+[API Blueprint](https://hyperbill.docs.apiary.io/api-description-document) and
+[Simple Invoice documentation](https://hyperbill.docs.apiary.io/#reference/1/simple-invoice-collection/create-simple-invoice).
+
+- POST `/api/login`: email/password -> `data.accessToken`.
+- POST `/api/simpleInvoice`: final SAR amount, DB, name, email, international
+  phone, language, merchant invoice number and expiration date.
+- GET `/api/simpleInvoice/retrieve/{invoice_no}`: status and invoice identity.
+- GET `/api/simpleInvoice/retrieve/min/{merchant_reference}`: recover uncertain
+  creation without repeating a POST.
+- States: pending, paid, canceled, declined. Obtain status from provider
+  retrieval, not a browser return URL or webhook body.
+
+## Operational path
+
+Existing owner screen -> live quote -> owner final price -> existing Hostaway
+unpaid reservation creation -> HyperBill invoice -> guest WhatsApp -> return to
+reservations hub. Accounting/ Aseel messaging remains the default when disabled;
+the modification/refund routes and existing card/Apple Pay flows are untouched.
+
+One durable invoice per reservation; concurrent owner submits cannot create two
+invoices. Creation timeouts require a GET reconciliation; never a second POST.
+The same rule holds for ambiguous WhatsApp delivery.
+
+Sandbox collections are stored separately in HyperBillInvoice; they cannot
+create real PaymentAttempts, mark a live Hostaway reservation paid, initiate
+refunds or fire production purchase analytics. Production rollout requires a
+separate reviewed integration with issued production credentials and accounting
+verification. Enabling a flag is not a production migration.
+
+## Required UAT settings (no credentials belong in GitHub)
+
+On checkout-uat-v2, not the main website:
+
+| Key | Value |
+| --- | --- |
+| HYPERBILL_ENABLED | false initially; true after credentials and tests |
+| HYPERBILL_BASE_URL | https://hyperbill-sandbox.hyperpay.com |
+| HYPERBILL_EMAIL | sandbox API account email |
+| HYPERBILL_PASSWORD | enter privately in Render |
+| HYPERBILL_WEBHOOK_SECRET | random, at least 32 characters; private in Render |
+| SITE_BASE_URL | https://checkout-uat-v2.onrender.com |
+| HYPERPAY_ENVIRONMENT | test (existing UAT setting) |
+| HYPERBILL_WHATSAPP_ALLOWED_NUMBERS | comma-separated owner-approved E.164 test numbers |
+| ULTRAMSG_ENABLED / INSTANCE_ID / TOKEN | existing approved WhatsApp account |
+| ACCOUNTING_WHATSAPP_NUMBER | existing client config requirement; not used for guest messages |
+| HYPERBILL_RECONCILIATION_ENABLED | false until an isolated worker/beat is running |
+
+Webhook: `https://checkout-uat-v2.onrender.com/payments/hyperbill/webhook/<private-secret>/`.
+Enter only in HyperBill Organization webhook configuration. Keep the callback
+URL out of public documents/screenshots and restrict access to request logs.
+It accepts empty POST, coalesces wakeups and saves a durable signal. With an
+isolated Celery worker/beat, it dispatches bounded polling. Without a worker,
+the signal is recorded but automatic verification is not operational.
+Use owner-only admin actions or `python manage.py reconcile_hyperbill --reference
+<merchant-reference>` for the first controlled test. The command performs only
+status reads; it does not create a payment or send a message.
+
+## Acceptance gate
+
+1. Publish to the UAT branch only; check build, migrations and HTTP health.
+2. Enter sandbox API credentials privately; verify API login succeeds.
+   The owner booking list has a POST-only connection test: login only, no
+   invoice, WhatsApp or booking creation.
+3. Enable only UAT guest link mode; allowlist the owner's test phone.
+4. Create/reuse one approved unpaid manual booking with the owner's final price.
+5. Check invoice ID, amount, SAR, merchant reference and canonical sandbox link.
+6. Verify UltraMsg accepted one guest message; guest confirms actual receipt.
+7. Complete sandbox payment from the user's phone; verify paid via provider GET.
+8. Configure/test an empty webhook POST, verify worker polling and queue recovery.
+   Do not treat HTTP 200 as payment verification.
+9. Confirm repeated actions cause no duplicate booking, invoice or message.
+10. Report evidence to HyperPay only with separate email authorization, then
+    await production-account issuance. Production and sandbox never share state.
+
+No extra Render service or subscription is created by this implementation.
+
+## Verification record
+
+Local full-suite run: 1,409 passed, 1 PostgreSQL-only test skipped, 9 failed.
+The same 9 failures were independently reproduced on the unchanged UAT base
+commit 6c81f8bd: admin language-switch markup, missing refund-alert translations
+(3 languages), CSS version assertion, unpaid-refund fixtures (3), and absolute
+hero-image URL expectation. These are not fixed by this payment-link change.
+Focused HyperBill/manual-booking/WhatsApp tests, lint and migration drift checks
+must pass before UAT release. No provider call or real payment occurs in tests.
+Owner actions are limited to 3 status reads or 2 first-time sends per request
+to respect the existing web timeout. A missing WhatsApp configuration allows
+safe setup and first delivery; an ambiguous network delivery never auto-retries.

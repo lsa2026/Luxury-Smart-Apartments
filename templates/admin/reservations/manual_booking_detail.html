@@ -27,12 +27,16 @@
       <p><b>السعر المعتمد:</b> {{ draft.final_total_price|format_money:draft.currency }}</p>
       <section class="lsa-manual-payment-next">
         <span>الخطوة التالية</span><h2>رابط الدفع</h2>
+        {% if hyperbill_enabled %}
+        <p>سيُنشأ الحجز أولًا في Hostaway، ثم يُنشأ رابط HyperBill بالسعر النهائي ويُرسل مباشرة للضيف عبر واتساب. هذه تجربة Sandbox وليست تحصيلًا حقيقيًا؛ لا يُرسل طلب للمحاسبة.</p>
+        {% else %}
         <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم يُرسل الموقع طلبًا تلقائيًا عبر WhatsApp إلى {{ accounting_whatsapp_name }} يتضمن بيانات الحجز ورابط Hostaway.</p>
+        {% endif %}
         <form method="post" novalidate>
           {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
-          <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز في Hostaway وإرسال الطلب للمحاسبة</button>
+          <button class="lsa-btn lsa-btn--gold" type="submit">{% if hyperbill_enabled %}تأكيد الحجز وإرسال رابط الدفع التجريبي للضيف{% else %}تأكيد الحجز في Hostaway وإرسال الطلب للمحاسبة{% endif %}</button>
         </form>
-        <div class="lsa-manual-payment-next__coming"><b>قريبًا:</b> إنشاء رابط HyperPay اليدوي وإرساله للضيف مباشرة من هذه الصفحة بعد اعتماد الواجهة من فريق HyperPay.</div>
+        {% if not hyperbill_enabled %}<div class="lsa-manual-payment-next__coming"><b>قريبًا:</b> إنشاء رابط HyperPay اليدوي وإرساله للضيف مباشرة من هذه الصفحة بعد اعتماد الواجهة من فريق HyperPay.</div>{% endif %}
       </section>
     {% elif draft.status == "booked_awaiting_payment" %}
       <section class="lsa-manual-payment-next">
@@ -40,7 +44,17 @@
         {% if reservation %}
           <p>تم إنشاء الحجز في Hostaway لحجز الموعد. لا توجد دفعة مسجلة بعد، ولذلك لا يُرسل تأكيد الحجز إلى الضيف إلا بعد إثبات الدفع.</p>
           <p><b>مرجع Hostaway:</b> <span dir="ltr">{{ reservation.hostaway_reservation_id }}</span></p>
-          {% if accounting_delivery %}
+          {% if hyperbill_enabled %}
+            {% if hyperbill_invoice %}
+              <p><b>فاتورة HyperBill التجريبية:</b> {{ hyperbill_invoice.status }} · <b>واتساب:</b> {{ hyperbill_invoice.delivery_status }}.</p>
+              <a class="lsa-btn lsa-btn--ghost" href="{% url 'admin:payments_hyperbillinvoice_change' hyperbill_invoice.pk %}">متابعة الفاتورة واستعلام حالتها</a>
+            {% else %}
+              <form method="post" novalidate>
+                {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
+                <button class="lsa-btn lsa-btn--gold" type="submit">إنشاء رابط الدفع التجريبي وإرساله للضيف</button>
+              </form>
+            {% endif %}
+          {% elif accounting_delivery %}
             {% if accounting_delivery.status == "sent" %}
               <p><b>طلب رابط الدفع:</b> أُرسل تلقائيًا إلى {{ accounting_whatsapp_name }} عبر WhatsApp.</p>
             {% elif accounting_delivery.status == "failed" %}

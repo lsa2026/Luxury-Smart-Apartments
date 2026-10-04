@@ -14,6 +14,14 @@
     <h2>بيانات الضيف</h2>
     {% if reservation.booking_intent %}<p><b>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</b><br><span dir="ltr">{{ reservation.booking_intent.guest_email }} · {{ reservation.booking_intent.guest_phone }}</span></p>{% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
   </section>
+  {% if hyperbill_enabled and hyperbill_invoice %}
+  <section class="lsa-panel">
+    <h2>رابط HyperBill التجريبي</h2>
+    <p>المبلغ النهائي: <b dir="ltr">{{ hyperbill_invoice.amount|floatformat:2 }} SAR</b> · حالة الفاتورة: <span dir="ltr">{{ hyperbill_invoice.status }}</span> · تسليم WhatsApp: <span dir="ltr">{{ hyperbill_invoice.delivery_status }}</span>.</p>
+    <p class="help">هذه فاتورة اختبار فقط؛ نجاحها لا يسجل دفعة حقيقية ولا يغيّر حالة الدفع في Hostaway. عند نتيجة غير مؤكدة، نتحقق من الفاتورة الحالية بدل إنشاء رابط آخر.</p>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'admin:payments_hyperbillinvoice_changelist' %}?id={{ hyperbill_invoice.pk }}">التحقق من الفاتورة الحالية ومتابعة التسليم</a>
+  </section>
+  {% endif %}
   <section class="lsa-panel">
     <h2>تعديل التواريخ أو عدد الضيوف</h2>
     <p class="help">غيّر التواريخ أو عدد الضيوف، ثم افحص السعر قبل تأكيد أي تعديل.</p>

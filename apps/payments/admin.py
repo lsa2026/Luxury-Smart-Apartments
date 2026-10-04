@@ -6,7 +6,58 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.templatetags.presentation import localized_money
 
-from .models import PaymentAttempt
+from .models import HyperBillInvoice, PaymentAttempt
+
+
+@admin.register(HyperBillInvoice)
+class HyperBillInvoiceAdmin(admin.ModelAdmin):
+    list_display = (
+        "merchant_reference",
+        "reservation",
+        "amount",
+        "currency",
+        "status",
+        "delivery_status",
+        "verified_at",
+    )
+    search_fields = ("merchant_reference", "invoice_no", "reservation__public_reference")
+    list_filter = ("status", "delivery_status")
+    readonly_fields = tuple(field.name for field in HyperBillInvoice._meta.fields)
+    actions = ("verify_sandbox_invoices", "send_unsent_sandbox_links")
+
+    @admin.action(description="استعلام حالة الدفع التجريبي من HyperBill")
+    def verify_sandbox_invoices(self, request, queryset):
+        from apps.accounts.access import require_operations_owner
+
+        from .hyperbill import HyperBillError, reconcile_invoice
+
+        require_operations_owner(request.user)
+        for invoice in queryset[:3]:
+            try:
+                outcome = reconcile_invoice(invoice.pk)
+                self.message_user(request, f"{invoice.merchant_reference}: {outcome.code}")
+            except HyperBillError as exc:
+                self.message_user(request, str(exc), level="error")
+
+    @admin.action(description="إرسال الرابط التجريبي الذي لم يسبق إرساله فقط")
+    def send_unsent_sandbox_links(self, request, queryset):
+        from apps.accounts.access import require_operations_owner
+
+        from .hyperbill import HyperBillError, send_guest_payment_link
+
+        require_operations_owner(request.user)
+        for invoice in queryset[:2]:
+            try:
+                outcome = send_guest_payment_link(invoice.pk)
+                self.message_user(request, f"{invoice.merchant_reference}: {outcome.code}")
+            except HyperBillError as exc:
+                self.message_user(request, str(exc), level="error")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(PaymentAttempt)

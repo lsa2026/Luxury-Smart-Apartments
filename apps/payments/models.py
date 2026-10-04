@@ -95,3 +95,46 @@ class PaymentAttempt(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider} — {self.amount} {self.currency}"
+
+
+class HyperBillInvoice(models.Model):
+    """Sandbox evidence, deliberately separate from real collections/refunds."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reservation = models.OneToOneField(
+        "reservations.Reservation", on_delete=models.PROTECT, related_name="hyperbill_invoice"
+    )
+    merchant_reference = models.CharField(max_length=32, unique=True)
+    invoice_no = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=3, default="SAR")
+    payment_url = models.URLField(max_length=500, blank=True)
+    status = models.CharField(max_length=30, default="creating")
+    delivery_status = models.CharField(max_length=30, default="not_sent")
+    delivery_message_id = models.CharField(max_length=255, blank=True)
+    error_code = models.CharField(max_length=100, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="hyperbill_amount_positive"),
+            models.CheckConstraint(condition=Q(currency="SAR"), name="hyperbill_currency_sar"),
+        ]
+
+    def __str__(self):
+        return f"{self.merchant_reference}: {self.status} (sandbox)"
+
+
+class HyperBillWebhookSignal(models.Model):
+    """Durable empty-body wakeup, not proof that any invoice was paid."""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"HyperBill sandbox wakeup {self.pk}"
