@@ -51,13 +51,21 @@ On checkout-uat-v2, not the main website:
 | HYPERBILL_WHATSAPP_ALLOWED_NUMBERS | comma-separated owner-approved E.164 test numbers |
 | ULTRAMSG_ENABLED / INSTANCE_ID / TOKEN | existing approved WhatsApp account |
 | ACCOUNTING_WHATSAPP_NUMBER | existing client config requirement; not used for guest messages |
-| HYPERBILL_RECONCILIATION_ENABLED | false until an isolated worker/beat is running |
+| HYPERBILL_RECONCILIATION_ENABLED | false for the dedicated DB-signal poller; disables general Celery dispatch |
 
 Webhook: `https://checkout-uat-v2.onrender.com/payments/hyperbill/webhook/<private-secret>/`.
 Enter only in HyperBill Organization webhook configuration. Keep the callback
 URL out of public documents/screenshots and restrict access to request logs.
-It accepts empty POST, coalesces wakeups and saves a durable signal. With an
-isolated Celery worker/beat, it dispatches bounded polling. Without a worker,
+It accepts empty POST, coalesces wakeups and saves a durable signal.
+The UAT start command `python manage.py run_hyperbill_uat` supervises the existing
+Gunicorn web server and `run_hyperbill_worker` in the same paid service. The latter
+checks durable DB signals every 10 seconds and recovers missed callbacks through
+read-only reconciliation every 60 seconds. It never consumes general Celery queues,
+creates invoices, sends messages or writes to Hostaway. Shared Redis provides the
+existing reconciliation lock. Leave Celery dispatch disabled. Gunicorn access logs
+omit request paths to avoid exposing the callback nonce. A child failure stops the
+launcher so Render can restart the instance. This is an isolated UAT arrangement,
+not the production-worker architecture. Without this poller or an isolated worker,
 the signal is recorded but automatic verification is not operational.
 Use owner-only admin actions or `python manage.py reconcile_hyperbill --reference
 <merchant-reference>` for the first controlled test. The command performs only

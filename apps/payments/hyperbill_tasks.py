@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from apps.integrations.tasks import distributed_task_lock
 
-from .hyperbill import HyperBillClient, HyperBillError, reconcile_invoice
+from .hyperbill import HyperBillClient, HyperBillError, reconcile_invoice, require_sandbox
 from .models import HyperBillInvoice, HyperBillWebhookSignal
 
 
@@ -14,6 +14,10 @@ from .models import HyperBillInvoice, HyperBillWebhookSignal
 def reconcile_hyperbill_task():
     if not settings.HYPERBILL_ENABLED:
         return {"status": "disabled"}
+    try:
+        require_sandbox()
+    except HyperBillError:
+        return {"status": "not_uat"}
     with distributed_task_lock("hyperbill-sandbox-reconcile") as acquired:
         if not acquired:
             return {"status": "already_running"}

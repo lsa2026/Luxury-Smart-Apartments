@@ -110,15 +110,8 @@ services:
     autoDeploy: true
     healthCheckPath: /health/live/
     buildCommand: ./build.sh --require-owner-login
-    startCommand: >-
-      gunicorn config.wsgi:application
-      --bind 0.0.0.0:$PORT
-      --workers 2
-      --threads 2
-      --timeout 60
-      --graceful-timeout 30
-      --access-logfile -
-      --error-logfile -
+    # Existing paid UAT service only; no general Celery queue or extra service.
+    startCommand: python manage.py run_hyperbill_uat
     envVars:
       - key: PYTHON_VERSION
         value: "3.13.5"

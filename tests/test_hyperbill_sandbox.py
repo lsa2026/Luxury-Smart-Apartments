@@ -2,11 +2,14 @@
 
 import json
 from datetime import timedelta
+from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
 from django.core.cache import cache
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -19,6 +22,7 @@ from apps.payments.hyperbill import (
     reconcile_invoice,
     send_guest_payment_link,
 )
+from apps.payments.hyperbill_tasks import reconcile_hyperbill_task
 from apps.payments.models import HyperBillInvoice, HyperBillWebhookSignal, PaymentAttempt
 from apps.reservations.models import HostawayReservationOperation, ManualBookingDraft, Reservation
 from tests.test_hostaway_booking_phase5 import make_intent
@@ -304,6 +308,119 @@ def test_webhook_queue_failure_keeps_durable_signal_and_returns_200(client):
         url = reverse("payments:hyperbill_webhook", args=[UAT["HYPERBILL_WEBHOOK_SECRET"]])
         assert client.post(url, data=b"", content_type="application/json").status_code == 200
     assert HyperBillWebhookSignal.objects.filter(processed_at__isnull=True).count() == 1
+
+
+def worker_invoice():
+    return HyperBillInvoice.objects.create(
+        reservation=reservation(), merchant_reference="HBWorkerSynthetic",
+        invoice_no="a" * 32, amount="500.25", currency="SAR", status="pending",
+        expires_at=timezone.now() + timedelta(hours=1),
+    )
+
+
+def test_poller_verifies_empty_webhook_via_api_and_duplicate_never_collects(client):
+    invoice = worker_invoice()
+    url = reverse("payments:hyperbill_webhook", args=[UAT["HYPERBILL_WEBHOOK_SECRET"]])
+    assert client.post(url, data=b"", content_type="application/json").status_code == 200
+    invoice.refresh_from_db()
+    assert invoice.status == "pending"
+    with patch("apps.payments.hyperbill_tasks.HyperBillClient") as api:
+        api.return_value.__enter__.return_value.retrieve_invoice.return_value = document(
+            invoice, status="paid"
+        )
+        output = StringIO()
+        call_command("run_hyperbill_worker", once=True, stdout=output)
+        invoice.refresh_from_db()
+        assert invoice.status == "paid"
+        assert invoice.verified_at is not None
+        assert "HYPERBILL_UAT_WORKER_READY" in output.getvalue()
+        assert HyperBillWebhookSignal.objects.filter(processed_at__isnull=True).count() == 0
+        assert client.post(url, data=b"", content_type="application/json").status_code == 200
+        call_command("run_hyperbill_worker", once=True, stdout=StringIO())
+        api.return_value.__enter__.return_value.retrieve_invoice.assert_called_once()
+    invoice.reservation.refresh_from_db()
+    assert invoice.reservation.payment_status == "unpaid"
+    assert not PaymentAttempt.objects.exists()
+    assert not HostawayReservationOperation.objects.exists()
+    assert invoice.delivery_status == "not_sent"
+
+
+@pytest.mark.parametrize("change", [{"amount": "1.00"}, {"currency": "USD"},
+                                   {"merchant_invoice_number": "other"},
+                                   {"invoice_no": "b" * 32}, {"payment_type": "PA"}])
+def test_poller_retains_signal_on_identity_or_amount_mismatch(change):
+    invoice = worker_invoice()
+    signal = HyperBillWebhookSignal.objects.create()
+    with patch("apps.payments.hyperbill_tasks.HyperBillClient") as api:
+        api.return_value.__enter__.return_value.retrieve_invoice.return_value = document(
+            invoice, status="paid", **change
+        )
+        assert reconcile_hyperbill_task.run()["status"] == "retry_required"
+    invoice.refresh_from_db()
+    signal.refresh_from_db()
+    assert invoice.status == "pending"
+    assert signal.processed_at is None
+    assert not PaymentAttempt.objects.exists()
+
+
+def test_poller_provider_outage_keeps_signal_for_recovery():
+    signal = HyperBillWebhookSignal.objects.create()
+    with patch("apps.payments.hyperbill_tasks.HyperBillClient", side_effect=HyperBillError):
+        assert reconcile_hyperbill_task.run()["status"] == "provider_unavailable"
+    signal.refresh_from_db()
+    assert signal.processed_at is None
+
+
+def test_poller_recovers_missing_webhook_using_periodic_api_read():
+    invoice = worker_invoice()
+    with patch("apps.payments.hyperbill_tasks.HyperBillClient") as api:
+        api.return_value.__enter__.return_value.retrieve_invoice.return_value = document(
+            invoice, status="paid"
+        )
+        call_command("run_hyperbill_worker", once=True, stdout=StringIO())
+    invoice.refresh_from_db()
+    assert invoice.status == "paid"
+    assert not HyperBillWebhookSignal.objects.exists()
+
+
+def test_poller_refuses_production_even_without_invoices():
+    signal = HyperBillWebhookSignal.objects.create()
+    with override_settings(SITE_BASE_URL="https://luxurysmartapartments.com"):
+        assert reconcile_hyperbill_task.run()["status"] == "not_uat"
+        with pytest.raises(CommandError, match="hyperbill_disabled_or_not_uat"):
+            call_command("run_hyperbill_worker", once=True)
+    signal.refresh_from_db()
+    assert signal.processed_at is None
+
+
+def test_uat_supervisor_only_launches_web_and_hyperbill_poller():
+    with (
+        override_settings(REDIS_URL="redis://synthetic", HYPERBILL_RECONCILIATION_ENABLED=False),
+        patch("apps.payments.management.commands.run_hyperbill_uat.sys.platform", "linux"),
+        patch.dict("os.environ", {"PORT": "10000"}),
+        patch("apps.payments.management.commands.run_hyperbill_uat.signal.signal"),
+        patch("apps.payments.management.commands.run_hyperbill_uat.subprocess.Popen") as spawn,
+        patch("apps.payments.management.commands.run_hyperbill_uat.time.sleep",
+              side_effect=KeyboardInterrupt),
+    ):
+        spawn.return_value.poll.return_value = None
+        with pytest.raises(KeyboardInterrupt):
+            call_command("run_hyperbill_uat", stdout=StringIO())
+        assert spawn.call_count == 2
+        commands = [c.args[0] for c in spawn.call_args_list]
+        assert "gunicorn" in commands[0]
+        assert commands[1][-1] == "run_hyperbill_worker"
+        assert not any("celery" in c or "beat" in c for c in commands)
+        assert spawn.return_value.terminate.call_count == 2
+
+
+def test_uat_supervisor_rejects_generic_queue_dispatch():
+    with (
+        override_settings(REDIS_URL="redis://synthetic", HYPERBILL_RECONCILIATION_ENABLED=True),
+        patch("apps.payments.management.commands.run_hyperbill_uat.sys.platform", "linux"),
+    ):
+        with pytest.raises(CommandError, match="celery_dispatch_disabled"):
+            call_command("run_hyperbill_uat")
 
 
 def test_http_contract_and_auth_token_remain_server_side():
