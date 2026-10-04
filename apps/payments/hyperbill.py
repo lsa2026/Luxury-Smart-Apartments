@@ -19,9 +19,14 @@ from apps.notifications.services.ultramsg import (
     UltraMsgConnectionError,
     UltraMsgResponseError,
 )
-from apps.reservations.models import Reservation
+from apps.reservations.models import (
+    BookingIntent,
+    HostawayReservationOperation,
+    ManualBookingDraft,
+    Reservation,
+)
 
-from .models import HyperBillInvoice
+from .models import HyperBillInvoice, PaymentAttempt
 
 
 class HyperBillError(Exception):
@@ -214,6 +219,35 @@ def _save_remote_invoice(invoice_id, document, *, verified=False):
         return invoice
 
 
+def _owner_manual_booking_has_no_collection(reservation, intent):
+    """Unknown is not unpaid in general; require this unpaid manual origin.
+
+    Hostaway returns paymentStatus=Unknown for freshly created direct stays.
+    Only an owner-approved manual draft with a successful create ledger and
+    no payment attempt may request its first sandbox invoice in that state.
+    This does not alter Hostaway's status or claim a verified payment.
+    """
+    return (
+        intent is not None
+        and reservation.payment_status.strip().casefold() == "unknown"
+        and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
+        and intent.status == BookingIntent.Status.AWAITING_PAYMENT
+        and ManualBookingDraft.objects.filter(
+            quote_id=intent.quote_id,
+            status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+            final_total_price=intent.total_price,
+        ).exists()
+        and HostawayReservationOperation.objects.filter(
+            reservation=reservation,
+            operation_type=HostawayReservationOperation.OperationType.CREATE_RESERVATION,
+            status=HostawayReservationOperation.Status.SUCCEEDED,
+            hostaway_reservation_id=reservation.hostaway_reservation_id,
+            attempt_count=1,
+        ).exists()
+        and not PaymentAttempt.objects.filter(booking_intent=intent).exists()
+    )
+
+
 def create_guest_payment_link(*, reservation_id):
     require_sandbox()
     with transaction.atomic():
@@ -223,7 +257,10 @@ def create_guest_payment_link(*, reservation_id):
             intent is None
             or not reservation.hostaway_reservation_id
             or reservation.normalized_status not in Reservation.ACTIVE_STATUSES
-            or reservation.payment_status not in {"unpaid", "awaiting_payment", "pending", ""}
+            or (
+                reservation.payment_status not in {"unpaid", "awaiting_payment", "pending", ""}
+                and not _owner_manual_booking_has_no_collection(reservation, intent)
+            )
             or reservation.total_price != intent.total_price
             or reservation.currency != intent.currency
         ):
@@ -291,7 +328,10 @@ def send_guest_payment_link(invoice_id):
             or reservation.normalized_status not in Reservation.ACTIVE_STATUSES
             or intent is None
             or intent.expires_at <= timezone.now()
-            or reservation.payment_status not in {"unpaid", "awaiting_payment", "pending", ""}
+            or (
+                reservation.payment_status not in {"unpaid", "awaiting_payment", "pending", ""}
+                and not _owner_manual_booking_has_no_collection(reservation, intent)
+            )
             or reservation.total_price != intent.total_price
             or reservation.currency != intent.currency
             or invoice.amount != intent.payment_amount_sar

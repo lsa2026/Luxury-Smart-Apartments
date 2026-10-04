@@ -130,10 +130,14 @@ def recheck_manual_booking_draft(
     if draft is None:
         unavailable = AvailabilityResult(False, "unavailable_dates", "", "", 0)
         return ManualBookingDraftRecheck("not_found", unavailable)
-    if draft.status in {
-        ManualBookingDraft.Status.CANCELLED,
-        ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
-    } or BookingIntent.objects.filter(quote=draft.quote).exists():
+    if (
+        draft.status
+        in {
+            ManualBookingDraft.Status.CANCELLED,
+            ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+        }
+        or BookingIntent.objects.filter(quote=draft.quote).exists()
+    ):
         unavailable = AvailabilityResult(False, "unavailable_dates", "", "", draft.nights)
         return ManualBookingDraftRecheck("not_recheckable", unavailable, draft)
 
@@ -161,10 +165,14 @@ def recheck_manual_booking_draft(
             )
             if locked is None:
                 return ManualBookingDraftRecheck("not_found", availability)
-            if locked.status in {
-                ManualBookingDraft.Status.CANCELLED,
-                ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
-            } or BookingIntent.objects.filter(quote=locked.quote).exists():
+            if (
+                locked.status
+                in {
+                    ManualBookingDraft.Status.CANCELLED,
+                    ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+                }
+                or BookingIntent.objects.filter(quote=locked.quote).exists()
+            ):
                 return ManualBookingDraftRecheck("not_recheckable", availability, locked)
             previous_quote = locked.quote
             quote = create_quote_for_property(
@@ -301,10 +309,7 @@ def create_manual_booking_in_hostaway(
         # quote/intent just to recover from missing configuration.
         if not verify_quote_fingerprint(draft.quote) or (
             intent is None
-            and (
-                draft.quote.status != BookingQuote.Status.ACTIVE
-                or draft.quote.is_expired
-            )
+            and (draft.quote.status != BookingQuote.Status.ACTIVE or draft.quote.is_expired)
         ):
             draft.status = ManualBookingDraft.Status.EXPIRED
             draft.save(update_fields=["status", "updated_at"])

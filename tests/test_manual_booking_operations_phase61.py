@@ -442,9 +442,12 @@ def test_pre_post_block_resumes_same_consumed_quote_intent_and_owner_price():
     draft.quote.refresh_from_db()
     assert draft.quote.status == BookingQuote.Status.CONSUMED
     recheck_service = FakeAvailabilityService(available)
-    assert recheck_manual_booking_draft(
-        draft_id=draft.pk, actor=draft.created_by, availability_service=recheck_service
-    ).code == "not_recheckable"
+    assert (
+        recheck_manual_booking_draft(
+            draft_id=draft.pk, actor=draft.created_by, availability_service=recheck_service
+        ).code
+        == "not_recheckable"
+    )
     assert not recheck_service.requests
     assert BookingQuote.objects.count() == 1
     recovered = create_manual_booking_in_hostaway(
@@ -553,7 +556,8 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
             language="ar",
             idempotency_key="phase61-accounting-request-key-000000000000000000000000",
             session_key_hash=draft.quote.session_key_hash,
-            terms_accepted_at=timezone.now(), privacy_accepted_at=timezone.now(),
+            terms_accepted_at=timezone.now(),
+            privacy_accepted_at=timezone.now(),
             expires_at=timezone.now() + timedelta(days=10),
         ),
         property=property_obj,
@@ -561,9 +565,15 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
         hostaway_listing_map_id=property_obj.hostaway_listing_map_id,
         source_type=Reservation.SourceType.DIRECT_WEBSITE,
         normalized_status=Reservation.Status.CONFIRMED,
-        check_in=draft.check_in, check_out=draft.check_out, nights=draft.nights,
-        guests=draft.guests, currency=draft.currency, total_price=draft.final_total_price,
-        hostaway_reservation_id=88001, payment_status="unpaid", confirmed_at=timezone.now(),
+        check_in=draft.check_in,
+        check_out=draft.check_out,
+        nights=draft.nights,
+        guests=draft.guests,
+        currency=draft.currency,
+        total_price=draft.final_total_price,
+        hostaway_reservation_id=88001,
+        payment_status="unpaid",
+        confirmed_at=timezone.now(),
     )
     monkeypatch.setattr(
         "apps.reservations.operations_views.create_manual_booking_in_hostaway",

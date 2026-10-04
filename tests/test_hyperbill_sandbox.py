@@ -20,7 +20,7 @@ from apps.payments.hyperbill import (
     send_guest_payment_link,
 )
 from apps.payments.models import HyperBillInvoice, HyperBillWebhookSignal, PaymentAttempt
-from apps.reservations.models import Reservation
+from apps.reservations.models import HostawayReservationOperation, ManualBookingDraft, Reservation
 from tests.test_hostaway_booking_phase5 import make_intent
 
 pytestmark = pytest.mark.django_db
@@ -101,6 +101,59 @@ def test_create_and_guest_whatsapp_are_idempotent_and_use_final_sar_price():
         assert "hyperbill-sandbox.hyperpay.com/invoice/show/simple/" in args["body"]
         assert "untrusted.invalid" not in args["body"]
     assert HyperBillInvoice.objects.count() == 1
+
+
+def test_unknown_payment_status_requires_verified_uncollected_owner_manual_origin():
+    booking = reservation()
+    booking.payment_status = "Unknown"
+    booking.source_type = Reservation.SourceType.DIRECT_WEBSITE
+    booking.save()
+    intent = booking.booking_intent
+    with patch("apps.payments.hyperbill.HyperBillClient") as api:
+        assert create_guest_payment_link(reservation_id=booking.pk).code == (
+            "confirmed_unpaid_hostaway_booking_required"
+        )
+        api.assert_not_called()
+    ManualBookingDraft.objects.create(
+        quote=intent.quote,
+        property=booking.property,
+        check_in=booking.check_in,
+        check_out=booking.check_out,
+        nights=booking.nights,
+        guests=booking.guests,
+        currency=booking.currency,
+        system_total_price=booking.total_price,
+        final_total_price=booking.total_price,
+        status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+        availability_checked_at=timezone.now(),
+        expires_at=intent.expires_at,
+    )
+    HostawayReservationOperation.objects.create(
+        reservation=booking,
+        operation_type="create_reservation",
+        idempotency_key="verified-manual-create",
+        request_fingerprint="synthetic",
+        status="succeeded",
+        hostaway_reservation_id=booking.hostaway_reservation_id,
+        attempt_count=1,
+    )
+    with (
+        patch("apps.payments.hyperbill.HyperBillClient") as api,
+        patch("apps.payments.hyperbill.UltraMsgClient") as wa,
+    ):
+        api.return_value.__enter__.return_value.create_invoice.side_effect = fake_create
+        wa.return_value.__enter__.return_value.send_text.return_value = {"sent": True, "id": 42}
+        assert create_guest_payment_link(reservation_id=booking.pk).code == "sent"
+    booking.refresh_from_db()
+    assert booking.payment_status == "Unknown"
+    assert not PaymentAttempt.objects.exists()
+    booking.payment_status = "paid"
+    booking.save()
+    with patch("apps.payments.hyperbill.HyperBillClient") as api:
+        assert create_guest_payment_link(reservation_id=booking.pk).code == (
+            "confirmed_unpaid_hostaway_booking_required"
+        )
+        api.assert_not_called()
 
 
 def test_timeout_never_repeats_creation_and_recovers_by_reference():
