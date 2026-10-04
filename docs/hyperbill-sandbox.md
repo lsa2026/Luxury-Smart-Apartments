@@ -96,3 +96,12 @@ must pass before UAT release. No provider call or real payment occurs in tests.
 Owner actions are limited to 3 status reads or 2 first-time sends per request
 to respect the existing web timeout. A missing WhatsApp configuration allows
 safe setup and first delivery; an ambiguous network delivery never auto-retries.
+
+Live API check on 2026-10-04: HyperBill returned HTTP 200 with a rejected login;
+the documented safe classification was `hyperbill_login_credentials_rejected`
+(credentials do not match provider records). Render evidence: deployment
+dep-db195sdg1s2s739dn9n0, commit 0482077. No invoice, booking or message was
+created. The user requested connection checks only and declined UAT Google
+owner-login setup. Keep HyperBill/UltraMsg disabled pending private correction
+of the sandbox API email/password and a successful read-only login check.
+Final focused tests: 54 passed; lint passed. Main production was not deployed.
