@@ -62,7 +62,21 @@ class ManualBookingAvailabilityForm(forms.Form):
             self.add_error("check_in", "لا يمكن أن يكون الوصول في تاريخ مضى.")
         if check_in and check_out and check_out <= check_in:
             self.add_error("check_out", "يجب أن يكون تاريخ المغادرة بعد تاريخ الوصول.")
+        property_obj = cleaned.get("property")
+        if (
+            property_obj
+            and property_obj.person_capacity
+            and cleaned.get("guests", 1) > property_obj.person_capacity
+        ):
+            self.add_error("guests", "عدد الضيوف يتجاوز سعة الشقة.")
         return cleaned
+
+    guests = forms.IntegerField(
+        label="عدد الضيوف", min_value=1, max_value=20, initial=1, required=False
+    )
+
+    def clean_guests(self) -> int:
+        return self.cleaned_data.get("guests") or 1
 
 
 class ManualBookingFinalizeForm(forms.Form):

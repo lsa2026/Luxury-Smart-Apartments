@@ -1,5 +1,6 @@
 from django.urls import path
 
+from . import sama_booking_api
 from .address_places import CheckoutAddressDetailsView, CheckoutAddressView
 from .views import (
     AvailabilitySearchView,
@@ -18,6 +19,10 @@ from .views import (
 app_name = "reservations"
 
 urlpatterns = [
+    path("sama/health/", sama_booking_api.health, name="sama_health"),
+    path("sama/prepare/", sama_booking_api.prepare, name="sama_prepare"),
+    path("sama/<uuid:request_id>/", sama_booking_api.status, name="sama_status"),
+    path("sama/<uuid:request_id>/confirm/", sama_booking_api.confirm, name="sama_confirm"),
     path(
         "quotes/<str:reference>/address-suggestions/",
         CheckoutAddressView.as_view(),

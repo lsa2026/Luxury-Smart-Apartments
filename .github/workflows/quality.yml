@@ -40,6 +40,8 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_sama_booking_api.py
+          tests/test_manual_booking_operations_phase61.py
           tests/test_booking_modifications_phase6.py
           tests/test_ultramsg_accounting_notifications.py
           tests/test_hyperpay_refunds_phase94.py
