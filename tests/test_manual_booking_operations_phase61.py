@@ -411,6 +411,53 @@ def test_ready_manual_draft_creates_an_unpaid_hostaway_booking_before_payment():
     assert intent.status == BookingIntent.Status.AWAITING_PAYMENT
 
 
+def test_pre_post_block_resumes_same_consumed_quote_intent_and_owner_price():
+    property_obj = make_property()
+    available = make_availability(property_obj)
+    draft = create_manual_booking_draft(
+        property_obj=property_obj,
+        check_in=available.quote.check_in,
+        check_out=available.quote.check_out,
+        guests=1,
+        actor=owner(),
+        availability_service=FakeAvailabilityService(available),
+    ).draft
+    finalize_manual_booking_draft(
+        draft_id=draft.pk,
+        guest_data={
+            "guest_first_name": "Test",
+            "guest_last_name": "Guest",
+            "guest_email": "guest@example.invalid",
+            "guest_phone": "+966500000000",
+        },
+        final_total_price=Decimal("10.00"),
+    )
+
+    class BlockedService:
+        def create_manual_reservation_before_payment(self, reservation):
+            return SimpleNamespace(code="listing_map_id_not_verified", reservation=reservation)
+
+    blocked = create_manual_booking_in_hostaway(draft_id=draft.pk, booking_service=BlockedService())
+    assert blocked.code == "listing_map_id_not_verified"
+    draft.quote.refresh_from_db()
+    assert draft.quote.status == BookingQuote.Status.CONSUMED
+    recheck_service = FakeAvailabilityService(available)
+    assert recheck_manual_booking_draft(
+        draft_id=draft.pk, actor=draft.created_by, availability_service=recheck_service
+    ).code == "not_recheckable"
+    assert not recheck_service.requests
+    assert BookingQuote.objects.count() == 1
+    recovered = create_manual_booking_in_hostaway(
+        draft_id=draft.pk, booking_service=FakeManualHostawayBookingService()
+    )
+    assert recovered.code == "created"
+    assert recovered.reservation.pk == blocked.reservation.pk
+    assert recovered.reservation.total_price == Decimal("10.00")
+    assert recovered.reservation.payment_status == "unpaid"
+    assert BookingIntent.objects.count() == 1
+    assert Reservation.objects.count() == 1
+
+
 @override_settings(
     OPERATIONS_OWNER_ENFORCEMENT_ENABLED=True,
     OPERATIONS_OWNER_EMAIL=OWNER_EMAIL,
