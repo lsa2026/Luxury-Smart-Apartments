@@ -128,3 +128,45 @@ returned to the UAT operations hub as the configured business owner, and
 The focused owner-login/HyperBill suite passed 44 tests; lint passed.
 An approved manual-booking test remains pending; no Hostaway booking, invoice
 or message was created by this setup.
+
+### Subsequent live Sandbox verification, 2026-10-04 (Riyadh)
+
+The earlier disabled-state/setup-only notes above are historical. With owner
+approval, the original manual-booking test created Hostaway 67170248 once and
+Sandbox invoice SI-INV-113974 for 10.00 SAR. The owner confirmed WhatsApp receipt;
+the provider recorded Connector Test Mode success and manual API reconciliation
+verified paid. This did not mark the real Hostaway booking paid.
+
+The persistent isolated poller was deployed on checkout-uat-v2, release
+`1d0fde7`, deployment `dep-db1b7d5ckfvc73dir9jg` (Live 23:16:12). A first launcher
+deployment failed safely because it checked the unused REDIS_URL broker rather
+than the configured shared CACHE_URL; the guard was corrected and the healthy
+release confirmed HYPERBILL_UAT_WORKER_READY. No production service was changed.
+63 focused tests passed; the corrected supervisor tests and HyperBill suite
+passed all 46 tests, and lint passed.
+
+New invoice SI-INV-113975, invoice_no `0d502ab18ab2fdd19c65f133f83483aa`, reference
+`HBWH20261004A001`, 10.00 SAR, used a closed local `is_test` fixture without a
+BookingIntent, property, Hostaway ID or Hostaway operation. It does not hold a
+night or represent a real guest reservation. No new WhatsApp message was sent.
+The provider's 3DS simulator approved its test card and displayed Connector Test
+Mode success. The running poller changed pending to paid at 23:19:01.341585,
+without a manual reconciliation command. The pre-existing global PaymentAttempt
+count stayed 6; this test created none. Full invoice identity/money checks ran
+before paid was persisted.
+
+Controlled endpoint probes returned HTTP 200. Signal 1 was created 23:17:52 and
+processed 23:18:00, while the invoice remained pending. Two duplicate probes after
+payment coalesced into signal 2 at 23:20:01 and were processed 23:20:11. The paid
+status and original verified_at remained unchanged. These were controlled probes,
+NOT provider-originated webhook delivery. No additional provider signal arrived
+after payment; the new automatic paid update came from the periodic GET fallback.
+
+HyperBill Organization 1673 initially showed Webhook Disabled and a blank URL.
+Active and the private callback were submitted, but the portal subsequently
+required Google Authenticator verification, preventing a fresh read of saved
+configuration. Persistence/provider delivery remains unverified. Ahmad Qasem was
+emailed the precise distinction and asked to confirm organization/activation,
+retry the notification, supply delivery evidence and production/refund guidance.
+Confirmed sent Gmail message `1a10894a2aa7d4b1`, thread `1a0af5f2c1e5d9e6`.
+This is Sandbox acceptance progress, not completed production readiness.
