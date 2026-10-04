@@ -1,6 +1,7 @@
 {% extends "core/content_page.html" %}
 {% load i18n %}
 {% block legal_service_notice %}
+{% include "legal/_user_provided_data_notice.html" %}
 <aside class="prose-card rich-copy">
     <h2>{% trans "Google Maps driving estimates" %}</h2>
     <p>{% trans "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature." %}</p>

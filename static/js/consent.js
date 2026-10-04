@@ -43,6 +43,9 @@
             ) {
                 return null;
             }
+            // Legacy cookie choices never grant the new, independent opt-in.
+            parsed.userProvidedData = parsed.userProvidedData === true
+                && parsed.userProvidedDataVersion === 1;
             return parsed;
         } catch {
             return null;
@@ -54,6 +57,8 @@
             version,
             analytics: Boolean(choice.analytics),
             marketing: Boolean(choice.marketing),
+            userProvidedData: choice.userProvidedData === true,
+            userProvidedDataVersion: 1,
             timestamp: new Date().toISOString(),
         };
         const attributes = [
@@ -157,7 +162,21 @@
     const dialog = document.querySelector("[data-consent-dialog]");
     const analyticsInput = dialog?.querySelector("[data-consent-analytics]");
     const marketingInput = dialog?.querySelector("[data-consent-marketing]");
+    const providedDataInputs = [...document.querySelectorAll("[data-consent-upd]")];
+    const dialogProvidedDataInput = dialog?.querySelector("[data-consent-upd]");
     let returnFocus = null;
+
+    function syncProvidedDataControls(choice) {
+        providedDataInputs.forEach((input) => {
+            input.checked = choice?.userProvidedData === true;
+        });
+    }
+
+    function isUserProvidedDataAllowed() {
+        const choice = parseConsent();
+        return googleEnabled && consentEnabled && choice?.analytics === true
+            && choice?.marketing === true && choice?.userProvidedData === true;
+    }
 
     function openSettings() {
         if (!(dialog instanceof HTMLDialogElement)) {
@@ -166,6 +185,7 @@
         const current = parseConsent() || {analytics: false, marketing: false};
         analyticsInput.checked = current.analytics;
         marketingInput.checked = current.marketing;
+        syncProvidedDataControls(current);
         returnFocus = document.activeElement;
         dialog.showModal();
         analyticsInput.focus();
@@ -178,8 +198,9 @@
         }
     }
 
-    function choose(analytics, marketing) {
-        const choice = writeConsent({analytics, marketing});
+    function choose(analytics, marketing, userProvidedData = false) {
+        const choice = writeConsent({analytics, marketing, userProvidedData});
+        syncProvidedDataControls(choice);
         applyConsent(choice, true);
         if (banner) {
             banner.hidden = true;
@@ -192,7 +213,8 @@
     });
     banner?.querySelector("[data-consent-accept]")?.addEventListener(
         "click",
-        () => choose(true, true),
+        // Accepting cookies is not consent to share first-party identity data.
+        () => choose(true, true, parseConsent()?.userProvidedData === true),
     );
     banner?.querySelector("[data-consent-reject]")?.addEventListener(
         "click",
@@ -205,8 +227,17 @@
     dialog?.querySelector("[data-consent-close]")?.addEventListener("click", closeSettings);
     dialog?.querySelector("[data-consent-save]")?.addEventListener(
         "click",
-        () => choose(analyticsInput.checked, marketingInput.checked),
+        () => choose(analyticsInput.checked, marketingInput.checked,
+            dialogProvidedDataInput?.checked === true),
     );
+    providedDataInputs.filter((input) => input !== dialogProvidedDataInput).forEach((input) => {
+        input.addEventListener("change", () => {
+            const current = parseConsent() || {analytics: false, marketing: false};
+            const choice = writeConsent({...current, userProvidedData: input.checked === true});
+            syncProvidedDataControls(choice);
+            applyConsent(choice, true);
+        });
+    });
     dialog?.addEventListener("cancel", (event) => {
         event.preventDefault();
         closeSettings();
@@ -228,10 +259,13 @@
     });
 
     const stored = parseConsent();
+    syncProvidedDataControls(stored);
     if (stored) {
         applyConsent(stored, false);
     } else if (consentEnabled && banner) {
         banner.hidden = false;
     }
-    window.LSAConsent = {applyConsent, loadPurchaseTracker, parseConsent, openSettings};
+    window.LSAConsent = {
+        applyConsent, loadPurchaseTracker, parseConsent, openSettings, isUserProvidedDataAllowed,
+    };
 }());

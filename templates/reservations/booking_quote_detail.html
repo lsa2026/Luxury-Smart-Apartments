@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% load i18n l10n presentation currency static %}
 {% block extra_head %}
+{% if quote_is_usable and google_config.gtm_enabled and google_config.ga4_enabled %}
+<script src="{% static 'js/user-provided-data.js' %}?v=1" defer></script>
+{% endif %}
 {% if address_places_enabled and quote_is_usable %}
 <link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">
 <script type="module" src="{% static 'js/checkout-address.js' %}"></script>
@@ -143,7 +146,7 @@
                             <path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
                         </svg>
                     </span>
-                    <p>{% trans "Your details are protected and are used only to prepare this booking request at this stage." %}</p>
+                    <p>{% if current_language_code == "ar" %}بياناتك محمية وتُستخدم لإعداد الحجز. مشاركة بصمة البريد مع Google اختيارية وتتطلب موافقة مستقلة أدناه.{% elif current_language_code == "fr" %}Vos informations sont protégées et servent à préparer la réservation. Le partage de l’empreinte de votre e-mail avec Google est facultatif et nécessite un consentement distinct ci-dessous.{% else %}Your details are protected and used to prepare your booking. Sharing your email fingerprint with Google is optional and requires the separate consent below.{% endif %}</p>
                 </div>
 
                 {% if quote_is_usable %}
@@ -152,6 +155,7 @@
                     method="post"
                     action="{% url 'reservations:guest_details' quote_reference %}"
                     data-guest-journey
+                    data-upd-guest-form
                     data-draft-form="guest-details"
                     data-draft-server-bound="{{ guest_form.is_bound|yesno:'true,false' }}"
                     data-initial-step="{{ guest_form_initial_step }}"
@@ -218,6 +222,15 @@
                                 {% if guest_form.guest_phone.help_text %}<small>{{ guest_form.guest_phone.help_text }}</small>{% endif %}
                             </div>
                         </div>
+
+                        {% if google_config.gtm_enabled and google_config.ga4_enabled %}
+                        <div class="quote-review__privacy-note">
+                            <div>
+                                {% include "includes/user_provided_data_choice.html" %}
+                                <button type="button" class="button button--secondary" data-consent-settings>{% trans "Cookie settings" %}</button>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <details class="guest-journey__optional"{% if guest_form.special_requests.errors or guest_form.marketing_consent.errors %} open{% endif %}>
                             <summary>

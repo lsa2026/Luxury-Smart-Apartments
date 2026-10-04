@@ -1,0 +1,15 @@
+<label class="consent-choice">
+    <input type="checkbox" data-consent-upd>
+    <span>
+        {% if current_language_code == "ar" %}
+        <strong>مطابقة البريد لتحسين القياس — اختياري</strong>
+        <small>أوافق على إرسال بصمة SHA-256 لبريدي الإلكتروني إلى Google لربط زياراتي وتحسين قياس التحويلات والتقارير، بما يشمل حساب Google Ads المرتبط. لا يُرسل اسمي أو هاتفي أو عنواني عبر هذه الميزة. يلزم أيضًا تفعيل التحليل والقياس الإعلاني في إعدادات الكوكيز. الرفض لا يؤثر على الحجز، ويمكنني سحب الموافقة من إعدادات الكوكيز.</small>
+        {% elif current_language_code == "fr" %}
+        <strong>Correspondance de l’e-mail pour la mesure — facultatif</strong>
+        <small>J’accepte l’envoi d’une empreinte SHA-256 de mon e-mail à Google pour associer mes visites et améliorer la mesure des conversions et les rapports, y compris dans le compte Google Ads associé. Cette fonctionnalité ne transmet ni mon nom, ni mon téléphone, ni mon adresse. Les options d’analyse et de mesure publicitaire doivent également être activées dans les paramètres des cookies. Le refus n’affecte pas la réservation ; je peux retirer mon consentement dans ces paramètres.</small>
+        {% else %}
+        <strong>Email matching for measurement — optional</strong>
+        <small>I agree to share a SHA-256 fingerprint of my email with Google to associate my visits and improve conversion measurement and reporting, including the linked Google Ads account. This feature does not send my name, phone or address. Analytics and advertising measurement must also be enabled in cookie settings. Refusing does not affect booking, and I can withdraw consent in cookie settings.</small>
+        {% endif %}
+    </span>
+</label>
