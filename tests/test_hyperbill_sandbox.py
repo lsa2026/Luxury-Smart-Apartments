@@ -395,7 +395,7 @@ def test_poller_refuses_production_even_without_invoices():
 
 def test_uat_supervisor_only_launches_web_and_hyperbill_poller():
     with (
-        override_settings(REDIS_URL="redis://synthetic", HYPERBILL_RECONCILIATION_ENABLED=False),
+        override_settings(CACHE_URL="redis://synthetic", REDIS_URL="", HYPERBILL_RECONCILIATION_ENABLED=False),
         patch("apps.payments.management.commands.run_hyperbill_uat.sys.platform", "linux"),
         patch.dict("os.environ", {"PORT": "10000"}),
         patch("apps.payments.management.commands.run_hyperbill_uat.signal.signal"),
@@ -416,7 +416,7 @@ def test_uat_supervisor_only_launches_web_and_hyperbill_poller():
 
 def test_uat_supervisor_rejects_generic_queue_dispatch():
     with (
-        override_settings(REDIS_URL="redis://synthetic", HYPERBILL_RECONCILIATION_ENABLED=True),
+        override_settings(CACHE_URL="redis://synthetic", HYPERBILL_RECONCILIATION_ENABLED=True),
         patch("apps.payments.management.commands.run_hyperbill_uat.sys.platform", "linux"),
     ):
         with pytest.raises(CommandError, match="celery_dispatch_disabled"):

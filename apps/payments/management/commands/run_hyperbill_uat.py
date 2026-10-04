@@ -20,7 +20,7 @@ class Command(BaseCommand):
             require_sandbox()
         except HyperBillError as exc:
             raise CommandError(str(exc)) from None
-        if sys.platform != "linux" or not settings.REDIS_URL:
+        if sys.platform != "linux" or not settings.CACHE_URL:
             raise CommandError("hyperbill_uat_linux_and_shared_cache_required")
         if settings.HYPERBILL_RECONCILIATION_ENABLED:
             raise CommandError("hyperbill_uat_poller_requires_celery_dispatch_disabled")
