@@ -188,6 +188,19 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     """The single owner workspace for paid, awaiting-payment, and cancelled stays."""
 
     _require_owner(request)
+    if request.method == "POST" and request.POST.get("action") == "check_hyperbill_connection":
+        from apps.payments.hyperbill import HyperBillClient, HyperBillError
+
+        try:
+            with HyperBillClient() as client:
+                client.check_connection()
+            messages.success(
+                request,
+                "نجح تسجيل الدخول عبر HyperBill API التجريبي. لم تُنشأ فاتورة أو تُرسل رسالة.",
+            )
+        except HyperBillError as exc:
+            messages.error(request, f"تعذر اتصال HyperBill التجريبي ({exc}). لم تُنشأ فاتورة.")
+        return redirect("notifications:booking_list")
     query = request.GET.get("q", "").strip()
     successful_original_payment = PaymentAttempt.objects.filter(
         booking_intent_id=OuterRef("booking_intent_id"),
@@ -238,7 +251,12 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "admin/reservations/booking_list.html",
-        {"title": "إدارة الحجوزات", "bookings": bookings, "query": query},
+        {
+            "title": "إدارة الحجوزات",
+            "bookings": bookings,
+            "query": query,
+            "hyperbill_enabled": settings.HYPERBILL_ENABLED,
+        },
     )
 
 
@@ -523,6 +541,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "final_price_form": final_price_form,
             "final_price_confirmed": final_price_confirmed,
             "settlement": settlement,
+            "hyperbill_enabled": settings.HYPERBILL_ENABLED,
+            "hyperbill_invoice": getattr(reservation, "hyperbill_invoice", None),
         },
     )
 
@@ -636,6 +656,40 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                         ),
                         metadata={"status": "awaiting_payment"},
                     )
+                if settings.HYPERBILL_ENABLED:
+                    from apps.payments.hyperbill import HyperBillError, create_guest_payment_link
+
+                    try:
+                        outcome = create_guest_payment_link(reservation_id=created.reservation.pk)
+                        code = outcome.code
+                    except HyperBillError as exc:
+                        code = str(exc)
+                    except Exception:
+                        logger.exception(
+                            "HyperBill needs review for booking %s", created.reservation.pk
+                        )
+                        code = "unexpected_error"
+                    record_audit(
+                        request=request,
+                        action="manual_booking.hyperbill_sandbox",
+                        object_type="ManualBookingDraft",
+                        object_reference=draft.public_reference,
+                        summary="Sandbox guest payment-link workflow; no accounting alert sent.",
+                        metadata={"status": code},
+                    )
+                    if code in {"sent", "already_sent"}:
+                        messages.success(
+                            request,
+                            "الحجز موجود في Hostaway بانتظار الدفع. أُرسل رابط HyperBill التجريبي "
+                            "للضيف عبر واتساب؛ لم يُرسل طلب إلى أسيل أو رسالة مكررة.",
+                        )
+                    else:
+                        messages.error(
+                            request,
+                            "الحجز موجود في Hostaway. رابط الدفع التجريبي يحتاج مراجعة "
+                            f"({code}). لم يُنشأ حجز مكرر. راجع سجل فواتير HyperBill.",
+                        )
+                    return redirect("notifications:booking_list")
                 try:
                     delivery_result = send_manual_payment_link_request(
                         reservation_id=created.reservation.pk,
@@ -789,6 +843,10 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "accounting_whatsapp_name": settings.ACCOUNTING_WHATSAPP_NAME or "المحاسبة",
             "reservation": reservation,
             "accounting_delivery": accounting_delivery,
+            "hyperbill_enabled": settings.HYPERBILL_ENABLED,
+            "hyperbill_invoice": (
+                getattr(reservation, "hyperbill_invoice", None) if reservation else None
+            ),
         },
     )
 

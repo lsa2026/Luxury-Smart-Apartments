@@ -11,6 +11,13 @@
     <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">＋ إنشاء حجز جديد</a>
   </section>
 
+  {% if hyperbill_enabled %}
+  <section class="lsa-panel">
+    <h2>اختبار اتصال HyperBill</h2>
+    <p class="help">فحص تسجيل الدخول فقط، دون إنشاء حجز أو فاتورة أو إرسال WhatsApp.</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="check_hyperbill_connection"><button class="lsa-btn lsa-btn--ghost" type="submit">فحص اتصال API التجريبي</button></form>
+  </section>
+  {% endif %}
   <section class="lsa-panel lsa-booking-list__search">
     <form method="get" class="lsa-inline-form" aria-label="البحث عن حجز">
       <label>البحث عن حجز<input type="search" name="q" value="{{ query }}" placeholder="الاسم أو الجوال أو البريد أو المرجع" autocomplete="off"></label>

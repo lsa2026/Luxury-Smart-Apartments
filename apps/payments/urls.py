@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .hyperbill_views import hyperbill_webhook
 from .views import (
     ApplePayFastAuthorizeView,
     ApplePayFastCreateView,
@@ -15,6 +16,7 @@ from .views import (
 app_name = "payments"
 
 urlpatterns = [
+    path("hyperbill/webhook/<str:secret>/", hyperbill_webhook, name="hyperbill_webhook"),
     path("currency/", CurrencyPreferenceView.as_view(), name="set_currency"),
     path(
         "hyperpay/fast/<str:reference>/create/",

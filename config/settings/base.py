@@ -329,9 +329,7 @@ HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED = strict_bool(
 # production guard prevents an otherwise harmless deployment from returning
 # real money before the sandbox flow has been accepted.
 HYPERPAY_REFUNDS_ENABLED = strict_bool("HYPERPAY_REFUNDS_ENABLED")
-HYPERPAY_REFUNDS_PRODUCTION_ENABLED = strict_bool(
-    "HYPERPAY_REFUNDS_PRODUCTION_ENABLED"
-)
+HYPERPAY_REFUNDS_PRODUCTION_ENABLED = strict_bool("HYPERPAY_REFUNDS_PRODUCTION_ENABLED")
 HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
     "HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS", default=86400
 )
@@ -347,9 +345,8 @@ HYPERPAY_ALLOWED_BRANDS = tuple(
 )
 # The guest-data-free Apple Pay journey is experimental and cannot be enabled
 # on the production payment connection by a stale Render environment value.
-APPLE_PAY_FAST_CHECKOUT_ENABLED = (
-    HYPERPAY_ENVIRONMENT == "test"
-    and strict_bool("APPLE_PAY_FAST_CHECKOUT_ENABLED")
+APPLE_PAY_FAST_CHECKOUT_ENABLED = HYPERPAY_ENVIRONMENT == "test" and strict_bool(
+    "APPLE_PAY_FAST_CHECKOUT_ENABLED"
 )
 APPLE_PAY_DOMAIN_ASSOCIATION_FILE = env(
     "APPLE_PAY_DOMAIN_ASSOCIATION_FILE",
@@ -584,13 +581,35 @@ ACCOUNTING_WHATSAPP_NUMBER = env("ACCOUNTING_WHATSAPP_NUMBER", default="").strip
 # deployment has the instance credentials; the public WhatsApp support button
 # never uses these values.
 ULTRAMSG_ENABLED = strict_bool("ULTRAMSG_ENABLED")
-ULTRAMSG_API_BASE_URL = env(
-    "ULTRAMSG_API_BASE_URL", default="https://api.ultramsg.com"
-).rstrip("/")
+ULTRAMSG_API_BASE_URL = env("ULTRAMSG_API_BASE_URL", default="https://api.ultramsg.com").rstrip("/")
 ULTRAMSG_INSTANCE_ID = env("ULTRAMSG_INSTANCE_ID", default="").strip()
 ULTRAMSG_TOKEN = env("ULTRAMSG_TOKEN", default="").strip()
 ULTRAMSG_CONNECT_TIMEOUT = 5.0
 ULTRAMSG_READ_TIMEOUT = 20.0
+# Isolated sandbox rollout; production/public checkout stays unchanged.
+HYPERBILL_ENABLED = strict_bool("HYPERBILL_ENABLED")
+HYPERBILL_BASE_URL = env(
+    "HYPERBILL_BASE_URL", default="https://hyperbill-sandbox.hyperpay.com"
+).rstrip("/")
+HYPERBILL_EMAIL = env("HYPERBILL_EMAIL", default="").strip()
+HYPERBILL_PASSWORD = env("HYPERBILL_PASSWORD", default="")
+HYPERBILL_WEBHOOK_SECRET = env("HYPERBILL_WEBHOOK_SECRET", default="")
+HYPERBILL_WHATSAPP_ALLOWED_NUMBERS = env.list("HYPERBILL_WHATSAPP_ALLOWED_NUMBERS", default=[])
+HYPERBILL_RECONCILIATION_ENABLED = strict_bool("HYPERBILL_RECONCILIATION_ENABLED")
+if HYPERBILL_ENABLED and (
+    HYPERPAY_ENVIRONMENT != "test"
+    or HYPERBILL_BASE_URL != "https://hyperbill-sandbox.hyperpay.com"
+    or SITE_BASE_URL != "https://checkout-uat-v2.onrender.com"
+    or not HYPERBILL_EMAIL
+    or not HYPERBILL_PASSWORD
+    or len(HYPERBILL_WEBHOOK_SECRET) < 32
+):
+    raise ImproperlyConfigured("HyperBill requires isolated UAT settings and sandbox credentials.")
+if HYPERBILL_ENABLED and HYPERBILL_RECONCILIATION_ENABLED:
+    CELERY_BEAT_SCHEDULE["hyperbill-sandbox-reconciliation"] = {
+        "task": "apps.payments.hyperbill_tasks.reconcile_hyperbill_task",
+        "schedule": 60,
+    }
 if ULTRAMSG_ENABLED:
     parsed_ultramsg_url = urlparse(ULTRAMSG_API_BASE_URL)
     if (
