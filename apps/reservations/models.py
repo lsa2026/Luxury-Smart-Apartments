@@ -165,6 +165,14 @@ class ManualBookingDraft(models.Model):
         MANUAL_OVERRIDE = "manual_override", _("Manual price adjustment")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sama_request_id = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    sama_request_fingerprint = models.CharField(
+        max_length=64, blank=True, editable=False, db_default=""
+    )
+    sama_confirmation_started_at = models.DateTimeField(null=True, blank=True, editable=False)
+    sama_accounting_result = models.CharField(
+        max_length=64, blank=True, editable=False, db_default=""
+    )
     public_reference = models.CharField(
         max_length=32,
         unique=True,

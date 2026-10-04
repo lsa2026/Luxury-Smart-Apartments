@@ -111,6 +111,7 @@ def _available_manual_properties(
     *,
     check_in: date,
     check_out: date,
+    guests: int = 1,
 ) -> list[dict[str, str | int]]:
     """Return live, priced offers for the date-first owner flow.
 
@@ -132,7 +133,7 @@ def _available_manual_properties(
                     property=property_obj,
                     check_in=check_in,
                     check_out=check_out,
-                    guests=1,
+                    guests=guests,
                 ),
                 bypass_cache=False,
             )
@@ -160,9 +161,10 @@ def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
     try:
         check_in = date.fromisoformat(request.GET["check_in"])
         check_out = date.fromisoformat(request.GET["check_out"])
+        guests = int(request.GET.get("guests", "1"))
     except (KeyError, TypeError, ValueError):
         return JsonResponse({"detail": "invalid_stay"}, status=400)
-    if check_in < timezone.localdate() or check_out <= check_in:
+    if check_in < timezone.localdate() or check_out <= check_in or not 1 <= guests <= 20:
         return JsonResponse({"detail": "invalid_stay"}, status=400)
 
     return JsonResponse(
@@ -170,6 +172,7 @@ def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
             "properties": _available_manual_properties(
                 check_in=check_in,
                 check_out=check_out,
+                guests=guests,
             )
         }
     )
@@ -549,7 +552,7 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
                 property_obj=form.cleaned_data["property"],
                 check_in=form.cleaned_data["check_in"],
                 check_out=form.cleaned_data["check_out"],
-                guests=1,
+                guests=form.cleaned_data["guests"],
                 actor=request.user,
             )
             if creation.draft is not None:

@@ -50,6 +50,10 @@ services:
       --access-logfile -
       --error-logfile -
     envVars:
+      - key: SAMA_BOOKING_ENABLED
+        value: "false"
+      - key: SAMA_BOOKING_KEY_SHA256
+        sync: false
       - key: PYTHON_VERSION
         value: "3.13.5"
       - key: DJANGO_SETTINGS_MODULE

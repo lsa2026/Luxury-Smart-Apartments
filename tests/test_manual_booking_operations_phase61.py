@@ -188,6 +188,7 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
             "property": property_obj.pk,
             "check_in": available.quote.check_in.isoformat(),
             "check_out": available.quote.check_out.isoformat(),
+            "guests": 3,
         },
     )
 
@@ -196,7 +197,7 @@ def test_owner_create_screen_records_a_privacy_safe_audit_event(monkeypatch):
     assert audit.actor_user == actor
     assert audit.object_reference == creation.draft.public_reference
     assert "guest" not in audit.summary.casefold()
-    assert captured["guests"] == 1
+    assert captured["guests"] == 3
 
 
 @override_settings(
@@ -300,7 +301,8 @@ def test_manual_booking_create_screen_exposes_live_calendar_for_each_property():
     assert "data-luxury-calendar" in content
     assert "data-calendar-property-select" in content
     assert "data-manual-property-filter" in content
-    assert "عدد الضيوف" not in content
+    assert "عدد الضيوف" in content
+    assert 'name="guests"' in content
     assert "data-manual-property-results" in content
 
 

@@ -961,6 +961,7 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
     const propertyInput = form.querySelector("[data-calendar-property-select]");
     const arrivalInput = form.querySelector("input[name='check_in']");
     const departureInput = form.querySelector("input[name='check_out']");
+    const guestsInput = form.querySelector("input[name='guests']");
     const status = form.querySelector("[data-manual-property-status]");
     const results = form.querySelector("[data-manual-property-results]");
     const submitButton = form.querySelector(".lsa-manual-booking-form__submit");
@@ -1070,6 +1071,7 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
         const url = new URL(endpoint, window.location.origin);
         url.searchParams.set("check_in", arrivalInput.value);
         url.searchParams.set("check_out", departureInput.value);
+        url.searchParams.set("guests", guestsInput?.value || "1");
 
         try {
             const response = await fetch(url, { credentials: "same-origin", headers: { Accept: "application/json" } });
@@ -1102,6 +1104,7 @@ document.querySelectorAll("[data-manual-property-filter]").forEach((form) => {
         setPlaceholder("اختر التواريخ أولًا");
     }
     [arrivalInput, departureInput].forEach((input) => input.addEventListener("change", refreshAvailableProperties));
+    guestsInput?.addEventListener("change", refreshAvailableProperties);
     propertyInput.addEventListener("change", () => {
         selectProperty(propertyInput.value);
     });

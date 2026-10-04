@@ -17,6 +17,8 @@ env = environ.Env(
 environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
+SAMA_BOOKING_ENABLED = env.bool("SAMA_BOOKING_ENABLED", default=False)
+SAMA_BOOKING_KEY_SHA256 = env("SAMA_BOOKING_KEY_SHA256", default="")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 

@@ -21,6 +21,9 @@
       {% csrf_token %}
       {{ form.non_field_errors }}
       <div class="lsa-manual-booking-form__grid">
+        <div class="form-row">
+          {{ form.guests.label_tag }}{{ form.guests }}{{ form.guests.errors }}
+        </div>
         {% for field in form %}
           {% if field.name == "check_in" or field.name == "check_out" %}
           <div class="form-row lsa-manual-booking-form__date">
