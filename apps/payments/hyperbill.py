@@ -28,6 +28,21 @@ class HyperBillError(Exception):
     """Static codes only; no provider payload, password, token or PII."""
 
 
+def _login_rejection(response):
+    """Recognize only documented login failures; never expose response contents."""
+    try:
+        document = response.json()
+        errors = document.get("errors", {}) if isinstance(document, dict) else {}
+        detail = str(errors.get("email", "")).lower() if isinstance(errors, dict) else ""
+    except ValueError:
+        detail = ""
+    if "wrong passowrd" in detail or "wrong password" in detail:
+        return "hyperbill_login_wrong_password"
+    if "unable to find user" in detail:
+        return "hyperbill_login_user_not_found"
+    return f"hyperbill_login_rejected_http_{response.status_code}"
+
+
 def require_sandbox():
     if (
         not settings.HYPERBILL_ENABLED
@@ -87,12 +102,16 @@ class HyperBillClient:
         if response.status_code >= 500:
             raise HyperBillError("hyperbill_outcome_unknown")
         if response.status_code >= 400 or response.is_redirect:
+            if path == "/api/login":
+                raise HyperBillError(_login_rejection(response))
             raise HyperBillError("hyperbill_request_rejected")
         try:
             document = response.json()
         except ValueError:
             raise HyperBillError("hyperbill_invalid_response") from None
         if not isinstance(document, dict) or document.get("status") is not True:
+            if path == "/api/login":
+                raise HyperBillError(_login_rejection(response))
             raise HyperBillError("hyperbill_request_rejected")
         return document
 

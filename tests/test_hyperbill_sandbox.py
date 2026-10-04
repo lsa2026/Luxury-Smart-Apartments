@@ -425,3 +425,23 @@ def test_deployment_connection_check_never_creates_an_invoice():
     api.return_value.__enter__.return_value.create_invoice.assert_not_called()
     assert "HYPERBILL_SANDBOX_API_CONNECTED" in output.getvalue()
     assert HyperBillInvoice.objects.count() == 0
+
+
+@pytest.mark.parametrize(
+    "detail,code",
+    [
+        ("Wrong passowrd", "hyperbill_login_wrong_password"),
+        ("Unable to find user", "hyperbill_login_user_not_found"),
+        ("unknown synthetic private detail", "hyperbill_login_rejected_http_400"),
+    ],
+)
+def test_login_diagnostics_expose_only_documented_static_codes(detail, code):
+    def handler(request):
+        return httpx.Response(400, json={"status": False, "errors": {"email": detail}})
+
+    with httpx.Client(
+        base_url=UAT["HYPERBILL_BASE_URL"], transport=httpx.MockTransport(handler)
+    ) as http:
+        with HyperBillClient(http=http) as api, pytest.raises(HyperBillError) as error:
+            api.check_connection()
+    assert str(error.value) == code
