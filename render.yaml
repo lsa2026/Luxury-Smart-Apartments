@@ -51,7 +51,7 @@ services:
       --error-logfile -
     envVars:
       - key: SAMA_BOOKING_ENABLED
-        value: "false"
+        sync: false
       - key: SAMA_BOOKING_KEY_SHA256
         sync: false
       - key: PYTHON_VERSION
