@@ -53,6 +53,26 @@ def calendar_factory(free_from, **changes):
     return client, Mock(return_value=client)
 
 
+def test_calendar_provider_with_short_window_projection_keeps_long_horizon(context):
+    p, _, _, _ = context
+    client, factory = calendar_factory(date(2027, 5, 1))
+    original = client.get_listing_calendar.side_effect
+
+    def short_response(*args, **kwargs):
+        document = original(*args, **kwargs)
+        return SimpleNamespace(days=document.days[:91])
+
+    client.get_listing_calendar.side_effect = short_response
+    result = next_service.next_availability(
+        p, "2026-10-10", "2026-10-13", 2, client_factory=factory
+    )
+    assert result["next_stay"]["check_in"] == "2027-05-01"
+    assert all(
+        (c.kwargs["end_date"] - c.kwargs["start_date"]).days <= 90
+        for c in client.get_listing_calendar.call_args_list
+    )
+
+
 def test_long_booking_next_whole_stay_not_ninety_day_cutoff(context):
     p, _, _, _ = context
     free = date(2027, 5, 1)
@@ -62,7 +82,7 @@ def test_long_booking_next_whole_stay_not_ninety_day_cutoff(context):
     )
     assert result["next_stay"] == {"check_in": "2027-05-01", "check_out": "2027-05-04", "nights": 3}
     assert result["requested_reason"] == "unavailable_dates"
-    assert client.get_listing_calendar.call_count == 1
+    assert client.get_listing_calendar.call_count == 3
     assert Reservation.objects.count() == 0
 
 
@@ -136,7 +156,7 @@ def test_calendar_windows_are_complete_bounded_and_cross_boundary(context):
         p, "2026-10-10", "2026-10-13", 2, client_factory=factory
     )
     assert result["next_stay"]["check_in"] == free.isoformat()
-    assert client.get_listing_calendar.call_count == 2
+    assert client.get_listing_calendar.call_count == 5
     for call in client.get_listing_calendar.call_args_list:
         assert (call.kwargs["end_date"] - call.kwargs["start_date"]).days <= 366
     cache.clear()
@@ -237,7 +257,7 @@ def test_earlier_long_minimum_is_resolved_before_later_short_stay(context):
     client.get_listing_calendar.side_effect = restricted
     result = next_service.next_availability(p, None, None, None, client_factory=factory)
     assert result["next_stay"]["check_in"] == "2026-10-04"
-    assert result["next_stay"]["nights"] == 366 and client.get_listing_calendar.call_count == 2
+    assert result["next_stay"]["nights"] == 366 and client.get_listing_calendar.call_count == 5
 
 
 def test_next_calendar_cannot_return_success_after_deadline(context, monkeypatch):

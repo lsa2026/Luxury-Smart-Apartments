@@ -58,7 +58,7 @@ def next_availability(property_obj, check_in, check_out, guests, *, client_facto
                 if required > last_day:
                     raise HostawayResponseError("Calendar search bound exceeded.")
                 window_end = max(
-                    cursor + timedelta(days=1), min(cursor + timedelta(days=365), last_day)
+                    cursor + timedelta(days=1), min(cursor + timedelta(days=90), last_day)
                 )
                 document = client.get_listing_calendar(
                     property_obj.hostaway_listing_id,
