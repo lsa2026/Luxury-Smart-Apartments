@@ -727,6 +727,7 @@ def _management_context(
     )
     context: dict[str, object] = {
         "reservation": reservation,
+        "legal_ui": UI[document_language(reservation.booking_intent.language)],
         "cover_image": cover_image,
         "masked_email": mask_email(reservation.booking_intent.guest_email),
         "modification_requests": reservation.modification_requests.order_by("-requested_at")[:6],

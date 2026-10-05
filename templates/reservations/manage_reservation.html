@@ -457,4 +457,16 @@
         {% endif %}
     </section>
 </section>
+{% if reservation.booking_intent.legal_acceptance.documents %}
+<section class="section container narrow">
+    <h2>{{ legal_ui.saved }}</h2>
+    <p>{{ legal_ui.accepted_at }}: <bdi dir="ltr">{{ reservation.booking_intent.legal_acceptance.accepted_at }}</bdi></p>
+    {% for key, document in reservation.booking_intent.legal_acceptance.documents.items %}
+    <details class="prose-card rich-copy" lang="{{ document.language }}" dir="{% if document.language == 'ar' %}rtl{% else %}ltr{% endif %}">
+        <summary>{{ document.title }} — <bdi dir="ltr">{{ document.version }}</bdi></summary>
+        <div class="structured-copy">{{ document.body|structured_text }}</div>
+    </details>
+    {% endfor %}
+</section>
+{% endif %}
 {% endblock %}

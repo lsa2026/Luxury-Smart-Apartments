@@ -161,3 +161,28 @@ def test_legacy_property_text_cannot_reintroduce_permission_for_pets(country):
         assert "Pets are prohibited" in rules
     apartment.refresh_from_db()
     assert apartment.house_rules_en == "Pets are welcome."  # Source preserved, not erased.
+
+
+def test_accepted_copy_stays_available_after_secure_booking_recovery():
+    from apps.reservations.access_tokens import make_access_link_token
+    from tests.test_account_booking_claim import make_reservation
+
+    reservation = make_reservation("LSA-DOCUMENT-COPY")
+    intent = reservation.booking_intent
+    documents = guest_documents("fr")
+    # Saved historic evidence must win over today's public copy.
+    documents["terms"]["body"] = "Accepted historical conditions."
+    intent.language = "fr"
+    intent.legal_acceptance = {"documents": documents, "accepted_at": "2026-10-05T05:00:00Z"}
+    intent.save(update_fields=["language", "legal_acceptance"])
+    client = Client()
+    manage_url = f"/reservations/manage/{reservation.public_reference}/"
+    assert client.get(manage_url).status_code == 404
+    token = make_access_link_token(reservation.public_reference, "guest@example.invalid")
+    assert client.get(f"/reservations/manage/access/{token}/").status_code == 302
+    response = client.get(manage_url)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Accepted historical conditions." in content
+    assert 'lang="fr"' in content
+    assert "no-store" in response["Cache-Control"]
