@@ -49,10 +49,11 @@
             {% endwith %}
         </div>
         {% endif %}
-        {% if site_setting.instagram_url or site_setting.facebook_url %}
+        {% if social_links %}
         <nav class="contact-social" aria-label="{% trans 'Follow us on social media' %}">
-            {% if site_setting.instagram_url %}<a href="{{ site_setting.instagram_url }}" rel="noopener noreferrer">Instagram</a>{% endif %}
-            {% if site_setting.facebook_url %}<a href="{{ site_setting.facebook_url }}" rel="noopener noreferrer">Facebook</a>{% endif %}
+            {% for link in social_links %}
+            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{% include link.icon %}<span>{{ link.name }}</span></a>
+            {% endfor %}
         </nav>
         {% endif %}
         <div class="contact-note">

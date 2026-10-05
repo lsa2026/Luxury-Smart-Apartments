@@ -118,18 +118,20 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     )
     integrations_enabled = settings.GOOGLE_INTEGRATIONS_ENABLED and public_marketing_page
     consent = _consent_from_cookie(request)
-    same_as = []
-    if site_setting is not None:
-        same_as = [
-            value
-            for value in (
-                site_setting.instagram_url,
-                site_setting.facebook_url,
-                site_setting.x_url,
-                site_setting.linkedin_url,
-            )
-            if value
-        ]
+    social_links = [
+        {"name": name, "url": getattr(site_setting, field), "icon": f"includes/social/{icon}.svg"}
+        for field, name, icon in (
+            ("instagram_url", "Instagram", "instagram"),
+            ("facebook_url", "Facebook", "facebook"),
+            ("tiktok_url", "TikTok", "tiktok"),
+            ("x_url", "X", "twitter-x"),
+            ("youtube_url", "YouTube", "youtube"),
+            ("linkedin_url", "LinkedIn", "linkedin"),
+            ("snapchat_url", "Snapchat", "snapchat"),
+        )
+        if site_setting is not None and getattr(site_setting, field)
+    ]
+    same_as = [link["url"] for link in social_links]
     organization_data: dict[str, object] = {
         "@context": "https://schema.org",
         "@type": "Organization",
@@ -150,6 +152,7 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     )
     return {
         "site_setting": site_setting,
+        "social_links": social_links,
         "footer_cities": footer_cities,
         "current_year": datetime.now(tz=timezone.get_current_timezone()).year,
         "canonical_url": (f"{settings.SITE_CANONICAL_URL}{canonical_path}{canonical_suffix}"),
