@@ -47,6 +47,15 @@ def test_documents_have_native_copy_and_complete_numbered_terms(language, pet_ru
         assert document["language"] == language
         assert document["sha256"] == hashlib.sha256(document["body"].encode()).hexdigest()
         assert "[" not in document["body"]  # No draft placeholders published.
+    for removed_text in (
+        "خدمات الخرائط واقتراحات العناوين",
+        "اقتراح عنوان الفوترة",
+        "Map services and address suggestions",
+        "Billing-address suggestions",
+        "Les cartes et suggestions d’adresses",
+        "suggestions d’adresse de facturation",
+    ):
+        assert removed_text not in documents["terms"]["body"]
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
