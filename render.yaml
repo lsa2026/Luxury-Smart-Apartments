@@ -362,10 +362,11 @@ services:
           name: luxury-smart-apartments
           envVarKey: HOSTAWAY_API_SECRET
       - key: HOSTAWAY_ACCESS_TOKEN
-        fromService:
-          type: web
-          name: luxury-smart-apartments
-          envVarKey: HOSTAWAY_ACCESS_TOKEN
+        # This optional web secret may be absent. Referencing it with
+        # fromService prevents the whole Blueprint from syncing. Background
+        # processes use the shared-cache OAuth token provider instead, with
+        # the account ID and API secret above; never seed an expired token.
+        value: ""
       - key: HOSTAWAY_AUTO_SYNC_ENABLED
         value: "False"
       - key: HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED
