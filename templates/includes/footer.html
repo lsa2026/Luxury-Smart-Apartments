@@ -107,13 +107,12 @@
     <div class="footer-lower">
         <div class="container footer-bottom">
             <p>© {{ current_year }} Luxury Smart Apartments. {% trans "All rights reserved." %}</p>
-            {% if site_setting.instagram_url or site_setting.facebook_url or site_setting.whatsapp_url or site_setting.x_url or site_setting.linkedin_url %}
+            {% if social_links or whatsapp_contact.url %}
             <nav class="footer-social" aria-label="{% trans 'Social media' %}">
-                {% if site_setting.instagram_url %}<a href="{{ site_setting.instagram_url }}" rel="noopener noreferrer" aria-label="Instagram"><span aria-hidden="true">ig</span></a>{% endif %}
-                {% if site_setting.facebook_url %}<a href="{{ site_setting.facebook_url }}" rel="noopener noreferrer" aria-label="Facebook"><span aria-hidden="true">f</span></a>{% endif %}
-                {% if site_setting.whatsapp_url %}<a href="{{ site_setting.whatsapp_url }}" rel="noopener noreferrer" aria-label="WhatsApp" data-analytics-event="whatsapp_click" data-analytics-lead-source="footer_social" data-analytics-contact-placement="footer_social" data-analytics-language="{{ current_language_code }}"><span aria-hidden="true">wa</span></a>{% endif %}
-                {% if site_setting.x_url %}<a href="{{ site_setting.x_url }}" rel="noopener noreferrer" aria-label="X"><span aria-hidden="true">x</span></a>{% endif %}
-                {% if site_setting.linkedin_url %}<a href="{{ site_setting.linkedin_url }}" rel="noopener noreferrer" aria-label="LinkedIn"><span aria-hidden="true">in</span></a>{% endif %}
+                {% for link in social_links %}
+                <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ link.name }}" title="{{ link.name }}">{% include link.icon %}</a>
+                {% endfor %}
+                {% if whatsapp_contact.url %}<a href="{{ whatsapp_contact.url }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp" data-analytics-event="whatsapp_click" data-analytics-lead-source="footer_social" data-analytics-contact-placement="footer_social" data-analytics-language="{{ current_language_code }}">{% include 'includes/social/whatsapp.svg' %}</a>{% endif %}
             </nav>
             {% endif %}
         </div>

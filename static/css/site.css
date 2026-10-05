@@ -11347,6 +11347,10 @@ a.contact-channel:hover {
 }
 
 .contact-social a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
     padding: 0.5rem 0.75rem;
     border: 1px solid rgb(155 111 44 / 28%);
     color: #563f18;
@@ -11460,6 +11464,15 @@ a.contact-channel:hover {
 
 .site-footer .footer-social a {
     font-size: 0.65rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+}
+
+.social-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
+    flex-shrink: 0;
 }
 
 .site-footer .footer-bottom {

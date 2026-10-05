@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from django.test import Client
 from django.utils import timezone, translation
+from django.utils.html import strip_tags
 
 from apps.core.templatetags.presentation import (
     localized_property_description,
@@ -158,7 +159,8 @@ def test_property_without_a_trustindex_widget_does_not_show_a_rating() -> None:
     content = Client().get(property_obj.get_absolute_url()).content.decode()
 
     assert "data-trustindex-property-reviews" not in content
-    assert "9.9" not in content
+    # Check displayed text; SVG path coordinates may contain the same number.
+    assert "9.9" not in strip_tags(content)
 
 
 def test_browse_dates_are_reassured_on_the_property_page() -> None:
