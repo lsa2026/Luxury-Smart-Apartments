@@ -46,6 +46,8 @@
             // Legacy cookie choices never grant the new, independent opt-in.
             parsed.userProvidedData = parsed.userProvidedData === true
                 && parsed.userProvidedDataVersion === 1;
+            // Existing Google choices are not permission for the new Meta destination.
+            parsed.metaMeasurement = parsed.metaMeasurement === true;
             return parsed;
         } catch {
             return null;
@@ -59,6 +61,7 @@
             marketing: Boolean(choice.marketing),
             userProvidedData: choice.userProvidedData === true,
             userProvidedDataVersion: 1,
+            metaMeasurement: choice.marketing === true && choice.metaMeasurement === true,
             timestamp: new Date().toISOString(),
         };
         const attributes = [
@@ -199,7 +202,8 @@
     }
 
     function choose(analytics, marketing, userProvidedData = false) {
-        const choice = writeConsent({analytics, marketing, userProvidedData});
+        const choice = writeConsent({analytics, marketing, userProvidedData,
+            metaMeasurement: marketing});
         syncProvidedDataControls(choice);
         applyConsent(choice, true);
         if (banner) {

@@ -101,7 +101,7 @@ jobs:
         run: node --test tests/checkout-address.test.cjs tests/guest-draft-country.test.cjs
 
       - name: Test consented GA4 UPD and purchase isolation
-        run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs
+        run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/meta-measurement.test.cjs
 
       - name: Run Ruff lint
         run: ruff check .

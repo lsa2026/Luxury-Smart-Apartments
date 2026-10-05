@@ -222,6 +222,15 @@ class SecurityHeadersMiddleware:
             )
         if google_allowed and settings.GOOGLE_TAG_MANAGER_ENABLED:
             frame_sources.append("https://www.googletagmanager.com")
+            if (
+                request.resolver_match is not None
+                and request.resolver_match.view_name in PUBLIC_LOCALIZED_VIEW_NAMES
+            ):
+                # GTM calls our consent-gated public-page bridge. Never allow the
+                # Meta SDK on payment returns or private reservation/account pages.
+                script_sources.append("https://connect.facebook.net")
+                connect_sources.append("https://www.facebook.com")
+                google_image_sources.append("https://www.facebook.com")
         if google_allowed and settings.GOOGLE_ADS_ENABLED:
             script_sources.extend(
                 [
