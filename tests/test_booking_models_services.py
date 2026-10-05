@@ -9,6 +9,7 @@ from django.core.management import call_command
 from django.test import override_settings
 from django.utils import timezone
 
+from apps.core.guest_documents import documents_digest
 from apps.integrations.hostaway.availability_validators import (
     PriceComponent,
     PriceQuote,
@@ -316,7 +317,8 @@ def test_guest_form_validation_normalization_and_xss() -> None:
             "billing_postcode": "12345",
             "special_requests": "<script>alert(1)</script>Quiet room",
             "terms_accepted": "on",
-            "privacy_accepted": "on",
+            "documents_digest": documents_digest(),
+            "house_rules_accepted": "on",
             "idempotency_key": "x" * 32,
         }
     )
@@ -342,7 +344,8 @@ def test_guest_form_accepts_an_e164_mobile_number_for_any_stay_country() -> None
             "billing_postcode": "40000",
             "special_requests": "",
             "terms_accepted": "on",
-            "privacy_accepted": "on",
+            "documents_digest": documents_digest(),
+            "house_rules_accepted": "on",
             "idempotency_key": "x" * 32,
         },
         default_country_code="MA",
@@ -366,7 +369,8 @@ def test_guest_phone_does_not_depend_on_the_selected_billing_country() -> None:
             "billing_postcode": "12345",
             "special_requests": "",
             "terms_accepted": "on",
-            "privacy_accepted": "on",
+            "documents_digest": documents_digest(),
+            "house_rules_accepted": "on",
             "idempotency_key": "x" * 32,
         },
         default_country_code="MA",
@@ -411,7 +415,8 @@ def test_guest_phone_accepts_numbers_from_any_country(
             "billing_postcode": "12345",
             "special_requests": "",
             "terms_accepted": "on",
-            "privacy_accepted": "on",
+            "documents_digest": documents_digest(),
+            "house_rules_accepted": "on",
             "idempotency_key": "x" * 32,
         },
     )
@@ -447,7 +452,8 @@ def test_guest_phone_rejects_local_or_invalid_phone_numbers(raw_phone: str) -> N
             "billing_postcode": "12345",
             "special_requests": "",
             "terms_accepted": "on",
-            "privacy_accepted": "on",
+            "documents_digest": documents_digest(),
+            "house_rules_accepted": "on",
             "idempotency_key": "x" * 32,
         },
     )
@@ -469,7 +475,8 @@ def test_guest_form_rejects_unknown_billing_country_choice() -> None:
         "billing_postcode": "12345",
         "special_requests": "",
         "terms_accepted": "on",
-        "privacy_accepted": "on",
+        "documents_digest": documents_digest(),
+        "house_rules_accepted": "on",
         "idempotency_key": "x" * 32,
     }
     assert GuestDetailsForm(data).is_valid() is False
@@ -484,7 +491,7 @@ def test_guest_form_rejects_unknown_billing_country_choice() -> None:
         {"guest_first_name": "<b></b>"},
         {"guest_last_name": "<i></i>"},
         {"terms_accepted": ""},
-        {"privacy_accepted": ""},
+        {"house_rules_accepted": ""},
     ],
 )
 def test_guest_form_rejects_invalid_input(overrides: dict[str, str]) -> None:
@@ -500,7 +507,8 @@ def test_guest_form_rejects_invalid_input(overrides: dict[str, str]) -> None:
         "billing_postcode": "12345",
         "special_requests": "",
         "terms_accepted": "on",
-        "privacy_accepted": "on",
+        "documents_digest": documents_digest(),
+        "house_rules_accepted": "on",
         "idempotency_key": "x" * 32,
     }
     data.update(overrides)

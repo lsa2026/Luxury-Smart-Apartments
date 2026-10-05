@@ -1,0 +1,7 @@
+{% extends "core/content_page.html" %}
+{% block document_body %}
+<p>{{ legal_document.intro }}</p>
+<ol class="guest-journey__house-rules-list">
+    {% for rule in legal_document.items %}<li>{{ rule }}</li>{% endfor %}
+</ol>
+{% endblock %}

@@ -324,6 +324,13 @@ def consume_revalidated_quote(
             session_key_hash=session_hash,
             terms_accepted_at=now,
             privacy_accepted_at=now,
+            house_rules_accepted_at=now if guest_data.get("house_rules_accepted") else None,
+            legal_acceptance={
+                **guest_data["legal_acceptance"],
+                "accepted_at": now.isoformat(),
+            }
+            if guest_data.get("legal_acceptance")
+            else {},
             marketing_consent=guest_data.get("marketing_consent", False),
             expires_at=intent_expires_at,
         )

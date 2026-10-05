@@ -4,6 +4,7 @@ import pytest
 from django.conf import settings
 from django.forms import Select, TextInput
 
+from apps.core.guest_documents import documents_digest
 from apps.reservations.booking_forms import GuestDetailsForm
 
 pytestmark = pytest.mark.django_db
@@ -20,7 +21,8 @@ BASE = {
     "billing_postcode": "12345",
     "special_requests": "",
     "terms_accepted": "on",
-    "privacy_accepted": "on",
+    "documents_digest": documents_digest(),
+    "house_rules_accepted": "on",
     "idempotency_key": "x" * 32,
 }
 

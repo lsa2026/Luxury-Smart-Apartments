@@ -229,6 +229,8 @@ class BookingIntentAdmin(ModelAdmin):
         "status",
         "terms_accepted_at",
         "privacy_accepted_at",
+        "house_rules_accepted_at",
+        "legal_acceptance",
         "marketing_consent",
         "expires_at",
         "created_at",

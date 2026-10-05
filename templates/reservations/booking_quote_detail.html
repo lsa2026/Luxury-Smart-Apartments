@@ -312,15 +312,23 @@
                         {% endif %}
 
                         {% url 'core:terms' as terms_url %}
-                        {% url 'core:privacy' as privacy_url %}
+                        {% url 'core:house_rules' as house_rules_url %}
+                        {{ guest_form.documents_digest }}
+                        {% for error in guest_form.documents_digest.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
                         <div class="guest-journey__legal" aria-label="{% trans 'Required agreements' %}">
                             <div class="form-field quote-review__choice{% if guest_form.terms_accepted.errors %} form-field--error{% endif %}">
-                                <label for="{{ guest_form.terms_accepted.id_for_label }}">{{ guest_form.terms_accepted }}<span>{% if not stay_policy.is_empty %}{% blocktrans with url=terms_url %}I accept the <a href="{{ url }}" target="_blank">terms and conditions</a>, including the cancellation policy and house rules shown for this stay.{% endblocktrans %}{% else %}{% blocktrans with url=terms_url %}I accept the <a href="{{ url }}" target="_blank">terms and conditions</a>.{% endblocktrans %}{% endif %}</span></label>
+                                <label for="{{ guest_form.terms_accepted.id_for_label }}">{{ guest_form.terms_accepted }}<span>{{ guest_documents.terms.acceptance }}</span></label>
+                                <a class="text-link" href="{{ terms_url }}" target="_blank" rel="noopener">{{ guest_documents.terms.title }} — {{ legal_ui.read }}</a>
                                 {% for error in guest_form.terms_accepted.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
-                            <div class="form-field quote-review__choice{% if guest_form.privacy_accepted.errors %} form-field--error{% endif %}">
-                                <label for="{{ guest_form.privacy_accepted.id_for_label }}">{{ guest_form.privacy_accepted }}<span>{% blocktrans with url=privacy_url %}I accept the <a href="{{ url }}" target="_blank">privacy policy</a>.{% endblocktrans %}</span></label>
-                                {% for error in guest_form.privacy_accepted.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                            <div class="form-field quote-review__choice{% if guest_form.house_rules_accepted.errors %} form-field--error{% endif %}">
+                                <details class="guest-journey__rules-preview">
+                                    <summary>{{ guest_documents.house_rules.title }}</summary>
+                                    <ol>{% for rule in guest_documents.house_rules.items %}<li>{{ rule }}</li>{% endfor %}</ol>
+                                </details>
+                                <label for="{{ guest_form.house_rules_accepted.id_for_label }}">{{ guest_form.house_rules_accepted }}<span>{{ guest_documents.house_rules.acceptance }}</span></label>
+                                <a class="text-link" href="{{ house_rules_url }}" target="_blank" rel="noopener">{{ guest_documents.house_rules.title }} — {{ legal_ui.read }}</a>
+                                {% for error in guest_form.house_rules_accepted.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
                         </div>
 
