@@ -1,0 +1,7 @@
+{% if current_language_code == "ar" %}
+<p class="help-text">تشمل موافقة التسويق قياس زيارات الصفحات العامة ومشاهدة الشقق لدى Meta (فيسبوك وإنستجرام). يمكنك الرفض أو سحب الموافقة من إعدادات الكوكيز دون التأثير على الحجز.</p>
+{% elif current_language_code == "fr" %}
+<p class="help-text">Le consentement marketing inclut la mesure des visites de pages publiques et des vues des appartements auprès de Meta (Facebook et Instagram). Vous pouvez refuser ou retirer votre consentement dans les paramètres des cookies sans affecter la réservation.</p>
+{% else %}
+<p class="help-text">Marketing consent includes measuring public-page visits and apartment views with Meta (Facebook and Instagram). You can reject or withdraw consent in cookie settings without affecting booking.</p>
+{% endif %}

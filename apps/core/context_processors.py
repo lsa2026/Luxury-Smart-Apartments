@@ -187,6 +187,12 @@ def site_context(request: HttpRequest) -> dict[str, object]:
             "ga4_debug_mode": settings.GOOGLE_ANALYTICS_DEBUG_MODE,
             "consent": consent,
         },
+        "meta_measurement_page_allowed": (
+            integrations_enabled
+            and settings.GOOGLE_TAG_MANAGER_ENABLED
+            and getattr(request, "resolver_match", None) is not None
+            and request.resolver_match.view_name in PUBLIC_LOCALIZED_VIEW_NAMES
+        ),
         "cookie_consent_enabled": settings.COOKIE_CONSENT_ENABLED and public_marketing_page,
         "cookie_consent_version": settings.COOKIE_CONSENT_VERSION,
         "cookie_consent_max_age": settings.COOKIE_CONSENT_MAX_AGE_DAYS * 86400,

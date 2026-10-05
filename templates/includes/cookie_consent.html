@@ -3,6 +3,7 @@
     <div>
         <h2 id="consent-title">{% trans "Your privacy choices" %}</h2>
         <p>{% trans "Essential cookies keep the site working. Analytics and marketing remain off unless you choose otherwise." %}</p>
+        {% include "includes/meta_consent_description.html" %}
         <a href="{% url 'core:cookies' %}">{% trans "Cookie policy" %}</a>
     </div>
     <div class="consent-actions">
@@ -26,6 +27,7 @@
             <input type="checkbox" data-consent-marketing>
             <span><strong>{% trans "Marketing" %}</strong><small>{% trans "Allows advertising measurement when configured." %}</small></span>
         </label>
+        {% include "includes/meta_consent_description.html" %}
         {% if google_config.gtm_enabled and google_config.ga4_enabled %}
         {% include "includes/user_provided_data_choice.html" %}
         {% endif %}

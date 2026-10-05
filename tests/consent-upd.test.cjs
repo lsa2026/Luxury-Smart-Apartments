@@ -70,3 +70,21 @@ test('new permission changes do not modify purchase loader or cookie consent mod
     assert.equal(r.window.LSAConsent.loadPurchaseTracker(), false);
     assert.equal(r.choice().userProvidedData, false);
 });
+
+test('old Google marketing and a Google email opt-in do not grant the new Meta destination', () => {
+    const r = run({version: 1, analytics: true, marketing: true});
+    assert.equal(r.choice().metaMeasurement, false);
+    r.checkoutUpd.checked = true; r.checkoutUpd.listeners.change();
+    assert.equal(r.choice().metaMeasurement, false);
+    assert.equal(r.window.LSAConsent.isUserProvidedDataAllowed(), true);
+});
+
+test('fresh marketing choice grants Meta separately from Google UPD; rejection clears it', () => {
+    const r = run(); r.marketing.checked = true; r.save.listeners.click();
+    assert.equal(r.choice().metaMeasurement, true);
+    assert.equal(r.choice().analytics, false);
+    assert.equal(r.choice().userProvidedData, false);
+    r.reject.listeners.click(); assert.equal(r.choice().metaMeasurement, false);
+    r.accept.listeners.click(); assert.equal(r.choice().metaMeasurement, true);
+    assert.equal(r.choice().userProvidedData, false);
+});
