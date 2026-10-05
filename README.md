@@ -1,5 +1,32 @@
 # Luxury Smart Apartments
 
+## SMA read-only next availability and previous bookings
+
+The existing HTTPS/bearer `sama-booking-agent` identity advertises two additional
+read capabilities: `POST /reservations/sama/next-availability/` and
+`POST /reservations/sama/guest-history/`. No new credential, migration, webhook,
+booking/payment write or financial permission is introduced.
+
+Next availability accepts the visible property slug, optional clear Gregorian
+check-in/check-out dates and optional guest count. It reads complete Hostaway
+calendar windows, uses the existing inventory/stay-rule evaluator, and resolves
+each earlier arrival before suggesting a later one. With no requested duration
+it tests eligible durations in ascending order, including closed-departure
+rules. Searches are limited to 730 arrival days ahead and 366 nights per stay,
+with a bounded runtime. Missing/contradictory/incomplete data is unknown, never
+an invented opening date. The result contains dates only, not a price or hold.
+
+Previous-booking lookup keeps the full international phone in the POST body,
+never a URL. Documented Hostaway cursor pagination is exhausted only on an empty
+page; IDs follow the provider's update-time ordering, not numeric ordering.
+The shared cache retains only phone hashes and public apartment/date/guest-count
+projections, with a short-lived scan lock. Reads have a per-call time/page bound
+and a 10,000-record cumulative ceiling; partial coverage is explicitly labelled
+and can resume within cache lifetime. At most five past booking periods matching
+the exact phone are returned. Names, email, payment data and private arrival
+secrets are excluded. Matching a number proves neither physical residence nor
+identity, and does not authorize a new booking or carry over old consent/prices.
+
 منصة Django عربية لحجز وحدات التأجير اليومي والشهري. تشمل المراحل الحالية
 الأساس الإنتاجي، مزامنة وحدات Hostaway وصورها ومرافقها، طبقة محتوى محلية، ومزامنة
 المراجعات المنشورة من نوع `guest-to-host`، والتحقق اللحظي من التقويم وحساب السعر.
