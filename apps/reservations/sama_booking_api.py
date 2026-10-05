@@ -26,6 +26,7 @@ from .manual_bookings import (
 )
 from .models import ManualBookingDraft, Reservation
 from .operations_forms import ManualBookingAvailabilityForm, ManualBookingFinalizeForm
+from .services.sama_guest_context import canonical_phone, current_guest_context
 
 ACTOR = "sama-booking-agent"
 
@@ -122,8 +123,28 @@ def health(request):
     return response(
         "ready",
         actor=ACTOR,
-        capabilities=["prepare", "confirm_unpaid", "request_accounting_payment", "status"],
+        capabilities=[
+            "prepare",
+            "confirm_unpaid",
+            "request_accounting_payment",
+            "status",
+            "guest_context",
+        ],
     )
+
+
+@authenticated("POST")
+def guest_context(request):
+    # Read-only POST keeps the guest number out of URLs and access logs.
+    data = payload(request, ("phone",))
+    if (
+        data is None
+        or not isinstance(data["phone"], str)
+        or not re.fullmatch(r"\+[1-9][0-9]{7,14}", data["phone"])
+        or canonical_phone(data["phone"]) != data["phone"]
+    ):
+        return response("invalid_request", 400)
+    return response(**current_guest_context(data["phone"]))
 
 
 @authenticated("POST")

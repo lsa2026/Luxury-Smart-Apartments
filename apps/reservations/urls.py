@@ -20,6 +20,7 @@ app_name = "reservations"
 
 urlpatterns = [
     path("sama/health/", sama_booking_api.health, name="sama_health"),
+    path("sama/guest-context/", sama_booking_api.guest_context, name="sama_guest_context"),
     path("sama/prepare/", sama_booking_api.prepare, name="sama_prepare"),
     path("sama/<uuid:request_id>/", sama_booking_api.status, name="sama_status"),
     path("sama/<uuid:request_id>/confirm/", sama_booking_api.confirm, name="sama_confirm"),
