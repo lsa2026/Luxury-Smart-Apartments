@@ -119,6 +119,10 @@ def test_robots_does_not_block_every_query_string() -> None:
             "/listing/luxury-smart-apartment-at-nour-prestige-marrakech/",
             "/ar/properties/luxury-smart-apartment-at-nour-prestige-marrakech/",
         ),
+        (
+            "/listing/spacious-and-modern-apartment-for-rent-in-riyadh/",
+            "/ar/properties/spacious-and-modern-apartment-for-rent-in-riyadh/",
+        ),
     ],
 )
 def test_confirmed_legacy_urls_have_exact_permanent_redirects(
