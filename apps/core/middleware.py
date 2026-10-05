@@ -20,6 +20,7 @@ PUBLIC_LOCALIZED_VIEW_NAMES = frozenset(
         "core:faq",
         "core:contact",
         "core:terms",
+        "core:house_rules",
         "core:privacy",
         "core:cancellation",
         "core:cookies",

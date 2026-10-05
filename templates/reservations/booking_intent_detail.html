@@ -43,4 +43,16 @@
             <strong>{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}</strong>
         </div><div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>{% if hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once>{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>{% elif payment_sandbox_enabled %}<div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "The next screen is a local simulation with no financial or live-booking activity." %}</span></div><a class="button" href="{% url 'payments:sandbox_booking' intent.public_reference %}">{% trans "Continue to test payment" %}</a>{% else %}<button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button>{% endif %}</article>
 </section>
+{% if intent.legal_acceptance.documents %}
+<section class="section container narrow">
+    <h2>{{ legal_ui.saved }}</h2>
+    <p>{{ legal_ui.accepted_at }}: <bdi dir="ltr">{{ intent.legal_acceptance.accepted_at }}</bdi></p>
+    {% for key, document in intent.legal_acceptance.documents.items %}
+    <details class="prose-card rich-copy" lang="{{ document.language }}" dir="{% if document.language == 'ar' %}rtl{% else %}ltr{% endif %}">
+        <summary>{{ document.title }} — <bdi dir="ltr">{{ document.version }}</bdi></summary>
+        <div class="structured-copy">{{ document.body|structured_text }}</div>
+    </details>
+    {% endfor %}
+</section>
+{% endif %}
 {% endblock %}

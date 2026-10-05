@@ -51,7 +51,7 @@ def test_checkout_scope_has_optional_controls_without_changing_booking_fields(la
     assert "js/user-provided-data.js" in content
     assert content.count("data-consent-upd") == 2  # Same preference, form and dialog.
     assert 'name="guest_email"' in content
-    assert 'name="terms_accepted"' in content and 'name="privacy_accepted"' in content
+    assert 'name="terms_accepted"' in content and 'name="house_rules_accepted"' in content
     assert 'data-analytics-event="begin_checkout"' in content
     assert "js/analytics.js" in content and "?v=17" in content
     assert 'dir="rtl"' in content if language == "ar" else 'dir="ltr"' in content

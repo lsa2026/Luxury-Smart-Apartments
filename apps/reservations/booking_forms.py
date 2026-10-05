@@ -7,6 +7,7 @@ from django import forms
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.guest_documents import UI, document_language, documents_digest
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES, normalize_country_code
 
@@ -100,7 +101,8 @@ class GuestDetailsForm(forms.Form):
         ),
     )
     terms_accepted = forms.BooleanField(label=_("I accept the terms"))
-    privacy_accepted = forms.BooleanField(label=_("I accept the privacy policy"))
+    house_rules_accepted = forms.BooleanField(label=_("House rules"))
+    documents_digest = forms.CharField(widget=forms.HiddenInput(), max_length=64)
     marketing_consent = forms.BooleanField(
         label=_("I would like to receive marketing offers"),
         required=False,
@@ -115,6 +117,7 @@ class GuestDetailsForm(forms.Form):
     ) -> None:
         self.default_country_code = default_country_code.upper()
         super().__init__(*args, **kwargs)
+        self.initial["documents_digest"] = documents_digest()
         self.fields["billing_country"].choices = [
             ("", _("Choose your country")),
             *((code, code) for code in sorted(ISO_ALPHA2_COUNTRY_CODES)),
@@ -173,4 +176,10 @@ class GuestDetailsForm(forms.Form):
         value = self.cleaned_data["idempotency_key"]
         if not re.fullmatch(r"[A-Za-z0-9_-]{32,64}", value):
             raise forms.ValidationError(_("The request identifier is invalid."))
+        return value
+
+    def clean_documents_digest(self) -> str:
+        value = self.cleaned_data["documents_digest"]
+        if value != documents_digest():
+            raise forms.ValidationError(UI[document_language()]["updated"])
         return value

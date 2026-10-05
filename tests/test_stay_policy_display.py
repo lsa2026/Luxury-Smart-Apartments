@@ -161,26 +161,27 @@ def test_cancellation_policy_falls_back_to_the_site_default() -> None:
         assert stay_policy_for(property_obj).cancellation_policy_text == "سياسة الموقع"
 
 
-def test_house_rules_prefer_the_property_over_the_site_default() -> None:
+def test_versioned_house_rules_supersede_legacy_property_rules() -> None:
     set_site_defaults(default_house_rules_ar="قواعد الموقع")
     property_obj = make_property(house_rules_ar="قواعد الوحدة")
 
     with translation.override("ar"):
-        assert stay_policy_for(property_obj).house_rules == "قواعد الوحدة"
+        assert "يُمنع اصطحاب الحيوانات الأليفة" in stay_policy_for(property_obj).house_rules
+        assert property_obj.house_rules_ar == "قواعد الوحدة"
 
 
-def test_house_rules_fall_back_to_the_site_default() -> None:
+def test_versioned_house_rules_supersede_legacy_site_defaults() -> None:
     set_site_defaults(default_house_rules_ar="قواعد الموقع")
     property_obj = make_property()
 
     with translation.override("ar"):
-        assert stay_policy_for(property_obj).house_rules == "قواعد الموقع"
+        assert "يُمنع اصطحاب الحيوانات الأليفة" in stay_policy_for(property_obj).house_rules
 
 
-def test_nothing_configured_renders_no_section() -> None:
+def test_common_house_rules_exist_without_listing_specific_configuration() -> None:
     property_obj = make_property()
 
-    assert stay_policy_for(property_obj).is_empty is True
+    assert stay_policy_for(property_obj).is_empty is False
 
 
 # --- what the pages show ----------------------------------------------------
@@ -202,15 +203,16 @@ def test_the_property_page_shows_the_three_answers() -> None:
     assert "١٦:٠٠" in content
     assert "١١:٠٠" in content
     assert "يمكن الإلغاء وفق السياسة المعروضة." in content
-    assert "ممنوع التدخين داخل الوحدة." in content
+    assert "ممنوع التدخين داخل الشقة بجميع أنواعه" in content
 
 
-def test_the_property_page_omits_the_section_when_nothing_is_configured() -> None:
+def test_the_property_page_shows_common_rules_even_without_source_rules() -> None:
     property_obj = make_property()
 
     content = Client().get(property_obj.get_absolute_url()).content.decode()
 
-    assert 'id="stay-policy-title"' not in content
+    assert 'id="stay-policy-title"' in content
+    assert "يُمنع اصطحاب الحيوانات الأليفة" in content
 
 
 def test_the_quote_review_summarizes_managed_policy_and_house_rules() -> None:
@@ -231,6 +233,7 @@ def test_the_quote_review_summarizes_managed_policy_and_house_rules() -> None:
     content = client.get(f"/reservations/quotes/{reference}/").content.decode()
 
     assert "إلغاء مُدار من لوحة التحكم." in content
-    assert "قواعد مُدارة من لوحة التحكم." in content
+    assert "قواعد مُدارة من لوحة التحكم." not in content
+    assert "يُمنع اصطحاب الحيوانات الأليفة" in content
     assert "١٧:٠٠" in content
-    assert "سياسة الإلغاء وقواعد المنزل المعروضة لهذه الإقامة" in content
+    assert "شروط السعر والإلغاء المعروضة لهذا الحجز" in content

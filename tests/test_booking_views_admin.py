@@ -12,6 +12,7 @@ from django.test import Client, RequestFactory, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
+from apps.core.guest_documents import documents_digest
 from apps.reservations.admin import BookingIntentAdmin, BookingQuoteAdmin
 from apps.reservations.models import BookingIntent, BookingQuote
 from apps.reservations.security import (
@@ -92,7 +93,8 @@ def form_data() -> dict[str, str]:
         "billing_postcode": "12345",
         "special_requests": "Synthetic",
         "terms_accepted": "on",
-        "privacy_accepted": "on",
+        "documents_digest": documents_digest(),
+        "house_rules_accepted": "on",
         "idempotency_key": "i" * 32,
     }
 
@@ -270,7 +272,7 @@ def test_invalid_guest_form_never_revalidates(
     RevalidationService.calls = 0
     monkeypatch.setattr(GuestDetailsView, "service_class", RevalidationService)
     data = form_data()
-    data.pop("privacy_accepted")
+    data.pop("house_rules_accepted")
     response = client.post(
         f"/reservations/quotes/{reference}/guest-details/",
         data,

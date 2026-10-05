@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.test import Client
 
 from apps.core.admin import SitePageAdmin
+from apps.core.guest_documents import VERSION
 from apps.core.models import SitePage, SiteSetting
 from apps.core.templatetags.presentation import structured_text
 
@@ -31,9 +32,10 @@ def test_legal_content_is_structured_and_no_longer_a_placeholder() -> None:
     content = response.content.decode()
 
     assert response.status_code == 200
-    assert "نطاق الخدمة" in content
+    assert "مقدم الخدمة ونطاق الشروط" in content
     assert "نسخة أولية للمراجعة القانونية" not in content
-    assert '<time datetime="2026-08-01">' in content
+    assert VERSION in content
+    assert "٥ أكتوبر ٢٠٢٦" in content
     assert "<h2>" in content
 
 

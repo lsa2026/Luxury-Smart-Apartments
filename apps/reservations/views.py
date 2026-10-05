@@ -18,6 +18,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views import View
 
+from apps.core.guest_documents import UI, document_language, guest_documents
 from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_choices
 from apps.properties.models import Property, PropertyImage
@@ -167,6 +168,8 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
         "property": quote.property,
         "cover_image": cover_image,
         "guest_form": form,
+        "guest_documents": guest_documents(),
+        "legal_ui": UI[document_language()],
         # Shared by every path that renders the review page, so the terms the
         # guest accepts are the ones shown directly above the checkbox.
         "stay_policy": stay_policy_for(quote.property),
@@ -190,7 +193,8 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
                     "billing_country",
                     "billing_postcode",
                     "terms_accepted",
-                    "privacy_accepted",
+                    "house_rules_accepted",
+                    "documents_digest",
                 )
             )
             else 1
@@ -514,6 +518,14 @@ class GuestDetailsView(View):
                 "language": (translation.get_language() or "ar").split("-")[0],
                 "special_requests": form.cleaned_data["special_requests"],
                 "marketing_consent": form.cleaned_data["marketing_consent"],
+                "house_rules_accepted": form.cleaned_data["house_rules_accepted"],
+                "legal_acceptance": {
+                    "documents": guest_documents(),
+                    "documents_digest": form.cleaned_data["documents_digest"],
+                    "source": "guest_checkout",
+                    "consents": {"terms": True, "house_rules": True},
+                    "rate_conditions": _rate_conditions_snapshot(quote),
+                },
             },
             revalidated=revalidated,
             selected_display_currency=selected_currency(request),
@@ -596,9 +608,37 @@ class BookingIntentDetailView(View):
                     "masked_email": mask_email(intent.guest_email),
                     "masked_phone": mask_phone(intent.guest_phone),
                     "hyperpay_enabled": settings.HYPERPAY_ENABLED,
+                    "legal_ui": UI[document_language(intent.language)],
                 },
             )
         )
+
+
+def _rate_conditions_snapshot(quote: BookingQuote) -> dict:
+    policy = stay_policy_for(quote.property)
+    return {
+        "property_slug": quote.property.slug,
+        "country": quote.property.country_code,
+        "check_in": quote.check_in.isoformat(),
+        "check_out": quote.check_out.isoformat(),
+        "check_in_hour": policy.check_in_hour,
+        "check_out_hour": policy.check_out_hour,
+        "guests": quote.guests,
+        "total": str(quote.total_price),
+        "currency": quote.currency,
+        "components": quote.components,
+        "cancellation_policy_code": policy.policy_code,
+        "cancellation_policy_text": policy.cancellation_policy_text,
+        "refund_tiers": [
+            {
+                "hours_before": tier.hours_before,
+                "percentage": str(tier.percentage),
+                "refunds_cleaning_fee": tier.refunds_cleaning_fee,
+                "note": tier.note,
+            }
+            for tier in policy.refund_tiers
+        ],
+    }
 
 
 def _owned_reservation(request: HttpRequest, public_reference: str) -> Reservation:

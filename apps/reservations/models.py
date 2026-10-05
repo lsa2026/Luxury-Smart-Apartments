@@ -390,6 +390,9 @@ class BookingIntent(models.Model):
     session_key_hash = models.CharField(max_length=64, editable=False)
     terms_accepted_at = models.DateTimeField()
     privacy_accepted_at = models.DateTimeField()
+    # Nullable for existing/admin-created intents: never invent a guest consent.
+    house_rules_accepted_at = models.DateTimeField(null=True, blank=True, editable=False)
+    legal_acceptance = models.JSONField(default=dict, blank=True, editable=False)
     marketing_consent = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)

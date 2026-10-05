@@ -19,6 +19,11 @@ urlpatterns = [
         name="terms",
     ),
     path(
+        "legal/house-rules/",
+        ContentPageView.as_view(page_slug="house-rules"),
+        name="house_rules",
+    ),
+    path(
         "legal/privacy/",
         ContentPageView.as_view(page_slug="privacy"),
         name="privacy",

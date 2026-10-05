@@ -5,13 +5,12 @@ values at booking time. Nothing here invents a rule:
 
 * locally managed arrival and departure hours take precedence for presentation;
   otherwise the channel-manager value and then the site default are used;
-* cancellation prose and house rules are administration-written content, with
-  site-wide fallbacks and no machine translation;
+* cancellation prose is administration-written content with site-wide fallbacks;
+* house rules are the issued, independently translated portfolio-wide document;
 * the refund ladder is rendered from the tiers the administration entered, so an
   empty table honestly shows "no automatic refund" rather than a friendly
   sentence nobody agreed to;
-* house rules are administration-written content, never machine-translated from
-  the host's English.
+* legacy property house-rule text is preserved but cannot override issued rules.
 """
 
 from dataclasses import dataclass, field
@@ -19,6 +18,7 @@ from decimal import Decimal
 
 from django.utils.translation import get_language
 
+from apps.core.guest_documents import house_rules_document
 from apps.core.models import SiteSetting
 from apps.properties.models import Property
 from apps.reservations.models import CancellationPolicyTier
@@ -134,9 +134,10 @@ def stay_policy_for(property_obj: Property) -> StayPolicy:
     if not cancellation_policy_text and site_setting is not None:
         cancellation_policy_text = _localized(site_setting, "default_cancellation_policy")
 
-    house_rules = _localized(property_obj, "house_rules")
-    if not house_rules and site_setting is not None:
-        house_rules = _localized(site_setting, "default_house_rules")
+    # The owner approved one common version, including a portfolio-wide pet
+    # ban. Keep legacy editable content in storage, but do not expose old rules
+    # that may contradict the document the guest now accepts.
+    house_rules = house_rules_document()["body"]
 
     return StayPolicy(
         check_in_hour=check_in,

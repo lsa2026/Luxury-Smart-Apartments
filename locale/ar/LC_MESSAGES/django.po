@@ -2343,7 +2343,7 @@ msgstr ""
 #: .\apps\properties\models.py:142 .\apps\properties\models.py:143
 #: .\apps\properties\models.py:144 .\templates\properties\_stay_policy.html:49
 msgid "House rules"
-msgstr ""
+msgstr "تعليمات المنزل"
 
 #: .\apps\properties\models.py:241 .\apps\reservations\admin.py:295
 #: .\apps\reservations\admin.py:552

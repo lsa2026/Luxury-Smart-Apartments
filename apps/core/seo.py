@@ -26,6 +26,7 @@ PUBLIC_STATIC_NAMES = (
     "core:faq",
     "core:contact",
     "core:terms",
+    "core:house_rules",
     "core:privacy",
     "core:cancellation",
     "core:cookies",

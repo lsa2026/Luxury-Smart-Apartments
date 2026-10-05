@@ -17,6 +17,7 @@ from apps.reservations.forms import AvailabilitySearchForm, ReservationAccessFor
 from apps.reservations.security import is_rate_limited
 
 from .forms import ContactForm
+from .guest_documents import PRIVACY_TITLES, UI, document_language, guest_documents
 from .models import ContactMessage, FAQItem, SiteInterfaceImage, SitePage, SiteSetting
 
 
@@ -125,6 +126,7 @@ class ContentPageView(TemplateView):
         template_map = {
             "about": "core/about.html",
             "terms": "legal/terms.html",
+            "house-rules": "legal/house_rules.html",
             "privacy": "legal/privacy.html",
             "cancellation": "legal/cancellation_policy.html",
             "cookies": "legal/cookies.html",
@@ -133,6 +135,32 @@ class ContentPageView(TemplateView):
 
     def get_context_data(self, **kwargs: object) -> dict[str, object]:
         context = super().get_context_data(**kwargs)
+        if self.page_slug in {"terms", "house-rules", "privacy"}:
+            documents = guest_documents()
+            document = documents["house_rules" if self.page_slug == "house-rules" else "terms"]
+            if self.page_slug == "privacy":
+                # Preserve the existing privacy URL, with the same notice as
+                # the main document rather than leaving contradictory copies.
+                document = dict(document)
+                document["title"] = PRIVACY_TITLES[document_language()]
+                sections = document["body"].split("\n\n## ")
+                document["body"] = "\n\n## ".join(sections[9:12])
+                document["body"] = "## " + document["body"]
+            context["page"] = SitePage(
+                slug=self.page_slug,
+                **{
+                    f"{prefix}_{language}": value
+                    for language in ("ar", "en", "fr")
+                    for prefix, value in (
+                        ("title", document["title"]),
+                        ("body", document["body"]),
+                        ("meta_description", document["title"]),
+                    )
+                },
+            )
+            context["legal_document"] = document
+            context["legal_ui"] = UI[document_language()]
+            return context
         context["page"] = get_object_or_404(
             SitePage,
             slug=self.page_slug,
