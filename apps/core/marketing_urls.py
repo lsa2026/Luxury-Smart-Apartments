@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .campaign_links import missed_call_welcome_redirect
 from .marketing_views import (
     acknowledge_purchase_event,
     marketing_diagnostics,
@@ -10,6 +11,8 @@ from .marketing_views import (
 app_name = "marketing"
 
 urlpatterns = [
+    path("hello", missed_call_welcome_redirect, name="missed_call_welcome"),
+    path("hello/", missed_call_welcome_redirect, name="missed_call_welcome_slash"),
     path(
         "analytics/purchase/acknowledge/",
         acknowledge_purchase_event,
