@@ -402,6 +402,25 @@ class HostawayClient:
             raise HostawayResponseError("Unbounded stay page response.")
         return rows
 
+    def guest_history_page(self, departure_end: date, *, after_id=None):
+        """Read past stays across channels without a phone/name query parameter."""
+        params = [
+            ("limit", 100),
+            ("includeResources", 0),
+            ("departureEndDate", departure_end.isoformat()),
+        ]
+        if after_id is not None:
+            if type(after_id) is not int or after_id <= 0:
+                raise ValueError("Invalid history cursor.")
+            params.append(("afterId", after_id))
+        value = self._get_json("/reservations", params=params)
+        if not isinstance(value, dict) or value.get("status") != "success":
+            raise HostawayResponseError("Invalid history response.")
+        rows, _ = validate_collection_response(value)
+        if len(rows) > 100:
+            raise HostawayResponseError("Unbounded history page.")
+        return rows
+
     def retrieve_reservation_observations(
         self,
         *,

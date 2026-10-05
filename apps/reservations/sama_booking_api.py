@@ -27,6 +27,8 @@ from .manual_bookings import (
 from .models import ManualBookingDraft, Reservation
 from .operations_forms import ManualBookingAvailabilityForm, ManualBookingFinalizeForm
 from .services.sama_guest_context import canonical_phone, current_guest_context
+from .services.sama_guest_history import guest_history as read_guest_history
+from .services.sama_next_availability import next_availability as read_next_availability
 
 ACTOR = "sama-booking-agent"
 
@@ -129,6 +131,8 @@ def health(request):
             "request_accounting_payment",
             "status",
             "guest_context",
+            "guest_history",
+            "next_availability",
         ],
     )
 
@@ -145,6 +149,38 @@ def guest_context(request):
     ):
         return response("invalid_request", 400)
     return response(**current_guest_context(data["phone"]))
+
+
+@authenticated("POST")
+def guest_history(request):
+    data = payload(request, ("phone",))
+    if (
+        data is None
+        or not isinstance(data["phone"], str)
+        or not re.fullmatch(r"\+[1-9][0-9]{7,14}", data["phone"])
+        or canonical_phone(data["phone"]) != data["phone"]
+    ):
+        return response("invalid_request", 400)
+    return response(**read_guest_history(data["phone"]))
+
+
+@authenticated("POST")
+def next_availability(request):
+    data = payload(request, ("property_slug", "check_in", "check_out", "guests"))
+    if data is None or not isinstance(data["property_slug"], str):
+        return response("invalid_request", 400)
+    if any(data[k] is not None and not isinstance(data[k], str) for k in ("check_in", "check_out")):
+        return response("invalid_request", 400)
+    property_obj = Property.objects.public().filter(slug=data["property_slug"]).first()
+    if property_obj is None:
+        return response("invalid_property", 400)
+    try:
+        result = read_next_availability(
+            property_obj, data["check_in"], data["check_out"], data["guests"]
+        )
+    except (ValueError, TypeError):
+        return response("invalid_request", 400)
+    return response(**result)
 
 
 @authenticated("POST")
