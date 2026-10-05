@@ -1,15 +1,4 @@
 {% extends "core/content_page.html" %}
-{% load i18n %}
 {% block legal_service_notice %}
 {% include "legal/_user_provided_data_notice.html" %}
-<aside class="prose-card rich-copy">
-    <h2>{% trans "Google Maps driving estimates" %}</h2>
-    <p>{% trans "To calculate airport driving time, our server sends only the public airport and property destination to Google Maps. We do not request your location or send your contact, booking or payment information for this feature." %}</p>
-    <p><a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">{% trans "Google Maps Terms of Service" %}</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{% trans "Google Privacy Policy" %}</a></p>
-</aside>
-<aside class="prose-card rich-copy">
-    <h2>{% trans "Payment address suggestions" %}</h2>
-    <p>{% trans "If you use the optional address search at checkout, your search text is sent through our server to Google Maps to show suggestions. You can instead enter your address manually. We do not send these searches or your full address to Google Analytics. The address you select and confirm is saved for your booking and payment, not the suggestion list." %}</p>
-    <p><a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">{% trans "Google Maps Terms of Service" %}</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{% trans "Google Privacy Policy" %}</a></p>
-</aside>
 {% endblock %}

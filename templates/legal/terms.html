@@ -1,14 +1,1 @@
 {% extends "core/content_page.html" %}
-{% load i18n %}
-{% block legal_service_notice %}
-<aside class="prose-card rich-copy">
-    <h2>{% trans "Google Maps driving estimates" %}</h2>
-    <p>{% trans "Airport driving estimates are provided by Google Maps and depend on current traffic. They are estimates, not guaranteed arrival times." %}</p>
-    <p><a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">{% trans "Google Maps Terms of Service" %}</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{% trans "Google Privacy Policy" %}</a></p>
-</aside>
-<aside class="prose-card rich-copy">
-    <h2>{% trans "Payment address suggestions" %}</h2>
-    <p>{% trans "Optional payment address suggestions are provided by Google Maps and are subject to its terms and privacy policy. Suggestions do not verify your address or guarantee payment acceptance. Please review and complete the fields using the address associated with your payment card, or enter it manually." %}</p>
-    <p><a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener noreferrer">{% trans "Google Maps Terms of Service" %}</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">{% trans "Google Privacy Policy" %}</a></p>
-</aside>
-{% endblock %}

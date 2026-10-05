@@ -15,7 +15,7 @@ from pathlib import Path
 
 from django.utils.translation import get_language
 
-VERSION = "2026-10-05.1"
+VERSION = "2026-10-05.2"
 
 TERMS_TITLES = {
     "ar": "شروط الحجز والإقامة وإشعار الخصوصية",

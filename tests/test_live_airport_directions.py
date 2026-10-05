@@ -224,9 +224,20 @@ def test_page_contains_only_lazy_server_ticket_no_api_key_no_static_darat_number
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
 @pytest.mark.parametrize("page", ["terms", "privacy"])
-def test_google_service_policies_are_public_and_localized(language, page):
+def test_requested_map_notices_are_removed_from_public_documents(language, page):
     content = Client().get(f"/{language}/legal/{page}/").content.decode()
-    assert "https://maps.google.com/help/terms_maps/" in content
-    assert "https://policies.google.com/privacy" in content
-    if language != "en":
-        assert "Google Maps driving estimates" not in content
+    assert "https://maps.google.com/help/terms_maps/" not in content
+    assert "Google Maps" not in content
+    for heading in (
+        "Google Maps driving estimates",
+        "Payment address suggestions",
+        "تقديرات القيادة من خرائط Google",
+        "اقتراحات عنوان الدفع",
+        "Estimations de trajet Google Maps",
+        "Suggestions d’adresse de paiement",
+    ):
+        assert heading not in content
+    if page == "privacy":
+        # Unrelated optional analytics disclosures remain intact.
+        assert "Google Analytics" in content
+        assert "https://policies.google.com/privacy" in content
