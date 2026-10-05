@@ -359,6 +359,27 @@ def test_history_endpoint_validates_phone_and_does_not_write(context, monkeypatc
 
 
 @ENABLED
+@pytest.mark.parametrize(
+    "lookup_status",
+    ["verified_calendar", "capacity_exceeded", "no_calendar_stay_in_window"],
+)
+def test_next_endpoint_preserves_lookup_status_as_data(context, monkeypatch, lookup_status):
+    p, _, _, _ = context
+    monkeypatch.setattr(
+        api,
+        "read_next_availability",
+        Mock(
+            return_value={"code": "next_availability", "status": lookup_status, "next_stay": None}
+        ),
+    )
+    body = {"property_slug": p.slug, "check_in": None, "check_out": None, "guests": None}
+    result = post("/reservations/sama/next-availability/", body)
+    assert result.status_code == 200
+    assert result.json()["status"] == lookup_status
+    assert result["Cache-Control"] == "no-store"
+
+
+@ENABLED
 def test_next_endpoint_and_failure_do_not_expose_provider_body(context, monkeypatch):
     p, _, _, _ = context
     fn = Mock(return_value={"code": "next_availability", "next_stay": None})

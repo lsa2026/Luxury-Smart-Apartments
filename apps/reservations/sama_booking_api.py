@@ -33,8 +33,8 @@ from .services.sama_next_availability import next_availability as read_next_avai
 ACTOR = "sama-booking-agent"
 
 
-def response(code, status=200, **fields):
-    result = JsonResponse({"code": code, **fields}, status=status)
+def response(code, http_status=200, **fields):
+    result = JsonResponse({"code": code, **fields}, status=http_status)
     result["Cache-Control"] = "no-store"
     return result
 
