@@ -382,6 +382,26 @@ class HostawayClient:
         payload = self._get_json(f"/reservations/{reservation_id}", params=[])
         return validate_reservation_response(payload)
 
+    def guest_stay_page(self, departure_start: date, arrival_end: date, *, after_id=None):
+        """Read one bounded date-window page for exact phone matching in memory."""
+        params = [
+            ("limit", 100),
+            ("includeResources", 0),
+            ("departureStartDate", departure_start.isoformat()),
+            ("arrivalEndDate", arrival_end.isoformat()),
+        ]
+        if after_id is not None:
+            if type(after_id) is not int or after_id <= 0:
+                raise ValueError("Invalid stay page cursor.")
+            params.append(("afterId", after_id))
+        value = self._get_json("/reservations", params=params)
+        if not isinstance(value, dict) or value.get("status") != "success":
+            raise HostawayResponseError("Invalid stay page response.")
+        rows, _ = validate_collection_response(value)
+        if len(rows) > 100:
+            raise HostawayResponseError("Unbounded stay page response.")
+        return rows
+
     def retrieve_reservation_observations(
         self,
         *,
