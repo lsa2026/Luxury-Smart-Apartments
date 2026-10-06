@@ -14,6 +14,7 @@ from django.utils.translation import gettext as _
 from django.views import View
 
 from apps.accounts.services import claimable_reference
+from apps.core.enhanced_conversions import consented_purchase_email_hash
 from apps.core.marketing import prepare_purchase_event, purchase_receipt_token
 from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
@@ -328,7 +329,8 @@ class HyperPayResultView(View):
         if outcome and outcome.reservation:
             # This is intentionally prepared only after both authoritative
             # conditions hold: HyperPay has verified the charge and Hostaway
-            # has confirmed the reservation. The browser sends no guest data.
+            # has confirmed the reservation. Public analytics sends no identity;
+            # optional Ads matching uses a separate, consent-gated accessor.
             purchase_event, purchase_receipt = prepare_purchase_event(
                 payment_attempt=display_attempt,
                 reservation=outcome.reservation,
@@ -342,6 +344,10 @@ class HyperPayResultView(View):
                 "success": HyperPayStatus.SUCCESS,
                 "claimable_reference": claimable,
                 "purchase_event": purchase_event,
+                "ads_purchase_email_hash": (
+                    consented_purchase_email_hash(request, attempt.booking_intent.guest_email)
+                    if purchase_event else ""
+                ),
                 "purchase_receipt_token": (
                     purchase_receipt_token(purchase_receipt)
                     if purchase_event and purchase_receipt

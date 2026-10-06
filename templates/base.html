@@ -45,7 +45,8 @@
     <link rel="stylesheet" href="{% static 'css/site.css' %}?v=47">
     {% if meta_measurement_page_allowed %}<script src="{% static 'js/meta-measurement.js' %}?v=1" defer></script>{% endif %}
     <script src="{% static 'js/consent.js' %}?v=15" defer></script>
-    <script src="{% static 'js/analytics.js' %}?v=17" defer></script>
+    {% block google_purchase_data %}{% endblock %}
+    <script src="{% static 'js/analytics.js' %}?v=18" defer></script>
     <script src="{% static 'js/site.js' %}?v=28" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
