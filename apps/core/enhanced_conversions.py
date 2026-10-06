@@ -28,10 +28,12 @@ def consented_purchase_email_hash(request: HttpRequest, email: str) -> str:
     except (ValueError, TypeError):
         return ""
     if not isinstance(choice, dict) or not (
-        choice.get("version") == settings.COOKIE_CONSENT_VERSION
+        type(choice.get("version")) is int
+        and choice.get("version") == settings.COOKIE_CONSENT_VERSION
         and choice.get("analytics") is True
         and choice.get("marketing") is True
         and choice.get("userProvidedData") is True
+        and type(choice.get("userProvidedDataVersion")) is int
         and choice.get("userProvidedDataVersion") == 1
     ):
         return ""

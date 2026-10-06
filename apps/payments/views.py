@@ -346,7 +346,8 @@ class HyperPayResultView(View):
                 "purchase_event": purchase_event,
                 "ads_purchase_email_hash": (
                     consented_purchase_email_hash(request, attempt.booking_intent.guest_email)
-                    if purchase_event else ""
+                    if purchase_event
+                    else ""
                 ),
                 "purchase_receipt_token": (
                     purchase_receipt_token(purchase_receipt)

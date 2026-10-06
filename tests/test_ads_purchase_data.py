@@ -26,11 +26,18 @@ GOOGLE = {
 
 
 def consent_cookie(**changes):
-    return quote(json.dumps({
-        "version": settings.COOKIE_CONSENT_VERSION,
-        "analytics": True, "marketing": True,
-        "userProvidedData": True, "userProvidedDataVersion": 1, **changes,
-    }))
+    return quote(
+        json.dumps(
+            {
+                "version": settings.COOKIE_CONSENT_VERSION,
+                "analytics": True,
+                "marketing": True,
+                "userProvidedData": True,
+                "userProvidedDataVersion": 1,
+                **changes,
+            }
+        )
+    )
 
 
 @override_settings(**GOOGLE)
@@ -38,8 +45,14 @@ def test_ads_hash_requires_current_independent_consent_and_valid_email():
     request = RequestFactory().get("/")
     assert consented_purchase_email_hash(request, "synthetic@example.invalid") == ""
     for changes in (
-        {"analytics": False}, {"marketing": False}, {"userProvidedData": False},
-        {"userProvidedDataVersion": 0}, {"version": 999}, {"userProvidedData": "true"},
+        {"analytics": False},
+        {"marketing": False},
+        {"userProvidedData": False},
+        {"userProvidedDataVersion": 0},
+        {"version": 999},
+        {"userProvidedData": "true"},
+        {"userProvidedDataVersion": True},
+        {"version": True},
     ):
         request.COOKIES["lsa_cookie_consent"] = consent_cookie(**changes)
         assert consented_purchase_email_hash(request, "synthetic@example.invalid") == ""
@@ -68,13 +81,19 @@ def test_result_page_keeps_ads_identity_outside_purchase_payload(monkeypatch, co
     if consented:
         client.cookies["lsa_cookie_consent"] = consent_cookie()
     attempt = PaymentAttempt.objects.create(
-        booking_intent=intent, provider="hyperpay", provider_checkout_id="synthetic-ec",
-        merchant_transaction_id="synthetic-ec", amount=intent.total_price,
-        currency=intent.currency, status=PaymentAttempt.Status.SUCCEEDED,
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="synthetic-ec",
+        merchant_transaction_id="synthetic-ec",
+        amount=intent.total_price,
+        currency=intent.currency,
+        status=PaymentAttempt.Status.SUCCEEDED,
         idempotency_key="synthetic-ec",
     )
     ResultViewServiceStub.outcome = VerificationOutcome(
-        attempt, HyperPayStatus.SUCCESS, reservation=reservation,
+        attempt,
+        HyperPayStatus.SUCCESS,
+        reservation=reservation,
     )
     monkeypatch.setattr(HyperPayResultView, "service_class", ResultViewServiceStub)
     response = client.get(reverse("payments:hyperpay_result", args=[attempt.pk]))
