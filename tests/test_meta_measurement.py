@@ -29,7 +29,7 @@ def test_public_pages_offer_meta_bridge_without_inline_pixel_or_relaxing_csp(lan
     script_csp = next(part for part in csp.split(";") if part.strip().startswith("script-src "))
     assert "'unsafe-inline'" not in script_csp and "'unsafe-eval'" not in script_csp
     assert "https://connect.facebook.net" not in content
-    assert "js/analytics.js?v=17" in content
+    assert "js/analytics.js?v=18" in content
 
 
 def test_private_checkout_preserves_google_but_cannot_load_meta():
@@ -41,7 +41,7 @@ def test_private_checkout_preserves_google_but_cannot_load_meta():
     assert "js/meta-measurement.js" not in content
     assert 'data-meta-measurement-page-allowed="false"' in content
     assert "connect.facebook.net" not in response["Content-Security-Policy"]
-    assert "js/analytics.js?v=17" in content
+    assert "js/analytics.js?v=18" in content
     assert 'data-analytics-event="begin_checkout"' in content
 
 

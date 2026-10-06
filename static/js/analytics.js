@@ -128,17 +128,21 @@
             return false;
         }
         window.dataLayer = window.dataLayer || [];
-        // GA4's GTM "Send Ecommerce data" reads ecommerce.*, while our Ads
-        // variables read the explicit top-level transaction fields.
+        // Clear on EVERY event: a contact click must not inherit an earlier
+        // apartment, checkout amount or transaction from GTM's merged model.
+        window.dataLayer.push({ecommerce: null});
+        const ecommerce = {};
+        const ecommerceKeys = eventName === "purchase"
+            ? ["transaction_id", "value", "currency", "items", "tax", "coupon"]
+            : ["item_list_name", "value", "currency", "items"];
+        ecommerceKeys.forEach((key) => {
+            if (Object.hasOwn(clean, key)) {
+                ecommerce[key] = clean[key];
+            }
+        });
+        const event = {event: eventName, ...clean,
+            ecommerce: Object.keys(ecommerce).length ? ecommerce : null};
         if (eventName === "purchase") {
-            window.dataLayer.push({ecommerce: null});
-            const ecommerce = {};
-            ["transaction_id", "value", "currency", "items", "tax", "coupon"].forEach((key) => {
-                if (Object.hasOwn(clean, key)) {
-                    ecommerce[key] = clean[key];
-                }
-            });
-            const event = {event: eventName, ...clean, ecommerce};
             if (typeof onProcessed === "function") {
                 event.eventCallback = (containerId) => {
                     if (/^GTM-[A-Z0-9]{4,}$/.test(containerId || "")
@@ -150,10 +154,8 @@
                 // This callback confirms GTM processing, NOT Google Ads attribution
                 // or server-side receipt of the conversion.
             }
-            window.dataLayer.push(event);
-        } else {
-            window.dataLayer.push({event: eventName, ...clean});
         }
+        window.dataLayer.push(event);
         return clean;
     }
 
