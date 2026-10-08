@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n presentation %}
-{% block title %}{% trans "My bookings" %} | Luxury Smart Apartments{% endblock %}
+{% block title %}{% trans "Bookings & loyalty rewards" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block content %}
@@ -8,7 +8,7 @@
     <div class="container account-hero__inner">
         <div>
             <p class="eyebrow">{% trans "Private account" %}</p>
-            <h1>{% trans "My bookings" %}</h1>
+            <h1>{% trans "Bookings & loyalty rewards" %}</h1>
             <p>{% trans "Welcome" %} {{ request.user.first_name|default:request.user.email }}</p>
         </div>
         <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="button button--ghost" type="submit">{% trans "Sign out" %}</button></form>
@@ -54,6 +54,14 @@
             <p>{% trans "Your rewards and benefits will be based on confirmed stays. No points or discounts are awarded before the programme launches." %}</p>
         </aside>
     </div>
+
+    <a class="auth-alt" href="{% url 'reservations:manage_access' %}">
+        <span>
+            <strong>{% trans "Manage a booking without an account" %}</strong>
+            <small>{% trans "Use your last name and mobile number to receive a secure link at your booking email address." %}</small>
+        </span>
+        <i class="auth-alt__chevron" aria-hidden="true">↗</i>
+    </a>
 
     <section class="account-booking-section" aria-labelledby="upcoming-bookings-heading">
         <div class="account-section-heading"><div><p class="eyebrow">{% trans "Your stays" %}</p><h2 id="upcoming-bookings-heading">{% trans "Upcoming and current bookings" %}</h2></div><span>{{ upcoming_reservations|length }}</span></div>

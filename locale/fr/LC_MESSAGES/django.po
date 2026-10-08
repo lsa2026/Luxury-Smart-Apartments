@@ -7856,3 +7856,13 @@ msgstr "Itinéraire vers ce lieu"
 
 msgid "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps."
 msgstr "La recherche commence dans un rayon de 1 km autour de l’appartement (5 km pour le métro). La recherche dans cette zone utilise la carte visible, jusqu’à 10 km (20 km pour le métro). Les distances sont à vol d’oiseau, pas des trajets à pied. Les emplacements et les entrées peuvent être approximatifs. Les itinéraires s’ouvrent dans Google Maps."
+
+
+#: templates/includes/header.html templates/includes/mobile_navigation.html templates/accounts/dashboard.html
+msgid "My bookings & rewards"
+msgstr "Mes réservations et avantages"
+
+
+#: templates/includes/header.html templates/includes/mobile_navigation.html templates/accounts/dashboard.html
+msgid "Bookings & loyalty rewards"
+msgstr "Réservations et programme de fidélité"
