@@ -30,7 +30,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["apps*", "config*"]
+include = ["apps*", "config*", "scheduler_runtime*"]
 
 [tool.setuptools.package-data]
 "apps.core" = ["guest_terms/*.txt"]

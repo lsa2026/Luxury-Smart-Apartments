@@ -315,7 +315,7 @@ services:
       --max-tasks-per-child 100
       --without-gossip
       --without-mingle
-    envVars: &celery_env
+    envVars:
       - key: PYTHON_VERSION
         value: "3.13.5"
       - key: DJANGO_SETTINGS_MODULE
@@ -507,7 +507,40 @@ services:
     autoDeploy: true
     buildCommand: ./build-worker.sh
     startCommand: >-
-      celery -A config beat
+      celery -A scheduler_runtime.app:app beat
       --loglevel info
       --schedule /tmp/celerybeat-schedule
-    envVars: *celery_env
+    # Dispatch-only: never inherit SMTP, payment, database or provider secrets.
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: lsa-cache
+          property: connectionString
+      - key: HOSTAWAY_AUTO_SYNC_ENABLED
+        value: "False"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED
+        value: "True"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR
+        value: "16"
+      - key: HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE
+        value: "30"
+      - key: HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED
+        value: "True"
+      - key: HOSTAWAY_WEBHOOK_PROCESSING_ENABLED
+        value: "False"
+      - key: TRUSTINDEX_REVIEW_SYNC_ENABLED
+        value: "True"
+      - key: CELERY_SYNC_DISPATCH_ENABLED
+        value: "True"
+      # Schedule email tasks; delivery credentials belong only to the worker.
+      - key: EMAIL_TASK_SCHEDULE_ENABLED
+        value: "True"
+      - key: HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES
+        value: "5"
+      - key: HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES
+        value: "1"
+      - key: BOOKING_EXPIRATION_INTERVAL_MINUTES
+        value: "5"
