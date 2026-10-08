@@ -5,8 +5,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import environ
-from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
+
+from scheduler_runtime.schedule import build_beat_schedule
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -501,48 +502,6 @@ CELERY_TASK_SOFT_TIME_LIMIT = 9 * 60
 # environment default silently shifting it back to UTC.
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True
-CELERY_BEAT_SCHEDULE = {}
-if HOSTAWAY_AUTO_SYNC_ENABLED:
-    CELERY_BEAT_SCHEDULE = {
-        "hostaway-properties": {
-            "task": "apps.integrations.tasks.sync_hostaway_properties_task",
-            "schedule": HOSTAWAY_AUTO_SYNC_INTERVAL_MINUTES * 60,
-        },
-    }
-if HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED:
-    CELERY_BEAT_SCHEDULE["indicative-rates"] = {
-        "task": "apps.integrations.tasks.refresh_indicative_rates_task",
-        # After the PriceLabs default overnight queue (up to 13:00 GMT).
-        "schedule": crontab(
-            hour=HOSTAWAY_PRICE_CALENDAR_SYNC_HOUR,
-            minute=HOSTAWAY_PRICE_CALENDAR_SYNC_MINUTE,
-        ),
-    }
-if HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED:
-    CELERY_BEAT_SCHEDULE["website-reservation-statuses"] = {
-        "task": "apps.integrations.tasks.refresh_website_reservations_task",
-        "schedule": 30 * 60,
-    }
-if HOSTAWAY_WEBHOOK_PROCESSING_ENABLED:
-    CELERY_BEAT_SCHEDULE["hostaway-webhooks"] = {
-        "task": "apps.integrations.tasks.process_hostaway_webhooks_task",
-        "schedule": HOSTAWAY_WEBHOOK_PROCESS_INTERVAL_MINUTES * 60,
-    }
-CELERY_BEAT_SCHEDULE["expire-booking-objects"] = {
-    "task": "apps.integrations.tasks.expire_booking_objects_task",
-    "schedule": BOOKING_EXPIRATION_INTERVAL_MINUTES * 60,
-}
-# No automatic paid-booking creation retries: notify operations instead.
-if TRUSTINDEX_REVIEW_SYNC_ENABLED:
-    CELERY_BEAT_SCHEDULE["trustindex-review-metrics"] = {
-        "task": "apps.reviews.tasks.sync_trustindex_review_metrics_task",
-        "schedule": crontab(hour=17, minute=0),
-    }
-if CELERY_SYNC_DISPATCH_ENABLED:
-    CELERY_BEAT_SCHEDULE["integration-scheduler-health"] = {
-        "task": "apps.integrations.tasks.check_sync_health_task",
-        "schedule": 5 * 60,
-    }
 
 SITE_CANONICAL_URL = env("SITE_CANONICAL_URL", default="http://localhost:8000").rstrip("/")
 CONTACT_RATE_LIMIT_REQUESTS = 5
@@ -767,23 +726,7 @@ COOKIE_CONSENT_MAX_AGE_DAYS = optional_positive_int(
 ANALYTICS_EVENT_DEBUG_ENABLED = strict_bool("ANALYTICS_EVENT_DEBUG_ENABLED")
 SITEMAP_CACHE_SECONDS = 300
 
-if EMAIL_TASK_SCHEDULE_ENABLED:
-    CELERY_BEAT_SCHEDULE.update(
-        {
-            "process-email-queue": {
-                "task": "apps.notifications.tasks.process_email_queue_task",
-                "schedule": 60,
-            },
-            "cleanup-expired-notifications": {
-                "task": "apps.notifications.tasks.cleanup_expired_notifications_task",
-                "schedule": 24 * 60 * 60,
-            },
-            "daily-operations-summary": {
-                "task": "apps.notifications.tasks.send_daily_operations_summary_task",
-                "schedule": crontab(hour=8, minute=0),
-            },
-        }
-    )
+CELERY_BEAT_SCHEDULE = build_beat_schedule(globals())
 
 LOGGING = {
     "version": 1,
