@@ -150,6 +150,23 @@ class SecurityHeadersMiddleware:
         if getattr(request, "_public_osm_embed", False):
             frame_sources.append("https://www.openstreetmap.org")
         form_action_sources = ["'self'"]
+        guest_sign_in_page = request.path in {
+            "/login/",
+            "/register/",
+            "/accounts/login/",
+            "/accounts/signup/",
+        }
+        # Browsers can enforce form-action on the OAuth POST redirect, not
+        # only the local form target. Allow exact provider origins solely on
+        # sign-in pages and their enabled provider's login endpoint.
+        if settings.APPLE_SIGN_IN_ENABLED and (
+            guest_sign_in_page or request.path == "/accounts/apple/login/"
+        ):
+            form_action_sources.append("https://appleid.apple.com")
+        if settings.GOOGLE_SIGN_IN_ENABLED and (
+            guest_sign_in_page or request.path == "/accounts/google/login/"
+        ):
+            form_action_sources.append("https://accounts.google.com")
         font_sources = ["'self'"]
         worker_sources = ["'self'"]
         if getattr(request, "_nearby_map_enabled", False):
