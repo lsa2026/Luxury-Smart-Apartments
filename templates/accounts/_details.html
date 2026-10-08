@@ -1,0 +1,32 @@
+{% load i18n presentation %}
+<section class="account-panel account-details" aria-labelledby="account-details-heading">
+    <h2 id="account-details-heading">{{ account_copy.details }}</h2>
+    <form method="post" action="{% url 'accounts:details' %}" class="account-details-form" novalidate>
+        {% csrf_token %}{% if profile_form.errors %}<div class="form-errors" role="alert">{{ account_copy.form_errors }}{{ profile_form.non_field_errors }}</div>{% endif %}
+        <fieldset><legend>{{ account_copy.personal }}</legend><div class="account-fields">
+            {% include "accounts/_field.html" with field=profile_form.first_name %}{% include "accounts/_field.html" with field=profile_form.last_name %}
+        </div></fieldset>
+        <fieldset><legend>{{ account_copy.communication }}</legend><div class="account-fields">
+            <div class="field-group account-field--full">
+                <label for="account-email">{{ account_copy.email }} <span class="account-verification">{% if profile.is_email_verified %}{{ account_copy.verified }}{% else %}{{ account_copy.not_verified }}{% endif %}</span></label>
+                <input id="account-email" type="email" value="{{ request.user.email }}" autocomplete="email" dir="ltr" readonly aria-describedby="account-email-help">
+                <small id="account-email-help">{{ account_copy.email_protected }}</small>
+                {% if not profile.is_email_verified %}<button class="account-text-link" type="submit" formaction="{% url 'accounts:resend_verification' %}" formnovalidate>{{ account_copy.verify_email }}</button>{% endif %}
+            </div>{% include "accounts/_field.html" with field=profile_form.phone full=True %}
+        </div></fieldset>
+        <fieldset><legend>{{ account_copy.preferences }}</legend><div class="account-fields">{% include "accounts/_field.html" with field=profile_form.preferred_language full=True %}</div></fieldset>
+        <fieldset><legend>{{ account_copy.address }}</legend><p class="account-field-hint">{{ account_copy.address_hint }}</p><div class="account-fields">
+            {% include "accounts/_field.html" with field=profile_form.residence_country %}{% include "accounts/_field.html" with field=profile_form.residence_city %}
+        </div><details class="account-address-details"{% if profile_form.residence_address_line1.errors or profile_form.residence_region.errors or profile_form.residence_postal_code.errors %} open{% endif %}>
+            <summary>{{ account_copy.address_more }}</summary><div class="account-fields">
+                {% include "accounts/_field.html" with field=profile_form.residence_address_line1 full=True %}
+                {% include "accounts/_field.html" with field=profile_form.residence_region %}{% include "accounts/_field.html" with field=profile_form.residence_postal_code %}
+            </div></details>
+        </fieldset><button class="button account-primary" type="submit">{{ account_copy.save }}</button>
+    </form>
+    <section class="account-information" aria-labelledby="account-information-heading"><h3 id="account-information-heading">{{ account_copy.account_info }}</h3>
+        <dl><div><dt>{{ account_copy.signin_methods }}</dt><dd>{% for method in sign_in_methods %}<span>{{ method }}</span>{% endfor %}</dd></div>
+            {% if request.user.last_login %}<div><dt>{{ account_copy.last_login }}</dt><dd>{{ request.user.last_login|localized_datetime }}</dd></div>{% endif %}
+        </dl>
+    </section>
+</section>

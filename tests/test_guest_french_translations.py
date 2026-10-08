@@ -160,32 +160,38 @@ def test_dashboard_profile_empty_states_and_saved_message_are_french():
     assert response.redirect_chain == [("/my-bookings/", 302)]
     content = response.content.decode()
     for text in (
-        "Profil du voyageur",
-        "Vos coordonnées et votre adresse",
-        "Adresse de résidence",
-        "Pays de résidence",
-        "Enregistrer mes coordonnées",
-        "Programme de fidélité",
-        "Réservations à venir et en cours",
-        "Séjours passés",
-        "Réservations annulées",
-        "Aucun séjour terminé pour le moment.",
-        "Aucune réservation annulée.",
+        "Mes informations",
+        "Mes avantages",
+        "À venir et en cours",
+        "Passées",
+        "Annulées",
+        "Aucune réservation à venir",
     ):
         assert text in content
+    assert "Aucun séjour précédent" in client.get("/my-bookings/?filter=past").content.decode()
+    assert (
+        "Aucune réservation annulée"
+        in client.get("/my-bookings/?filter=cancelled").content.decode()
+    )
+    details = client.get("/my-bookings/details/").content.decode()
+    for text in ("Informations personnelles", "Coordonnées", "Adresse — facultative", "Pays"):
+        assert text in details
+    rewards = client.get("/my-bookings/rewards/").content.decode()
+    assert "Notre programme de fidélité se prépare" in rewards
     assert "ملف الضيف" not in content
-    assert "Residence address" not in content
+    assert "Residence address" not in details
     response = client.post("/my-bookings/", {"first_name": "Camille"}, follow=True)
-    assert "Votre profil voyageur a été enregistré." in response.content.decode()
+    assert response.redirect_chain == [("/my-bookings/details/", 302)]
+    assert "Vos modifications ont été enregistrées." in response.content.decode()
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "language, expected",
     [
-        ("ar", "ملف الضيف"),
-        ("en", "Guest profile"),
-        ("fr", "Profil du voyageur"),
+        ("ar", "بياناتي"),
+        ("en", "My details"),
+        ("fr", "Mes informations"),
     ],
 )
 def test_dashboard_keeps_all_three_languages(language, expected):

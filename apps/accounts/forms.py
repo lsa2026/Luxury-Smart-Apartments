@@ -9,6 +9,8 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 
+from .dashboard_copy import account_copy
+
 User = get_user_model()
 
 
@@ -137,6 +139,16 @@ class CustomerProfileForm(forms.Form):
             }
         ),
     )
+    preferred_language = forms.ChoiceField(
+        label=_("Preferred language"),
+        required=False,
+        choices=[
+            ("", _("Use the current website language")),
+            ("ar", _("Arabic")),
+            ("en", _("English")),
+            ("fr", _("French")),
+        ],
+    )
     residence_address_line1 = forms.CharField(
         label=_("Residence address"),
         max_length=250,
@@ -171,12 +183,34 @@ class CustomerProfileForm(forms.Form):
     def __init__(self, *args: object, user: object, profile: object, **kwargs: object) -> None:
         kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
+        copy = account_copy()
+        labels = {
+            "first_name": "first_name",
+            "last_name": "last_name",
+            "phone": "phone",
+            "preferred_language": "language",
+            "residence_address_line1": "street",
+            "residence_city": "city",
+            "residence_region": "region",
+            "residence_postal_code": "postal",
+            "residence_country": "country",
+        }
+        for field, key in labels.items():
+            self.fields[field].label = copy[key]
+        self.fields["phone"].widget.attrs["placeholder"] = copy["phone_example"]
+        self.fields["preferred_language"].choices = [
+            ("", copy["current_language"]),
+            ("ar", copy["arabic"]),
+            ("en", copy["english"]),
+            ("fr", copy["french"]),
+        ]
         if not self.is_bound:
             self.initial.update(
                 {
                     "first_name": getattr(user, "first_name", ""),
                     "last_name": getattr(user, "last_name", ""),
                     "phone": getattr(profile, "phone", ""),
+                    "preferred_language": getattr(profile, "preferred_language", ""),
                     "residence_address_line1": getattr(profile, "residence_address_line1", ""),
                     "residence_city": getattr(profile, "residence_city", ""),
                     "residence_region": getattr(profile, "residence_region", ""),

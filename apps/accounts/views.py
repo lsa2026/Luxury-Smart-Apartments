@@ -4,16 +4,21 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Count, Q
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views import View
+from django.views.decorators.cache import never_cache
 
 from apps.reservations.models import Reservation
 from apps.reservations.security import is_rate_limited
 
+from .dashboard_copy import account_copy
 from .emails import queue_verification_email, queue_welcome_email
 from .forms import (
     CustomerProfileForm,
@@ -305,28 +310,50 @@ class LogoutView(View):
         return redirect("core:home")
 
 
+@never_cache
 @login_required(login_url="accounts:login")
-def dashboard(request: HttpRequest) -> HttpResponse:
+def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
+    if request.method not in {"GET", "POST"} or (request.method == "POST" and section == "rewards"):
+        return HttpResponseNotAllowed(["GET"] if section == "rewards" else ["GET", "POST"])
+    copy = account_copy(_active_language(request))
     profile = profile_for(request.user)
     profile_form = CustomerProfileForm(user=request.user, profile=profile)
     if request.method == "POST":
+        # Retain legacy profile POSTs to /my-bookings/ while rendering errors
+        # on the dedicated details page. Identity and booking ownership do not change.
+        section = "details"
         profile_form = CustomerProfileForm(request.POST, user=request.user, profile=profile)
         if profile_form.is_valid():
-            request.user.first_name = profile_form.cleaned_data["first_name"]
-            request.user.last_name = profile_form.cleaned_data["last_name"]
-            request.user.save(update_fields=["first_name", "last_name"])
-            for field in (
-                "phone",
-                "residence_address_line1",
-                "residence_city",
-                "residence_region",
-                "residence_postal_code",
-                "residence_country",
-            ):
-                setattr(profile, field, profile_form.cleaned_data[field])
-            profile.save()
-            messages.success(request, _("Your guest profile has been saved."))
-            return redirect("accounts:dashboard")
+            with transaction.atomic():
+                request.user.first_name = profile_form.cleaned_data["first_name"]
+                request.user.last_name = profile_form.cleaned_data["last_name"]
+                request.user.save(update_fields=["first_name", "last_name"])
+                for field in (
+                    "phone",
+                    "residence_address_line1",
+                    "residence_city",
+                    "residence_region",
+                    "residence_postal_code",
+                    "residence_country",
+                ):
+                    setattr(profile, field, profile_form.cleaned_data[field])
+                if "preferred_language" in request.POST:
+                    profile.preferred_language = profile_form.cleaned_data["preferred_language"]
+                profile.save()
+            messages.success(request, copy["saved"])
+            response = redirect("accounts:details")
+            if profile.preferred_language:
+                response.set_cookie(
+                    settings.LANGUAGE_COOKIE_NAME,
+                    profile.preferred_language,
+                    max_age=settings.LANGUAGE_COOKIE_AGE,
+                    path=settings.LANGUAGE_COOKIE_PATH,
+                    domain=settings.LANGUAGE_COOKIE_DOMAIN,
+                    secure=settings.LANGUAGE_COOKIE_SECURE,
+                    httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
+                    samesite=settings.LANGUAGE_COOKIE_SAMESITE,
+                )
+            return response
 
     reservations = Reservation.objects.select_related("property", "booking_intent").filter(
         booking_intent__customer=request.user
@@ -346,6 +373,41 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     cancelled_reservations = reservations.filter(
         normalized_status=Reservation.Status.CANCELLED,
     ).order_by("-cancelled_at", "-created_at")
+    booking_filter = request.GET.get("filter", "upcoming")
+    groups = {
+        "upcoming": upcoming_reservations,
+        "past": past_reservations,
+        "cancelled": cancelled_reservations,
+    }
+    if booking_filter not in groups:
+        booking_filter = "upcoming"
+    counts = {}
+    booking_page = None
+    if section == "bookings":
+        counts = reservations.aggregate(
+            upcoming=Count(
+                "pk", filter=~Q(normalized_status__in=closed_statuses) & Q(check_out__gte=today)
+            ),
+            past=Count(
+                "pk", filter=~Q(normalized_status__in=closed_statuses) & Q(check_out__lt=today)
+            ),
+            cancelled=Count("pk", filter=Q(normalized_status=Reservation.Status.CANCELLED)),
+        )
+        booking_page = Paginator(groups[booking_filter], 6).get_page(request.GET.get("page"))
+    sign_in_methods = []
+    if section == "details":
+        from allauth.socialaccount.models import SocialAccount
+
+        sign_in_methods = [copy["email_code"]]
+        providers = set(
+            SocialAccount.objects.filter(user=request.user).values_list("provider", flat=True)
+        )
+        sign_in_methods.extend(
+            name
+            for provider, name in (("google", "Google"), ("apple", "Apple"))
+            if provider in providers
+        )
+    name = request.user.first_name.strip()
     return render(
         request,
         "accounts/dashboard.html",
@@ -355,6 +417,14 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "upcoming_reservations": upcoming_reservations,
             "past_reservations": past_reservations,
             "cancelled_reservations": cancelled_reservations,
+            "account_copy": copy,
+            "account_section": section,
+            "account_greeting": copy["welcome_named"] % {"name": name} if name else copy["welcome"],
+            "booking_filter": booking_filter,
+            "booking_counts": counts,
+            "booking_page": booking_page,
+            "booking_empty_heading": copy[f"empty_{booking_filter}"],
+            "sign_in_methods": sign_in_methods,
         },
     )
 

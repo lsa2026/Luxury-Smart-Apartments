@@ -104,7 +104,7 @@ def test_anonymous_entry_preserves_email_social_and_no_account_access(language):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("language", LABELS)
-def test_authenticated_dashboard_keeps_booking_access_and_loyalty_preview(language):
+def test_authenticated_dashboard_keeps_booking_access_and_separate_rewards_page(language):
     user = get_user_model().objects.create_user(
         username="dashboard-guest", email="dashboard@example.invalid"
     )
@@ -114,9 +114,13 @@ def test_authenticated_dashboard_keeps_booking_access_and_loyalty_preview(langua
     response = client.get("/my-bookings/")
     assert response.status_code == 200
     content = response.content.decode()
-    assert f"<h1>{LABELS[language][1]}</h1>" in unescape(content)
-    assert 'class="loyalty-preview"' in content
+    assert f"<h1>{LABELS[language][0]}</h1>" in unescape(content)
+    assert 'class="loyalty-preview"' not in content
     assert 'href="/reservations/manage/"' in content
-    assert 'id="upcoming-bookings-heading"' in content
-    assert 'id="past-bookings-heading"' in content
-    assert 'id="cancelled-bookings-heading"' in content
+    assert 'id="account-bookings-heading"' in content
+    assert 'href="/my-bookings/?filter=past"' in content
+    assert 'href="/my-bookings/?filter=cancelled"' in content
+    assert 'href="/my-bookings/rewards/"' in content
+    rewards = client.get("/my-bookings/rewards/")
+    assert rewards.status_code == 200
+    assert 'id="account-rewards-heading"' in rewards.content.decode()

@@ -39,6 +39,12 @@ class CustomerProfile(models.Model):
     # than to an individual stay.  This keeps a returning guest in control of
     # their current details and avoids copying personal data across bookings.
     phone = models.CharField(max_length=32, blank=True, verbose_name=_("Phone number"))
+    preferred_language = models.CharField(
+        max_length=2,
+        blank=True,
+        choices=[("ar", _("Arabic")), ("en", _("English")), ("fr", _("French"))],
+        verbose_name=_("Preferred language"),
+    )
     residence_address_line1 = models.CharField(
         max_length=250,
         blank=True,

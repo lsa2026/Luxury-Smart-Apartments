@@ -7661,3 +7661,11 @@ msgstr "حجوزاتي ومكافآتي"
 #: templates/includes/header.html templates/includes/mobile_navigation.html templates/accounts/dashboard.html
 msgid "Bookings & loyalty rewards"
 msgstr "إدارة الحجوزات وبرنامج الولاء"
+
+#: apps/accounts/forms.py
+msgid "Preferred language"
+msgstr "اللغة المفضلة"
+
+#: apps/accounts/forms.py
+msgid "Use the current website language"
+msgstr "استخدام لغة الموقع الحالية"
