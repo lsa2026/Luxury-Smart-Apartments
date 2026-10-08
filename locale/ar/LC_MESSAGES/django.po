@@ -7631,3 +7631,7 @@ msgstr "الاتجاهات إلى هذا المكان"
 
 msgid "Search starts within 1 km of the apartment (5 km for metro stations). Search this area uses the visible map, up to 10 km (20 km for metro). Distances are straight-line, not walking routes. Locations and entrances may be approximate. Directions open in Google Maps."
 msgstr "يبدأ البحث ضمن كيلومتر واحد من الشقة (5 كم لمحطات المترو). يستخدم البحث في هذه المنطقة الخريطة الظاهرة، بحد أقصى 10 كم (20 كم للمترو). المسافات بخط مستقيم وليست مسارات مشي. قد تكون المواقع والمداخل تقريبية. تُفتح الاتجاهات في خرائط Google."
+
+#: templates/accounts/_social_signin.html
+msgid "Continue with Apple"
+msgstr "المتابعة باستخدام Apple"
