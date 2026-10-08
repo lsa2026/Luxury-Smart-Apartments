@@ -7651,3 +7651,13 @@ msgstr "المتابعة باستخدام Google"
 #: templates/accounts/_social_signin.html
 msgid "A provider confirms your identity; it never grants administrative access on its own."
 msgstr "يؤكد مزوّد الدخول هويتك، ولا يمنحك صلاحيات الإدارة بمجرد تسجيل الدخول."
+
+
+#: templates/includes/header.html templates/includes/mobile_navigation.html templates/accounts/dashboard.html
+msgid "My bookings & rewards"
+msgstr "حجوزاتي ومكافآتي"
+
+
+#: templates/includes/header.html templates/includes/mobile_navigation.html templates/accounts/dashboard.html
+msgid "Bookings & loyalty rewards"
+msgstr "إدارة الحجوزات وبرنامج الولاء"
