@@ -1,6 +1,7 @@
 """The unified guest entry must preserve existing authentication and booking access."""
 
 import gettext
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -8,7 +9,6 @@ import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
-from django.utils.html import escape
 
 LABELS = {
     "ar": ("حجوزاتي ومكافآتي", "إدارة الحجوزات وبرنامج الولاء"),
@@ -72,7 +72,7 @@ def test_desktop_and_mobile_have_one_guest_entry(language, authenticated):
         assert sum("data-guest-account-link" in link for link in links) == 1
         assert sum(link.get("href") == "/my-bookings/" for link in links) == 1
         assert not any(link.get("href") in {"/reservations/manage/", "/login/"} for link in links)
-    assert content.count(escape(LABELS[language][0])) == 2
+    assert unescape(content).count(LABELS[language][0]) == 2
 
 
 @pytest.mark.django_db
@@ -114,7 +114,7 @@ def test_authenticated_dashboard_keeps_booking_access_and_loyalty_preview(langua
     response = client.get("/my-bookings/")
     assert response.status_code == 200
     content = response.content.decode()
-    assert f"<h1>{escape(LABELS[language][1])}</h1>" in content
+    assert f"<h1>{LABELS[language][1]}</h1>" in unescape(content)
     assert 'class="loyalty-preview"' in content
     assert 'href="/reservations/manage/"' in content
     assert 'id="upcoming-bookings-heading"' in content
