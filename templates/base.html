@@ -53,6 +53,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body
+    class="{% block body_class %}{% endblock %}"
     data-google-integrations-enabled="{{ google_config.google_integrations_enabled|yesno:'true,false' }}"
     data-meta-measurement-page-allowed="{{ meta_measurement_page_allowed|yesno:'true,false' }}"
     data-gtm-enabled="{{ google_config.gtm_enabled|yesno:'true,false' }}"
@@ -105,9 +106,9 @@
     <main id="main-content" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
-    {% include "includes/footer.html" %}
+    {% block footer %}{% include "includes/footer.html" %}{% endblock %}
     {% if cookie_consent_enabled %}{% include "includes/cookie_consent.html" %}{% endif %}
-    {% include "includes/whatsapp_button.html" %}
+    {% block contact_widget %}{% include "includes/whatsapp_button.html" %}{% endblock %}
     {% if featured_properties or properties or similar_properties %}
     {% include "properties/_price_calendar.html" %}
     {% endif %}

@@ -1,85 +1,63 @@
 {% extends "base.html" %}
-{% load i18n presentation %}
-{% block title %}{% trans "Bookings & loyalty rewards" %} | Luxury Smart Apartments{% endblock %}
+{% load i18n static presentation %}
+{% block title %}{% trans "My bookings & rewards" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
+{% block body_class %}guest-account{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=1">{% endblock %}
+{% block contact_widget %}{% endblock %}
 {% block content %}
-<header class="page-hero page-hero--compact account-hero">
-    <div class="container account-hero__inner">
-        <div>
-            <p class="eyebrow">{% trans "Private account" %}</p>
-            <h1>{% trans "Bookings & loyalty rewards" %}</h1>
-            <p>{% trans "Welcome" %} {{ request.user.first_name|default:request.user.email }}</p>
-        </div>
-        <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="button button--ghost" type="submit">{% trans "Sign out" %}</button></form>
-    </div>
-</header>
-
-<section class="section container account-dashboard">
-    <div class="guest-profile-layout">
-        <article class="guest-profile-card">
-            <div class="guest-profile-card__heading">
-                <div>
-                    <p class="eyebrow">{% trans "Guest profile" %}</p>
-                    <h2>{% trans "Your details and home address" %}</h2>
-                    <p>{% trans "Keep your details up to date for your bookings and future services." %}</p>
-                </div>
-                <span class="guest-profile-card__badge">{% trans "Private account" %}</span>
-            </div>
-            <form method="post" class="guest-profile-form" novalidate>
-                {% csrf_token %}
-                {% if profile_form.non_field_errors %}<div class="form-errors">{{ profile_form.non_field_errors }}</div>{% endif %}
-                <div class="guest-profile-form__grid">
-                    <div class="field-group"><label for="{{ profile_form.first_name.id_for_label }}">{{ profile_form.first_name.label }}</label>{{ profile_form.first_name }}{{ profile_form.first_name.errors }}</div>
-                    <div class="field-group"><label for="{{ profile_form.last_name.id_for_label }}">{{ profile_form.last_name.label }}</label>{{ profile_form.last_name }}{{ profile_form.last_name.errors }}</div>
-                    <div class="field-group">
-                        <label for="account-email">{% trans "Email" %}</label>
-                        <input id="account-email" type="email" value="{{ request.user.email }}" autocomplete="email" readonly aria-describedby="account-email-help">
-                        <small id="account-email-help" class="helptext">{% trans "Your sign-in email is protected; changing it requires verifying the new address." %}</small>
-                    </div>
-                    <div class="field-group"><label for="{{ profile_form.phone.id_for_label }}">{{ profile_form.phone.label }}</label>{{ profile_form.phone }}{{ profile_form.phone.errors }}</div>
-                    <div class="field-group guest-profile-form__full"><label for="{{ profile_form.residence_address_line1.id_for_label }}">{{ profile_form.residence_address_line1.label }}</label>{{ profile_form.residence_address_line1 }}{{ profile_form.residence_address_line1.errors }}</div>
-                    <div class="field-group"><label for="{{ profile_form.residence_city.id_for_label }}">{{ profile_form.residence_city.label }}</label>{{ profile_form.residence_city }}{{ profile_form.residence_city.errors }}</div>
-                    <div class="field-group"><label for="{{ profile_form.residence_region.id_for_label }}">{{ profile_form.residence_region.label }}</label>{{ profile_form.residence_region }}{{ profile_form.residence_region.errors }}</div>
-                    <div class="field-group"><label for="{{ profile_form.residence_postal_code.id_for_label }}">{{ profile_form.residence_postal_code.label }}</label>{{ profile_form.residence_postal_code }}{{ profile_form.residence_postal_code.errors }}</div>
-                    <div class="field-group"><label for="{{ profile_form.residence_country.id_for_label }}">{{ profile_form.residence_country.label }}</label>{{ profile_form.residence_country }}{{ profile_form.residence_country.errors }}</div>
-                </div>
-                <button class="button" type="submit">{% trans "Save my details" %}</button>
-            </form>
-        </article>
-
-        <aside class="loyalty-preview" aria-label="{% trans 'Loyalty programme coming soon' %}">
-            <p class="eyebrow">{% trans "Coming soon" %}</p>
-            <h2>{% trans "Loyalty programme" %}</h2>
-            <p>{% trans "Your rewards and benefits will be based on confirmed stays. No points or discounts are awarded before the programme launches." %}</p>
+<div class="container guest-account-shell">
+    <h1>{% trans "My bookings & rewards" %}</h1>
+    <header class="account-welcome">
+        <div class="account-welcome__identity"><span class="account-welcome__avatar">{% include "accounts/_icon.html" with icon="user" %}</span><div><h2>{{ account_greeting }}</h2><p>{{ account_copy.welcome_back }}</p></div></div>
+        {% if request.user.last_login %}<p class="account-welcome__login">{% include "accounts/_icon.html" with icon="clock" %}<span>{{ account_copy.last_login }}: <time datetime="{{ request.user.last_login|date:'c' }}">{{ request.user.last_login|localized_datetime }}</time></span></p>{% endif %}
+    </header>
+    <div class="account-workspace">
+        <aside class="account-sidebar">
+            <nav class="account-navigation" aria-label="{{ account_copy.navigation }}">
+                <a href="{% url 'accounts:dashboard' %}"{% if account_section == 'bookings' %} aria-current="page"{% endif %}>{% include "accounts/_icon.html" with icon="calendar" %}<span>{{ account_copy.bookings }}</span></a>
+                <a href="{% url 'accounts:rewards' %}"{% if account_section == 'rewards' %} aria-current="page"{% endif %}>{% include "accounts/_icon.html" with icon="gift" %}<span>{{ account_copy.rewards }}</span></a>
+                <a href="{% url 'accounts:details' %}"{% if account_section == 'details' %} aria-current="page"{% endif %}>{% include "accounts/_icon.html" with icon="user" %}<span>{{ account_copy.details }}</span></a>
+            </nav>
+            <div class="account-sidebar__support">{% include "accounts/_icon.html" with icon="support" %}<p>{{ account_copy.support }}</p><a href="{% url 'core:contact' %}">{{ account_copy.contact }}</a></div>
+            <form class="account-sidebar__logout" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">{{ account_copy.sign_out }} {% include "accounts/_icon.html" with icon="logout" %}</button></form>
         </aside>
+        <div class="account-main">
+            {% if account_section == 'bookings' %}
+            <section class="account-panel account-bookings" aria-labelledby="account-bookings-heading">
+                <h2 id="account-bookings-heading">{{ account_copy.bookings }}</h2>
+                <nav class="account-booking-filters" aria-label="{{ account_copy.bookings }}">
+                    <a href="{% url 'accounts:dashboard' %}"{% if booking_filter == 'upcoming' %} aria-current="page"{% endif %}>{{ account_copy.upcoming }} <span>{{ booking_counts.upcoming|localized_number }}</span></a>
+                    <a href="{% url 'accounts:dashboard' %}?filter=past"{% if booking_filter == 'past' %} aria-current="page"{% endif %}>{{ account_copy.past }} <span>{{ booking_counts.past|localized_number }}</span></a>
+                    <a href="{% url 'accounts:dashboard' %}?filter=cancelled"{% if booking_filter == 'cancelled' %} aria-current="page"{% endif %}>{{ account_copy.cancelled }} <span>{{ booking_counts.cancelled|localized_number }}</span></a>
+                </nav>
+                {% if booking_page.object_list %}
+                <div class="account-booking-results">{% for reservation in booking_page %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>
+                {% if booking_page.has_other_pages %}<nav class="account-pagination" aria-label="{{ account_copy.bookings }}">
+                    {% if booking_page.has_previous %}<a href="?filter={{ booking_filter }}&amp;page={{ booking_page.previous_page_number }}">{{ account_copy.previous_page }}</a>{% endif %}
+                    <span>{{ account_copy.page }} {{ booking_page.number|localized_number }} {{ account_copy.of }} {{ booking_page.paginator.num_pages|localized_number }}</span>
+                    {% if booking_page.has_next %}<a href="?filter={{ booking_filter }}&amp;page={{ booking_page.next_page_number }}">{{ account_copy.next_page }}</a>{% endif %}
+                </nav>{% endif %}
+                <a class="account-text-link" href="{% url 'properties:list' %}#property-search">{{ account_copy.choose_stay }} {% include "accounts/_icon.html" with icon="arrow" %}</a>
+                {% else %}<div class="account-bookings-empty">
+                    {% include "accounts/_icon.html" with icon="calendar" %}<h3>{{ booking_empty_heading }}</h3><p>{{ account_copy.empty_hint }}</p>
+                    <a class="button account-primary" href="{% url 'properties:list' %}#property-search">{{ account_copy.choose_stay }}</a>
+                </div>{% endif %}
+            </section>
+            <a class="account-utility account-panel" href="{% url 'reservations:manage_access' %}"><span class="account-utility__icon">{% include "accounts/_icon.html" with icon="link" %}</span><span><strong>{{ account_copy.missing_booking }}</strong><small>{{ account_copy.access_hint }}</small><b>{{ account_copy.access_booking }}</b></span>{% include "accounts/_icon.html" with icon="arrow" %}</a>
+            {% elif account_section == 'rewards' %}
+            <section class="account-panel account-rewards" aria-labelledby="account-rewards-heading">
+                {% include "accounts/_icon.html" with icon="gift" %}<span class="account-coming-soon">{{ account_copy.coming_soon }}</span>
+                <h2 id="account-rewards-heading">{{ account_copy.rewards }}</h2><h3>{{ account_copy.rewards_heading }}</h3>
+                <p>{{ account_copy.rewards_intro }}</p><p>{{ account_copy.rewards_hint }}</p>
+                <a class="button account-primary" href="{% url 'accounts:dashboard' %}">{{ account_copy.return_bookings }}</a>
+                <a class="account-text-link" href="{% url 'properties:list' %}#property-search">{{ account_copy.choose_stay }} {% include "accounts/_icon.html" with icon="arrow" %}</a>
+            </section>
+            {% else %}{% include "accounts/_details.html" %}{% endif %}
+            <a class="account-utility account-panel account-help" href="{% url 'core:contact' %}"><span class="account-utility__icon">{% include "accounts/_icon.html" with icon="support" %}</span><span><strong>{{ account_copy.support }}</strong><b>{{ account_copy.contact }}</b></span>{% include "accounts/_icon.html" with icon="arrow" %}</a>
+        </div>
     </div>
-
-    <a class="auth-alt" href="{% url 'reservations:manage_access' %}">
-        <span>
-            <strong>{% trans "Manage a booking without an account" %}</strong>
-            <small>{% trans "Use your last name and mobile number to receive a secure link at your booking email address." %}</small>
-        </span>
-        <i class="auth-alt__chevron" aria-hidden="true">↗</i>
-    </a>
-
-    <section class="account-booking-section" aria-labelledby="upcoming-bookings-heading">
-        <div class="account-section-heading"><div><p class="eyebrow">{% trans "Your stays" %}</p><h2 id="upcoming-bookings-heading">{% trans "Upcoming and current bookings" %}</h2></div><span>{{ upcoming_reservations|length }}</span></div>
-        {% if upcoming_reservations %}
-            <div class="booking-list">{% for reservation in upcoming_reservations %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>
-        {% else %}
-            <div class="empty-state account-empty"><p class="eyebrow">{% trans "No upcoming stay" %}</p><h3>{% trans "Your next stay starts here" %}</h3><p>{% trans "Bookings made with your account appear here automatically." %}</p><a class="button" href="{% url 'properties:list' %}#property-search">{% trans "Explore apartments" %}</a></div>
-        {% endif %}
-    </section>
-
-    <section class="account-booking-section" aria-labelledby="past-bookings-heading">
-        <div class="account-section-heading"><div><p class="eyebrow">{% trans "History" %}</p><h2 id="past-bookings-heading">{% trans "Past stays" %}</h2></div><span>{{ past_reservations|length }}</span></div>
-        {% if past_reservations %}<div class="booking-list">{% for reservation in past_reservations %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>{% else %}<p class="account-section-empty">{% trans "No completed stays yet." %}</p>{% endif %}
-    </section>
-
-    <section class="account-booking-section" aria-labelledby="cancelled-bookings-heading">
-        <div class="account-section-heading account-section-heading--cancelled"><div><p class="eyebrow">{% trans "History" %}</p><h2 id="cancelled-bookings-heading">{% trans "Cancelled bookings" %}</h2></div><span>{{ cancelled_reservations|length }}</span></div>
-        {% if cancelled_reservations %}<div class="booking-list">{% for reservation in cancelled_reservations %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>{% else %}<p class="account-section-empty">{% trans "No cancelled bookings." %}</p>{% endif %}
-    </section>
-</section>
+</div>
 {% endblock %}
+{% block footer %}<footer class="container account-footer"><a href="{% url 'core:privacy' %}">{{ account_copy.privacy }}</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">{{ account_copy.sign_out }}</button></form></footer>{% endblock %}
