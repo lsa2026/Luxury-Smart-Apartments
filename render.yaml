@@ -251,7 +251,8 @@ services:
       - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
       - key: APPLE_SIGN_IN_ENABLED
-        value: "False"
+        # Preserve the deliberate Apple login opt-in across Blueprint syncs.
+        sync: false
       - key: APPLE_SERVICE_ID
         sync: false
       - key: APPLE_KEY_ID
