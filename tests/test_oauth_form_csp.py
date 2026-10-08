@@ -17,9 +17,7 @@ def policy_for(path):
     }
 
 
-@pytest.mark.parametrize(
-    "path", ["/login/", "/register/", "/accounts/login/", "/accounts/signup/"]
-)
+@pytest.mark.parametrize("path", ["/login/", "/register/", "/accounts/login/", "/accounts/signup/"])
 @override_settings(APPLE_SIGN_IN_ENABLED=True, GOOGLE_SIGN_IN_ENABLED=True)
 def test_guest_sign_in_allows_only_exact_enabled_provider_form_redirects(path):
     policy = policy_for(path)
