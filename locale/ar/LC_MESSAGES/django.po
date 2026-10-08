@@ -7635,3 +7635,19 @@ msgstr "يبدأ البحث ضمن كيلومتر واحد من الشقة (5 ك
 #: templates/accounts/_social_signin.html
 msgid "Continue with Apple"
 msgstr "المتابعة باستخدام Apple"
+
+#: templates/accounts/_social_signin.html
+msgid "Other secure sign-in options"
+msgstr "خيارات أخرى للدخول الآمن"
+
+#: templates/accounts/_social_signin.html
+msgid "Or continue with"
+msgstr "أو تابع باستخدام"
+
+#: templates/accounts/_social_signin.html
+msgid "Continue with Google"
+msgstr "المتابعة باستخدام Google"
+
+#: templates/accounts/_social_signin.html
+msgid "A provider confirms your identity; it never grants administrative access on its own."
+msgstr "يؤكد مزوّد الدخول هويتك، ولا يمنحك صلاحيات الإدارة بمجرد تسجيل الدخول."
