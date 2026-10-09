@@ -1592,7 +1592,10 @@ document.querySelectorAll("[data-guest-journey]").forEach((form) => {
     form.classList.add("is-enhanced");
     if (nextButton) {
         nextButton.hidden = false;
-        nextButton.addEventListener("click", () => {
+        nextButton.addEventListener("click", async () => {
+            if (form.validateGuestPhone && !(await form.validateGuestPhone())) {
+                return;
+            }
             const guestPanel = form.querySelector("[data-journey-panel='1']");
             const invalid = firstInvalid(guestPanel);
             if (invalid) {

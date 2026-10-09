@@ -7669,3 +7669,15 @@ msgstr "اللغة المفضلة"
 #: apps/accounts/forms.py
 msgid "Use the current website language"
 msgstr "استخدام لغة الموقع الحالية"
+
+#: apps/reservations/booking_forms.py
+msgid "Phone number country"
+msgstr "بلد رقم الجوال"
+
+#: apps/reservations/booking_forms.py
+msgid "Choose your phone number's country, then enter your usual number, including the starting zero if needed. You can also paste a full international number."
+msgstr "اختر بلد رقم جوالك واكتبه كالمعتاد، حتى لو بدأ بصفر. يمكنك أيضًا لصق الرقم الدولي كاملًا."
+
+#: apps/reservations/booking_forms.py templates/reservations/booking_quote_detail.html
+msgid "Check your phone number and the selected country."
+msgstr "تأكد من رقم الجوال وبلد الرقم المختار."

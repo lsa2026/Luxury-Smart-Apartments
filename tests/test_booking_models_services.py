@@ -429,9 +429,7 @@ def test_guest_phone_accepts_numbers_from_any_country(
     "raw_phone",
     [
         "6462817246",  # number entered without its country calling code
-        "0500000000",  # local Saudi number
         "01012345678",  # valid Egyptian local notation without +20
-        "0033612345678",  # dial-out prefix is not accepted as E.164 input
         "12345",  # too short for any country
         "+9999999999999999",  # no such country code, and over E.164 length
         "0000000000",
