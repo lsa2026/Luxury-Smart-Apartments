@@ -5,6 +5,7 @@ import secrets
 from datetime import date, timedelta
 from urllib.parse import urlencode
 
+import phonenumbers
 from django.conf import settings
 from django.contrib import messages
 from django.core import signing
@@ -19,6 +20,7 @@ from django.utils.translation import gettext_lazy
 from django.views import View
 
 from apps.core.guest_documents import UI, document_language, guest_documents
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_choices
 from apps.properties.models import Property, PropertyImage
@@ -184,6 +186,7 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
         "guest_form_initial_step": (
             2
             if form.is_bound
+            and not (form.errors.get("guest_phone") or form.errors.get("guest_phone_country"))
             and any(
                 form.errors.get(name)
                 for name in (
@@ -424,6 +427,42 @@ class BookingQuoteDetailView(View):
                 ),
             ),
         )
+
+
+class GuestPhoneValidationView(View):
+    """Local, session-owned formatting check; no provider call or booking write."""
+
+    http_method_names = ["post"]
+
+    def post(self, request: HttpRequest, reference: str) -> HttpResponse:
+        quote = _owned_quote(request, reference)
+        if is_rate_limited(request, scope="guest-phone", requests=60, window=300):
+            response = JsonResponse({"detail": "temporarily_unavailable"}, status=429)
+        elif (
+            quote.status != BookingQuote.Status.ACTIVE
+            or quote.is_expired
+            or not verify_quote_fingerprint(quote)
+        ):
+            response = JsonResponse({"detail": "quote_unavailable"}, status=409)
+        else:
+            value = request.POST.get("phone", "")
+            country = request.POST.get("country", "SA")
+            try:
+                if len(value) > 32:
+                    raise InvalidPhoneNumber
+                normalized = normalize_phone_number(value, default_region=country)
+                parsed = phonenumbers.parse(normalized, None)
+                region = phonenumbers.region_code_for_number(parsed)
+                response = JsonResponse(
+                    {
+                        "phone": normalized,
+                        "country": region if region in phonenumbers.SUPPORTED_REGIONS else country,
+                    }
+                )
+            except InvalidPhoneNumber:
+                response = JsonResponse({"detail": "invalid_phone"}, status=400)
+        response["Cache-Control"] = "private, no-store"
+        return response
 
 
 class GuestDetailsView(View):

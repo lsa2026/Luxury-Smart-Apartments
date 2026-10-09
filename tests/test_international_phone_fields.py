@@ -9,7 +9,7 @@ from apps.reservations.booking_forms import GuestDetailsForm
 pytestmark = pytest.mark.django_db
 
 
-def test_every_phone_input_prompts_for_an_international_country_code() -> None:
+def test_checkout_uses_country_picker_while_other_phone_fields_remain_international() -> None:
     expected_placeholder = "+<country code> <number>"
     expected_help = (
         "Enter an international number, starting with + and its country code, "
@@ -19,11 +19,11 @@ def test_every_phone_input_prompts_for_an_international_country_code() -> None:
     with override("en"):
         assert ContactForm().fields["phone"].widget.attrs["placeholder"] == expected_placeholder
         assert str(ContactForm().fields["phone"].help_text) == expected_help
-        assert (
-            GuestDetailsForm().fields["guest_phone"].widget.attrs["placeholder"]
-            == expected_placeholder
+        assert GuestDetailsForm().fields["guest_phone"].widget.attrs["placeholder"] == "0501234567"
+        assert "Choose your phone number's country" in str(
+            GuestDetailsForm().fields["guest_phone"].help_text
         )
-        assert str(GuestDetailsForm().fields["guest_phone"].help_text) == expected_help
+        assert GuestDetailsForm().fields["guest_phone_country"].initial == "SA"
     assert (
         SiteSettingAdminForm().fields["contact_phone"].widget.attrs["placeholder"]
         == expected_placeholder

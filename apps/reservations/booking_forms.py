@@ -3,6 +3,7 @@
 import re
 import secrets
 
+import phonenumbers
 from django import forms
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
@@ -33,21 +34,30 @@ class GuestDetailsForm(forms.Form):
         max_length=254,
         widget=forms.EmailInput(attrs={"autocomplete": "email", "inputmode": "email"}),
     )
+    guest_phone_country = forms.ChoiceField(
+        label=_("Phone number country"),
+        choices=(),
+        required=False,
+        initial="SA",
+        widget=forms.Select(attrs={"data-phone-country": ""}),
+    )
     guest_phone = forms.CharField(
         label=_("Phone number"),
         # Long enough for an international number written with spaces,
         # brackets or dashes; the value is normalised to E.164 on clean.
         max_length=32,
         help_text=_(
-            "Enter an international number, starting with + and its country code, "
-            "for example +966500000000."
+            "Choose your phone number's country, then enter your usual number, "
+            "including the starting zero if needed. You can also paste a full international number."
         ),
         widget=forms.TextInput(
             attrs={
                 "autocomplete": "tel",
                 "dir": "ltr",
                 "inputmode": "tel",
-                "placeholder": "+<country code> <number>",
+                "placeholder": "0501234567",
+                "data-guest-phone": "",
+                "aria-describedby": "guest-phone-help guest-phone-validation",
             }
         ),
     )
@@ -118,6 +128,10 @@ class GuestDetailsForm(forms.Form):
         self.default_country_code = default_country_code.upper()
         super().__init__(*args, **kwargs)
         self.initial["documents_digest"] = documents_digest()
+        self.fields["guest_phone_country"].choices = [
+            (code, f"{code} (+{phonenumbers.country_code_for_region(code)})")
+            for code in ["SA", *sorted(phonenumbers.SUPPORTED_REGIONS - {"SA"})]
+        ]
         self.fields["billing_country"].choices = [
             ("", _("Choose your country")),
             *((code, code) for code in sorted(ISO_ALPHA2_COUNTRY_CODES)),
@@ -141,6 +155,11 @@ class GuestDetailsForm(forms.Form):
     def clean_guest_phone(self) -> str:
         return _clean_text(self.cleaned_data["guest_phone"])
 
+    def clean_guest_phone_country(self) -> str:
+        # Older/in-flight forms do not have this field; Saudi Arabia is the
+        # agreed default, independently of the stay and billing address.
+        return self.cleaned_data["guest_phone_country"] or "SA"
+
     def clean_billing_country(self) -> str:
         try:
             return normalize_country_code(self.cleaned_data["billing_country"])
@@ -156,16 +175,14 @@ class GuestDetailsForm(forms.Form):
         if not cleaned.get("billing_city"):
             self.add_error("billing_city", _("This field is required."))
         phone = cleaned.get("guest_phone")
-        if isinstance(phone, str):
+        phone_country = cleaned.get("guest_phone_country")
+        if isinstance(phone, str) and phone_country:
             try:
-                cleaned["guest_phone"] = normalize_phone_number(phone)
+                cleaned["guest_phone"] = normalize_phone_number(phone, default_region=phone_country)
             except InvalidPhoneNumber:
                 self.add_error(
                     "guest_phone",
-                    _(
-                        "Enter a valid mobile number in international format, starting "
-                        "with +, for example +966500000000."
-                    ),
+                    _("Check your phone number and the selected country."),
                 )
         return cleaned
 

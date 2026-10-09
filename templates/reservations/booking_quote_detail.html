@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% load i18n l10n presentation currency static %}
 {% block extra_head %}
+{% if quote_is_usable %}
+<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}?v=1">
+<script src="{% static 'js/checkout-phone.js' %}?v=1" defer></script>
+{% endif %}
 {% if quote_is_usable and google_config.gtm_enabled and google_config.ga4_enabled %}
 <script src="{% static 'js/user-provided-data.js' %}?v=1" defer></script>
 {% endif %}
@@ -216,10 +220,22 @@
                                 {% for error in guest_form.guest_email.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
                             <div class="form-field quote-review__field--guest_phone{% if guest_form.guest_phone.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.guest_phone.id_for_label }}">{{ guest_form.guest_phone.label }}</label>
-                                {{ guest_form.guest_phone }}
+                                <div class="checkout-phone" data-checkout-phone
+                                     data-check-url="{% url 'reservations:phone_check' reference=quote_reference %}"
+                                     data-invalid-message="{% trans 'Check your phone number and the selected country.' %}">
+                                    <div class="checkout-phone__country">
+                                        <label for="{{ guest_form.guest_phone_country.id_for_label }}">{{ guest_form.guest_phone_country.label }}</label>
+                                        {{ guest_form.guest_phone_country }}
+                                    </div>
+                                    <div class="checkout-phone__number">
+                                        <label for="{{ guest_form.guest_phone.id_for_label }}">{{ guest_form.guest_phone.label }}</label>
+                                        {{ guest_form.guest_phone }}
+                                    </div>
+                                </div>
+                                {% for error in guest_form.guest_phone_country.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                                 {% for error in guest_form.guest_phone.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                                {% if guest_form.guest_phone.help_text %}<small>{{ guest_form.guest_phone.help_text }}</small>{% endif %}
+                                <p class="form-error" id="guest-phone-validation" role="status" aria-live="polite" hidden></p>
+                                {% if guest_form.guest_phone.help_text %}<small id="guest-phone-help">{{ guest_form.guest_phone.help_text }}</small>{% endif %}
                             </div>
                         </div>
 

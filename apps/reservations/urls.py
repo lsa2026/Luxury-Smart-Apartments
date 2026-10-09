@@ -7,6 +7,7 @@ from .views import (
     BookingIntentDetailView,
     BookingQuoteDetailView,
     GuestDetailsView,
+    GuestPhoneValidationView,
     ModificationCreateView,
     ModificationDetailView,
     PropertyCalendarAvailabilityView,
@@ -19,6 +20,11 @@ from .views import (
 app_name = "reservations"
 
 urlpatterns = [
+    path(
+        "quotes/<str:reference>/phone-check/",
+        GuestPhoneValidationView.as_view(),
+        name="phone_check",
+    ),
     path("sama/health/", sama_booking_api.health, name="sama_health"),
     path("sama/guest-context/", sama_booking_api.guest_context, name="sama_guest_context"),
     path("sama/guest-history/", sama_booking_api.guest_history, name="sama_guest_history"),

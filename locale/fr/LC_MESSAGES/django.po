@@ -7874,3 +7874,15 @@ msgstr "Langue préférée"
 #: apps/accounts/forms.py
 msgid "Use the current website language"
 msgstr "Utiliser la langue actuelle du site"
+
+#: apps/reservations/booking_forms.py
+msgid "Phone number country"
+msgstr "Pays du numéro de téléphone"
+
+#: apps/reservations/booking_forms.py
+msgid "Choose your phone number's country, then enter your usual number, including the starting zero if needed. You can also paste a full international number."
+msgstr "Choisissez le pays de votre numéro et saisissez-le comme d’habitude, avec le zéro initial si nécessaire. Vous pouvez aussi coller un numéro international complet."
+
+#: apps/reservations/booking_forms.py templates/reservations/booking_quote_detail.html
+msgid "Check your phone number and the selected country."
+msgstr "Vérifiez votre numéro de téléphone et le pays sélectionné."
