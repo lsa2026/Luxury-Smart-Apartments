@@ -110,6 +110,11 @@ def _render_hyperpay_checkout(
             "checkout_id": attempt.provider_checkout_id,
             "widget_integrity": attempt.widget_integrity,
             "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
+            "apple_pay_enabled": settings.HYPERPAY_ENVIRONMENT == "test"
+            or (
+                settings.HYPERPAY_ENVIRONMENT == "production"
+                and settings.HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
+            ),
             "widget_url": (
                 f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js"
                 f"?checkoutId={attempt.provider_checkout_id}"

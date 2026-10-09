@@ -619,7 +619,13 @@ class ResultViewServiceStub:
 
 
 @override_settings(**HYPERPAY_SETTINGS)
-def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    ("environment", "production_apple_pay_enabled", "expect_apple_pay"),
+    [("test", False, True), ("production", False, False), ("production", True, True)],
+)
+def test_widget_page_orders_mada_and_never_exposes_access_token(
+    monkeypatch, environment, production_apple_pay_enabled, expect_apple_pay
+) -> None:
     client = Client()
     intent = payable_intent()
     own_intent(client, intent)
@@ -640,23 +646,40 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
         "sha384-YWJj",
     )
     monkeypatch.setattr(HyperPayBookingCheckoutView, "service_class", CheckoutViewServiceStub)
-    response = client.post(reverse("payments:hyperpay_booking", args=[intent.public_reference]))
+    gateway_origin = (
+        "https://eu-prod.oppwa.com" if environment == "production" else "https://eu-test.oppwa.com"
+    )
+    with override_settings(
+        HYPERPAY_ENVIRONMENT=environment,
+        HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED=production_apple_pay_enabled,
+        HYPERPAY_BASE_URL=f"{gateway_origin}/",
+        HYPERPAY_WIDGET_ORIGIN=gateway_origin,
+    ):
+        response = client.post(reverse("payments:hyperpay_booking", args=[intent.public_reference]))
     content = response.content.decode()
     assert response.status_code == 200
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
-    assert content.index('data-brands="MADA APPLEPAY"') < content.index('data-brands="VISA MASTER"')
+    mada_brands = "MADA APPLEPAY" if expect_apple_pay else "MADA"
+    assert content.index(f'data-brands="{mada_brands}"') < content.index(
+        'data-brands="VISA MASTER"'
+    )
     assert 'paymentTarget: "_top"' in content
-    assert 'displayName: "Luxury Smart Apartments"' in content
-    assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
-    assert 'countryCode: "SA"' in content
-    assert "version: 3" in content
-    assert "-webkit-appearance: -apple-pay-button" in content
+    if expect_apple_pay:
+        assert 'displayName: "Luxury Smart Apartments"' in content
+        assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
+        assert 'countryCode: "SA"' in content
+        assert "version: 3" in content
+        assert "-webkit-appearance: -apple-pay-button" in content
+    else:
+        assert "APPLEPAY" not in content
+        assert "applePay" not in content
+        assert "apple-pay" not in content
     assert 'integrity="sha384-YWJj"' in content
     assert "test-access-token-secret" not in content
     csp = response.headers["Content-Security-Policy"]
-    assert "https://eu-test.oppwa.com" in csp
-    assert "form-action 'self' https://eu-test.oppwa.com" in csp
-    assert "style-src 'self' 'unsafe-inline' https://eu-test.oppwa.com" in csp
+    assert gateway_origin in csp
+    assert f"form-action 'self' {gateway_origin}" in csp
+    assert f"style-src 'self' 'unsafe-inline' {gateway_origin}" in csp
     # The hosted widget ships English labels; the locale makes it follow the page.
     assert 'locale: "ar"' in content
     # One method is shown at a time, and the payer can confirm what they are buying.
@@ -667,7 +690,7 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(monkeypatch) -> 
     assert "checkout__total--display" in content
     assert "checkout__total--payment" not in content
     assert reverse("reservations:intent_detail", args=[intent.public_reference]) in content
-    assert "font-src 'self' data: https://eu-test.oppwa.com" in csp
+    assert f"font-src 'self' data: {gateway_origin}" in csp
     assert "unsafe-eval" not in csp
     assert "return_token=" in content
 
