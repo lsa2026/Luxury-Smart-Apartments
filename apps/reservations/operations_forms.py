@@ -104,6 +104,7 @@ class ManualBookingFinalizeForm(forms.Form):
         choices=ManualBookingDraft._meta.get_field("guest_language").choices,
         initial="ar",
         required=False,
+        widget=forms.Select(attrs={"class": "lsa-manual-booking__language-select"}),
         help_text="تُرسل إلى Hostaway لتحديد لغة التواصل مع الضيف، ولا تغيّر لغة صفحة الإدارة.",
     )
     final_total_price = forms.DecimalField(

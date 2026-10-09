@@ -164,6 +164,7 @@ def test_admin_shows_language_in_form_and_on_confirmation():
     before = client.get(url).content.decode()
     assert 'name="guest_language"' in before
     assert "لغة الضيف" in before
+    assert "lsa-manual-booking__language-select" in before
     assert 'value="ar" selected' in before
     finalize_manual_booking_draft(
         draft_id=draft.pk,
