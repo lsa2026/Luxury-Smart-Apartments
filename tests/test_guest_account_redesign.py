@@ -56,6 +56,8 @@ def test_account_pages_localized_private_and_not_duplicated(guest_client, langua
     assert 'class="site-footer"' not in content
     assert "css/guest-account.css" in content
     assert 'action="/logout/"' in content
+    assert content.count('class="account-signout-button"') == 2
+    assert content.count(f"<span>{copy['sign_out']}</span>") == 2
     assert 'name="csrfmiddlewaretoken"' in content
     assert "سجل الحجوزات" not in content
     assert 'class="loyalty-preview"' not in content
