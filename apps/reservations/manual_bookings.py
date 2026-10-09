@@ -254,6 +254,7 @@ def finalize_manual_booking_draft(
         draft.guest_last_name = str(guest_data["guest_last_name"])
         draft.guest_email = str(guest_data["guest_email"])
         draft.guest_phone = str(guest_data["guest_phone"])
+        draft.guest_language = str(guest_data.get("guest_language") or "ar")
         draft.special_requests = ""
         draft.final_total_price = final_total
         draft.payment_amount_sar = payment_amount_sar
@@ -327,7 +328,7 @@ def create_manual_booking_in_hostaway(
                 billing_state="Not provided",
                 billing_country=_guest_country_code(draft.guest_phone),
                 billing_postcode="Not provided",
-                language="ar",
+                language=draft.guest_language or "ar",
                 special_requests="",
                 status=BookingIntent.Status.AWAITING_PAYMENT,
                 idempotency_key=_manual_intent_idempotency_key(draft),

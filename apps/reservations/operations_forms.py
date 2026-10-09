@@ -99,6 +99,13 @@ class ManualBookingFinalizeForm(forms.Form):
         max_length=32,
         widget=forms.TextInput(attrs={"dir": "ltr", "inputmode": "tel", "placeholder": "+966…"}),
     )
+    guest_language = forms.ChoiceField(
+        label="لغة الضيف",
+        choices=ManualBookingDraft._meta.get_field("guest_language").choices,
+        initial="ar",
+        required=False,
+        help_text="تُرسل إلى Hostaway لتحديد لغة التواصل مع الضيف، ولا تغيّر لغة صفحة الإدارة.",
+    )
     final_total_price = forms.DecimalField(
         label="السعر النهائي",
         max_digits=14,
@@ -131,6 +138,7 @@ class ManualBookingFinalizeForm(forms.Form):
                     "guest_last_name": draft.guest_last_name,
                     "guest_email": draft.guest_email,
                     "guest_phone": draft.guest_phone,
+                    "guest_language": draft.guest_language or "ar",
                 }
             )
 
@@ -148,6 +156,10 @@ class ManualBookingFinalizeForm(forms.Form):
 
     def clean_guest_email(self) -> str:
         return self.cleaned_data["guest_email"].strip().casefold()
+
+    def clean_guest_language(self) -> str:
+        # Keep already-open forms compatible during deployment.
+        return self.cleaned_data["guest_language"] or "ar"
 
     def clean_guest_phone(self) -> str:
         try:

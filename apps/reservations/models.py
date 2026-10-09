@@ -218,6 +218,14 @@ class ManualBookingDraft(models.Model):
     guest_last_name = models.CharField(max_length=100, blank=True)
     guest_email = models.EmailField(max_length=254, blank=True)
     guest_phone = models.CharField(max_length=32, blank=True)
+    # Legacy drafts stay unspecified; no previous reservation is reclassified.
+    guest_language = models.CharField(
+        max_length=2,
+        choices=[("ar", "العربية"), ("en", "الإنجليزية"), ("fr", "الفرنسية")],
+        blank=True,
+        default="",
+        db_default="",
+    )
     special_requests = models.TextField(max_length=1000, blank=True)
     status = models.CharField(
         max_length=30,

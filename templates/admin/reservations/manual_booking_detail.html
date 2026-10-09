@@ -16,6 +16,7 @@
     <p><b>سعر Hostaway عند الفحص:</b> {{ draft.system_total_price|format_money:draft.currency }}</p>
     <p><b>فحص التوفر:</b> <span dir="ltr">{{ draft.availability_checked_at }}</span></p>
     <p><b>صلاحية السعر:</b> <span dir="ltr">{{ draft.expires_at }}</span></p>
+    {% if draft.guest_language %}<p><b>لغة الضيف:</b> {{ draft.get_guest_language_display }}</p>{% endif %}
     {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
     <form method="post" class="lsa-owner-form" novalidate>
       {% csrf_token %}<input type="hidden" name="action" value="recheck">
