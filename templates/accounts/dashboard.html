@@ -4,7 +4,7 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block body_class %}guest-account{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=1">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=2">{% endblock %}
 {% block contact_widget %}{% endblock %}
 {% block content %}
 <div class="container guest-account-shell">
@@ -21,7 +21,7 @@
                 <a href="{% url 'accounts:details' %}"{% if account_section == 'details' %} aria-current="page"{% endif %}>{% include "accounts/_icon.html" with icon="user" %}<span>{{ account_copy.details }}</span></a>
             </nav>
             <div class="account-sidebar__support">{% include "accounts/_icon.html" with icon="support" %}<p>{{ account_copy.support }}</p><a href="{% url 'core:contact' %}">{{ account_copy.contact }}</a></div>
-            <form class="account-sidebar__logout" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">{{ account_copy.sign_out }} {% include "accounts/_icon.html" with icon="logout" %}</button></form>
+            <form class="account-sidebar__logout" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="account-signout-button" type="submit">{% include "accounts/_icon.html" with icon="logout" %}<span>{{ account_copy.sign_out }}</span></button></form>
         </aside>
         <div class="account-main">
             {% if account_section == 'bookings' %}
@@ -60,4 +60,4 @@
     </div>
 </div>
 {% endblock %}
-{% block footer %}<footer class="container account-footer"><a href="{% url 'core:privacy' %}">{{ account_copy.privacy }}</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">{{ account_copy.sign_out }}</button></form></footer>{% endblock %}
+{% block footer %}<footer class="container account-footer"><a href="{% url 'core:privacy' %}">{{ account_copy.privacy }}</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="account-signout-button" type="submit">{% include "accounts/_icon.html" with icon="logout" %}<span>{{ account_copy.sign_out }}</span></button></form></footer>{% endblock %}

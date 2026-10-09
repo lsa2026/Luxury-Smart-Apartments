@@ -1,4 +1,4 @@
-{% load i18n socialaccount %}
+{% load i18n socialaccount static %}
 {% if google_sign_in_enabled or apple_sign_in_enabled %}
 <section class="auth-social" aria-label="{% trans 'Other secure sign-in options' %}">
     <div class="auth-social__divider"><span>{% trans "Or continue with" %}</span></div>
@@ -7,7 +7,8 @@
         <form method="post" action="{% provider_login_url 'google' process='login' next=next %}">
             {% csrf_token %}
             <button class="auth-social__button" type="submit">
-                <span class="auth-social__google" aria-hidden="true">G</span>
+                {# Official asset: https://developers.google.com/static/identity/images/g-logo.png #}
+                <img class="auth-social__logo" src="{% static 'images/auth/google.png' %}" width="24" height="24" alt="" aria-hidden="true">
                 {% trans "Continue with Google" %}
             </button>
         </form>
@@ -16,7 +17,7 @@
         <form method="post" action="{% provider_login_url 'apple' process='login' next=next %}">
             {% csrf_token %}
             <button class="auth-social__button" type="submit">
-                <span class="auth-social__apple" aria-hidden="true">●</span>
+                <img class="auth-social__logo" src="{% static 'images/auth/apple.svg' %}" width="24" height="24" alt="" aria-hidden="true">
                 {% trans "Continue with Apple" %}
             </button>
         </form>

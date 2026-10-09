@@ -12560,9 +12560,10 @@ body.splash-active .whatsapp-fab {
     align-items: center;
     justify-content: center;
     min-height: 3rem;
-    border: 1px solid var(--color-border);
-    color: var(--color-primary-strong);
-    background: var(--color-surface);
+    border: 1px solid #747775;
+    color: #1f1f1f;
+    background: #fff;
+    padding: 0.65rem 0.75rem;
     border-radius: 0.8rem;
     cursor: pointer;
     font: inherit;
@@ -12578,27 +12579,12 @@ body.splash-active .whatsapp-fab {
     transform: translateY(-1px);
 }
 
-.auth-social__google,
-.auth-social__apple {
-    display: inline-grid;
-    width: 1.35rem;
-    height: 1.35rem;
-    place-items: center;
-    border-radius: 50%;
-    font-size: 1rem;
-    font-weight: 850;
-}
-
-.auth-social__google {
-    color: #4285f4;
-    background: #fff;
-    box-shadow: inset 0 0 0 1px #d9d9d9;
-}
-
-.auth-social__apple {
-    color: #fff;
-    background: #171717;
-    font-size: 0.65rem;
+.auth-social__logo {
+    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 1.5rem;
+    object-fit: contain;
 }
 
 .auth-social__note {

@@ -26,8 +26,9 @@
 .account-sidebar__support p { margin: 0.35rem 0; }
 .account-sidebar__support a { color: var(--account-green); font-weight: 700; }
 .account-sidebar__logout { border-block-start: 1px solid var(--color-border); padding-block-start: 0.6rem; }
-.account-sidebar__logout button, .account-footer button { border: 0; background: none; cursor: pointer; color: inherit; min-height: 2.75rem; padding: 0.6rem; }
-.account-sidebar__logout button { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.guest-account .account-signout-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.65rem; min-height: 3rem; padding: 0.65rem 1.15rem; border: 1px solid #b7a17a; border-radius: 0.75rem; background: #f6f0e5; color: var(--account-navy); font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+.guest-account .account-signout-button:hover { background: #eee2cf; border-color: var(--account-gold); }
+.account-sidebar__logout .account-signout-button { width: 100%; }
 .account-main { display: grid; gap: 1rem; min-width: 0; }
 .account-panel { background: #fff; border: 1px solid #e6dfd2; border-radius: 1.2rem; box-shadow: 0 5px 20px rgb(9 44 42 / 4%); }
 .account-bookings, .account-details { padding: 1.4rem; }
@@ -88,7 +89,7 @@
 .account-information dl > div { padding-block: 0.7rem; display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.5rem; }
 .account-information dt { color: var(--color-muted); }
 .account-information dd { margin: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; }
-.account-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding-block: 0.8rem 1.5rem; margin-block-start: 1.5rem; border-block-start: 1px solid var(--color-border); font-size: 0.8rem; color: var(--account-navy); }
+.account-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.8rem 1.5rem; margin-block-start: 1.5rem; border-block-start: 1px solid var(--color-border); font-size: 0.8rem; color: var(--account-navy); }
 .account-footer a { padding: 0.6rem 0; min-height: 2.75rem; }
 .guest-account :is(a, button, input, select, summary):focus-visible { outline: 3px solid var(--account-gold); outline-offset: 3px; }
 @media (max-width: 850px) {
@@ -96,7 +97,9 @@
     .account-sidebar { padding: 0; border: 0; background: none; margin-block-end: 1rem; }
     .account-navigation { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.2rem; background: #fff; border: 1px solid #e6dfd2; border-radius: 0.8rem; padding: 0.2rem; }
     .account-navigation a { justify-content: center; padding: 0.6rem 0.25rem; min-height: 3rem; text-align: center; font-size: 0.86rem; gap: 0.3rem; line-height: 1.4; }
-    .account-navigation a svg, .account-sidebar__support, .account-sidebar__logout { display: none; }
+    .account-navigation a svg, .account-sidebar__support { display: none; }
+    .account-sidebar__logout { display: flex; justify-content: end; border: 0; padding-block-start: 0.7rem; }
+    .account-sidebar__logout .account-signout-button { width: auto; }
     .account-welcome { align-items: start; flex-direction: column; gap: 0.4rem; padding: 1rem; }
     .account-welcome__login { font-size: 0.76rem; }
     .account-bookings, .account-details { padding: 1rem; }
@@ -118,6 +121,7 @@
     .account-information dl > div { grid-template-columns: minmax(0, 1fr); }
     .guest-account .quote-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .account-rewards { padding: 1.8rem 1rem; }
+    .account-footer form, .account-footer .account-signout-button { width: 100%; }
 }
 @media (max-width: 48rem) {
     .guest-account .header-top { min-height: 4.8rem; }
