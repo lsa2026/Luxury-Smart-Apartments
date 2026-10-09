@@ -81,6 +81,14 @@ and the validated billing address. The widget script uses the returned SRI hash.
 3-D Secure redirects. MADA is rendered in the first widget form and the native
 HyperPay brand logo is used; VISA and MASTER follow in a second form.
 
+Apple Pay remains available in TEST/UAT. On production it is hidden by default:
+the widget receives only `MADA` and `VISA MASTER`, without Apple Pay options or
+button styles. Keep `HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED=false` until production
+onboarding (including the official domain and gateway configuration) has been
+verified with HyperPay. Setting this separate opt-in to `true` restores Apple Pay
+without changing card payments, credentials, refunds, or booking logic. This is
+an availability switch, not evidence that Apple Pay production is ready.
+
 CSP additions are route-scoped to `/payments/hyperpay/` and the single origin
 `https://eu-test.oppwa.com` for scripts, connections, frames, images, fonts, and
 form submission. COPYandPAY requires a runtime stylesheet, so `unsafe-inline`

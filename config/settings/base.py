@@ -316,6 +316,9 @@ PAYMENT_SANDBOX_ENABLED = DEBUG and strict_bool("PAYMENT_SANDBOX_ENABLED")
 # are never shared between them and the base URL is pinned for each environment.
 HYPERPAY_ENABLED = strict_bool("HYPERPAY_ENABLED")
 HYPERPAY_ENVIRONMENT = env("HYPERPAY_ENVIRONMENT", default="test").strip().lower()
+# Do not advertise Apple Pay on the live checkout until production onboarding
+# has been verified. This opt-in does not disable the separate TEST/UAT flow.
+HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED = strict_bool("HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED")
 HYPERPAY_BASE_URL = env(
     "HYPERPAY_BASE_URL",
     default="https://eu-test.oppwa.com/",

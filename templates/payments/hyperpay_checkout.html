@@ -4,11 +4,13 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block extra_head %}
+{% if apple_pay_enabled %}
 <style nonce="{{ csp_nonce }}">
 .wpwl-apple-pay-button {
     -webkit-appearance: -apple-pay-button !important;
 }
 </style>
+{% endif %}
 <script nonce="{{ csp_nonce }}">
 var wpwlOptions = {
     locale: "{{ LANGUAGE_CODE|default:'ar' }}",
@@ -16,6 +18,7 @@ var wpwlOptions = {
     brandDetection: true,
     brandDetectionType: "binlist",
     brandDetectionPriority: ["MADA", "VISA", "MASTER"],
+    {% if apple_pay_enabled %}
     applePay: {
         displayName: "Luxury Smart Apartments",
         total: { label: "Luxury Smart Apartments" },
@@ -23,6 +26,7 @@ var wpwlOptions = {
         countryCode: "SA",
         version: 3
     },
+    {% endif %}
     onReady: function () {
         document.documentElement.classList.add("wpwl-ready");
     }
@@ -96,7 +100,7 @@ var wpwlOptions = {
                 aria-labelledby="method-tab-mada"
                 data-checkout-panel="mada"
             >
-                <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA APPLEPAY"></form>
+                <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA{% if apple_pay_enabled %} APPLEPAY{% endif %}"></form>
             </div>
             <div
                 class="checkout__panel"
