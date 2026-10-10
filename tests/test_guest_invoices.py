@@ -166,6 +166,14 @@ def test_wrong_reservation_identity_is_blocked(payload):
         invoice_snapshot(payload, 123)
 
 
+def test_ambiguous_property_link_is_blocked(payload):
+    Property.objects.create(
+        hostaway_listing_id=9002, hostaway_listing_map_id=8001, slug="ambiguous", name_ar="شقة أخرى"
+    )
+    with pytest.raises(ValidationError):
+        invoice_snapshot(payload, 88001234)
+
+
 def test_external_currency_is_not_relabelled_but_direct_marrakech_is(payload, property_obj):
     property_obj.price_currency_override = "MAD"
     property_obj.save()

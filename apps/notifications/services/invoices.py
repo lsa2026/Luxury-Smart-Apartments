@@ -31,12 +31,15 @@ def invoice_snapshot(payload, expected_id):
     if booking.status.casefold() not in {"new", "confirmed", "modified", "awaitingpayment"}:
         raise ValidationError("الحجز ملغى أو غير مؤكد؛ لا يمكن إصدار فاتورة إقامة له.")
     raw = payload["result"]
-    property_obj = Property.objects.filter(
-        Q(hostaway_listing_map_id=booking.listing_map_id)
-        | Q(hostaway_listing_id=booking.listing_map_id)
-    ).first()
-    if property_obj is None:
+    matches = list(
+        Property.objects.filter(
+            Q(hostaway_listing_map_id=booking.listing_map_id)
+            | Q(hostaway_listing_id=booking.listing_map_id)
+        )[:2]
+    )
+    if len(matches) != 1:
         raise ValidationError("الشقة غير مرتبطة بعقاراتنا المحلية؛ يلزم مراجعتها قبل إصدار فاتورة.")
+    property_obj = matches[0]
     try:
         total = Decimal(str(raw.get("totalPrice")))
         if not total.is_finite() or not Decimal("0") < total <= Decimal("99999999.99"):

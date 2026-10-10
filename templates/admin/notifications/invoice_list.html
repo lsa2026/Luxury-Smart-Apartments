@@ -1,5 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
+{% block bodyclass %}{{ block.super }} lsa-invoice-page{% endblock %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen lsa-invoices" dir="rtl">
