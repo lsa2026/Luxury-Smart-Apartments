@@ -389,6 +389,25 @@ class HostawayClient:
         validate_reservation_response(payload)
         return payload
 
+    def invoice_search_page(self, *, after_id=None):
+        """Bounded owner lookup; phone matching stays in memory, not in URL logs."""
+        params = [("limit", 100), ("includeResources", 0), ("sortOrder", "arrivalDateDesc")]
+        if after_id is not None:
+            _validate_reservation_id(after_id)
+            params.append(("afterId", after_id))
+        payload = self._get_json("/reservations", params=params)
+        if not isinstance(payload, dict) or payload.get("status") != "success":
+            raise HostawayResponseError("Invalid invoice search response.")
+        rows, _ = validate_collection_response(payload)
+        if len(rows) > 100:
+            raise HostawayResponseError("Unbounded invoice search response.")
+        ids = [row.get("id") for row in rows]
+        if any(type(value) is not int or value <= 0 for value in ids) or len(set(ids)) != len(ids):
+            raise HostawayResponseError("Invalid invoice search identities.")
+        if ids and ids[-1] == after_id:
+            raise HostawayResponseError("Invoice search cursor did not advance.")
+        return rows
+
     def guest_stay_page(self, departure_start: date, arrival_end: date, *, after_id=None):
         """Read one bounded date-window page for exact phone matching in memory."""
         params = [

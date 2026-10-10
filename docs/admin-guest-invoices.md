@@ -4,6 +4,22 @@ Entry: `/admin/operations/invoices/`, linked from the booking administration hub
 
 - Owner-only, CSRF-protected, no-cache. Guest PDFs have no public URL.
 - A numeric Hostaway ID performs one on-demand, read-only reservation lookup.
+- Lookup also accepts a guest phone with Saudi Arabia as the default country and
+  the same libphonenumber parser as checkout: national starting zeros, Arabic digits,
+  spaces, `00`, and a full international number. Invalid/ambiguous input is rejected.
+- Hostaway documents `match` for guest names, not a phone filter. Read-only phone
+  search therefore compares full normalized numbers in memory over at most two
+  100-row cursor pages per click (one GET attempt, eight-second timeout per page).
+  An explicit continuation button searches older pages; incomplete searches never
+  claim no bookings exist. No guest phone is added to a provider URL, audit metadata,
+  public link, new cache or stored search-history table.
+- Matching stays display apartment, guest, platform reference and dates; the owner
+  must select a stay even when there is only one result. Search alone creates no
+  invoice or reservation. Expiring signed POST tokens bind selection/cursor to the
+  owner and phone; fresh lookup rechecks the phone before preparing the invoice.
+- Stored international numbers are normalized; national numbers require a verified
+  two-letter `guestCountry`. Missing/masked/ambiguous contacts need lookup by booking
+  ID instead. Booking search stays owner-only, CSRF-protected and private/no-store.
 - No external booking is imported into `Reservation` or the administration booking list.
 - Snapshot contains only guest/contact, platform reference, apartment, dates, nights,
   total, currency, supplier and retrieval timestamp. Card/access-code/raw payload data

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from django.contrib.auth import get_user_model
+from django.core import signing
 from django.core.exceptions import ValidationError
 from django.db import close_old_connections, connection
 from django.test import Client, override_settings
@@ -14,10 +15,17 @@ from django.urls import reverse
 from pypdf import PdfReader
 
 from apps.integrations.hostaway.exceptions import HostawayResponseError
-from apps.notifications.invoice_forms import InvoiceReviewForm, InvoiceSendForm
+from apps.notifications.invoice_forms import InvoiceLookupForm, InvoiceReviewForm, InvoiceSendForm
 from apps.notifications.invoice_pdf import render_invoice_pdf
 from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery
 from apps.notifications.services.invoice_delivery import deliver_invoice
+from apps.notifications.services.invoice_search import (
+    SALT,
+    find_invoice_bookings,
+    read_search_token,
+    search_token,
+    stored_phone,
+)
 from apps.notifications.services.invoices import (
     invoice_snapshot,
     issue_invoice,
@@ -34,6 +42,255 @@ from apps.properties.models import Property
 from apps.reservations.models import Reservation
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.mark.parametrize(
+    "phone,country,expected",
+    [
+        ("0501234567", "SA", "+966501234567"),
+        ("٥٠١٢٣٤٥٦٧", "SA", "+966501234567"),
+        ("966501234567", "SA", "+966501234567"),
+        ("00966501234567", "SA", "+966501234567"),
+        ("+1 (202) 555-0100", "SA", "+12025550100"),
+        ("06 12 34 56 78", "FR", "+33612345678"),
+        ("06 12 34 56 78", "MA", "+212612345678"),
+    ],
+)
+def test_invoice_lookup_normalizes_familiar_phone(phone, country, expected):
+    form = InvoiceLookupForm({"guest_phone": phone, "guest_phone_country": country})
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["guest_phone"] == expected
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {},
+        {"guest_phone": "123"},
+        {"guest_phone": "0501234567", "guest_phone_country": "XX"},
+        {"guest_phone": "abc+966501234567", "guest_phone_country": "SA"},
+        {"hostaway_id": 88, "guest_phone": "0501234567"},
+    ],
+)
+def test_invoice_lookup_rejects_ambiguous_or_invalid_input(data):
+    assert not InvoiceLookupForm(data).is_valid()
+
+
+def test_invoice_lookup_keeps_old_id_posts_valid():
+    form = InvoiceLookupForm({"hostaway_id": 88001234})
+    assert form.is_valid()
+    assert InvoiceLookupForm().fields["guest_phone_country"].initial == "SA"
+
+
+@pytest.mark.parametrize(
+    "row,expected",
+    [
+        ({"phone": "00966501234567"}, "+966501234567"),
+        ({"phone": "966501234567"}, "+966501234567"),
+        ({"phone": "0501234567", "guestCountry": "SA"}, "+966501234567"),
+        ({"phone": "0501234567"}, ""),
+        ({"phone": ""}, ""),
+        ({"phone": "1234", "guestCountry": "SA"}, ""),
+    ],
+)
+def test_invoice_stored_phone_does_not_guess_unknown_local_country(row, expected):
+    assert stored_phone(row) == expected
+
+
+def test_phone_search_exact_match_and_no_persistence(payload):
+    raw = {**payload["result"], "phone": "+966501234567"}
+    provider = MagicMock()
+    provider.invoice_search_page.return_value = [
+        raw,
+        {**raw, "id": 88001235, "phone": "+971501234567"},
+    ]
+    candidates, cursor = find_invoice_bookings(client=provider, phone="+966501234567")
+    assert [item["id"] for item in candidates] == [88001234]
+    assert cursor is None
+    assert "must-not-persist" not in str(candidates)
+    assert "guest_email" not in candidates[0] and "guest_phone" not in candidates[0]
+    assert GuestInvoice.objects.count() == Reservation.objects.count() == 0
+
+
+def test_phone_search_does_not_auto_choose_from_multiple_stays(client, actor, payload):
+    client.force_login(actor)
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        provider = factory.return_value.__enter__.return_value
+        provider.invoice_search_page.return_value = [
+            payload["result"],
+            {**payload["result"], "id": 88001235},
+        ]
+        response = client.post(url("list"), {"guest_phone": "0016462817246"})
+        provider.get_reservation_invoice_data.assert_not_called()
+    assert response.status_code == 200
+    assert len(response.context["candidates"]) == 2
+    assert response.content.count("اختيار هذا الحجز".encode()) == 2
+    assert GuestInvoice.objects.count() == Reservation.objects.count() == 0
+    assert "no-store" in response["Cache-Control"]
+
+
+def test_signed_phone_selection_rechecks_current_booking(client, actor, payload):
+    client.force_login(actor)
+    token = search_token(actor=actor, phone="+16462817246", reservation_id=88001234)
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        provider = factory.return_value.__enter__.return_value
+        provider.get_reservation_invoice_data.return_value = payload
+        response = client.post(url("list"), {"phone_search_token": token})
+        provider.get_reservation_invoice_data.assert_called_once_with(88001234)
+        provider.invoice_search_page.assert_not_called()
+    assert response.status_code == 302 and GuestInvoice.objects.count() == 1
+    assert Reservation.objects.count() == 0
+
+
+def test_phone_selection_changed_contact_does_not_create_invoice(client, actor, payload):
+    client.force_login(actor)
+    token = search_token(actor=actor, phone="+966501234567", reservation_id=88001234)
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value.get_reservation_invoice_data.return_value = (
+            payload
+        )
+        response = client.post(url("list"), {"phone_search_token": token})
+    assert response.status_code == 200
+    assert "تغيّر رقم جوال الحجز" in response.content.decode()
+    assert GuestInvoice.objects.count() == 0
+
+
+@pytest.mark.parametrize("bad", ["bad-token", "", "tamper"])
+def test_invoice_search_token_is_validated(actor, bad):
+    with pytest.raises(ValidationError):
+        read_search_token(bad, actor)
+
+
+def test_phone_selection_wrong_actor_and_expired_token(actor):
+    token = search_token(actor=actor, phone="+966501234567", reservation_id=88)
+    other = get_user_model().objects.create_superuser(
+        username="another-owner", email="other@example.invalid"
+    )
+    with pytest.raises(ValidationError):
+        read_search_token(token, other)
+    with patch("django.core.signing.time.time", return_value=0):
+        old = search_token(actor=actor, phone="+966501234567", reservation_id=88)
+    with pytest.raises(ValidationError):
+        read_search_token(old, actor)
+    malformed = signing.dumps(
+        {"actor": str(actor.pk), "phone": "+966501234567", "id": True}, salt=SALT
+    )
+    with pytest.raises(ValidationError):
+        read_search_token(malformed, actor)
+
+
+def test_invalid_phone_selection_is_friendly_and_never_reads_provider(client, actor):
+    client.force_login(actor)
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        response = client.post(url("list"), {"phone_search_token": "tampered"})
+        factory.assert_not_called()
+    assert response.status_code == 200
+
+
+def test_phone_search_bounded_and_has_explicit_continuation(payload, actor, client):
+    rows = [{**payload["result"], "id": i, "phone": "+966501234567"} for i in range(1, 301)]
+    provider = MagicMock()
+    provider.invoice_search_page.side_effect = [rows[:100], rows[100:200]]
+    candidates, cursor = find_invoice_bookings(client=provider, phone="+16462817246")
+    assert candidates == [] and cursor == 200
+    assert provider.invoice_search_page.call_count == 2
+    client.force_login(actor)
+    token = search_token(actor=actor, phone="+16462817246", cursor=200)
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        provider = factory.return_value.__enter__.return_value
+        provider.invoice_search_page.return_value = []
+        response = client.post(url("list"), {"phone_search_token": token})
+        provider.invoice_search_page.assert_called_once_with(after_id=200)
+    assert response.status_code == 200 and response.context["continuation"] is None
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"status": "cancelled"},
+        {"listingMapId": 987654},
+        {"arrivalDate": "2026-13-01"},
+        {"departureDate": "2026-12-01"},
+        {"phone": "+1646281724"},
+    ],
+)
+def test_phone_search_skips_non_matching_or_invalid_stays(payload, change):
+    provider = MagicMock()
+    provider.invoice_search_page.return_value = [{**payload["result"], **change}]
+    assert find_invoice_bookings(client=provider, phone="+16462817246") == ([], None)
+
+
+def test_phone_page_uses_documented_cursor_without_phone_query(payload):
+    from apps.integrations.hostaway.client import HostawayClient
+
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"status": "success", "result": [payload["result"]]})
+
+    with httpx.Client(
+        base_url="https://api.hostaway.com/v1", transport=httpx.MockTransport(handler)
+    ) as http:
+        with HostawayClient(access_token="test-token", client=http) as provider:
+            assert provider.invoice_search_page(after_id=42)[0]["id"] == 88001234
+    assert requests[0].url.params["afterId"] == "42"
+    assert requests[0].url.params["sortOrder"] == "arrivalDateDesc"
+    assert requests[0].url.params["limit"] == "100"
+    assert "phone" not in str(requests[0].url) and "match" not in requests[0].url.params
+
+
+def test_phone_lookup_nonowner_get_and_invalid_form_never_reads_hostaway(client, actor):
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        assert client.post(url("list"), {"guest_phone": "0501234567"}).status_code == 302
+        client.force_login(actor)
+        response = client.get(url("list"))
+        assert response.status_code == 200
+        assert 'name="guest_phone"' in response.content.decode()
+        assert client.post(url("list"), {"guest_phone": "123"}).status_code == 200
+        factory.assert_not_called()
+
+
+def test_selected_national_stored_phone_becomes_international_in_draft(actor, payload):
+    payload["result"].update(phone="0501234567", guestCountry="SA")
+    provider = MagicMock()
+    provider.get_reservation_invoice_data.return_value = payload
+    invoice = prepare_invoice(
+        client=provider, hostaway_id=88001234, actor=actor, expected_phone="+966501234567"
+    )
+    assert invoice.snapshot["guest_phone"] == "+966501234567"
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [{"id": True}],
+        [{"id": 0}],
+        [{"id": 1}, {"id": 1}],
+        [{"id": i} for i in range(1, 102)],
+    ],
+)
+def test_invoice_phone_api_rejects_unbounded_or_bad_identities(rows):
+    from apps.integrations.hostaway.client import HostawayClient
+
+    with HostawayClient(access_token="test-token") as provider:
+        with patch.object(
+            provider, "_get_json", return_value={"status": "success", "result": rows}
+        ):
+            with pytest.raises(HostawayResponseError):
+                provider.invoice_search_page()
+
+
+def test_phone_search_continuation_never_reports_complete_empty_result(client, actor, payload):
+    client.force_login(actor)
+    rows = [{**payload["result"], "id": i, "phone": "+966501234567"} for i in range(1, 201)]
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        provider = factory.return_value.__enter__.return_value
+        provider.invoice_search_page.side_effect = [rows[:100], rows[100:]]
+        response = client.post(url("list"), {"guest_phone": "+16462817246"})
+    assert response.status_code == 200 and response.context["continuation"]
+    assert "لم يظهر حجز مطابق في هذه الدفعة" in response.content.decode()
+    assert "متابعة البحث في الحجوزات الأقدم" in response.content.decode()
 
 
 @pytest.fixture

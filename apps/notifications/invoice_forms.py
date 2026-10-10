@@ -2,6 +2,7 @@
 
 import re
 
+import phonenumbers
 from django import forms
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
@@ -21,10 +22,51 @@ def invoice_phone(value):
 class InvoiceLookupForm(forms.Form):
     hostaway_id = forms.IntegerField(
         label="رقم الحجز في Hostaway",
+        required=False,
         min_value=1,
         max_value=9223372036854775807,
         widget=forms.NumberInput(attrs={"inputmode": "numeric", "autocomplete": "off"}),
     )
+    guest_phone_country = forms.ChoiceField(
+        label="بلد رقم الجوال",
+        required=False,
+        initial="SA",
+        choices=[
+            (code, f"{code} (+{phonenumbers.country_code_for_region(code)})")
+            for code in ["SA", *sorted(phonenumbers.SUPPORTED_REGIONS - {"SA"})]
+        ],
+        widget=forms.Select(attrs={"data-invoice-phone-country": ""}),
+    )
+    guest_phone = forms.CharField(
+        label="رقم جوال الضيف",
+        max_length=32,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "inputmode": "tel",
+                "autocomplete": "off",
+                "dir": "ltr",
+                "placeholder": "0501234567",
+                "aria-describedby": "invoice-phone-help",
+            }
+        ),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        phone = cleaned.get("guest_phone", "").strip()
+        if cleaned.get("hostaway_id") and phone:
+            raise forms.ValidationError("ابحث برقم الحجز أو رقم الجوال، وليس الاثنين معًا.")
+        if not cleaned.get("hostaway_id") and not phone and not self.errors:
+            raise forms.ValidationError("أدخل رقم الحجز أو رقم جوال الضيف.")
+        if phone and "guest_phone_country" not in self.errors:
+            try:
+                cleaned["guest_phone"] = normalize_phone_number(
+                    phone, default_region=cleaned.get("guest_phone_country") or "SA"
+                )
+            except InvalidPhoneNumber:
+                self.add_error("guest_phone", "راجع رقم الجوال ومفتاح الدولة المختار.")
+        return cleaned
 
 
 class InvoiceReviewForm(forms.Form):
