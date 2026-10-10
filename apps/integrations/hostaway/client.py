@@ -382,6 +382,13 @@ class HostawayClient:
         payload = self._get_json(f"/reservations/{reservation_id}", params=[])
         return validate_reservation_response(payload)
 
+    def get_reservation_invoice_data(self, reservation_id: int) -> dict:
+        """Owner-only billing lookup; callers must allowlist before storing any fields."""
+        _validate_reservation_id(reservation_id)
+        payload = self._get_json(f"/reservations/{reservation_id}", params=[])
+        validate_reservation_response(payload)
+        return payload
+
     def guest_stay_page(self, departure_start: date, arrival_end: date, *, after_id=None):
         """Read one bounded date-window page for exact phone matching in memory."""
         params = [

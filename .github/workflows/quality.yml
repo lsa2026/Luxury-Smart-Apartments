@@ -50,6 +50,7 @@ jobs:
           tests/test_property_price_calendar.py
           tests/test_indicative_rates.py
           tests/test_sync_policy_october.py
+          tests/test_guest_invoices.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

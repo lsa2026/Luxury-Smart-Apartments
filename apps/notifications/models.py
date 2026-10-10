@@ -213,6 +213,66 @@ class WhatsAppDelivery(models.Model):
         return f"{self.message_type} — {self.status}"
 
 
+class GuestInvoice(models.Model):
+    """An independent, immutable issued accommodation statement, not a booking."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    hostaway_reservation_id = models.PositiveBigIntegerField(unique=True)
+    snapshot = models.JSONField(default=dict)
+    language = models.CharField(max_length=2, default="ar")
+    number = models.CharField(max_length=40, unique=True, null=True, blank=True)
+    pdf_content = models.BinaryField(blank=True, default=bytes, editable=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    issued_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.number or f"Invoice draft {self.pk}"
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).first()
+            if previous and previous.issued_at:
+                raise ValidationError("Issued invoices cannot be overwritten.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.issued_at:
+            raise ValidationError("Issued invoices must be retained.")
+        return super().delete(*args, **kwargs)
+
+
+class GuestInvoiceDelivery(models.Model):
+    """One owner-authorized recipient/channel; ambiguous results are never retried."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(GuestInvoice, on_delete=models.PROTECT, related_name="deliveries")
+    channel = models.CharField(
+        max_length=10, choices=[("email", "الإيميل"), ("whatsapp", "واتساب")]
+    )
+    recipient = models.CharField(max_length=254)
+    status = models.CharField(max_length=20, default="queued")
+    attempt_count = models.PositiveIntegerField(default=0)
+    error_code = models.CharField(max_length=50, blank=True)
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice", "channel", "recipient"], name="unique_guest_invoice_recipient"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.channel} — {self.status}"
+
+
 class AuditLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor_user = models.ForeignKey(

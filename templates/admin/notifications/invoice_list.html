@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen lsa-invoices" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div><span class="lsa-kicker">مساحة الإدارة</span><h1>فواتير الضيوف</h1><p>أدخل رقم الحجز في Hostaway لجلب بياناته، حتى لو كان من Booking أو Airbnb.</p></div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">إدارة الحجوزات</a>
+  </section>
+  <section class="lsa-panel">
+    <h2>إعداد فاتورة إقامة</h2>
+    <form method="post" class="invoice-lookup">{% csrf_token %}{{ form.non_field_errors }}
+      <div>{{ form.hostaway_id.label_tag }}{{ form.hostaway_id }}{{ form.hostaway_id.errors }}</div>
+      <button class="lsa-btn lsa-btn--gold" type="submit">جلب بيانات الحجز</button>
+    </form>
+    <p class="invoice-help">رقم Hostaway يُستخدم هنا للبحث فقط. الفاتورة تعرض للضيف رقم حجز منصته، دون بيان حالة السداد. لا يعدّل البحث الحجز ولا يخصم أي مبلغ.</p>
+  </section>
+  <section class="lsa-panel"><h2>الفواتير الأخيرة</h2>
+    <div class="invoice-records">
+      {% for invoice in invoices %}
+      <a class="invoice-record" href="{% url 'notifications:invoice_detail' invoice.pk %}">
+        <strong>{{ invoice.snapshot.guest_name }}</strong><span><bdi>{{ invoice.snapshot.platform }}</bdi> · <bdi>{{ invoice.snapshot.platform_reference|default:"مرجع المنصة يحتاج استكمالًا" }}</bdi></span>
+        <span>{% if invoice.issued_at %}صادرة{% else %}مسودة{% endif %}</span><span dir="ltr">{{ invoice.snapshot.total }} {{ invoice.snapshot.currency }}</span>
+      </a>{% empty %}<p>لم تُصدر فواتير بعد.</p>{% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}

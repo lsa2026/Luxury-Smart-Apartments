@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen lsa-invoices" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations">
+    <div><span class="lsa-kicker">فواتير الضيوف</span><h1>{% if invoice.issued_at %}فاتورة صادرة{% else %}مراجعة الفاتورة{% endif %}</h1><p>رقم البحث الداخلي في Hostaway: <bdi>{{ invoice.hostaway_reservation_id }}</bdi> — لا يظهر للضيف.</p></div>
+    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:invoice_list' %}">العودة للفواتير</a>
+  </section>
+  <div class="invoice-layout">
+    <section class="invoice-sheet" lang="{{ invoice.language }}" dir="{% if invoice.language == 'ar' %}rtl{% else %}ltr{% endif %}">
+      <header class="invoice-brand"><img src="{% static 'images/brand/luxury-living-monogram-light.svg' %}" alt="Luxury Living"><div><span>LUXURY LIVING</span><h2>{{ copy.title }}</h2></div></header>
+      <div class="invoice-supplier"><strong>{{ data.supplier }}</strong><span dir="ltr">{{ data.website }}</span></div>
+      {% if invoice.issued_at %}<div class="invoice-meta"><bdi>{{ invoice.number }}</bdi><span>{{ copy.date }}: <bdi>{{ invoice.issued_at|date:"Y-m-d H:i" }}</bdi></span></div>{% else %}<p class="invoice-preview-label">{{ copy.preview }}</p>{% endif %}
+      <div class="invoice-cards"><div><h3>{{ copy.guest }}</h3><strong>{{ data.guest_name }}</strong><bdi>{{ data.guest_email }}</bdi><bdi>{{ data.guest_phone }}</bdi></div><div><h3>{{ copy.booking }}</h3><strong><bdi>{{ data.platform }}</bdi></strong><small>{{ copy.reference }}</small><strong><bdi>{{ data.platform_reference|default:"—" }}</bdi></strong></div></div>
+      <h3>{{ copy.stay }}</h3><h2 class="invoice-property">{{ property_name }}</h2>
+      <div class="invoice-dates"><div><small>{{ copy.arrival }}</small><bdi>{{ data.check_in }}</bdi></div><div><small>{{ copy.departure }}</small><bdi>{{ data.check_out }}</bdi></div><div><small>{{ copy.nights }}</small><strong>{{ data.nights }}</strong></div></div>
+      <div class="invoice-line"><strong>{{ copy.description }}</strong><span>{{ property_name }}</span></div>
+      <div class="invoice-total"><span>{{ copy.total }}</span><strong><bdi>{{ data.total }} {{ data.currency }}</bdi></strong></div>
+      <footer><strong>{{ copy.thanks }}</strong><small>{{ copy.notice }}</small></footer>
+    </section>
+    <aside class="invoice-controls">
+      {% if not invoice.issued_at %}
+      <section class="lsa-panel"><h2>راجع البيانات قبل الإصدار</h2><p class="invoice-help">المبلغ هو إجمالي الحجز من Hostaway، وليس صافي تحويل المنصة. تحقّق من مطابقته لمبلغ إقامة الضيف. إذا غاب مرجع المنصة أو بيانات التواصل، يمكنك استكمالها هنا.</p>
+        <form action="{% url 'notifications:invoice_issue' invoice.pk %}" method="post" class="invoice-review">{% csrf_token %}{{ form.non_field_errors }}
+          {{ form.snapshot_token }}
+          {% for field in form.visible_fields %}<div class="{% if field.name == 'confirm_details' %}invoice-check{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+          <button type="submit" class="lsa-btn lsa-btn--gold">اعتماد وإصدار الفاتورة</button>
+        </form>
+        <p class="invoice-help">المعاينة بجانبك تعكس البيانات المستوردة؛ ملف PDF النهائي يعكس البيانات التي تعتمدها، ثم يُحفظ دون تغيير.</p>
+      </section>
+      {% else %}
+      <section class="lsa-panel"><h2>تنزيل وإرسال</h2><div class="invoice-buttons"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a><a class="lsa-btn lsa-btn--subtle" target="_blank" rel="noopener" href="{% url 'notifications:invoice_pdf' invoice.pk %}">عرض PDF</a></div>
+        <form method="post" action="{% url 'notifications:invoice_send' invoice.pk %}" class="invoice-send">{% csrf_token %}<input type="hidden" name="channel" value="email"><label for="invoice-email">البريد الإلكتروني</label><input id="invoice-email" type="email" name="recipient" value="{{ data.guest_email }}" required maxlength="254" dir="ltr"><label class="invoice-check"><input type="checkbox" name="confirm_recipient" required>أؤكد صحة البريد وأوافق على الإرسال.</label><button class="lsa-btn lsa-btn--subtle" type="submit">إرسال عبر الإيميل</button></form>
+        <form method="post" action="{% url 'notifications:invoice_send' invoice.pk %}" class="invoice-send">{% csrf_token %}<input type="hidden" name="channel" value="whatsapp"><label for="invoice-phone">رقم واتساب الدولي</label><input id="invoice-phone" type="tel" name="recipient" value="{{ data.guest_phone }}" required maxlength="30" dir="ltr" placeholder="+966…"><label class="invoice-check"><input type="checkbox" name="confirm_recipient" required>أؤكد صحة الرقم وأوافق على الإرسال.</label><button class="lsa-btn lsa-btn--subtle" type="submit">إرسال عبر واتساب</button></form>
+        <p class="invoice-help">لا تُرسل الفاتورة تلقائيًا. يُرفق الملف نفسه بعد موافقتك، ويُمنع تكرار الإرسال المقبول أو غير المؤكد إلى المستلم نفسه. إذا رُفض الإرسال صراحةً، يمكنك إصلاح الاتصال ثم طلب الإرسال مرة أخرى.</p>
+      </section>
+      {% endif %}
+      <section class="lsa-panel"><h2>سجل الإرسال</h2><p class="invoice-help">قبول مزوّد الإرسال لا يعني تأكيد قراءة الضيف. عند نتيجة غير مؤكدة لا نُكرر الإرسال تلقائيًا لحماية الضيف من الرسائل المكررة.</p>
+        {% for delivery in deliveries %}<div class="invoice-delivery"><strong>{{ delivery.get_channel_display }}</strong><bdi>{{ delivery.recipient }}</bdi><span>{% if delivery.status == 'accepted' %}قبله مزوّد الإرسال{% elif delivery.status == 'queued' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}قيد الإرسال — راجع المزود إذا طال الانتظار{% elif delivery.status == 'failed' %}لم يقبل الإرسال — يلزم مراجعة الاتصال{% else %}النتيجة غير مؤكدة — راجع المزود قبل إعادة المحاولة{% endif %}</span><small>{{ delivery.created_at|date:"Y-m-d H:i" }}</small></div>{% empty %}<p>لا توجد طلبات إرسال.</p>{% endfor %}
+      </section>
+    </aside>
+  </div>
+</main>
+{% endblock %}
