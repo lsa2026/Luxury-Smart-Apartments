@@ -50,6 +50,16 @@ Entry: `/admin/operations/invoices/`, linked from the booking administration hub
   read/delivery confirmation. Timeouts and ambiguous outcomes require manual review;
   they are never retried automatically. Explicit rejections may be retried by an
   additional owner click after fixing the connection; attempt count is retained.
+- Email and WhatsApp have separate labelled recipient cards and icon buttons. They
+  are visible but disabled before issuance. A recipient defaults to the imported
+  contact and may be replaced without mutating the reservation or frozen invoice.
+  WhatsApp uses the same tolerant Unicode/international invoice-phone normalizer
+  with a country selector for national input. Each send still requires explicit
+  recipient confirmation. Invalid input/provider-disabled errors retain the entered
+  alternate contact and appear beside the relevant card. No automatic dual-channel send.
+- Shared admin controls use explicit single-line heights and native-select-safe
+  padding. Textareas/multiple-selects remain multi-line; checkboxes/radios stay small.
+  Email and phone review/send controls are LTR in the Arabic owner UI.
 - Queue runs on the existing `lsa-worker`. If the worker stops, send requests stay
   queued; PDF download remains available. Queue acknowledgement errors surface as review.
 
