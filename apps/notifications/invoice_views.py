@@ -15,6 +15,11 @@ from apps.notifications.invoice_forms import InvoiceLookupForm, InvoiceReviewFor
 from apps.notifications.invoice_pdf import COPY, render_invoice_pdf
 from apps.notifications.models import GuestInvoice
 from apps.notifications.services.audit import record_audit
+from apps.notifications.services.invoice_search import (
+    find_invoice_bookings,
+    read_search_token,
+    search_token,
+)
 from apps.notifications.services.invoices import (
     issue_invoice,
     prepare_invoice,
@@ -40,17 +45,48 @@ def _audit(request, invoice, action, status):
 def invoice_list(request):
     require_operations_owner(request.user)
     form = InvoiceLookupForm(request.POST if request.method == "POST" else None)
-    if request.method == "POST" and form.is_valid():
+    candidates = None
+    continuation = None
+    phone = ""
+    token = request.POST.get("phone_search_token", "") if request.method == "POST" else ""
+    if token or (request.method == "POST" and form.is_valid()):
         try:
-            with HostawayClient() as client:
-                invoice = prepare_invoice(
-                    client=client, hostaway_id=form.cleaned_data["hostaway_id"], actor=request.user
+            selection = read_search_token(token, request.user) if token else None
+            if selection:
+                phone = selection["phone"]
+                form = InvoiceLookupForm({"guest_phone": phone, "guest_phone_country": "SA"})
+                form.is_valid()
+                hostaway_id = selection.get("id")
+                cursor = selection.get("cursor")
+                if (hostaway_id is None) == (cursor is None):
+                    raise ValidationError("نتائج البحث غير صالحة؛ أعد البحث برقم الجوال.")
+            else:
+                phone = form.cleaned_data.get("guest_phone", "")
+                hostaway_id = form.cleaned_data.get("hostaway_id")
+                cursor = None
+            options = {"max_get_attempts": 1, "timeout": 8} if not hostaway_id else {}
+            with HostawayClient(**options) as client:
+                if hostaway_id:
+                    invoice = prepare_invoice(
+                        client=client,
+                        hostaway_id=hostaway_id,
+                        actor=request.user,
+                        expected_phone=phone or None,
+                    )
+                    _audit(request, invoice, "invoice_lookup", "prepared")
+                    return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
+                candidates, next_cursor = find_invoice_bookings(
+                    client=client, phone=phone, after_id=cursor
                 )
-            _audit(request, invoice, "invoice_lookup", "prepared")
-            return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
+            for candidate in candidates:
+                candidate["token"] = search_token(
+                    actor=request.user, phone=phone, reservation_id=candidate["id"]
+                )
+            if next_cursor:
+                continuation = search_token(actor=request.user, phone=phone, cursor=next_cursor)
         except HostawayError:
             form.add_error(
-                None, "تعذر قراءة الحجز من Hostaway؛ تحقق من الرقم والاتصال ثم حاول مجددًا."
+                None, "تعذر قراءة الحجوزات من Hostaway؛ تحقق من الرقم والاتصال ثم حاول مجددًا."
             )
         except ValidationError as exc:
             form.add_error(None, exc)
@@ -60,6 +96,9 @@ def invoice_list(request):
         {
             "title": "فواتير الضيوف",
             "form": form,
+            "candidates": candidates,
+            "phone_searched": phone,
+            "continuation": continuation,
             "invoices": GuestInvoice.objects.defer("pdf_content").order_by("-created_at")[:50],
         },
     )

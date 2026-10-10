@@ -113,11 +113,25 @@ def re_internal_reference(value):
     return bool(re.fullmatch(r"\d+-\d+-(?:2000|thread\d+)-.+", value))
 
 
-def prepare_invoice(*, client, hostaway_id, actor):
+def prepare_invoice(*, client, hostaway_id, actor, expected_phone=None):
+    payload = None
+    if expected_phone:
+        from apps.notifications.services.invoice_search import stored_phone
+
+        payload = client.get_reservation_invoice_data(hostaway_id)
+        booking = validate_reservation_response(payload)
+        if booking.reservation_id != hostaway_id:
+            raise HostawayResponseError("Unexpected reservation identity.")
+        if stored_phone(payload["result"]) != expected_phone:
+            raise ValidationError("تغيّر رقم جوال الحجز بعد البحث؛ أعد البحث قبل تجهيز الفاتورة.")
     existing = GuestInvoice.objects.filter(hostaway_reservation_id=hostaway_id).first()
     if existing and existing.issued_at:
         return existing
-    snapshot = invoice_snapshot(client.get_reservation_invoice_data(hostaway_id), hostaway_id)
+    snapshot = invoice_snapshot(
+        payload or client.get_reservation_invoice_data(hostaway_id), hostaway_id
+    )
+    if expected_phone:
+        snapshot["guest_phone"] = expected_phone
     with transaction.atomic():
         invoice, _ = GuestInvoice.objects.get_or_create(
             hostaway_reservation_id=hostaway_id,

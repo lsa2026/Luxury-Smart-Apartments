@@ -2,20 +2,53 @@
 {% load static %}
 {% block bodyclass %}{{ block.super }} lsa-invoice-page{% endblock %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script>{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen lsa-invoices" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
-    <div><span class="lsa-kicker">مساحة الإدارة</span><h1>فواتير الضيوف</h1><p>أدخل رقم الحجز في Hostaway لجلب بياناته، حتى لو كان من Booking أو Airbnb.</p></div>
+    <div><span class="lsa-kicker">مساحة الإدارة</span><h1>فواتير الضيوف</h1><p>ابحث برقم الحجز في Hostaway أو رقم جوال الضيف، حتى لو كان الحجز من Booking أو Airbnb.</p></div>
     <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">إدارة الحجوزات</a>
   </section>
   <section class="lsa-panel">
     <h2>إعداد فاتورة إقامة</h2>
     <form method="post" class="invoice-lookup">{% csrf_token %}{{ form.non_field_errors }}
       <div>{{ form.hostaway_id.label_tag }}{{ form.hostaway_id }}{{ form.hostaway_id.errors }}</div>
-      <button class="lsa-btn lsa-btn--gold" type="submit">جلب بيانات الحجز</button>
+      <span class="invoice-lookup-or">أو</span>
+      <div class="invoice-phone-lookup">
+        <div>{{ form.guest_phone_country.label_tag }}{{ form.guest_phone_country }}{{ form.guest_phone_country.errors }}</div>
+        <div>{{ form.guest_phone.label_tag }}{{ form.guest_phone }}{{ form.guest_phone.errors }}</div>
+      </div>
+      <button class="lsa-btn lsa-btn--gold" type="submit">البحث عن الحجز</button>
     </form>
+    <p class="invoice-help" id="invoice-phone-help">اختر بلد رقم الجوال، ثم اكتب الرقم المعتاد مثل 0501234567 أو ألصق الرقم الدولي كاملًا. يُعالج الصفر ومفتاح الدولة تلقائيًا. عند استخدام الجوال اختر الحجز الصحيح من النتائج أدناه.</p>
     <p class="invoice-help">رقم Hostaway يُستخدم هنا للبحث فقط. الفاتورة تعرض للضيف رقم حجز منصته، دون بيان حالة السداد. لا يعدّل البحث الحجز ولا يخصم أي مبلغ.</p>
   </section>
+  {% if candidates is not None %}
+  <section class="lsa-panel">
+    <h2>الحجوزات المطابقة للجوال <bdi dir="ltr">{{ phone_searched }}</bdi></h2>
+    <p class="invoice-help">تطابق كامل للرقم؛ لن تُجهز الفاتورة حتى تختار الحجز. تُقرأ النتائج على دفعات للحفاظ على سرعة الصفحة، ولا تُضاف الحجوزات الخارجية إلى قائمة إدارة الحجوزات.</p>
+    <div class="invoice-records">
+    {% for candidate in candidates %}
+      <form method="post" class="invoice-search-result">{% csrf_token %}
+        <input type="hidden" name="phone_search_token" value="{{ candidate.token }}">
+        <strong>{{ candidate.guest_name }}</strong>
+        <span>{{ candidate.property_name }}</span>
+        <span><bdi>{{ candidate.platform }}</bdi> · <bdi>{{ candidate.reference|default:"مرجع المنصة يحتاج استكمالًا" }}</bdi></span>
+        <span dir="ltr">{{ candidate.check_in }} — {{ candidate.check_out }}</span>
+        <button type="submit" class="lsa-btn lsa-btn--gold">اختيار هذا الحجز</button>
+      </form>
+    {% empty %}
+      <p>{% if continuation %}لم يظهر حجز مطابق في هذه الدفعة؛ تابع البحث في الحجوزات الأقدم.{% else %}لم يظهر حجز مطابق في هذه الدفعة. إذا لم يظهر في الدفعات السابقة، جرّب رقم Hostaway مباشرة؛ قد لا توفر المنصة رقم جوال الضيف أو يكون مسجلًا برقم آخر.{% endif %}</p>
+    {% endfor %}
+    </div>
+    {% if continuation %}
+    <form method="post" class="invoice-search-more">{% csrf_token %}
+      <input type="hidden" name="phone_search_token" value="{{ continuation }}">
+      <button type="submit" class="lsa-btn lsa-btn--ghost">متابعة البحث في الحجوزات الأقدم</button>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
   <section class="lsa-panel"><h2>الفواتير الأخيرة</h2>
     <div class="invoice-records">
       {% for invoice in invoices %}
