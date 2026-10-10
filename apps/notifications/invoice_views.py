@@ -1,5 +1,7 @@
 """Private owner-only invoice workflow, separate from reservation administration."""
 
+import logging
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
@@ -10,7 +12,13 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from apps.accounts.access import require_operations_owner
 from apps.integrations.hostaway.client import HostawayClient
-from apps.integrations.hostaway.exceptions import HostawayError
+from apps.integrations.hostaway.exceptions import (
+    HostawayAuthenticationError,
+    HostawayConfigurationError,
+    HostawayError,
+    HostawayRateLimitError,
+    HostawayTimeoutError,
+)
 from apps.notifications.invoice_forms import InvoiceLookupForm, InvoiceReviewForm, InvoiceSendForm
 from apps.notifications.invoice_pdf import COPY, render_invoice_pdf
 from apps.notifications.models import GuestInvoice
@@ -26,6 +34,8 @@ from apps.notifications.services.invoices import (
     queue_invoice_delivery,
     snapshot_token,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _audit(request, invoice, action, status):
@@ -64,7 +74,7 @@ def invoice_list(request):
                 phone = form.cleaned_data.get("guest_phone", "")
                 hostaway_id = form.cleaned_data.get("hostaway_id")
                 cursor = None
-            options = {"max_get_attempts": 1, "timeout": 8} if not hostaway_id else {}
+            options = {"max_get_attempts": 1, "timeout": 20} if not hostaway_id else {}
             with HostawayClient(**options) as client:
                 if hostaway_id:
                     invoice = prepare_invoice(
@@ -84,10 +94,27 @@ def invoice_list(request):
                 )
             if next_cursor:
                 continuation = search_token(actor=request.user, phone=phone, cursor=next_cursor)
-        except HostawayError:
-            form.add_error(
-                None, "تعذر قراءة الحجوزات من Hostaway؛ تحقق من الرقم والاتصال ثم حاول مجددًا."
-            )
+        except HostawayError as exc:
+            # No exception text, contact details, response body, tokens or URLs.
+            logger.warning("Invoice lookup provider failure: %s", type(exc).__name__)
+            if isinstance(exc, HostawayTimeoutError):
+                message = (
+                    "استغرق Hostaway وقتًا أطول من المعتاد؛ أعد البحث. "
+                    "رقم الجوال صالح ولم يصدر أي طلب إرسال."
+                )
+            elif isinstance(exc, HostawayRateLimitError):
+                message = "وصل الاتصال بـHostaway إلى حد الطلبات؛ انتظر قليلًا ثم أعد البحث."
+            elif isinstance(exc, HostawayAuthenticationError | HostawayConfigurationError):
+                message = (
+                    "تعذر اتصال الموقع بحساب Hostaway؛ يلزم مراجعة إعدادات الربط، "
+                    "وليس تغيير رقم الجوال."
+                )
+            else:
+                message = (
+                    "تعذر قراءة الحجوزات من Hostaway. "
+                    "لم يتم تغيير أي حجز أو إرسال فاتورة؛ أعد المحاولة."
+                )
+            form.add_error(None, message)
         except ValidationError as exc:
             form.add_error(None, exc)
     return render(

@@ -20,7 +20,7 @@
       </div>
       <button class="lsa-btn lsa-btn--gold" type="submit">البحث عن الحجز</button>
     </form>
-    <p class="invoice-help" id="invoice-phone-help">اختر بلد رقم الجوال، ثم اكتب الرقم المعتاد مثل 0501234567 أو ألصق الرقم الدولي كاملًا. يُعالج الصفر ومفتاح الدولة تلقائيًا. عند استخدام الجوال اختر الحجز الصحيح من النتائج أدناه.</p>
+    <p class="invoice-help" id="invoice-phone-help">ألصق الرقم كما هو: محلي أو دولي، بالصفر أو بدونه، وبأرقام عربية أو غيرها. للأرقام المحلية اختر البلد؛ السعودية هي الافتراضية. إذا وُجد مفتاح دولة في الرقم يُقرأ مباشرة.</p>
     <p class="invoice-help">رقم Hostaway يُستخدم هنا للبحث فقط. الفاتورة تعرض للضيف رقم حجز منصته، دون بيان حالة السداد. لا يعدّل البحث الحجز ولا يخصم أي مبلغ.</p>
   </section>
   {% if candidates is not None %}
@@ -38,13 +38,13 @@
         <button type="submit" class="lsa-btn lsa-btn--gold">اختيار هذا الحجز</button>
       </form>
     {% empty %}
-      <p>{% if continuation %}لم يظهر حجز مطابق في هذه الدفعة؛ تابع البحث في الحجوزات الأقدم.{% else %}لم يظهر حجز مطابق في هذه الدفعة. إذا لم يظهر في الدفعات السابقة، جرّب رقم Hostaway مباشرة؛ قد لا توفر المنصة رقم جوال الضيف أو يكون مسجلًا برقم آخر.{% endif %}</p>
+      <p>{% if continuation %}لم يظهر حجز مطابق في هذه الدفعة؛ تابع البحث في بقية الحجوزات.{% else %}لم يظهر حجز مطابق في هذه الدفعة. إذا لم يظهر في الدفعات السابقة، جرّب رقم Hostaway مباشرة؛ قد لا توفر المنصة رقم جوال الضيف أو يكون مسجلًا برقم آخر.{% endif %}</p>
     {% endfor %}
     </div>
     {% if continuation %}
     <form method="post" class="invoice-search-more">{% csrf_token %}
       <input type="hidden" name="phone_search_token" value="{{ continuation }}">
-      <button type="submit" class="lsa-btn lsa-btn--ghost">متابعة البحث في الحجوزات الأقدم</button>
+      <button type="submit" class="lsa-btn lsa-btn--ghost">متابعة البحث في بقية الحجوزات</button>
     </form>
     {% endif %}
   </section>

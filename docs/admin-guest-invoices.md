@@ -8,8 +8,16 @@ Entry: `/admin/operations/invoices/`, linked from the booking administration hub
   the same libphonenumber parser as checkout: national starting zeros, Arabic digits,
   spaces, `00`, and a full international number. Invalid/ambiguous input is rejected.
 - Hostaway documents `match` for guest names, not a phone filter. Read-only phone
-  search therefore compares full normalized numbers in memory over at most two
-  100-row cursor pages per click (one GET attempt, eight-second timeout per page).
+  search therefore compares full normalized numbers in memory over one
+  50-row cursor page per click (one GET attempt, twenty-second timeout).
+  This avoids two heavy sequential calls competing with the web request budget.
+  Use Hostaway's default newest-updated ordering, not a forced arrival-date sort.
+  Invoice-only parsing normalizes Unicode decimal digits, copied bidi/zero-width
+  formatting and common separators, including a pasted international prefix without
+  `+`. Valid national input uses the selected country; international fallback occurs
+  only when national parsing fails. Significant zeros (e.g. Italy) are preserved.
+  Impossible/ambiguous numbers, letters and multiple numbers are not guessed.
+  Safe failure logs record exception class only, never phone, payload or credentials.
   An explicit continuation button searches older pages; incomplete searches never
   claim no bookings exist. No guest phone is added to a provider URL, audit metadata,
   public link, new cache or stored search-history table.
