@@ -8,6 +8,7 @@ from django.utils.dateparse import parse_date
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.integrations.hostaway.exceptions import HostawayResponseError
 from apps.notifications.invoice_forms import plain
+from apps.notifications.invoice_phone import normalize_invoice_phone
 from apps.properties.models import Property
 
 SALT = "guest-invoice-phone-search-v1"
@@ -44,28 +45,26 @@ def stored_phone(row):
     value = plain(row.get("phone"))
     if not value:
         return ""
-    # E.164, 00-prefix, and explicit country-code numbers need no country guess.
-    if value.startswith("00"):
-        value = "+" + value[2:]
+    # Clean copied Unicode formatting on provider values just as on owner input.
     try:
-        return normalize_phone_number(value if value.startswith("+") else "+" + value)
+        return normalize_invoice_phone(value)
     except InvalidPhoneNumber:
         country = plain(row.get("guestCountry")).upper()
         if country not in phonenumbers.SUPPORTED_REGIONS:
             return ""
         try:
-            return normalize_phone_number(value, default_region=country)
+            return normalize_invoice_phone(value, country=country)
         except InvalidPhoneNumber:
             return ""
 
 
 def find_invoice_bookings(*, client, phone, after_id=None):
-    """At most two 100-row pages per click; continue explicitly without caching PII."""
+    """One bounded 50-row request per click; no caching PII or nested slow requests."""
     properties = list(Property.objects.all())
     candidates = []
     seen = set()
     cursor = after_id
-    for _ in range(2):
+    for _ in range(1):
         rows = client.invoice_search_page(after_id=cursor)
         for row in rows:
             reservation_id = row["id"]
@@ -116,7 +115,7 @@ def find_invoice_bookings(*, client, phone, after_id=None):
                     "check_out": departure.isoformat(),
                 }
             )
-        if len(rows) < 100:
+        if len(rows) < 50:
             return candidates, None
         cursor = rows[-1]["id"]
     return candidates, cursor

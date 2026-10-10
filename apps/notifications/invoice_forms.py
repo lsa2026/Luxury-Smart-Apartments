@@ -6,6 +6,7 @@ import phonenumbers
 from django import forms
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.notifications.invoice_phone import normalize_invoice_phone
 
 
 def plain(value):
@@ -28,7 +29,7 @@ class InvoiceLookupForm(forms.Form):
         widget=forms.NumberInput(attrs={"inputmode": "numeric", "autocomplete": "off"}),
     )
     guest_phone_country = forms.ChoiceField(
-        label="بلد رقم الجوال",
+        label="بلد الرقم المحلي",
         required=False,
         initial="SA",
         choices=[
@@ -39,7 +40,7 @@ class InvoiceLookupForm(forms.Form):
     )
     guest_phone = forms.CharField(
         label="رقم جوال الضيف",
-        max_length=32,
+        max_length=96,
         required=False,
         widget=forms.TextInput(
             attrs={
@@ -61,8 +62,8 @@ class InvoiceLookupForm(forms.Form):
             raise forms.ValidationError("أدخل رقم الحجز أو رقم جوال الضيف.")
         if phone and "guest_phone_country" not in self.errors:
             try:
-                cleaned["guest_phone"] = normalize_phone_number(
-                    phone, default_region=cleaned.get("guest_phone_country") or "SA"
+                cleaned["guest_phone"] = normalize_invoice_phone(
+                    phone, country=cleaned.get("guest_phone_country") or "SA"
                 )
             except InvalidPhoneNumber:
                 self.add_error("guest_phone", "راجع رقم الجوال ومفتاح الدولة المختار.")

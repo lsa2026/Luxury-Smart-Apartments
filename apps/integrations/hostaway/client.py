@@ -391,7 +391,7 @@ class HostawayClient:
 
     def invoice_search_page(self, *, after_id=None):
         """Bounded owner lookup; phone matching stays in memory, not in URL logs."""
-        params = [("limit", 100), ("includeResources", 0), ("sortOrder", "arrivalDateDesc")]
+        params = [("limit", 50), ("includeResources", 0)]
         if after_id is not None:
             _validate_reservation_id(after_id)
             params.append(("afterId", after_id))
@@ -399,7 +399,7 @@ class HostawayClient:
         if not isinstance(payload, dict) or payload.get("status") != "success":
             raise HostawayResponseError("Invalid invoice search response.")
         rows, _ = validate_collection_response(payload)
-        if len(rows) > 100:
+        if len(rows) > 50:
             raise HostawayResponseError("Unbounded invoice search response.")
         ids = [row.get("id") for row in rows]
         if any(type(value) is not int or value <= 0 for value in ids) or len(set(ids)) != len(ids):

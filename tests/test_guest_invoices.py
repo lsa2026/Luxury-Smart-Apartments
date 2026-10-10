@@ -54,6 +54,19 @@ pytestmark = pytest.mark.django_db
         ("+1 (202) 555-0100", "SA", "+12025550100"),
         ("06 12 34 56 78", "FR", "+33612345678"),
         ("06 12 34 56 78", "MA", "+212612345678"),
+        ("+966 50 123 4567", "SA", "+966501234567"),
+        ("0501234567", "SA", "+966501234567"),
+        ("501234567", "SA", "+966501234567"),
+        ("9660501234567", "SA", "+966501234567"),
+        ("\u202a+٩٦٦\u00a0٥٠\u200f١٢٣\u202f٤٥٦٧\u202c", "SA", "+966501234567"),
+        ("＋９６６（０）５０–１２３–４５６７", "SA", "+966501234567"),
+        ("۰۵۰۱۲۳۴۵۶۷", "SA", "+966501234567"),
+        ("०५०१२३४५६७", "SA", "+966501234567"),
+        ("০৫০১২৩৪৫৬৭", "SA", "+966501234567"),
+        ("12025550100", "SA", "+12025550100"),
+        ("33612345678", "SA", "+33612345678"),
+        ("+33 (0)6 12 34 56 78", "SA", "+33612345678"),
+        ("+39 06 6982", "SA", "+39066982"),
     ],
 )
 def test_invoice_lookup_normalizes_familiar_phone(phone, country, expected):
@@ -70,6 +83,9 @@ def test_invoice_lookup_normalizes_familiar_phone(phone, country, expected):
         {"guest_phone": "0501234567", "guest_phone_country": "XX"},
         {"guest_phone": "abc+966501234567", "guest_phone_country": "SA"},
         {"hostaway_id": 88, "guest_phone": "0501234567"},
+        {"guest_phone": "+966501234567 / +966509876543"},
+        {"guest_phone": "+966501234567 ext 2"},
+        {"guest_phone": "++966501234567"},
     ],
 )
 def test_invoice_lookup_rejects_ambiguous_or_invalid_input(data):
@@ -91,6 +107,8 @@ def test_invoice_lookup_keeps_old_id_posts_valid():
         ({"phone": "0501234567"}, ""),
         ({"phone": ""}, ""),
         ({"phone": "1234", "guestCountry": "SA"}, ""),
+        ({"phone": "\u202a+۹۶۶ ۵۰ ۱۲۳ ۴۵۶۷\u202c"}, "+966501234567"),
+        ({"phone": "٠٥٠١٢٣٤٥٦٧", "guestCountry": "SA"}, "+966501234567"),
     ],
 )
 def test_invoice_stored_phone_does_not_guess_unknown_local_country(row, expected):
@@ -190,17 +208,17 @@ def test_invalid_phone_selection_is_friendly_and_never_reads_provider(client, ac
 def test_phone_search_bounded_and_has_explicit_continuation(payload, actor, client):
     rows = [{**payload["result"], "id": i, "phone": "+966501234567"} for i in range(1, 301)]
     provider = MagicMock()
-    provider.invoice_search_page.side_effect = [rows[:100], rows[100:200]]
+    provider.invoice_search_page.return_value = rows[:50]
     candidates, cursor = find_invoice_bookings(client=provider, phone="+16462817246")
-    assert candidates == [] and cursor == 200
-    assert provider.invoice_search_page.call_count == 2
+    assert candidates == [] and cursor == 50
+    assert provider.invoice_search_page.call_count == 1
     client.force_login(actor)
-    token = search_token(actor=actor, phone="+16462817246", cursor=200)
+    token = search_token(actor=actor, phone="+16462817246", cursor=50)
     with patch("apps.notifications.invoice_views.HostawayClient") as factory:
         provider = factory.return_value.__enter__.return_value
         provider.invoice_search_page.return_value = []
         response = client.post(url("list"), {"phone_search_token": token})
-        provider.invoice_search_page.assert_called_once_with(after_id=200)
+        provider.invoice_search_page.assert_called_once_with(after_id=50)
     assert response.status_code == 200 and response.context["continuation"] is None
 
 
@@ -235,8 +253,8 @@ def test_phone_page_uses_documented_cursor_without_phone_query(payload):
         with HostawayClient(access_token="test-token", client=http) as provider:
             assert provider.invoice_search_page(after_id=42)[0]["id"] == 88001234
     assert requests[0].url.params["afterId"] == "42"
-    assert requests[0].url.params["sortOrder"] == "arrivalDateDesc"
-    assert requests[0].url.params["limit"] == "100"
+    assert "sortOrder" not in requests[0].url.params
+    assert requests[0].url.params["limit"] == "50"
     assert "phone" not in str(requests[0].url) and "match" not in requests[0].url.params
 
 
@@ -286,11 +304,35 @@ def test_phone_search_continuation_never_reports_complete_empty_result(client, a
     rows = [{**payload["result"], "id": i, "phone": "+966501234567"} for i in range(1, 201)]
     with patch("apps.notifications.invoice_views.HostawayClient") as factory:
         provider = factory.return_value.__enter__.return_value
-        provider.invoice_search_page.side_effect = [rows[:100], rows[100:]]
+        provider.invoice_search_page.return_value = rows[:50]
         response = client.post(url("list"), {"guest_phone": "+16462817246"})
     assert response.status_code == 200 and response.context["continuation"]
     assert "لم يظهر حجز مطابق في هذه الدفعة" in response.content.decode()
-    assert "متابعة البحث في الحجوزات الأقدم" in response.content.decode()
+    assert "متابعة البحث في بقية الحجوزات" in response.content.decode()
+
+
+def test_invoice_phone_page_has_explicit_ios_select_and_unicode_help(client, actor):
+    client.force_login(actor)
+    response = client.get(url("list"))
+    html = response.content.decode()
+    assert "بلد الرقم المحلي" in html and "بالصفر أو بدونه" in html
+    assert 'maxlength="96"' in html
+
+
+def test_invoice_lookup_timeout_is_not_reported_as_invalid_phone(client, actor, caplog):
+    from apps.integrations.hostaway.exceptions import HostawayTimeoutError
+
+    client.force_login(actor)
+    with patch("apps.notifications.invoice_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value.invoice_search_page.side_effect = (
+            HostawayTimeoutError("private response must not be logged")
+        )
+        response = client.post(url("list"), {"guest_phone": "+966 50 123 4567"})
+        factory.assert_called_once_with(max_get_attempts=1, timeout=20)
+    assert "رقم الجوال صالح" in response.content.decode()
+    assert "HostawayTimeoutError" in caplog.text
+    assert "private response" not in caplog.text and "+966" not in caplog.text
+    assert GuestInvoice.objects.count() == Reservation.objects.count() == 0
 
 
 @pytest.fixture
