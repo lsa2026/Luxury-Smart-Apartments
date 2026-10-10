@@ -74,8 +74,15 @@ class InvoiceReviewForm(forms.Form):
     snapshot_token = forms.CharField(widget=forms.HiddenInput, max_length=64)
     platform_reference = forms.CharField(label="رقم حجز المنصة الظاهر للضيف", max_length=100)
     guest_name = forms.CharField(label="اسم الضيف", max_length=160)
-    guest_email = forms.EmailField(label="البريد الإلكتروني", required=False)
-    guest_phone = forms.CharField(label="الجوال بالصيغة الدولية", max_length=30, required=False)
+    guest_email = forms.EmailField(
+        label="البريد الإلكتروني", required=False, widget=forms.EmailInput(attrs={"dir": "ltr"})
+    )
+    guest_phone = forms.CharField(
+        label="رقم جوال الضيف",
+        max_length=96,
+        required=False,
+        widget=forms.TextInput(attrs={"dir": "ltr", "inputmode": "tel"}),
+    )
     language = forms.ChoiceField(
         label="لغة الفاتورة",
         choices=[("ar", "العربية"), ("en", "الإنجليزية"), ("fr", "الفرنسية")],
@@ -101,7 +108,7 @@ class InvoiceReviewForm(forms.Form):
         if not value:
             return ""
         try:
-            return invoice_phone(value)
+            return normalize_invoice_phone(value, country="SA")
         except InvalidPhoneNumber as exc:
             raise forms.ValidationError("أدخل رقمًا دوليًا صحيحًا مع مفتاح الدولة.") from exc
 
@@ -109,7 +116,31 @@ class InvoiceReviewForm(forms.Form):
 class InvoiceSendForm(forms.Form):
     channel = forms.ChoiceField(choices=[("email", "email"), ("whatsapp", "whatsapp")])
     recipient = forms.CharField(max_length=254)
+    guest_phone_country = forms.ChoiceField(
+        label="بلد الرقم المحلي",
+        required=False,
+        initial="SA",
+        choices=InvoiceLookupForm.base_fields["guest_phone_country"].choices,
+        widget=forms.Select(attrs={"data-invoice-phone-country": ""}),
+    )
     confirm_recipient = forms.BooleanField(label="أؤكد أن بيانات المستلم صحيحة وأوافق على الإرسال.")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        channel = self.data.get("channel") if self.is_bound else self.initial.get("channel")
+        if channel == "whatsapp":
+            self.fields["recipient"].label = "رقم واتساب المستلم"
+            self.fields["recipient"].widget = forms.TextInput(
+                attrs={
+                    "dir": "ltr",
+                    "inputmode": "tel",
+                    "maxlength": 96,
+                    "placeholder": "0501234567",
+                }
+            )
+        else:
+            self.fields["recipient"].label = "البريد المستلم — المسجل أو بريد آخر"
+            self.fields["recipient"].widget = forms.EmailInput(attrs={"dir": "ltr"})
 
     def clean(self):
         cleaned = super().clean()
@@ -118,7 +149,11 @@ class InvoiceSendForm(forms.Form):
             if cleaned.get("channel") == "email":
                 cleaned["recipient"] = forms.EmailField().clean(recipient).lower()
             elif cleaned.get("channel") == "whatsapp":
-                cleaned["recipient"] = invoice_phone(recipient)
+                if "guest_phone_country" in self.errors:
+                    return cleaned
+                cleaned["recipient"] = normalize_invoice_phone(
+                    recipient, country=cleaned.get("guest_phone_country") or "SA"
+                )
         except (forms.ValidationError, InvalidPhoneNumber):
             self.add_error(
                 "recipient", "راجع بيانات المستلم؛ لا يمكن الإرسال بهذا العنوان أو الرقم."

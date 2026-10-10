@@ -2,6 +2,7 @@
 {% load static %}
 {% block bodyclass %}{{ block.super }} lsa-invoice-page{% endblock %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script>{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen lsa-invoices" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
@@ -25,18 +26,21 @@
       <section class="lsa-panel"><h2>راجع البيانات قبل الإصدار</h2><p class="invoice-help">المبلغ هو إجمالي الحجز من Hostaway، وليس صافي تحويل المنصة. تحقّق من مطابقته لمبلغ إقامة الضيف. إذا غاب مرجع المنصة أو بيانات التواصل، يمكنك استكمالها هنا.</p>
         <form action="{% url 'notifications:invoice_issue' invoice.pk %}" method="post" class="invoice-review">{% csrf_token %}{{ form.non_field_errors }}
           {{ form.snapshot_token }}
-          {% for field in form.visible_fields %}<div class="{% if field.name == 'confirm_details' %}invoice-check{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+          {% for field in form.visible_fields %}<div>{% if field.name == 'confirm_details' %}<label class="invoice-check" for="{{ field.id_for_label }}">{{ field }}{{ field.label }}</label>{% else %}{{ field.label_tag }}{{ field }}{% endif %}{{ field.errors }}</div>{% endfor %}
           <button type="submit" class="lsa-btn lsa-btn--gold">اعتماد وإصدار الفاتورة</button>
         </form>
         <p class="invoice-help">المعاينة بجانبك تعكس البيانات المستوردة؛ ملف PDF النهائي يعكس البيانات التي تعتمدها، ثم يُحفظ دون تغيير.</p>
       </section>
       {% else %}
-      <section class="lsa-panel"><h2>تنزيل وإرسال</h2><div class="invoice-buttons"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a><a class="lsa-btn lsa-btn--subtle" target="_blank" rel="noopener" href="{% url 'notifications:invoice_pdf' invoice.pk %}">عرض PDF</a></div>
-        <form method="post" action="{% url 'notifications:invoice_send' invoice.pk %}" class="invoice-send">{% csrf_token %}<input type="hidden" name="channel" value="email"><label for="invoice-email">البريد الإلكتروني</label><input id="invoice-email" type="email" name="recipient" value="{{ data.guest_email }}" required maxlength="254" dir="ltr"><label class="invoice-check"><input type="checkbox" name="confirm_recipient" required>أؤكد صحة البريد وأوافق على الإرسال.</label><button class="lsa-btn lsa-btn--subtle" type="submit">إرسال عبر الإيميل</button></form>
-        <form method="post" action="{% url 'notifications:invoice_send' invoice.pk %}" class="invoice-send">{% csrf_token %}<input type="hidden" name="channel" value="whatsapp"><label for="invoice-phone">رقم واتساب الدولي</label><input id="invoice-phone" type="tel" name="recipient" value="{{ data.guest_phone }}" required maxlength="30" dir="ltr" placeholder="+966…"><label class="invoice-check"><input type="checkbox" name="confirm_recipient" required>أؤكد صحة الرقم وأوافق على الإرسال.</label><button class="lsa-btn lsa-btn--subtle" type="submit">إرسال عبر واتساب</button></form>
-        <p class="invoice-help">لا تُرسل الفاتورة تلقائيًا. يُرفق الملف نفسه بعد موافقتك، ويُمنع تكرار الإرسال المقبول أو غير المؤكد إلى المستلم نفسه. إذا رُفض الإرسال صراحةً، يمكنك إصلاح الاتصال ثم طلب الإرسال مرة أخرى.</p>
-      </section>
+      <section class="lsa-panel"><h2>تنزيل الفاتورة</h2><div class="invoice-buttons"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a><a class="lsa-btn lsa-btn--subtle" target="_blank" rel="noopener" href="{% url 'notifications:invoice_pdf' invoice.pk %}">عرض PDF</a></div></section>
       {% endif %}
+      <section class="lsa-panel invoice-delivery-panel"><h2>إرسال الفاتورة للضيف</h2>
+        <p class="invoice-help">تُعبّأ بيانات التواصل من الحجز. يمكنك استبدال بريد الإرسال أو رقم واتساب هنا دون تغيير الحجز أو بيانات الفاتورة المعتمدة.</p>
+        {% if not invoice.issued_at %}<p class="invoice-send-notice">اعتمد وأصدر الفاتورة أعلاه أولًا؛ يتفعّل بعدها زرا الإرسال.</p>{% endif %}
+        {% include "admin/notifications/invoice_send_card.html" with send_form=whatsapp_send_form channel="whatsapp" %}
+        {% include "admin/notifications/invoice_send_card.html" with send_form=email_send_form channel="email" %}
+        <p class="invoice-help">لا تُرسل الفاتورة تلقائيًا. يُرفق ملف PDF المعتمد نفسه بعد تأكيد المستلم، ويُمنع تكرار الإرسال المقبول أو غير المؤكد إلى المستلم نفسه.</p>
+      </section>
       <section class="lsa-panel"><h2>سجل الإرسال</h2><p class="invoice-help">قبول مزوّد الإرسال لا يعني تأكيد قراءة الضيف. عند نتيجة غير مؤكدة لا نُكرر الإرسال تلقائيًا لحماية الضيف من الرسائل المكررة.</p>
         {% for delivery in deliveries %}<div class="invoice-delivery"><strong>{{ delivery.get_channel_display }}</strong><bdi>{{ delivery.recipient }}</bdi><span>{% if delivery.status == 'accepted' %}قبله مزوّد الإرسال{% elif delivery.status == 'queued' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}قيد الإرسال — راجع المزود إذا طال الانتظار{% elif delivery.status == 'failed' %}لم يقبل الإرسال — يلزم مراجعة الاتصال{% else %}النتيجة غير مؤكدة — راجع المزود قبل إعادة المحاولة{% endif %}</span><small>{{ delivery.created_at|date:"Y-m-d H:i" }}</small></div>{% empty %}<p>لا توجد طلبات إرسال.</p>{% endfor %}
       </section>

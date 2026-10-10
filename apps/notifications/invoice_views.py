@@ -131,8 +131,20 @@ def invoice_list(request):
     )
 
 
-def _detail(request, invoice, form=None):
+def _detail(request, invoice, form=None, send_forms=None):
     data = invoice.snapshot
+    delivery_forms = {
+        channel: InvoiceSendForm(
+            initial={
+                "channel": channel,
+                "recipient": data.get(key, ""),
+                "guest_phone_country": "SA",
+            },
+            auto_id=f"invoice-{channel}-%s",
+        )
+        for channel, key in (("email", "guest_email"), ("whatsapp", "guest_phone"))
+    }
+    delivery_forms.update(send_forms or {})
     return render(
         request,
         "admin/notifications/invoice_detail.html",
@@ -152,6 +164,8 @@ def _detail(request, invoice, form=None):
             "copy": COPY[invoice.language],
             "property_name": data["property_names"][invoice.language],
             "deliveries": invoice.deliveries.all()[:20],
+            "email_send_form": delivery_forms["email"],
+            "whatsapp_send_form": delivery_forms["whatsapp"],
         },
     )
 
@@ -216,7 +230,11 @@ def invoice_pdf(request, invoice_id):
 def invoice_send(request, invoice_id):
     require_operations_owner(request.user)
     invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
-    form = InvoiceSendForm(request.POST)
+    channel = request.POST.get("channel", "")
+    if channel not in {"email", "whatsapp"}:
+        messages.error(request, "اختر الإرسال عبر البريد الإلكتروني أو واتساب.")
+        return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
+    form = InvoiceSendForm(request.POST, auto_id=f"invoice-{channel}-%s")
     if form.is_valid():
         try:
             delivery = queue_invoice_delivery(
@@ -230,7 +248,8 @@ def invoice_send(request, invoice_id):
                 request, "تم تسجيل طلب الإرسال. راجع سجل الإرسال أدناه؛ الطلب المكرر لن يُرسل مرتين."
             )
         except ValidationError as exc:
-            messages.error(request, " ".join(exc.messages))
+            form.add_error(None, exc)
+            return _detail(request, invoice, send_forms={channel: form})
     else:
-        messages.error(request, "تحقق من عنوان المستلم أو رقمه، وأكّد الموافقة على الإرسال.")
+        return _detail(request, invoice, send_forms={channel: form})
     return redirect("notifications:invoice_detail", invoice_id=invoice.pk)

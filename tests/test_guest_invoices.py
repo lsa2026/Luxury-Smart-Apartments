@@ -1,5 +1,6 @@
 """Synthetic-only owner invoice coverage; no live guest or payment operations."""
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from unittest.mock import MagicMock, patch
@@ -766,6 +767,117 @@ def test_whatsapp_uses_private_base64_and_safe_filename(draft):
 def test_recipient_validation_and_explicit_consent(channel, value):
     form = InvoiceSendForm({"channel": channel, "recipient": value})
     assert not form.is_valid()
+
+
+@pytest.mark.parametrize(
+    "phone,country,expected",
+    [
+        ("٥٠١٢٣٤٥٦٧", "SA", "+966501234567"),
+        ("9660501234567", "SA", "+966501234567"),
+        ("\u202a+٩٦٦ ٥٠ ١٢٣ ٤٥٦٧\u202c", "SA", "+966501234567"),
+        ("06 12 34 56 78", "FR", "+33612345678"),
+    ],
+)
+def test_invoice_send_phone_uses_tolerant_normalization(phone, country, expected):
+    form = InvoiceSendForm(
+        {
+            "channel": "whatsapp",
+            "recipient": phone,
+            "guest_phone_country": country,
+            "confirm_recipient": True,
+        }
+    )
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["recipient"] == expected
+
+
+def test_invoice_controls_show_two_disabled_delivery_buttons_before_issue(client, actor, draft):
+    client.force_login(actor)
+    response = client.get(url("detail", draft))
+    html = response.content.decode()
+    assert html.count("<fieldset disabled>") == 2
+    assert len(re.findall(r"<button[^>]*invoice-send-button[^>]* disabled>", html)) == 2
+    assert html.count('stroke-width="1.8" aria-hidden="true"') == 2
+    assert response.context["form"].fields["guest_phone"].widget.attrs["dir"] == "ltr"
+    assert response.context["form"].fields["guest_email"].widget.attrs["dir"] == "ltr"
+    ids = re.findall(r'\bid="([^"]+)"', html)
+    assert len(ids) == len(set(ids))
+
+
+def test_invoice_issued_controls_prefill_recipients_and_are_enabled(client, actor, draft):
+    invoice = issue_invoice(draft.pk, reviewed(draft))
+    client.force_login(actor)
+    response = client.get(url("detail", invoice))
+    assert (
+        response.context["email_send_form"]["recipient"].value() == invoice.snapshot["guest_email"]
+    )
+    assert (
+        response.context["whatsapp_send_form"]["recipient"].value()
+        == invoice.snapshot["guest_phone"]
+    )
+    assert response.content.count(b"<fieldset>") == 2
+    assert b"<fieldset disabled>" not in response.content
+
+
+@override_settings(EMAIL_DELIVERY_ENABLED=True, ULTRAMSG_ENABLED=True)
+@pytest.mark.parametrize(
+    "channel,recipient,expected",
+    [
+        ("email", "alternate@example.invalid", "alternate@example.invalid"),
+        ("whatsapp", "٥٠١٢٣٤٥٦٧", "+966501234567"),
+    ],
+)
+def test_owner_can_send_to_alternate_contact_without_mutating_invoice(
+    client, actor, draft, channel, recipient, expected, django_capture_on_commit_callbacks
+):
+    invoice = issue_invoice(draft.pk, reviewed(draft))
+    original_snapshot, original_pdf = dict(invoice.snapshot), bytes(invoice.pdf_content)
+    client.force_login(actor)
+    with patch("apps.notifications.services.invoices.dispatch_invoice_delivery") as dispatch:
+        with django_capture_on_commit_callbacks(execute=True):
+            response = client.post(
+                url("send", invoice),
+                {
+                    "channel": channel,
+                    "recipient": recipient,
+                    "confirm_recipient": True,
+                    "guest_phone_country": "SA",
+                },
+            )
+        assert response.status_code == 302
+        delivery = GuestInvoiceDelivery.objects.get()
+        dispatch.assert_called_once_with(str(delivery.pk))
+    assert delivery.recipient == expected
+    invoice.refresh_from_db()
+    assert invoice.snapshot == original_snapshot
+    assert bytes(invoice.pdf_content) == original_pdf
+    assert Reservation.objects.count() == 0
+
+
+def test_invalid_send_keeps_entered_contact_and_shows_field_error(client, actor, draft):
+    invoice = issue_invoice(draft.pk, reviewed(draft))
+    client.force_login(actor)
+    response = client.post(
+        url("send", invoice), {"channel": "email", "recipient": "alternate@example.invalid"}
+    )
+    assert response.status_code == 200
+    assert response.context["email_send_form"]["recipient"].value() == "alternate@example.invalid"
+    assert "confirm_recipient" in response.context["email_send_form"].errors
+    assert b'class="errorlist"' in response.content
+    assert GuestInvoiceDelivery.objects.count() == 0
+
+
+@override_settings(EMAIL_DELIVERY_ENABLED=False)
+def test_disabled_provider_error_keeps_alternate_recipient(client, actor, draft):
+    invoice = issue_invoice(draft.pk, reviewed(draft))
+    client.force_login(actor)
+    response = client.post(
+        url("send", invoice),
+        {"channel": "email", "recipient": "alternate@example.invalid", "confirm_recipient": True},
+    )
+    assert response.status_code == 200
+    assert "إرسال البريد غير مفعّل" in response.content.decode()
+    assert GuestInvoiceDelivery.objects.count() == 0
 
 
 @pytest.mark.django_db(transaction=True)
