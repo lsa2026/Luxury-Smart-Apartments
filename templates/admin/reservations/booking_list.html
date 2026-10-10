@@ -8,7 +8,10 @@
       <h1>إدارة الحجوزات</h1>
       <p>الحجوزات المدفوعة، المؤكدة بانتظار الدفع، والملغاة.</p>
     </div>
-    <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">＋ إنشاء حجز جديد</a>
+    <div class="lsa-page-head__actions">
+      <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">＋ إنشاء حجز جديد</a>
+      <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:invoice_list' %}">فواتير الضيوف</a>
+    </div>
   </section>
 
   <section class="lsa-panel lsa-booking-list__search">

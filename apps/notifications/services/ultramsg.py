@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 from dataclasses import dataclass
 from decimal import Decimal
@@ -95,6 +96,40 @@ class UltraMsgClient:
             # An ambiguous response is not proof of delivery and must not be retried blindly.
             raise UltraMsgConnectionError()
         return document
+
+    def send_document(self, *, recipient: str, content: bytes, filename: str, caption: str) -> None:
+        """Send a private PDF as base64; never expose a public guest-document URL."""
+        encoded = base64.b64encode(content).decode("ascii")
+        if not content.startswith(b"%PDF-") or len(encoded) > 10_000_000:
+            raise UltraMsgResponseError()
+        try:
+            response = self.http.post(
+                f"/{settings.ULTRAMSG_INSTANCE_ID}/messages/document",
+                data={
+                    "token": settings.ULTRAMSG_TOKEN,
+                    "to": recipient,
+                    "document": encoded,
+                    "filename": filename,
+                    "caption": caption[:1024],
+                },
+            )
+        except httpx.HTTPError as exc:
+            raise UltraMsgConnectionError() from exc
+        if response.status_code >= 500:
+            raise UltraMsgConnectionError()
+        if response.status_code >= 400:
+            raise UltraMsgResponseError()
+        try:
+            document = response.json()
+        except (TypeError, ValueError) as exc:
+            raise UltraMsgConnectionError() from exc
+        if not isinstance(document, dict):
+            raise UltraMsgConnectionError()
+        sent = str(document.get("sent", "")).casefold()
+        if sent in {"false", "0", "no"}:
+            raise UltraMsgResponseError()
+        if sent not in {"true", "1", "yes"}:
+            raise UltraMsgConnectionError()
 
 
 @dataclass(frozen=True, slots=True)

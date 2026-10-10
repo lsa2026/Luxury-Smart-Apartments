@@ -12,6 +12,15 @@ from apps.notifications.services.email import queue_email, send_queued_email
 
 
 @shared_task(
+    name="apps.notifications.tasks.send_guest_invoice_task", soft_time_limit=45, time_limit=60
+)
+def send_guest_invoice_task(delivery_id: str) -> dict[str, str]:
+    from apps.notifications.services.invoice_delivery import deliver_invoice
+
+    return {"status": deliver_invoice(delivery_id)}
+
+
+@shared_task(
     bind=True,
     name="apps.notifications.tasks.send_email_delivery_task",
     max_retries=3,

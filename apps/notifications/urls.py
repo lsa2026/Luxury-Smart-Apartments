@@ -2,11 +2,32 @@ from django.urls import path
 
 from apps.reservations import operations_views
 
-from . import health, views
+from . import health, invoice_views, views
 
 app_name = "notifications"
 
 urlpatterns = [
+    path("admin/operations/invoices/", invoice_views.invoice_list, name="invoice_list"),
+    path(
+        "admin/operations/invoices/<uuid:invoice_id>/",
+        invoice_views.invoice_detail,
+        name="invoice_detail",
+    ),
+    path(
+        "admin/operations/invoices/<uuid:invoice_id>/issue/",
+        invoice_views.invoice_issue,
+        name="invoice_issue",
+    ),
+    path(
+        "admin/operations/invoices/<uuid:invoice_id>/pdf/",
+        invoice_views.invoice_pdf,
+        name="invoice_pdf",
+    ),
+    path(
+        "admin/operations/invoices/<uuid:invoice_id>/send/",
+        invoice_views.invoice_send,
+        name="invoice_send",
+    ),
     path("health/live/", health.live, name="health_live"),
     path("health/ready/", health.ready, name="health_ready"),
     path("admin/operations/hub/", views.operations_hub, name="hub"),
