@@ -133,7 +133,8 @@ def health(request):
             "guest_context",
             "guest_history",
             "next_availability",
-        ],
+        ]
+        + (["guest_invoices"] if getattr(settings, "SAMA_INVOICES_ENABLED", False) else []),
     )
 
 

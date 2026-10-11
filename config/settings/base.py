@@ -19,6 +19,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 SAMA_BOOKING_ENABLED = env.bool("SAMA_BOOKING_ENABLED", default=False)
+SAMA_INVOICES_ENABLED = env.bool("SAMA_INVOICES_ENABLED", default=False)
 LOYALTY_ENABLED = env.bool("LOYALTY_ENABLED", default=False)
 LOYALTY_LAUNCH_AT = env("LOYALTY_LAUNCH_AT", default="")
 # Stage-nine interfaces remain closed until a separately approved launch.
