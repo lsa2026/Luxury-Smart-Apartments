@@ -205,3 +205,35 @@ def test_static_email_logo_is_the_exact_approved_pdf_lockup():
 def test_shared_template_can_render_without_optional_brand_context():
     html = render_to_string("emails/shared/base.html", {})
     assert "<title>Luxury Living</title>" in html
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+@pytest.mark.parametrize(
+    "message_type", ["loyalty_join_invitation", "loyalty_movement", "loyalty_invite_ready"]
+)
+def test_loyalty_messages_keep_approved_shell_and_statement_details(language, message_type):
+    from apps.loyalty.notifications import MESSAGES as loyalty_messages
+    from apps.loyalty.notifications import SUBJECTS as loyalty_subjects
+
+    message = build_guest_email(
+        EmailMessageRequest(
+            recipient="guest@example.invalid",
+            subject=loyalty_subjects[message_type][language],
+            template_name="loyalty",
+            language=language,
+            context={
+                "heading": loyalty_subjects[message_type][language],
+                "message": loyalty_messages[message_type][language],
+                "operation": "TEST-POINTS-123",
+                "credit": "22.50",
+                "debit": "0.00",
+                "balance": "120.00",
+                "action_url": "https://example.invalid/rewards/test-only/",
+            },
+        )
+    )
+    html = message.alternatives[0].content
+    assert html.count("luxury-living-lockup-light.png") == 1
+    assert f'lang="{language}"' in html
+    for content in ("TEST-POINTS-123", "22.50", "0.00", "120.00", "rewards/test-only/"):
+        assert content in html and content in message.body
