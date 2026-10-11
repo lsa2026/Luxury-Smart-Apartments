@@ -121,12 +121,14 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
 
 @staff_member_required
 def operations_hub(request: HttpRequest) -> HttpResponse:
-    """Open the focused reservations workspace from every admin entry point."""
+    """A local-only entrance, separate from the reservations and invoice lists."""
 
     _require_operations_permission(request)
-    from apps.reservations.operations_views import booking_list
-
-    return booking_list(request)
+    return render(
+        request,
+        "admin/notifications/operations_hub.html",
+        {"title": "مركز الإدارة"},
+    )
 
 
 @staff_member_required

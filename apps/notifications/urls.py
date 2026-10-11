@@ -7,6 +7,11 @@ from . import health, invoice_views, views
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/bookings/<uuid:reservation_id>/invoice/",
+        invoice_views.booking_invoice,
+        name="booking_invoice",
+    ),
     path("admin/operations/invoices/", invoice_views.invoice_list, name="invoice_list"),
     path(
         "admin/operations/invoices/<uuid:invoice_id>/",

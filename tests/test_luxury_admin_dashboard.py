@@ -20,11 +20,11 @@ def test_administration_landing_opens_focused_booking_workspace(client, django_u
 
     assert response.status_code == 200
     body = response.content.decode()
-    assert "luxury-living-monogram-ll-dark.svg" in body
-    assert 'class="lsa-admin-brand__logo"' in body
+    assert "luxury-living-lockup-dark.svg" in body
+    assert 'class="lsa-admin-brand__logo lsa-admin-brand__logo--approved"' in body
     assert "إدارة الحجوزات" in body
-    assert "إنشاء حجز جديد" in body
-    assert "الحجوزات المدفوعة، المؤكدة بانتظار الدفع، والملغاة." in body
+    assert "مركز الإدارة" in body
+    assert 'class="lsa-admin-home__grid"' in body
     assert "lsa-header-utilities" in body
     assert "lsa-user-menu__menu-icon" in body
     assert "أولويات تحتاج قرارًا" not in body

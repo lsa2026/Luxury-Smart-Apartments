@@ -1,50 +1,20 @@
 {% extends "admin/base_site.html" %}
-
 {% block content_title %}{% endblock %}
 {% block bodyclass %}{{ block.super }} lsa-dashboard-page lsa-booking-console-page{% endblock %}
-
 {% block content %}
-<main class="lsa-dashboard lsa-booking-console" dir="rtl">
-  <section class="lsa-page-head lsa-page-head--operations">
-    <div>
-      <span class="lsa-kicker"><i></i> مركز خاص بالإدارة</span>
-      <h1>إدارة الحجوزات</h1>
-      <p>ثلاث مهام فقط: حجز جديد، تعديل حجز قائم، أو إلغاؤه مع استرداد كامل أو جزئي.</p>
-    </div>
+<main class="lsa-dashboard lsa-admin-home" dir="rtl">
+  <h1>مركز الإدارة</h1>
+  <section class="lsa-admin-home__grid" aria-label="أقسام الإدارة الرئيسية">
+    <a class="lsa-admin-home__card" href="{% url 'notifications:booking_list' %}">
+      <span aria-hidden="true">▦</span><h2>إدارة الحجوزات</h2>
+      <p>استعرض حجوزات الموقع، أنشئ حجزًا جديدًا، وافتح الحجز لإدارته أو إرسال فاتورته.</p>
+      <strong>فتح إدارة الحجوزات ←</strong>
+    </a>
+    <a class="lsa-admin-home__card" href="{% url 'notifications:invoice_list' %}">
+      <span aria-hidden="true">▤</span><h2>فواتير الضيوف</h2>
+      <p>إدارة الفواتير وإرسالها، بما فيها حجوزات Airbnb وبوكينج من خارج الموقع.</p>
+      <strong>فتح فواتير الضيوف ←</strong>
+    </a>
   </section>
-
-  <section class="lsa-booking-console__grid" aria-label="مهام إدارة الحجوزات">
-    <article class="lsa-booking-console__card">
-      <span class="lsa-booking-console__number">1</span>
-      <div>
-        <h2>حجز جديد</h2>
-        <p>اختر التواريخ أولًا، ثم راجع كل الوحدات المتاحة وأسعارها قبل اختيار الشقة والضيف.</p>
-        <small>بعد تثبيت السعر يُنشأ الحجز في Hostaway ثم يُرسل طلب رابط الدفع إلى المحاسبة.</small>
-      </div>
-      <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">إنشاء حجز جديد</a>
-    </article>
-
-    <article class="lsa-booking-console__card">
-      <span class="lsa-booking-console__number">2</span>
-      <div>
-        <h2>تعديل حجز قائم</h2>
-        <p>ابحث باسم الضيف أو رقمه، ثم راجع التواريخ والسعر وحالة الدفع قبل اعتماد أي فرق.</p>
-        <small>تظهر جميع حجوزات الموقع في مكان واحد لتسهيل الوصول إلى الحجز الصحيح.</small>
-      </div>
-      <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:booking_list' %}">عرض وإدارة الحجوزات</a>
-    </article>
-
-    <article class="lsa-booking-console__card lsa-booking-console__card--critical">
-      <span class="lsa-booking-console__number">3</span>
-      <div>
-        <h2>إلغاء واسترداد</h2>
-        <p>أدر إلغاء الحجز أو استرداد المبلغ من الحجز نفسه، مع توثيق التنفيذ في Hostaway وHyperPay.</p>
-        <small>تظهر الحجوزات الفعلية فقط في القائمة؛ لا توجد قائمة مستقلة لمسودات الحجز.</small>
-      </div>
-      <a class="lsa-btn lsa-btn--danger" href="{% url 'notifications:cancellation_list' %}">إدارة الإلغاءات</a>
-    </article>
-  </section>
-
-  <p class="lsa-booking-console__note">هذه الصفحة خاصة بالإدارة ولا يراها الضيوف. صُممت لتعمل كبطاقات واضحة على الجوال دون قوائم أدوات إضافية.</p>
 </main>
 {% endblock %}

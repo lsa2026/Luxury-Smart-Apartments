@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.access import require_operations_owner
-from apps.notifications.models import AuditLog, WhatsAppDelivery
+from apps.notifications.models import AuditLog, GuestInvoice, WhatsAppDelivery
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.ultramsg import (
     send_manual_payment_link_request,
@@ -57,6 +57,7 @@ from .services.availability import AvailabilityRequest, AvailabilityService
 from .services.modifications import ModificationService
 from .services.owner_settlement import owner_change_blocker, settlement_for
 from .services.refunds import cancellation_refund, successful_original_payment_amount
+from .services.stay_lifecycle import cancellation_blocker
 
 logger = logging.getLogger(__name__)
 
@@ -241,11 +242,14 @@ def booking_list(request: HttpRequest) -> HttpResponse:
         booking.admin_status_code = (
             "cancelled"
             if booking.normalized_status == Reservation.Status.CANCELLED
+            else "stay_ended"
+            if cancellation_blocker(booking)
             else "completed"
             if booking.admin_has_paid or payment_status in {"paid", "partially_paid", "refunded"}
             else "awaiting_payment"
         )
         booking.admin_status_label = {
+            "stay_ended": "انتهت الإقامة",
             "completed": "مكتمل ومدفوع",
             "awaiting_payment": "مؤكد بانتظار الدفع",
             "cancelled": "ملغى",
@@ -271,6 +275,17 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
     )
     intent = reservation.booking_intent
+    cancellation_blocked = cancellation_blocker(reservation)
+    invoice = (
+        GuestInvoice.objects.defer("pdf_content")
+        .filter(hostaway_reservation_id=reservation.hostaway_reservation_id)
+        .first()
+        if reservation.hostaway_reservation_id and intent is not None
+        else None
+    )
+    from apps.notifications.invoice_views import invoice_delivery_forms
+
+    delivery_forms = invoice_delivery_forms(invoice) if invoice else {}
     has_successful_payment = settlement_for(reservation, reservation.total_price).paid > 0
     date_form = DateChangeRequestForm(
         initial={
@@ -381,7 +396,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 else:
                     messages.error(request, "تعذر تسعير التعديل الآن. لم يتغير الحجز.")
         elif action == "start_cancellation":
-            if intent is None:
+            if cancellation_blocked:
+                messages.error(request, "لا يمكن إلغاء الحجز لأن الإقامة اكتملت وانتهت.")
+            elif intent is None:
                 messages.error(request, "لا توجد بيانات دفع مرتبطة بهذا الحجز.")
             else:
                 with ModificationService() as service:
@@ -532,6 +549,10 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         {
             "title": "إدارة الحجز",
             "reservation": reservation,
+            "cancellation_blocked": cancellation_blocked,
+            "invoice": invoice,
+            "email_send_form": delivery_forms.get("email"),
+            "whatsapp_send_form": delivery_forms.get("whatsapp"),
             "date_form": date_form,
             "pending_adjustments": pending_adjustments,
             "ready_adjustment": ready_adjustment,
@@ -847,6 +868,11 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
         request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
     )
     approval_form = CancellationDecisionForm()
+    cancellation_blocked = cancellation_blocker(cancellation.reservation)
+    if request.method == "POST" and request.POST.get("action") in {"approve", "execute_external"}:
+        if cancellation_blocked:
+            messages.error(request, "لا يمكن إلغاء الحجز لأن الإقامة اكتملت وانتهت.")
+            return redirect("notifications:cancellation_detail", request_id=cancellation.pk)
     rejection_form = CancellationRejectionForm()
     original_payment_amount = successful_original_payment_amount(cancellation.reservation)
     has_successful_payment = original_payment_amount is not None and original_payment_amount > 0
@@ -1045,6 +1071,7 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
         {
             "title": "مراجعة طلب الإلغاء",
             "cancellation": cancellation,
+            "cancellation_blocked": cancellation_blocked,
             "estimated_refund": estimated_refund,
             "has_successful_payment": has_successful_payment,
             "original_payment_amount": original_payment_amount,

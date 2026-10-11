@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+{% block content_title %}{% endblock %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen lsa-booking-list-screen" dir="rtl">
@@ -11,6 +12,7 @@
     <div class="lsa-page-head__actions">
       <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">＋ إنشاء حجز جديد</a>
       <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:invoice_list' %}">فواتير الضيوف</a>
+      <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">مركز الإدارة</a>
     </div>
   </section>
 

@@ -27,6 +27,7 @@ from .availability import (
 from .booking import sanitized_components
 from .host_policy import check_in_datetime, policy_blocker
 from .owner_settlement import settlement_blocker, settlement_for
+from .stay_lifecycle import cancellation_blocker
 
 
 @dataclass(frozen=True, slots=True)
@@ -319,50 +320,58 @@ class ModificationService:
     ) -> ModificationCreation:
         if not settings.BOOKING_CANCELLATION_REQUEST_ENABLED:
             return ModificationCreation("cancellation_requests_disabled")
-        blocker = _base_blocker(reservation, session_hash, owner_override=owner_override)
-        if blocker:
-            return ModificationCreation(blocker)
-        key = _idempotency_key(
-            reservation,
-            BookingModificationRequest.RequestType.CANCEL_RESERVATION,
-            None,
-            None,
-            None,
-            session_hash,
-        )
-        existing = BookingModificationRequest.objects.filter(idempotency_key=key).first()
-        if existing:
-            return ModificationCreation("idempotent", existing)
         from django.core.exceptions import ValidationError
 
         from apps.loyalty.settlements import cancellation_plan
 
-        try:
-            cancellation_plan(reservation)
-        except ValidationError:
-            return ModificationCreation("loyalty_departure_evidence_required")
-        request = BookingModificationRequest(
-            reservation=reservation,
-            request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
-            status=(
-                BookingModificationRequest.Status.READY_FOR_HOSTAWAY
-                if settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
-                else BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
-            ),
-            old_check_in=reservation.check_in,
-            old_check_out=reservation.check_out,
-            old_guests=reservation.guests,
-            old_total=reservation.total_price,
-            price_difference=Decimal("0"),
-            currency=reservation.currency,
-            reason=_clean_reason(reason),
-            quote_snapshot={},
-            idempotency_key=key,
-            session_key_hash=session_hash,
-            expires_at=BookingModificationRequest.default_expiry(),
-        )
-        request.full_clean()
         with transaction.atomic():
+            reservation = (
+                Reservation.objects.select_for_update(of=("self",))
+                .select_related("property", "booking_intent")
+                .get(pk=reservation.pk)
+            )
+            blocker = _base_blocker(reservation, session_hash, owner_override=owner_override)
+            if blocker:
+                return ModificationCreation(blocker)
+            blocker = cancellation_blocker(reservation)
+            if blocker:
+                return ModificationCreation(blocker)
+            key = _idempotency_key(
+                reservation,
+                BookingModificationRequest.RequestType.CANCEL_RESERVATION,
+                None,
+                None,
+                None,
+                session_hash,
+            )
+            existing = BookingModificationRequest.objects.filter(idempotency_key=key).first()
+            if existing:
+                return ModificationCreation("idempotent", existing)
+            try:
+                cancellation_plan(reservation)
+            except ValidationError:
+                return ModificationCreation("loyalty_departure_evidence_required")
+            request = BookingModificationRequest(
+                reservation=reservation,
+                request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
+                status=(
+                    BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+                    if settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED
+                    else BookingModificationRequest.Status.PENDING_ADMIN_APPROVAL
+                ),
+                old_check_in=reservation.check_in,
+                old_check_out=reservation.check_out,
+                old_guests=reservation.guests,
+                old_total=reservation.total_price,
+                price_difference=Decimal("0"),
+                currency=reservation.currency,
+                reason=_clean_reason(reason),
+                quote_snapshot={},
+                idempotency_key=key,
+                session_key_hash=session_hash,
+                expires_at=BookingModificationRequest.default_expiry(),
+            )
+            request.full_clean()
             request.save(force_insert=True)
             from apps.notifications.services.events import handle_modification_created
 

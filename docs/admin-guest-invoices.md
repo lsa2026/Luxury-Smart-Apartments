@@ -50,6 +50,23 @@ Entry: `/admin/operations/invoices/`, linked from the booking administration hub
   read/delivery confirmation. Timeouts and ambiguous outcomes require manual review;
   they are never retried automatically. Explicit rejections may be retried by an
   additional owner click after fixing the connection; attempt count is retained.
+
+### Administration navigation (11 October 2026)
+
+- `/admin/operations/hub/` is a local-only home with two entries: website booking
+  management and guest invoices. It never refreshes Hostaway or sends messages.
+- The booking list keeps its existing local website/manual reservation scope;
+  opening the home does not import external platform bookings into that list.
+- A booking detail resolves its invoice by the stored Hostaway reservation ID.
+  An explicit POST prepares a missing invoice for review; GET never creates one.
+  Existing issued invoices are reused without changing their frozen contents.
+- Issued invoices expose the existing email/WhatsApp recipient-confirmation cards
+  inside booking details, retaining duplicate prevention and explicit owner sends.
+- Completed stays cannot be cancelled, including via old request URLs. The same
+  shared guard checks the listing's checkout instant at creation and execution
+  with freshly locked reservation data. This does not alter past bookings.
+- The admin header uses the full approved horizontal Figma dark lockup at its
+  original 64:15 aspect ratio, rather than independently typesetting its words.
 - Email and WhatsApp have separate labelled recipient cards and icon buttons. They
   are visible but disabled before issuance. A recipient defaults to the imported
   contact and may be replaced without mutating the reservation or frozen invoice.

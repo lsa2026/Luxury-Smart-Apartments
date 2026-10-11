@@ -32,6 +32,10 @@ def test_operations_hub_is_private_and_does_not_call_providers(db):
     content = response.content.decode()
     assert response.status_code == 200
     assert "إدارة الحجوزات" in content
-    assert "إنشاء حجز جديد" in content
-    assert "البحث عن حجز" in content
-    assert "الحجوزات المدفوعة، المؤكدة بانتظار الدفع، والملغاة." in content
+    assert "مركز الإدارة" in content
+    assert "فواتير الضيوف" in content
+    assert "البحث عن حجز" not in content
+    assert 'href="' + reverse("notifications:booking_list") + '"' in content
+    assert 'href="' + reverse("notifications:invoice_list") + '"' in content
+    assert content.count('class="lsa-admin-home__card"') == 2
+    assert content.count("<h1>") == 1

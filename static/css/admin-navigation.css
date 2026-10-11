@@ -1,0 +1,32 @@
+/* Use the complete approved Figma lockup, never independently typeset its words. */
+#header .lsa-admin-brand { min-width: 0; }
+#header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved {
+    display: flex; width: clamp(200px, 40vw, 440px); max-width: 100%;
+    height: auto; min-height: 0; padding: 0; gap: 0; overflow: visible;
+}
+#header .lsa-admin-brand__logo--approved img {
+    width: 100%; height: auto; max-width: 100%; flex: 0 1 auto;
+    aspect-ratio: 64 / 15; object-fit: contain;
+}
+.lsa-admin-home__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.lsa-admin-home__card {
+    display: flex; flex-direction: column; gap: 12px; padding: 32px;
+    background: #fffdf8; border: 1px solid #d9c9a9; border-radius: 24px;
+    color: #123c35 !important; text-decoration: none !important;
+    box-shadow: 0 12px 35px #123c350a;
+}
+.lsa-admin-home__card > span { color: #b58b40; font-size: 36px; }
+.lsa-admin-home__card h2 { margin: 0; font-size: 26px; }
+.lsa-admin-home__card p { margin: 0; line-height: 1.8; flex: 1; }
+.lsa-admin-home__card strong { padding-top: 12px; }
+.lsa-admin-home__card:hover { border-color: #b58b40; }
+.lsa-admin-home__card:focus-visible { outline: 3px solid #b58b40; outline-offset: 4px; }
+.lsa-booking-invoice__send { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.lsa-booking-invoice__send form { min-width: 0; }
+.lsa-booking-list__search .lsa-inline-form label { flex: 1; min-width: 0; }
+.lsa-booking-list__search .lsa-inline-form input { width: 100%; }
+@media (max-width: 767px) {
+    #header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved { width: clamp(150px, 50vw, 260px); }
+    .lsa-admin-home__grid, .lsa-booking-invoice__send { grid-template-columns: 1fr; }
+    .lsa-admin-home__card { padding: 24px; }
+}
