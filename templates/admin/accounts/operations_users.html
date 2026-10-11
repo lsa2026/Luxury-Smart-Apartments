@@ -1,0 +1,21 @@
+{% extends "admin/base_site.html" %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen lsa-users-screen" dir="rtl">
+  <section class="lsa-page-head"><div><h1>إدارة المستخدمين</h1><p>إضافة مديرين للحجوزات والفواتير أو إلغاء وصولهم. إدارة المستخدمين وإعدادات النظام للمالك فقط.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">مركز الإدارة</a></section>
+  <section class="lsa-panel"><h2>حساب المالك</h2><p dir="ltr">{{ owner_email }}</p><p class="help">حسابك محفوظ ولا يمكن إلغاؤه من هذه الصفحة.</p></section>
+  <section class="lsa-panel"><h2>إضافة مدير</h2><p class="help">أدخل بريد Gmail نفسه الذي سيختاره المدير في Google. لا يحتاج كلمة مرور للموقع، ولا يُمنح صلاحيات إعدادات النظام أو إدارة المستخدمين.</p>
+    <form method="post" class="lsa-owner-form">{% csrf_token %}{{ form.non_field_errors }}
+      {% for field in form %}<div class="form-row lsa-manager-field">{% if field.field.widget.input_type == "checkbox" %}<label class="lsa-manager-confirm" for="{{ field.id_for_label }}">{{ field }}<span>{{ field.label }}</span></label>{% else %}{{ field.label_tag }}{{ field }}{% endif %}{{ field.errors }}</div>{% endfor %}
+      <button class="lsa-btn lsa-btn--gold" type="submit">إضافة المدير</button>
+    </form>
+  </section>
+  <section class="lsa-panel"><h2>المديرون</h2>
+    {% for manager in managers %}<article class="lsa-manager-card">
+      <h3>{{ manager.display_name|default:"مدير" }}</h3><p dir="ltr">{{ manager.email }}</p><p>{% if manager.is_enabled %}الوصول مفعّل{% else %}الوصول ملغى{% endif %}</p>
+      {% if manager.last_google_login_at %}<p>آخر دخول عبر Google: {{ manager.last_google_login_at }}</p>{% else %}<p class="help">لم يسجل الدخول عبر Google بعد.</p>{% endif %}
+      {% if manager.is_enabled %}<form method="post" action="{% url 'accounts:operations_user_revoke' manager.pk %}">{% csrf_token %}<label class="lsa-manager-confirm"><input type="checkbox" name="confirm_revoke" required><span>أؤكد إلغاء وصول هذا المدير.</span></label><button class="lsa-btn lsa-btn--ghost" type="submit">إلغاء الوصول</button></form>{% else %}<p class="help">لإعادة السماح له، أضف البريد نفسه أعلاه. ستلزمه جلسة Google جديدة.</p>{% endif %}
+    </article>{% empty %}<p>لم تضف أي مدير بعد.</p>{% endfor %}
+  </section>
+</main>
+{% endblock %}

@@ -6,7 +6,7 @@
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20261011-admin-navigation">
-  <link rel="stylesheet" href="{% static 'css/admin-navigation.css' %}?v=20261011-1">
+  <link rel="stylesheet" href="{% static 'css/admin-navigation.css' %}?v=20261011-users-1">
 {% endblock %}
 
 {% block extrahead %}
@@ -31,7 +31,7 @@
               <div class="lsa-user-menu__panel">
                 <strong>{{ user.get_full_name|default:user.get_username }}</strong>
                 <small>{% if user.is_superuser %}{% trans "System administrator" %}{% else %}{% trans "Administration team member" %}{% endif %}</small>
-                {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">{% trans "Change password" %}</a>{% endif %}
+                {% if user.is_superuser and user.has_usable_password %}<a href="{% url 'admin:password_change' %}">{% trans "Change password" %}</a>{% endif %}
                 {% include "admin/color_theme_toggle.html" %}
                 <form method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">{% trans "Sign out" %}</button></form>
               </div>

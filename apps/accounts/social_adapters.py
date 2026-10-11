@@ -38,6 +38,14 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
         if not verified_email:
             return
 
+        # Request-local only. The login signal creates proof after authentication
+        # succeeds, never while a callback is pending or on an email-code login.
+        if (
+            sociallogin.account.extra_data.get("email_verified") is True
+            or sociallogin.account.extra_data.get("verified_email") is True
+        ):
+            request._operations_google_email = verified_email
+
         with transaction.atomic():
             if verified_email == self._operations_owner_email():
                 user = self._get_or_create_owner(verified_email)
@@ -47,6 +55,21 @@ class LuxurySocialAccountAdapter(DefaultSocialAccountAdapter):
                 return
             if not sociallogin.is_existing:
                 sociallogin.connect(request, user)
+            # Existing guest accounts may lack an allauth verified address.
+            # Google has just verified this exact mailbox; do not force an
+            # extra email-code step that would discard the Google login proof.
+            if (
+                getattr(request, "_operations_google_email", None) == verified_email
+                and normalize_email(user.email) == verified_email
+            ):
+                from allauth.account.models import EmailAddress
+
+                from .models import OperationsManager
+
+                if OperationsManager.objects.filter(email=verified_email, is_enabled=True).exists():
+                    EmailAddress.objects.update_or_create(
+                        user=user, email=verified_email, defaults={"verified": True}
+                    )
             profile_for(user).mark_verified()
             claim_reservations_for_verified_email(user)
 

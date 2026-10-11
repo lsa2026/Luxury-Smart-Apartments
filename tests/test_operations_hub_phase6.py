@@ -37,5 +37,6 @@ def test_operations_hub_is_private_and_does_not_call_providers(db):
     assert "البحث عن حجز" not in content
     assert 'href="' + reverse("notifications:booking_list") + '"' in content
     assert 'href="' + reverse("notifications:invoice_list") + '"' in content
-    assert content.count('class="lsa-admin-home__card"') == 2
+    assert content.count('class="lsa-admin-home__card"') == 3
+    assert "إدارة المستخدمين" in content
     assert content.count("<h1>") == 1

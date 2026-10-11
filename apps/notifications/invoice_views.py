@@ -1,16 +1,15 @@
-"""Private owner-only invoice workflow, separate from reservation administration."""
+"""Private invoice workflow for the owner and explicitly authorized managers."""
 
 import logging
 
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.accounts.access import require_operations_owner
+from apps.accounts.access import operations_access_required, require_operations_access
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import (
     HostawayAuthenticationError,
@@ -51,11 +50,11 @@ def _audit(request, invoice, action, status):
     )
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_http_methods(["GET", "POST"])
 def invoice_list(request):
-    require_operations_owner(request.user)
+    require_operations_access(request)
     form = InvoiceLookupForm(request.POST if request.method == "POST" else None)
     candidates = None
     continuation = None
@@ -180,14 +179,14 @@ def _detail(request, invoice, form=None, send_forms=None):
     )
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_POST
 def booking_invoice(request, reservation_id):
-    """Explicit owner lookup only; never issue or send an invoice automatically."""
+    """Explicit operational lookup; never issue or send an invoice automatically."""
     from apps.reservations.models import Reservation
 
-    require_operations_owner(request.user)
+    require_operations_access(request)
     reservation = get_object_or_404(Reservation, pk=reservation_id, booking_intent__isnull=False)
     hostaway_id = reservation.hostaway_reservation_id
     if not hostaway_id:
@@ -216,21 +215,21 @@ def booking_invoice(request, reservation_id):
     return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_GET
 def invoice_detail(request, invoice_id):
-    require_operations_owner(request.user)
+    require_operations_access(request)
     return _detail(
         request, get_object_or_404(GuestInvoice.objects.defer("pdf_content"), pk=invoice_id)
     )
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_POST
 def invoice_issue(request, invoice_id):
-    require_operations_owner(request.user)
+    require_operations_access(request)
     invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
     if not invoice.issued_at:
         form = InvoiceReviewForm(request.POST)
@@ -253,11 +252,11 @@ def invoice_issue(request, invoice_id):
     return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_GET
 def invoice_pdf(request, invoice_id):
-    require_operations_owner(request.user)
+    require_operations_access(request)
     invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
     presentation = invoice.presentations.first() if invoice.issued_at else None
     if invoice.issued_at:
@@ -276,11 +275,11 @@ def invoice_pdf(request, invoice_id):
     return response
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_POST
 def invoice_refresh_design(request, invoice_id):
-    require_operations_owner(request.user)
+    require_operations_access(request)
     invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
     try:
         refresh_invoice_presentation(invoice.pk, request.user)
@@ -296,11 +295,11 @@ def invoice_refresh_design(request, invoice_id):
     return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
 
 
-@staff_member_required
+@operations_access_required
 @never_cache
 @require_POST
 def invoice_send(request, invoice_id):
-    require_operations_owner(request.user)
+    require_operations_access(request)
     invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
     channel = request.POST.get("channel", "")
     if channel not in {"email", "whatsapp"}:

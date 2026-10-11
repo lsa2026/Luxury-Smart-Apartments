@@ -12,7 +12,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
-from apps.accounts.access import require_operations_owner
+from apps.accounts.access import (
+    is_operations_owner,
+    operations_access_required,
+    require_operations_owner,
+)
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
 from apps.notifications.exports import report_rows, write_csv
 from apps.notifications.health import readiness_status
@@ -25,11 +29,10 @@ def _require_operations_permission(request: HttpRequest) -> None:
     require_operations_owner(request.user)
 
 
-@staff_member_required
+@operations_access_required
 def admin_landing(request: HttpRequest) -> HttpResponse:
     """Make the administration root a focused reservations workspace."""
 
-    _require_operations_permission(request)
     return redirect("notifications:hub")
 
 
@@ -119,15 +122,14 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def operations_hub(request: HttpRequest) -> HttpResponse:
     """A local-only entrance, separate from the reservations and invoice lists."""
 
-    _require_operations_permission(request)
     return render(
         request,
         "admin/notifications/operations_hub.html",
-        {"title": "مركز الإدارة"},
+        {"title": "مركز الإدارة", "can_manage_users": is_operations_owner(request.user)},
     )
 
 

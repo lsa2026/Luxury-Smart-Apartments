@@ -24,6 +24,7 @@ from django.test import Client, override_settings  # noqa: E402
 from django.urls import reverse  # noqa: E402
 from django.utils import timezone  # noqa: E402
 
+from apps.accounts.models import OperationsManager  # noqa: E402
 from apps.notifications.models import GuestInvoice  # noqa: E402
 from tests.test_booking_modifications_phase6 import confirmed_reservation  # noqa: E402
 
@@ -51,6 +52,9 @@ def render_previews():
     )
     client = Client()
     client.force_login(user)
+    OperationsManager.objects.create(
+        email="synthetic.preview@gmail.com", display_name="مدير تجريبي"
+    )
     output = ROOT / "outputs/admin-navigation-20261011"
     output.mkdir(parents=True, exist_ok=True)
     with override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False):
@@ -62,6 +66,7 @@ def render_previews():
                 "home": reverse("notifications:hub"),
                 "bookings": reverse("notifications:booking_list"),
                 "booking": reverse("notifications:booking_detail", args=[reservation.pk]),
+                "users": reverse("accounts:operations_users"),
             }.items():
                 response = client.get(url)
                 assert response.status_code == 200

@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -88,3 +89,33 @@ def profile_for(user: object) -> CustomerProfile:
     """Return the profile for ``user``, creating it on first need."""
     profile, _created = CustomerProfile.objects.get_or_create(user=user)
     return profile
+
+
+class OperationsManager(models.Model):
+    """Owner-managed allowlist, separate from guest accounts and Django roles."""
+
+    email = models.EmailField(unique=True)
+    display_name = models.CharField(max_length=150, blank=True)
+    is_enabled = models.BooleanField(default=True)
+    # Invalidates previously authenticated sessions on revoke/re-enable.
+    access_version = models.PositiveIntegerField(default=1)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="manager_grants",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_google_login_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-is_enabled", "display_name", "email"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(email=Lower("email")), name="operations_manager_email_lowercase"
+            )
+        ]
+
+    def __str__(self):
+        return self.display_name or self.email
