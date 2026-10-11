@@ -109,3 +109,13 @@
     .lsa-invoices .invoice-lookup-or { padding: 0; text-align: center; }
     .lsa-invoices .invoice-help { font-size: 14px; margin-top: 16px; }
 }
+
+/* Approved horizontal lockup, with consistent compact invoice sections. */
+.lsa-invoices .invoice-brand { flex-direction: column; align-items: stretch; gap: 8px; }
+.lsa-invoices .invoice-brand img { width: min(100%, 440px); height: auto; align-self: center; }
+.lsa-invoices .invoice-brand h2 { font-size: 24px; }
+.lsa-invoices .invoice-cards small { margin-top: 8px; }
+.lsa-invoices .invoice-delivery-error { color: #a23124; font-weight: 600; }
+@media (max-width: 480px) {
+    .lsa-invoices .invoice-brand h2 { font-size: 21px; }
+}

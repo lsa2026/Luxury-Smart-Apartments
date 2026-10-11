@@ -17,8 +17,8 @@ from pypdf import PdfReader
 
 from apps.integrations.hostaway.exceptions import HostawayResponseError
 from apps.notifications.invoice_forms import InvoiceLookupForm, InvoiceReviewForm, InvoiceSendForm
-from apps.notifications.invoice_pdf import render_invoice_pdf
-from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery
+from apps.notifications.invoice_pdf import COPY, _visual, render_invoice_pdf
+from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery, GuestInvoicePresentation
 from apps.notifications.services.invoice_delivery import deliver_invoice
 from apps.notifications.services.invoice_search import (
     SALT,
@@ -32,6 +32,7 @@ from apps.notifications.services.invoices import (
     issue_invoice,
     prepare_invoice,
     queue_invoice_delivery,
+    refresh_invoice_presentation,
     snapshot_token,
 )
 from apps.notifications.services.ultramsg import (
@@ -540,6 +541,87 @@ def test_preview_is_not_issued_and_number_not_assigned(draft):
     assert draft.number is None and draft.issued_at is None and not draft.pdf_content
 
 
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_labelled_pdf_removes_internal_number_and_repeated_property(draft, language):
+    invoice = issue_invoice(draft.pk, reviewed(draft, language))
+    text = PdfReader(BytesIO(invoice.pdf_content)).pages[0].extract_text()
+    assert invoice.number not in text
+    assert "Apartment accommodation" not in text
+    assert "Hébergement en appartement" not in text
+    for key in ("name", "email", "phone", "platform"):
+        shaped = _visual(COPY[language][key])
+        # pypdf reconstructs Arabic reading order; the canvas stores visual order.
+        assert shaped in text or (language == "ar" and shaped[::-1] in text)
+    assert text.count("2026-12-15") <= 1
+
+
+def test_restyle_is_explicit_idempotent_and_preserves_original(client, actor, draft):
+    invoice = issue_invoice(draft.pk, reviewed(draft))
+    original_pdf, original_data = bytes(invoice.pdf_content), dict(invoice.snapshot)
+    client.force_login(actor)
+    assert client.get(url("detail", invoice)).status_code == 200
+    assert not GuestInvoicePresentation.objects.exists()
+    response = client.post(url("refresh_design", invoice))
+    assert response.status_code == 302
+    first = invoice.presentations.get()
+    assert client.post(url("refresh_design", invoice)).status_code == 302
+    assert invoice.presentations.count() == 1
+    invoice.refresh_from_db()
+    assert bytes(invoice.pdf_content) == original_pdf and invoice.snapshot == original_data
+    assert client.get(url("pdf", invoice)).content == bytes(first.pdf_content)
+    assert client.get(url("pdf", invoice) + "?original=1").content == original_pdf
+    with pytest.raises(ValidationError):
+        first.save()
+    with pytest.raises(ValidationError):
+        first.delete()
+    assert not GuestInvoiceDelivery.objects.exists()
+
+
+@override_settings(EMAIL_DELIVERY_ENABLED=True)
+def test_delivery_freezes_selected_presentation_and_keeps_duplicate_guard(draft, actor, mailoutbox):
+    invoice = issue_invoice(draft.pk, reviewed(draft))
+    with patch("apps.notifications.services.invoices.dispatch_invoice_delivery"):
+        original_send = queue_invoice_delivery(
+            invoice=invoice, channel="email", recipient="first@example.invalid", actor=actor
+        )
+        restyled = refresh_invoice_presentation(invoice.pk, actor)
+        # A queued request must still send the exact version originally selected.
+        assert deliver_invoice(original_send.pk) == "accepted"
+        assert mailoutbox[0].attachments[0].content == bytes(invoice.pdf_content)
+        later_send = queue_invoice_delivery(
+            invoice=invoice, channel="email", recipient="second@example.invalid", actor=actor
+        )
+        assert later_send.presentation_id == restyled.pk
+        assert deliver_invoice(later_send.pk) == "accepted"
+        assert mailoutbox[1].attachments[0].content == bytes(restyled.pdf_content)
+        again = queue_invoice_delivery(
+            invoice=invoice, channel="email", recipient="first@example.invalid", actor=actor
+        )
+        assert again.pk == original_send.pk and again.status == "accepted"
+    assert GuestInvoiceDelivery.objects.count() == 2
+
+
+def test_restyle_rejects_draft(draft, actor):
+    with pytest.raises(ValidationError):
+        refresh_invoice_presentation(draft.pk, actor)
+    assert not GuestInvoicePresentation.objects.exists()
+
+
+def test_delivery_error_is_safe_and_specific(client, actor, draft):
+    client.force_login(actor)
+    GuestInvoiceDelivery.objects.create(
+        invoice=draft,
+        channel="whatsapp",
+        recipient="+16462817246",
+        requested_by=actor,
+        status="failed",
+        error_code="whatsapp_disabled",
+    )
+    html = client.get(url("detail", draft)).content.decode()
+    assert "UltraMsg" in html and "lsa-worker" in html
+    assert "غير مكتملة أو معطلة" in html
+
+
 def test_long_fields_have_single_page(draft):
     draft.snapshot["guest_name"] = "ضيف " * 40
     draft.snapshot["guest_email"] = "a" * 60 + "@" + "b" * 180 + ".invalid"
@@ -560,20 +642,20 @@ def test_contacts_optional_and_phone_normalized(draft):
     assert form.is_valid() and form.cleaned_data["guest_phone"] == "+16462817246"
 
 
-@pytest.mark.parametrize("name", ["list", "detail", "pdf", "issue", "send"])
+@pytest.mark.parametrize("name", ["list", "detail", "pdf", "issue", "send", "refresh_design"])
 def test_non_owner_cannot_access_any_invoice_endpoint(draft, name):
     client = Client()
     assert client.get(url(name, None if name == "list" else draft)).status_code == 302
     user = get_user_model().objects.create_user(username="not-owner", is_staff=True)
     client.force_login(user)
-    method = client.post if name in {"issue", "send"} else client.get
+    method = client.post if name in {"issue", "send", "refresh_design"} else client.get
     assert method(url(name, None if name == "list" else draft)).status_code == 403
 
 
 def test_no_mutation_via_get_and_csrf_is_required(draft, actor):
     client = Client(enforce_csrf_checks=True)
     client.force_login(actor)
-    for name in ("issue", "send"):
+    for name in ("issue", "send", "refresh_design"):
         assert client.get(url(name, draft)).status_code == 405
         assert client.post(url(name, draft), reviewed(draft)).status_code == 403
     assert client.post(url("list"), {"hostaway_id": 88001234}).status_code == 403

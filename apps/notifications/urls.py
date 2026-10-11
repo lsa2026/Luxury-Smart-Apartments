@@ -24,6 +24,11 @@ urlpatterns = [
         name="invoice_pdf",
     ),
     path(
+        "admin/operations/invoices/<uuid:invoice_id>/refresh-design/",
+        invoice_views.invoice_refresh_design,
+        name="invoice_refresh_design",
+    ),
+    path(
         "admin/operations/invoices/<uuid:invoice_id>/send/",
         invoice_views.invoice_send,
         name="invoice_send",

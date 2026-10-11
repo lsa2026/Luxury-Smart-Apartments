@@ -20,7 +20,7 @@ from apps.integrations.hostaway.exceptions import (
     HostawayTimeoutError,
 )
 from apps.notifications.invoice_forms import InvoiceLookupForm, InvoiceReviewForm, InvoiceSendForm
-from apps.notifications.invoice_pdf import COPY, render_invoice_pdf
+from apps.notifications.invoice_pdf import COPY, platform_name, render_invoice_pdf
 from apps.notifications.models import GuestInvoice
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.invoice_search import (
@@ -32,6 +32,7 @@ from apps.notifications.services.invoices import (
     issue_invoice,
     prepare_invoice,
     queue_invoice_delivery,
+    refresh_invoice_presentation,
     snapshot_token,
 )
 
@@ -163,6 +164,8 @@ def _detail(request, invoice, form=None, send_forms=None):
             ),
             "copy": COPY[invoice.language],
             "property_name": data["property_names"][invoice.language],
+            "platform_name": platform_name(data["platform"]),
+            "presentation": invoice.presentations.defer("pdf_content").first(),
             "deliveries": invoice.deliveries.all()[:20],
             "email_send_form": delivery_forms["email"],
             "whatsapp_send_form": delivery_forms["whatsapp"],
@@ -213,7 +216,13 @@ def invoice_issue(request, invoice_id):
 def invoice_pdf(request, invoice_id):
     require_operations_owner(request.user)
     invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
-    content = bytes(invoice.pdf_content) if invoice.issued_at else render_invoice_pdf(invoice)
+    presentation = invoice.presentations.first() if invoice.issued_at else None
+    if invoice.issued_at:
+        content = bytes(presentation.pdf_content if presentation else invoice.pdf_content)
+    else:
+        content = render_invoice_pdf(invoice)
+    if request.GET.get("original") == "1" and invoice.issued_at:
+        content = bytes(invoice.pdf_content)
     response = HttpResponse(content, content_type="application/pdf")
     filename = f"{invoice.number or 'Luxury-Living-preview'}.pdf"
     disposition = "attachment" if request.GET.get("download") == "1" else "inline"
@@ -222,6 +231,26 @@ def invoice_pdf(request, invoice_id):
     response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
     response["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'self'"
     return response
+
+
+@staff_member_required
+@never_cache
+@require_POST
+def invoice_refresh_design(request, invoice_id):
+    require_operations_owner(request.user)
+    invoice = get_object_or_404(GuestInvoice, pk=invoice_id)
+    try:
+        refresh_invoice_presentation(invoice.pk, request.user)
+    except ValidationError as exc:
+        messages.error(request, " ".join(exc.messages))
+    else:
+        _audit(request, invoice, "invoice_design_refresh", "retained_original")
+        messages.success(
+            request,
+            "حُفظ التصميم الجديد مع الاحتفاظ بالأصل، "
+            "دون تغيير بيانات الحجز أو المبلغ أو إرسال رسالة.",
+        )
+    return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
 
 
 @staff_member_required

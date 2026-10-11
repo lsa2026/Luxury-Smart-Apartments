@@ -1,0 +1,5 @@
+lockup-light.png is a verbatim 3x raster conversion of the existing approved
+static/images/brand/luxury-living-lockup-light.svg (640 x 150).
+Source: approved Figma LSA Logo Approval Board / Primary Lockups / Light.
+No re-created lettering, monogram, colors or AI image generation.
+Converted offline with PyMuPDF; conversion is not a runtime dependency.

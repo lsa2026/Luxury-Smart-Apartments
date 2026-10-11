@@ -11,13 +11,12 @@
   </section>
   <div class="invoice-layout">
     <section class="invoice-sheet" lang="{{ invoice.language }}" dir="{% if invoice.language == 'ar' %}rtl{% else %}ltr{% endif %}">
-      <header class="invoice-brand"><img src="{% static 'images/brand/luxury-living-monogram-light.svg' %}" alt="Luxury Living"><div><span>LUXURY LIVING</span><h2>{{ copy.title }}</h2></div></header>
+      <header class="invoice-brand"><img src="{% static 'images/brand/luxury-living-lockup-light.svg' %}" alt="Luxury Living"><h2>{{ copy.title }}</h2></header>
       <div class="invoice-supplier"><strong>{{ data.supplier }}</strong><span dir="ltr">{{ data.website }}</span></div>
-      {% if invoice.issued_at %}<div class="invoice-meta"><bdi>{{ invoice.number }}</bdi><span>{{ copy.date }}: <bdi>{{ invoice.issued_at|date:"Y-m-d H:i" }}</bdi></span></div>{% else %}<p class="invoice-preview-label">{{ copy.preview }}</p>{% endif %}
-      <div class="invoice-cards"><div><h3>{{ copy.guest }}</h3><strong>{{ data.guest_name }}</strong><bdi>{{ data.guest_email }}</bdi><bdi>{{ data.guest_phone }}</bdi></div><div><h3>{{ copy.booking }}</h3><strong><bdi>{{ data.platform }}</bdi></strong><small>{{ copy.reference }}</small><strong><bdi>{{ data.platform_reference|default:"—" }}</bdi></strong></div></div>
+      {% if invoice.issued_at %}<div class="invoice-meta"><span>{{ copy.date }}: <bdi>{{ invoice.issued_at|date:"Y-m-d H:i" }}</bdi></span></div>{% else %}<p class="invoice-preview-label">{{ copy.preview }}</p>{% endif %}
+      <div class="invoice-cards"><div><h3>{{ copy.guest }}</h3><small>{{ copy.name }}</small><strong>{{ data.guest_name }}</strong><small>{{ copy.email }}</small><bdi>{{ data.guest_email|default:"—" }}</bdi><small>{{ copy.phone }}</small><bdi>{{ data.guest_phone|default:"—" }}</bdi></div><div><h3>{{ copy.booking }}</h3><small>{{ copy.platform }}</small><strong><bdi>{{ platform_name }}</bdi></strong><small>{{ copy.reference }}</small><strong><bdi>{{ data.platform_reference|default:"—" }}</bdi></strong></div></div>
       <h3>{{ copy.stay }}</h3><h2 class="invoice-property">{{ property_name }}</h2>
       <div class="invoice-dates"><div><small>{{ copy.arrival }}</small><bdi>{{ data.check_in }}</bdi></div><div><small>{{ copy.departure }}</small><bdi>{{ data.check_out }}</bdi></div><div><small>{{ copy.nights }}</small><strong>{{ data.nights }}</strong></div></div>
-      <div class="invoice-line"><strong>{{ copy.description }}</strong><span>{{ property_name }}</span></div>
       <div class="invoice-total"><span>{{ copy.total }}</span><strong><bdi>{{ data.total }} {{ data.currency }}</bdi></strong></div>
       <footer><strong>{{ copy.thanks }}</strong><small>{{ copy.notice }}</small></footer>
     </section>
@@ -32,7 +31,9 @@
         <p class="invoice-help">المعاينة بجانبك تعكس البيانات المستوردة؛ ملف PDF النهائي يعكس البيانات التي تعتمدها، ثم يُحفظ دون تغيير.</p>
       </section>
       {% else %}
-      <section class="lsa-panel"><h2>تنزيل الفاتورة</h2><div class="invoice-buttons"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a><a class="lsa-btn lsa-btn--subtle" target="_blank" rel="noopener" href="{% url 'notifications:invoice_pdf' invoice.pk %}">عرض PDF</a></div></section>
+      <section class="lsa-panel"><h2>تنزيل الفاتورة</h2><div class="invoice-buttons"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a><a class="lsa-btn lsa-btn--subtle" target="_blank" rel="noopener" href="{% url 'notifications:invoice_pdf' invoice.pk %}">عرض PDF</a></div>
+        {% if presentation %}<p class="invoice-help">حُفظت نسخة بالتنسيق الجديد. <a href="{% url 'notifications:invoice_pdf' invoice.pk %}?original=1&amp;download=1">تنزيل الأصل المحفوظ</a></p>{% else %}<p class="invoice-help">للفاتورة الصادرة سابقًا: حدّث تنسيق PDF ليطابق المعاينة، مع حفظ الأصل. لا يتغير المبلغ أو بيانات الحجز ولا تُرسل رسالة.</p><form action="{% url 'notifications:invoice_refresh_design' invoice.pk %}" method="post">{% csrf_token %}<button class="lsa-btn lsa-btn--subtle" type="submit">تحديث التصميم فقط مع حفظ الأصل</button></form>{% endif %}
+      </section>
       {% endif %}
       <section class="lsa-panel invoice-delivery-panel"><h2>إرسال الفاتورة للضيف</h2>
         <p class="invoice-help">تُعبّأ بيانات التواصل من الحجز. يمكنك استبدال بريد الإرسال أو رقم واتساب هنا دون تغيير الحجز أو بيانات الفاتورة المعتمدة.</p>
@@ -42,7 +43,7 @@
         <p class="invoice-help">لا تُرسل الفاتورة تلقائيًا. يُرفق ملف PDF المعتمد نفسه بعد تأكيد المستلم، ويُمنع تكرار الإرسال المقبول أو غير المؤكد إلى المستلم نفسه.</p>
       </section>
       <section class="lsa-panel"><h2>سجل الإرسال</h2><p class="invoice-help">قبول مزوّد الإرسال لا يعني تأكيد قراءة الضيف. عند نتيجة غير مؤكدة لا نُكرر الإرسال تلقائيًا لحماية الضيف من الرسائل المكررة.</p>
-        {% for delivery in deliveries %}<div class="invoice-delivery"><strong>{{ delivery.get_channel_display }}</strong><bdi>{{ delivery.recipient }}</bdi><span>{% if delivery.status == 'accepted' %}قبله مزوّد الإرسال{% elif delivery.status == 'queued' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}قيد الإرسال — راجع المزود إذا طال الانتظار{% elif delivery.status == 'failed' %}لم يقبل الإرسال — يلزم مراجعة الاتصال{% else %}النتيجة غير مؤكدة — راجع المزود قبل إعادة المحاولة{% endif %}</span><small>{{ delivery.created_at|date:"Y-m-d H:i" }}</small></div>{% empty %}<p>لا توجد طلبات إرسال.</p>{% endfor %}
+        {% for delivery in deliveries %}<div class="invoice-delivery"><strong>{{ delivery.get_channel_display }}</strong><bdi>{{ delivery.recipient }}</bdi><span>{% if delivery.status == 'accepted' %}قبله مزوّد الإرسال{% elif delivery.status == 'queued' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}قيد الإرسال — راجع المزود إذا طال الانتظار{% elif delivery.status == 'failed' %}لم يقبل الإرسال — يلزم مراجعة الاتصال{% else %}النتيجة غير مؤكدة — راجع المزود قبل إعادة المحاولة{% endif %}</span>{% if delivery.error_message %}<small class="invoice-delivery-error">{{ delivery.error_message }}</small>{% endif %}<small>{{ delivery.created_at|date:"Y-m-d H:i" }}</small></div>{% empty %}<p>لا توجد طلبات إرسال.</p>{% endfor %}
       </section>
     </aside>
   </div>

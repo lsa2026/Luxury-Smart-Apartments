@@ -13,7 +13,7 @@ from django.utils import timezone
 from apps.integrations.hostaway.exceptions import HostawayResponseError
 from apps.integrations.hostaway.reservation_validators import validate_reservation_response
 from apps.notifications.invoice_forms import plain
-from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery
+from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery, GuestInvoicePresentation
 from apps.properties.models import Property
 
 
@@ -167,6 +167,25 @@ def issue_invoice(invoice_id, reviewed):
         return invoice
 
 
+def refresh_invoice_presentation(invoice_id, actor):
+    """Owner-authorized style-only copy; no Hostaway read, amount edit or send."""
+    from apps.notifications.invoice_pdf import DESIGN_VERSION, render_invoice_pdf
+
+    with transaction.atomic():
+        invoice = GuestInvoice.objects.select_for_update().get(pk=invoice_id)
+        if not invoice.issued_at or not invoice.pdf_content:
+            raise ValidationError("أصدر الفاتورة أولًا.")
+        presentation = invoice.presentations.filter(design_version=DESIGN_VERSION).first()
+        if presentation:
+            return presentation
+        return GuestInvoicePresentation.objects.create(
+            invoice=invoice,
+            design_version=DESIGN_VERSION,
+            pdf_content=render_invoice_pdf(invoice),
+            created_by=actor,
+        )
+
+
 def queue_invoice_delivery(*, invoice, channel, recipient, actor):
     if not invoice.issued_at or not invoice.pdf_content:
         raise ValidationError("أصدر الفاتورة أولًا قبل إرسالها.")
@@ -175,11 +194,13 @@ def queue_invoice_delivery(*, invoice, channel, recipient, actor):
     if channel == "whatsapp" and not settings.ULTRAMSG_ENABLED:
         raise ValidationError("اتصال واتساب غير مفعّل حاليًا؛ يمكنك تنزيل الفاتورة.")
     with transaction.atomic():
+        invoice = GuestInvoice.objects.select_for_update().get(pk=invoice.pk)
+        presentation = invoice.presentations.first()
         delivery, created = GuestInvoiceDelivery.objects.get_or_create(
             invoice=invoice,
             channel=channel,
             recipient=recipient,
-            defaults={"requested_by": actor},
+            defaults={"requested_by": actor, "presentation": presentation},
         )
         delivery = GuestInvoiceDelivery.objects.select_for_update().get(pk=delivery.pk)
         # A second OWNER click may retry an explicitly rejected attempt, not an
@@ -187,7 +208,8 @@ def queue_invoice_delivery(*, invoice, channel, recipient, actor):
         if not created and delivery.status == "failed":
             delivery.status = "queued"
             delivery.error_code = ""
-            delivery.save(update_fields=["status", "error_code"])
+            delivery.presentation = presentation
+            delivery.save(update_fields=["status", "error_code", "presentation"])
             created = True
         if created:
             transaction.on_commit(lambda: dispatch_invoice_delivery(str(delivery.pk)))
