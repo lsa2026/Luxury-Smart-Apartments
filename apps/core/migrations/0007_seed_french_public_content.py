@@ -82,23 +82,21 @@ FAQS = {
 
 
 def seed_french_content(apps, schema_editor):
-    del schema_editor
     site_page = apps.get_model("core", "SitePage")
     faq_item = apps.get_model("core", "FAQItem")
     for slug, values in PAGES.items():
-        site_page.objects.filter(slug=slug, title_fr="").update(**values)
+        site_page.objects.using(schema_editor.connection.alias).filter(slug=slug, title_fr="").update(**values)
     for question_en, values in FAQS.items():
-        faq_item.objects.filter(question_en=question_en, question_fr="").update(**values)
+        faq_item.objects.using(schema_editor.connection.alias).filter(question_en=question_en, question_fr="").update(**values)
 
 
 def clear_seeded_french_content(apps, schema_editor):
-    del schema_editor
     site_page = apps.get_model("core", "SitePage")
     faq_item = apps.get_model("core", "FAQItem")
     for slug, values in PAGES.items():
-        site_page.objects.filter(slug=slug, **values).update(title_fr="", body_fr="")
+        site_page.objects.using(schema_editor.connection.alias).filter(slug=slug, **values).update(title_fr="", body_fr="")
     for question_en, values in FAQS.items():
-        faq_item.objects.filter(question_en=question_en, **values).update(
+        faq_item.objects.using(schema_editor.connection.alias).filter(question_en=question_en, **values).update(
             question_fr="",
             answer_fr="",
         )

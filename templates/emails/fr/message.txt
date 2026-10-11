@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if operation %}Opération : {{ operation }}
+Points crédités : {{ credit }}
+Points débités : {{ debit }}
+Solde après l’opération : {{ balance }}{% endif %}
 {% if verification_code %}
 Code de vérification : {{ verification_code }}
 Saisissez le code dans les {{ expires_in_minutes }} minutes.

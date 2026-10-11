@@ -14,6 +14,7 @@ from django.utils.html import strip_tags
 
 from apps.integrations.hostaway.availability_validators import PriceQuote
 from apps.integrations.hostaway.exceptions import HostawayError
+from apps.loyalty.settlements import priced_nights
 from apps.payments.currency import CurrencyError, CurrencyService
 
 from ..models import BookingModificationRequest, Reservation
@@ -81,6 +82,7 @@ class ModificationService:
         if (
             settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED
             and timezone.now() >= check_in_datetime(reservation.property, reservation.check_in)
+            and not _loyalty_booking(reservation)
         ):
             return ModificationCreation("cancellation_after_check_in_not_allowed")
         if new_check_out <= reservation.check_out:
@@ -129,6 +131,7 @@ class ModificationService:
             session_hash=session_hash,
             reason=reason,
             quote=quote,
+            night_prices=_extension_nights(reservation, calendar.document, quote),
             owner_override=owner_override,
         )
 
@@ -185,6 +188,7 @@ class ModificationService:
             session_hash=session_hash,
             reason=reason,
             quote=result.quote,
+            night_prices=priced_nights(result),
             owner_override=owner_override,
         )
 
@@ -278,6 +282,8 @@ class ModificationService:
             snapshot = dict(locked.quote_snapshot)
             snapshot["system_total"] = format(system_total, "f")
             snapshot["owner_final_total"] = format(final_total, "f")
+            if final_total != system_total:
+                snapshot.pop("night_prices", None)
             snapshot["owner_settlement"] = {
                 "paid": format(settlement.paid, "f"),
                 "due": format(settlement.due, "f"),
@@ -327,6 +333,14 @@ class ModificationService:
         existing = BookingModificationRequest.objects.filter(idempotency_key=key).first()
         if existing:
             return ModificationCreation("idempotent", existing)
+        from django.core.exceptions import ValidationError
+
+        from apps.loyalty.settlements import cancellation_plan
+
+        try:
+            cancellation_plan(reservation)
+        except ValidationError:
+            return ModificationCreation("loyalty_departure_evidence_required")
         request = BookingModificationRequest(
             reservation=reservation,
             request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION,
@@ -438,6 +452,7 @@ class ModificationService:
         session_hash: str,
         reason: str,
         quote: object,
+        night_prices: dict | None = None,
         owner_override: bool = False,
     ) -> ModificationCreation:
         if quote.currency != reservation.currency:
@@ -497,6 +512,7 @@ class ModificationService:
             payment_amount_sar = currency_quote.payment_amount_sar
             fx_snapshot = dict(currency_quote.snapshot)
         snapshot = {
+            "night_prices": night_prices or {},
             "price_version": 2,
             "system_total": format(quote.total_price, "f"),
             "components": sanitized_components(quote),
@@ -610,6 +626,41 @@ def _supersede_open_change_requests(reservation: Reservation) -> None:
     )
 
 
+def _loyalty_booking(reservation):
+    from apps.loyalty.settlements import eligible
+
+    return eligible(reservation)
+
+
+def _extension_nights(reservation, calendar, quote):
+    from types import SimpleNamespace
+
+    from apps.integrations.hostaway.availability_validators import CalendarDay, CalendarDocument
+
+    saved = reservation.loyalty_state.get("priced_nights", {})
+    if not saved or saved.get("currency") != quote.currency:
+        return {}
+    prior = [
+        CalendarDay(
+            date=date.fromisoformat(row["date"]),
+            price=Decimal(row["value"]),
+            is_available=None,
+            minimum_stay=None,
+            maximum_stay=None,
+            closed_on_arrival=None,
+            closed_on_departure=None,
+            status="contract",
+        )
+        for row in saved.get("nights", [])
+    ]
+    added = [day for day in calendar.days if reservation.check_out <= day.date < quote.check_out]
+    return priced_nights(
+        SimpleNamespace(
+            quote=quote, calendar_document=CalendarDocument(tuple(prior + added), frozenset(), ())
+        )
+    )
+
+
 def _base_blocker(
     reservation: Reservation,
     session_hash: str,
@@ -623,7 +674,10 @@ def _base_blocker(
     )
     if (
         reservation.normalized_status != Reservation.Status.CONFIRMED
-        and not (owner_override and reservation.normalized_status == Reservation.Status.MODIFIED)
+        and not (
+            (owner_override or _loyalty_booking(reservation))
+            and reservation.normalized_status == Reservation.Status.MODIFIED
+        )
         and not orphaned_paid_reservation
     ):
         return "reservation_not_confirmed"

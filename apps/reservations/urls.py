@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.loyalty.booking_ui import booking_points
+
 from . import sama_booking_api
 from .address_places import CheckoutAddressDetailsView, CheckoutAddressView
 from .views import (
@@ -20,6 +22,7 @@ from .views import (
 app_name = "reservations"
 
 urlpatterns = [
+    path("requests/<str:public_reference>/points/", booking_points, name="booking_points"),
     path(
         "quotes/<str:reference>/phone-check/",
         GuestPhoneValidationView.as_view(),

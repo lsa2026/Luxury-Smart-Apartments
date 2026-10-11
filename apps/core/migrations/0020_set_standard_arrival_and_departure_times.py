@@ -55,18 +55,16 @@ PREVIOUS_VALUES = {
 
 
 def set_standard_times(apps, schema_editor):
-    del schema_editor
     faq_item = apps.get_model("core", "FAQItem")
-    faq_item.objects.filter(
+    faq_item.objects.using(schema_editor.connection.alias).filter(
         question_en=CURRENT_QUESTION,
         property__isnull=True,
     ).update(**UPDATED_VALUES)
 
 
 def restore_previous_answer(apps, schema_editor):
-    del schema_editor
     faq_item = apps.get_model("core", "FAQItem")
-    faq_item.objects.filter(
+    faq_item.objects.using(schema_editor.connection.alias).filter(
         question_en=UPDATED_VALUES["question_en"],
         property__isnull=True,
     ).update(**PREVIOUS_VALUES)

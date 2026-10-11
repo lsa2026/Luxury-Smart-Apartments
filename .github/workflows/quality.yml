@@ -51,6 +51,9 @@ jobs:
           tests/test_indicative_rates.py
           tests/test_sync_policy_october.py
           tests/test_guest_invoices.py
+          tests/test_loyalty_stage8.py
+          tests/test_loyalty_checkout_integration.py
+          tests/test_loyalty_settlement_integration.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

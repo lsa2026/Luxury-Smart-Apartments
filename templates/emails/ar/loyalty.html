@@ -1,0 +1,5 @@
+{% extends "emails/ar/base.html" %}{% block content %}
+<h1>{{ heading }}</h1><p>{% if first_name %}مرحبًا {{ first_name }}، {% endif %}{{ message }}</p>
+{% if operation %}<dl><dt>رقم العملية</dt><dd><bdi>{{ operation }}</bdi></dd><dt>النقاط المضافة</dt><dd>{{ credit }}</dd><dt>النقاط المستخدمة</dt><dd>{{ debit }}</dd><dt>رصيدك بعد العملية</dt><dd>{{ balance }}</dd></dl>{% endif %}
+<p><a href="{{ action_url }}">عرض حجوزاتي ومكافآتي</a></p>
+{% endblock %}

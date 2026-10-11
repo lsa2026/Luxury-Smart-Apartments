@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if operation %}رقم العملية: {{ operation }}
+النقاط المضافة: {{ credit }}
+النقاط المستخدمة: {{ debit }}
+الرصيد بعد العملية: {{ balance }}{% endif %}
 {% if verification_code %}
 رمز التحقق: {{ verification_code }}
 أدخل الرمز خلال {{ expires_in_minutes }} دقيقة.

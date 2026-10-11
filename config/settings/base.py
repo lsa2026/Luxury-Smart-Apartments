@@ -19,6 +19,23 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 SAMA_BOOKING_ENABLED = env.bool("SAMA_BOOKING_ENABLED", default=False)
+LOYALTY_ENABLED = env.bool("LOYALTY_ENABLED", default=False)
+LOYALTY_LAUNCH_AT = env("LOYALTY_LAUNCH_AT", default="")
+# Stage-nine interfaces remain closed until a separately approved launch.
+LOYALTY_UI_ENABLED = env.bool("LOYALTY_UI_ENABLED", default=False)
+LOYALTY_MESSAGES_ENABLED = env.bool("LOYALTY_MESSAGES_ENABLED", default=False)
+LOYALTY_UI_PREVIEW = env.bool("LOYALTY_UI_PREVIEW", default=False)
+LOYALTY_TERMS_APPROVED = env.bool("LOYALTY_TERMS_APPROVED", default=False)
+LOYALTY_TERMS_VERSION = env("LOYALTY_TERMS_VERSION", default="")
+LOYALTY_TERMS_REFERENCE = env("LOYALTY_TERMS_REFERENCE", default="")
+# Cloud destination is explicit; missing credentials never select a local fallback.
+LOYALTY_BACKUP_ENABLED = env.bool("LOYALTY_BACKUP_ENABLED", default=False)
+LOYALTY_BACKUP_LOCAL_REHEARSAL = env.bool("LOYALTY_BACKUP_LOCAL_REHEARSAL", default=False)
+LOYALTY_BACKUP_LOCAL_PATH = env("LOYALTY_BACKUP_LOCAL_PATH", default="")
+LOYALTY_BACKUP_SOURCE_ID = env("LOYALTY_BACKUP_SOURCE_ID", default="")
+LOYALTY_BACKUP_DATABASE_URL = env("LOYALTY_BACKUP_DATABASE_URL", default="")
+LOYALTY_BACKUP_PROJECT_REF = env("LOYALTY_BACKUP_PROJECT_REF", default="")
+LOYALTY_BACKUP_SSL_ROOT_CERT = env("LOYALTY_BACKUP_SSL_ROOT_CERT", default="system")
 SAMA_BOOKING_KEY_SHA256 = env("SAMA_BOOKING_KEY_SHA256", default="")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
@@ -37,6 +54,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.google",
     "apps.core.apps.CoreConfig",
     "apps.accounts.apps.AccountsConfig",
+    "apps.loyalty.apps.LoyaltyConfig",
     "apps.properties.apps.PropertiesConfig",
     "apps.reservations.apps.ReservationsConfig",
     "apps.payments.apps.PaymentsConfig",

@@ -572,7 +572,13 @@ def test_idempotency_prevents_duplicate_intent_and_double_consumption() -> None:
 def test_price_or_currency_change_creates_replacement_quote_only(
     total: Decimal,
     currency: str,
+    monkeypatch,
 ) -> None:
+    # A quote revalidation test must not depend on a live FX service.
+    from apps.payments.currency import CurrencyService
+    from tests.test_currency import fixed_rates
+
+    monkeypatch.setattr(CurrencyService, "get_rates", lambda self: fixed_rates())
     property_obj = make_property()
     quote = make_quote(property_obj)
     outcome = consume_revalidated_quote(

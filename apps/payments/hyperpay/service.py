@@ -9,6 +9,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -215,6 +216,14 @@ class HyperPayService:
                 )
             except CurrencyError as exc:
                 raise HyperPayCheckoutError("payment_snapshot_invalid") from exc
+            from apps.loyalty.checkout import cash_due
+
+            try:
+                collectible = cash_due(locked, freeze=True)
+            except (ValueError, ValidationError) as exc:
+                raise HyperPayCheckoutError("loyalty_payment_allocation_invalid") from exc
+            if collectible is None or collectible <= 0:
+                raise HyperPayCheckoutError("points_only_booking_requires_confirmation")
             existing = (
                 PaymentAttempt.objects.select_for_update()
                 .filter(
@@ -227,10 +236,7 @@ class HyperPayService:
                 .first()
             )
             if existing and existing.provider_checkout_id and existing.widget_integrity:
-                if (
-                    existing.amount != locked.payment_amount_sar
-                    or existing.currency != PAYMENT_CURRENCY
-                ):
+                if existing.amount != collectible or existing.currency != PAYMENT_CURRENCY:
                     raise HyperPayCheckoutError("existing_payment_snapshot_mismatch")
                 return CheckoutSession(
                     existing,
@@ -243,13 +249,13 @@ class HyperPayService:
                 booking_intent=locked,
                 provider=HYPERPAY_PROVIDER,
                 merchant_transaction_id=merchant_id,
-                amount=locked.payment_amount_sar,
+                amount=collectible,
                 currency=PAYMENT_CURRENCY,
                 status=PaymentAttempt.Status.CREATED,
                 idempotency_key=secrets.token_urlsafe(32),
             )
             try:
-                payload = build_checkout_payload(locked, merchant_id)
+                payload = build_checkout_payload(locked, merchant_id, amount=collectible)
             except ValueError as exc:
                 raise HyperPayCheckoutError(str(exc)) from exc
             response = self.client.create_checkout(payload)
@@ -517,6 +523,9 @@ class HyperPayService:
                 locked.normalized_status = Reservation.Status.READY_FOR_HOSTAWAY
                 update_fields.append("normalized_status")
             locked.save(update_fields=update_fields)
+            from apps.loyalty.site_adapter import schedule_reconciliation
+
+            schedule_reconciliation(locked.pk)
             BookingIntent.objects.filter(
                 pk=attempt.booking_intent_id,
                 status=BookingIntent.Status.AWAITING_PAYMENT,

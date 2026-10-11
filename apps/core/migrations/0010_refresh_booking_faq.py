@@ -39,10 +39,9 @@ UPDATED_FAQS = {
 
 
 def refresh_booking_faq(apps, schema_editor):
-    del schema_editor
     faq_item = apps.get_model("core", "FAQItem")
     for question_en, values in UPDATED_FAQS.items():
-        faq_item.objects.filter(question_en=question_en).update(**values)
+        faq_item.objects.using(schema_editor.connection.alias).filter(question_en=question_en).update(**values)
 
 
 class Migration(migrations.Migration):

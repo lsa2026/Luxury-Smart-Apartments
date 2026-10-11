@@ -158,6 +158,12 @@ class HostawayModificationService:
                 locked_reservation.confirmed_at = None
             else:
                 locked_reservation.normalized_status = Reservation.Status.MODIFIED
+                prices = locked_request.quote_snapshot.get("night_prices")
+                if prices:
+                    locked_reservation.loyalty_state["priced_nights"] = prices
+                else:
+                    # The old dated contract cannot price a changed stay.
+                    locked_reservation.loyalty_state.pop("priced_nights", None)
             locked_reservation.full_clean()
             locked_reservation.save()
             locked_request.status = BookingModificationRequest.Status.COMPLETED
@@ -170,6 +176,9 @@ class HostawayModificationService:
             from apps.notifications.services.events import handle_modification_completed
 
             transaction.on_commit(lambda: handle_modification_completed(locked_request.pk))
+            from apps.loyalty.site_adapter import schedule_reconciliation
+
+            schedule_reconciliation(locked_reservation.pk)
         modification.refresh_from_db()
         operation.refresh_from_db()
         return ModificationExecution("completed", modification, operation)

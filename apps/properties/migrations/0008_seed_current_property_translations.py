@@ -335,7 +335,7 @@ def seed_translations(apps, schema_editor):
     Amenity = apps.get_model("properties", "Amenity")
 
     for listing_id, translations in PROPERTY_TRANSLATIONS.items():
-        property_obj = Property.objects.filter(hostaway_listing_id=listing_id).first()
+        property_obj = Property.objects.using(schema_editor.connection.alias).filter(hostaway_listing_id=listing_id).first()
         if property_obj is None:
             continue
         update_fields = []
@@ -347,7 +347,7 @@ def seed_translations(apps, schema_editor):
             property_obj.save(update_fields=update_fields)
 
     for source_name, (name_ar, name_fr) in AMENITY_TRANSLATIONS.items():
-        amenity = Amenity.objects.filter(name__iexact=source_name).first()
+        amenity = Amenity.objects.using(schema_editor.connection.alias).filter(name__iexact=source_name).first()
         if amenity is None:
             continue
         update_fields = []
@@ -369,7 +369,7 @@ def unseed_translations(apps, schema_editor):
     Amenity = apps.get_model("properties", "Amenity")
 
     for listing_id, translations in PROPERTY_TRANSLATIONS.items():
-        property_obj = Property.objects.filter(hostaway_listing_id=listing_id).first()
+        property_obj = Property.objects.using(schema_editor.connection.alias).filter(hostaway_listing_id=listing_id).first()
         if property_obj is None:
             continue
         update_fields = []
@@ -381,7 +381,7 @@ def unseed_translations(apps, schema_editor):
             property_obj.save(update_fields=update_fields)
 
     for source_name, (name_ar, name_fr) in AMENITY_TRANSLATIONS.items():
-        amenity = Amenity.objects.filter(name__iexact=source_name).first()
+        amenity = Amenity.objects.using(schema_editor.connection.alias).filter(name__iexact=source_name).first()
         if amenity is None:
             continue
         update_fields = []

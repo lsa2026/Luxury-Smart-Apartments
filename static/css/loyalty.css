@@ -1,0 +1,69 @@
+/* Scoped to private rewards pages. Mobile cards, no global or public-page selectors. */
+.loyalty-workspace { display: grid; gap: 1rem; min-width: 0; }
+.loyalty-panel { padding: 1.3rem; min-width: 0; background: #fff; border: 1px solid #e6dfd2; border-radius: 1rem; }
+.loyalty-panel h2 { color: #101d3f; margin: 0 0 1rem; font-size: 1.2rem; line-height: 1.6; }
+.loyalty-notice { padding: .85rem 1rem; border-inline-start: 4px solid #bb9450; border-radius: .6rem; background: #f6f0e5; color: #101d3f; margin: 0; line-height: 1.8; }
+.loyalty-muted { color: #586661; line-height: 1.8; font-size: .85rem; }
+.loyalty-error { color: #8b231e; line-height: 1.7; }
+.loyalty-identity { display: flex; flex-wrap: wrap; gap: 1.1rem; margin-block: 1rem; }
+.loyalty-identity dt, .loyalty-movement dt { font-size: .8rem; color: #52615c; }
+.loyalty-identity dd, .loyalty-movement dd { margin: .25rem 0 0; font-weight: 600; }
+.loyalty-metrics { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: .6rem; }
+.loyalty-metric { background: #f7f5ef; padding: 1rem; border-radius: .75rem; display: grid; gap: .5rem; min-width: 0; }
+.loyalty-metric span { font-size: .8rem; line-height: 1.6; }
+.loyalty-metric strong { font-size: 1.6rem; overflow-wrap: anywhere; }
+.loyalty-metric strong small { font-size: .75rem; font-weight: 400; }
+.loyalty-metric--main { color: #fff; background: linear-gradient(135deg, #113e39, #096957); }
+.loyalty-form { display: grid; gap: .65rem; margin-block: 1rem; min-width: 0; }
+.loyalty-form label, .loyalty-rules summary { font-weight: 600; line-height: 1.8; }
+.loyalty-form input:not([type=checkbox]), .loyalty-form textarea, .loyalty-form select, .loyalty-link { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid #b9c3bd; border-radius: .6rem; padding: .8rem; font: inherit; font-size: 1rem; background: #fffefa; color: #101d3f; }
+.loyalty-fields { display: grid; grid-template-columns: 1.3fr 1fr; gap: .8rem; }
+.loyalty-consent { display: flex; align-items: start; gap: .6rem; padding-block: .5rem; }
+.loyalty-consent input { flex: 0 0 auto; width: 1.2rem; height: 1.2rem; margin-block-start: .35rem; }
+.loyalty-form button { min-height: 3rem; cursor: pointer; font: inherit; }
+.loyalty-form .account-primary { min-width: 0; width: 100%; }
+.loyalty-rules summary, .loyalty-movement summary { cursor: pointer; min-height: 2.8rem; padding-block: .6rem; }
+.loyalty-ledger { display: grid; gap: .8rem; margin-block: 1rem; }
+.loyalty-movement { border: 1px solid #dce3dd; border-radius: .75rem; padding: 1rem; background: #fff; }
+.loyalty-movement header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; }
+.loyalty-movement time { color: #586661; font-size: .8rem; }
+.loyalty-movement-summary { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: .6rem; margin-block: .8rem; }
+.loyalty-movement .loyalty-credit { color: #096957; }
+.loyalty-detail-list { display: grid; gap: .5rem; }
+.loyalty-detail-list > div { display: grid; grid-template-columns: 1fr 1.5fr; gap: .8rem; padding-block: .3rem; border-block-end: 1px solid #f0eee7; }
+.loyalty-movement bdi, .loyalty-tree-node bdi { overflow-wrap: anywhere; }
+.loyalty-admin { max-width: 75rem; margin: auto; color: #101d3f; }
+.loyalty-admin-page #content .loyalty-tree-children,
+.loyalty-admin-page #content .loyalty-tree-children li { list-style: none; margin: 0; }
+.loyalty-admin-nav { display: flex; flex-wrap: wrap; gap: 1rem; margin-block: 1rem; }
+.loyalty-admin-nav a, .loyalty-tree a { min-height: 2.8rem; display: inline-flex; align-items: center; }
+.loyalty-admin .loyalty-panel { margin-block: 1rem; }
+.loyalty-tree-focus { margin: 1rem auto; max-width: 24rem; position: relative; }
+.loyalty-tree-focus::after { content: ""; display: block; position: absolute; height: 1.05rem; width: 2px; background: #bb9450; inset-block-end: -1.05rem; inset-inline-start: 50%; }
+.loyalty-tree-children { list-style: none; display: grid; grid-template-columns: repeat(auto-fit,minmax(13rem,1fr)); gap: 1rem; padding: 1rem 0; border-block-start: 2px solid #bb9450; }
+.loyalty-tree-children li { position: relative; min-width: 0; }
+.loyalty-tree-children li::before { content: ""; position: absolute; height: 1rem; width: 2px; background: #bb9450; inset-block-start: -1rem; inset-inline-start: 50%; }
+.loyalty-tree-node { display: grid; gap: .4rem; padding: 1rem; border: 1px solid #bb9450; border-radius: .85rem; text-align: center; background: #fffcf6; }
+.loyalty-tree--roots .loyalty-tree-children { border-block-start: 0; }
+.loyalty-tree--roots .loyalty-tree-children li::before { display: none; }
+.loyalty-workspace :focus-visible, .loyalty-admin :focus-visible { outline: 3px solid #096957; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .loyalty-admin-page .lsa-shell-header__inner { grid-template-columns: 2.8rem minmax(0,1fr) 3.8rem; min-height: 90px; }
+  .loyalty-admin-page .lsa-shell-header { min-height: 90px !important; padding-inline: 12px !important; }
+  .loyalty-admin-page .lsa-admin-brand__logo { width: auto; max-width: 100%; height: 90px; gap: 4px; }
+  .loyalty-admin-page .lsa-admin-brand__logo span { font-size: clamp(14px,4vw,20px); letter-spacing: 0; }
+  .loyalty-admin-page .lsa-admin-brand__logo img { width: 38px; height: 38px; flex-basis: 38px; }
+  .loyalty-admin-page .lsa-admin-language { padding-inline: 8px; }
+  .loyalty-admin-page .lsa-user-menu > summary { width: 36px; height: 36px; }
+  .loyalty-admin-page .lsa-shell-header::before { max-width: 100%; }
+  .loyalty-panel { padding: 1rem; }
+  .loyalty-metrics { grid-template-columns: 1fr 1fr; }
+  .loyalty-metric--main { grid-column: 1/-1; }
+  .loyalty-fields { grid-template-columns: 1fr; }
+  .loyalty-detail-list > div { grid-template-columns: 1fr; gap: .15rem; }
+  .loyalty-movement { padding: .8rem; }
+  .loyalty-tree-children { grid-template-columns: 1fr; }
+  .loyalty-admin-page #content .loyalty-tree:not(.loyalty-tree--roots) .loyalty-tree-children { margin-inline-start: 1rem; border-inline-start: 2px solid #bb9450; padding-inline-start: 1rem; }
+  .loyalty-tree:not(.loyalty-tree--roots) .loyalty-tree-children li::before { height: 2px; width: 1rem; inset-block-start: 1.5rem; inset-inline-start: -1rem; }
+}
+

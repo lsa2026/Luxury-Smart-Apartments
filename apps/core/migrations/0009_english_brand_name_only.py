@@ -5,9 +5,8 @@ BRAND_NAME = "Luxury Smart Apartments"
 
 
 def normalize_brand_name(apps, schema_editor):
-    del schema_editor
     site_setting = apps.get_model("core", "SiteSetting")
-    site_setting.objects.update(
+    site_setting.objects.using(schema_editor.connection.alias).update(
         site_name=BRAND_NAME,
         brand_name_ar=BRAND_NAME,
         brand_name_en=BRAND_NAME,

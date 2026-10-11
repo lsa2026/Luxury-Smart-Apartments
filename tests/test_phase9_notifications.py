@@ -875,7 +875,7 @@ def test_health_live() -> None:
 
 def test_health_ready() -> None:
     response = Client().get(reverse("notifications:health_ready"))
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     assert response.json()["status"] == "ok"
 
 
@@ -892,7 +892,7 @@ def test_health_ready_checks_configured_redis() -> None:
     redis_client.ping.return_value = True
     with patch("redis.Redis.from_url", return_value=redis_client):
         response = Client().get(reverse("notifications:health_ready"))
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     assert response.json()["checks"]["redis"] == "ok"
 
 

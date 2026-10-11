@@ -253,7 +253,12 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "admin/reservations/booking_list.html",
-        {"title": "إدارة الحجوزات", "bookings": bookings, "query": query},
+        {
+            "title": "إدارة الحجوزات",
+            "bookings": bookings,
+            "query": query,
+            "loyalty_ui_enabled": settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED,
+        },
     )
 
 
@@ -1180,6 +1185,9 @@ def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
                         request,
                         "سُجل التحويل في النظام. لم يتصل الموقع بأي بوابة دفع.",
                     )
+                    from apps.loyalty.site_adapter import schedule_reconciliation
+
+                    schedule_reconciliation(refund.reservation_id)
                     return redirect("notifications:refund_detail", refund_id=refund.pk)
         elif action == "submit_hyperpay_refund":
             gateway_form = RefundGatewaySubmitForm(request.POST)

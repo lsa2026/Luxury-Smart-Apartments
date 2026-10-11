@@ -38,10 +38,9 @@ CONFIRMED_REDIRECTS = (
 
 
 def apply_language_redirects(apps, schema_editor) -> None:
-    del schema_editor
     LegacyRedirect = apps.get_model("core", "LegacyRedirect")
     for source_path, destination_path, redirect_type in CONFIRMED_REDIRECTS:
-        LegacyRedirect.objects.update_or_create(
+        LegacyRedirect.objects.using(schema_editor.connection.alias).update_or_create(
             source_path=source_path,
             defaults={
                 "destination_path": destination_path,
@@ -52,11 +51,10 @@ def apply_language_redirects(apps, schema_editor) -> None:
 
 
 def restore_previous_redirects(apps, schema_editor) -> None:
-    del schema_editor
     LegacyRedirect = apps.get_model("core", "LegacyRedirect")
-    LegacyRedirect.objects.filter(source_path="/about-us/").update(destination_path="/about/")
-    LegacyRedirect.objects.filter(source_path="/contact-us/").update(destination_path="/contact/")
-    LegacyRedirect.objects.filter(
+    LegacyRedirect.objects.using(schema_editor.connection.alias).filter(source_path="/about-us/").update(destination_path="/about/")
+    LegacyRedirect.objects.using(schema_editor.connection.alias).filter(source_path="/contact-us/").update(destination_path="/contact/")
+    LegacyRedirect.objects.using(schema_editor.connection.alias).filter(
         source_path__in=[source_path for source_path, _destination, _status in CONFIRMED_REDIRECTS[2:]]
     ).delete()
 

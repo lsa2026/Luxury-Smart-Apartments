@@ -76,6 +76,12 @@ def prepare_local_reservation(booking_intent: BookingIntent) -> Reservation:
             guests=locked_intent.guests,
             currency=locked_intent.currency,
             total_price=locked_intent.total_price,
+            loyalty_state=(
+                {"priced_nights": locked_intent.quote.night_prices}
+                if locked_intent.quote.total_price == locked_intent.total_price
+                and locked_intent.quote.night_prices
+                else {}
+            ),
         )
         reservation.full_clean()
         reservation.save(force_insert=True)
@@ -140,6 +146,21 @@ class HostawayBookingService:
             allow_manual_price_override=True,
         )
 
+    def create_points_reservation(self, reservation: Reservation) -> ReservationCreationOutcome:
+        """No manual price override and no fictional gateway receipt."""
+        from apps.loyalty.checkout import cash_due
+        from apps.loyalty.services import enabled
+
+        if not enabled() or not reservation.loyalty_state.get("points_confirmation_started"):
+            return self._block(reservation, "points_confirmation_not_authorized")
+        if not reservation.loyalty_state.get("hold") or cash_due(reservation.booking_intent) != 0:
+            return self._block(reservation, "points_not_fully_allocated")
+        return self._create_hostaway_reservation(
+            reservation,
+            require_successful_payment=False,
+            allow_manual_price_override=False,
+        )
+
     def _create_hostaway_reservation(
         self,
         reservation: Reservation,
@@ -153,11 +174,13 @@ class HostawayBookingService:
         if intent is None:
             return self._block(reservation, "booking_intent_missing")
         if require_successful_payment:
+            from apps.loyalty.checkout import cash_due
+
             payment = (
                 PaymentAttempt.objects.filter(
                     booking_intent=intent,
                     status=PaymentAttempt.Status.SUCCEEDED,
-                    amount=intent.payment_amount_sar,
+                    amount=cash_due(intent),
                     currency=PAYMENT_CURRENCY,
                 )
                 .order_by("-created_at")
@@ -290,6 +313,9 @@ class HostawayBookingService:
                 from apps.notifications.services.events import handle_reservation_confirmed
 
                 transaction.on_commit(lambda: handle_reservation_confirmed(locked_reservation.pk))
+                from apps.loyalty.site_adapter import schedule_reconciliation
+
+                schedule_reconciliation(locked_reservation.pk)
         reservation.refresh_from_db()
         operation.refresh_from_db()
         logger.info(

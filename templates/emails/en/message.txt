@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if operation %}Transaction: {{ operation }}
+Points credited: {{ credit }}
+Points debited: {{ debit }}
+Balance after transaction: {{ balance }}{% endif %}
 {% if verification_code %}
 Verification code: {{ verification_code }}
 Enter the code within {{ expires_in_minutes }} minutes.

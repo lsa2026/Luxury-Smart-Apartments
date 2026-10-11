@@ -8,6 +8,16 @@ from celery.schedules import crontab
 
 def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     schedule = {}
+    if settings.get("LOYALTY_MESSAGES_ENABLED", False):
+        schedule["loyalty-guest-invitations"] = {
+            "task": "apps.loyalty.tasks.guest_invitations_task",
+            "schedule": 60 * 60,
+        }
+    if settings.get("LOYALTY_BACKUP_ENABLED", False):
+        schedule["loyalty-daily-backup"] = {
+            "task": "apps.loyalty.tasks.daily_backup_task",
+            "schedule": crontab(hour=1, minute=0),
+        }
     if settings["HOSTAWAY_AUTO_SYNC_ENABLED"]:
         schedule["hostaway-properties"] = {
             "task": "apps.integrations.tasks.sync_hostaway_properties_task",
