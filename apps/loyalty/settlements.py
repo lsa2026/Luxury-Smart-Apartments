@@ -204,7 +204,7 @@ def record_manual_receipt(
         if lodging_only is not True:
             raise ValidationError("أكد أن السعر خاص بالإقامة فقط ولا يشمل رسومًا أخرى.")
         booking = (
-            Reservation.objects.select_for_update()
+            Reservation.objects.select_for_update(of=("self",))
             .select_related("booking_intent")
             .get(pk=reservation_id)
         )

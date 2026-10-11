@@ -36,6 +36,11 @@ pytestmark = pytest.mark.django_db
 def program(settings, monkeypatch):
     settings.LOYALTY_ENABLED = settings.LOYALTY_UI_ENABLED = True
     settings.LOYALTY_UI_PREVIEW = settings.DEBUG = True
+    # PostgreSQL deliberately refuses SQLite-only draft preview consent.
+    # Exercise the approved-terms path using fictional test references instead.
+    settings.LOYALTY_TERMS_APPROVED = True
+    settings.LOYALTY_TERMS_VERSION = "test-not-published-v1"
+    settings.LOYALTY_TERMS_REFERENCE = "/test-only-loyalty-terms/"
     settings.LOYALTY_LAUNCH_AT = "2026-10-01T00:00:00+03:00"
     settings.HOSTAWAY_LIVE_BOOKING_ENABLED = True
     settings.HOSTAWAY_DIRECT_CHANNEL_ID = 2000
