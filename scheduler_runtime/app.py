@@ -44,6 +44,8 @@ schedule_settings = {
         "TRUSTINDEX_REVIEW_SYNC_ENABLED",
         "CELERY_SYNC_DISPATCH_ENABLED",
         "EMAIL_TASK_SCHEDULE_ENABLED",
+        "LOYALTY_BACKUP_ENABLED",
+        "LOYALTY_MESSAGES_ENABLED",
     )
 }
 schedule_settings.update(

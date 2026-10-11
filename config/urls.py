@@ -24,6 +24,7 @@ urlpatterns = [
     path("", include("apps.core.marketing_urls")),
     path("", include("apps.properties.admin_urls")),
     path("admin/customers/", customer_overview, name="admin_customers"),
+    path("admin/loyalty/", include("apps.loyalty.urls")),
     path("admin/", admin_landing, name="admin_landing"),
     path("admin/", admin.site.urls),
     path("service-worker.js", service_worker, name="service_worker"),

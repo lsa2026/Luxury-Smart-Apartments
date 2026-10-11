@@ -2,9 +2,8 @@ from django.db import migrations
 
 
 def simplify_arabic_tagline(apps, schema_editor):
-    del schema_editor
     site_setting = apps.get_model("core", "SiteSetting")
-    site_setting.objects.filter(
+    site_setting.objects.using(schema_editor.connection.alias).filter(
         tagline_ar__in=(
             "إقامات ذكية فاخرة",
             "إقامات ذكية فاخرة ",

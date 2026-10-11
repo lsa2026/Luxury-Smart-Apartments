@@ -9,6 +9,7 @@ import phonenumbers
 from django.conf import settings
 from django.contrib import messages
 from django.core import signing
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
@@ -637,6 +638,8 @@ class BookingIntentDetailView(View):
             .order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
             .first()
         )
+        from apps.loyalty.booking_ui import checkout_context
+
         return _private_response(
             render(
                 request,
@@ -648,6 +651,7 @@ class BookingIntentDetailView(View):
                     "masked_phone": mask_phone(intent.guest_phone),
                     "hyperpay_enabled": settings.HYPERPAY_ENABLED,
                     "legal_ui": UI[document_language(intent.language)],
+                    **checkout_context(request, intent),
                 },
             )
         )
@@ -756,11 +760,24 @@ def _management_context(
         and settings.BOOKING_AUTOMATIC_REFUND_ENABLED
         and settings.HYPERPAY_ENVIRONMENT == "production"
     )
+    from apps.loyalty.settlements import cancellation_plan, eligible
+
+    loyalty_cancellation_ready = False
+    if eligible(reservation):
+        try:
+            loyalty_cancellation_ready = cancellation_plan(reservation) is not None
+        except ValidationError:
+            pass  # Started stays require reception's actual departure evidence.
     can_cancel = (
-        reservation.normalized_status == Reservation.Status.CONFIRMED
+        (
+            reservation.normalized_status == Reservation.Status.CONFIRMED
+            or loyalty_cancellation_ready
+            and reservation.normalized_status == Reservation.Status.MODIFIED
+        )
         and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
         and (
             not settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED
+            or loyalty_cancellation_ready
             or timezone.now() < check_in_datetime(reservation.property, reservation.check_in)
         )
     )

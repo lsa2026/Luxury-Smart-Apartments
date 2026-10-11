@@ -1,0 +1,35 @@
+{% load presentation %}
+<div class="loyalty-ledger">
+{% for row in loyalty_rows %}
+<article class="loyalty-movement">
+  <header><strong>{{ row.ui_kind }}</strong><time datetime="{{ row.occurred_at|date:'c' }}">{{ row.occurred_at|localized_datetime }}</time></header>
+  <dl class="loyalty-movement-summary">
+    <div><dt>{{ loyalty_copy.credit }}</dt><dd class="loyalty-credit">{{ row.credit|floatformat:2|localized_number }}</dd></div>
+    <div><dt>{{ loyalty_copy.debit }}</dt><dd>{{ row.debit|floatformat:2|localized_number }}</dd></div>
+    <div><dt>{% if loyalty_admin %}{{ loyalty_copy.program_balance }}{% else %}{{ loyalty_copy.account_balance }}{% endif %}</dt><dd>{% if loyalty_admin %}{{ row.program_balance_after|floatformat:2|localized_number }}{% else %}{{ row.member_balance_after|floatformat:2|localized_number }}{% endif %}</dd></div>
+  </dl>
+  <details><summary>{{ loyalty_copy.details }} <bdi>{{ row.operation_number }}</bdi></summary>
+    <dl class="loyalty-detail-list">
+      <div><dt>{{ loyalty_copy.sequence }}</dt><dd>{{ row.sequence|localized_number }}</dd></div>
+      <div><dt>{{ loyalty_copy.number }}</dt><dd><bdi>{{ row.membership_number }}</bdi></dd></div>
+      <div><dt>{{ loyalty_copy.group }}</dt><dd><bdi>{{ row.operation_group }}</bdi></dd></div>
+      {% if row.original_id %}<div><dt>{{ loyalty_copy.original }}</dt><dd><bdi>{{ row.original.operation_number }}</bdi></dd></div>{% endif %}
+      {% if row.ui_rate != None %}<div><dt>{{ loyalty_copy.rate }}</dt><dd>{{ row.ui_rate|floatformat:"-6"|localized_number }} ٪</dd></div>{% endif %}
+      {% if loyalty_admin or row.booking_customer_id == request.user.pk %}
+      {% if row.reservation_reference %}<div><dt>{{ loyalty_copy.booking }}</dt><dd><bdi>{{ row.reservation_reference }}</bdi></dd></div>{% endif %}
+      {% if row.property_name %}<div><dt>{{ loyalty_copy.property }}</dt><dd>{{ row.property_name }}</dd></div>{% endif %}
+      {% if row.booking_total != None %}<div><dt>{{ loyalty_copy.gross }}</dt><dd>{{ row.booking_total|floatformat:2|localized_number }}</dd></div>{% endif %}
+      {% if row.eligible_lodging_sar != None %}<div><dt>{{ loyalty_copy.base }}</dt><dd>{{ row.eligible_lodging_sar|floatformat:2|localized_number }}</dd></div>{% endif %}
+      {% endif %}
+      {% if loyalty_admin %}
+      <div><dt>{{ loyalty_copy.member }}</dt><dd>{{ row.account_name }}</dd></div>
+      <div><dt>{{ loyalty_copy.tree_number }}</dt><dd><bdi>{{ row.tree_number }}</bdi></dd></div>
+      <div><dt>{{ loyalty_copy.member_after }}</dt><dd>{{ row.member_balance_after|floatformat:2|localized_number }}</dd></div>
+      <div><dt>{{ loyalty_copy.version }}</dt><dd><bdi>{{ row.rules_version }}</bdi></dd></div>
+      {% endif %}
+    </dl>
+  </details>
+</article>
+{% empty %}<p>{{ loyalty_copy.empty }}</p>{% endfor %}
+</div>
+

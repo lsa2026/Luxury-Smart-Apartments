@@ -3,19 +3,18 @@ from django.utils import timezone
 
 
 def backfill_verified_booking_state(apps, schema_editor):
-    del schema_editor
     payment_attempt = apps.get_model("payments", "PaymentAttempt")
     booking_intent = apps.get_model("reservations", "BookingIntent")
     reservation = apps.get_model("reservations", "Reservation")
     now = timezone.now()
 
-    intent_ids = payment_attempt.objects.filter(
+    intent_ids = payment_attempt.objects.using(schema_editor.connection.alias).filter(
         provider="hyperpay",
         status="succeeded",
         modification_request__isnull=True,
     ).values_list("booking_intent_id", flat=True)
 
-    reservation.objects.filter(
+    reservation.objects.using(schema_editor.connection.alias).filter(
         booking_intent_id__in=intent_ids,
         normalized_status="awaiting_payment",
     ).update(
@@ -23,14 +22,14 @@ def backfill_verified_booking_state(apps, schema_editor):
         payment_status="paid",
         updated_at=now,
     )
-    reservation.objects.filter(
+    reservation.objects.using(schema_editor.connection.alias).filter(
         booking_intent_id__in=intent_ids,
         payment_status="",
     ).exclude(normalized_status="awaiting_payment").update(
         payment_status="paid",
         updated_at=now,
     )
-    booking_intent.objects.filter(
+    booking_intent.objects.using(schema_editor.connection.alias).filter(
         pk__in=intent_ids,
         status="awaiting_payment",
     ).update(

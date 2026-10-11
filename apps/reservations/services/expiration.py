@@ -93,4 +93,8 @@ def expire_booking_objects(
             status=BookingModificationRequest.Status.EXPIRED,
             updated_at=now,
         )
+        from apps.loyalty.checkout import release_expired_points
+
+        for intent_id in intent_ids:
+            transaction.on_commit(lambda key=intent_id: release_expired_points(key), robust=True)
     return result

@@ -27,6 +27,7 @@ def quote_fingerprint_values(
     payment_amount_sar: Decimal | None = None,
     selected_display_currency: str = "",
     exchange_rate_snapshot: dict[str, Any] | None = None,
+    night_prices: dict[str, Any] | None = None,
 ) -> str:
     payload = {
         "quote_id": str(quote_id),
@@ -54,6 +55,8 @@ def quote_fingerprint_values(
                 "exchange_rate_snapshot": exchange_rate_snapshot or {},
             }
         )
+    if night_prices:
+        payload["night_prices"] = night_prices
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return salted_hmac(QUOTE_FINGERPRINT_SALT, canonical).hexdigest()
 
@@ -72,6 +75,7 @@ def quote_fingerprint(quote: BookingQuote) -> str:
         payment_amount_sar=quote.payment_amount_sar,
         selected_display_currency=quote.selected_display_currency,
         exchange_rate_snapshot=quote.exchange_rate_snapshot,
+        night_prices=quote.night_prices,
     )
 
 

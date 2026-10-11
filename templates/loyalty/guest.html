@@ -1,0 +1,63 @@
+{% load presentation %}
+<div class="loyalty-workspace">
+  {% if loyalty_preview %}<p class="loyalty-notice" role="status">{{ loyalty_copy.preview }}</p>{% endif %}
+  {% if not loyalty_can_act %}<p class="loyalty-notice">{{ loyalty_copy.legal_wait }}</p>{% endif %}
+  {% if loyalty_verify %}<p class="loyalty-notice"><a href="{% url 'accounts:verify_pending' %}">{{ loyalty_copy.verify }}</a></p>{% endif %}
+  {% if loyalty_error or loyalty_invitation_invalid %}<p class="loyalty-error" role="alert">{{ loyalty_copy.invalid }}</p>{% endif %}
+  {% if not loyalty_member %}
+  <section class="account-panel loyalty-panel" aria-labelledby="account-rewards-heading">
+    <h2 id="account-rewards-heading">{{ loyalty_copy.join_heading }}</h2><p>{{ loyalty_copy.join_intro }}</p>
+    {% if loyalty_terms_approved %}<a class="account-text-link" href="{{ loyalty_terms_reference }}">{{ loyalty_copy.terms }}</a>
+    {% else %}<details class="loyalty-rules"><summary>{{ loyalty_copy.draft }}</summary><p>{{ loyalty_copy.rules }}</p></details>{% endif %}
+    {% if loyalty_inviter %}<p>{{ loyalty_copy.invited_by }} <strong>{{ loyalty_inviter.customer.first_name|default:loyalty_inviter.number }}</strong> <bdi>{{ loyalty_inviter.number }}</bdi></p>{% endif %}
+    {% if loyalty_can_act and not loyalty_invitation_invalid %}
+    <form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="join">
+      {% for field in loyalty_join_form %}<label class="loyalty-consent">{{ field }} <span>{{ field.label }}</span></label>{% endfor %}
+      <button class="button account-primary" type="submit">{{ loyalty_copy.join }}</button>
+    </form>{% endif %}
+  </section>
+  {% else %}
+  <section class="account-panel loyalty-panel">
+    <h2 id="account-rewards-heading">{{ loyalty_copy.title }}</h2>
+    <dl class="loyalty-identity"><div><dt>{{ loyalty_copy.number }}</dt><dd><bdi>{{ loyalty_member.number }}</bdi></dd></div><div><dt>{{ loyalty_copy.joined }}</dt><dd>{{ loyalty_member.joined_at|localized_datetime }}</dd></div></dl>
+    {% if loyalty_member.status == 'withdrawn' %}<p class="loyalty-notice">{{ loyalty_copy.withdrawn }}</p>{% endif %}
+    <div class="loyalty-metrics">
+      <div class="loyalty-metric loyalty-metric--main"><span>{{ loyalty_copy.available }}</span><strong>{{ loyalty_metrics.available|floatformat:2|localized_number }} <small>{{ loyalty_copy.points }}</small></strong></div>
+      <div class="loyalty-metric"><span>{{ loyalty_copy.balance }}</span><strong>{{ loyalty_metrics.balance|floatformat:2|localized_number }}</strong></div>
+      <div class="loyalty-metric"><span>{{ loyalty_copy.held }}</span><strong>{{ loyalty_metrics.held|floatformat:2|localized_number }}</strong></div>
+    </div>
+    <p class="loyalty-muted">{{ loyalty_copy.redemption_wait }}</p>
+  </section>
+  {% if loyalty_can_act and loyalty_member.status == 'active' %}
+  <section class="account-panel loyalty-panel" aria-labelledby="loyalty-transfer-heading">
+    <h2 id="loyalty-transfer-heading">{{ loyalty_copy.transfer }}</h2>
+    {% if loyalty_confirmation %}
+    <p>{{ loyalty_copy.confirmation }}</p><dl class="loyalty-identity"><div><dt>{{ loyalty_copy.recipient }}</dt><dd><bdi>{{ loyalty_confirmation.recipient }}</bdi></dd></div><div><dt>{{ loyalty_copy.amount }}</dt><dd>{{ loyalty_confirmation.value|localized_number }}</dd></div></dl>
+    <form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="transfer_confirm"><input type="hidden" name="confirmation" value="{{ loyalty_confirmation.token }}">
+      <button class="button account-primary" type="submit">{{ loyalty_copy.confirm_transfer }}</button><a class="account-text-link" href="{% url 'accounts:rewards' %}">{{ loyalty_copy.cancel }}</a>
+    </form>
+    {% else %}
+    <p>{{ loyalty_copy.transfer_help }}</p><form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="transfer_review">
+      <div class="loyalty-fields">{% for field in loyalty_transfer_form %}<div><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<p class="loyalty-error">{{ loyalty_copy.invalid }}</p>{% endif %}</div>{% endfor %}</div>
+      <button class="button account-primary" type="submit">{{ loyalty_copy.review_transfer }}</button>
+    </form>{% endif %}
+  </section>
+  {% endif %}
+  <section class="account-panel loyalty-panel">
+    <h2>{{ loyalty_copy.invite }}</h2>
+    {% if loyalty_invite_url %}<label for="loyalty-invite-link">{{ loyalty_copy.invite_link }}</label><input id="loyalty-invite-link" class="loyalty-link" type="text" dir="ltr" readonly value="{{ loyalty_invite_url }}" autocomplete="off">
+    {% elif loyalty_completed and loyalty_can_act and loyalty_member.status == 'active' %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="invite"><input type="hidden" name="reservation" value="{{ loyalty_completed.0.pk }}"><button class="button account-primary" type="submit">{{ loyalty_copy.issue_invite }}</button></form>
+    {% else %}<p>{{ loyalty_copy.invite_wait }}</p>{% endif %}
+  </section>
+  <section class="account-panel loyalty-panel" aria-labelledby="loyalty-statement-heading">
+    <h2 id="loyalty-statement-heading">{{ loyalty_copy.statement }}</h2>
+    {% include "loyalty/statement.html" %}
+    <nav class="account-pagination" aria-label="{{ loyalty_copy.statement }}">
+      {% if request.GET.before %}<a href="{% url 'accounts:rewards' %}">{{ loyalty_copy.first }}</a>{% endif %}
+      {% if loyalty_cursor %}<a href="?before={{ loyalty_cursor }}">{{ loyalty_copy.next }}</a>{% endif %}
+    </nav>
+  </section>
+  {% endif %}
+</div>
+

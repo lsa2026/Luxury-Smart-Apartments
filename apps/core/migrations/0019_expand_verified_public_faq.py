@@ -443,17 +443,16 @@ NEW_FAQS = [
 
 
 def expand_verified_faq(apps, schema_editor):
-    del schema_editor
     faq_item = apps.get_model("core", "FAQItem")
 
     for old_question_en, values in EXISTING_FAQ_UPDATES.items():
-        faq_item.objects.filter(
+        faq_item.objects.using(schema_editor.connection.alias).filter(
             question_en=old_question_en,
             property__isnull=True,
         ).update(**values, is_active=True)
 
     for values in NEW_FAQS:
-        faq_item.objects.update_or_create(
+        faq_item.objects.using(schema_editor.connection.alias).update_or_create(
             question_en=values["question_en"],
             property=None,
             defaults={**values, "is_active": True},
@@ -461,9 +460,8 @@ def expand_verified_faq(apps, schema_editor):
 
 
 def remove_expanded_faq(apps, schema_editor):
-    del schema_editor
     faq_item = apps.get_model("core", "FAQItem")
-    faq_item.objects.filter(
+    faq_item.objects.using(schema_editor.connection.alias).filter(
         question_en__in=[item["question_en"] for item in NEW_FAQS],
         property__isnull=True,
     ).delete()

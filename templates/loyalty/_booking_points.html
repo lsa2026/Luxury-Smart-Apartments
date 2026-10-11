@@ -1,0 +1,22 @@
+{% load l10n presentation %}{% if points_checkout %}
+<section class="prose-card" aria-labelledby="points-checkout-title">
+    <h2 id="points-checkout-title">{{ points_checkout.text.title }}</h2>
+    <p>{{ points_checkout.text.help }}</p>
+    <dl class="quote-summary">
+        <div><dt>{{ points_checkout.text.available }}</dt><dd>{{ points_checkout.available|floatformat:"2u"|localized_number }}</dd></div>
+        <div><dt>{{ points_checkout.text.points }}</dt><dd>{{ points_checkout.points|floatformat:"2u"|localized_number }}</dd></div>
+        <div><dt>{{ points_checkout.text.cash }}</dt><dd>{{ points_checkout.cash|floatformat:"2u"|localized_number }}</dd></div>
+    </dl>
+    <form class="loyalty-form" method="post" action="{% url 'reservations:booking_points' intent.public_reference %}" data-submit-once>
+        {% csrf_token %}<input type="hidden" name="request_reference" value="{{ points_checkout.request_reference }}">
+        {% if points_checkout.allocated %}
+            {% if points_checkout.full_points and not points_checkout.frozen %}<button type="submit" name="action" value="confirm" class="button">{{ points_checkout.text.confirm }}</button>{% elif points_checkout.full_points %}<p role="status">{{ points_checkout.text.review }}</p>{% endif %}
+            {% if not points_checkout.frozen %}<button type="submit" name="action" value="remove" class="button button--outline">{{ points_checkout.text.remove }}</button>{% endif %}
+        {% else %}
+            <label for="booking-points">{{ points_checkout.text.points }}</label>
+            <input id="booking-points" name="points" type="number" min="0.01" step="0.01" inputmode="decimal" max="{{ points_checkout.available|unlocalize }}" required>
+            <button type="submit" name="action" value="apply" class="button">{{ points_checkout.text.apply }}</button>
+        {% endif %}
+    </form>
+</section>
+{% endif %}

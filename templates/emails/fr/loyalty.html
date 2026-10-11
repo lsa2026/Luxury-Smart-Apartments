@@ -1,0 +1,5 @@
+{% extends "emails/fr/base.html" %}{% block content %}
+<h1>{{ heading }}</h1><p>{% if first_name %}Bonjour {{ first_name }}, {% endif %}{{ message }}</p>
+{% if operation %}<dl><dt>Référence de l’opération</dt><dd>{{ operation }}</dd><dt>Points crédités</dt><dd>{{ credit }}</dd><dt>Points utilisés</dt><dd>{{ debit }}</dd><dt>Votre solde après cette opération</dt><dd>{{ balance }}</dd></dl>{% endif %}
+<p><a href="{{ action_url }}">Voir mes réservations et mes avantages</a></p>
+{% endblock %}

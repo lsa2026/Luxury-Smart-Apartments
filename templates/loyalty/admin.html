@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=1">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} loyalty-admin-page{% endblock %}
+{% block content %}
+<main class="loyalty-admin" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
+  <h1>{{ title }}</h1>{% if loyalty_preview %}<p class="loyalty-notice">{{ loyalty_copy.preview }}</p>{% endif %}
+  <nav class="loyalty-admin-nav"><a href="{% url 'notifications:hub' %}">{{ loyalty_copy.bookings_admin }}</a><a href="{% url 'loyalty:tree' %}">{{ loyalty_copy.tree }}</a></nav>
+  <p>{{ loyalty_copy.program_total }}: <strong>{{ program_balance|floatformat:2|localized_number }}</strong></p>
+  <section class="loyalty-panel"><h2>{{ loyalty_copy.ledger }}</h2>
+    <form method="get" class="loyalty-form"><label for="ledger-query">{{ loyalty_copy.search }}</label><input id="ledger-query" name="q" value="{{ loyalty_search }}" maxlength="80"><button type="submit">{{ loyalty_copy.filter }}</button></form>
+    {% include "loyalty/statement.html" with loyalty_admin=True %}
+    <nav class="loyalty-admin-nav">{% if request.GET.before %}<a href="?q={{ loyalty_search|urlencode }}">{{ loyalty_copy.first }}</a>{% endif %}{% if loyalty_cursor %}<a href="?before={{ loyalty_cursor }}&amp;q={{ loyalty_search|urlencode }}">{{ loyalty_copy.next }}</a>{% endif %}</nav>
+  </section>
+  <section class="loyalty-panel"><h2>{{ loyalty_copy.arrival }}</h2><p>{{ loyalty_copy.arrival_help }}{% if loyalty_preview %} {{ loyalty_copy.arrival_preview }}{% endif %}</p>
+    <form method="post" action="{% url 'loyalty:arrival' %}" class="loyalty-form">{% csrf_token %}
+      <label for="arrival-booking">{{ loyalty_copy.booking }}</label><input id="arrival-booking" name="booking" maxlength="64" required>
+      <label for="arrival-at">{{ loyalty_copy.arrival_time }}</label><input id="arrival-at" name="arrived_at" type="datetime-local" required>
+      <label for="arrival-reference">{{ loyalty_copy.arrival_reference }}</label><input id="arrival-reference" name="reference" maxlength="255" required>
+      <button type="submit">{{ loyalty_copy.arrival }}</button>
+    </form>
+  </section>
+  <section class="loyalty-panel"><h2>توثيق القبض والمغادرة</h2>
+    <p>توثيق معلومات فعلية فقط، دون تحصيل جديد. عند المغادرة أثناء الإقامة، تُحفظ خطة الاسترداد أولًا ثم يُنفذ الإلغاء عبر إدارة الحجز.</p>
+    <form method="post" action="{% url 'loyalty:settlement' %}" class="loyalty-form">{% csrf_token %}
+      <label for="settlement-booking">مرجع الحجز</label><input id="settlement-booking" name="booking" required maxlength="64">
+      <label for="settlement-action">الإجراء</label><select id="settlement-action" name="action"><option value="receipt">توثيق قبض لحجز إداري</option><option value="departure">توثيق المغادرة الفعلية</option></select>
+      <label for="settlement-at">الوقت الفعلي بتوقيت العقار</label><input id="settlement-at" name="at" type="datetime-local" required>
+      <label for="settlement-reference">مرجع الإثبات</label><input id="settlement-reference" name="reference" required maxlength="255">
+      <label for="receipt-value">المبلغ المقبوض بالريال، لتوثيق القبض فقط</label><input id="receipt-value" name="value" type="number" step="0.01" min="0.01" inputmode="decimal">
+      <label><input type="checkbox" name="lodging_only">أؤكد أن سعر الحجز للإقامة فقط، دون ضرائب أو رسوم أو خدمات إضافية</label>
+      <button type="submit">حفظ التوثيق</button>
+    </form>
+  </section>
+  <section class="loyalty-panel"><h2>تفصيل أسعار ليالي العقد</h2><p>يُحفظ تلقائيًا عندما يطابق تقويم العرض سعر العقد. عند وجود خصم أو سعر إداري مختلف، يلزم التفصيل المتفق عليه؛ لا نستخدم متوسطًا افتراضيًا للاسترداد.</p>
+    <form method="post" action="{% url 'loyalty:settlement' %}" class="loyalty-form">{% csrf_token %}<input name="action" value="nights" type="hidden">
+      <label for="nights-booking">مرجع الحجز</label><input id="nights-booking" name="booking" required maxlength="64">
+      <label for="nights-reference">مرجع العقد أو اتفاق الأسعار</label><input id="nights-reference" name="reference" required maxlength="255">
+      <label for="nights-detail">كل ليلة في سطر: التاريخ ثم الفاصل ثم السعر</label><textarea id="nights-detail" name="nights" required dir="ltr" placeholder="2026-12-15 | 750.00"></textarea>
+      <button type="submit">توثيق أسعار الليالي</button>
+    </form>
+  </section>
+<section class="loyalty-panel"><h2>حسم حجز النقاط غير المؤكد</h2><p>لنتيجة غير مؤكدة فقط، بعد مطابقة اسم الضيف وبريده في هوستاوي. يقرأ النظام الحجز الموجود ولا يعيد إنشاؤه. غير متاح في المعاينة المحلية.</p>
+<form method="post" action="{% url 'loyalty:settlement' %}" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="recover">
+<label for="recover-booking">مرجع حجز الموقع</label><input id="recover-booking" name="booking" required maxlength="64">
+<label for="recover-id">رقم الحجز في هوستاوي</label><input id="recover-id" name="external_id" type="number" min="1" required>
+<label for="recover-reference">مرجع المراجعة</label><input id="recover-reference" name="reference" required maxlength="255">
+<label><input name="identity_confirmed" type="checkbox" required>تحققت من تطابق هوية الضيف وبريده في الحجزين</label><button type="submit">تحقق من الحجز الموجود</button></form></section>
+</main>
+{% endblock %}
+

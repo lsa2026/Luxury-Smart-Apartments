@@ -58,6 +58,11 @@ def settlement_for(reservation: Reservation, final_total: Decimal) -> OwnerSettl
         currency=reservation.currency,
     ).aggregate(total=Sum("amount"))["total"] or Decimal("0")
     paid = max(collected - returned, Decimal("0"))
+    from apps.loyalty.settlements import eligible, funding
+
+    if eligible(reservation):
+        cash, points = funding(reservation)
+        paid = cash + points
     return OwnerSettlement(
         paid, max(final_total - paid, Decimal("0")), max(paid - final_total, Decimal("0"))
     )

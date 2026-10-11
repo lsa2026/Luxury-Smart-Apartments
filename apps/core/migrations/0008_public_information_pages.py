@@ -486,12 +486,11 @@ SITE_SETTINGS = {
 
 
 def seed_public_information(apps, schema_editor):
-    del schema_editor
     site_page = apps.get_model("core", "SitePage")
     site_setting = apps.get_model("core", "SiteSetting")
 
     for slug, values in PAGES.items():
-        page, created = site_page.objects.get_or_create(
+        page, created = site_page.objects.using(schema_editor.connection.alias).get_or_create(
             slug=slug,
             defaults={**values, "is_published": True},
         )
@@ -509,9 +508,9 @@ def seed_public_information(apps, schema_editor):
                 setattr(page, field, value)
                 changed = True
         if changed:
-            page.save()
+            page.save(using=schema_editor.connection.alias)
 
-    setting = site_setting.objects.first()
+    setting = site_setting.objects.using(schema_editor.connection.alias).first()
     if setting is None:
         setting = site_setting(site_name="Luxury Smart Apartments")
     changed = setting.pk is None
@@ -520,7 +519,7 @@ def seed_public_information(apps, schema_editor):
             setattr(setting, field, value)
             changed = True
     if changed:
-        setting.save()
+        setting.save(using=schema_editor.connection.alias)
 
 
 class Migration(migrations.Migration):

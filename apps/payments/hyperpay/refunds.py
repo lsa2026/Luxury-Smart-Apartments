@@ -106,8 +106,18 @@ class HyperPayRefundService:
         intent = refund.reservation.booking_intent
         if intent is None:
             raise HyperPayRefundError("original_payment_not_found")
+        allocated = refund.calculation.get("payment_attempt")
+        payment_query = PaymentAttempt.objects.select_for_update().filter(
+            booking_intent=intent,
+            provider=HYPERPAY_PROVIDER,
+            currency=refund.currency,
+            status__in=[PaymentAttempt.Status.SUCCEEDED, PaymentAttempt.Status.PARTIALLY_REFUNDED],
+            verified_at__isnull=False,
+        )
         payment = (
-            PaymentAttempt.objects.select_for_update()
+            payment_query.filter(pk=allocated).first()
+            if allocated
+            else PaymentAttempt.objects.select_for_update()
             .filter(
                 booking_intent=intent,
                 modification_request__isnull=True,
@@ -135,7 +145,11 @@ class HyperPayRefundService:
                 if isinstance(prior.calculation, dict)
                 else {}
             )
-            if detail.get("original_payment_id") == payment.provider_payment_id:
+            if detail.get(
+                "original_payment_id"
+            ) == payment.provider_payment_id or prior.calculation.get("payment_attempt") == str(
+                payment.pk
+            ):
                 previously_refunded += prior.amount
         if refund.amount > payment.amount - previously_refunded:
             raise HyperPayRefundError("refund_amount_exceeds_original_payment")
@@ -245,6 +259,9 @@ class HyperPayRefundService:
                     else PaymentAttempt.Status.PARTIALLY_REFUNDED
                 )
                 payment.save(update_fields=["status", "updated_at"])
+                from apps.loyalty.site_adapter import schedule_reconciliation
+
+                schedule_reconciliation(refund.reservation_id)
                 from apps.payments.hostaway_ledger import flag_confirmed_refund_for_accounting
 
                 transaction.on_commit(
