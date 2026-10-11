@@ -9,6 +9,7 @@ import pytest
 from allauth.account.adapter import get_adapter
 from django.conf import settings
 from django.core import mail
+from django.template.loader import render_to_string
 from django.test import override_settings
 from django.utils import timezone
 from django.utils.translation import override
@@ -199,3 +200,8 @@ def test_static_email_logo_is_the_exact_approved_pdf_lockup():
     original = Path(settings.BASE_DIR) / "apps/notifications/invoice_assets/lockup-light.png"
     email_logo = Path(settings.BASE_DIR) / "static/images/brand/luxury-living-lockup-light.png"
     assert original.read_bytes() == email_logo.read_bytes()
+
+
+def test_shared_template_can_render_without_optional_brand_context():
+    html = render_to_string("emails/shared/base.html", {})
+    assert "<title>Luxury Living</title>" in html
