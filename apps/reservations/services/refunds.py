@@ -121,6 +121,13 @@ def cancellation_refund(
     """
     currency = reservation.currency
     moment = at or timezone.now()
+    from apps.loyalty.settlements import cancellation_plan
+
+    loyalty = cancellation_plan(reservation)
+    if loyalty is not None:
+        return RefundComputation(
+            loyalty["cash"], "SAR", {key: str(value) for key, value in loyalty.items()}
+        )
     if settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED:
         arrival = check_in_datetime(reservation.property, reservation.check_in)
         original_payment = successful_original_payment_amount(reservation)

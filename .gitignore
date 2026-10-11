@@ -18,3 +18,8 @@ media/
 .vscode/
 .DS_Store
 Thumbs.db
+/reports/loyalty-stage8-tests.xml
+/reports/loyalty-stage9-tests.xml
+/reports/loyalty-stage10-tests.xml
+/reports/loyalty-stage11-tests.xml
+/reports/loyalty-stage13-tests.xml

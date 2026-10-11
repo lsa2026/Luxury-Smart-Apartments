@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -88,6 +89,19 @@ def execute_automatic_modification(
                 return AutomaticModificationOutcome(blocker, locked)
         if locked.status == BookingModificationRequest.Status.COMPLETED:
             return AutomaticModificationOutcome("already_completed", locked)
+        if approved_refund_amount is not None:
+            from apps.loyalty.settlements import cancellation_plan, decrease_plan
+
+            try:
+                loyalty_plan = (
+                    cancellation_plan(locked.reservation)
+                    if locked.request_type == locked.RequestType.CANCEL_RESERVATION
+                    else decrease_plan(locked.reservation, locked.new_total)
+                )
+            except ValidationError:
+                return AutomaticModificationOutcome("loyalty_departure_evidence_required", locked)
+            if loyalty_plan is not None and approved_refund_amount != loyalty_plan["cash"]:
+                return AutomaticModificationOutcome("loyalty_refund_must_match_policy", locked)
         if owner_override:
             settlement = settlement_for(locked.reservation, locked.new_total)
             preview = locked.quote_snapshot.get("owner_settlement", {})
@@ -102,7 +116,10 @@ def execute_automatic_modification(
             if not settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED:
                 return AutomaticModificationOutcome("automatic_cancellation_disabled", locked)
             # Recheck under the reservation lock, before making any external change.
-            ceiling = cancellation_refund(locked.reservation).amount
+            try:
+                ceiling = cancellation_refund(locked.reservation).amount
+            except ValidationError:
+                return AutomaticModificationOutcome("loyalty_departure_evidence_required", locked)
             if (
                 approved_refund_amount is not None
                 and not Decimal("0") <= approved_refund_amount <= ceiling
@@ -159,7 +176,19 @@ def execute_automatic_modification(
             refund_decision_note=refund_decision_note,
         )
         if refund is not None and settings.BOOKING_AUTOMATIC_REFUND_ENABLED:
-            refund_code = _submit_automatic_refund(refund, service=refund_service)
+            if refund.calculation.get("receipt_provider", "hyperpay") == "hyperpay":
+                refund_code = _submit_automatic_refund(refund, service=refund_service)
+            else:
+                refund_code = "manual_refund_required"
+            if refund.calculation.get("settlement_reference"):
+                for companion in execution.request.reservation.refund_obligations.filter(
+                    modification_request=execution.request,
+                    status=RefundObligation.Status.DUE,
+                ).exclude(pk=refund.pk):
+                    # A manual receipt remains an accounting obligation. Never
+                    # send its reference to the card provider.
+                    if companion.calculation.get("receipt_provider") == "hyperpay":
+                        _submit_automatic_refund(companion, service=refund_service)
     return AutomaticModificationOutcome(
         execution.code,
         execution.request,
@@ -398,6 +427,22 @@ def _record_refund_if_owed(
     only on success means the money owed always matches a real booking state.
     """
     reservation = modification.reservation
+    from apps.loyalty.settlements import cancellation_plan, decrease_plan, record_refund_plan
+
+    plan = (
+        cancellation_plan(reservation)
+        if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+        else decrease_plan(reservation, modification.new_total)
+    )
+    if plan is not None:
+        reason = (
+            RefundObligation.Reason.CANCELLATION
+            if modification.request_type
+            == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+            else RefundObligation.Reason.MODIFICATION_DECREASE
+        )
+        rows = record_refund_plan(modification, plan, reason)
+        return rows[0] if rows else None
     if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
         computation = cancellation_refund(reservation)
         reason = RefundObligation.Reason.CANCELLATION

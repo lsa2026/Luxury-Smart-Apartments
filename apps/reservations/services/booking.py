@@ -88,6 +88,12 @@ def create_quote_for_property(
     if price_quote.total_price < 0 or price_quote.total_price.as_tuple().exponent < -4:
         raise ValueError("Price total has an unsupported precision.")
     components = sanitized_components(price_quote)
+    from apps.loyalty.settlements import priced_nights
+
+    try:
+        night_prices = priced_nights(availability)
+    except ValueError:
+        night_prices = {}
     if len(components) > 100:
         raise ValueError("Price component count exceeds the safe limit.")
 
@@ -127,6 +133,7 @@ def create_quote_for_property(
         selected_display_currency=currency_quote.display_currency,
         exchange_rate_snapshot=dict(currency_quote.snapshot),
         components=components,
+        night_prices=night_prices,
         price_version=2,
         session_key_hash=session_hash,
         expires_at=expires_at,

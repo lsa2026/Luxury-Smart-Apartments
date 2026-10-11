@@ -131,20 +131,20 @@ def seed_content(apps, schema_editor):
     faq_item = apps.get_model("core", "FAQItem")
     site_setting = apps.get_model("core", "SiteSetting")
     for page in PAGES:
-        site_page.objects.update_or_create(slug=page["slug"], defaults=page)
+        site_page.objects.using(schema_editor.connection.alias).update_or_create(slug=page["slug"], defaults=page)
     for faq in FAQS:
-        faq_item.objects.get_or_create(
+        faq_item.objects.using(schema_editor.connection.alias).get_or_create(
             question_en=faq["question_en"],
             defaults=faq,
         )
-    site_setting.objects.get_or_create(site_name="Luxury Smart Apartments")
+    site_setting.objects.using(schema_editor.connection.alias).get_or_create(site_name="Luxury Smart Apartments")
 
 
 def unseed_content(apps, schema_editor):
     site_page = apps.get_model("core", "SitePage")
     faq_item = apps.get_model("core", "FAQItem")
-    site_page.objects.filter(slug__in=[page["slug"] for page in PAGES]).delete()
-    faq_item.objects.filter(question_en__in=[item["question_en"] for item in FAQS]).delete()
+    site_page.objects.using(schema_editor.connection.alias).filter(slug__in=[page["slug"] for page in PAGES]).delete()
+    faq_item.objects.using(schema_editor.connection.alias).filter(question_en__in=[item["question_en"] for item in FAQS]).delete()
 
 
 class Migration(migrations.Migration):

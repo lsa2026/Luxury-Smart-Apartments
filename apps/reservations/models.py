@@ -68,6 +68,7 @@ class BookingQuote(models.Model):
     selected_display_currency = models.CharField(max_length=3, blank=True, editable=False)
     exchange_rate_snapshot = models.JSONField(default=dict, blank=True, editable=False)
     components = models.JSONField(default=list)
+    night_prices = models.JSONField(default=dict, blank=True, editable=False)
     price_version = models.PositiveSmallIntegerField(default=2, editable=False)
     signature = models.CharField(max_length=64, editable=False)
     session_key_hash = models.CharField(max_length=64, editable=False)
@@ -485,6 +486,9 @@ class BookingIntent(models.Model):
 
 class Reservation(models.Model):
     """Sanitized local reservation state; live confirmation requires a Hostaway ID."""
+
+    # Internal evidence/holds/reconciliation only; never accepted from guest forms.
+    loyalty_state = models.JSONField(default=dict, blank=True, editable=False)
 
     class SourceType(models.TextChoices):
         DIRECT_WEBSITE = "direct_website", _("Live site")

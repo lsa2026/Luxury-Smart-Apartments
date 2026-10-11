@@ -50,6 +50,9 @@ def claim_reservation(
             return None
         intent.customer = user
         intent.save(update_fields=["customer"])
+        from apps.loyalty.site_adapter import schedule_reconciliation
+
+        schedule_reconciliation(reservation.pk)
     return reservation
 
 
@@ -71,7 +74,19 @@ def claim_reservations_for_verified_email(user: AbstractBaseUser) -> int:
     if not email or not getattr(user, "pk", None):
         return 0
     with transaction.atomic():
-        return BookingIntent.objects.filter(
+        intents = BookingIntent.objects.filter(
             customer__isnull=True,
             guest_email__iexact=email,
-        ).update(customer=user)
+        )
+        from apps.loyalty.services import enabled
+
+        ids = list(intents.values_list("pk", flat=True)) if enabled() else []
+        count = intents.update(customer=user)
+        if enabled():
+            from apps.loyalty.site_adapter import schedule_reconciliation
+
+            for pk in Reservation.objects.filter(booking_intent_id__in=ids).values_list(
+                "pk", flat=True
+            ):
+                schedule_reconciliation(pk)
+        return count

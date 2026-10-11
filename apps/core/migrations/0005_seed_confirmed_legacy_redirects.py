@@ -12,10 +12,9 @@ CONFIRMED_REDIRECTS = (
 
 
 def seed_confirmed_redirects(apps, schema_editor) -> None:
-    del schema_editor
     LegacyRedirect = apps.get_model("core", "LegacyRedirect")
     for source_path, destination_path, redirect_type in CONFIRMED_REDIRECTS:
-        LegacyRedirect.objects.get_or_create(
+        LegacyRedirect.objects.using(schema_editor.connection.alias).get_or_create(
             source_path=source_path,
             defaults={
                 "destination_path": destination_path,
@@ -26,9 +25,8 @@ def seed_confirmed_redirects(apps, schema_editor) -> None:
 
 
 def remove_confirmed_redirects(apps, schema_editor) -> None:
-    del schema_editor
     LegacyRedirect = apps.get_model("core", "LegacyRedirect")
-    LegacyRedirect.objects.filter(
+    LegacyRedirect.objects.using(schema_editor.connection.alias).filter(
         source_path__in=[row[0] for row in CONFIRMED_REDIRECTS]
     ).delete()
 

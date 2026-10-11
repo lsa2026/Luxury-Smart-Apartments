@@ -642,6 +642,7 @@ def queue_email(
     language: str,
     idempotency_key: str,
 ) -> EmailDelivery:
+    _register_loyalty_copy(message_type)
     normalized_language = language if language in {"ar", "en", "fr"} else "ar"
     subject = strip_tags(SUBJECTS[message_type][normalized_language]).strip()
     status = (
@@ -719,6 +720,10 @@ def _account_links(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
 
 
 def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
+    if delivery.recipient_source.startswith("loyalty_"):
+        from apps.loyalty.notifications import resolve_recipient
+
+        return resolve_recipient(delivery)
     if delivery.recipient_source == "account":
         return _account_links(delivery)
     if delivery.recipient_source == "contact":
@@ -967,6 +972,16 @@ def _localized_property_name(property_obj: object, language: str) -> str:
     return ""
 
 
+def _register_loyalty_copy(message_type):
+    if message_type.startswith("loyalty_"):
+        from apps.loyalty.notifications import MESSAGES as loyalty_messages
+        from apps.loyalty.notifications import SUBJECTS as loyalty_subjects
+
+        SUBJECTS.update(loyalty_subjects)
+        MESSAGES.update(loyalty_messages)
+        TEMPLATE_GROUPS.update({key: "loyalty" for key in loyalty_subjects})
+
+
 def send_queued_email(
     delivery_id: object,
     *,
@@ -1001,6 +1016,7 @@ def send_queued_email(
 
     try:
         recipient, context = _resolve_recipient(delivery)
+        _register_loyalty_copy(delivery.message_type)
         if recipient_hmac(recipient) != delivery.recipient_hash:
             raise EmailProviderError("recipient_integrity_failed", permanent=True)
         request = EmailMessageRequest(

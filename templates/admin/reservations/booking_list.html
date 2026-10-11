@@ -14,6 +14,7 @@
     </div>
   </section>
 
+  {% if loyalty_ui_enabled %}<p><a class="lsa-btn" href="{% url 'loyalty:admin' %}">إدارة برنامج الولاء وسجل النقاط</a></p>{% endif %}
   <section class="lsa-panel lsa-booking-list__search">
     <form method="get" class="lsa-inline-form" aria-label="البحث عن حجز">
       <label>البحث عن حجز<input type="search" name="q" value="{{ query }}" placeholder="الاسم أو الجوال أو البريد أو المرجع" autocomplete="off"></label>
