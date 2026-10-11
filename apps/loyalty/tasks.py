@@ -33,6 +33,7 @@ def daily_backup_task():
         from .cloud_backup import CloudMirror, mark_failure, mark_success
 
         if not settings.LOYALTY_BACKUP_DATABASE_URL:
+            mark_failure("approved_cloud_connection_required")
             raise ImproperlyConfigured("يلزم إعداد الاتصال السري بالوجهة المعتمدة.")
         try:
             result = CloudMirror.configured().run()

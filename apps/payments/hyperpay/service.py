@@ -236,10 +236,7 @@ class HyperPayService:
                 .first()
             )
             if existing and existing.provider_checkout_id and existing.widget_integrity:
-                if (
-                    existing.amount != collectible
-                    or existing.currency != PAYMENT_CURRENCY
-                ):
+                if existing.amount != collectible or existing.currency != PAYMENT_CURRENCY:
                     raise HyperPayCheckoutError("existing_payment_snapshot_mismatch")
                 return CheckoutSession(
                     existing,

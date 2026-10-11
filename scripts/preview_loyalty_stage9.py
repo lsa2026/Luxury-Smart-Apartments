@@ -59,7 +59,8 @@ from tests.test_loyalty_stage8 import booking, completed_inviter, join, user  # 
 # Only this disposable preview reloads templates; production keeps its cache.
 settings.TEMPLATES[0]["APP_DIRS"] = False
 settings.TEMPLATES[0]["OPTIONS"]["loaders"] = [
-    "django.template.loaders.filesystem.Loader", "django.template.loaders.app_directories.Loader"
+    "django.template.loaders.filesystem.Loader",
+    "django.template.loaders.app_directories.Loader",
 ]
 
 call_command("migrate", verbosity=0, interactive=False)

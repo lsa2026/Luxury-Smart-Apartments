@@ -288,3 +288,18 @@ def test_cloud_task_never_uses_local_fallback(settings):
         assert daily_backup_task()["status"] == "succeeded"
         run.assert_called_once()
         local.assert_not_called()
+
+
+def test_missing_cloud_connection_notifies_admin_without_reading_source(settings):
+    from django.core.exceptions import ImproperlyConfigured
+
+    from apps.loyalty.tasks import daily_backup_task
+
+    settings.LOYALTY_BACKUP_ENABLED = True
+    settings.LOYALTY_BACKUP_LOCAL_REHEARSAL = False
+    settings.LOYALTY_BACKUP_DATABASE_URL = ""
+    with patch("apps.loyalty.cloud_backup.capture") as source:
+        with pytest.raises(ImproperlyConfigured):
+            daily_backup_task.run()
+        source.assert_not_called()
+    assert Notification.objects.filter(related_object_type="LoyaltyBackup").exists()
