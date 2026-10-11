@@ -5,6 +5,7 @@ import hashlib
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 from django.test import Client, override_settings
 
 from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery
@@ -199,6 +200,10 @@ def test_expired_selection_and_disabled_channel_do_not_issue(payload):
 
 @ENABLED
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.skipif(
+    settings.DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql",
+    reason="Independent session row locks require PostgreSQL before fixture setup.",
+)
 def test_concurrent_guest_requests_issue_and_queue_only_once(payload):
     from concurrent.futures import ThreadPoolExecutor
 
