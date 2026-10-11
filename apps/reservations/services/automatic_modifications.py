@@ -21,6 +21,7 @@ from .refunds import (
     record_obligation,
     successful_original_payment_amount,
 )
+from .stay_lifecycle import cancellation_blocker
 
 if TYPE_CHECKING:
     from apps.payments.hyperpay.refunds import HyperPayRefundService
@@ -77,12 +78,19 @@ def execute_automatic_modification(
         return AutomaticModificationOutcome("automatic_approval_disabled", modification)
 
     with transaction.atomic():
-        Reservation.objects.select_for_update().get(pk=modification.reservation_id)
-        locked = (
-            BookingModificationRequest.objects.select_for_update()
-            .select_related("reservation")
-            .get(pk=modification.pk)
+        reservation = (
+            Reservation.objects.select_for_update(of=("self",))
+            .select_related("property")
+            .get(pk=modification.reservation_id)
         )
+        locked = BookingModificationRequest.objects.select_for_update().get(pk=modification.pk)
+        locked.reservation = reservation
+        if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
+            if locked.status == BookingModificationRequest.Status.COMPLETED:
+                return AutomaticModificationOutcome("already_completed", locked)
+            blocker = cancellation_blocker(reservation)
+            if blocker:
+                return AutomaticModificationOutcome(blocker, locked)
         if owner_override:
             blocker = owner_change_blocker(locked, completed=True)
             if blocker:

@@ -30,7 +30,9 @@
     {% endif %}
   </section>
 
-  {% if cancellation.status == "pending_admin_approval" %}
+  {% if cancellation_blocked %}
+  <section class="lsa-panel"><h2>الإلغاء غير متاح</h2><p>لا يمكن اعتماد الإلغاء أو تنفيذه لأن الإقامة اكتملت وانتهت.</p></section>
+  {% elif cancellation.status == "pending_admin_approval" %}
   <section class="lsa-panel">
     <h2>اعتماد الإلغاء</h2>
     <p>اعتماد هذه الخطوة يجهز الإلغاء للتنفيذ الخارجي. لن يُرسل الطلب إلى Hostaway قبل خطوة التنفيذ التالية.</p>

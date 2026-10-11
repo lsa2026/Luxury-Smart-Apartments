@@ -1,4 +1,8 @@
 {% extends "admin/base_site.html" %}
+{% load static %}
+{% block content_title %}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script>{% endblock %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -13,6 +17,23 @@
   <section class="lsa-panel">
     <h2>بيانات الضيف</h2>
     {% if reservation.booking_intent %}<p><b>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</b><br><span dir="ltr">{{ reservation.booking_intent.guest_email }} · {{ reservation.booking_intent.guest_phone }}</span></p>{% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
+  </section>
+  <section class="lsa-panel">
+    <h2>فاتورة الضيف</h2>
+    {% if invoice %}
+      <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_detail' invoice.pk %}">استعراض {% if invoice.issued_at %}الفاتورة{% else %}واعتماد الفاتورة{% endif %}</a>
+      {% if invoice.issued_at %}
+        <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a>
+        <div class="lsa-invoices lsa-booking-invoice__send">
+          {% include "admin/notifications/invoice_send_card.html" with send_form=whatsapp_send_form channel="whatsapp" %}
+          {% include "admin/notifications/invoice_send_card.html" with send_form=email_send_form channel="email" %}
+        </div>
+        <p class="help">يمكن تغيير مستلم الإرسال دون تغيير بيانات الحجز أو الفاتورة. الإرسال لا يتم إلا بعد تأكيد المستلم والضغط على زر الإرسال.</p>
+      {% else %}<p class="help">راجع بيانات الفاتورة واعتمد إصدارها أولًا، ثم يمكنك إرسالها من هنا.</p>{% endif %}
+    {% elif reservation.hostaway_reservation_id and reservation.booking_intent %}
+      <p class="help">تُعبّأ الفاتورة من هذا الحجز، ثم تراجعها قبل اعتماد الإصدار. لن تُرسل تلقائيًا.</p>
+      <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--gold" type="submit">إعداد واستعراض فاتورة الحجز</button></form>
+    {% else %}<p class="help">تتوفر الفاتورة بعد تأكيد الحجز وربطه بـHostaway.</p>{% endif %}
   </section>
   <section class="lsa-panel">
     <h2>تعديل التواريخ أو عدد الضيوف</h2>
@@ -88,8 +109,13 @@
   {% endif %}
   <section class="lsa-panel lsa-manual-booking__delete">
     <h2>إلغاء الحجز</h2>
+    {% if cancellation_blocked %}
+    <p class="help">لا يمكن إلغاء هذا الحجز لأن الإقامة اكتملت وانتهت. تبقى بياناته وفاتورته متاحة للمراجعة.</p>
+    <button class="lsa-btn" type="button" disabled>الإلغاء غير متاح — انتهت الإقامة</button>
+    {% else %}
     <p class="help">اضغط الإلغاء ثم اختر كامل المبلغ أو صفرًا أو مبلغًا مخصصًا. لا يلزم إدخال سبب.</p>
     <form method="post" class="lsa-owner-form lsa-owner-cancellation">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز</button></form>
+    {% endif %}
   </section>
 </main>
 {% endblock %}

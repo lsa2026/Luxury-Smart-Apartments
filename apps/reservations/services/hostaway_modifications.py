@@ -35,6 +35,7 @@ from ..models import (
 )
 from .owner_settlement import owner_change_blocker
 from .reservation_payloads import _override_price_details
+from .stay_lifecycle import cancellation_blocker
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +65,14 @@ class HostawayModificationService:
         self.close()
 
     def execute(self, modification: BookingModificationRequest) -> ModificationExecution:
+        # Cancellation URLs and callers may hold a request/reservation from
+        # before checkout. Reload both facts before the preliminary refusal.
+        if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
+            modification = BookingModificationRequest.objects.select_related(
+                "reservation__property"
+            ).get(pk=modification.pk)
+            if modification.status == BookingModificationRequest.Status.COMPLETED:
+                return ModificationExecution("already_completed", modification)
         reservation = modification.reservation
         if modification.status == BookingModificationRequest.Status.UNKNOWN:
             operation = modification.hostaway_operations.filter(
@@ -79,7 +88,14 @@ class HostawayModificationService:
             return ModificationExecution(blocker, modification)
         operation, can_send = _prepare_operation(modification)
         if not can_send:
-            return ModificationExecution(operation.status, modification, operation)
+            code = (
+                operation.error_code
+                if modification.request_type
+                == BookingModificationRequest.RequestType.CANCEL_RESERVATION
+                and operation.status == HostawayModificationOperation.Status.BLOCKED
+                else operation.status
+            )
+            return ModificationExecution(code, modification, operation)
         try:
             if (
                 modification.request_type
@@ -195,6 +211,9 @@ def _execution_blocker(
     if reservation.source_type != Reservation.SourceType.DIRECT_WEBSITE:
         return "external_channel_modification_blocked"
     if modification.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
+        blocker = cancellation_blocker(reservation)
+        if blocker:
+            return blocker
         if not settings.HOSTAWAY_LIVE_CANCELLATION_ENABLED:
             return "hostaway_live_cancellation_disabled"
         if not settings.BOOKING_AUTOMATIC_CANCELLATION_ENABLED:
@@ -240,8 +259,13 @@ def _prepare_operation(
         ),
     ).hexdigest()
     with transaction.atomic():
-        Reservation.objects.select_for_update().get(pk=modification.reservation_id)
+        reservation = (
+            Reservation.objects.select_for_update(of=("self",))
+            .select_related("property")
+            .get(pk=modification.reservation_id)
+        )
         locked = BookingModificationRequest.objects.select_for_update().get(pk=modification.pk)
+        locked.reservation = reservation
         operation, created = (
             HostawayModificationOperation.objects.select_for_update().get_or_create(
                 modification_request=locked,
@@ -264,6 +288,13 @@ def _prepare_operation(
             or operation.attempt_count > 0
         ):
             return operation, False
+        if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:
+            blocker = _execution_blocker(locked, reservation)
+            if blocker:
+                operation.status = HostawayModificationOperation.Status.BLOCKED
+                operation.error_code = blocker
+                operation.save(update_fields=["status", "error_code", "updated_at"])
+                return operation, False
         if locked.quote_snapshot.get("owner_final_total") is not None:
             blocker = owner_change_blocker(locked)
             if blocker:

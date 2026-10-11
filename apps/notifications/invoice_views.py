@@ -133,9 +133,10 @@ def invoice_list(request):
     )
 
 
-def _detail(request, invoice, form=None, send_forms=None):
+def invoice_delivery_forms(invoice):
+    """Use the same recipient validation and controls on invoice and booking pages."""
     data = invoice.snapshot
-    delivery_forms = {
+    return {
         channel: InvoiceSendForm(
             initial={
                 "channel": channel,
@@ -146,6 +147,11 @@ def _detail(request, invoice, form=None, send_forms=None):
         )
         for channel, key in (("email", "guest_email"), ("whatsapp", "guest_phone"))
     }
+
+
+def _detail(request, invoice, form=None, send_forms=None):
+    data = invoice.snapshot
+    delivery_forms = invoice_delivery_forms(invoice)
     delivery_forms.update(send_forms or {})
     return render(
         request,
@@ -172,6 +178,42 @@ def _detail(request, invoice, form=None, send_forms=None):
             "whatsapp_send_form": delivery_forms["whatsapp"],
         },
     )
+
+
+@staff_member_required
+@never_cache
+@require_POST
+def booking_invoice(request, reservation_id):
+    """Explicit owner lookup only; never issue or send an invoice automatically."""
+    from apps.reservations.models import Reservation
+
+    require_operations_owner(request.user)
+    reservation = get_object_or_404(Reservation, pk=reservation_id, booking_intent__isnull=False)
+    hostaway_id = reservation.hostaway_reservation_id
+    if not hostaway_id:
+        messages.error(request, "لم يتوفر رقم حجز Hostaway بعد؛ لا يمكن إعداد الفاتورة.")
+        return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+    invoice = (
+        GuestInvoice.objects.defer("pdf_content")
+        .filter(hostaway_reservation_id=hostaway_id)
+        .first()
+    )
+    if invoice is None:
+        try:
+            with HostawayClient() as client:
+                invoice = prepare_invoice(
+                    client=client, hostaway_id=hostaway_id, actor=request.user
+                )
+            _audit(request, invoice, "invoice_lookup", "prepared")
+        except (HostawayError, ValidationError) as exc:
+            logger.warning("Booking invoice lookup failure: %s", type(exc).__name__)
+            messages.error(
+                request,
+                "تعذر إعداد فاتورة الحجز الآن؛ راجع الاتصال وبيانات الحجز. "
+                "لم تُصدر فاتورة أو تُرسل رسالة.",
+            )
+            return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+    return redirect("notifications:invoice_detail", invoice_id=invoice.pk)
 
 
 @staff_member_required

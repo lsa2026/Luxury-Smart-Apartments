@@ -5,7 +5,8 @@
 
 {% block extrastyle %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20261011-admin-controls">
+  <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20261011-admin-navigation">
+  <link rel="stylesheet" href="{% static 'css/admin-navigation.css' %}?v=20261011-1">
 {% endblock %}
 
 {% block extrahead %}
@@ -17,10 +18,8 @@
   <header id="header" class="lsa-shell-header">
     <div class="lsa-shell-header__inner" dir="rtl">
       <div id="branding" class="lsa-admin-brand">
-        <a href="{% url 'notifications:hub' %}" class="lsa-admin-brand__logo" aria-label="Luxury Living · إدارة الحجوزات">
-          <span aria-hidden="true">LUXURY</span>
-          <img src="{% static 'images/brand/luxury-living-monogram-ll-dark.svg' %}" alt="">
-          <span aria-hidden="true">LIVING</span>
+        <a href="{% url 'notifications:hub' %}" class="lsa-admin-brand__logo lsa-admin-brand__logo--approved" aria-label="Luxury Living · مركز الإدارة">
+          <img src="{% static 'images/brand/luxury-living-lockup-dark.svg' %}" alt="Luxury Living" width="640" height="150">
         </a>
       </div>
 
