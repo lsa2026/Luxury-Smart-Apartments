@@ -16,6 +16,7 @@ from django.utils.crypto import salted_hmac
 from django.utils.html import strip_tags
 
 from apps.core.templatetags.presentation import localized_money_text
+from apps.notifications.email_design import COPY as DESIGN_COPY
 from apps.notifications.models import EmailDelivery
 from apps.reservations.security import mask_email
 
@@ -63,22 +64,8 @@ class DjangoEmailProvider:
     name = "django"
 
     def send(self, request: EmailMessageRequest) -> EmailSendResult:
-        template_root = f"emails/{request.language}/{request.template_name}"
-        context = {
-            **request.context,
-            **_email_brand_context(request.language),
-        }
         try:
-            text_body = render_to_string(f"emails/{request.language}/message.txt", context)
-            html_body = render_to_string(f"{template_root}.html", context)
-            message = EmailMultiAlternatives(
-                subject=request.subject,
-                body=text_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[request.recipient],
-                reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
-            )
-            message.attach_alternative(html_body, "text/html")
+            message = build_guest_email(request)
             sent_count = message.send(fail_silently=False)
         except SMTPAuthenticationError as exc:
             raise EmailProviderError("email_authentication_failed", permanent=True) from exc
@@ -91,7 +78,28 @@ class DjangoEmailProvider:
         return EmailSendResult(sent=True, code="sent")
 
 
-def _email_brand_context(language: str) -> dict[str, str]:
+def build_guest_email(request: EmailMessageRequest) -> EmailMultiAlternatives:
+    """Render only; callers retain their own send/queue/idempotency semantics."""
+    language = request.language if request.language in DESIGN_COPY else "ar"
+    context = {**request.context, **_email_brand_context(language)}
+    if request.template_name == "invoice":
+        template_root = "emails/shared/invoice"
+        text_template = f"{template_root}.txt"
+    else:
+        template_root = f"emails/{language}/{request.template_name}"
+        text_template = f"emails/{language}/message.txt"
+    message = EmailMultiAlternatives(
+        subject=request.subject,
+        body=render_to_string(text_template, context),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[request.recipient],
+        reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
+    )
+    message.attach_alternative(render_to_string(f"{template_root}.html", context), "text/html")
+    return message
+
+
+def _email_brand_context(language: str) -> dict[str, Any]:
     """Resolve public brand details at send time without storing them in queue rows."""
     language = language if language in {"ar", "en", "fr"} else "ar"
     site_setting = None
@@ -158,9 +166,13 @@ def _email_brand_context(language: str) -> dict[str, str]:
 
     site_url = f"{settings.SITE_BASE_URL.rstrip('/')}/"
     site_base_url = settings.SITE_BASE_URL.rstrip("/")
-    configured_logo = settings.EMAIL_LOGO_URL.strip()
-    logo_url = urljoin(site_url, configured_logo or "static/images/brand/apple-touch-icon.png")
+    # One approved horizontal PNG for email clients, never an SVG or account icon.
+    logo_url = urljoin(site_url, "static/images/brand/luxury-living-lockup-light.png")
     return {
+        "email_language": language,
+        "email_direction": "rtl" if language == "ar" else "ltr",
+        "email_alignment": "right" if language == "ar" else "left",
+        "email_copy": DESIGN_COPY[language],
         "brand_name": brand_name,
         "tagline": tagline,
         "site_base_url": site_base_url,

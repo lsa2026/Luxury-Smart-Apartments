@@ -70,7 +70,10 @@ def test_customer_email_uses_live_brand_logo_site_and_contact() -> None:
     text = mail.outbox[0].body
     assert "Luxury Smart Apartments" in html
     assert "اسم عربي يجب تجاهله" not in html
-    assert 'src="https://stays.example.invalid/static/images/brand/apple-touch-icon.png"' in html
+    assert (
+        'src="https://stays.example.invalid/static/images/brand/luxury-living-lockup-light.png"'
+        in html
+    )
     assert "+966500000000" in html
     assert 'dir="rtl"' in html
     assert "ضيافة فاخرة في كل إقامة" in html

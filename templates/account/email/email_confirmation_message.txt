@@ -1,7 +1,7 @@
 Luxury Smart Apartments
 
-أكّد بريدك الإلكتروني لتأمين حسابك والاطلاع على حجوزاتك من مكان واحد.
+{{ email_copy.confirmation_message }}
 
 {{ activate_url }}
 
-إذا لم تنشئ هذا الحساب، تجاهل هذه الرسالة بأمان.
+{{ email_copy.confirmation_notice }}

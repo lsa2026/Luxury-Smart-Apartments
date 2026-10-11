@@ -23,6 +23,7 @@ from apps.notifications.invoice_forms import InvoiceLookupForm, InvoiceReviewFor
 from apps.notifications.invoice_pdf import COPY, platform_name, render_invoice_pdf
 from apps.notifications.models import GuestInvoice
 from apps.notifications.services.audit import record_audit
+from apps.notifications.services.invoice_email import invoice_filename
 from apps.notifications.services.invoice_search import (
     find_invoice_bookings,
     read_search_token,
@@ -224,7 +225,7 @@ def invoice_pdf(request, invoice_id):
     if request.GET.get("original") == "1" and invoice.issued_at:
         content = bytes(invoice.pdf_content)
     response = HttpResponse(content, content_type="application/pdf")
-    filename = f"{invoice.number or 'Luxury-Living-preview'}.pdf"
+    filename = invoice_filename(invoice)
     disposition = "attachment" if request.GET.get("download") == "1" else "inline"
     response["Content-Disposition"] = f'{disposition}; filename="{filename}"'
     response["X-Content-Type-Options"] = "nosniff"

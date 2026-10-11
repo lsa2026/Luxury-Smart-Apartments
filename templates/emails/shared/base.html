@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="{{ email_language }}" dir="{{ email_direction }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{% firstof heading brand_name "Luxury Living" %}</title></head>
+<body style="margin:0;padding:0;background:#f3f0e9;color:#193e36;font-family:Tahoma,Arial,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">{{ message|striptags|truncatechars:120 }}</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f0e9" style="background:#f3f0e9;width:100%">
+<tr><td align="center" style="padding:20px 10px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="width:100%;max-width:600px;background:#fff;border:1px solid #e5ddce;border-radius:16px">
+<tr><td align="center" bgcolor="#ffffff" style="padding:26px 20px 22px;border-bottom:3px solid #c7a15b;background:#fff;border-radius:16px 16px 0 0">
+<a href="{{ site_url }}" style="text-decoration:none;color:#193e36"><img src="{{ logo_url }}" width="340" alt="Luxury Living · {{ brand_name }}" style="display:block;width:100%;max-width:340px;height:auto;margin:0 auto;border:0"></a>
+<p style="margin:10px 0 0;color:#6d726c;font-size:13px;line-height:1.7">{{ tagline }}</p>
+</td></tr>
+<tr><td dir="{{ email_direction }}" style="padding:28px 24px;text-align:{{ email_alignment }};font-size:15px;line-height:1.85;overflow-wrap:anywhere">
+{% block content %}{% endblock %}
+</td></tr>
+<tr><td dir="{{ email_direction }}" align="center" bgcolor="#f8f5ef" style="padding:22px 20px;background:#f8f5ef;border-top:1px solid #e5ddce;border-radius:0 0 16px 16px;font-size:13px;line-height:1.9;overflow-wrap:anywhere">
+<p style="margin:0 0 8px;font-weight:bold;color:#193e36">{{ email_copy.help }}</p>
+<p style="margin:0 0 14px"><a href="{{ contact_url }}" style="color:#193e36;text-decoration:underline">{{ email_copy.contact }}</a></p>
+{% if contact_phone %}<p dir="ltr" style="margin:0 0 8px"><a href="tel:{{ contact_phone }}" style="color:#193e36">{{ contact_phone }}</a></p>{% endif %}
+{% if support_email %}<p dir="ltr" style="margin:0 0 8px;word-break:break-all"><a href="mailto:{{ support_email }}" style="color:#193e36">{{ support_email }}</a></p>{% endif %}
+{% if whatsapp_url %}<p style="margin:0 0 14px"><a href="{{ whatsapp_url }}" style="color:#193e36">{{ email_copy.whatsapp }}{% if whatsapp_display %} · <span dir="ltr" style="display:inline-block;unicode-bidi:isolate">{{ whatsapp_display }}</span>{% endif %}</a></p>{% endif %}
+{% if office_hours or public_address %}<p style="margin:0 0 12px;color:#65706a;font-size:12px">{% if office_hours %}{{ email_copy.hours }} {{ office_hours }}{% endif %}{% if office_hours and public_address %}<br>{% endif %}{% if public_address %}{{ email_copy.address }} {{ public_address }}{% endif %}</p>{% endif %}
+{% if instagram_url or facebook_url or x_url or linkedin_url %}<p dir="ltr" style="margin:0 0 12px;font-size:12px">{% if instagram_url %}<a href="{{ instagram_url }}" style="color:#193e36">Instagram</a> {% endif %}{% if facebook_url %}<a href="{{ facebook_url }}" style="color:#193e36">Facebook</a> {% endif %}{% if x_url %}<a href="{{ x_url }}" style="color:#193e36">X</a> {% endif %}{% if linkedin_url %}<a href="{{ linkedin_url }}" style="color:#193e36">LinkedIn</a>{% endif %}</p>{% endif %}
+<p style="margin:0;color:#4c5853">{{ email_copy.provider }}</p>
+<p dir="ltr" style="margin:4px 0 12px;word-break:break-all"><a href="{{ site_url }}" style="color:#193e36;text-decoration:none">luxurysmartapartments.com</a></p>
+<p style="margin:0;color:#65706a;font-size:12px"><a href="{{ privacy_url }}" style="color:#65706a">{{ email_copy.privacy }}</a> &nbsp;·&nbsp; <a href="{{ terms_url }}" style="color:#65706a">{{ email_copy.terms }}</a></p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
