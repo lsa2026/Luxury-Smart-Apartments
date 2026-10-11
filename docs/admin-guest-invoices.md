@@ -41,7 +41,7 @@ Entry: `/admin/operations/invoices/`, linked from the booking administration hub
 - A refreshed snapshot invalidates an earlier review, preventing stale-amount issuance.
 - Issuance is row-locked and unique per Hostaway reservation. PDF, language, number,
   timestamp and reviewed snapshot are frozen. Double clicks return the existing PDF.
-- The PDF embeds licensed Amiri fonts and the approved Figma LL light logo, with
+- The PDF embeds licensed Amiri fonts and the approved Figma horizontal light lockup, with
   Arabic, English and French copy. Font/license assets ship with the application.
 - Email uses the existing backend; WhatsApp uploads the PDF privately as base64 to
   UltraMsg. Neither adds a paid service, public storage bucket, nor periodic task.
@@ -62,6 +62,21 @@ Entry: `/admin/operations/invoices/`, linked from the booking administration hub
   Email and phone review/send controls are LTR in the Arabic owner UI.
 - Queue runs on the existing `lsa-worker`. If the worker stops, send requests stay
   queued; PDF download remains available. Queue acknowledgement errors surface as review.
+- The worker must inherit ULTRAMSG_ENABLED, ULTRAMSG_API_BASE_URL,
+  ULTRAMSG_INSTANCE_ID, ULTRAMSG_TOKEN and ACCOUNTING_WHATSAPP_NUMBER from the web
+  service. These were missing from the worker Blueprint; verify the Blueprint sync
+  and running worker after deployment, not just the web CSS. No secrets are committed.
+- Internal LL/year/UUID invoice numbers remain in storage, not guest-visible content.
+  Guest name/email/mobile and platform/reference have explicit labels in all languages.
+  The property and dates appear once; no repeated accommodation description.
+- A POST-only owner action may restyle an issued invoice from its exact frozen snapshot.
+  GuestInvoicePresentation stores an append-only, versioned PDF and keeps the original
+  GuestInvoice.pdf_content unchanged (available via owner-only ?original=1 download).
+  No migration backfill or automatic messages. GET never regenerates an issued PDF.
+  Each new send freezes the chosen presentation; already queued messages retain their
+  selected original version. Restyling does not bypass accepted/unknown duplicate guards.
+- Delivery errors use allowlisted owner-facing explanations; no raw exception, token,
+  provider response or secret is exposed. Provider acceptance alone is not delivery.
 
 This is an accommodation document, not a claim of certified statutory e-invoicing.
 Where a compliant tax invoice is required, issue it through the appropriate process.

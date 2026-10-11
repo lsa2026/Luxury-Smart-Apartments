@@ -7,18 +7,23 @@ from pathlib import Path
 
 from django.utils import timezone
 
+DESIGN_VERSION = "labelled-lockup-v2"
+
 COPY = {
     "ar": {
         "title": "فاتورة إقامة",
         "preview": "معاينة — لم تُصدر بعد",
         "guest": "بيانات الضيف",
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الجوال",
+        "platform": "اسم المنصة",
         "booking": "بيانات الحجز",
         "reference": "مرجع حجز المنصة",
         "stay": "تفاصيل الإقامة",
         "arrival": "الدخول",
         "departure": "الخروج",
         "nights": "الليالي",
-        "description": "الإقامة في الشقة",
         "total": "الإجمالي",
         "thanks": "شكرًا لاختياركم Luxury Living",
         "date": "تاريخ الإصدار",
@@ -28,13 +33,16 @@ COPY = {
         "title": "Accommodation invoice",
         "preview": "PREVIEW — not issued",
         "guest": "Guest details",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Mobile number",
+        "platform": "Platform",
         "booking": "Booking details",
         "reference": "Platform booking reference",
         "stay": "Stay details",
         "arrival": "Check-in",
         "departure": "Check-out",
         "nights": "Nights",
-        "description": "Apartment accommodation",
         "total": "Total",
         "thanks": "Thank you for choosing Luxury Living",
         "date": "Issued on",
@@ -44,13 +52,16 @@ COPY = {
         "title": "Facture de séjour",
         "preview": "APERÇU — non émis",
         "guest": "Informations du client",
+        "name": "Nom",
+        "email": "Adresse e-mail",
+        "phone": "Téléphone",
+        "platform": "Plateforme",
         "booking": "Informations de réservation",
         "reference": "Référence de réservation de la plateforme",
         "stay": "Détails du séjour",
         "arrival": "Arrivée",
         "departure": "Départ",
         "nights": "Nuits",
-        "description": "Hébergement en appartement",
         "total": "Total",
         "thanks": "Merci d’avoir choisi Luxury Living",
         "date": "Date d’émission",
@@ -138,54 +149,57 @@ def render_invoice_pdf(invoice):
 
     # The supplied approved Figma logo is used verbatim, not recreated.
     canvas.drawImage(
-        str(assets / "logo.png"),
-        width - 189,
-        height - 173,
-        150,
-        150,
+        str(assets / "lockup-light.png"),
+        (width - 400) / 2,
+        height - 130,
+        400,
+        93.75,
         preserveAspectRatio=True,
         mask="auto",
     )
-    text("LUXURY LIVING", 42, height - 65, size=18, bold=True, align="left")
-    text("SMART APARTMENTS", 42, height - 88, size=10, color=gold, align="left")
-    text(words["title"], 42, height - 122, size=24, bold=True, align="left", max_width=340)
+    text(words["title"], width - 48 if rtl else 48, height - 155, size=22, bold=True)
     canvas.setStrokeColor(gold)
     canvas.setLineWidth(1)
-    canvas.line(42, height - 163, width - 42, height - 163)
+    canvas.line(42, height - 174, width - 42, height - 174)
     edge = width - 60 if rtl else 60
-    text(data["supplier"], edge, height - 190, size=13, bold=True)
-    text(data["website"], edge, height - 209, size=10, color=muted)
+    text(data["supplier"], edge, height - 201, size=13, bold=True)
+    text(data["website"], edge, height - 221, size=10, color=muted)
     if invoice.issued_at:
-        text(invoice.number, edge, height - 235, size=10)
-        stamp = timezone.localtime(invoice.issued_at).strftime("%Y-%m-%d  %H:%M %Z")
-        text(f"{words['date']}: {stamp}", edge, height - 254, size=10, color=muted)
+        # Keep numbers and the timestamp LTR, separate from an Arabic label.
+        text(words["date"], edge, height - 246, size=10, color=muted)
+        stamp = timezone.localtime(invoice.issued_at).strftime("%Y-%m-%d  %H:%M")
+        text(stamp, edge, height - 265, size=11, color=muted)
     else:
         text(words["preview"], edge, height - 242, size=12, color=gold, bold=True)
 
-    y = height - 291
+    y = height - 290
     card_width = (width - 96 - 16) / 2
     for x in (48, 48 + card_width + 16):
         canvas.setFillColor(HexColor("#f3f0e7"))
-        canvas.roundRect(x, y - 110, card_width, 110, 12, fill=1, stroke=0)
+        canvas.roundRect(x, y - 172, card_width, 172, 12, fill=1, stroke=0)
     guest_x = width - 58 if rtl else 58
     booking_x = 48 + card_width - 10 if rtl else 48 + card_width + 26
     text(words["guest"], guest_x, y - 22, bold=True, size=13, max_width=card_width - 20)
-    paragraph(data["guest_name"], guest_x, y - 44, bold=True, max_width=card_width - 20, size=11)
-    text(data["guest_email"], guest_x, y - 82, size=9, max_width=card_width - 20, color=muted)
-    text(data["guest_phone"], guest_x, y - 99, size=10, max_width=card_width - 20, color=muted)
+    text(words["name"], guest_x, y - 43, size=9, color=muted, max_width=card_width - 20)
+    paragraph(data["guest_name"], guest_x, y - 62, bold=True, max_width=card_width - 20, size=11)
+    text(words["email"], guest_x, y - 106, size=9, color=muted, max_width=card_width - 20)
+    text(data["guest_email"] or "—", guest_x, y - 122, size=9, max_width=card_width - 20)
+    text(words["phone"], guest_x, y - 142, size=9, color=muted, max_width=card_width - 20)
+    text(data["guest_phone"] or "—", guest_x, y - 159, size=11, max_width=card_width - 20)
     text(words["booking"], booking_x, y - 22, bold=True, size=13, max_width=card_width - 20)
-    text(data["platform"], booking_x, y - 44, size=12, max_width=card_width - 20)
-    text(words["reference"], booking_x, y - 66, size=9, color=muted, max_width=card_width - 20)
+    text(words["platform"], booking_x, y - 43, size=9, color=muted, max_width=card_width - 20)
+    text(platform_name(data["platform"]), booking_x, y - 64, size=13, max_width=card_width - 20)
+    text(words["reference"], booking_x, y - 106, size=9, color=muted, max_width=card_width - 20)
     text(
         data["platform_reference"] or "—",
         booking_x,
-        y - 93,
+        y - 130,
         size=15,
         bold=True,
         max_width=card_width - 20,
     )
 
-    y -= 146
+    y -= 208
     text(words["stay"], edge, y, bold=True, size=15)
     paragraph(
         data["property_names"][invoice.language],
@@ -195,7 +209,7 @@ def render_invoice_pdf(invoice):
         bold=True,
         size=16,
     )
-    y = 327
+    y = 254
     positions = [width - 48, width / 2 + 42, 170] if rtl else [48, 230, 412]
     for x, label, value in zip(
         positions,
@@ -205,14 +219,7 @@ def render_invoice_pdf(invoice):
     ):
         text(label, x, y, size=10, color=muted, max_width=135)
         text(value, x, y - 23, bold=True, size=14, max_width=135)
-    y -= 63
-    canvas.setFillColor(emerald)
-    canvas.roundRect(48, y - 35, width - 96, 35, 6, stroke=0, fill=1)
-    text(words["description"], edge, y - 24, color=HexColor("#ffffff"), bold=True, size=12)
-    y -= 62
-    text(data["property_names"][invoice.language], edge, y, size=12)
-    text(f"{data['check_in']} - {data['check_out']}", edge, y - 23, size=11, color=muted)
-    y = 149
+    y = 180
     canvas.setFillColor(HexColor("#f0e6cb"))
     canvas.roundRect(48, y - 67, width - 96, 67, 10, stroke=0, fill=1)
     text(words["total"], edge, y - 22, size=12, bold=True)
@@ -222,3 +229,10 @@ def render_invoice_pdf(invoice):
     canvas.showPage()
     canvas.save()
     return out.getvalue()
+
+
+def platform_name(value):
+    """Display known channel labels without changing the imported snapshot."""
+    return {"bookingcom": "Booking.com", "booking.com": "Booking.com", "airbnb": "Airbnb"}.get(
+        str(value).casefold(), value
+    )

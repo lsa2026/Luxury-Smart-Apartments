@@ -245,11 +245,46 @@ class GuestInvoice(models.Model):
         return super().delete(*args, **kwargs)
 
 
+class GuestInvoicePresentation(models.Model):
+    """Append-only restyling of a frozen invoice; original bytes remain retained."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(
+        GuestInvoice, on_delete=models.PROTECT, related_name="presentations"
+    )
+    design_version = models.CharField(max_length=40)
+    pdf_content = models.BinaryField(editable=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice", "design_version"], name="unique_invoice_presentation"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.invoice_id} — {self.design_version}"
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError("Invoice presentations cannot be overwritten.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Invoice presentations must be retained.")
+
+
 class GuestInvoiceDelivery(models.Model):
     """One owner-authorized recipient/channel; ambiguous results are never retried."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice = models.ForeignKey(GuestInvoice, on_delete=models.PROTECT, related_name="deliveries")
+    presentation = models.ForeignKey(
+        GuestInvoicePresentation, on_delete=models.PROTECT, null=True, blank=True
+    )
     channel = models.CharField(
         max_length=10, choices=[("email", "الإيميل"), ("whatsapp", "واتساب")]
     )
@@ -271,6 +306,29 @@ class GuestInvoiceDelivery(models.Model):
 
     def __str__(self):
         return f"{self.channel} — {self.status}"
+
+    @property
+    def error_message(self):
+        # Only controlled explanations, never raw provider errors or credentials.
+        return {
+            "whatsapp_disabled": (
+                "إعدادات اتصال UltraMsg غير مكتملة أو معطلة في عامل الإرسال (lsa-worker)."
+            ),
+            "whatsapp_rejected": (
+                "رفض UltraMsg طلب المستند؛ راجع اتصال واتساب وصلاحية إعدادات الخدمة في المزوّد."
+            ),
+            "whatsapp_outcome_unknown": (
+                "تعذر تأكيد نتيجة UltraMsg؛ راجع سجل المزوّد قبل إعادة الإرسال."
+            ),
+            "email_disabled": "إرسال البريد معطل في عامل الإرسال.",
+            "invoice_not_issued": "الفاتورة المعتمدة أو ملفها غير متاح لعامل الإرسال.",
+            "queue_acknowledgement_unknown": (
+                "تعذر تأكيد إدراج الطلب في قائمة التنفيذ؛ لا تُعد الإرسال قبل المراجعة."
+            ),
+            "delivery_outcome_unknown": (
+                "لم تُحسم نتيجة الإرسال؛ يلزم فحص سجل المزوّد قبل أي محاولة أخرى."
+            ),
+        }.get(self.error_code, "")
 
 
 class AuditLog(models.Model):

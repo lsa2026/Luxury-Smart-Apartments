@@ -468,6 +468,33 @@ services:
       - key: EMAIL_HOST_PASSWORD
         # Set once in the Render dashboard for this worker. Do not commit it.
         sync: false
+      # Invoice WhatsApp delivery executes here, not in the HTTP web process.
+      # Reuse the existing approved integration; never store a second token.
+      - key: ULTRAMSG_ENABLED
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: ULTRAMSG_ENABLED
+      - key: ULTRAMSG_API_BASE_URL
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: ULTRAMSG_API_BASE_URL
+      - key: ULTRAMSG_INSTANCE_ID
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: ULTRAMSG_INSTANCE_ID
+      - key: ULTRAMSG_TOKEN
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: ULTRAMSG_TOKEN
+      - key: ACCOUNTING_WHATSAPP_NUMBER
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: ACCOUNTING_WHATSAPP_NUMBER
       - key: EMAIL_USE_TLS
         value: "True"
       - key: EMAIL_USE_SSL

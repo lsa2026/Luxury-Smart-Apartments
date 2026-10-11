@@ -44,6 +44,11 @@ def deliver_invoice(delivery_id):
             status, code = "failed", "invoice_not_issued"
         else:
             subject, body = MESSAGES[invoice.language]
+            pdf_content = bytes(
+                delivery.presentation.pdf_content
+                if delivery.presentation_id
+                else invoice.pdf_content
+            )
             filename = f"{invoice.number}.pdf"
             if delivery.channel == "email":
                 if not settings.EMAIL_DELIVERY_ENABLED:
@@ -56,14 +61,14 @@ def deliver_invoice(delivery_id):
                         [delivery.recipient],
                         reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
                     )
-                    message.attach(filename, bytes(invoice.pdf_content), "application/pdf")
+                    message.attach(filename, pdf_content, "application/pdf")
                     if message.send(fail_silently=False) == 1:
                         status, code = "accepted", ""
             elif delivery.channel == "whatsapp":
                 with UltraMsgClient() as client:
                     client.send_document(
                         recipient=delivery.recipient,
-                        content=bytes(invoice.pdf_content),
+                        content=pdf_content,
                         filename=filename,
                         caption=body,
                     )
