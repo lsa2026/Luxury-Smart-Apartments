@@ -186,7 +186,9 @@ def refresh_invoice_presentation(invoice_id, actor):
         )
 
 
-def queue_invoice_delivery(*, invoice, channel, recipient, actor):
+def queue_invoice_delivery(
+    *, invoice, channel, recipient, actor, retry_failed=True, delay_seconds=0
+):
     if not invoice.issued_at or not invoice.pdf_content:
         raise ValidationError("أصدر الفاتورة أولًا قبل إرسالها.")
     if channel == "email" and not settings.EMAIL_DELIVERY_ENABLED:
@@ -205,22 +207,30 @@ def queue_invoice_delivery(*, invoice, channel, recipient, actor):
         delivery = GuestInvoiceDelivery.objects.select_for_update().get(pk=delivery.pk)
         # A second OWNER click may retry an explicitly rejected attempt, not an
         # accepted or ambiguous attempt. Preserve the attempt count for auditing.
-        if not created and delivery.status == "failed":
+        if not created and delivery.status == "failed" and retry_failed:
             delivery.status = "queued"
             delivery.error_code = ""
             delivery.presentation = presentation
             delivery.save(update_fields=["status", "error_code", "presentation"])
             created = True
         if created:
-            transaction.on_commit(lambda: dispatch_invoice_delivery(str(delivery.pk)))
+            if delay_seconds:
+                transaction.on_commit(
+                    lambda: dispatch_invoice_delivery(str(delivery.pk), delay_seconds=delay_seconds)
+                )
+            else:
+                transaction.on_commit(lambda: dispatch_invoice_delivery(str(delivery.pk)))
     return delivery
 
 
-def dispatch_invoice_delivery(delivery_id):
+def dispatch_invoice_delivery(delivery_id, *, delay_seconds=0):
     from apps.notifications.tasks import send_guest_invoice_task
 
     try:
-        send_guest_invoice_task.delay(delivery_id)
+        if delay_seconds:
+            send_guest_invoice_task.apply_async(args=[delivery_id], countdown=delay_seconds)
+        else:
+            send_guest_invoice_task.delay(delivery_id)
     except Exception:
         # Broker acknowledgement can be ambiguous: never re-send automatically.
         GuestInvoiceDelivery.objects.filter(pk=delivery_id, status="queued").update(

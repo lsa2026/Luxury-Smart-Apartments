@@ -2,7 +2,7 @@ from django.urls import path
 
 from apps.loyalty.booking_ui import booking_points
 
-from . import sama_booking_api
+from . import sama_booking_api, sama_invoice_api
 from .address_places import CheckoutAddressDetailsView, CheckoutAddressView
 from .views import (
     AvailabilitySearchView,
@@ -29,6 +29,9 @@ urlpatterns = [
         name="phone_check",
     ),
     path("sama/health/", sama_booking_api.health, name="sama_health"),
+    path("sama/invoice-options/", sama_invoice_api.options, name="sama_invoice_options"),
+    path("sama/invoice-send/", sama_invoice_api.send, name="sama_invoice_send"),
+    path("sama/invoice-status/", sama_invoice_api.status, name="sama_invoice_status"),
     path("sama/guest-context/", sama_booking_api.guest_context, name="sama_guest_context"),
     path("sama/guest-history/", sama_booking_api.guest_history, name="sama_guest_history"),
     path(

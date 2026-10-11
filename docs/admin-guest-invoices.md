@@ -100,6 +100,30 @@ Where a compliant tax invoice is required, issue it through the appropriate proc
 
 ## Verification and rollout
 
+### SMA guest-requested issuance and delivery (12 October 2026)
+
+`SAMA_INVOICES_ENABLED` opts in the existing restricted SMA bearer identity. Its
+private POST endpoints are `/reservations/sama/invoice-options/`, `invoice-send/`
+and `invoice-status/`. They do not provide administrator access or public PDFs.
+Selection tokens expire after 15 minutes and bind the stay to the exact sender
+phone hash. Search reads one existing 50-row provider page per explicit continuation
+and includes previously stored same-phone invoices. Multiple matches need selection;
+partial search is labelled, and more than six matches require administrative review.
+
+Before issuance, a fresh provider read rechecks the phone, amount, currency, reference
+and dates. Missing billing facts are never invented. The original `InvoiceReviewForm`,
+`issue_invoice`, `InvoiceSendForm`, queue and delivery services remain authoritative.
+An issued invoice whose amount/dates/reference have changed needs administrative
+review rather than being overwritten. WhatsApp delivery uses only the bound sender
+phone. Email uses the explicitly confirmed destination. Both channels are selected
+only when requested. Repeated requests reuse the issued invoice and delivery rows;
+failed/ambiguous attempts are not automatically retried. Status reads are phone-bound.
+
+SMA queues documents with a 15-second delay so its request acknowledgement can be
+recorded before the worker's outgoing PDF reaches the conversation. Ordinary owner
+delivery retains immediate dispatch. Provider acceptance does not prove receipt,
+reading or payment. The guest archive remains six columns; no migration is required.
+
 `pytest tests/test_guest_invoices.py` covers isolation, references, currency, amount
 validation, three-language PDFs, private access, immutable issuance, stale reviews,
 explicit sends, provider failures and idempotence. PostgreSQL CI verifies row locking.

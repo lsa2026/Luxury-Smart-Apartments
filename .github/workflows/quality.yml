@@ -51,6 +51,7 @@ jobs:
           tests/test_indicative_rates.py
           tests/test_sync_policy_october.py
           tests/test_guest_invoices.py
+          tests/test_sama_invoices.py
           tests/test_booking_invoice_navigation.py
           tests/test_completed_stay_cancellation.py
           tests/test_operations_users.py
