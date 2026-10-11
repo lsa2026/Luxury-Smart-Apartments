@@ -1,0 +1,18 @@
+Luxury Living
+
+{{ heading }}
+{% if guest_name %}{{ email_copy.greeting }} {{ guest_name }}{{ email_copy.comma }}{% endif %}
+{{ message }}
+
+{{ invoice_labels.stay }}: {{ property_name }}
+{{ email_copy.invoice_reference }}: {{ platform_name }} · {{ platform_reference }}
+{{ invoice_labels.arrival }}: {{ check_in }}
+{{ invoice_labels.departure }}: {{ check_out }}
+{{ invoice_labels.nights }}: {{ nights }}
+{{ invoice_labels.total }}: {{ invoice_total }}
+{{ email_copy.invoice_attachment }}: {{ attachment_filename }}
+
+{{ email_copy.invoice_thanks }}
+{{ email_copy.provider }}
+{{ site_url }}
+{{ email_copy.contact }}: {{ contact_url }}

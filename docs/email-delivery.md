@@ -112,3 +112,26 @@ EMAIL_LOCAL_SMTP_ENABLED=True
   ```
 
 - شغّلي `EMAIL_TASK_SCHEDULE_ENABLED=True` ليعالج `lsa-beat` طابور البريد كل دقيقة.
+
+## Approved shared guest email design (2026-10-11)
+
+All AR/EN/FR transactional layouts extend `emails/shared/base.html` through their
+language wrappers. Account confirmation through allauth uses the same layout and
+localized copy via `LuxuryAccountAdapter`; authentication tokens and activation
+links remain allauth-owned. Future message groups, including loyalty templates,
+must extend a language base and use the existing email provider.
+
+`build_guest_email` renders HTML plus a plain-text fallback without sending.
+Invoice delivery calls it but retains its separate explicit-send audit and
+no-blind-retry semantics. No old invoice delivery is rescheduled by this change.
+
+The approved horizontal lockup is served as
+`static/images/brand/luxury-living-lockup-light.png`, byte-identical to the PDF
+lockup. Guest emails intentionally do not use the historical `EMAIL_LOGO_URL`
+override, so the site/account icon cannot replace the approved email identity.
+Optional public contact/social details continue to come from site settings.
+
+Invoice attachment and download names use `Invoice-<platform-reference>.pdf`.
+Unsafe or missing references fall back to `Invoice.pdf`; internal invoice numbers
+and Hostaway IDs remain internal. Renaming the attachment never changes frozen
+PDF bytes, issuance timestamps, totals, currency, or booking/payment state.

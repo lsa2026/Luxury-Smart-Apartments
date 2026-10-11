@@ -1,0 +1,18 @@
+{% extends "emails/shared/base.html" %}
+{% block content %}
+<p style="margin:0 0 7px;color:#8b672e;font-size:13px">{{ invoice_labels.title }}</p>
+<h1 style="margin:0 0 20px;color:#123c35;font-size:27px;line-height:1.5">{{ heading }}</h1>
+{% if guest_name %}<p style="margin:0 0 12px">{{ email_copy.greeting }} <span dir="auto" style="unicode-bidi:isolate;font-weight:bold">{{ guest_name }}</span>{{ email_copy.comma }}</p>{% endif %}
+<p style="margin:0 0 22px;color:#4c5853">{{ message }}</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f8f5ef;border-radius:12px">
+<tr><td style="padding:18px 18px 8px;color:#65706a;font-size:13px">{{ invoice_labels.stay }}</td></tr>
+<tr><td style="padding:0 18px 16px;font-weight:bold">{{ property_name }}</td></tr>
+<tr><td style="padding:14px 18px;border-top:1px solid #e5ddce"><span style="color:#65706a;font-size:13px">{{ email_copy.invoice_reference }}</span><br><strong dir="ltr" style="unicode-bidi:isolate">{{ platform_name }} · {{ platform_reference }}</strong></td></tr>
+<tr><td style="padding:0 18px 16px"><span style="color:#65706a;font-size:13px">{{ invoice_labels.arrival }}</span><br><strong>{{ check_in }}</strong></td></tr>
+<tr><td style="padding:0 18px 16px"><span style="color:#65706a;font-size:13px">{{ invoice_labels.departure }}</span><br><strong>{{ check_out }}</strong></td></tr>
+<tr><td style="padding:0 18px 16px"><span style="color:#65706a;font-size:13px">{{ invoice_labels.nights }}</span><br><strong>{{ nights }}</strong></td></tr>
+<tr><td style="padding:16px 18px;background:#123c35;color:#fff;border-radius:0 0 12px 12px"><span style="font-size:13px">{{ invoice_labels.total }}</span><br><strong dir="ltr" style="display:inline-block;unicode-bidi:isolate;font-size:25px;line-height:1.6">{{ invoice_total }}</strong></td></tr>
+</table>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0 0;width:100%;border:1px solid #e5ddce;border-radius:10px"><tr><td style="padding:14px 16px;font-size:13px"><strong>{{ email_copy.invoice_attachment }}</strong><br><span dir="ltr" style="display:inline-block;unicode-bidi:isolate;color:#193e36;overflow-wrap:anywhere">{{ attachment_filename }}</span><br><span style="color:#65706a">{{ email_copy.invoice_attachment_note }}</span></td></tr></table>
+<p style="margin:20px 0 0;color:#4c5853">{{ email_copy.invoice_thanks }}</p>
+{% endblock %}

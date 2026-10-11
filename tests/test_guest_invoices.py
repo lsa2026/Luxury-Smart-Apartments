@@ -802,7 +802,7 @@ def test_ambiguous_smtp_outcome_does_not_retry(draft, actor):
         invoice=invoice, channel="email", recipient="guest@example.invalid", requested_by=actor
     )
     with patch(
-        "apps.notifications.services.invoice_delivery.EmailMessage.send",
+        "apps.notifications.services.email.EmailMultiAlternatives.send",
         side_effect=TimeoutError("secret"),
     ) as send:
         assert deliver_invoice(delivery.pk) == "review"

@@ -1,11 +1,12 @@
 """One explicit, auditable send; ambiguous outcomes are never blindly retried."""
 
 from django.conf import settings
-from django.core.mail import EmailMessage
 from django.db import transaction
 from django.utils import timezone
 
 from apps.notifications.models import GuestInvoiceDelivery
+from apps.notifications.services.email import EmailMessageRequest, build_guest_email
+from apps.notifications.services.invoice_email import invoice_email_context, invoice_filename
 from apps.notifications.services.ultramsg import (
     UltraMsgClient,
     UltraMsgConfigurationError,
@@ -49,17 +50,19 @@ def deliver_invoice(delivery_id):
                 if delivery.presentation_id
                 else invoice.pdf_content
             )
-            filename = f"{invoice.number}.pdf"
+            filename = invoice_filename(invoice)
             if delivery.channel == "email":
                 if not settings.EMAIL_DELIVERY_ENABLED:
                     status, code = "failed", "email_disabled"
                 else:
-                    message = EmailMessage(
-                        subject,
-                        body,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [delivery.recipient],
-                        reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
+                    message = build_guest_email(
+                        EmailMessageRequest(
+                            recipient=delivery.recipient,
+                            subject=subject,
+                            template_name="invoice",
+                            language=invoice.language,
+                            context=invoice_email_context(invoice),
+                        )
                     )
                     message.attach(filename, pdf_content, "application/pdf")
                     if message.send(fail_silently=False) == 1:

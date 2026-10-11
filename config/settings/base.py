@@ -178,6 +178,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 # The branded allauth subject templates already name the company. Avoid the
 # default technical prefix such as "[luxurysmartapartments.com]".
 ACCOUNT_EMAIL_SUBJECT_PREFIX = ""
+ACCOUNT_ADAPTER = "apps.accounts.email_adapter.LuxuryAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "apps.accounts.social_adapters.LuxurySocialAccountAdapter"
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
