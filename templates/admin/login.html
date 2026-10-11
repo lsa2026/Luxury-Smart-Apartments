@@ -19,11 +19,11 @@
 {% endif %}
 
 <div id="content-main">
-  <p class="lsa-admin-login__intro">هذا المركز خاص بمالك الأعمال المحدد فقط. توثيق الهوية لا يمنح صلاحيات الإدارة بمفرده.</p>
+  <p class="lsa-admin-login__intro">هذا المركز خاص بمالك الأعمال والمديرين الذين أضافهم. اختر حساب Google المعتمد؛ توثيق الهوية وحده لا يمنح صلاحيات الإدارة.</p>
 
   {% if google_sign_in_enabled %}
-  <a href="{% provider_login_url 'google' process='login' next=next %}" class="lsa-admin-login__google">المتابعة ببريد الأعمال عبر Google</a>
-  <p class="lsa-admin-login__or">دخول الإدارة يتم عبر حساب Google الخاص بالأعمال فقط.</p>
+  <a href="{% provider_login_url 'google' process='login' auth_params='prompt=select_account' next=next %}" class="lsa-admin-login__google">المتابعة ببريد الأعمال عبر Google</a>
+  <p class="lsa-admin-login__or">الدخول عبر بريد المالك أو بريد Gmail الذي أضافه المالك فقط.</p>
   {% else %}
   <p class="errornote">تسجيل الدخول عبر Google غير مهيأ حاليًا.</p>
   {% endif %}

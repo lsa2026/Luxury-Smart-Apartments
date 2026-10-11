@@ -1,6 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
+from .operations_users import manager_list, manager_revoke
 from .password_reset import LuxurySetPasswordForm, QueuedPasswordResetForm
 from .views import (
     LoginView,
@@ -16,6 +17,12 @@ from .views import (
 app_name = "accounts"
 
 urlpatterns = [
+    path("admin/operations/users/", manager_list, name="operations_users"),
+    path(
+        "admin/operations/users/<int:manager_id>/revoke/",
+        manager_revoke,
+        name="operations_user_revoke",
+    ),
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),

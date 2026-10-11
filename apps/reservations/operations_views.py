@@ -1,4 +1,4 @@
-"""Owner-only operations screens for preparing a new booking."""
+"""Scoped private operations screens for the owner and authorized managers."""
 
 from __future__ import annotations
 
@@ -9,14 +9,13 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Exists, OuterRef, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.access import require_operations_owner
+from apps.accounts.access import operations_access_required, require_operations_access
 from apps.notifications.models import AuditLog, GuestInvoice, WhatsAppDelivery
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.ultramsg import (
@@ -63,7 +62,7 @@ logger = logging.getLogger(__name__)
 
 
 def _require_owner(request: HttpRequest) -> None:
-    require_operations_owner(request.user)
+    require_operations_access(request)
 
 
 _MANUAL_DRAFT_AUDIT_LABELS = {
@@ -154,7 +153,7 @@ def _available_manual_properties(
     return available
 
 
-@staff_member_required
+@operations_access_required
 def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
     """Owner-only endpoint for the date-first manual-booking property picker."""
 
@@ -179,7 +178,7 @@ def manual_booking_available_properties(request: HttpRequest) -> JsonResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def manual_booking_list(request: HttpRequest) -> HttpResponse:
     """Retire the draft inbox; real stays live only in the booking list."""
 
@@ -187,7 +186,7 @@ def manual_booking_list(request: HttpRequest) -> HttpResponse:
     return redirect("notifications:booking_list")
 
 
-@staff_member_required
+@operations_access_required
 def booking_list(request: HttpRequest) -> HttpResponse:
     """The single owner workspace for paid, awaiting-payment, and cancelled stays."""
 
@@ -266,9 +265,9 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
-    """One owner-only place to price, modify, or begin a cancellation."""
+    """One private place to price, modify, or begin a cancellation."""
 
     _require_owner(request)
     reservation = get_object_or_404(
@@ -568,7 +567,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def manual_booking_create(request: HttpRequest) -> HttpResponse:
     _require_owner(request)
     if request.method == "POST":
@@ -622,7 +621,7 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     _require_owner(request)
     draft = get_object_or_404(
@@ -834,7 +833,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def manual_booking_disposal(request: HttpRequest, draft_id: str) -> HttpResponse:
     """Retired compatibility endpoint for historic draft URLs."""
 
@@ -847,7 +846,7 @@ def manual_booking_disposal(request: HttpRequest, draft_id: str) -> HttpResponse
     return redirect("notifications:booking_list")
 
 
-@staff_member_required
+@operations_access_required
 def cancellation_list(request: HttpRequest) -> HttpResponse:
     """Keep the legacy URL inside the one reservations workspace."""
 
@@ -855,7 +854,7 @@ def cancellation_list(request: HttpRequest) -> HttpResponse:
     return booking_list(request)
 
 
-@staff_member_required
+@operations_access_required
 def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
     """Review one cancellation before any separately-enabled Hostaway action."""
 
@@ -1085,7 +1084,7 @@ def cancellation_detail(request: HttpRequest, request_id: str) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def refund_list(request: HttpRequest) -> HttpResponse:
     """A local record of money owed; opening it never moves funds."""
 
@@ -1118,7 +1117,7 @@ def refund_list(request: HttpRequest) -> HttpResponse:
     )
 
 
-@staff_member_required
+@operations_access_required
 def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
     """Approve a full/partial amount and record an already-made transfer safely."""
 

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from allauth.account.signals import email_confirmed
+from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
+from django.utils import timezone
 
+from .access import MANAGER_SESSION_KEY, normalize_email
 from .emails import queue_welcome_email
-from .models import profile_for
+from .models import OperationsManager, profile_for
 from .services import claim_reservations_for_verified_email
 
 
@@ -21,3 +24,24 @@ def sync_allauth_verified_email(sender, request, email_address, **kwargs):  # ty
     claim_reservations_for_verified_email(email_address.user)
     language = (getattr(request, "LANGUAGE_CODE", "") or "ar").split("-")[0]
     queue_welcome_email(email_address.user, language=language)
+
+
+@receiver(user_logged_in)
+def set_operations_google_session(sender, request, user, **kwargs):
+    """Non-Google logins cannot inherit a previous manager authentication proof."""
+    if request is None:
+        return
+    request.session.pop(MANAGER_SESSION_KEY, None)
+    email = normalize_email(user.email)
+    if getattr(request, "_operations_google_email", None) != email:
+        return
+    grant = OperationsManager.objects.filter(email=email, is_enabled=True).first()
+    if grant is None or not user.is_active:
+        return
+    request.session[MANAGER_SESSION_KEY] = {
+        "user_id": user.pk,
+        "email": email,
+        "grant_id": grant.pk,
+        "version": grant.access_version,
+    }
+    OperationsManager.objects.filter(pk=grant.pk).update(last_google_login_at=timezone.now())

@@ -25,6 +25,14 @@
 .lsa-booking-invoice__send form { min-width: 0; }
 .lsa-booking-list__search .lsa-inline-form label { flex: 1; min-width: 0; }
 .lsa-booking-list__search .lsa-inline-form input { width: 100%; }
+.lsa-manager-field input:not([type="checkbox"]) { width: 100%; min-height: 48px; box-sizing: border-box; font-size: 16px; }
+.lsa-manager-field input[type="checkbox"] { width: 22px; height: 22px; vertical-align: middle; }
+.lsa-manager-card { padding: 24px 0; border-bottom: 1px solid #d9c9a9; overflow-wrap: anywhere; }
+.lsa-manager-card form { display: grid; gap: 18px; justify-items: start; }
+.lsa-manager-confirm { display: flex !important; align-items: flex-start; gap: 12px; line-height: 1.8; }
+.lsa-operations-screen .lsa-manager-confirm input[type="checkbox"] { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 4px; }
+.lsa-users-screen .lsa-btn { min-height: 48px; padding: 12px 20px; box-sizing: border-box; font-size: 16px; }
+.lsa-users-screen .lsa-owner-form > .lsa-btn { width: 100%; }
 @media (max-width: 767px) {
     #header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved { width: clamp(150px, 50vw, 260px); }
     .lsa-admin-home__grid, .lsa-booking-invoice__send { grid-template-columns: 1fr; }
