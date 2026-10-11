@@ -29,7 +29,10 @@
           {% include "admin/notifications/invoice_send_card.html" with send_form=email_send_form channel="email" %}
         </div>
         <p class="help">يمكن تغيير مستلم الإرسال دون تغيير بيانات الحجز أو الفاتورة. الإرسال لا يتم إلا بعد تأكيد المستلم والضغط على زر الإرسال.</p>
-      {% else %}<p class="help">راجع بيانات الفاتورة واعتمد إصدارها أولًا، ثم يمكنك إرسالها من هنا.</p>{% endif %}
+      {% else %}
+        <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--ghost" type="submit">تحديث المسودة من الحجز</button></form>
+        <p class="help">إذا تغيّر الحجز، حدّث المسودة أولًا. التحديث يستبدل بيانات المسودة غير الصادرة فقط، ولا يرسل رسالة. راجع البيانات واعتمد الإصدار قبل الإرسال.</p>
+      {% endif %}
     {% elif reservation.hostaway_reservation_id and reservation.booking_intent %}
       <p class="help">تُعبّأ الفاتورة من هذا الحجز، ثم تراجعها قبل اعتماد الإصدار. لن تُرسل تلقائيًا.</p>
       <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--gold" type="submit">إعداد واستعراض فاتورة الحجز</button></form>

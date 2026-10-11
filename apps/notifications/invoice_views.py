@@ -198,7 +198,7 @@ def booking_invoice(request, reservation_id):
         .filter(hostaway_reservation_id=hostaway_id)
         .first()
     )
-    if invoice is None:
+    if invoice is None or not invoice.issued_at:
         try:
             with HostawayClient() as client:
                 invoice = prepare_invoice(

@@ -107,6 +107,33 @@ def test_explicit_booking_invoice_lookup_prepares_only_draft(client, actor, payl
     assert not GuestInvoiceDelivery.objects.exists()
 
 
+def test_booking_invoice_refreshes_unissued_draft_explicitly(client, actor, draft, payload):
+    reservation = booking(draft)
+    client.force_login(actor)
+    path = reverse("notifications:booking_invoice", args=[reservation.pk])
+    with patch("apps.notifications.invoice_views.HostawayClient") as provider:
+        html = client.get(
+            reverse("notifications:booking_detail", args=[reservation.pk])
+        ).content.decode()
+        assert "تحديث المسودة من الحجز" in html
+        provider.assert_not_called()
+        payload["result"]["totalPrice"] = "1900.00"
+        payload["result"]["departureDate"] = "2026-12-18"
+        api = provider.return_value.__enter__.return_value
+        api.get_reservation_invoice_data.return_value = payload
+        response = client.post(path)
+        api.get_reservation_invoice_data.assert_called_once_with(draft.hostaway_reservation_id)
+        api.update_reservation.assert_not_called()
+        api.cancel_reservation.assert_not_called()
+    assert response.url == reverse("notifications:invoice_detail", args=[draft.pk])
+    draft.refresh_from_db()
+    assert draft.snapshot["total"] == "1900.00"
+    assert draft.snapshot["check_out"] == "2026-12-18"
+    assert draft.issued_at is None
+    assert GuestInvoice.objects.count() == 1
+    assert not GuestInvoiceDelivery.objects.exists()
+
+
 def test_booking_invoice_missing_id_and_timeout_do_not_issue(client, actor):
     reservation = booking()
     client.force_login(actor)

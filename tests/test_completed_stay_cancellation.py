@@ -135,7 +135,7 @@ def pending_cancellation(
         old_total=reservation.total_price,
         price_difference=Decimal("0"),
         currency=reservation.currency,
-        idempotency_key="completed-stay-cancellation-test-" + "x" * 32,
+        idempotency_key="completed-stay-cancellation-test-" + "x" * 31,
         session_key_hash=reservation.booking_intent.session_key_hash,
         expires_at=timezone.now() + timedelta(days=1),
     )
