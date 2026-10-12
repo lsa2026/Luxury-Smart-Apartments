@@ -27,7 +27,9 @@
             });
         }
 
-        const form = panel.querySelector("form.paymentWidgets");
+        // COPYandPAY replaces the original .paymentWidgets form. Read the
+        // capability marker on its rendered form, not the removed placeholder.
+        const form = panel.querySelector("[data-applepaycapabilities]");
         const button = panel.querySelector("apple-pay-button, .wpwl-apple-pay-button");
         let status;
         try {

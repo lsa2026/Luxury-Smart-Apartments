@@ -30,7 +30,11 @@ function setup({loading = false, absent = false, dir = "ltr", native = false} = 
     let notify;
     let domReady;
     let observers = 0;
-    panels[2].querySelector = (selector) => selector === "form.paymentWidgets" ? form : button;
+    panels[2].querySelector = (selector) => {
+        if (selector === "[data-applepaycapabilities]") return form;
+        if (selector === "form.paymentWidgets") return null; // Removed by COPYandPAY.
+        return button;
+    };
     const document = {
         readyState: loading ? "loading" : "complete",
         documentElement: {dir},

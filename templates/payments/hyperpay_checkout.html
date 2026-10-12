@@ -31,7 +31,7 @@ var wpwlOptions = {
         {% if apple_pay_enabled %}
         // Availability is asynchronous on Windows/non-Safari. Let the gateway
         // load its SRI-protected Apple SDK before exposing the wallet tab.
-        window.lsaApplePayCheckout.refresh();
+        if (window.lsaApplePayCheckout) window.lsaApplePayCheckout.refresh();
         {% endif %}
     }
 };
