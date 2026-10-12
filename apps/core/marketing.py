@@ -13,6 +13,12 @@ from apps.reservations.models import Reservation
 
 PURCHASE_RECEIPT_TOKEN_SALT = "marketing.purchase-receipt.v1"
 PROPERTY_CONTEXT_FIELDS = frozenset({"property_id", "property_name", "page_language"})
+PAYMENT_FIELDS = frozenset({"payment_type", "payment_brand", "checkout_kind"})
+PAYMENT_JOURNEY_FIELDS = (
+    frozenset({"currency", "value", "items", "payment_status", "error_category"})
+    | PROPERTY_CONTEXT_FIELDS
+    | PAYMENT_FIELDS
+)
 
 EVENT_SCHEMAS: dict[str, frozenset[str]] = {
     "view_item_list": frozenset({"item_list_name", "items", "page_language"}),
@@ -23,6 +29,20 @@ EVENT_SCHEMAS: dict[str, frozenset[str]] = {
     ),
     "begin_checkout": (
         frozenset({"currency", "value", "items", "nights", "guests"}) | PROPERTY_CONTEXT_FIELDS
+    ),
+    **dict.fromkeys(
+        (
+            "payment_checkout_requested",
+            "secure_payment_view",
+            "payment_widget_ready",
+            "payment_method_selected",
+            "payment_submit_clicked",
+            "add_payment_info",
+            "payment_widget_error",
+            "payment_result",
+            "payment_verification_started",
+        ),
+        PAYMENT_JOURNEY_FIELDS,
     ),
     "generate_lead": frozenset({"lead_source", "page_language"}),
     "check_availability": (
@@ -50,6 +70,7 @@ EVENT_SCHEMAS: dict[str, frozenset[str]] = {
     "purchase": (
         frozenset({"transaction_id", "value", "currency", "items", "tax", "coupon"})
         | PROPERTY_CONTEXT_FIELDS
+        | PAYMENT_FIELDS
     ),
     "refund": frozenset({"transaction_id", "value", "currency"}),
 }
@@ -242,6 +263,7 @@ def prepare_purchase_event(
             "value": reservation.total_price,
             "currency": reservation.currency,
             "page_language": (translation.get_language() or "ar").split("-")[0],
+            **payment_analytics_fields(payment_attempt),
             **(
                 {
                     "property_id": purchased_item["item_id"],
@@ -254,6 +276,18 @@ def prepare_purchase_event(
         },
     )
     return payload, receipt
+
+
+def payment_analytics_fields(attempt: PaymentAttempt) -> dict[str, str]:
+    """Only a gateway-reported brand; never infer a wallet's underlying network."""
+    brands = {"MADA": "mada", "VISA": "visa", "MASTER": "mastercard", "APPLEPAY": "apple_pay"}
+    brand = brands.get(getattr(attempt, "payment_brand", ""), "unknown")
+    return {
+        "payment_brand": brand,
+        "payment_type": "apple_pay"
+        if brand == "apple_pay"
+        else ("card" if brand != "unknown" else "unknown"),
+    }
 
 
 def purchase_receipt_token(receipt: MarketingEventReceipt) -> str:

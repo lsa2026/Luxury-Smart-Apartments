@@ -114,6 +114,9 @@ jobs:
       - name: Test asynchronous Apple Pay desktop and mobile availability
         run: node --test tests/apple-pay-checkout.test.cjs
 
+      - name: Test consented payment journey and gateway callback isolation
+        run: node --test tests/payment-journey.test.cjs tests/analytics-ecommerce.test.cjs
+
       - name: Test consented GA4 UPD and purchase isolation
         run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/meta-measurement.test.cjs
 

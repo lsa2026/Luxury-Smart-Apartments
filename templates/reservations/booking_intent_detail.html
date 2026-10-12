@@ -46,7 +46,7 @@
         {% include "loyalty/_booking_points.html" %}
         <div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>
         {% if points_checkout.full_points %}
-        {% elif hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once>{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>
+        {% elif hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once data-analytics-event="payment_checkout_requested" data-analytics-checkout-kind="booking" data-analytics-currency="{{ intent.currency }}" data-analytics-value="{{ intent.total_price|unlocalize }}">{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>
         {% elif payment_sandbox_enabled %}<div class="sandbox-inline-notice"><strong>{% trans "Testing mode" %}</strong><span>{% trans "The next screen is a local simulation with no financial or live-booking activity." %}</span></div><a class="button" href="{% url 'payments:sandbox_booking' intent.public_reference %}">{% trans "Continue to test payment" %}</a>
         {% else %}<button class="button" type="button" disabled aria-disabled="true">{% trans "Payment will be enabled soon" %}</button>{% endif %}</article>
 </section>

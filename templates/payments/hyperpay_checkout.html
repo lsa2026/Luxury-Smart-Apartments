@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% load i18n presentation currency static %}
+{% load i18n l10n presentation currency static %}
 {% block title %}{% trans "Secure payment" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/checkout-methods.css' %}?v=1">
+<script src="{% static 'js/payment-journey.js' %}?v=1"></script>
 {% if apple_pay_enabled %}
 <script src="{% static 'js/apple-pay-checkout.js' %}?v=1"></script>
 {% endif %}
@@ -15,6 +16,16 @@ var wpwlOptions = {
     brandDetection: true,
     brandDetectionType: "binlist",
     brandDetectionPriority: ["MADA", "VISA", "MASTER"],
+    onAfterSubmit: function () {
+        // Observation only. No form fields or iframe data are read.
+        window.LSAPaymentJourney?.submitted();
+    },
+    onError: function (error) {
+        window.LSAPaymentJourney?.error(error);
+    },
+    onLoadThreeDIframe: function () {
+        window.LSAPaymentJourney?.bankVerification();
+    },
     {% if apple_pay_enabled %}
     applePay: {
         displayName: "Luxury Smart Apartments",
@@ -31,6 +42,7 @@ var wpwlOptions = {
     {% endif %}
     onReady: function () {
         document.documentElement.classList.add("wpwl-ready");
+        window.LSAPaymentJourney?.ready();
         {% if apple_pay_enabled %}
         // Availability is asynchronous on Windows/non-Safari. Let the gateway
         // load its SRI-protected Apple SDK before exposing the wallet tab.
@@ -42,7 +54,14 @@ var wpwlOptions = {
 <script src="{{ widget_url }}" integrity="{{ widget_integrity }}" crossorigin="anonymous"></script>
 {% endblock %}
 {% block content %}
-<section class="section container checkout">
+<section class="section container checkout" data-payment-journey
+    data-analytics-property-id="{{ intent.property.slug }}"
+    data-analytics-property-name="{{ intent.property|localized_property_name }}"
+    data-analytics-page-language="{{ LANGUAGE_CODE|default:'ar' }}"
+    data-analytics-value="{{ attempt.amount|unlocalize }}"
+    data-analytics-currency="{{ attempt.currency }}"
+    data-analytics-checkout-kind="{% if modification %}modification{% else %}booking{% endif %}"
+>
     {% include "includes/progress_indicator.html" with step=4 %}
 
     <div class="section-heading checkout__heading">
