@@ -22,13 +22,24 @@ var wpwlOptions = {
     applePay: {
         displayName: "Luxury Smart Apartments",
         total: { label: "Luxury Smart Apartments" },
-        supportedNetworks: ["mada", "masterCard", "visa"],
+        supportedNetworks: {% if hyperpay_environment == 'test' %}["masterCard", "visa"]{% else %}["mada", "masterCard", "visa"]{% endif %},
         countryCode: "SA",
-        version: 3
+        version: 5
     },
     {% endif %}
     onReady: function () {
         document.documentElement.classList.add("wpwl-ready");
+        {% if apple_pay_enabled %}
+        // Keep an unsupported browser from selecting an empty wallet panel.
+        var appleTab = document.getElementById("method-tab-apple-pay");
+        if (appleTab) {
+            try {
+                appleTab.hidden = !(window.ApplePaySession && ApplePaySession.canMakePayments());
+            } catch (error) {
+                appleTab.hidden = true;
+            }
+        }
+        {% endif %}
     }
 };
 </script>
@@ -91,6 +102,21 @@ var wpwlOptions = {
                     <span class="checkout__method-name">{% trans "Visa / Mastercard" %}</span>
                     <small>{% trans "Credit and debit cards" %}</small>
                 </button>
+                {% if apple_pay_enabled %}
+                <button
+                    class="checkout__method"
+                    type="button"
+                    role="tab"
+                    id="method-tab-apple-pay"
+                    aria-controls="method-panel-apple-pay"
+                    aria-selected="false"
+                    tabindex="-1"
+                    data-checkout-method="apple-pay"
+                    hidden
+                >
+                    <span class="checkout__method-name">Apple Pay</span>
+                </button>
+                {% endif %}
             </div>
 
             <div
@@ -100,7 +126,7 @@ var wpwlOptions = {
                 aria-labelledby="method-tab-mada"
                 data-checkout-panel="mada"
             >
-                <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA{% if apple_pay_enabled %} APPLEPAY{% endif %}"></form>
+                <form action="{{ result_url }}" class="paymentWidgets" data-brands="MADA"></form>
             </div>
             <div
                 class="checkout__panel"
@@ -112,6 +138,18 @@ var wpwlOptions = {
             >
                 <form action="{{ result_url }}" class="paymentWidgets" data-brands="VISA MASTER"></form>
             </div>
+            {% if apple_pay_enabled %}
+            <div
+                class="checkout__panel"
+                id="method-panel-apple-pay"
+                role="tabpanel"
+                aria-labelledby="method-tab-apple-pay"
+                data-checkout-panel="apple-pay"
+                hidden
+            >
+                <form action="{{ result_url }}" class="paymentWidgets" data-brands="APPLEPAY"></form>
+            </div>
+            {% endif %}
 
             <ul class="checkout__assurances">
                 <li>{% trans "3-D Secure verification with your bank" %}</li>

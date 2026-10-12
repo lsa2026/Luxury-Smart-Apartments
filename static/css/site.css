@@ -11679,7 +11679,8 @@ a.contact-channel:hover {
     font-size: 0.76rem;
 }
 
-.checkout__panel[hidden] {
+.checkout__panel[hidden],
+.checkout__method[hidden] {
     display: none;
 }
 
