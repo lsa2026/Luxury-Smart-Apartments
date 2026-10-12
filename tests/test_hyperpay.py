@@ -663,16 +663,12 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     content = response.content.decode()
     assert response.status_code == 200
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
-    assert content.index('data-brands="MADA"') < content.index(
-        'data-brands="VISA MASTER"'
-    )
+    assert content.index('data-brands="MADA"') < content.index('data-brands="VISA MASTER"')
     assert 'paymentTarget: "_top"' in content
     if expect_apple_pay:
         assert 'displayName: "Luxury Smart Apartments"' in content
         networks = (
-            '["masterCard", "visa"]'
-            if environment == "test"
-            else '["mada", "masterCard", "visa"]'
+            '["masterCard", "visa"]' if environment == "test" else '["mada", "masterCard", "visa"]'
         )
         assert f"supportedNetworks: {networks}" in content
         assert 'countryCode: "SA"' in content
