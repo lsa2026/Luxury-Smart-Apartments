@@ -1839,7 +1839,7 @@ if (checkoutMethods.length) {
                 return;
             }
             event.preventDefault();
-            const tabs = [...checkoutMethods];
+            const tabs = [...checkoutMethods].filter((method) => !method.hidden);
             const current = tabs.indexOf(tab);
             // Arrow keys follow reading order, which is mirrored in RTL.
             const forward = document.documentElement.dir === "rtl" ? "ArrowLeft" : "ArrowRight";

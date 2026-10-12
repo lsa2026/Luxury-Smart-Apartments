@@ -362,6 +362,16 @@ HYPERPAY_RETURN_TOKEN_MAX_AGE_SECONDS = env.int(
 HYPERPAY_CONNECT_TIMEOUT = 5.0
 HYPERPAY_READ_TIMEOUT = 20.0
 HYPERPAY_ALLOWED_BRANDS = ("MADA", "VISA", "MASTER")
+if HYPERPAY_ENVIRONMENT == "test" or (
+    HYPERPAY_ENVIRONMENT == "production" and HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
+):
+    HYPERPAY_ALLOWED_BRANDS += ("APPLEPAY",)
+# This public verification file is supplied by Apple for the exact merchant
+# domain. It contains no private key and must be served without byte changes.
+APPLE_PAY_DOMAIN_ASSOCIATION_FILE = env(
+    "APPLE_PAY_DOMAIN_ASSOCIATION_FILE",
+    default="/etc/secrets/apple_pay_domain_association",
+).strip()
 HYPERPAY_APPROVED_BASE_URLS = {
     "test": "https://eu-test.oppwa.com/",
     "production": "https://eu-prod.oppwa.com/",

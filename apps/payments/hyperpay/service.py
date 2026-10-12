@@ -670,6 +670,12 @@ class HyperPayService:
             return "entity_id_mismatch"
         if document.get("paymentBrand") not in settings.HYPERPAY_ALLOWED_BRANDS:
             return "payment_brand_mismatch"
+        if (
+            document.get("paymentBrand") == "APPLEPAY"
+            and settings.HYPERPAY_ENVIRONMENT == "production"
+            and not settings.HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
+        ):
+            return "payment_brand_mismatch"
         return ""
 
 

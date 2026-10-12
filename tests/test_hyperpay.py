@@ -367,8 +367,12 @@ def test_paid_modification_never_returns_to_pay_button_after_revalidation_error(
     assert outcome.automatic_modification.code == "postpayment_revalidation_failed"
 
 
-@override_settings(**HYPERPAY_SETTINGS, HOSTAWAY_LIVE_BOOKING_ENABLED=False)
-def test_verified_success_creates_one_local_reservation_without_duplicate() -> None:
+@pytest.mark.parametrize("payment_brand", ["MADA", "VISA", "MASTER", "APPLEPAY"])
+@override_settings(
+    **{**HYPERPAY_SETTINGS, "HYPERPAY_ALLOWED_BRANDS": ("MADA", "VISA", "MASTER", "APPLEPAY")},
+    HOSTAWAY_LIVE_BOOKING_ENABLED=False,
+)
+def test_verified_success_creates_one_local_reservation_without_duplicate(payment_brand) -> None:
     intent = payable_intent()
     client = HyperPayStub()
     checkout = HyperPayService(client=client).create_checkout(intent)
@@ -377,7 +381,7 @@ def test_verified_success_creates_one_local_reservation_without_duplicate() -> N
         "amount": "1250.00",
         "currency": "SAR",
         "paymentType": "DB",
-        "paymentBrand": "MADA",
+        "paymentBrand": payment_brand,
         "merchantTransactionId": checkout.attempt.merchant_transaction_id,
         "entityId": "test-entity-id",
         "result": {"code": "000.100.110", "description": "Test success"},
@@ -659,16 +663,19 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     content = response.content.decode()
     assert response.status_code == 200
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
-    mada_brands = "MADA APPLEPAY" if expect_apple_pay else "MADA"
-    assert content.index(f'data-brands="{mada_brands}"') < content.index(
-        'data-brands="VISA MASTER"'
-    )
+    assert content.index('data-brands="MADA"') < content.index('data-brands="VISA MASTER"')
     assert 'paymentTarget: "_top"' in content
     if expect_apple_pay:
         assert 'displayName: "Luxury Smart Apartments"' in content
-        assert 'supportedNetworks: ["mada", "masterCard", "visa"]' in content
+        networks = (
+            '["masterCard", "visa"]' if environment == "test" else '["mada", "masterCard", "visa"]'
+        )
+        assert f"supportedNetworks: {networks}" in content
         assert 'countryCode: "SA"' in content
-        assert "version: 3" in content
+        assert "version: 5" in content
+        assert 'data-brands="APPLEPAY"' in content
+        assert 'data-brands="MADA APPLEPAY"' not in content
+        assert 'data-checkout-method="apple-pay"' in content
         assert "-webkit-appearance: -apple-pay-button" in content
     else:
         assert "APPLEPAY" not in content
@@ -683,8 +690,8 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     # The hosted widget ships English labels; the locale makes it follow the page.
     assert 'locale: "ar"' in content
     # One method is shown at a time, and the payer can confirm what they are buying.
-    assert content.count('data-checkout-method="') == 2
-    assert content.count('data-checkout-panel="') == 2
+    assert content.count('data-checkout-method="') == (3 if expect_apple_pay else 2)
+    assert content.count('data-checkout-panel="') == (3 if expect_apple_pay else 2)
     assert intent.property.display_name in content or "checkout__summary" in content
     assert content.count("checkout__total checkout__total--") == 1
     assert "checkout__total--display" in content

@@ -105,6 +105,11 @@ services:
       # --- UAT safety -----------------------------------------------------
       # Production checkout: credentials remain dashboard-only secrets. A
       # verified payment must create the corresponding Hostaway reservation.
+      # Apple Pay rollout is a web-only opt-in, preserved across Blueprint syncs.
+      - key: HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
+        sync: false
+      - key: APPLE_PAY_DOMAIN_ASSOCIATION_FILE
+        sync: false
       - key: HYPERPAY_ENABLED
         value: "True"
       - key: HYPERPAY_ENVIRONMENT
