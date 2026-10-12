@@ -111,6 +111,9 @@ jobs:
       - name: Test checkout phone country and normalization
         run: node --test tests/checkout-phone.test.cjs
 
+      - name: Test asynchronous Apple Pay desktop and mobile availability
+        run: node --test tests/apple-pay-checkout.test.cjs
+
       - name: Test consented GA4 UPD and purchase isolation
         run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/meta-measurement.test.cjs
 

@@ -57,3 +57,43 @@ provider email alone is not that outcome.
 - https://developer.apple.com/help/account/capabilities/configure-apple-pay-on-the-web
 - https://developer.apple.com/documentation/applepayontheweb/configuring-your-environment
 - Business email CRM:016237, message 1a12ee5ab014513d (2026-10-12).
+
+## Desktop alongside mobile (2026-10-12)
+
+The owner authorized enabling third-party desktop browsers on the official
+hostname, without replacing the existing mobile checkout.
+
+- HyperPay's official COPYandPAY Apple Pay guide explicitly supports third-party
+  browsers with `checkAvailability: "applePayCapabilities"` and the configured
+  `merchantIdentifier`. `buttonSource: "js"` avoids Safari-only button rendering.
+- The public production widget inspected on this date supports this option and
+  loads Apple SDK **1.3.2** with its own SRI. Apple requires SDK 1.2.0 or newer.
+  Do not add a second independent Apple SDK/session or alter gateway hashes.
+- The configured public Merchant ID is `merchant.com.luxurysmartapartments`.
+  `HYPERPAY_APPLE_PAY_MERCHANT_IDENTIFIER` permits an explicit override if needed;
+  it is NOT the HyperPay entity ID or access token.
+- The wallet tab stays hidden until the gateway has completed its asynchronous
+  capability check and rendered its actual button. Unsupported browsers, blocked
+  SDKs and removed buttons leave normal card methods available.
+- The Apple CDN is allowed in script/frame/image/connect/style directives only
+  for rendered, enabled Apple Pay checkouts. Payment results, sign-in and public
+  pages do not gain these permissions. CSP/SRI remain enforced.
+- Desktop starts checkout and the customer scans Apple's dynamic code with an
+  iPhone running iOS 18+ (or iPadOS 18+), then authorizes on that device. Mobile
+  Safari continues to use the same gateway and server-side verification.
+
+Release verification: run Python payment/refund/security regressions and the
+JavaScript asynchronous availability tests; deploy and inspect the running
+checkout configuration. A mock button or successful SDK capability check is
+not a paid booking. Final acceptance still requires the owner's real desktop
+and mobile payments, verified gateway success and Hostaway confirmation.
+No additional charge, refund or cancellation should be triggered by diagnostics.
+
+If rollback is needed, revert the desktop integration commit, preserving the
+existing mobile Apple Pay production flag and all card methods. Turning that
+flag off disables Apple Pay on BOTH desktop and mobile.
+
+References:
+- https://hyperpay.docs.oppwa.com/integrations/widget/apple-pay
+- https://applepaypartners.apple.com/merchants/features/apple-pay-in-third-party-browsers
+- https://developer.apple.com/documentation/applepayontheweb/loading-the-latest-version-of-apple-pay-js

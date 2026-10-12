@@ -217,8 +217,18 @@ class SecurityHeadersMiddleware:
             font_sources.extend(["data:", settings.HYPERPAY_WIDGET_ORIGIN])
             image_sources = f"{image_sources} {settings.HYPERPAY_WIDGET_ORIGIN}"
             # COPYandPAY creates a runtime stylesheet and inserts its widget rules
-            # into it. Keep this relaxation isolated to the TEST payment route.
+            # into it. Keep this relaxation isolated to the hosted payment route.
             style_sources = f"{style_sources} 'unsafe-inline' {settings.HYPERPAY_WIDGET_ORIGIN}"
+            if getattr(request, "_apple_pay_checkout_enabled", False):
+                # COPYandPAY loads Apple's versioned SDK with SRI. Its button
+                # and cross-browser code overlay use Apple's own CDN iframe.
+                # No wildcard, unsafe-eval or new form-action destination.
+                apple_origin = "https://applepay.cdn-apple.com"
+                script_sources.append(apple_origin)
+                connect_sources.append(apple_origin)
+                frame_sources.append(apple_origin)
+                image_sources = f"{image_sources} {apple_origin}"
+                style_sources = f"{style_sources} {apple_origin}"
         if google_allowed and (
             settings.GOOGLE_TAG_MANAGER_ENABLED or settings.GOOGLE_ANALYTICS_ENABLED
         ):
