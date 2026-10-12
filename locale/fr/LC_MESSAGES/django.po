@@ -7886,3 +7886,19 @@ msgstr "Choisissez le pays de votre numéro et saisissez-le comme d’habitude, 
 #: apps/reservations/booking_forms.py templates/reservations/booking_quote_detail.html
 msgid "Check your phone number and the selected country."
 msgstr "Vérifiez votre numéro de téléphone et le pays sélectionné."
+
+#: templates/payments/hyperpay_checkout.html
+msgid "Pay securely with your Apple device"
+msgstr "Payez en toute sécurité avec votre appareil Apple"
+
+#: templates/payments/hyperpay_checkout.html
+msgid "Complete your payment with Apple Pay"
+msgstr "Finalisez votre paiement avec Apple Pay"
+
+#: templates/payments/hyperpay_checkout.html
+msgid "On a computer, scan Apple's code with your iPhone to approve payment."
+msgstr "Sur ordinateur, scannez le code Apple avec votre iPhone pour autoriser le paiement."
+
+#: templates/payments/hyperpay_checkout.html
+msgid "Review the amount, then approve payment on your Apple device."
+msgstr "Vérifiez le montant, puis autorisez le paiement sur votre appareil Apple."

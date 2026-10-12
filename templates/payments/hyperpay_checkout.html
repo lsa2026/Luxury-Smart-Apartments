@@ -4,6 +4,7 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/checkout-methods.css' %}?v=1">
 {% if apple_pay_enabled %}
 <script src="{% static 'js/apple-pay-checkout.js' %}?v=1"></script>
 {% endif %}
@@ -23,7 +24,9 @@ var wpwlOptions = {
         version: 5,
         checkAvailability: "applePayCapabilities",
         merchantIdentifier: "{{ apple_pay_merchant_identifier|escapejs }}",
-        buttonSource: "js"
+        buttonSource: "js",
+        buttonStyle: "black",
+        buttonType: "buy"
     },
     {% endif %}
     onReady: function () {
@@ -77,9 +80,14 @@ var wpwlOptions = {
                     aria-selected="true"
                     data-checkout-method="mada"
                 >
-                    <span class="checkout__method-mark checkout__method-mark--mada" aria-hidden="true">mada</span>
-                    <span class="checkout__method-name">{% trans "mada" %}</span>
-                    <small>{% trans "Saudi debit cards" %}</small>
+                    <span class="checkout__method-brand" aria-hidden="true">
+                        <span class="checkout__mada-art"></span>
+                    </span>
+                    <span class="checkout__method-copy">
+                        <span class="checkout__method-name">{% trans "mada" %}</span>
+                        <small>{% trans "Saudi debit cards" %}</small>
+                    </span>
+                    {% include "payments/_method_choice.html" %}
                 </button>
                 <button
                     class="checkout__method"
@@ -91,9 +99,15 @@ var wpwlOptions = {
                     tabindex="-1"
                     data-checkout-method="card"
                 >
-                    <span class="checkout__method-mark checkout__method-mark--card" aria-hidden="true">VISA</span>
-                    <span class="checkout__method-name">{% trans "Visa / Mastercard" %}</span>
-                    <small>{% trans "Credit and debit cards" %}</small>
+                    <span class="checkout__method-brand checkout__method-brand--dual" aria-hidden="true">
+                        <img src="{% static 'images/payment/visa.svg' %}" alt="" width="53" height="39">
+                        <img src="{% static 'images/payment/master.svg' %}" alt="" width="53" height="39">
+                    </span>
+                    <span class="checkout__method-copy">
+                        <span class="checkout__method-name">{% trans "Visa / Mastercard" %}</span>
+                        <small>{% trans "Credit and debit cards" %}</small>
+                    </span>
+                    {% include "payments/_method_choice.html" %}
                 </button>
                 {% if apple_pay_enabled %}
                 <button
@@ -107,7 +121,14 @@ var wpwlOptions = {
                     data-checkout-method="apple-pay"
                     hidden
                 >
-                    <span class="checkout__method-name">Apple Pay</span>
+                    <span class="checkout__method-brand" aria-hidden="true">
+                        <img class="checkout__apple-mark" src="{% static 'images/payment/apple-pay-mark.svg' %}" alt="" width="84" height="54">
+                    </span>
+                    <span class="checkout__method-copy">
+                        <span class="checkout__method-name" lang="en" dir="ltr">Apple Pay</span>
+                        <small>{% trans "Pay securely with your Apple device" %}</small>
+                    </span>
+                    {% include "payments/_method_choice.html" %}
                 </button>
                 {% endif %}
             </div>
@@ -140,6 +161,19 @@ var wpwlOptions = {
                 data-checkout-panel="apple-pay"
                 hidden
             >
+                <div class="checkout__wallet-intro">
+                    <span class="checkout__wallet-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="22" height="22">
+                            <rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
+                            <path d="M10 18h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h3>{% trans "Complete your payment with Apple Pay" %}</h3>
+                        <p class="checkout__wallet-desktop">{% trans "On a computer, scan Apple's code with your iPhone to approve payment." %}</p>
+                        <p class="checkout__wallet-mobile">{% trans "Review the amount, then approve payment on your Apple device." %}</p>
+                    </div>
+                </div>
                 <form action="{{ result_url }}" class="paymentWidgets" data-brands="APPLEPAY"></form>
             </div>
             {% endif %}
