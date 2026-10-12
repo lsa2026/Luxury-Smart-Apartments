@@ -7681,3 +7681,19 @@ msgstr "اختر بلد رقم جوالك واكتبه كالمعتاد، حتى
 #: apps/reservations/booking_forms.py templates/reservations/booking_quote_detail.html
 msgid "Check your phone number and the selected country."
 msgstr "تأكد من رقم الجوال وبلد الرقم المختار."
+
+#: templates/payments/hyperpay_checkout.html
+msgid "Pay securely with your Apple device"
+msgstr "ادفع بأمان باستخدام جهاز Apple"
+
+#: templates/payments/hyperpay_checkout.html
+msgid "Complete your payment with Apple Pay"
+msgstr "أكمل الدفع باستخدام Apple Pay"
+
+#: templates/payments/hyperpay_checkout.html
+msgid "On a computer, scan Apple's code with your iPhone to approve payment."
+msgstr "على الكمبيوتر، امسح رمز Apple باستخدام الآيفون للموافقة على الدفع."
+
+#: templates/payments/hyperpay_checkout.html
+msgid "Review the amount, then approve payment on your Apple device."
+msgstr "راجع المبلغ، ثم وافق على الدفع من جهاز Apple الخاص بك."

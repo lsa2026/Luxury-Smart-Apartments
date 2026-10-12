@@ -666,6 +666,12 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     assert content.index("var wpwlOptions") < content.index("paymentWidgets.js")
     assert content.index('data-brands="MADA"') < content.index('data-brands="VISA MASTER"')
     assert 'paymentTarget: "_top"' in content
+    assert "css/checkout-methods.css" in content
+    assert "images/payment/visa.svg" in content
+    assert "images/payment/master.svg" in content
+    assert "checkout__mada-art" in content
+    assert content.count('class="checkout__method-choice"') == (3 if expect_apple_pay else 2)
+    assert 'data-checkout-method="mada"' in content
     if expect_apple_pay:
         assert 'displayName: "Luxury Smart Apartments"' in content
         networks = (
@@ -680,6 +686,11 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
         assert 'checkAvailability: "applePayCapabilities"' in content
         assert 'merchantIdentifier: "merchant.com.luxurysmartapartments"' in content
         assert 'buttonSource: "js"' in content
+        assert 'buttonStyle: "black"' in content
+        assert 'buttonType: "buy"' in content
+        assert "images/payment/apple-pay-mark.svg" in content
+        assert "checkout__wallet-intro" in content
+        assert "apple-pay-button-label.svg" not in content
         assert "apple-pay-checkout.js" in content
         assert content.index("apple-pay-checkout.js") < content.index("paymentWidgets.js")
         assert "ApplePaySession.canMakePayments()" not in content
