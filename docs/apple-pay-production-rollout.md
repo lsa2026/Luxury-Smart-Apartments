@@ -10,6 +10,11 @@
   activation; the previously used certificate remained active. Do not revoke it.
 - Only the two UAT domains were registered. The official hostname needs its
   own Apple-generated association file and verified registration.
+- During activation, Apple explicitly warned that activating the new
+  processing certificate revokes previous processing certificates for this
+  Merchant ID. The owner completed activation after this warning was shown.
+  MB2J6VGUC6 now appears as Active Certificate and the old processing
+  certificate is no longer listed. Do not claim the old UAT can still work.
 - The old production template combined APPLEPAY with MADA and used version 3;
   this preparation separates APPLEPAY and adopts the UAT-tested version 5.
 
@@ -28,8 +33,9 @@
    actually used for payment separately; do not reuse a UAT-domain token.
 5. Coordinate activation of MB2J6VGUC6 after the provider has loaded its matching
    key/certificate. Activation changes the certificate used for new tokens under
-   this Merchant ID and may affect UAT. Keep the prior certificate available;
-   do not revoke or assume UAT remains unaffected.
+   this Merchant ID and revokes prior processing certificates according to
+   Apple's confirmation dialog. Retain prior artifacts only for the audit;
+   do not treat a retained file as an active certificate or assume UAT works.
 6. Enable `HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED=true` only after the above
    checks. This adds APPLEPAY to server verification and an independent widget
    panel; MADA, VISA and MASTER remain allowed.
