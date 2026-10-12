@@ -3,7 +3,8 @@ from decimal import Decimal
 
 import httpx
 import pytest
-from django.test import Client, override_settings
+from django.contrib.auth.models import AnonymousUser
+from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
 from apps.payments.checks import hyperpay_configuration_check
@@ -676,7 +677,13 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
         assert 'data-brands="APPLEPAY"' in content
         assert 'data-brands="MADA APPLEPAY"' not in content
         assert 'data-checkout-method="apple-pay"' in content
-        assert "-webkit-appearance: -apple-pay-button" in content
+        assert 'checkAvailability: "applePayCapabilities"' in content
+        assert 'merchantIdentifier: "merchant.com.luxurysmartapartments"' in content
+        assert 'buttonSource: "js"' in content
+        assert "apple-pay-checkout.js" in content
+        assert content.index("apple-pay-checkout.js") < content.index("paymentWidgets.js")
+        assert "ApplePaySession.canMakePayments()" not in content
+        assert "-webkit-appearance: -apple-pay-button" not in content
     else:
         assert "APPLEPAY" not in content
         assert "applePay" not in content
@@ -700,6 +707,46 @@ def test_widget_page_orders_mada_and_never_exposes_access_token(
     assert f"font-src 'self' data: {gateway_origin}" in csp
     assert "unsafe-eval" not in csp
     assert "return_token=" in content
+    apple_origin = "https://applepay.cdn-apple.com"
+    for directive in ("script-src", "connect-src", "frame-src", "img-src", "style-src"):
+        sources = next(item for item in csp.split(";") if item.strip().startswith(directive))
+        assert (apple_origin in sources) == expect_apple_pay
+    assert apple_origin not in next(item for item in csp.split(";") if "form-action" in item)
+    assert "payment=(self)" in response.headers["Permissions-Policy"]
+
+
+@override_settings(**HYPERPAY_SETTINGS, HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED=True)
+def test_apple_pay_cdn_is_not_allowed_on_unrelated_pages_or_payment_returns() -> None:
+    client = Client()
+    for url in ("/ar/", "/login/", "/payments/hyperpay/not-a-checkout/"):
+        response = client.get(url)
+        assert "applepay.cdn-apple.com" not in response.headers["Content-Security-Policy"]
+
+
+@override_settings(**HYPERPAY_SETTINGS)
+def test_apple_pay_merchant_identifier_is_escaped_as_javascript() -> None:
+    from apps.payments.views import _render_hyperpay_checkout
+
+    intent = payable_intent()
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        provider_checkout_id="checkout_merchant_test",
+        merchant_transaction_id="LSA-merchant-test",
+        widget_integrity="sha384-YWJj",
+        amount=intent.total_price,
+        currency="SAR",
+        status=PaymentAttempt.Status.PENDING,
+        idempotency_key="merchant-test-idempotency",
+    )
+    request = RequestFactory().get("/payments/hyperpay/checkout/")
+    request.session = {}
+    request.user = AnonymousUser()
+    with override_settings(HYPERPAY_APPLE_PAY_MERCHANT_IDENTIFIER='merchant.test"</script>'):
+        response = _render_hyperpay_checkout(request, attempt=attempt, intent=intent)
+    content = response.content.decode()
+    assert 'merchantIdentifier: "merchant.test\\u0022\\u003C/script\\u003E"' in content
+    assert 'merchant.test"</script>' not in content
 
 
 @override_settings(**HYPERPAY_SETTINGS)

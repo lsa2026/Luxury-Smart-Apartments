@@ -339,6 +339,11 @@ HYPERPAY_ENVIRONMENT = env("HYPERPAY_ENVIRONMENT", default="test").strip().lower
 # Do not advertise Apple Pay on the live checkout until production onboarding
 # has been verified. This opt-in does not disable the separate TEST/UAT flow.
 HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED = strict_bool("HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED")
+# Public Apple Merchant ID, not the HyperPay entity or an access credential.
+HYPERPAY_APPLE_PAY_MERCHANT_IDENTIFIER = env(
+    "HYPERPAY_APPLE_PAY_MERCHANT_IDENTIFIER",
+    default="merchant.com.luxurysmartapartments",
+).strip()
 HYPERPAY_BASE_URL = env(
     "HYPERPAY_BASE_URL",
     default="https://eu-test.oppwa.com/",

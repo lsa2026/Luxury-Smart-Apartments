@@ -99,6 +99,13 @@ def _render_hyperpay_checkout(
     result_url = request.build_absolute_uri(reverse("payments:hyperpay_result", args=[attempt.pk]))
     result_url = f"{result_url}?{urlencode({'return_token': _hyperpay_return_token(attempt)})}"
     property_obj = modification.reservation.property if modification else intent.property
+    apple_pay_enabled = settings.HYPERPAY_ENVIRONMENT == "test" or (
+        settings.HYPERPAY_ENVIRONMENT == "production"
+        and settings.HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
+    )
+    # The security middleware permits Apple resources only on this checkout,
+    # not on payment results, account pages or unrelated public pages.
+    request._apple_pay_checkout_enabled = apple_pay_enabled
     response = render(
         request,
         "payments/hyperpay_checkout.html",
@@ -110,11 +117,8 @@ def _render_hyperpay_checkout(
             "checkout_id": attempt.provider_checkout_id,
             "widget_integrity": attempt.widget_integrity,
             "hyperpay_environment": settings.HYPERPAY_ENVIRONMENT,
-            "apple_pay_enabled": settings.HYPERPAY_ENVIRONMENT == "test"
-            or (
-                settings.HYPERPAY_ENVIRONMENT == "production"
-                and settings.HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
-            ),
+            "apple_pay_enabled": apple_pay_enabled,
+            "apple_pay_merchant_identifier": settings.HYPERPAY_APPLE_PAY_MERCHANT_IDENTIFIER,
             "widget_url": (
                 f"{settings.HYPERPAY_BASE_URL}v1/paymentWidgets.js"
                 f"?checkoutId={attempt.provider_checkout_id}"

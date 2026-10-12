@@ -1,15 +1,11 @@
 {% extends "base.html" %}
-{% load i18n presentation currency %}
+{% load i18n presentation currency static %}
 {% block title %}{% trans "Secure payment" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block extra_head %}
 {% if apple_pay_enabled %}
-<style nonce="{{ csp_nonce }}">
-.wpwl-apple-pay-button {
-    -webkit-appearance: -apple-pay-button !important;
-}
-</style>
+<script src="{% static 'js/apple-pay-checkout.js' %}?v=1"></script>
 {% endif %}
 <script nonce="{{ csp_nonce }}">
 var wpwlOptions = {
@@ -24,21 +20,18 @@ var wpwlOptions = {
         total: { label: "Luxury Smart Apartments" },
         supportedNetworks: {% if hyperpay_environment == 'test' %}["masterCard", "visa"]{% else %}["mada", "masterCard", "visa"]{% endif %},
         countryCode: "SA",
-        version: 5
+        version: 5,
+        checkAvailability: "applePayCapabilities",
+        merchantIdentifier: "{{ apple_pay_merchant_identifier|escapejs }}",
+        buttonSource: "js"
     },
     {% endif %}
     onReady: function () {
         document.documentElement.classList.add("wpwl-ready");
         {% if apple_pay_enabled %}
-        // Keep an unsupported browser from selecting an empty wallet panel.
-        var appleTab = document.getElementById("method-tab-apple-pay");
-        if (appleTab) {
-            try {
-                appleTab.hidden = !(window.ApplePaySession && ApplePaySession.canMakePayments());
-            } catch (error) {
-                appleTab.hidden = true;
-            }
-        }
+        // Availability is asynchronous on Windows/non-Safari. Let the gateway
+        // load its SRI-protected Apple SDK before exposing the wallet tab.
+        window.lsaApplePayCheckout.refresh();
         {% endif %}
     }
 };
