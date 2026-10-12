@@ -14,7 +14,15 @@
         "item_category3", "index", "quantity", "currency", "price",
     ]);
     const propertyContextKeys = ["property_id", "property_name", "page_language"];
+    const paymentContextKeys = ["payment_type", "payment_brand", "checkout_kind"];
+    const paymentJourneyKeys = ["currency", "value", "items", "payment_status", "error_category",
+        ...propertyContextKeys, ...paymentContextKeys];
     const schemas = {
+        ...Object.fromEntries([
+            "payment_checkout_requested", "secure_payment_view", "payment_widget_ready",
+            "payment_method_selected", "payment_submit_clicked", "add_payment_info",
+            "payment_widget_error", "payment_result", "payment_verification_started",
+        ].map(name => [name, new Set(paymentJourneyKeys)])),
         view_item_list: new Set(["item_list_name", "items", "page_language"]),
         select_item: new Set(["item_list_name", "items", ...propertyContextKeys]),
         view_item: new Set(["currency", "value", "items", ...propertyContextKeys]),
@@ -51,9 +59,18 @@
         cookie_consent_updated: new Set(["analytics", "marketing", "version"]),
         purchase: new Set([
             "transaction_id", "value", "currency", "items", "tax", "coupon",
-            ...propertyContextKeys,
+            ...propertyContextKeys, ...paymentContextKeys,
         ]),
         refund: new Set(["transaction_id", "value", "currency"]),
+    };
+    const paymentEnums = {
+        payment_type: new Set(["card", "apple_pay", "unknown"]),
+        payment_brand: new Set(["mada", "visa", "mastercard", "apple_pay", "unknown"]),
+        checkout_kind: new Set(["booking", "modification"]),
+        payment_status: new Set(["succeeded", "pending", "failed", "cancelled", "expired",
+            "review", "unknown", "verification_unavailable"]),
+        error_category: new Set(["checkout_expired", "gateway_communication",
+            "wallet_closed", "merchant_validation", "widget_error"]),
     };
 
     function cleanItem(item) {
@@ -90,6 +107,9 @@
         const clean = {};
         Object.entries(payload).forEach(([key, value]) => {
             if (!schema.has(key)) {
+                return;
+            }
+            if (paymentEnums[key] && !paymentEnums[key].has(value)) {
                 return;
             }
             if (key === "property_id" && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value))) {
@@ -140,7 +160,10 @@
                 ecommerce[key] = clean[key];
             }
         });
-        const event = {event: eventName, ...clean,
+        const paymentReset = Object.fromEntries(
+            [...paymentContextKeys, "payment_status", "error_category"].map(key => [key, null]),
+        );
+        const event = {event: eventName, ...paymentReset, ...clean,
             ecommerce: Object.keys(ecommerce).length ? ecommerce : null};
         if (eventName === "purchase") {
             if (typeof onProcessed === "function") {
@@ -348,6 +371,8 @@
             transaction_id: transactionId,
             value,
             currency,
+            payment_type: purchase.dataset.analyticsPaymentType,
+            payment_brand: purchase.dataset.analyticsPaymentBrand,
             ...(purchasedItem ? {items: [{...purchasedItem, price: value, currency}]} : {}),
             ...propertyContext(purchase),
         }, () => {
@@ -401,6 +426,10 @@
                 currency: element.dataset.analyticsCurrency,
                 value: Number(element.dataset.analyticsValue || 0),
                 request_type: element.dataset.analyticsRequestType,
+                checkout_kind: element.dataset.analyticsCheckoutKind,
+                payment_status: element.dataset.analyticsPaymentStatus,
+                payment_type: element.dataset.analyticsPaymentType,
+                payment_brand: element.dataset.analyticsPaymentBrand,
                 items: item ? [item] : undefined,
                 ...propertyContext(element),
             });

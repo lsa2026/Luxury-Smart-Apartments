@@ -15,7 +15,11 @@ from django.views import View
 
 from apps.accounts.services import claimable_reference
 from apps.core.enhanced_conversions import consented_purchase_email_hash
-from apps.core.marketing import prepare_purchase_event, purchase_receipt_token
+from apps.core.marketing import (
+    payment_analytics_fields,
+    prepare_purchase_event,
+    purchase_receipt_token,
+)
 from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
@@ -353,6 +357,10 @@ class HyperPayResultView(View):
                 "success": HyperPayStatus.SUCCESS,
                 "claimable_reference": claimable,
                 "purchase_event": purchase_event,
+                "payment_analytics": payment_analytics_fields(display_attempt),
+                "payment_analytics_status": (
+                    display_attempt.status if outcome else "verification_unavailable"
+                ),
                 "ads_purchase_email_hash": (
                     consented_purchase_email_hash(request, attempt.booking_intent.guest_email)
                     if purchase_event

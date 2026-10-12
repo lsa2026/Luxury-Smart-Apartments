@@ -7,7 +7,17 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block content %}
-<section class="section container narrow payment-result">
+<section class="section container narrow payment-result"
+    data-analytics-event="payment_result"
+    data-analytics-payment-status="{{ payment_analytics_status }}"
+    data-analytics-payment-type="{{ payment_analytics.payment_type }}"
+    data-analytics-payment-brand="{{ payment_analytics.payment_brand }}"
+    data-analytics-checkout-kind="{% if attempt.modification_request_id %}modification{% else %}booking{% endif %}"
+    data-analytics-property-id="{{ attempt.booking_intent.property.slug }}"
+    data-analytics-property-name="{{ attempt.booking_intent.property|localized_property_name }}"
+    data-analytics-value="{{ attempt.amount|unlocalize }}"
+    data-analytics-currency="{{ attempt.currency }}"
+>
     {% if purchase_event %}
     {% with purchased_item=purchase_event.items.0 %}
     <div
@@ -22,6 +32,8 @@
         data-analytics-property-type="{{ purchased_item.item_category3 }}"
         {% endif %}
         data-analytics-page-language="{{ purchase_event.page_language }}"
+        data-analytics-payment-type="{{ purchase_event.payment_type }}"
+        data-analytics-payment-brand="{{ purchase_event.payment_brand }}"
         {% if ads_purchase_email_hash %}data-ads-purchase-email-hash="{{ ads_purchase_email_hash }}"{% endif %}
         data-analytics-receipt-token="{{ purchase_receipt_token }}"
         data-analytics-receipt-csrf="{{ purchase_receipt_csrf_token }}"
