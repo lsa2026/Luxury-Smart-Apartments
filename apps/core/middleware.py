@@ -32,6 +32,43 @@ PUBLIC_LOCALIZED_VIEW_NAMES = frozenset(
 )
 
 
+class GuestJourneyLanguageMiddleware:
+    """Remember a public language URL for later unprefixed guest pages.
+
+    LocaleMiddleware already selects the prefix for this response. Persist only
+    a successfully resolved public page, never an API, callback or admin request.
+    No provider request or session/database write is needed.
+    """
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        language = request.path_info.split("/", 2)[1]
+        match = request.resolver_match
+        if (
+            request.method in {"GET", "HEAD"}
+            and response.status_code == 200
+            and response.get("Content-Type", "").startswith("text/html")
+            and match is not None
+            and match.view_name in PUBLIC_LOCALIZED_VIEW_NAMES
+            and language in dict(settings.LANGUAGES)
+            and request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME) != language
+        ):
+            response.set_cookie(
+                settings.LANGUAGE_COOKIE_NAME,
+                language,
+                max_age=settings.LANGUAGE_COOKIE_AGE,
+                path=settings.LANGUAGE_COOKIE_PATH,
+                domain=settings.LANGUAGE_COOKIE_DOMAIN,
+                secure=settings.LANGUAGE_COOKIE_SECURE,
+                httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
+                samesite=settings.LANGUAGE_COOKIE_SAMESITE,
+            )
+        return response
+
+
 class PublicLanguagePrefixRedirectMiddleware:
     """Move old unprefixed public URLs to the Arabic canonical URL."""
 

@@ -1,6 +1,7 @@
 """The easy booking-recovery form must never disclose a stay directly."""
 
 import pytest
+from django.conf import settings
 from django.core import mail
 from django.test import Client, override_settings
 
@@ -28,9 +29,14 @@ def test_last_name_and_phone_queue_a_secure_link_without_opening_the_booking() -
     assert delivery.recipient_reference == reservation.public_reference
 
 
-def test_recovery_reply_does_not_reveal_that_no_booking_matched() -> None:
+@pytest.mark.parametrize(
+    "language, expected",
+    [("ar", "رابط آمن"), ("en", "secure link"), ("fr", "lien sécurisé")],
+)
+def test_recovery_reply_does_not_reveal_that_no_booking_matched(language, expected) -> None:
     reservation = make_reservation("LSA-RECOVERY-2")
     client = Client()
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
 
     response = client.post(
         "/reservations/manage/",
@@ -39,7 +45,8 @@ def test_recovery_reply_does_not_reveal_that_no_booking_matched() -> None:
     )
 
     assert response.status_code == 200
-    assert "secure link" in response.content.decode().lower()
+    assert expected in response.content.decode().lower()
+    assert reservation.public_reference not in response.content.decode()
     assert not EmailDelivery.objects.filter(message_type="reservation_access_link").exists()
     assert client.get(f"/reservations/manage/{reservation.public_reference}/").status_code == 404
 

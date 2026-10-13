@@ -29,7 +29,7 @@
 
     <h3 class="stay-policy__subtitle">{% trans "Cancellation" %}</h3>
     {% if stay_policy.cancellation_policy_text %}
-    <div class="rich-copy stay-policy__rules">{{ stay_policy.cancellation_policy_text|linebreaks }}</div>
+    <div class="rich-copy stay-policy__rules">{{ stay_policy.cancellation_policy_text|localized_policy_copy|linebreaks }}</div>
     {% endif %}
     {% if stay_policy.has_refund_ladder %}
     <ul class="stay-policy__ladder">
@@ -40,7 +40,7 @@
                 {% blocktrans with hours=tier.hours_before|localized_number %}when you cancel at least {{ hours }} hours before arrival{% endblocktrans %}
                 {% if not tier.refunds_cleaning_fee %}<em>{% trans "cleaning fee not refunded" %}</em>{% endif %}
             </span>
-            {% if tier.note %}<small>{{ tier.note }}</small>{% endif %}
+            {% if tier.note %}<small>{{ tier.note|localized_policy_copy }}</small>{% endif %}
         </li>
         {% endfor %}
     </ul>

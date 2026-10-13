@@ -137,7 +137,7 @@
                 {% if public_location_map %}
                 <p>{% trans "The exact property location is shown below. Use Google Maps for directions." %}</p>
                 {% if property.public_address %}
-                <p class="location-panel__address"><strong>{% trans "Full address" %}</strong><br>{{ property.public_address }}</p>
+                <p class="location-panel__address"><strong>{% trans "Full address" %}</strong><br>{{ property.public_address|localized_public_address }}</p>
                 {% endif %}
                 <div
                     class="property-map"
