@@ -20,6 +20,8 @@ document.querySelectorAll("[data-property-map]").forEach((mapElement) => {
         fr: ["Agrandir", "Réduire"],
     }[(document.documentElement.lang || "en").split("-")[0]] || ["Zoom in", "Zoom out"];
     window.L.control.zoom({zoomInTitle: labels[0], zoomOutTitle: labels[1]}).addTo(map);
+    // Keep required map credits, without Leaflet's English-only tooltip.
+    map.attributionControl.setPrefix('<a href="https://leafletjs.com/">Leaflet</a>');
     window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',

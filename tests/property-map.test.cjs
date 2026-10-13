@@ -9,7 +9,9 @@ for (const [language, zoomInTitle, zoomOutTitle] of [
 ]) {
     test(`${language}: map titles are localized without changing location or zoom behavior`, () => {
         const mapElement = {dataset: {latitude: "24.7", longitude: "46.6"}};
-        const map = {setView(coordinates, zoom) {
+        const map = {attributionControl: {setPrefix(html) {
+            assert.equal(html, '<a href="https://leafletjs.com/">Leaflet</a>');
+        }}, setView(coordinates, zoom) {
             assert.equal(JSON.stringify(coordinates), "[24.7,46.6]");
             assert.equal(zoom, 16);
             return this;
