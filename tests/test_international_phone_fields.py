@@ -17,7 +17,7 @@ def test_checkout_uses_country_picker_while_other_phone_fields_remain_internatio
     )
 
     with override("en"):
-        assert ContactForm().fields["phone"].widget.attrs["placeholder"] == expected_placeholder
+        assert ContactForm().fields["phone"].widget.attrs["placeholder"] == "+966 50 000 0000"
         assert str(ContactForm().fields["phone"].help_text) == expected_help
         assert GuestDetailsForm().fields["guest_phone"].widget.attrs["placeholder"] == "0501234567"
         assert "Choose your phone number's country" in str(
