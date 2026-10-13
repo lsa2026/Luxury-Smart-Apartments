@@ -71,6 +71,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "apps.core.middleware.GuestJourneyLanguageMiddleware",
     "django.middleware.common.CommonMiddleware",
     "apps.core.middleware.PublicLanguagePrefixRedirectMiddleware",
     "apps.core.middleware.LegacyRedirectMiddleware",

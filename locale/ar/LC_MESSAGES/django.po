@@ -135,25 +135,23 @@ msgid "Customer profiles"
 msgstr "العملاء"
 
 #: .\apps\accounts\password_reset.py:47
-#, fuzzy
 #| msgid "Show password"
 msgid "New password"
-msgstr "إظهار كلمة المرور"
+msgstr "كلمة المرور الجديدة"
 
 #: .\apps\accounts\password_reset.py:48
-#, fuzzy
 #| msgid "Change password"
 msgid "Confirm the new password"
-msgstr "تغيير كلمة المرور"
+msgstr "تأكيد كلمة المرور الجديدة"
 
 #: .\apps\accounts\views.py:55
 #, python-format
 msgid "Booking %(reference)s is now saved to your account."
-msgstr ""
+msgstr "حُفظ الحجز %(reference)s في حسابك."
 
 #: .\apps\accounts\views.py:111
 msgid "Your account is ready. Check your inbox to confirm your email address."
-msgstr ""
+msgstr "حسابك جاهز. تحقق من صندوق بريدك لتأكيد عنوان بريدك الإلكتروني."
 
 #: .\apps\accounts\views.py:113
 msgid "Your account is ready."
@@ -168,20 +166,18 @@ msgid "You have signed out securely."
 msgstr "تم تسجيل خروجك بأمان."
 
 #: .\apps\accounts\views.py:188 .\apps\accounts\views.py:199
-#, fuzzy
 #| msgid "This quote is no longer valid. Please request a new one."
 msgid "This confirmation link is no longer valid. Request a new one."
-msgstr "عرض السعر لم يعد صالحًا. يرجى طلب عرض جديد."
+msgstr "لم يعد رابط التأكيد صالحًا. اطلب رابطًا جديدًا."
 
 #: .\apps\accounts\views.py:207
-#, fuzzy
 #| msgid "Creation result unconfirmed"
 msgid "Your email address is confirmed."
-msgstr "نتيجة الإنشاء غير مؤكدة"
+msgstr "تم تأكيد بريدك الإلكتروني."
 
 #: .\apps\accounts\views.py:236
 msgid "You have asked for several links recently. Please wait a few minutes."
-msgstr ""
+msgstr "طلبت عدة روابط مؤخرًا. يرجى الانتظار بضع دقائق."
 
 #: .\apps\accounts\views.py:240
 msgid "A new confirmation email is on its way."
@@ -3279,10 +3275,9 @@ msgid "The property does not accept departures on that date."
 msgstr "الوحدة لا تقبل المغادرة في هذا التاريخ."
 
 #: .\apps\reservations\views.py:764
-#, fuzzy
 #| msgid "Guest count exceeds this property's capacity."
 msgid "The guest count exceeds this property's capacity."
-msgstr "عدد الضيوف يتجاوز سعة الوحدة."
+msgstr "عدد الضيوف يتجاوز السعة المسموح بها لهذه الوحدة."
 
 #: .\apps\reservations\views.py:765 .\apps\reservations\views.py:766
 msgid "The requested dates are no longer available."
@@ -3406,10 +3401,9 @@ msgid "Marrakech"
 msgstr "مراكش"
 
 #: .\templates\accounts\_auth_base.html:29
-#, fuzzy
 #| msgid "Create your account"
 msgid "Your account"
-msgstr "أنشئ حسابك"
+msgstr "حسابك"
 
 #: .\templates\accounts\_auth_base.html:30 .\templates\accounts\login.html:34
 msgid "Your bookings, in one place"
@@ -3417,7 +3411,7 @@ msgstr "حجوزاتك في مكان واحد"
 
 #: .\templates\accounts\_auth_base.html:31
 msgid "Follow your stay, change your dates, and book faster next time."
-msgstr ""
+msgstr "تابع إقامتك وعدّل تواريخك واحجز بسهولة أكبر في المرة القادمة."
 
 #: .\templates\accounts\_auth_base.html:34 .\templates\accounts\login.html:68
 #: .\templates\accounts\register.html:68
@@ -3587,160 +3581,150 @@ msgstr "إنشاء حساب"
 
 #: .\templates\accounts\password_reset.html:3
 #: .\templates\accounts\password_reset.html:8
-#, fuzzy
 #| msgid "Forgot your password?"
 msgid "Reset your password"
-msgstr "نسيت كلمة المرور؟"
+msgstr "إعادة تعيين كلمة المرور"
 
 #: .\templates\accounts\password_reset.html:4
 #: .\templates\accounts\password_reset_confirm.html:4
 #: .\templates\accounts\password_reset_done.html:4
 msgid "Account recovery"
-msgstr ""
+msgstr "استعادة الحساب"
 
 #: .\templates\accounts\password_reset.html:5
-#, fuzzy
 #| msgid "Back to my booking"
 msgid "Back to your bookings"
-msgstr "العودة إلى حجزي"
+msgstr "العودة إلى حجوزاتك"
 
 #: .\templates\accounts\password_reset.html:6
 msgid ""
 "Give us the email you booked with and we will send a link to set a new "
 "password."
 msgstr ""
+"أدخل البريد الإلكتروني الذي استخدمته عند الحجز، وسنرسل لك رابطًا لتعيين كلمة"
+" مرور جديدة."
 
 #: .\templates\accounts\password_reset.html:7
 #: .\templates\accounts\password_reset_complete.html:7
 #: .\templates\accounts\password_reset_confirm.html:7
 #: .\templates\accounts\password_reset_done.html:7
-#, fuzzy
 #| msgid "Show password"
 msgid "Password"
-msgstr "إظهار كلمة المرور"
+msgstr "كلمة المرور"
 
 #: .\templates\accounts\password_reset.html:9
 msgid "Enter your email address and we will send you a link."
-msgstr ""
+msgstr "أدخل بريدك الإلكتروني وسنرسل لك رابطًا."
 
 #: .\templates\accounts\password_reset.html:21
-#, fuzzy
 #| msgid "Short link"
 msgid "Send the link"
-msgstr "الرابط المختصر"
+msgstr "إرسال الرابط"
 
 #: .\templates\accounts\password_reset.html:26
 #: .\templates\accounts\password_reset_done.html:16
-#, fuzzy
 #| msgid "Back to diagnostics"
 msgid "Back to sign in"
-msgstr "العودة إلى التشخيص"
+msgstr "العودة إلى تسجيل الدخول"
 
 #: .\templates\accounts\password_reset_complete.html:3
-#, fuzzy
 #| msgctxt "admin field label"
 #| msgid "Last updated"
 msgid "Password updated"
-msgstr "آخر تحديث"
+msgstr "تم تحديث كلمة المرور"
 
 #: .\templates\accounts\password_reset_complete.html:4
-#, fuzzy
 #| msgid "All severities"
 msgid "All set"
-msgstr "كل درجات الأهمية"
+msgstr "كل شيء جاهز"
 
 #: .\templates\accounts\password_reset_complete.html:5
 #: .\templates\accounts\password_reset_complete.html:8
-#, fuzzy
 #| msgid "Your price quote"
 msgid "Your password is updated"
-msgstr "عرض سعرك"
+msgstr "تم تحديث كلمة مرورك"
 
 #: .\templates\accounts\password_reset_complete.html:6
-#, fuzzy
 #| msgid "Open your bookings from anywhere, in your language."
 msgid "Sign in and your bookings are waiting where you left them."
-msgstr "افتح حجوزاتك من أي مكان وبلغتك."
+msgstr "سجّل الدخول لمتابعة حجوزاتك من حيث توقفت."
 
 #: .\templates\accounts\password_reset_complete.html:9
 msgid "You can sign in with your new password now."
-msgstr ""
+msgstr "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة."
 
 #: .\templates\accounts\password_reset_confirm.html:3
 #: .\templates\accounts\password_reset_confirm.html:8
-#, fuzzy
 #| msgid "Change password"
 msgid "Set a new password"
-msgstr "تغيير كلمة المرور"
+msgstr "تعيين كلمة مرور جديدة"
 
 #: .\templates\accounts\password_reset_confirm.html:5
-#, fuzzy
 #| msgid "Change password"
 msgid "Choose a new password"
-msgstr "تغيير كلمة المرور"
+msgstr "اختر كلمة مرور جديدة"
 
 #: .\templates\accounts\password_reset_confirm.html:6
 msgid ""
 "Pick something long and unique. A password manager remembers it for you."
-msgstr ""
+msgstr "اختر كلمة مرور طويلة وفريدة. يمكنك حفظها باستخدام مدير كلمات المرور."
 
 #: .\templates\accounts\password_reset_confirm.html:8
-#, fuzzy
 #| msgid "This field is required."
 msgid "This link has expired"
-msgstr "هذا الحقل مطلوب."
+msgstr "انتهت صلاحية هذا الرابط"
 
 #: .\templates\accounts\password_reset_confirm.html:9
-#, fuzzy
 #| msgid "Choose the new departure day for your extended stay"
 msgid "Choose a new password for your account."
-msgstr "اختر يوم المغادرة الجديد لتمديد إقامتك"
+msgstr "اختر كلمة مرور جديدة لحسابك."
 
 #: .\templates\accounts\password_reset_confirm.html:9
 msgid ""
 "For your safety a reset link can be used only once, and only for a short "
 "time."
 msgstr ""
+"لحمايتك، يمكن استخدام رابط إعادة التعيين مرة واحدة فقط وخلال فترة قصيرة."
 
 #: .\templates\accounts\password_reset_confirm.html:59
-#, fuzzy
 #| msgid "Show password"
 msgid "Save the new password"
-msgstr "إظهار كلمة المرور"
+msgstr "حفظ كلمة المرور الجديدة"
 
 #: .\templates\accounts\password_reset_confirm.html:64
 msgid "Request a fresh link and it will arrive within a minute."
-msgstr ""
+msgstr "اطلب رابطًا جديدًا وسيصلك خلال دقيقة."
 
 #: .\templates\accounts\password_reset_confirm.html:67
-#, fuzzy
 #| msgid "Request cancellation"
 msgid "Request a new link"
-msgstr "طلب إلغاء"
+msgstr "طلب رابط جديد"
 
 #: .\templates\accounts\password_reset_done.html:3
 #: .\templates\accounts\password_reset_done.html:8
 #: .\templates\accounts\verify_pending.html:8
 msgid "Check your inbox"
-msgstr ""
+msgstr "تحقق من صندوق بريدك"
 
 #: .\templates\accounts\password_reset_done.html:5
 msgid "The link is on its way"
-msgstr ""
+msgstr "الرابط في طريقه إليك"
 
 #: .\templates\accounts\password_reset_done.html:6
 msgid "Open it from any device; it works wherever you read your email."
-msgstr ""
+msgstr "افتحه من أي جهاز تستخدمه لقراءة بريدك الإلكتروني."
 
 #: .\templates\accounts\password_reset_done.html:9
 msgid ""
 "If an account exists for that address, a link to set a new password is on "
 "its way."
-msgstr ""
+msgstr "إذا كان هناك حساب بهذا البريد، فسيصلك رابط لتعيين كلمة مرور جديدة."
 
 #: .\templates\accounts\password_reset_done.html:12
-msgid "The link expires shortly for your safety. Ask for another if it lapses."
+msgid ""
+"The link expires shortly for your safety. Ask for another if it lapses."
 msgstr ""
+"تنتهي صلاحية الرابط قريبًا لحمايتك. اطلب رابطًا آخر إذا انتهت صلاحيته."
 
 #: .\templates\accounts\register.html:33
 msgid "Your private space"
@@ -3783,26 +3767,24 @@ msgid "Already have an account?"
 msgstr "لديك حساب بالفعل؟"
 
 #: .\templates\accounts\verify_pending.html:3
-#, fuzzy
 #| msgid "Confirmation"
 msgid "Confirm your email"
-msgstr "التأكيد"
+msgstr "تأكيد بريدك الإلكتروني"
 
 #: .\templates\accounts\verify_pending.html:4
 msgid "One step left"
-msgstr ""
+msgstr "تبقّت خطوة واحدة"
 
 #: .\templates\accounts\verify_pending.html:5
-#, fuzzy
 #| msgid "Email address"
 msgid "Confirm your email address"
-msgstr "البريد الإلكتروني"
+msgstr "تأكيد عنوان بريدك الإلكتروني"
 
 #: .\templates\accounts\verify_pending.html:6
 msgid ""
 "A confirmed address is how we send your booking details and how you recover "
 "your account."
-msgstr ""
+msgstr "نستخدم بريدك الإلكتروني المؤكد لإرسال تفاصيل حجزك واستعادة حسابك."
 
 #: .\templates\accounts\verify_pending.html:7
 #: .\templates\includes\progress_indicator.html:8
@@ -3827,10 +3809,9 @@ msgid "Send the link again"
 msgstr "فتح العنصر المرتبط ←"
 
 #: .\templates\accounts\verify_pending.html:23
-#, fuzzy
 #| msgid "Continue booking"
 msgid "Continue to my bookings"
-msgstr "متابعة الحجز"
+msgstr "المتابعة إلى حجوزاتي"
 
 #: .\templates\admin\base_site.html:4
 msgid "Luxury Smart Apartments administration"
@@ -5853,11 +5834,11 @@ msgstr "إحدى وحداتنا"
 
 #: .\templates\includes\review_card.html:36
 msgid "What they liked"
-msgstr ""
+msgstr "ما أعجبهم"
 
 #: .\templates\includes\review_card.html:42
 msgid "What could be better"
-msgstr ""
+msgstr "ما يمكن تحسينه"
 
 #: .\templates\includes\review_card.html:61
 msgid "Read more"
@@ -6086,34 +6067,32 @@ msgid "Confirmation and arrival details"
 msgstr "التأكيد وتفاصيل الوصول"
 
 #: .\templates\payments\hyperpay_result.html:55
-#, fuzzy
 #| msgid "Fetch booking"
 msgid "Keep this booking"
-msgstr "جلب حجز"
+msgstr "احتفظ بهذا الحجز"
 
 #: .\templates\payments\hyperpay_result.html:56
-#, fuzzy
 #| msgid "Sign in to your account"
 msgid "Save it to your account"
-msgstr "سجّل الدخول إلى حسابك"
+msgstr "احفظه في حسابك"
 
 #: .\templates\payments\hyperpay_result.html:57
 msgid ""
 "Change your dates, see your arrival details, and book faster next time. It "
 "takes a moment."
 msgstr ""
+"عدّل تواريخك، واطّلع على تفاصيل وصولك، واحجز بسهولة أكبر في المرة القادمة. "
+"لن يستغرق ذلك سوى لحظات."
 
 #: .\templates\payments\hyperpay_result.html:60
-#, fuzzy
 #| msgid "Create account"
 msgid "Create my account"
-msgstr "إنشاء حساب"
+msgstr "إنشاء حسابي"
 
 #: .\templates\payments\hyperpay_result.html:63
-#, fuzzy
 #| msgid "Already have an account?"
 msgid "I already have an account"
-msgstr "لديك حساب بالفعل؟"
+msgstr "لدي حساب بالفعل"
 
 #: .\templates\payments\hyperpay_result.html:70
 msgid "View change request"
@@ -6237,11 +6216,11 @@ msgid "Cancellation"
 msgstr "الإلغاء"
 
 #: .\templates\properties\_stay_policy.html:37
-#, fuzzy, python-format
+#, python-format
 #| msgid ""
 #| "Applies when the cancellation happens at least this long before arrival."
 msgid "when you cancel at least %(hours)s hours before arrival"
-msgstr "تُطبَّق عندما يقع الإلغاء قبل الوصول بهذه المدة على الأقل."
+msgstr "عند الإلغاء قبل الوصول بما لا يقل عن %(hours)s ساعة"
 
 #: .\templates\properties\_stay_policy.html:38
 msgid "cleaning fee not refunded"
@@ -6962,19 +6941,18 @@ msgid "optional"
 msgstr "اختياري"
 
 #: .\templates\reservations\booking_quote_detail.html:296
-#, fuzzy
 #| msgid "You are paying for"
 msgid "What you are agreeing to"
-msgstr "أنت تدفع مقابل"
+msgstr "ما الذي توافق عليه"
 
 #: .\templates\reservations\booking_quote_detail.html:300
 #, python-format
 msgid "%(share)s back up to %(hours)s hours before arrival"
-msgstr ""
+msgstr "استرداد %(share)s عند الإلغاء قبل الوصول بما لا يقل عن %(hours)s ساعة"
 
 #: .\templates\reservations\booking_quote_detail.html:302
 msgid "Read the full terms for this stay"
-msgstr ""
+msgstr "اقرأ الشروط الكاملة لهذه الإقامة"
 
 #: .\templates\reservations\booking_quote_detail.html:308
 msgid "Required agreements"
@@ -7697,3 +7675,235 @@ msgstr "على الكمبيوتر، امسح رمز Apple باستخدام ال�
 #: templates/payments/hyperpay_checkout.html
 msgid "Review the amount, then approve payment on your Apple device."
 msgstr "راجع المبلغ، ثم وافق على الدفع من جهاز Apple الخاص بك."
+
+msgid "Residence address"
+msgstr "عنوان الإقامة"
+
+msgid "Region"
+msgstr "المنطقة"
+
+msgid "Country of residence"
+msgstr "بلد الإقامة"
+
+msgid ""
+"This business address signs in through the secure owner verification route."
+msgstr ""
+"يُستخدم مسار التحقق الآمن الخاص بالمالك لتسجيل الدخول بهذا البريد التجاري."
+
+msgid "Enter the six-digit code from your email."
+msgstr "أدخل رمز التحقق المكوّن من ستة أرقام المرسل إلى بريدك الإلكتروني."
+
+msgid "Enter a valid mobile number in international format, starting with +."
+msgstr "أدخل رقم جوال صحيحًا بالصيغة الدولية يبدأ بعلامة +."
+
+msgid "For example: +966 50 000 0000"
+msgstr "مثال: +966 50 000 0000"
+
+msgid "Enter a valid international phone number."
+msgstr "أدخل رقم هاتف صحيحًا بالصيغة الدولية."
+
+msgid "As entered when booking"
+msgstr "كما أُدخل عند الحجز"
+
+msgid ""
+"I understand that the booking will be cancelled and any eligible refund will"
+" be returned to the original payment method."
+msgstr ""
+"أُقرّ بأن الحجز سيُلغى وأن أي مبلغ مستحق للاسترداد سيُعاد إلى وسيلة الدفع "
+"الأصلية."
+
+msgid ""
+"This booking can no longer be cancelled online because the stay has started."
+msgstr "لا يمكن إلغاء هذا الحجز عبر الموقع لأن الإقامة بدأت."
+
+msgid "If the details match a booking, a secure link will arrive shortly."
+msgstr "إذا تطابقت البيانات مع حجز، فسيصلك رابط آمن قريبًا."
+
+msgid "This secure link is no longer valid. Request a new one."
+msgstr "لم يعد هذا الرابط الآمن صالحًا. اطلب رابطًا جديدًا."
+
+msgid ""
+"The cancellation could not be completed. Your booking has not been changed."
+msgstr "تعذّر إتمام الإلغاء. لم يُجرَ أي تغيير على حجزك."
+
+msgid ""
+"Your booking was cancelled and your refund was sent to the original payment "
+"method."
+msgstr "أُلغي حجزك وأُرسل المبلغ المسترد إلى وسيلة الدفع الأصلية."
+
+msgid ""
+"Your booking was cancelled and your refund has been submitted to the payment"
+" provider."
+msgstr "أُلغي حجزك وأُرسل طلب الاسترداد إلى مزود الدفع."
+
+msgid ""
+"Your booking was cancelled. The refund needs a final review before it can be"
+" sent."
+msgstr "أُلغي حجزك. يحتاج الاسترداد إلى مراجعة نهائية قبل إرساله."
+
+msgid "Create your account once, then confirm your email with a simple code."
+msgstr "أنشئ حسابك، ثم أكّد بريدك الإلكتروني باستخدام رمز بسيط."
+
+msgid "It takes a minute. We will verify your email with a six-digit code."
+msgstr ""
+"لن يستغرق ذلك سوى دقيقة. سنتحقق من بريدك الإلكتروني برمز مكوّن من ستة أرقام."
+
+msgid "Test booking — no live booking"
+msgstr "حجز تجريبي — ليس حجزًا فعليًا"
+
+msgid ""
+"The next screen is a local simulation with no financial or live-booking "
+"activity."
+msgstr "الشاشة التالية محاكاة محلية لا تنفّذ أي عملية مالية أو حجز فعلي."
+
+msgid ""
+"This is a local test record. No live reservation or change was created."
+msgstr "هذا سجل اختبار محلي. لم يُنشأ أي حجز فعلي ولم يُنفّذ أي تعديل فعلي."
+
+msgid "Cancel securely and return any eligible refund"
+msgstr "إلغاء آمن واسترداد أي مبلغ مستحق"
+
+msgid ""
+"For this launch period, you may cancel before check-in for a full refund to "
+"your original payment method."
+msgstr ""
+"خلال فترة الإطلاق هذه، يمكنك الإلغاء قبل الدخول واسترداد المبلغ كاملًا إلى "
+"وسيلة الدفع الأصلية."
+
+msgid ""
+"The eligible refund is %(amount)s %(currency)s and is returned to the "
+"original payment method after the cancellation is confirmed."
+msgstr ""
+"المبلغ المستحق للاسترداد هو %(amount)s %(currency)s، ويُعاد إلى وسيلة الدفع "
+"الأصلية بعد تأكيد الإلغاء."
+
+msgid "Cancel booking and process refund"
+msgstr "إلغاء الحجز ومعالجة الاسترداد"
+
+msgid "Booking cancelled"
+msgstr "تم إلغاء الحجز"
+
+msgid "Your cancellation was confirmed in the reservation system."
+msgstr "تم تأكيد إلغاء حجزك في نظام الحجوزات."
+
+msgid "Refund status"
+msgstr "حالة الاسترداد"
+
+msgid "%(amount)s %(currency)s · %(status)s"
+msgstr "%(amount)s %(currency)s · %(status)s"
+
+msgid "Pay the difference locally without financial or live-booking activity."
+msgstr "محاكاة دفع الفرق محليًا دون أي عملية مالية أو حجز فعلي."
+
+msgid "The total includes every price component listed above."
+msgstr "يشمل الإجمالي جميع بنود السعر الموضحة أعلاه."
+
+msgid ""
+"The pricing system returned one authoritative total but did not itemise "
+"whether taxes or cleaning fees are included. No amount has been added "
+"locally."
+msgstr ""
+"أعاد نظام التسعير إجماليًا معتمدًا واحدًا دون توضيح تفصيلي لشمول الضرائب أو "
+"رسوم التنظيف. لم نُضف أي مبلغ محليًا."
+
+msgid "Your reservation was updated successfully."
+msgstr "تم تحديث حجزك بنجاح."
+
+msgid ""
+"No real money is charged, no card details are collected, and no live booking"
+" is created."
+msgstr ""
+"لا يُخصم أي مبلغ حقيقي، ولا تُجمع بيانات البطاقات، ولا يُنشأ حجز فعلي."
+
+msgid "No live reservation or modification"
+msgstr "لا يوجد حجز أو تعديل فعلي"
+
+msgid "Start a conversation"
+msgstr "ابدأ المحادثة"
+
+msgid "What are the usual check-in and check-out times?"
+msgstr "ما أوقات الدخول والخروج المعتادة؟"
+
+msgid ""
+"The usual check-in time is %(check_in)s, and check-out is by %(check_out)s. "
+"The property page shows any property-specific time before booking."
+msgstr ""
+"وقت الدخول المعتاد هو %(check_in)s، والخروج بحد أقصى %(check_out)s. تظهر أي "
+"أوقات خاصة بالوحدة في صفحتها قبل الحجز."
+
+msgid ""
+"The usual check-in time is %(check_in)s. The property page shows the "
+"available departure time before booking."
+msgstr ""
+"وقت الدخول المعتاد هو %(check_in)s. تعرض صفحة الوحدة وقت الخروج المتاح قبل "
+"الحجز."
+
+msgid ""
+"The usual check-out time is %(check_out)s. The property page shows the "
+"available arrival time before booking."
+msgstr ""
+"وقت الخروج المعتاد هو %(check_out)s. تعرض صفحة الوحدة وقت الدخول المتاح قبل "
+"الحجز."
+
+msgid ""
+"Your dates are carried to the property page. Availability and final price "
+"are checked only when you submit them."
+msgstr ""
+"تنتقل تواريخك إلى صفحة الوحدة. يُتحقق من التوفر والسعر النهائي عند إرسالها "
+"فقط."
+
+msgid "Branded placeholder for %(name)s"
+msgstr "صورة بديلة للوحدة %(name)s"
+
+msgid "Saudi Arabia"
+msgstr "المملكة العربية السعودية"
+
+msgid "Morocco"
+msgstr "المغرب"
+
+msgid "Full refund for bookings cancelled under the flexible policy."
+msgstr "استرداد كامل للحجوزات الملغاة وفق السياسة المرنة."
+
+msgid "Luxury Smart Apartment Safa 41 B16798"
+msgstr "شقة صفا الذكية الفاخرة 41 B16798"
+
+msgid "7946 Abha"
+msgstr "7946 أبها"
+
+msgid ""
+"Muhammad Ibn Abdulaziz Ad Daghaythir, Building E, Floor 1, Apartment 12"
+msgstr "محمد بن عبدالعزيز الدغيثر، مبنى E، الطابق 1، الشقة 12"
+
+msgid "RFHA7813, 7813 Ibrahim al Kinani"
+msgstr "RFHA7813، 7813 إبراهيم الكناني"
+
+msgid "Number 32, third floor"
+msgstr "رقم 32، الطابق الثالث"
+
+msgid "Street 32, Building 2, Floor 3, Apartment 12"
+msgstr "شارع 32، مبنى 2، الطابق 3، الشقة 12"
+
+msgid "Rue Assaqia Al Hamra, Building N, second floor, Apartment 12"
+msgstr "شارع الساقية الحمراء، مبنى N، الطابق الثاني، الشقة 12"
+
+msgctxt "booking step"
+msgid "Review"
+msgstr "مراجعة الطلب"
+
+msgid "for %(nights)s night"
+msgid_plural "for %(nights)s nights"
+msgstr[0] "لمدة %(nights)s ليلة"
+msgstr[1] "لمدة ليلة واحدة (%(nights)s)"
+msgstr[2] "لمدة ليلتين (%(nights)s)"
+msgstr[3] "لمدة %(nights)s ليالٍ"
+msgstr[4] "لمدة %(nights)s ليلة"
+msgstr[5] "لمدة %(nights)s ليلة"
+
+msgid "Rated %(rating)s out of 5, %(counter)s review"
+msgid_plural "Rated %(rating)s out of 5, %(counter)s reviews"
+msgstr[0] "التقييم %(rating)s من 5، %(counter)s مراجعة"
+msgstr[1] "التقييم %(rating)s من 5، مراجعة واحدة (%(counter)s)"
+msgstr[2] "التقييم %(rating)s من 5، مراجعتان (%(counter)s)"
+msgstr[3] "التقييم %(rating)s من 5، %(counter)s مراجعات"
+msgstr[4] "التقييم %(rating)s من 5، %(counter)s مراجعة"
+msgstr[5] "التقييم %(rating)s من 5، %(counter)s مراجعة"

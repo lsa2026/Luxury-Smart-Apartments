@@ -197,7 +197,8 @@ def test_the_property_page_shows_the_three_answers() -> None:
     )
     make_tier("flexible", 48, "100")
 
-    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    with translation.override("ar"):
+        content = Client().get(property_obj.get_absolute_url()).content.decode()
 
     assert "stay-policy" in content
     assert "١٦:٠٠" in content
@@ -209,7 +210,8 @@ def test_the_property_page_shows_the_three_answers() -> None:
 def test_the_property_page_shows_common_rules_even_without_source_rules() -> None:
     property_obj = make_property()
 
-    content = Client().get(property_obj.get_absolute_url()).content.decode()
+    with translation.override("ar"):
+        content = Client().get(property_obj.get_absolute_url()).content.decode()
 
     assert 'id="stay-policy-title"' in content
     assert "يُمنع اصطحاب الحيوانات الأليفة" in content

@@ -210,8 +210,8 @@ def site_context(request: HttpRequest) -> dict[str, object]:
         "refund_working_days": settings.BOOKING_REFUND_WORKING_DAYS,
         "display_currency": selected_currency(request),
         "display_currency_options": (
-            {"code": "SAR", "symbol": "ر.س"},
-            {"code": "MAD", "symbol": "د.م."},
+            {"code": "SAR", "symbol": "ر.س" if language == "ar" else "SR"},
+            {"code": "MAD", "symbol": "د.م." if language == "ar" else "DH"},
             {"code": "USD", "symbol": "$"},
             {"code": "EUR", "symbol": "€"},
         ),

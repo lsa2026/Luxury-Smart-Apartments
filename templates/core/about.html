@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static presentation %}
+{% load i18n static presentation %}
 
 {% block title %}{{ page|localized_page_title }} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{{ page|localized_field:"meta_description" }}{% endblock %}
@@ -47,7 +47,7 @@
                 </span>
             </a>
 
-            <p class="about-showcase__locations" dir="ltr">RIYADH <span aria-hidden="true">·</span> MARRAKECH</p>
+            <p class="about-showcase__locations">{% trans "Riyadh" %} <span aria-hidden="true">·</span> {% trans "Marrakech" %}</p>
         </div>
 
         <div class="about-collage" aria-label="{% if current_language_code == 'ar' %}مجموعة من صور شققنا الحقيقية{% elif current_language_code == 'fr' %}Sélection de photos authentiques de nos appartements{% else %}A selection of real photographs from our apartments{% endif %}">
@@ -140,8 +140,8 @@
             {% endif %}
         </div>
         <div class="about-destinations__grid">
-            <a href="{% url 'properties:list' %}?city=Riyadh"><span>01</span><div><small>SAUDI ARABIA</small><h3>{% if current_language_code == "ar" %}الرياض{% elif current_language_code == "fr" %}Riyad{% else %}Riyadh{% endif %}</h3><p>{% if current_language_code == "ar" %}طاقة عصرية وإقامات ذكية داخل المدينة.{% elif current_language_code == "fr" %}Énergie moderne et séjours intelligents au cœur de la ville.{% else %}Modern energy and smart city stays.{% endif %}</p></div><i aria-hidden="true">↗</i></a>
-            <a href="{% url 'properties:list' %}?city=Marrakech"><span>02</span><div><small>MOROCCO</small><h3>Marrakech</h3><p>{% if current_language_code == "ar" %}ضوء دافئ وراحة حديثة بطابع مراكش.{% elif current_language_code == "fr" %}Lumière chaleureuse et confort moderne au rythme de Marrakech.{% else %}Warm light and modern comfort with Marrakech character.{% endif %}</p></div><i aria-hidden="true">↗</i></a>
+            <a href="{% url 'properties:list' %}?city=Riyadh"><span>01</span><div><small>{% trans "Saudi Arabia" %}</small><h3>{% trans "Riyadh" %}</h3><p>{% if current_language_code == "ar" %}طاقة عصرية وإقامات ذكية داخل المدينة.{% elif current_language_code == "fr" %}Énergie moderne et séjours intelligents au cœur de la ville.{% else %}Modern energy and smart city stays.{% endif %}</p></div><i aria-hidden="true">↗</i></a>
+            <a href="{% url 'properties:list' %}?city=Marrakech"><span>02</span><div><small>{% trans "Morocco" %}</small><h3>{% trans "Marrakech" %}</h3><p>{% if current_language_code == "ar" %}ضوء دافئ وراحة حديثة بطابع مراكش.{% elif current_language_code == "fr" %}Lumière chaleureuse et confort moderne au rythme de Marrakech.{% else %}Warm light and modern comfort with Marrakech character.{% endif %}</p></div><i aria-hidden="true">↗</i></a>
         </div>
     </section>
 

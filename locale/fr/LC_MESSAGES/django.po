@@ -6045,11 +6045,11 @@ msgstr "L’un de nos logements"
 
 #: .\templates\includes\review_card.html:36
 msgid "What they liked"
-msgstr ""
+msgstr "Ce qu’ils ont apprécié"
 
 #: .\templates\includes\review_card.html:42
 msgid "What could be better"
-msgstr ""
+msgstr "Ce qui pourrait être amélioré"
 
 #: .\templates\includes\review_card.html:61
 msgid "Read more"
@@ -6287,34 +6287,32 @@ msgid "Confirmation and arrival details"
 msgstr "Confirmation et informations d’arrivée"
 
 #: .\templates\payments\hyperpay_result.html:55
-#, fuzzy
 #| msgid "Fetch booking"
 msgid "Keep this booking"
-msgstr "Récupérer la réservation"
+msgstr "Conserver cette réservation"
 
 #: .\templates\payments\hyperpay_result.html:56
-#, fuzzy
 #| msgid "Sign in to your account"
 msgid "Save it to your account"
-msgstr "Connectez-vous à votre compte"
+msgstr "L’enregistrer dans votre compte"
 
 #: .\templates\payments\hyperpay_result.html:57
 msgid ""
 "Change your dates, see your arrival details, and book faster next time. It "
 "takes a moment."
 msgstr ""
+"Modifiez vos dates, consultez les détails de votre arrivée et réservez plus "
+"facilement la prochaine fois. Cela ne prend qu’un instant."
 
 #: .\templates\payments\hyperpay_result.html:60
-#, fuzzy
 #| msgid "Create account"
 msgid "Create my account"
-msgstr "Créer un compte"
+msgstr "Créer mon compte"
 
 #: .\templates\payments\hyperpay_result.html:63
-#, fuzzy
 #| msgid "Already have an account?"
 msgid "I already have an account"
-msgstr "Vous avez déjà un compte ?"
+msgstr "J’ai déjà un compte"
 
 #: .\templates\payments\hyperpay_result.html:70
 msgid "View change request"
@@ -6438,12 +6436,11 @@ msgid "Cancellation"
 msgstr "Annulation"
 
 #: .\templates\properties\_stay_policy.html:37
-#, fuzzy, python-format
+#, python-format
 #| msgid ""
 #| "Applies when the cancellation happens at least this long before arrival."
 msgid "when you cancel at least %(hours)s hours before arrival"
-msgstr ""
-"S'applique lorsque l'annulation a lieu au moins ce délai avant l'arrivée."
+msgstr "si vous annulez au moins %(hours)s heures avant l’arrivée"
 
 #: .\templates\properties\_stay_policy.html:38
 msgid "cleaning fee not refunded"
@@ -7152,19 +7149,20 @@ msgid "optional"
 msgstr "Facultatif"
 
 #: .\templates\reservations\booking_quote_detail.html:296
-#, fuzzy
 #| msgid "You are paying for"
 msgid "What you are agreeing to"
-msgstr "Vous payez pour"
+msgstr "Ce que vous acceptez"
 
 #: .\templates\reservations\booking_quote_detail.html:300
 #, python-format
 msgid "%(share)s back up to %(hours)s hours before arrival"
 msgstr ""
+"Remboursement de %(share)s en cas d’annulation au moins %(hours)s heures "
+"avant l’arrivée"
 
 #: .\templates\reservations\booking_quote_detail.html:302
 msgid "Read the full terms for this stay"
-msgstr ""
+msgstr "Lire les conditions complètes de ce séjour"
 
 #: .\templates\reservations\booking_quote_detail.html:308
 msgid "Required agreements"
@@ -7902,3 +7900,121 @@ msgstr "Sur ordinateur, scannez le code Apple avec votre iPhone pour autoriser l
 #: templates/payments/hyperpay_checkout.html
 msgid "Review the amount, then approve payment on your Apple device."
 msgstr "Vérifiez le montant, puis autorisez le paiement sur votre appareil Apple."
+
+msgid ""
+"The next screen is a local simulation with no financial or live-booking "
+"activity."
+msgstr ""
+"L’écran suivant est une simulation locale, sans opération financière ni "
+"réservation réelle."
+
+msgid "The total includes every price component listed above."
+msgstr "Le total comprend tous les éléments de prix indiqués ci-dessus."
+
+msgid ""
+"The pricing system returned one authoritative total but did not itemise "
+"whether taxes or cleaning fees are included. No amount has been added "
+"locally."
+msgstr ""
+"Le système de tarification a fourni un total de référence sans préciser si "
+"les taxes ou les frais de ménage sont inclus. Aucun montant n’a été ajouté "
+"localement."
+
+msgid "Your reservation was updated successfully."
+msgstr "Votre réservation a été mise à jour."
+
+msgid ""
+"No real money is charged, no card details are collected, and no live booking"
+" is created."
+msgstr ""
+"Aucun montant réel n’est débité, aucune donnée de carte n’est collectée et "
+"aucune réservation réelle n’est créée."
+
+msgid "No live reservation or modification"
+msgstr "Aucune réservation ni modification réelle"
+
+msgid "Start a conversation"
+msgstr "Commencer une conversation"
+
+msgid "What are the usual check-in and check-out times?"
+msgstr "Quels sont les horaires habituels d’arrivée et de départ ?"
+
+msgid ""
+"The usual check-in time is %(check_in)s, and check-out is by %(check_out)s. "
+"The property page shows any property-specific time before booking."
+msgstr ""
+"L’arrivée se fait habituellement à partir de %(check_in)s et le départ au "
+"plus tard à %(check_out)s. Les horaires propres au logement sont indiqués "
+"sur sa page avant la réservation."
+
+msgid ""
+"The usual check-in time is %(check_in)s. The property page shows the "
+"available departure time before booking."
+msgstr ""
+"L’arrivée se fait habituellement à partir de %(check_in)s. L’horaire de "
+"départ est indiqué sur la page du logement avant la réservation."
+
+msgid ""
+"The usual check-out time is %(check_out)s. The property page shows the "
+"available arrival time before booking."
+msgstr ""
+"Le départ se fait habituellement au plus tard à %(check_out)s. L’horaire "
+"d’arrivée est indiqué sur la page du logement avant la réservation."
+
+msgid ""
+"Your dates are carried to the property page. Availability and final price "
+"are checked only when you submit them."
+msgstr ""
+"Vos dates sont reprises sur la page du logement. La disponibilité et le prix"
+" final ne sont vérifiés que lorsque vous les soumettez."
+
+msgid "Branded placeholder for %(name)s"
+msgstr "Image de remplacement pour %(name)s"
+
+msgid "Saudi Arabia"
+msgstr "Arabie saoudite"
+
+msgid "Morocco"
+msgstr "Maroc"
+
+msgid "Full refund for bookings cancelled under the flexible policy."
+msgstr ""
+"Remboursement intégral des réservations annulées conformément à la politique"
+" flexible."
+
+msgid "Luxury Smart Apartment Safa 41 B16798"
+msgstr "Appartement intelligent de luxe Safa 41 B16798"
+
+msgid "7946 Abha"
+msgstr "7946 Abha"
+
+msgid ""
+"Muhammad Ibn Abdulaziz Ad Daghaythir, Building E, Floor 1, Apartment 12"
+msgstr ""
+"Muhammad Ibn Abdulaziz Ad Daghaythir, bâtiment E, étage 1, appartement 12"
+
+msgid "RFHA7813, 7813 Ibrahim al Kinani"
+msgstr "RFHA7813, 7813 Ibrahim al Kinani"
+
+msgid "Number 32, third floor"
+msgstr "Numéro 32, troisième étage"
+
+msgid "Street 32, Building 2, Floor 3, Apartment 12"
+msgstr "Rue 32, bâtiment 2, étage 3, appartement 12"
+
+msgid "Rue Assaqia Al Hamra, Building N, second floor, Apartment 12"
+msgstr "Rue Assaqia Al Hamra, bâtiment N, deuxième étage, appartement 12"
+
+msgctxt "booking step"
+msgid "Review"
+msgstr "Vérification"
+
+msgid "for %(nights)s night"
+msgid_plural "for %(nights)s nights"
+msgstr[0] "pour %(nights)s nuit"
+msgstr[1] "pour %(nights)s nuits"
+
+msgid "Rated %(rating)s out of 5, %(counter)s review"
+msgid_plural "Rated %(rating)s out of 5, %(counter)s reviews"
+msgstr[0] "Note de %(rating)s sur 5, %(counter)s avis"
+msgstr[1] "Note de %(rating)s sur 5, %(counter)s avis"

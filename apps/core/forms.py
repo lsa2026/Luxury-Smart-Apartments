@@ -35,7 +35,7 @@ class ContactForm(forms.Form):
                 "autocomplete": "tel",
                 "inputmode": "tel",
                 "dir": "ltr",
-                "placeholder": "+<country code> <number>",
+                "placeholder": "+966 50 000 0000",
             }
         ),
     )

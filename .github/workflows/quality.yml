@@ -111,6 +111,9 @@ jobs:
       - name: Test checkout phone country and normalization
         run: node --test tests/checkout-phone.test.cjs
 
+      - name: Test guest form validation in Arabic, English and French
+        run: node --test tests/form-validation.test.cjs
+
       - name: Test asynchronous Apple Pay desktop and mobile availability
         run: node --test tests/apple-pay-checkout.test.cjs
 

@@ -123,6 +123,44 @@ def localized_city(property_obj: object) -> str:
     return _localized_value(property_obj, "city", source_fields=("city",))
 
 
+_PUBLIC_ADDRESS_COPY = {
+    "Luxury Smart Apartment Safa 41 B16798": gettext_noop("Luxury Smart Apartment Safa 41 B16798"),
+    "7946 Abha": gettext_noop("7946 Abha"),
+    "Muhammad Ibn Abdulaziz Ad Daghaythir Building E Floor 1 Apartment Num 12": gettext_noop(
+        "Muhammad Ibn Abdulaziz Ad Daghaythir, Building E, Floor 1, Apartment 12"
+    ),
+    "RFHA7813, 7813 Ibrahim al Kinani": gettext_noop("RFHA7813, 7813 Ibrahim al Kinani"),
+    "رقم 32 3ed floor": gettext_noop("Number 32, third floor"),
+    "شارع ٣٢ Building 2 Level 3 Apartment 12": gettext_noop(
+        "Street 32, Building 2, Floor 3, Apartment 12"
+    ),
+    "Rue Assaqia Al Hamra Building N, second floor, apartment num 12": gettext_noop(
+        "Rue Assaqia Al Hamra, Building N, second floor, Apartment 12"
+    ),
+}
+_POLICY_COPY = {
+    "استرداد كامل للحجوزات الملغاة وفق السياسة المرنة.": gettext_noop(
+        "Full refund for bookings cancelled under the flexible policy."
+    ),
+}
+
+
+@register.filter
+def localized_public_address(value: object) -> str:
+    """Translate reviewed public addresses without rewriting provider data."""
+    source = str(value or "")
+    message = _PUBLIC_ADDRESS_COPY.get(source.strip())
+    return translation.gettext(message) if message else source
+
+
+@register.filter
+def localized_policy_copy(value: object) -> str:
+    """Translate known copy only; preserve unknown custom legal terms verbatim."""
+    source = str(value or "")
+    message = _POLICY_COPY.get(source.strip())
+    return translation.gettext(message) if message else source
+
+
 @register.filter
 def localized_amenity(amenity: object) -> str:
     """Render a known Hostaway amenity in the active guest language.
