@@ -5,14 +5,6 @@ from django.views.generic import TemplateView
 from apps.properties.models import Property
 from apps.properties.trustindex import full_review_widget_id
 
-GENERAL_WIDGETS = {
-    "ar": "cf56bfb80db642820b86b5cdc90",
-    "en": "018647b80f89428a137637d5e0f",
-    # The existing account has no French general widget yet. English review
-    # text can still be translated by Trustindex inside this approved widget.
-    "fr": "018647b80f89428a137637d5e0f",
-}
-
 REVIEW_EXPLORER_HINTS = {
     "ar": (
         "اختر الوحدة، ثم استخدم ألسنة Google أو Booking.com أو Airbnb أدناه "
@@ -62,9 +54,15 @@ class ReviewListView(TemplateView):
             if selected_property is not None
             else ""
         )
-        widget_id = selected_widget_id or GENERAL_WIDGETS.get(
-            language,
-            GENERAL_WIDGETS["en"],
+        # A combined widget is capped across all properties. Use each stay's
+        # complete list so the all-properties page cannot silently truncate it.
+        review_sections = tuple(
+            {
+                "property": property_obj,
+                "widget_id": full_review_widget_id(property_obj, language),
+            }
+            for property_obj in review_properties
+            if selected_property is None or property_obj.pk == selected_property.pk
         )
         context.update(
             {
@@ -75,7 +73,7 @@ class ReviewListView(TemplateView):
                     language,
                     REVIEW_EXPLORER_HINTS["en"],
                 ),
-                "trustindex_widget_id": widget_id,
+                "review_sections": review_sections,
             }
         )
         return context

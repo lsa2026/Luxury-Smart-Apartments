@@ -13319,6 +13319,12 @@ body.splash-active .whatsapp-fab {
     box-shadow: var(--shadow-sm);
 }
 
+.review-property-section + .review-property-section {
+    margin-block-start: var(--space-6);
+    padding-block-start: var(--space-5);
+    border-block-start: 1px solid var(--color-border);
+}
+
 .review-explorer .form-field {
     margin: 0;
 }
