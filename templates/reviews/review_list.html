@@ -29,16 +29,27 @@
         <button class="button button--compact" type="submit">{% trans "Apply filters" %}</button>
         <p class="review-explorer__hint">{{ review_explorer_hint }}</p>
     </form>
-    {% if selected_review_property and not selected_review_widget_id %}
+    <div data-trustindex-general-reviews>
+    {% for review_section in review_sections %}
+    <section class="review-property-section" aria-labelledby="review-property-heading-{{ review_section.property.pk }}">
+        {% if not selected_review_property %}
+        <h2 id="review-property-heading-{{ review_section.property.pk }}">{{ review_section.property|localized_property_name }}</h2>
+        {% else %}
+        <h2 class="sr-only" id="review-property-heading-{{ review_section.property.pk }}">{{ review_section.property|localized_property_name }}</h2>
+        {% endif %}
+    {% if not review_section.widget_id %}
         <div class="review-explorer__empty" role="status">
             <p class="eyebrow">{% trans "Guest reviews" %}</p>
             <h3>{% trans "Verified reviews are being prepared" %}</h3>
             <p>{% trans "This property will show verified guest reviews once its review sources are connected." %}</p>
         </div>
     {% else %}
-        <div class="trustindex-widget" data-trustindex-general-reviews{% if selected_review_property %} data-trustindex-property-full-reviews{% endif %}>
-            <script defer async src="https://cdn.trustindex.io/loader.js?{{ trustindex_widget_id }}"></script>
+        <div class="trustindex-widget" data-trustindex-property-full-reviews>
+            <script defer async src="https://cdn.trustindex.io/loader.js?{{ review_section.widget_id }}"></script>
         </div>
     {% endif %}
+    </section>
+    {% endfor %}
+    </div>
 </section>
 {% endblock %}
