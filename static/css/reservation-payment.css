@@ -1,0 +1,52 @@
+.reservation-payment fieldset {
+    border: 0;
+    padding: 0;
+    margin: 1.5rem 0;
+    min-width: 0;
+}
+.reservation-payment legend {
+    font-size: 1.15rem;
+    font-weight: 750;
+    margin-block-end: 1rem;
+}
+.reservation-payment .form-field input,
+.reservation-payment .form-field select {
+    box-sizing: border-box;
+    font: inherit;
+    font-size: 1rem;
+    min-width: 0;
+    max-width: 100%;
+}
+.reservation-payment details {
+    margin-block: 1rem;
+    overflow-wrap: anywhere;
+}
+.reservation-payment summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding-block: .5rem;
+}
+.reservation-payment__consent label {
+    line-height: 1.8;
+}
+.reservation-payment__consent input {
+    vertical-align: middle;
+}
+.reservation-payment .errorlist {
+    color: var(--color-danger);
+    margin: .35rem 0;
+    padding-inline-start: 1.3rem;
+}
+.reservation-payment button[type="submit"] {
+    width: 100%;
+    margin-block: 1rem;
+    white-space: normal;
+}
+@media (max-width: 600px) {
+    .reservation-payment .review-panel {
+        padding: 1.25rem;
+    }
+    .reservation-payment {
+        padding-block-end: 6rem;
+    }
+}

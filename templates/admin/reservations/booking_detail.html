@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
+{% load static presentation %}
 {% block content_title %}{% endblock %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script>{% endblock %}
@@ -38,6 +38,31 @@
       <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--gold" type="submit">إعداد واستعراض فاتورة الحجز</button></form>
     {% else %}<p class="help">تتوفر الفاتورة بعد تأكيد الحجز وربطه بـHostaway.</p>{% endif %}
   </section>
+  {% if payment_links_enabled and reservation.booking_intent and reservation.hostaway_reservation_id %}
+  <section class="lsa-panel">
+    <h2>رابط سداد الحجز</h2>
+    <p>يسدد الضيف من بوابة الموقع على الحجز نفسه، دون إنشاء حجز جديد أو تغيير السعر المعتمد.</p>
+    {% if guest_payment_request %}
+      <p>الحالة: {{ guest_payment_request.get_status_display }} · الصلاحية حتى: {{ guest_payment_request.expires_at }}</p>
+      {% for attempt in guest_payment_request.attempts.all %}
+      <p>محاولة السداد: {{ attempt.status|localized_payment_status }}{% if attempt.failure_code %} — تحتاج مراجعة سجل الدفع قبل محاولة جديدة{% endif %}</p>
+      {% endfor %}
+      {% for delivery in guest_payment_request.deliveries.all %}
+        <p>{% if delivery.kind == 'link' %}إرسال الرابط{% else %}تأكيد السداد{% endif %}:
+          {% if delivery.status == 'sent' %}أُرسل{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% else %}تحتاج مراجعة{% endif %}
+          {% if delivery.error_code %} — راجع سجل التسليم قبل إعادة المحاولة{% endif %}</p>
+      {% endfor %}
+    {% endif %}
+    {% if reservation.payment_status != 'paid' %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">تجهيز وإرسال رابط السداد للضيف</button></form>
+    {% if guest_payment_request.status == 'open' %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إعادة إرسال الرابط نفسه للضيف</button></form>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="revoke_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إيقاف الرابط دون إلغاء الحجز</button></form>
+    <p>لا يمكن استبدال الرابط أو إيقافه أثناء وجود محاولة دفع غير محسومة. راجع نتيجة البوابة أولًا.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+  {% endif %}
   <section class="lsa-panel">
     <h2>تعديل التواريخ أو عدد الضيوف</h2>
     <p class="help">غيّر التواريخ أو عدد الضيوف، ثم افحص السعر قبل تأكيد أي تعديل.</p>

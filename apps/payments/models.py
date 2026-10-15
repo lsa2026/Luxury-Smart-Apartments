@@ -8,6 +8,76 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
 
+class ReservationPaymentRequest(models.Model):
+    """A revocable payment-only capability for an already-created manual stay."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", _("Awaiting payment")
+        PAID = "paid", _("Paid")
+        REVOKED = "revoked", _("Cancelled")
+        REVIEW = "review", _("Needs review")
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reservation = models.ForeignKey(
+        "reservations.Reservation", on_delete=models.PROTECT, related_name="payment_requests"
+    )
+    amount_sar = models.DecimalField(max_digits=14, decimal_places=2)
+    source_amount = models.DecimalField(max_digits=14, decimal_places=4)
+    source_currency = models.CharField(max_length=3)
+    fingerprint = models.CharField(max_length=64, editable=False)
+    language = models.CharField(max_length=2, default="ar")
+    environment = models.CharField(max_length=10, default="test", editable=False)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.OPEN)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    legal_acceptance = models.JSONField(default=dict, editable=False)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    review_code = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reservation"],
+                condition=Q(status="open"),
+                name="one_open_reservation_payment_request",
+            ),
+            models.CheckConstraint(
+                condition=Q(amount_sar__gt=0) & Q(source_amount__gt=0),
+                name="reservation_payment_request_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Payment request {self.pk}: {self.status}"
+
+
+class PaymentRequestDelivery(models.Model):
+    """Delivery evidence only; never retain a bearer link or message body."""
+
+    request = models.ForeignKey(
+        ReservationPaymentRequest, on_delete=models.PROTECT, related_name="deliveries"
+    )
+    kind = models.CharField(max_length=12, choices=[("link", "Link"), ("receipt", "Receipt")])
+    sequence = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=12, default="queued")
+    provider_message_id = models.CharField(max_length=255, blank=True)
+    error_code = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["request", "kind", "sequence"], name="unique_payment_request_delivery"
+            )
+        ]
+
+    def __str__(self):
+        return f"Payment delivery {self.pk}: {self.status}"
+
+
 class PaymentAttempt(models.Model):
     class Status(models.TextChoices):
         CREATED = "created", _("Created")
@@ -26,6 +96,13 @@ class PaymentAttempt(models.Model):
         "reservations.BookingIntent",
         on_delete=models.PROTECT,
         related_name="payment_attempts",
+    )
+    payment_request = models.ForeignKey(
+        ReservationPaymentRequest,
+        on_delete=models.PROTECT,
+        related_name="attempts",
+        null=True,
+        blank=True,
     )
     modification_request = models.ForeignKey(
         "reservations.BookingModificationRequest",

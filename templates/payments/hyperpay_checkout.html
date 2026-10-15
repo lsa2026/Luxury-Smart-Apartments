@@ -237,7 +237,7 @@ var wpwlOptions = {
             </dl>
             {% endif %}
 
-            {% if not modification %}
+            {% if not modification and not payment_request %}
             <div class="checkout__breakdown">
                 {% include "reservations/_price_breakdown.html" with quote=intent.quote %}
             </div>
@@ -249,7 +249,9 @@ var wpwlOptions = {
             </div>
             <p class="checkout__fx-note">{% trans "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference." %}</p>
 
-            {% if modification %}
+            {% if payment_request %}
+            <a class="checkout__back text-link" href="{% url 'core:contact' %}">{% trans "Contact support" %}</a>
+            {% elif modification %}
             <a class="checkout__back text-link" href="{% url 'reservations:modification_detail' modification.public_reference %}">
                 {% trans "Back to your change request" %}
             </a>

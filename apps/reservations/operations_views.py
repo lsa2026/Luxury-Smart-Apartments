@@ -65,6 +65,65 @@ def _require_owner(request: HttpRequest) -> None:
     require_operations_access(request)
 
 
+def _payment_link_action(request: HttpRequest, reservation: Reservation) -> HttpResponse:
+    """Owner-only POST helper; a delivery failure cannot undo an existing stay."""
+    from apps.payments.hyperpay.exceptions import HyperPayError
+    from apps.payments.payment_link_tasks import queue_delivery
+    from apps.payments.payment_links import UNRESOLVED, issue_request, require_enabled
+
+    try:
+        require_enabled()
+        if request.POST.get("action") == "revoke_guest_payment_link":
+            from django.db import transaction
+
+            with transaction.atomic():
+                locked = Reservation.objects.select_for_update().get(pk=reservation.pk)
+                payment_request = locked.payment_requests.filter(status="open").first()
+                if payment_request:
+                    if payment_request.attempts.filter(status__in=UNRESOLVED).exists():
+                        raise ValueError("active_gateway_attempt_requires_review")
+                    payment_request.status = "revoked"
+                    payment_request.save(update_fields=["status"])
+            action = "payment_link.revoked"
+            messages.success(request, "أُوقف رابط السداد. الحجز القائم لم يُلغَ.")
+        else:
+            payment_request = issue_request(reservation.pk)
+            delivery = queue_delivery(
+                payment_request.pk,
+                resend=request.POST.get("action") == "resend_guest_payment_link",
+            )
+            action = "payment_link.delivery_requested"
+            messages.success(
+                request,
+                "الحجز محفوظ. حالة إرسال رابط السداد للضيف: "
+                + {
+                    "queued": "بانتظار الإرسال",
+                    "sent": "أُرسل سابقًا دون تكرار",
+                    "sending": "جارٍ الإرسال",
+                    "unknown": "تحتاج مراجعة قبل إعادة الإرسال",
+                    "failed": "تعذر الإرسال؛ راجع السجل",
+                }.get(delivery.status, "تحتاج متابعة"),
+            )
+        record_audit(
+            request=request,
+            action=action,
+            object_type="Reservation",
+            object_reference=reservation.public_reference,
+            summary="Existing reservation payment-link action; no booking or charge created.",
+        )
+    except (ValueError, HyperPayError):
+        messages.error(
+            request,
+            "الحجز محفوظ، لكن رابط السداد يحتاج مراجعة: قد توجد محاولة دفع قائمة، "
+            "أو تحصيل سابق، أو تغيير بالحجز. لم يُنشأ حجز مكرر ولم يُرسل طلب للمحاسبة.",
+        )
+    except Exception:
+        # No guest data, URL, token or provider response in the log.
+        logger.error("Existing-reservation payment-link action needs review")
+        messages.error(request, "الحجز محفوظ، وتعذر تجهيز الرابط أو إرساله. راجع السجل.")
+    return redirect("notifications:booking_list")
+
+
 _MANUAL_DRAFT_AUDIT_LABELS = {
     "manual_booking.availability_checked": "تم فحص التوفر وتثبيت سعر النظام.",
     "manual_booking.rechecked": "أُعيد فحص التوفر والسعر من Hostaway لهذا الحجز.",
@@ -274,6 +333,12 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
     )
     intent = reservation.booking_intent
+    if request.method == "POST" and request.POST.get("action") in {
+        "send_guest_payment_link",
+        "resend_guest_payment_link",
+        "revoke_guest_payment_link",
+    }:
+        return _payment_link_action(request, reservation)
     cancellation_blocked = cancellation_blocker(reservation)
     invoice = (
         GuestInvoice.objects.defer("pdf_content")
@@ -548,6 +613,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         {
             "title": "إدارة الحجز",
             "reservation": reservation,
+            "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
+            "guest_payment_request": reservation.payment_requests.first(),
             "cancellation_blocked": cancellation_blocked,
             "invoice": invoice,
             "email_send_form": delivery_forms.get("email"),
@@ -677,6 +744,8 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                         metadata={"status": "awaiting_payment"},
                     )
                 try:
+                    if settings.RESERVATION_PAYMENT_LINKS_ENABLED:
+                        return _payment_link_action(request, created.reservation)
                     delivery_result = send_manual_payment_link_request(
                         reservation_id=created.reservation.pk,
                     )
@@ -829,6 +898,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "accounting_whatsapp_name": settings.ACCOUNTING_WHATSAPP_NAME or "المحاسبة",
             "reservation": reservation,
             "accounting_delivery": accounting_delivery,
+            "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
         },
     )
 

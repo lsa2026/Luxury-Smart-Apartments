@@ -182,6 +182,12 @@ class HyperPayService:
         self.close()
 
     def create_checkout(self, intent: BookingIntent) -> CheckoutSession:
+        from apps.reservations.models import ManualBookingDraft
+
+        if ManualBookingDraft.objects.filter(
+            quote_id=intent.quote_id, status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+        ).exists():
+            raise HyperPayCheckoutError("manual_booking_requires_payment_link")
         # A production card charge is only safe when the same journey can
         # create the corresponding live Hostaway reservation.  A deployment
         # can otherwise collect money and leave an orphaned local record.
@@ -389,7 +395,23 @@ class HyperPayService:
         attempt.refresh_from_db()
         if attempt.status == PaymentAttempt.Status.SUCCEEDED and attempt.verified_at:
             return self._complete_success(attempt)
+        if attempt.payment_request_id and attempt.status in {
+            PaymentAttempt.Status.REFUNDED,
+            PaymentAttempt.Status.PARTIALLY_REFUNDED,
+        }:
+            # A checkout GET is not a refund reconciliation operation.
+            return VerificationOutcome(attempt, HyperPayStatus.REVIEW)
         document = self.client.get_checkout_payment(attempt.provider_checkout_id)
+        result = document.get("result")
+        if (
+            attempt.payment_request_id
+            and isinstance(result, dict)
+            and map_result_code(result.get("code")) is HyperPayStatus.PENDING
+        ):
+            # A checkout still in 3DS may have no financial fields yet. It is
+            # not a verified payment and not permission for a second checkout.
+            PaymentAttempt.objects.filter(pk=attempt.pk).update(updated_at=timezone.now())
+            return VerificationOutcome(attempt, HyperPayStatus.PENDING)
         return self._process_verification(attempt.pk, document)
 
     def _process_verification(
@@ -449,6 +471,12 @@ class HyperPayService:
 
     def _complete_success(self, attempt: PaymentAttempt) -> VerificationOutcome:
         from apps.payments.hostaway_ledger import queue_payment_receipt
+
+        if attempt.payment_request_id:
+            from apps.payments.payment_links import complete_request_payment
+
+            reservation = complete_request_payment(attempt)
+            return VerificationOutcome(attempt, HyperPayStatus.SUCCESS, reservation)
 
         if attempt.modification_request_id:
             queue_payment_receipt(attempt.pk)
@@ -651,6 +679,14 @@ class HyperPayService:
 
     @staticmethod
     def _verification_mismatch(attempt: PaymentAttempt, document: dict[str, Any]) -> str:
+        result = document.get("result")
+        if (
+            getattr(attempt, "payment_request_id", None)
+            and isinstance(result, dict)
+            and map_result_code(result.get("code")) is HyperPayStatus.SUCCESS
+            and not _safe_optional_text(document.get("id"), 255)
+        ):
+            return "payment_id_missing"
         expected = {
             "currency": attempt.currency,
             "paymentType": settings.HYPERPAY_PAYMENT_TYPE,

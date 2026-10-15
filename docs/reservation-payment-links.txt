@@ -1,0 +1,97 @@
+Existing manual reservation payment links — implementation / rollout checklist
+Base: main c6cd9f7f395cd2dd831ff6ebd8b7488b21253027 (matched live Render on 2026-10-15).
+
+Scope
+- Full settlement of an unpaid, confirmed, owner-created reservation with an existing
+  Hostaway ID and BookingIntent. No new inventory reservation or availability quote.
+- Existing verified or uncertain collections, refund obligations and active/completed
+  amendments are blocked for review. Price-difference collection is NOT in this release.
+- HyperBill and the existing accounting fallback are unchanged when the new flag is off.
+
+Activation (NOT performed by this implementation)
+1. Approve rollout and link policy, review the branch against current main, run CI with
+   PostgreSQL including concurrency tests, and inspect the change set.
+2. Apply payments migration 0010 during the separately approved deployment.
+   The loyalty backup closure includes payment requests and delivery evidence. Validation
+   supports exactly the current schema and the pre-payment-link schema (only the nullable
+   PaymentAttempt.payment_request field and two new models differ). Historical seals and
+   payloads are not rewritten; all existing closure/history checks still run. Offline
+   old-to-new mirror transition is tested; unknown older schemas remain rejected. A real
+   backup destination read/write was not performed and must be checked on approved rollout.
+3. Keep RESERVATION_PAYMENT_LINKS_ENABLED=false until web AND worker run this version.
+4. Deploy the dispatch-only scheduler version; it requires no payment credentials.
+5. Review SITE_BASE_URL (HTTPS origin), HYPERPAY environment/credentials, UltraMsg,
+   and future-only Hostaway financial receipt settings via approved private channels.
+   Never print secrets or use production credentials in local tests.
+6. The configurable RESERVATION_PAYMENT_LINK_TTL_SECONDS default is 86400 seconds,
+   additionally capped by the existing manual intent expiry. Obtain owner approval for
+   that policy before enabling. Expiring/revoking the local link does NOT cancel a stay
+   or invalidate an already-open provider checkout; unresolved attempts prevent replacing
+   or revoking the request. A late verified payment is retained, not discarded.
+7. The application console, Django server and Gunicorn access log redact bearer payment
+   paths and return tokens. Review upstream/proxy log retention before exposing links;
+   these server-side filters do not control edge-provider logs. Code does not retain message bodies,
+   bearer links or raw gateway responses. Link pages disable Google integrations and send
+   no-referrer, no-store and noindex headers. Payment-only access never grants management.
+8. Enable only after explicit approval; run one authorized end-to-end trial and match
+   provider amount/transaction, local state, Hostaway financial entry and guest delivery.
+
+Architecture
+- ReservationPaymentRequest freezes original amount/currency plus SAR amount and a
+  fingerprint of booking/guest/FX data. Deterministic signed links grant payment only.
+- Opening a link has no provider side effect. Guest POST requires CSRF, current document
+  digest, terms/house-rules acceptance and a real billing address. Guest identity remains
+  the existing reservation identity, not editable through a bearer link.
+- Checkout validates the existing Hostaway reservation and paid charges, then serializes
+  local claims on reservation/intent/request rows. The local attempt commits before the
+  gateway POST. A lost response is REVIEW, never blindly retried.
+- The same gateway, widget, integrity validation and allowed payment brands are reused.
+  Success is routed to existing-reservation completion, never Hostaway booking creation.
+- The worker polls persisted checkout IDs, including after link expiry/feature rollback.
+  It can recover financial success persisted just before a process crash. A changed or
+  cancelled booking with a late payment is flagged for review, not silently reopened.
+- The same existing worker sends durable WhatsApp link/receipt records. A send timeout or
+  process crash while sending is unknown/sending and requires review; no automatic resend.
+  An explicit resend of a confirmed-sent link reuses the same URL and has a 60-second cooldown.
+- Financial receipt uses the frozen source amount/currency in Hostaway (e.g. MAD), with
+  the actual SAR gateway charge retained separately. It never relabels SAR as MAD.
+- No new paid resources, global queue purge, Blueprint sync, or credentials for beat.
+
+Recovery / rollback
+- If provider verification is unavailable, do not collect again. Retry authoritative GET
+  via worker, or inspect the payment attempt with operations access.
+- Existing local review/unknown attempts block new checkout creation. Accounting must
+  reconcile provider outcomes; never reset them just to enable another payment.
+- Switch the rollout flag off to stop new public links/checkouts. Keep the gateway,
+  worker, schema and recovery task available for outstanding payments. Do not reverse the
+  migration or remove its records after use. Card details are never stored; the existing
+  intent fields retain the guest-entered billing address.
+- Disabling new links restores the original manual-accounting request for NEW bookings;
+  do not send an additional accounting link for an unresolved payment already in progress.
+
+Acceptance
+- No second BookingIntent/Reservation/Hostaway creation, even on refresh/retry.
+- Price fixed by administration; no reprice or availability request on collection.
+- Anonymous recipient can pay; cannot manage/cancel/claim booking via the bearer link.
+- Amount/currency/reference/type/brand and nonempty financial payment ID are verified.
+- Cancellation, tampering, expiry, stale legal forms, prior/parallel collections, lost
+  checkout response, repeated callbacks and closed-browser recovery are covered in tests.
+- Live collection, real WhatsApp delivery, provider configuration, full/partial refund,
+  cross-currency amendment/refund settlement, tracking conversions and production rollout
+  are NOT proven by mocked tests. Cross-currency future amendments retain existing review guards.
+
+Local verification — 2026-10-15
+- Full Python suite: 2738 passed, 5 skipped; the skips require PostgreSQL.
+- The two new payment-request concurrency tests are included in the existing PostgreSQL
+  CI job, but that job has not been run for this local branch. No PostgreSQL concurrency
+  result is claimed. Do not enable production before it passes.
+- Existing relevant browser-script tests: 28 passed (wallet availability, billing address,
+  phone validation, payment journey, ecommerce isolation).
+- Ruff lint/format, Django checks and migration drift check passed.
+- Local Chrome desktop/mobile preview: fields readable and no horizontal overflow at the
+  phone viewport. Fake reservation only, no guest/payment form submission. Server stopped.
+- No GitHub push/PR, deployment, Render setting changes, real charge, real Hostaway write,
+  or actual WhatsApp delivery was performed by this implementation.
+- Changes are staged locally on codex/admin-booking-payment-links-20261015. A local
+  commit was attempted but Git has no configured author identity; no identity was
+  invented or global Git settings changed. Configure an approved author before commit.

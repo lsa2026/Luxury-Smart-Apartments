@@ -138,7 +138,11 @@ def test_django_and_standalone_use_one_schedule_definition():
     assert settings.CELERY_BEAT_SCHEDULE == build_beat_schedule(values)
     values.update({key: True for key in values if key.endswith("_ENABLED")})
     schedule = build_beat_schedule(values)
-    assert len(schedule) == 10
+    assert len(schedule) == 11
+    assert schedule["recover-reservation-payments"]["task"] == (
+        "apps.payments.payment_link_tasks.recover_payment_requests_task"
+    )
+    assert schedule["recover-reservation-payments"]["schedule"] == 60
     assert schedule["daily-operations-summary"]["schedule"].hour == {8}
     assert schedule["trustindex-review-metrics"]["schedule"].hour == {17}
     assert schedule["website-reservation-statuses"]["schedule"] == 1800

@@ -81,6 +81,21 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
         if not attempt.verified_at or attempt.verified_at < cutoff:
             return {"status": "historical_payment_skipped"}
         reservation = Reservation.objects.get(booking_intent_id=attempt.booking_intent_id)
+        receipt_amount, receipt_currency = attempt.amount, attempt.currency
+        if attempt.payment_request_id:
+            # The request froze both the approved stay currency and SAR collection.
+            # Book the receipt in Hostaway's source currency, never relabel SAR as MAD.
+            request = attempt.payment_request
+            if (
+                request.status != "paid"
+                or request.amount_sar != attempt.amount
+                or request.environment != "production"
+                or reservation.is_test
+            ):
+                entry.status, entry.error_code = "review", "payment_request_not_settled"
+                entry.save(update_fields=["status", "error_code", "updated_at"])
+                return {"status": "review"}
+            receipt_amount, receipt_currency = request.source_amount, request.source_currency
         marker = f"LSA HyperPay receipt {attempt.pk}"
         try:
             with HostawayClient() as client:
@@ -91,8 +106,8 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
                     or attempt.status not in {"succeeded", "partially_refunded", "refunded"}
                     or snapshot.reservation_id != reservation.hostaway_reservation_id
                     or snapshot.listing_map_id != reservation.hostaway_listing_map_id
-                    or snapshot.currency != attempt.currency
-                    or reservation.currency != attempt.currency
+                    or snapshot.currency != receipt_currency
+                    or reservation.currency != receipt_currency
                 ):
                     raise ValueError("receipt_requires_accounting_review")
                 charges = client.get_guest_charges(reservation.hostaway_reservation_id)
@@ -100,8 +115,8 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
                 if matches:
                     if len(matches) != 1 or (
                         matches[0].get("status") != "paid"
-                        or Decimal(str(matches[0].get("amount"))) != attempt.amount
-                        or matches[0].get("currency") != attempt.currency
+                        or Decimal(str(matches[0].get("amount"))) != receipt_amount
+                        or matches[0].get("currency") != receipt_currency
                     ):
                         raise ValueError("receipt_remote_mismatch")
                     charge_id = matches[0]["id"]
@@ -114,8 +129,8 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
                     charge = client.create_offline_paid_charge(
                         reservation.hostaway_reservation_id,
                         title=marker,
-                        amount=attempt.amount,
-                        currency=attempt.currency,
+                        amount=receipt_amount,
+                        currency=receipt_currency,
                         description=(
                             f"Verified HyperPay {attempt.payment_brand or 'card'} receipt; "
                             "no new charge."
