@@ -10,6 +10,8 @@ from apps.notifications.services.ultramsg import UltraMsgClient
 
 from .models import PaymentRequestDelivery, ReservationPaymentRequest
 
+PAYMENT_MESSAGE_BRAND = "Luxury Smart Apartments"
+
 
 def queue_delivery(request_id, *, kind="link", resend=False):
     from .payment_links import validate_open
@@ -56,7 +58,7 @@ def payment_message(request, kind="link", *, owner_review=False):
     language = request.language if request.language in {"ar", "en", "fr"} else "ar"
     copy = {
         "ar": (
-            "لاكشري ليفينغ",
+            PAYMENT_MESSAGE_BRAND,
             "أهلًا بك،",
             "نود تزويدك برابط سداد حجزك:",
             "فترة الإقامة",
@@ -64,24 +66,24 @@ def payment_message(request, kind="link", *, owner_review=False):
             "يمكنك إتمام السداد عبر الرابط الآمن أدناه:",
             "لا يتم تحصيل أي مبلغ بمجرد إرسال الرابط أو فتحه. "
             "يتم السداد فقط بعد تأكيد عملية الدفع.",
-            "شكرًا لاختياركم لاكشري ليفينغ.",
+            f"شكرًا لاختياركم {PAYMENT_MESSAGE_BRAND}.",
             "تم استلام دفعتك بنجاح. لا تدفع مرة أخرى.",
             "نسخة مراجعة للمالك فقط، وليست رسالة للضيف.",
         ),
         "en": (
-            "Luxury Living",
+            PAYMENT_MESSAGE_BRAND,
             "Welcome,",
             "Here is the payment link for your booking:",
             "Stay",
             "Total",
             "Complete your payment using the secure link below:",
             "Sending or opening this link does not charge you. Payment requires your confirmation.",
-            "Thank you for choosing Luxury Living.",
+            f"Thank you for choosing {PAYMENT_MESSAGE_BRAND}.",
             "Payment received. Please do not pay again.",
             "Owner review only — not a guest message.",
         ),
         "fr": (
-            "Luxury Living",
+            PAYMENT_MESSAGE_BRAND,
             "Bienvenue,",
             "Voici le lien de paiement de votre réservation :",
             "Séjour",
@@ -89,7 +91,7 @@ def payment_message(request, kind="link", *, owner_review=False):
             "Effectuez votre paiement via le lien sécurisé ci-dessous :",
             "L’envoi ou l’ouverture du lien ne vous débite pas. "
             "Le paiement nécessite votre confirmation.",
-            "Merci d’avoir choisi Luxury Living.",
+            f"Merci d’avoir choisi {PAYMENT_MESSAGE_BRAND}.",
             "Paiement reçu. Ne payez pas à nouveau.",
             "Copie de contrôle du propriétaire uniquement — pas un message au client.",
         ),
@@ -101,13 +103,13 @@ def payment_message(request, kind="link", *, owner_review=False):
         if language == "ar":
             amount = localized_money_text(request.amount_sar, "", language=language) + " ريال سعودي"
     blocks = [
-        f"*{brand}*",
+        f"✨ *{brand}*",
         greeting,
-        intro if kind == "link" else receipt,
-        f"{stay}: {dates}\n{total}: {amount}",
+        intro if kind == "link" else f"✅ {receipt}",
+        f"📅 *{stay}:* {dates}\n💳 *{total}:* {amount}",
     ]
     if kind == "link":
-        blocks.extend([cta, public_url(request), note])
+        blocks.extend([f"🔗 {cta}", public_url(request), note])
     blocks.append(thanks)
     body = "\n\n".join(blocks)
     if owner_review:
