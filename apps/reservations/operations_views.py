@@ -91,7 +91,10 @@ def _payment_link_action(request: HttpRequest, reservation: Reservation) -> Http
             payment_request = issue_request(reservation.pk)
             delivery = queue_delivery(
                 payment_request.pk,
-                resend=request.POST.get("action") == "resend_guest_payment_link",
+                # Both admin buttons are deliberate manual sends, including
+                # an older page's original send button. Background callers
+                # retain queue_delivery's default idempotent behavior.
+                resend=True,
             )
             action = "payment_link.delivery_requested"
             messages.success(
@@ -99,10 +102,10 @@ def _payment_link_action(request: HttpRequest, reservation: Reservation) -> Http
                 "الحجز محفوظ. حالة إرسال رابط السداد للضيف: "
                 + {
                     "queued": "بانتظار الإرسال",
-                    "sent": "أُرسل سابقًا دون تكرار",
+                    "sent": "قبِل مزود الواتساب الرسالة؛ الوصول إلى الجوال غير مؤكد هنا",
                     "sending": "جارٍ الإرسال",
-                    "unknown": "تحتاج مراجعة قبل إعادة الإرسال",
-                    "failed": "تعذر الإرسال؛ راجع السجل",
+                    "unknown": "نتيجة الإرسال غير مؤكدة؛ يمكنك إعادة الإرسال يدويًا",
+                    "failed": "تعذر الإرسال؛ يمكنك إعادة المحاولة يدويًا",
                 }.get(delivery.status, "تحتاج متابعة"),
             )
         record_audit(
@@ -122,7 +125,7 @@ def _payment_link_action(request: HttpRequest, reservation: Reservation) -> Http
         # No guest data, URL, token or provider response in the log.
         logger.error("Existing-reservation payment-link action needs review")
         messages.error(request, "الحجز محفوظ، وتعذر تجهيز الرابط أو إرساله. راجع السجل.")
-    return redirect("notifications:booking_list")
+    return redirect("notifications:booking_detail", reservation_id=reservation.pk)
 
 
 _MANUAL_DRAFT_AUDIT_LABELS = {
@@ -641,6 +644,12 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 else:
                     messages.error(request, "تعذر إرسال طلب رابط فرق التعديل إلى أسيل.")
 
+    guest_payment_request = reservation.payment_requests.first()
+    latest_link_delivery = (
+        guest_payment_request.deliveries.filter(kind="link").order_by("-sequence").first()
+        if guest_payment_request
+        else None
+    )
     return render(
         request,
         "admin/reservations/booking_detail.html",
@@ -648,7 +657,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "title": "إدارة الحجز",
             "reservation": reservation,
             "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
-            "guest_payment_request": reservation.payment_requests.first(),
+            "guest_payment_request": guest_payment_request,
+            "latest_link_delivery": latest_link_delivery,
             "manual_receipts_enabled": settings.MANUAL_PAYMENT_RECEIPTS_ENABLED,
             "offline_receipt_form": receipt_form,
             "offline_receipt": getattr(reservation, "offline_payment_receipt", None),

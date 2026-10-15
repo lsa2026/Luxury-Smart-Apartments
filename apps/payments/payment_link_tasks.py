@@ -28,11 +28,10 @@ def queue_delivery(request_id, *, kind="link", resend=False):
         if previous:
             if not resend or kind == "receipt":
                 return previous
-            if (
-                previous.status != "sent"
-                or (timezone.now() - previous.created_at).total_seconds() < 60
-            ):
-                raise ValueError("delivery_wait_or_review")
+            # Each explicit operator resend is a new, auditable delivery,
+            # even after a failure/uncertain result or an immediate repeat.
+            # Default/background calls remain idempotent; worker execution
+            # still claims each delivery once. Never regenerate the pay link.
         delivery = PaymentRequestDelivery.objects.create(
             request=request, kind=kind, sequence=previous.sequence + 1 if previous else 1
         )

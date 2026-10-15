@@ -653,8 +653,10 @@ def test_whatsapp_delivery_is_durable_and_not_repeated(settings):
     )
     assert public_url(request) in fake.send_text.call_args.kwargs["body"]
     assert request.deliveries.count() == 1
-    with pytest.raises(ValueError):
-        queue_delivery(request.pk, resend=True)
+    resent = queue_delivery(request.pk, resend=True)
+    assert resent.pk != delivery.pk and resent.sequence == 2
+    assert request.deliveries.count() == 2
+    assert queue_delivery(request.pk).pk == resent.pk
 
 
 def test_whatsapp_timeout_never_blindly_retries(settings):
@@ -666,8 +668,9 @@ def test_whatsapp_timeout_never_blindly_retries(settings):
         assert deliver_payment_request_task.run(delivery.pk)["status"] == "unknown"
         assert deliver_payment_request_task.run(delivery.pk)["status"] == "unknown"
         assert cls.return_value.__enter__.return_value.send_text.call_count == 1
-    with pytest.raises(ValueError):
-        queue_delivery(request.pk, resend=True)
+    assert queue_delivery(request.pk).pk == delivery.pk
+    resent = queue_delivery(request.pk, resend=True)
+    assert resent.pk != delivery.pk and resent.status == "queued"
 
 
 def test_owner_action_does_not_allow_anonymous_and_redirects_owner():
@@ -679,8 +682,97 @@ def test_owner_action_does_not_allow_anonymous_and_redirects_owner():
     client.force_login(owner())
     response = client.post(url, {"action": "send_guest_payment_link"})
     assert response.status_code == 302
-    assert response.url == reverse("notifications:booking_list")
+    assert response.url == url
     assert stay.payment_requests.get().deliveries.count() == 1
+
+
+@pytest.mark.parametrize("previous_status", ["sent", "unknown", "failed", "queued", "sending"])
+def test_operator_can_resend_immediately_after_any_delivery_status(previous_status):
+    stay = manual_stay()
+    request = issue_request(stay.pk)
+    token = link_token(request)
+    first = queue_delivery(request.pk)
+    first.status = previous_status
+    first.save(update_fields=["status"])
+    second = queue_delivery(request.pk, resend=True)
+    assert second.pk != first.pk and second.sequence == 2 and second.status == "queued"
+    assert queue_delivery(request.pk).pk == second.pk
+    assert issue_request(stay.pk).pk == request.pk
+    assert link_token(request) == token
+    assert ReservationPaymentRequest.objects.count() == 1
+    assert not PaymentAttempt.objects.exists()
+
+
+def test_admin_send_and_resend_each_request_new_delivery_even_from_old_page(settings):
+    settings.ULTRAMSG_ENABLED = True
+    stay, client = manual_stay(), Client()
+    client.force_login(owner())
+    url = reverse("notifications:booking_detail", args=[stay.pk])
+    html = client.get(url).content.decode()
+    assert 'value="send_guest_payment_link"' in html
+    for action in [
+        "send_guest_payment_link",
+        "send_guest_payment_link",
+        "resend_guest_payment_link",
+    ]:
+        response = client.post(url, {"action": action})
+        assert response.status_code == 302 and response.url == url
+    request = stay.payment_requests.get()
+    assert list(request.deliveries.order_by("sequence").values_list("sequence", flat=True)) == [
+        1,
+        2,
+        3,
+    ]
+    html = client.get(url).content.decode()
+    assert 'value="resend_guest_payment_link"' in html
+    assert 'value="send_guest_payment_link"' not in html
+    assert "قد توصل أكثر من نسخة" in html
+    assert ReservationPaymentRequest.objects.count() == 1
+    assert not PaymentAttempt.objects.exists()
+    fake = Mock()
+    fake.send_text.return_value = {"sent": "true", "id": "test-message-repeat"}
+    with patch("apps.payments.payment_link_tasks.UltraMsgClient") as cls:
+        cls.return_value.__enter__.return_value = fake
+        for delivery in request.deliveries.all():
+            assert deliver_payment_request_task.run(delivery.pk)["status"] == "sent"
+            assert deliver_payment_request_task.run(delivery.pk)["status"] == "sent"
+    assert fake.send_text.call_count == 3
+    assert len({call.kwargs["reference_id"] for call in fake.send_text.call_args_list}) == 3
+    assert len({call.kwargs["body"] for call in fake.send_text.call_args_list}) == 1
+
+
+@pytest.mark.parametrize("status", ["paid", "revoked", "review"])
+def test_manual_resend_never_bypasses_closed_payment_request(status):
+    request = issue_request(manual_stay().pk)
+    first = queue_delivery(request.pk)
+    request.status = status
+    request.save(update_fields=["status"])
+    with pytest.raises(HyperPayCheckoutError):
+        queue_delivery(request.pk, resend=True)
+    assert request.deliveries.count() == 1 and request.deliveries.get().pk == first.pk
+
+
+def test_receipt_delivery_remains_single_even_when_resend_is_requested():
+    request = issue_request(manual_stay().pk)
+    request.status = "paid"
+    request.save(update_fields=["status"])
+    first = queue_delivery(request.pk, kind="receipt")
+    assert queue_delivery(request.pk, kind="receipt", resend=True).pk == first.pk
+    assert request.deliveries.count() == 1
+
+
+def test_resend_during_pending_payment_reuses_link_without_creating_checkout():
+    request = issue_request(manual_stay().pk)
+    stub = HyperPayStub()
+    attempt = checkout(request, stub=stub).attempt
+    original_token = link_token(request)
+    first = queue_delivery(request.pk)
+    second = queue_delivery(request.pk, resend=True)
+    assert first.pk != second.pk
+    assert link_token(request) == original_token
+    assert stub.checkout_calls == 1
+    assert list(request.attempts.values_list("pk", flat=True)) == [attempt.pk]
+    assert ReservationPaymentRequest.objects.count() == 1
 
 
 def test_general_checkout_refuses_existing_manual_booking():
@@ -794,6 +886,31 @@ def test_malformed_result_is_review_not_server_error():
     HyperPayService(client=stub).verify(attempt)
     attempt.refresh_from_db()
     assert attempt.status == "review"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgres_parallel_manual_resends_keep_distinct_auditable_sequences():
+    if connection.vendor != "postgresql":
+        pytest.skip("PostgreSQL row-lock test; executed by the PostgreSQL CI job")
+    request = issue_request(manual_stay().pk)
+    barrier = Barrier(2)
+
+    def resend():
+        close_old_connections()
+        try:
+            barrier.wait(timeout=10)
+            return queue_delivery(request.pk, resend=True).sequence
+        finally:
+            close_old_connections()
+
+    with patch("apps.payments.payment_link_tasks._dispatch"):
+        queue_delivery(request.pk)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(resend), pool.submit(resend)]
+            assert sorted(future.result(timeout=20) for future in futures) == [2, 3]
+    assert request.deliveries.count() == 3
+    assert ReservationPaymentRequest.objects.count() == 1
+    assert not PaymentAttempt.objects.exists()
 
 
 @pytest.mark.django_db(transaction=True)
