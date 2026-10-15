@@ -49,14 +49,21 @@
       {% endfor %}
       {% for delivery in guest_payment_request.deliveries.all %}
         <p>{% if delivery.kind == 'link' %}إرسال الرابط{% else %}تأكيد السداد{% endif %}:
-          {% if delivery.status == 'sent' %}أُرسل{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% else %}تحتاج مراجعة{% endif %}
+          {% if delivery.status == 'sent' %}قبِل مزود الواتساب الرسالة{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% elif delivery.status == 'unknown' %}نتيجة الإرسال غير مؤكدة{% else %}تعذر الإرسال{% endif %}
           {% if delivery.error_code %} — راجع سجل التسليم قبل إعادة المحاولة{% endif %}</p>
       {% endfor %}
     {% endif %}
     {% if reservation.payment_status != 'paid' %}
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">تجهيز وإرسال رابط السداد للضيف</button></form>
+    {% if guest_payment_request.status == 'open' and latest_link_delivery %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">إعادة إرسال رابط السداد للضيف</button></form>
+    {% if latest_link_delivery.status == 'unknown' or latest_link_delivery.status == 'sending' or latest_link_delivery.status == 'queued' %}
+    <p>الإرسال السابق قيد التنفيذ أو غير مؤكد؛ إعادة الإرسال اليدوية قد توصل أكثر من نسخة من الرسالة.</p>
+    {% endif %}
+    {% else %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">إرسال رابط السداد للضيف</button></form>
+    {% endif %}
+    <p class="help">يمكن للمدير إعادة الإرسال يدويًا دون انتظار دقيقة أو منع بسبب إرسال سابق. يُستخدم الرابط نفسه دون تكرار تحصيل المبلغ. قبول المزود لا يؤكد وصول الرسالة إلى الجوال.</p>
     {% if guest_payment_request.status == 'open' %}
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إعادة إرسال الرابط نفسه للضيف</button></form>
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="revoke_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إيقاف الرابط دون إلغاء الحجز</button></form>
     <p>لا يمكن استبدال الرابط أو إيقافه أثناء وجود محاولة دفع غير محسومة. راجع نتيجة البوابة أولًا.</p>
     {% endif %}
