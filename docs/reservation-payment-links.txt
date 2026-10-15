@@ -55,7 +55,8 @@ Architecture
   cancelled booking with a late payment is flagged for review, not silently reopened.
 - The same existing worker sends durable WhatsApp link/receipt records. A send timeout or
   process crash while sending is unknown/sending and requires review; no automatic resend.
-  An explicit resend of a confirmed-sent link reuses the same URL and has a 60-second cooldown.
+  Each explicit operator resend reuses the same URL without a cooldown. Background
+  recovery and the payment receipt remain idempotent; resend never extends link expiry.
 - Financial receipt uses the frozen source amount/currency in Hostaway (e.g. MAD), with
   the actual SAR gateway charge retained separately. It never relabels SAR as MAD.
 - No new paid resources, global queue purge, Blueprint sync, or credentials for beat.
@@ -131,3 +132,21 @@ Existing-booking / offline receipt extension — 2026-10-15
   must be separately gated, deduplicated and tested before it is represented as complete.
 - Majed Alzahrani was nominated by the owner for a future live trial; no live record,
   amount, phone, inventory or message has been fetched, modified or sent for that trial.
+
+Optional accountant route — 2026-10-15
+- The default new-manual-booking button still creates the stay and queues the latest
+  branded guest payment link. A secondary, collapsed option explicitly chooses an
+  accountant request INSTEAD of creating/sending the website payment link.
+- Existing unpaid confirmed direct/manual bookings expose the same optional request.
+  Rendering a page or failing guest delivery never triggers the accountant route.
+- An open/review/paid website request must be resolved/revoked explicitly first.
+  Successful or unresolved gateway attempts block the accountant request, including
+  after link expiry/revocation. No automatic reservation cancellation or price change.
+- The optional sender claims its existing auditable accounting delivery under the
+  same reservation lock used by website link issuance. Once accounting is claimed,
+  new site links are blocked for review because the site cannot revoke or verify an
+  external payment link. No automatic route switch-back is implied.
+- Requests to accounting retain the existing single-send rule: uncertain/failed/sent
+  requests are not blindly resent. The owner's unrestricted guest-link resend policy
+  is unchanged. Provider acceptance is not handset delivery or guest payment proof.
+- No schema, secrets, infrastructure, refunds or live messages change in this patch.

@@ -70,6 +70,22 @@
     {% endif %}
   </section>
   {% endif %}
+  {% if reservation.booking_intent and reservation.hostaway_reservation_id and reservation.normalized_status == 'confirmed' and reservation.payment_status != 'paid' %}
+  {% if reservation.source_type == 'direct_website' or reservation.source_type == 'hostaway_manual' %}
+  <section class="lsa-panel">
+    <details>
+      <summary>خيار إضافي: طلب رابط دفع يدوي من أسيل</summary>
+      <p>اختياري فقط، ولا يُرسل تلقائيًا عند تعذر رابط الموقع. إذا كان رابط الموقع قائمًا، أوقفه أولًا قبل طلب رابط آخر من أسيل. لا يمكن التحويل أثناء وجود دفعة قيد التحقق.</p>
+      {% if accounting_link_delivery %}
+      <p>طلب أسيل: {% if accounting_link_delivery.status == 'sent' %}قبِل مزود الواتساب الرسالة؛ الوصول إلى جوالها غير مؤكد هنا{% elif accounting_link_delivery.status == 'sending' or accounting_link_delivery.status == 'queued' %}قيد الإرسال{% elif accounting_link_delivery.status == 'disabled' %}الإرسال غير مفعّل{% else %}تحتاج نتيجة الإرسال إلى مراجعة{% endif %}.</p>
+      <p>لا تُنشئ رابطًا إضافيًا من الموقع قبل مراجعة أسيل وإغلاق أي رابط خارجي قابل للدفع. لا تُعاد طلبات المحاسبة تلقائيًا.</p>
+      {% else %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="request_accounting_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إرسال طلب إلى أسيل لتكوين رابط الدفع اليدوي</button></form>
+      {% endif %}
+    </details>
+  </section>
+  {% endif %}
+  {% endif %}
   {% if manual_receipts_enabled %}
   <section class="lsa-panel">
     <h2>تسجيل الحجز مدفوعًا بحوالة بنكية أو نقدًا أو رابط دفع</h2>
