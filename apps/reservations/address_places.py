@@ -144,7 +144,7 @@ class CheckoutAddressView(View):
     http_method_names = ["post"]
     details = False
 
-    def post(self, request: HttpRequest, reference: str) -> JsonResponse:
+    def get_address_scope(self, request: HttpRequest, reference: str):
         try:
             quote = BookingQuote.objects.get(pk=quote_id_from_reference(reference))
         except (signing.BadSignature, ValueError, BookingQuote.DoesNotExist) as exc:
@@ -156,6 +156,12 @@ class CheckoutAddressView(View):
             or quote.is_expired
             or not verify_quote_fingerprint(quote)
         ):
+            return None
+        return quote
+
+    def post(self, request: HttpRequest, reference: str) -> JsonResponse:
+        quote = self.get_address_scope(request, reference)
+        if quote is None:
             return _reply(409, detail="quote_unavailable")
         if not places_enabled():
             return _reply(503, detail="address_search_unavailable")

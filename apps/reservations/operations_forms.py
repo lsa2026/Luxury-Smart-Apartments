@@ -349,9 +349,15 @@ class OfflinePaymentReceiptForm(forms.Form):
     currency = forms.CharField(widget=forms.HiddenInput(), max_length=3)
     snapshot_digest = forms.CharField(widget=forms.HiddenInput(), max_length=64)
     method = forms.ChoiceField(
-        label="طريقة الاستلام", choices=[("bank_transfer", "حوالة بنكية"), ("cash", "نقدًا")]
+        label="طريقة الاستلام",
+        choices=[("bank_transfer", "حوالة بنكية"), ("cash", "نقدًا"), ("external_link", "رابط دفع")],
     )
-    reference = forms.CharField(label="مرجع الحوالة أو رقم إيصال النقد", max_length=100)
+    reference = forms.CharField(
+        label="مرجع الدفع أو الإيصال — اختياري",
+        max_length=100,
+        required=False,
+        help_text="يمكن تركه فارغًا؛ يُنشأ رقم توثيق داخلي لا يمثل مرجعًا بنكيًا أو تأكيد بوابة.",
+    )
     received_at = forms.DateTimeField(
         label="وقت الاستلام الفعلي",
         widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
@@ -366,7 +372,8 @@ class OfflinePaymentReceiptForm(forms.Form):
         label="السعر للإقامة فقط دون رسوم أخرى، لأغراض احتساب الولاء", required=False
     )
     confirmed = forms.BooleanField(
-        label="أؤكد استلام المبلغ فعليًا، وأنه ليس تحصيلًا مكررًا أو مبلغًا تحت التحصيل لدى منصة أخرى"
+        label="أؤكد استلام المبلغ فعليًا، وأنه ليس تحصيلًا مكررًا أو مبلغًا تحت التحصيل لدى منصة أخرى",
+        error_messages={"required": "يلزم تأكيد استلام المبلغ فعليًا قبل تحويل الحجز إلى مدفوع."},
     )
 
     def clean_reference(self):

@@ -63,7 +63,8 @@ def values(stay, **overrides):
 
 
 @pytest.mark.parametrize(
-    "method,currency", [("cash", "SAR"), ("bank_transfer", "SAR"), ("bank_transfer", "MAD")]
+    "method,currency",
+    [("cash", "SAR"), ("bank_transfer", "SAR"), ("bank_transfer", "MAD"), ("external_link", "SAR")],
 )
 def test_receipt_is_audited_full_and_idempotent_without_provider_calls(method, currency):
     stay = manual_stay(currency=currency)
@@ -99,6 +100,39 @@ def test_existing_direct_booking_link_does_not_require_an_admin_draft():
         issue_request(stay.pk)
 
 
+@pytest.mark.parametrize("method", ["cash", "bank_transfer", "external_link"])
+def test_missing_external_reference_gets_stable_internal_id_without_gateway_claim(method):
+    stay, request = manual_stay(), actor_request()
+    data = values(stay, method=method, reference="")
+    receipt = record_offline_receipt(request=request, reservation_id=stay.pk, **data)
+    assert receipt.has_internal_reference
+    assert record_offline_receipt(request=request, reservation_id=stay.pk, **data).pk == receipt.pk
+    assert receipt.payment_attempt.provider == "manual"
+    assert not receipt.payment_attempt.provider_checkout_id
+    audit = AuditLog.objects.get(action="payment.offline_received")
+    assert audit.metadata["external_reference_supplied"] is False
+    assert OfflinePaymentReceipt.objects.count() == 1
+    refund = RefundObligation.objects.create(
+        reservation=stay, reason="cancellation", amount=stay.total_price, currency=stay.currency
+    )
+    gateway = Mock()
+    assert _submit_automatic_refund(refund, service=gateway) == "manual_refund_required"
+    gateway.submit.assert_not_called()
+
+
+def test_operations_external_link_without_reference_records_only_confirmed_full_receipt():
+    stay, client = manual_stay(), Client()
+    client.force_login(owner())
+    url = reverse("notifications:booking_detail", args=[stay.pk])
+    html = client.get(url).content.decode()
+    assert 'value="external_link"' in html
+    assert 'name="reference" required' not in html
+    data = values(stay, method="external_link", reference="") | {"action": "record_offline_payment"}
+    assert client.post(url, data).status_code == 302
+    html = client.get(url).content.decode()
+    assert "رابط دفع" in html and "رقم توثيق داخلي، وليس مرجع بوابة" in html
+
+
 @pytest.mark.parametrize(
     "status",
     ["created", "pending", "unknown", "review", "succeeded", "partially_refunded", "refunded"],
@@ -125,7 +159,7 @@ def test_any_unresolved_or_previous_collection_blocks_manual_full_payment(status
         {"currency": "USD"},
         {"confirmed": False},
         {"method": "card"},
-        {"reference": ""},
+        {"reference": "internal-receipt:forged"},
         {"snapshot_digest": "stale"},
     ],
 )

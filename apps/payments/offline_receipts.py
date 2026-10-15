@@ -1,4 +1,4 @@
-"""Audited bank/cash attestation. No provider, inventory or message side effects."""
+"""Audited external receipt. No provider, inventory or message side effects."""
 
 import hashlib
 import json
@@ -15,6 +15,8 @@ from apps.reservations.models import BookingIntent, Reservation
 
 from .manual_references import claim_reference
 from .models import OfflinePaymentReceipt, PaymentAttempt
+
+INTERNAL_REFERENCE_PREFIX = "internal-receipt:"
 
 
 def receipt_snapshot(reservation):
@@ -51,14 +53,14 @@ def record_offline_receipt(
         raise ValidationError("توثيق السداد اليدوي غير مفعّل.")
     if (
         confirmed is not True
-        or method not in {"cash", "bank_transfer"}
-        or not reference.strip()
+        or method not in {"cash", "bank_transfer", "external_link"}
+        or reference.strip().casefold().startswith(INTERNAL_REFERENCE_PREFIX)
         or len(reference) > 100
         or len(note) > 500
         or timezone.is_naive(received_at)
         or received_at > timezone.now()
     ):
-        raise ValidationError("أكد القبض الفعلي وأدخل طريقة ومرجعًا ووقتًا صحيحًا.")
+        raise ValidationError("أكد القبض الفعلي وأدخل طريقة ووقتًا صحيحين؛ المرجع الخارجي اختياري.")
     value = Decimal(str(amount))
     if not value.is_finite() or value <= 0:
         raise ValidationError("مبلغ القبض غير صحيح.")
@@ -66,6 +68,9 @@ def record_offline_receipt(
         booking = Reservation.objects.select_for_update().get(pk=reservation_id)
         if snapshot_digest != receipt_snapshot(booking):
             raise ValidationError("تغيّرت بيانات الحجز؛ أعد فتحه وراجع المبلغ.")
+        # Stable per reservation: a repeated blank-reference POST stays
+        # idempotent. This is an internal receipt ID, never bank/gateway proof.
+        receipt_reference = reference.strip() or f"{INTERNAL_REFERENCE_PREFIX}{booking.pk}"
         existing = OfflinePaymentReceipt.objects.filter(reservation=booking).first()
         if existing:
             if (
@@ -79,7 +84,7 @@ def record_offline_receipt(
                 value,
                 currency,
                 method,
-                reference.strip(),
+                receipt_reference,
                 received_at,
                 note.strip(),
             ):
@@ -124,7 +129,7 @@ def record_offline_receipt(
                 or booking.loyalty_state.get("redemption")
             ):
                 raise ValidationError("يوجد تحصيل أو محاولة دفع أو نقاط؛ يلزم مراجعتها أولًا.")
-        claim = claim_reference(booking, reference)
+        claim = claim_reference(booking, receipt_reference)
         if claim.payment_attempt_id:
             raise ValidationError("مرجع القبض موثق سابقًا؛ راجع الإيصال الأصلي.")
         receipt = OfflinePaymentReceipt.objects.create(
@@ -132,7 +137,7 @@ def record_offline_receipt(
             amount=value,
             currency=currency,
             method=method,
-            reference=reference.strip(),
+            reference=receipt_reference,
             note=note.strip(),
             received_at=received_at,
             recorded_by=request.user,
@@ -142,7 +147,7 @@ def record_offline_receipt(
             payment = PaymentAttempt.objects.create(
                 booking_intent_id=booking.booking_intent_id,
                 provider="manual",
-                provider_reference=reference.strip(),
+                provider_reference=receipt_reference,
                 provider_payment_id=f"manual:{receipt.pk}",
                 idempotency_key=f"offline:{receipt.pk}",
                 amount=value,
@@ -165,7 +170,7 @@ def record_offline_receipt(
         if lodging_only is True:
             booking.loyalty_state["manual_lodging_price"] = {
                 "total": str(booking.total_price),
-                "reference": reference.strip(),
+                "reference": receipt_reference,
                 "operator": request.user.pk,
                 "at": timezone.now().isoformat(),
             }
@@ -175,13 +180,14 @@ def record_offline_receipt(
             action="payment.offline_received",
             object_type="OfflinePaymentReceipt",
             object_reference=str(receipt.pk),
-            summary="توثيق قبض بنكي أو نقدي فعلي دون تحصيل جديد أو تأكيد من بوابة الدفع",
+            summary="توثيق قبض خارجي فعلي دون تحصيل جديد أو تأكيد آلي من بوابة الدفع",
             metadata={
                 "reservation": str(booking.pk),
                 "method": method,
                 "amount": str(value),
                 "currency": currency,
                 "received_at": received_at.isoformat(),
+                "external_reference_supplied": bool(reference.strip()),
             },
         )
         from apps.loyalty.site_adapter import schedule_reconciliation

@@ -65,19 +65,19 @@
   {% endif %}
   {% if manual_receipts_enabled %}
   <section class="lsa-panel">
-    <h2>تسجيل الحجز مدفوعًا بحوالة بنكية أو نقدًا</h2>
+    <h2>تسجيل الحجز مدفوعًا بحوالة بنكية أو نقدًا أو رابط دفع</h2>
     {% if offline_receipt %}
-      <p>تم توثيق القبض اليدوي: {{ offline_receipt.amount|format_money:offline_receipt.currency }} — {% if offline_receipt.method == 'cash' %}نقدًا{% else %}حوالة بنكية{% endif %}</p>
-      <p>مرجع القبض: {{ offline_receipt.reference }} · وقت الاستلام: {{ offline_receipt.received_at }} · المسجّل: {{ offline_receipt.recorded_by.get_username }}</p>
+      <p>تم توثيق القبض اليدوي: {{ offline_receipt.amount|format_money:offline_receipt.currency }} — {% if offline_receipt.method == 'cash' %}نقدًا{% elif offline_receipt.method == 'external_link' %}رابط دفع{% else %}حوالة بنكية{% endif %}</p>
+      <p>{% if offline_receipt.has_internal_reference %}رقم توثيق داخلي، وليس مرجع بوابة: {{ offline_receipt.pk }}{% else %}مرجع القبض: {{ offline_receipt.reference }}{% endif %} · وقت الاستلام: {{ offline_receipt.received_at }} · المسجّل: {{ offline_receipt.recorded_by.get_username }}</p>
       <p>هذا قبض وثّقته الإدارة وليس عملية دفع مؤكدة من بوابة الدفع.</p>
     {% elif reservation.payment_status != 'paid' %}
-      <p>توثيق مبلغ استلمته الإدارة فعلًا فقط، وليس تحصيلًا جديدًا. أدخل كامل مبلغ الحجز بعملته بعد مراجعة الحساب أو إيصال النقد. لا تدخل بيانات بطاقة أو رقم حساب بنكي.</p>
+      <p>توثيق مبلغ استلمته الإدارة فعلًا فقط، وليس تحصيلًا جديدًا. أدخل كامل مبلغ الحجز بعملته بعد مراجعة الحساب أو إيصال النقد أو نتيجة رابط الدفع الخارجي الذي أعدّته المحاسبة. المرجع اختياري. لا تدخل بيانات بطاقة أو رقم حساب بنكي.</p>
       <form method="post" class="lsa-owner-form" novalidate>
         {% csrf_token %}<input type="hidden" name="action" value="record_offline_payment">
         {{ offline_receipt_form.non_field_errors }}
         <div class="lsa-owner-form__grid">
         {% for field in offline_receipt_form %}{% if field.is_hidden %}{{ field }}{% else %}
-          <label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>
+          <label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</label>
         {% endif %}{% endfor %}
         </div>
         <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد استلام المبلغ وتحويل الحجز إلى مدفوع</button>

@@ -3,7 +3,11 @@
 {% block title %}{{ ui.title }}{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}">{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}">
+<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">
+<script type="module" src="{% static 'js/checkout-address.js' %}"></script>
+{% endblock %}
 {% block content %}
 <section class="section container narrow payment-result reservation-payment">
   <div class="section-heading"><h1>{{ ui.title }}</h1></div>
@@ -24,9 +28,7 @@
       <form method="post" class="guest-form">
         {% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
         <fieldset><legend>{{ ui.billing }}</legend>
-          {% for field in form %}{% if 'billing_' in field.name %}
-          <div class="form-field{% if field.errors %} form-field--error{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>
-          {% endif %}{% endfor %}
+          {% include "reservations/_billing_fields.html" with guest_form=form %}
         </fieldset>
         <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
         <div class="form-field reservation-payment__consent"><label for="{{ form.terms_accepted.id_for_label }}">{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label>{{ form.terms_accepted.errors }}</div>

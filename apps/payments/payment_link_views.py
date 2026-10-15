@@ -4,19 +4,25 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import Http404
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone, translation
 from django.views import View
 
 from apps.core.guest_documents import guest_documents
 from apps.integrations.hostaway.exceptions import HostawayError
 from apps.payments.currency import CurrencyError
+from apps.reservations.address_places import (
+    CheckoutAddressView,
+    make_address_ticket,
+    places_enabled,
+)
 from apps.reservations.booking_forms import GuestDetailsForm
-from apps.reservations.security import is_ip_rate_limited
+from apps.reservations.security import is_ip_rate_limited, session_key_hash
 from apps.reservations.views import _rate_conditions_snapshot
 
 from .hyperpay.exceptions import HyperPayError
 from .models import ReservationPaymentRequest
-from .payment_links import create_request_checkout, resolve_token, validate_open
+from .payment_links import create_request_checkout, link_token, resolve_token, validate_open
 from .views import _render_hyperpay_checkout
 
 COPY = {
@@ -81,9 +87,12 @@ class PaymentLinkBillingForm(GuestDetailsForm):
                 self.fields.pop(name)
 
 
-def private_response(response):
+def private_response(response, *, form_page=False):
     response["Cache-Control"] = "no-store, private"
-    response["Referrer-Policy"] = "no-referrer"
+    # no-referrer can make Safari send Origin: null on a same-origin form POST.
+    # Same-origin preserves CSRF validation without leaking the capability to
+    # HyperPay, Google or any other cross-origin destination. Results need none.
+    response["Referrer-Policy"] = "same-origin" if form_page else "no-referrer"
     response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
     return response
 
@@ -103,7 +112,7 @@ class ReservationPaymentView(View):
         # Bearer URLs must never enter analytics, marketing or third-party map URLs.
         request._disable_google_integrations = True
         with translation.override(language):
-            return private_response(super().dispatch(request, token))
+            return private_response(super().dispatch(request, token), form_page=True)
 
     def _render(self, request, *, form=None, error=""):
         payment_request = self.payment_request
@@ -128,7 +137,18 @@ class ReservationPaymentView(View):
             "conditions": _rate_conditions_snapshot(
                 payment_request.reservation.booking_intent.quote
             ),
+            "address_places_enabled": payable and places_enabled(),
         }
+        if context["address_places_enabled"]:
+            context.update(
+                address_places_ticket=make_address_ticket(_address_scope(request, payment_request)),
+                address_suggestions_url=reverse(
+                    "payments:reservation_address_suggestions", args=[link_token(payment_request)]
+                ),
+                address_details_url=reverse(
+                    "payments:reservation_address_details", args=[link_token(payment_request)]
+                ),
+            )
         return render(request, "payments/reservation_payment.html", context)
 
     def get(self, request, token):
@@ -174,6 +194,40 @@ class ReservationPaymentView(View):
             intent=self.payment_request.reservation.booking_intent,
             payment_request=self.payment_request,
         )
+
+
+def _address_scope(request, payment_request):
+    from types import SimpleNamespace
+
+    # Separate namespace and this browser's own marker, never ownership of the
+    # original quote/session. Opening a payment link grants no booking access.
+    return SimpleNamespace(
+        pk=f"payment:{payment_request.pk}", session_key_hash=session_key_hash(request)
+    )
+
+
+class ReservationPaymentAddressView(CheckoutAddressView):
+    def dispatch(self, request, reference):
+        if not settings.RESERVATION_PAYMENT_LINKS_ENABLED or not settings.HYPERPAY_ENABLED:
+            raise Http404
+        payment_request = resolve_token(reference)
+        if payment_request is None:
+            raise Http404
+        try:
+            validate_open(payment_request)
+        except (ValueError, ValidationError, CurrencyError, HyperPayError) as exc:
+            raise Http404 from exc
+        self.payment_request = payment_request
+        language = payment_request.language if payment_request.language in COPY else "ar"
+        request.LANGUAGE_CODE = language
+        request._disable_google_integrations = True
+        # Renewals and post-selection tickets must retain the link's language,
+        # independently of Accept-Language or the site's language cookie.
+        with translation.override(language):
+            return private_response(super().dispatch(request, reference), form_page=True)
+
+    def get_address_scope(self, request, reference):
+        return _address_scope(request, self.payment_request)
 
 
 def render_request_result(request, attempt, outcome):

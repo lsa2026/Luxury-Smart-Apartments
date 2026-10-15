@@ -1,8 +1,10 @@
 {% load i18n %}
+{% if not address_suggestions_url %}{% url 'reservations:address_suggestions' quote_reference as address_suggestions_url %}{% endif %}
+{% if not address_details_url %}{% url 'reservations:address_details' quote_reference as address_details_url %}{% endif %}
 <div class="checkout-address" data-checkout-address hidden
      data-address-ticket="{{ address_places_ticket }}"
-     data-address-suggestions-url="{% url 'reservations:address_suggestions' quote_reference %}"
-     data-address-details-url="{% url 'reservations:address_details' quote_reference %}"
+     data-address-suggestions-url="{{ address_suggestions_url }}"
+     data-address-details-url="{{ address_details_url }}"
      data-address-loading="{% trans 'Searching for your address…' %}"
      data-address-choose="{% trans 'Choose your address, or enter it manually below.' %}"
      data-address-empty="{% trans 'No matching address. Enter your address manually below.' %}"

@@ -796,6 +796,12 @@ LOGGING = {
     "loggers": {
         "gunicorn.access": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "django.server": {"filters": ["payment_capabilities"], "level": "INFO"},
+        "django.security.csrf": {
+            "handlers": ["console"],
+            "filters": ["payment_capabilities"],
+            "level": "WARNING",
+            "propagate": False,
+        },
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "httpx": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "apps.integrations.hostaway": {

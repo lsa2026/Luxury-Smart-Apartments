@@ -210,7 +210,12 @@ class OfflinePaymentReceipt(models.Model):
     amount = models.DecimalField(max_digits=14, decimal_places=4)
     currency = models.CharField(max_length=3)
     method = models.CharField(
-        max_length=20, choices=[("bank_transfer", "Bank transfer"), ("cash", "Cash")]
+        max_length=20,
+        choices=[
+            ("bank_transfer", "Bank transfer"),
+            ("cash", "Cash"),
+            ("external_link", "External payment link"),
+        ],
     )
     reference = models.CharField(max_length=100)
     note = models.CharField(max_length=500, blank=True)
@@ -229,6 +234,10 @@ class OfflinePaymentReceipt(models.Model):
 
     def __str__(self):
         return f"Offline receipt {self.pk}"
+
+    @property
+    def has_internal_reference(self):
+        return self.reference == f"internal-receipt:{self.reservation_id}"
 
 
 class HostawayFinancialEntry(models.Model):
