@@ -69,6 +69,18 @@ def successful_original_payment_amount(reservation: Reservation) -> Decimal | No
     A partial refund changes the payment status, not whether money was collected.
     """
     intent = reservation.booking_intent
+    receipt = getattr(reservation, "offline_payment_receipt", None)
+    if receipt and receipt.payment_attempt_id is None:
+        returned = sum(
+            (
+                r.amount
+                for r in reservation.refund_obligations.filter(
+                    currency=receipt.currency, status__in=["processing", "transferred"]
+                )
+            ),
+            Decimal("0"),
+        )
+        return max(receipt.amount - returned, Decimal("0"))
     if intent is None:
         return None
 
@@ -223,13 +235,22 @@ def record_obligation(
     """
     if computation.amount <= 0:
         return None
+    detail = dict(computation.detail)
+    receipt = getattr(reservation, "offline_payment_receipt", None)
+    if receipt:
+        detail.update(receipt_provider="manual", offline_receipt=str(receipt.pk))
+        ceiling = successful_original_payment_amount(reservation) or Decimal("0")
+        if computation.amount > ceiling:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError("الاسترداد يتجاوز صافي القبض اليدوي الموثق.")
     obligation = RefundObligation.objects.create(
         reservation=reservation,
         modification_request=modification,
         reason=reason,
         amount=computation.amount,
         currency=computation.currency,
-        calculation=computation.detail,
+        calculation=detail,
     )
     _announce(obligation)
     return obligation

@@ -101,6 +101,8 @@ class HyperPayRefundService:
         )
         if refund.status != RefundObligation.Status.DUE or refund.amount <= Decimal("0"):
             raise HyperPayRefundError("refund_not_available")
+        if hasattr(refund.reservation, "offline_payment_receipt"):
+            raise HyperPayRefundError("manual_refund_required")
         if refund.currency != "SAR":
             raise HyperPayRefundError("refund_currency_not_supported")
         intent = refund.reservation.booking_intent

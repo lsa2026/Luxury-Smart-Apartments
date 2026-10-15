@@ -139,7 +139,13 @@ def booking_facts(booking):
             ):
                 return None, "modification_snapshot_mismatch"
             components = modification.quote_snapshot.get("components")
-        elif intent.total_price != booking.total_price:
+        elif intent.total_price != booking.total_price or (
+            booking.currency == "SAR"
+            and hasattr(intent.quote, "manual_booking_draft")
+            and any(payment.provider == "manual" for payment in payments)
+            and booking.loyalty_state.get("manual_lodging_price", {}).get("total")
+            == str(booking.total_price)
+        ):
             draft = getattr(intent.quote, "manual_booking_draft", None)
             if not draft or draft.final_total_price != booking.total_price:
                 return None, "manual_price_breakdown_required"

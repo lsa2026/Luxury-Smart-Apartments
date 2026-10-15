@@ -35,6 +35,8 @@ CONTEXT = (
     "reservations.refundobligation",
     "payments.reservationpaymentrequest",
     "payments.paymentrequestdelivery",
+    "payments.offlinepaymentreceipt",
+    "payments.manualreceiptreference",
     "payments.paymentattempt",
     "payments.hostawayfinancialentry",
 )
@@ -54,6 +56,8 @@ REVERSE = (
     ("payments.paymentattempt", "booking_intent", "reservations.bookingintent"),
     ("payments.reservationpaymentrequest", "reservation", "reservations.reservation"),
     ("payments.paymentrequestdelivery", "request", "payments.reservationpaymentrequest"),
+    ("payments.offlinepaymentreceipt", "reservation", "reservations.reservation"),
+    ("payments.manualreceiptreference", "reservation", "reservations.reservation"),
     ("payments.hostawayfinancialentry", "payment_attempt", "payments.paymentattempt"),
 )
 MAX_ROWS = 100_000
@@ -107,7 +111,12 @@ def _schema_hash(*, payment_links=True):
             for label, model in _models().items()
             if payment_links
             or label
-            not in {"payments.reservationpaymentrequest", "payments.paymentrequestdelivery"}
+            not in {
+                "payments.reservationpaymentrequest",
+                "payments.paymentrequestdelivery",
+                "payments.offlinepaymentreceipt",
+                "payments.manualreceiptreference",
+            }
         }
     )
 
@@ -247,6 +256,8 @@ def validate(snapshot):
             if row["model"] in {
                 "payments.reservationpaymentrequest",
                 "payments.paymentrequestdelivery",
+                "payments.offlinepaymentreceipt",
+                "payments.manualreceiptreference",
             }:
                 _reject("unreviewed_record_fields")
             if row["model"] == "payments.paymentattempt":
@@ -401,6 +412,8 @@ def compare(previous, incoming):
     for key, row in old.items():
         if key not in new:
             _reject("financial_history_missing" if key[0] in CORE else "related_history_missing")
+        if key[0] == "payments.offlinepaymentreceipt" and new[key] != row:
+            _reject("offline_receipt_history_changed")
         if key[0] not in CORE:
             continue
         if key[0] != "loyalty.member" and new[key] != row:

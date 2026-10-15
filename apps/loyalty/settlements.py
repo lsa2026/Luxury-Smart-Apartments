@@ -228,7 +228,10 @@ def record_manual_receipt(
         ):
             raise ValidationError("يلزم مبلغ ومرجع ووقت قبض فعلي صحيح.")
         key = salted_hmac("loyalty-manual-receipt-v1", reference.strip()).hexdigest()
-        prior = PaymentAttempt.objects.filter(idempotency_key=key).first()
+        from apps.payments.manual_references import claim_reference
+
+        claim = claim_reference(booking, reference)
+        prior = claim.payment_attempt or PaymentAttempt.objects.filter(idempotency_key=key).first()
         if prior:
             if (
                 prior.booking_intent_id != booking.booking_intent_id
@@ -236,6 +239,9 @@ def record_manual_receipt(
                 or prior.verified_at != received_at
             ):
                 raise ValidationError("المرجع مسجل ببيانات أخرى.")
+            if not claim.payment_attempt_id:
+                claim.payment_attempt = prior
+                claim.save(update_fields=["payment_attempt"])
             return prior
         if PaymentAttempt.objects.filter(
             booking_intent_id=booking.booking_intent_id,
@@ -262,6 +268,8 @@ def record_manual_receipt(
             verified_at=received_at,
             payment_brand="manual_receipt",
         )
+        claim.payment_attempt = row
+        claim.save(update_fields=["payment_attempt"])
         AuditLog.objects.create(
             actor_user=operator,
             action="loyalty.manual_receipt",

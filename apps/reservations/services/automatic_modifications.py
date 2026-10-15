@@ -521,6 +521,8 @@ def _submit_automatic_refund(
     A provider error never reopens or reverses a confirmed cancellation.  The
     obligation remains visible to the operations team for a safe retry.
     """
+    if hasattr(refund.reservation, "offline_payment_receipt"):
+        return "manual_refund_required"
     from apps.payments.hyperpay.exceptions import HyperPayRefundError
     from apps.payments.hyperpay.refunds import HyperPayRefundService
 

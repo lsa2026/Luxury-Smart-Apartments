@@ -2,6 +2,7 @@
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -173,6 +174,61 @@ class PaymentAttempt(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider} — {self.amount} {self.currency}"
+
+
+class ManualReceiptReference(models.Model):
+    """One cross-workflow claim per normalized manual receipt reference."""
+
+    digest = models.CharField(primary_key=True, max_length=64, editable=False)
+    reservation = models.ForeignKey(
+        "reservations.Reservation",
+        on_delete=models.PROTECT,
+        related_name="manual_receipt_references",
+    )
+    payment_attempt = models.ForeignKey(
+        PaymentAttempt, on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    def __str__(self):
+        return "Manual receipt reference claim"
+
+
+class OfflinePaymentReceipt(models.Model):
+    """Manager attestation of money ALREADY received, never a gateway transaction."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reservation = models.OneToOneField(
+        "reservations.Reservation", on_delete=models.PROTECT, related_name="offline_payment_receipt"
+    )
+    payment_attempt = models.OneToOneField(
+        PaymentAttempt,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="offline_receipt",
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=4)
+    currency = models.CharField(max_length=3)
+    method = models.CharField(
+        max_length=20, choices=[("bank_transfer", "Bank transfer"), ("cash", "Cash")]
+    )
+    reference = models.CharField(max_length=100)
+    note = models.CharField(max_length=500, blank=True)
+    received_at = models.DateTimeField()
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    snapshot_digest = models.CharField(max_length=64, editable=False)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="offline_receipt_positive"),
+            models.UniqueConstraint(
+                fields=["method", "reference"], name="unique_offline_receipt_reference"
+            ),
+        ]
+
+    def __str__(self):
+        return f"Offline receipt {self.pk}"
 
 
 class HostawayFinancialEntry(models.Model):

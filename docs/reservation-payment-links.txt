@@ -2,7 +2,7 @@ Existing manual reservation payment links — implementation / rollout checklist
 Base: main c6cd9f7f395cd2dd831ff6ebd8b7488b21253027 (matched live Render on 2026-10-15).
 
 Scope
-- Full settlement of an unpaid, confirmed, owner-created reservation with an existing
+- Full settlement of an unpaid, confirmed, direct reservation with an existing
   Hostaway ID and BookingIntent. No new inventory reservation or availability quote.
 - Existing verified or uncertain collections, refund obligations and active/completed
   amendments are blocked for review. Price-difference collection is NOT in this release.
@@ -11,7 +11,7 @@ Scope
 Activation (NOT performed by this implementation)
 1. Approve rollout and link policy, review the branch against current main, run CI with
    PostgreSQL including concurrency tests, and inspect the change set.
-2. Apply payments migration 0010 during the separately approved deployment.
+2. Apply payments migrations 0010-0012 during the separately approved deployment.
    The loyalty backup closure includes payment requests and delivery evidence. Validation
    supports exactly the current schema and the pre-payment-link schema (only the nullable
    PaymentAttempt.payment_request field and two new models differ). Historical seals and
@@ -92,6 +92,39 @@ Local verification — 2026-10-15
   phone viewport. Fake reservation only, no guest/payment form submission. Server stopped.
 - No GitHub push/PR, deployment, Render setting changes, real charge, real Hostaway write,
   or actual WhatsApp delivery was performed by this implementation.
-- Changes are staged locally on codex/admin-booking-payment-links-20261015. A local
-  commit was attempted but Git has no configured author identity; no identity was
-  invented or global Git settings changed. Configure an approved author before commit.
+- The initial author-identity blocker was resolved on explicit owner approval, using
+  the verified connected GitHub account identity in repository-local settings only.
+- First review commit c750313 was pushed to codex/admin-booking-payment-links-20261015,
+  draft PR 61. Its PostgreSQL and quality CI jobs both passed (run 38731457806).
+  Current extensions below must pass their own fresh CI before any merge/deployment.
+
+Existing-booking / offline receipt extension — 2026-10-15
+- Existing direct bookings with a matching local BookingIntent/FX snapshot can issue a
+  payment link from booking administration without requiring a ManualBookingDraft.
+  OTA/external-channel collections are blocked. Imported bookings without an intent
+  are not silently converted into website checkouts; do not fabricate guest/FX data.
+- MANUAL_PAYMENT_RECEIPTS_ENABLED defaults false, independent of card collection.
+  Approved operations managers can attest a FULL bank/cash payment in original booking
+  currency, with received time, proof reference, optional note and explicit confirmation.
+  A frozen reservation digest rejects stale amounts/dates. No partial/mixed settlement.
+- OfflinePaymentReceipt holds the manager's evidence and links to a provider=manual
+  accounting record when an existing intent exists. manual: identifiers are INTERNAL
+  receipt references, never HyperPay transaction IDs. No intent is invented for imports.
+- Settlements/refund ceilings count the receipt once. Bank/cash refunds remain manual,
+  never a HyperPay refund or claimed gateway authorization. Issued invoices are unchanged;
+  no invoice/email/WhatsApp is auto-sent by the offline receipt action.
+- Shared ManualReceiptReference PK claims unify old loyalty and new administration
+  receipt references, including case/Unicode normalization. Migration 0012 backfills
+  legacy manual payment references and stops on historical collisions for accounting
+  review. It does not rewrite old payments or choose a conflicting winner silently.
+- Receipt recording locks reservation then intent, blocks existing/uncertain collections,
+  revokes unused links and leaves the original stay unchanged. Parallel cash/cash and
+  cash/online claims are tested on PostgreSQL CI, not inferred from SQLite.
+- Lodging-only owner attestation is optional and auditable. It permits loyalty allocation
+  for a manually overridden lodging-only rate even when intent equals booking but the
+  original quote breakdown differs. Fees are never automatically assumed to be lodging.
+- This release records offline money LOCALLY. It neither calls a bank nor writes an
+  offline Hostaway charge. The operations UI says so explicitly; future provider sync
+  must be separately gated, deduplicated and tested before it is represented as complete.
+- Majed Alzahrani was nominated by the owner for a future live trial; no live record,
+  amount, phone, inventory or message has been fetched, modified or sent for that trial.

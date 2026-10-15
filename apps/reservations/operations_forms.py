@@ -337,3 +337,40 @@ class RefundGatewaySubmitForm(forms.Form):
         label="أؤكد إعادة هذا المبلغ إلى بطاقة الضيف عبر HyperPay",
         error_messages={"required": "أكد تنفيذ الاسترداد عبر بوابة الدفع قبل المتابعة."},
     )
+
+
+class OfflinePaymentReceiptForm(forms.Form):
+    amount = forms.DecimalField(
+        label="المبلغ المستلم كاملًا بعملة الحجز",
+        max_digits=14,
+        decimal_places=4,
+        min_value=Decimal("0.0001"),
+    )
+    currency = forms.CharField(widget=forms.HiddenInput(), max_length=3)
+    snapshot_digest = forms.CharField(widget=forms.HiddenInput(), max_length=64)
+    method = forms.ChoiceField(
+        label="طريقة الاستلام", choices=[("bank_transfer", "حوالة بنكية"), ("cash", "نقدًا")]
+    )
+    reference = forms.CharField(label="مرجع الحوالة أو رقم إيصال النقد", max_length=100)
+    received_at = forms.DateTimeField(
+        label="وقت الاستلام الفعلي",
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+    )
+    note = forms.CharField(
+        label="ملاحظة محاسبية دون بيانات بطاقة أو حساب بنكي",
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+    lodging_only = forms.BooleanField(
+        label="السعر للإقامة فقط دون رسوم أخرى، لأغراض احتساب الولاء", required=False
+    )
+    confirmed = forms.BooleanField(
+        label="أؤكد استلام المبلغ فعليًا، وأنه ليس تحصيلًا مكررًا أو مبلغًا تحت التحصيل لدى منصة أخرى"
+    )
+
+    def clean_reference(self):
+        return _clean_text(self.cleaned_data["reference"])
+
+    def clean_note(self):
+        return _clean_text(self.cleaned_data["note"])

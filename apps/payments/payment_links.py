@@ -19,7 +19,7 @@ from apps.core.guest_documents import documents_digest
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.reservation_validators import normalize_hostaway_reservation_status
 from apps.payments.currency import validate_payment_snapshot
-from apps.reservations.models import BookingIntent, ManualBookingDraft, Reservation
+from apps.reservations.models import BookingIntent, Reservation
 
 from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .hyperpay.service import (
@@ -71,17 +71,18 @@ def _eligible(reservation):
         not intent
         or not reservation.hostaway_reservation_id
         or reservation.normalized_status != Reservation.Status.CONFIRMED
-        or not ManualBookingDraft.objects.filter(
-            quote_id=intent.quote_id, status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
-        ).exists()
+        or reservation.source_type
+        not in {Reservation.SourceType.DIRECT_WEBSITE, Reservation.SourceType.HOSTAWAY_MANUAL}
     ):
-        raise HyperPayCheckoutError("confirmed_manual_reservation_required")
+        raise HyperPayCheckoutError("confirmed_direct_reservation_required")
     if (settings.HYPERPAY_ENVIRONMENT == "test") != reservation.is_test:
         raise HyperPayCheckoutError("payment_environment_mismatch")
     if reservation.check_in <= timezone.localdate():
         raise HyperPayCheckoutError("stay_already_started")
     if reservation.payment_status.casefold() in {"paid", "fully_paid", "partially_paid"}:
         raise HyperPayCheckoutError("existing_collection_requires_review")
+    if hasattr(reservation, "offline_payment_receipt"):
+        raise HyperPayCheckoutError("offline_collection_already_recorded")
     if (
         intent.total_price != reservation.total_price
         or intent.currency != reservation.currency
