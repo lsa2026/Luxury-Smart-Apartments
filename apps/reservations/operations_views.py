@@ -119,12 +119,57 @@ def _payment_link_action(request: HttpRequest, reservation: Reservation) -> Http
         messages.error(
             request,
             "الحجز محفوظ، لكن رابط السداد يحتاج مراجعة: قد توجد محاولة دفع قائمة، "
-            "أو تحصيل سابق، أو تغيير بالحجز. لم يُنشأ حجز مكرر ولم يُرسل طلب للمحاسبة.",
+            "أو تحصيل سابق، أو طلب رابط لدى أسيل، أو تغيير بالحجز. "
+            "لم يُنشأ حجز مكرر ولم يُرسل طلب للمحاسبة.",
         )
     except Exception:
         # No guest data, URL, token or provider response in the log.
         logger.error("Existing-reservation payment-link action needs review")
         messages.error(request, "الحجز محفوظ، وتعذر تجهيز الرابط أو إرساله. راجع السجل.")
+    return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+
+
+def _accounting_link_action(request: HttpRequest, reservation: Reservation) -> HttpResponse:
+    """Explicit, optional accounting route; never a guest-link failure fallback."""
+    from apps.payments.hyperpay.exceptions import HyperPayError
+
+    try:
+        result = send_manual_payment_link_request(
+            reservation_id=reservation.pk, owner_optional=True
+        )
+    except (ValueError, HyperPayError):
+        messages.error(
+            request,
+            "لم يُرسل طلب إلى أسيل. أوقف رابط الموقع غير المستخدم أولًا، وتأكد من عدم "
+            "وجود تحصيل سابق أو محاولة دفع غير محسومة أو تعديل يحتاج مراجعة.",
+        )
+    except Exception:
+        logger.error("Optional accounting payment-link request needs review")
+        messages.error(request, "تعذر تأكيد إرسال الطلب إلى أسيل؛ راجع السجل قبل إعادة المحاولة.")
+    else:
+        record_audit(
+            request=request,
+            action="payment_link.accounting_requested",
+            object_type="Reservation",
+            object_reference=reservation.public_reference,
+            summary="Owner explicitly selected the optional accounting payment-link route.",
+            metadata={"status": result.code},
+        )
+        copy = {
+            "sent": (
+                "قبِل مزود الواتساب طلب إنشاء الرابط اليدوي إلى أسيل؛ وصوله إلى جوالها غير مؤكد هنا."
+            ),
+            "already_sent": "سبق إرسال طلب الرابط اليدوي إلى أسيل؛ لم يُرسل طلب مكرر.",
+            "already_requested": "طلب الرابط اليدوي إلى أسيل قيد الإرسال؛ لم يُرسل طلب إضافي.",
+            "previously_failed": "نتيجة الطلب السابق إلى أسيل تحتاج مراجعة؛ لم يُرسل طلب مكرر.",
+            "disabled": "إرسال الواتساب غير مفعّل؛ لم يُرسل طلب إلى أسيل.",
+        }
+        if result.code == "sent":
+            messages.success(request, copy[result.code])
+        elif result.code in {"already_sent", "already_requested"}:
+            messages.info(request, copy[result.code])
+        else:
+            messages.error(request, copy.get(result.code, "تعذر تأكيد إرسال الطلب إلى أسيل."))
     return redirect("notifications:booking_detail", reservation_id=reservation.pk)
 
 
@@ -376,6 +421,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         "revoke_guest_payment_link",
     }:
         return _payment_link_action(request, reservation)
+    if request.method == "POST" and request.POST.get("action") == "request_accounting_payment_link":
+        return _accounting_link_action(request, reservation)
     cancellation_blocked = cancellation_blocker(reservation)
     invoice = (
         GuestInvoice.objects.defer("pdf_content")
@@ -659,6 +706,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
             "guest_payment_request": guest_payment_request,
             "latest_link_delivery": latest_link_delivery,
+            "accounting_link_delivery": WhatsAppDelivery.objects.filter(
+                reservation=reservation, message_type="manual_payment_link_request"
+            ).first(),
             "manual_receipts_enabled": settings.MANUAL_PAYMENT_RECEIPTS_ENABLED,
             "offline_receipt_form": receipt_form,
             "offline_receipt": getattr(reservation, "offline_payment_receipt", None),
@@ -776,7 +826,10 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                 messages.error(request, "التوفر موجود لكن تعذر تثبيت السعر بالعملة المطلوبة الآن.")
             else:
                 messages.error(request, "لا يمكن إعادة فحص الحجز في حالته الحالية.")
-        elif action == "create_hostaway_and_request_payment":
+        elif action in {
+            "create_hostaway_and_request_payment",
+            "create_hostaway_and_request_accounting_link",
+        }:
             created = create_manual_booking_in_hostaway(draft_id=draft.pk)
             if created.code in {"created", "already_created"} and created.reservation is not None:
                 if created.code == "created":
@@ -791,6 +844,8 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                         metadata={"status": "awaiting_payment"},
                     )
                 try:
+                    if action == "create_hostaway_and_request_accounting_link":
+                        return _accounting_link_action(request, created.reservation)
                     if settings.RESERVATION_PAYMENT_LINKS_ENABLED:
                         return _payment_link_action(request, created.reservation)
                     delivery_result = send_manual_payment_link_request(

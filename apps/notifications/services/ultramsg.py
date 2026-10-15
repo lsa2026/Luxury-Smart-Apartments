@@ -138,7 +138,9 @@ class WhatsAppDeliveryResult:
     delivery: WhatsAppDelivery | None
 
 
-def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliveryResult:
+def send_manual_payment_link_request(
+    *, reservation_id: object, owner_optional: bool = False
+) -> WhatsAppDeliveryResult:
     """Send exactly one accountant alert after a manual Hostaway booking.
 
     A timeout is intentionally not retried automatically: UltraMsg may have
@@ -150,6 +152,10 @@ def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliv
         reservation = Reservation.objects.select_for_update().filter(pk=reservation_id).first()
         if reservation is None:
             raise ValueError("Reservation was not found.")
+        if owner_optional:
+            from apps.payments.payment_links import validate_accounting_request
+
+            validate_accounting_request(reservation)
         delivery, created = WhatsAppDelivery.objects.get_or_create(
             reservation=reservation,
             modification_request=None,

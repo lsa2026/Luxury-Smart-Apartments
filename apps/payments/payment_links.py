@@ -123,6 +123,16 @@ def issue_request(reservation_id):
     with transaction.atomic():
         reservation = Reservation.objects.select_for_update().get(pk=reservation_id)
         intent = _eligible(reservation)
+        # Accounting can create an external payable link that this site cannot
+        # revoke or reconcile. Do not offer a second collection channel.
+        from apps.notifications.models import WhatsAppDelivery
+
+        if (
+            WhatsAppDelivery.objects.filter(reservation=reservation)
+            .exclude(status=WhatsAppDelivery.Status.DISABLED)
+            .exists()
+        ):
+            raise HyperPayCheckoutError("accounting_collection_requires_review")
         current = reservation.payment_requests.filter(status="open").first()
         if current:
             # Do not replace an expired/changed capability with a live gateway attempt.
@@ -155,6 +165,21 @@ def issue_request(reservation_id):
             environment=settings.HYPERPAY_ENVIRONMENT,
             expires_at=expiry,
         )
+
+
+def validate_accounting_request(reservation):
+    """Called under the sender's reservation lock before claiming an optional alert.
+
+    An existing site link must be explicitly revoked first. Its gateway attempt
+    remains authoritative even after revocation/expiry, including uncertain results.
+    """
+    intent = _eligible(reservation)
+    if PaymentAttempt.objects.filter(
+        booking_intent=intent, status__in=(*SETTLED, *UNRESOLVED)
+    ).exists():
+        raise HyperPayCheckoutError("previous_collection_requires_review")
+    if reservation.payment_requests.filter(status__in=["open", "review", "paid"]).exists():
+        raise HyperPayCheckoutError("stop_site_payment_link_first")
 
 
 def link_token(request):
