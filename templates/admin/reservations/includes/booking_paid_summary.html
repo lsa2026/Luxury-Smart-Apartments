@@ -1,0 +1,6 @@
+{% load presentation %}
+<span class="lsa-booking-paid">
+  {% for total in booking.admin_paid_totals %}<strong>{{ total.amount|format_money:total.currency }}</strong>{% endfor %}
+  {% if booking.admin_payment_note %}<small>{{ booking.admin_payment_note }}</small>{% endif %}
+  {% for total in booking.admin_refunded_totals %}<small class="lsa-booking-paid__refund">المسترد: {{ total.amount|format_money:total.currency }}</small>{% endfor %}
+</span>

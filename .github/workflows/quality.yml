@@ -57,6 +57,7 @@ jobs:
           tests/test_booking_invoice_navigation.py
           tests/test_completed_stay_cancellation.py
           tests/test_operations_users.py
+          tests/test_operations_booking_summary.py
           tests/test_loyalty_stage8.py
           tests/test_loyalty_checkout_integration.py
           tests/test_loyalty_settlement_integration.py

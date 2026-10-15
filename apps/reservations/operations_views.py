@@ -54,6 +54,7 @@ from .operations_forms import (
 )
 from .services.automatic_modifications import execute_automatic_modification
 from .services.availability import AvailabilityRequest, AvailabilityService
+from .services.booking_list_summary import attach_booking_list_summaries
 from .services.modifications import ModificationService
 from .services.owner_settlement import owner_change_blocker, settlement_for
 from .services.refunds import cancellation_refund, successful_original_payment_amount
@@ -341,6 +342,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             | Q(property__name_en__icontains=query)
         )
     bookings = list(bookings[:100])
+    attach_booking_list_summaries(bookings)
     for booking in bookings:
         payment_status = (booking.payment_status or "").strip().casefold()
         booking.admin_status_code = (
