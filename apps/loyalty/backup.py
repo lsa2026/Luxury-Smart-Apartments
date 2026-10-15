@@ -89,7 +89,7 @@ def _fields(model):
     return [f.name for f in model._meta.concrete_fields if not f.primary_key]
 
 
-def _schema_hash(*, payment_links=True):
+def _schema_hash(*, payment_links=True, legacy_link_expiry=False):
     # Deconstruction contains callable defaults; field metadata here is stable and JSON-safe.
     return _hash(
         {
@@ -97,7 +97,13 @@ def _schema_hash(*, payment_links=True):
                 (
                     f.name,
                     f.get_internal_type(),
-                    f.null,
+                    (
+                        False
+                        if legacy_link_expiry
+                        and label == "payments.reservationpaymentrequest"
+                        and f.name == "expires_at"
+                        else f.null
+                    ),
                     f.max_length,
                     getattr(f, "decimal_places", None),
                     getattr(f, "max_digits", None),
@@ -228,7 +234,8 @@ def validate(snapshot):
         _reject("invalid_snapshot_format")
     legacy_payment_schema = snapshot["schema"] == _schema_hash(payment_links=False)
     if snapshot["version"] != VERSION or (
-        snapshot["schema"] != _schema_hash() and not legacy_payment_schema
+        snapshot["schema"] not in {_schema_hash(), _schema_hash(legacy_link_expiry=True)}
+        and not legacy_payment_schema
     ):
         _reject("incompatible_snapshot_schema")
     if seal(snapshot)["digest"] != snapshot["digest"]:

@@ -31,7 +31,7 @@ COPY = {
         "pay": "متابعة إلى الدفع الآمن",
         "billing": "عنوان الفوترة",
         "unavailable": "رابط السداد غير متاح",
-        "closed": "قد يكون الرابط منتهيًا أو ملغى أو تم سداد الحجز. تواصل مع الإدارة.",
+        "closed": "الرابط موقوف أو تم سداد الحجز أو تغيّرت حالته. تواصل مع الإدارة.",
         "error": "تعذر بدء الدفع الآن. إذا بدأت محاولة سابقة فلا تدفع مجددًا قبل التحقق.",
         "paid": "تم التحقق من استلام دفعتك. لا تدفع مرة أخرى.",
         "pending": "التحقق من الدفع قيد المتابعة. لا تدفع مرة أخرى قبل تأكيد الحالة.",
@@ -46,7 +46,7 @@ COPY = {
         "pay": "Continue to secure payment",
         "billing": "Billing address",
         "unavailable": "Payment link unavailable",
-        "closed": "This link may be expired, revoked or already paid. Contact management.",
+        "closed": "This link is stopped, already paid or its booking changed. Contact management.",
         "error": (
             "Payment could not be started. Do not pay again before checking an earlier attempt."
         ),
@@ -63,7 +63,9 @@ COPY = {
         "pay": "Continuer vers le paiement sécurisé",
         "billing": "Adresse de facturation",
         "unavailable": "Lien de paiement indisponible",
-        "closed": "Ce lien peut être expiré, révoqué ou déjà payé. Contactez la direction.",
+        "closed": (
+            "Ce lien est arrêté, déjà payé ou la réservation a changé. Contactez la direction."
+        ),
         "error": "Le paiement n’a pas pu démarrer. Vérifiez toute tentative avant de repayer.",
         "paid": "Votre paiement est vérifié. Ne payez pas à nouveau.",
         "pending": "Vérification en cours. Ne payez pas avant confirmation.",

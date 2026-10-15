@@ -675,7 +675,16 @@ body.login .errornote { border-radius: 10px; }
 .lsa-operation-log__row { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,.65fr); gap: 12px; align-items: center; padding: 13px 14px; border: 1px solid var(--lsa-line); border-radius: 12px; background: #fffdf8; }
 .lsa-operation-log__row p { margin: 0; color: var(--lsa-ink); font-size: 13px; font-weight: 700; line-height: 1.65; }
 .lsa-operation-log__row > div { display: flex; justify-content: space-between; gap: 10px; color: var(--lsa-muted); font-size: 11px; }.lsa-operation-log__row time { white-space: nowrap; }
-@media (max-width: 767px) { .lsa-booking-list-screen .lsa-page-head .lsa-btn { width: 100%; margin-top: 14px; }.lsa-refund-choice__presets { grid-template-columns: 1fr; }.lsa-booking-status { min-width: 0; font-size: 11px; } }
+/* Size the booking actions inside the hero's content box, including in RTL.
+   A 100% content-box button plus padding previously extended past its left edge. */
+.lsa-booking-list-screen .lsa-page-head > div { min-width: 0; }
+@media (max-width: 767px) {
+  .lsa-booking-list-screen .lsa-page-head { grid-template-columns: minmax(0, 1fr); }
+  .lsa-booking-list-screen .lsa-page-head__actions { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; max-width: 100%; gap: 12px; }
+  .lsa-booking-list-screen .lsa-page-head .lsa-btn { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; margin: 0; white-space: normal; text-align: center; }
+  .lsa-refund-choice__presets { grid-template-columns: 1fr; }
+  .lsa-booking-status { min-width: 0; font-size: 11px; }
+}
 @media (max-width: 767px) { .lsa-operations-screen .module.aligned .form-row { grid-template-columns: 1fr; gap: 6px; padding: 12px 0; }.lsa-operations-screen .module.aligned .form-row label,.lsa-operations-screen .module.aligned .form-row input,.lsa-operations-screen .module.aligned .form-row .help,.lsa-operations-screen .module.aligned .form-row .errorlist { grid-column: 1; }.lsa-operations-screen .module.aligned .form-row label { padding: 0; }.lsa-operations-screen .module.aligned .form-row input { min-height: 52px; font-size: 16px; }.lsa-operation-log__row { grid-template-columns: 1fr; gap: 10px; padding: 14px; }.lsa-operation-log__row > div { padding-top: 9px; border-top: 1px solid var(--lsa-line); }.lsa-operation-log__row time { font-size: 10px; } }
 /* Consistent owner/admin controls, including native iOS select widgets. */
 #content input:is([type="text"], [type="password"], [type="email"], [type="url"],

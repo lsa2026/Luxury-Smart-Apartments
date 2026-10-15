@@ -1,4 +1,31 @@
 Existing manual reservation payment links — implementation / rollout checklist
+Current owner-approved policy update — 2026-10-15 (supersedes expiry/route guards below)
+- Open existing-reservation payment links have no temporal deadline. New expires_at
+  values are NULL; historical timestamps are retained but no longer close open links.
+  Neither check-in nor quote/intent expiry closes the frozen-price collection link.
+  RESERVATION_PAYMENT_LINK_TTL_SECONDS is now legacy configuration, not link policy.
+- Verified payment closes checkout. Explicit revocation, cancelled/changed bookings,
+  provider-environment mismatches and previous/uncertain collections still prevent
+  unsafe website collection. Provider checkout sessions are separate from the link;
+  an unresolved session is not blindly replaced. Failed attempts can retry the same URL.
+- Requesting Aseel is an optional, explicit administration decision even with a site
+  link, paid status or unresolved attempt. It does not revoke a link, collect money,
+  mark the booking paid or bypass gateway verification. Accounting alerts no longer
+  block issuing the site link either. A nonblocking warning explains external-link
+  duplicate-collection risk; the site cannot automatically revoke Aseel's links.
+- Existing accounting-delivery deduplication is unchanged. No automatic fallback,
+  retry, guest message, new stay, price change or receipt is caused by a page view.
+- Migration 0014 only relaxes expires_at nullability; it does not delete/rewrite rows.
+  Backup validation accepts the exact prior nonnullable-expiry schema as well as
+  the current and known pre-payment schemas, retaining integrity/closure checks.
+  Keep the forward schema and compatible code on rollback; do not reverse the
+  migration or deploy expiry-comparison code against new NULL deadlines.
+- Mobile booking hero actions use border-box buttons and a shrinkable one-column
+  grid. This fixes the actual RTL width calculation, not by hiding overflow.
+- This release's tests use synthetic records and fake providers only. No live charge,
+  guest/accountant WhatsApp, real booking or actual backup upload is part of QA.
+
+Historical implementation notes and earlier verification (not current policy):
 Base: main c6cd9f7f395cd2dd831ff6ebd8b7488b21253027 (matched live Render on 2026-10-15).
 
 Scope

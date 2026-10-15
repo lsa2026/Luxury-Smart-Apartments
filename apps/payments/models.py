@@ -29,7 +29,8 @@ class ReservationPaymentRequest(models.Model):
     language = models.CharField(max_length=2, default="ar")
     environment = models.CharField(max_length=10, default="test", editable=False)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.OPEN)
-    expires_at = models.DateTimeField()
+    # Retain historical deadlines for audit; open links no longer expire by time.
+    expires_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     legal_acceptance = models.JSONField(default=dict, editable=False)
     paid_at = models.DateTimeField(null=True, blank=True)
