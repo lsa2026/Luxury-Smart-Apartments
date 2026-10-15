@@ -119,7 +119,7 @@ def _payment_link_action(request: HttpRequest, reservation: Reservation) -> Http
         messages.error(
             request,
             "الحجز محفوظ، لكن رابط السداد يحتاج مراجعة: قد توجد محاولة دفع قائمة، "
-            "أو تحصيل سابق، أو طلب رابط لدى أسيل، أو تغيير بالحجز. "
+            "أو تحصيل سابق، أو تغيير بالحجز. "
             "لم يُنشأ حجز مكرر ولم يُرسل طلب للمحاسبة.",
         )
     except Exception:
@@ -134,14 +134,11 @@ def _accounting_link_action(request: HttpRequest, reservation: Reservation) -> H
     from apps.payments.hyperpay.exceptions import HyperPayError
 
     try:
-        result = send_manual_payment_link_request(
-            reservation_id=reservation.pk, owner_optional=True
-        )
+        result = send_manual_payment_link_request(reservation_id=reservation.pk)
     except (ValueError, HyperPayError):
         messages.error(
             request,
-            "لم يُرسل طلب إلى أسيل. أوقف رابط الموقع غير المستخدم أولًا، وتأكد من عدم "
-            "وجود تحصيل سابق أو محاولة دفع غير محسومة أو تعديل يحتاج مراجعة.",
+            "تعذر تجهيز طلب أسيل؛ راجع بيانات الحجز وإعدادات إرسال الواتساب.",
         )
     except Exception:
         logger.error("Optional accounting payment-link request needs review")

@@ -3,7 +3,6 @@
 import hashlib
 import json
 import secrets
-from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlsplit
 
@@ -20,7 +19,6 @@ from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.reservation_validators import normalize_hostaway_reservation_status
 from apps.payments.currency import validate_payment_snapshot
 from apps.reservations.models import BookingIntent, Reservation
-from apps.reservations.services.host_policy import check_in_datetime
 
 from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .hyperpay.service import (
@@ -78,8 +76,6 @@ def _eligible(reservation):
         raise HyperPayCheckoutError("confirmed_direct_reservation_required")
     if (settings.HYPERPAY_ENVIRONMENT == "test") != reservation.is_test:
         raise HyperPayCheckoutError("payment_environment_mismatch")
-    if timezone.now() >= check_in_datetime(reservation.property, reservation.check_in):
-        raise HyperPayCheckoutError("stay_already_started")
     if reservation.payment_status.casefold() in {"paid", "fully_paid", "partially_paid"}:
         raise HyperPayCheckoutError("existing_collection_requires_review")
     if hasattr(reservation, "offline_payment_receipt"):
@@ -123,23 +119,11 @@ def issue_request(reservation_id):
     with transaction.atomic():
         reservation = Reservation.objects.select_for_update().get(pk=reservation_id)
         intent = _eligible(reservation)
-        # Accounting can create an external payable link that this site cannot
-        # revoke or reconcile. Do not offer a second collection channel.
-        from apps.notifications.models import WhatsAppDelivery
-
-        if (
-            WhatsAppDelivery.objects.filter(reservation=reservation)
-            .exclude(status=WhatsAppDelivery.Status.DISABLED)
-            .exists()
-        ):
-            raise HyperPayCheckoutError("accounting_collection_requires_review")
         current = reservation.payment_requests.filter(status="open").first()
         if current:
-            # Do not replace an expired/changed capability with a live gateway attempt.
-            if (
-                current.fingerprint == fingerprint(reservation)
-                and current.expires_at > timezone.now()
-            ):
+            # The owner removed temporal expiry, including legacy deadlines.
+            # A changed booking still cannot replace an unresolved gateway attempt.
+            if current.fingerprint == fingerprint(reservation):
                 return current
             if current.attempts.filter(status__in=UNRESOLVED).exists():
                 raise HyperPayCheckoutError("previous_payment_unresolved")
@@ -149,12 +133,6 @@ def issue_request(reservation_id):
             booking_intent=intent, status__in=(*SETTLED, *UNRESOLVED)
         ).exists():
             raise HyperPayCheckoutError("previous_collection_requires_review")
-        expiry = min(
-            timezone.now() + timedelta(seconds=settings.RESERVATION_PAYMENT_LINK_TTL_SECONDS),
-            check_in_datetime(reservation.property, reservation.check_in),
-        )
-        if expiry <= timezone.now():
-            raise HyperPayCheckoutError("payment_request_expired")
         return ReservationPaymentRequest.objects.create(
             reservation=reservation,
             amount_sar=intent.payment_amount_sar,
@@ -163,23 +141,8 @@ def issue_request(reservation_id):
             fingerprint=fingerprint(reservation),
             language=intent.language,
             environment=settings.HYPERPAY_ENVIRONMENT,
-            expires_at=expiry,
+            expires_at=None,
         )
-
-
-def validate_accounting_request(reservation):
-    """Called under the sender's reservation lock before claiming an optional alert.
-
-    An existing site link must be explicitly revoked first. Its gateway attempt
-    remains authoritative even after revocation/expiry, including uncertain results.
-    """
-    intent = _eligible(reservation)
-    if PaymentAttempt.objects.filter(
-        booking_intent=intent, status__in=(*SETTLED, *UNRESOLVED)
-    ).exists():
-        raise HyperPayCheckoutError("previous_collection_requires_review")
-    if reservation.payment_requests.filter(status__in=["open", "review", "paid"]).exists():
-        raise HyperPayCheckoutError("stop_site_payment_link_first")
 
 
 def link_token(request):
@@ -212,11 +175,7 @@ def resolve_token(token):
 
 
 def validate_open(request):
-    if (
-        request.status != "open"
-        or request.expires_at <= timezone.now()
-        or request.environment != settings.HYPERPAY_ENVIRONMENT
-    ):
+    if request.status != "open" or request.environment != settings.HYPERPAY_ENVIRONMENT:
         raise HyperPayCheckoutError("payment_request_not_open")
     reservation = Reservation.objects.select_related("booking_intent").get(
         pk=request.reservation_id

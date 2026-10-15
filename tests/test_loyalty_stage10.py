@@ -106,6 +106,38 @@ def test_snapshot_preserves_existing_booking_payment_requests_and_delivery_evide
     assert row(data, "payments.paymentrequestdelivery")["fields"]["status"] == "unknown"
 
 
+@pytest.mark.parametrize("legacy_deadline", [False, True])
+def test_payment_link_nullable_deadline_backup_and_restore(
+    sequence, recovery_db, tmp_path, legacy_deadline
+):
+    from apps.loyalty.backup import _schema_hash
+    from apps.payments.models import ReservationPaymentRequest
+
+    stay = Reservation.objects.first()
+    expiry = timezone.now() - timedelta(days=1) if legacy_deadline else None
+    request = ReservationPaymentRequest.objects.create(
+        reservation=stay,
+        amount_sar=stay.total_price,
+        source_amount=stay.total_price,
+        source_currency=stay.currency,
+        fingerprint="fictional-nullable-expiry",
+        expires_at=expiry,
+    )
+    data = snapshot()
+    if legacy_deadline:
+        data["schema"] = _schema_hash(legacy_link_expiry=True)
+        data = seal(data)
+    original = copy.deepcopy(data)
+    validate(data)
+    mirror = LocalMirror(tmp_path / "nullable-expiry.sqlite3")
+    mirror.update(data)
+    assert mirror.read() == original
+    restore_local(data, using=recovery_db)
+    restored = ReservationPaymentRequest.objects.using(recovery_db).get(pk=request.pk)
+    assert restored.expires_at == expiry and restored.status == "open"
+    assert data == original
+
+
 def test_known_pre_payment_link_backup_survives_schema_transition(sequence, tmp_path):
     from apps.loyalty.backup import _schema_hash
 

@@ -225,17 +225,17 @@ def test_closed_link_does_not_offer_checkout(status):
     assert PaymentAttempt.objects.count() == 0
 
 
-def test_expiry_closes_link_but_preserves_booking():
+def test_legacy_deadline_does_not_expire_link_or_replace_existing_booking():
     stay = manual_stay()
     request = issue_request(stay.pk)
     request.expires_at = timezone.now() - timedelta(seconds=1)
     request.save()
-    assert b'name="billing_city"' not in Client().get(page_url(request)).content
-    with pytest.raises(HyperPayCheckoutError):
-        checkout(request)
+    assert b'name="billing_city"' in Client().get(page_url(request)).content
+    assert checkout(request).attempt.payment_request_id == request.pk
     stay.refresh_from_db()
     assert stay.normalized_status == "confirmed"
-    assert issue_request(stay.pk).pk != request.pk
+    assert issue_request(stay.pk).pk == request.pk
+    assert Reservation.objects.count() == BookingIntent.objects.count() == 1
 
 
 @pytest.mark.parametrize(
@@ -302,14 +302,16 @@ def test_uncertain_checkout_is_durable_and_blocks_retry():
     assert stub.create_checkout.call_count == 1
 
 
-def test_expired_pending_attempt_cannot_be_replaced():
+def test_legacy_deadline_reuses_link_and_pending_attempt_without_duplicate_charge():
     stay = manual_stay()
     request = issue_request(stay.pk)
-    checkout(request)
+    stub = HyperPayStub()
+    first = checkout(request, stub=stub)
     request.expires_at = timezone.now() - timedelta(seconds=1)
     request.save()
-    with pytest.raises(HyperPayCheckoutError, match="unresolved"):
-        issue_request(stay.pk)
+    assert issue_request(stay.pk).pk == request.pk
+    assert checkout(request, stub=stub).attempt.pk == first.attempt.pk
+    assert stub.checkout_calls == 1
     assert stay.payment_requests.count() == 1
 
 
@@ -738,12 +740,13 @@ def test_optional_accounting_sends_only_to_accountant_and_deduplicates(settings)
     assert not PaymentAttempt.objects.exists()
     stay.refresh_from_db()
     assert stay.payment_status == "unpaid" and stay.normalized_status == "confirmed"
-    with pytest.raises(HyperPayCheckoutError, match="accounting_collection_requires_review"):
-        issue_request(stay.pk)
+    assert issue_request(stay.pk).status == "open"
+    assert not PaymentAttempt.objects.exists()
 
 
 @pytest.mark.parametrize("status", ["created", "pending", "unknown", "review", "succeeded"])
-def test_optional_accounting_blocks_gateway_attempt_even_after_link_revocation(status, settings):
+@pytest.mark.parametrize("link_status", ["open", "revoked"])
+def test_optional_accounting_preserves_gateway_attempt(status, link_status, settings):
     from apps.notifications.models import WhatsAppDelivery
     from apps.notifications.services.ultramsg import send_manual_payment_link_request
 
@@ -752,17 +755,20 @@ def test_optional_accounting_blocks_gateway_attempt_even_after_link_revocation(s
     attempt = checkout(request).attempt
     attempt.status = status
     attempt.save(update_fields=["status"])
-    request.status = "revoked"
+    request.status = link_status
     request.save(update_fields=["status"])
-    accounting_sender(settings)
+    fake = accounting_sender(settings)
     with patch("apps.notifications.services.ultramsg.UltraMsgClient") as messaging:
-        with pytest.raises(HyperPayCheckoutError, match="previous_collection_requires_review"):
-            send_manual_payment_link_request(reservation_id=stay.pk, owner_optional=True)
-        messaging.assert_not_called()
-    assert not WhatsAppDelivery.objects.exists()
+        messaging.return_value.__enter__.return_value = fake
+        send_manual_payment_link_request(reservation_id=stay.pk)
+    fake.send_text.assert_called_once()
+    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
+    attempt.refresh_from_db()
+    assert attempt.status == status
+    assert PaymentAttempt.objects.count() == 1
 
 
-def test_optional_accounting_requires_explicit_site_link_stop(settings):
+def test_optional_accounting_does_not_require_or_stop_open_site_link(settings):
     from apps.notifications.models import WhatsAppDelivery
 
     stay, client = manual_stay(), Client()
@@ -773,30 +779,37 @@ def test_optional_accounting_requires_explicit_site_link_stop(settings):
     with patch("apps.notifications.services.ultramsg.UltraMsgClient") as cls:
         cls.return_value.__enter__.return_value = fake
         client.post(url, {"action": "request_accounting_payment_link"})
-        assert not WhatsAppDelivery.objects.exists()
-        fake.send_text.assert_not_called()
-        request.refresh_from_db()
-        assert request.status == "open"
-        client.post(url, {"action": "revoke_guest_payment_link"})
-        client.post(url, {"action": "request_accounting_payment_link"})
     request.refresh_from_db()
-    assert request.status == "revoked"
+    assert request.status == "open" and issue_request(stay.pk).pk == request.pk
     fake.send_text.assert_called_once()
     assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
 
 
 @pytest.mark.parametrize("payment_status", ["paid", "fully_paid", "partially_paid"])
-def test_optional_accounting_never_sends_for_already_collected_booking(payment_status, settings):
+def test_optional_accounting_alert_preserves_collected_booking(payment_status, settings):
     from apps.notifications.models import WhatsAppDelivery
     from apps.notifications.services.ultramsg import send_manual_payment_link_request
 
     stay = manual_stay()
     stay.payment_status = payment_status
     stay.save(update_fields=["payment_status"])
-    accounting_sender(settings)
+    client = Client()
+    client.force_login(owner())
+    assert (
+        b"request_accounting_payment_link"
+        in client.get(reverse("notifications:booking_detail", args=[stay.pk])).content
+    )
+    fake = accounting_sender(settings)
+    with patch("apps.notifications.services.ultramsg.UltraMsgClient") as messaging:
+        messaging.return_value.__enter__.return_value = fake
+        send_manual_payment_link_request(reservation_id=stay.pk)
+    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
+    fake.send_text.assert_called_once()
+    stay.refresh_from_db()
+    assert stay.payment_status == payment_status
+    assert not PaymentAttempt.objects.exists()
     with pytest.raises(HyperPayCheckoutError, match="existing_collection_requires_review"):
-        send_manual_payment_link_request(reservation_id=stay.pk, owner_optional=True)
-    assert not WhatsAppDelivery.objects.exists()
+        issue_request(stay.pk)
 
 
 def test_new_manual_booking_offers_accounting_as_alternative_not_automatic(settings):
@@ -875,7 +888,7 @@ def test_default_guest_link_failure_never_falls_back_to_accountant():
 
 
 @pytest.mark.django_db(transaction=True)
-def test_postgres_parallel_accounting_and_site_link_select_only_one_collection_route(settings):
+def test_postgres_parallel_accounting_and_site_link_allow_operator_choice_without_charge(settings):
     from apps.notifications.models import WhatsAppDelivery
     from apps.notifications.services.ultramsg import send_manual_payment_link_request
 
@@ -890,7 +903,7 @@ def test_postgres_parallel_accounting_and_site_link_select_only_one_collection_r
         try:
             barrier.wait(timeout=10)
             if accounting:
-                send_manual_payment_link_request(reservation_id=stay.pk, owner_optional=True)
+                send_manual_payment_link_request(reservation_id=stay.pk)
                 return "accounting"
             issue_request(stay.pk)
             return "site"
@@ -905,11 +918,9 @@ def test_postgres_parallel_accounting_and_site_link_select_only_one_collection_r
                 f.result(timeout=20)
                 for f in [pool.submit(select_route, True), pool.submit(select_route, False)]
             ]
-    assert results.count("blocked") == 1
-    assert (
-        ReservationPaymentRequest.objects.filter(reservation=stay, status="open").count()
-        + WhatsAppDelivery.objects.filter(reservation=stay).count()
-    ) == 1
+    assert sorted(results) == ["accounting", "site"]
+    assert ReservationPaymentRequest.objects.filter(reservation=stay, status="open").count() == 1
+    assert WhatsAppDelivery.objects.filter(reservation=stay).count() == 1
     assert not PaymentAttempt.objects.exists()
 
 
@@ -1196,7 +1207,7 @@ def test_postgres_parallel_checkout_never_creates_second_gateway_session():
 
 
 @pytest.mark.parametrize("zone", ["Asia/Riyadh", "Africa/Casablanca", "Europe/Paris"])
-def test_same_day_link_uses_actual_property_arrival_not_midnight_intent_expiry(zone, monkeypatch):
+def test_link_has_no_deadline_even_after_arrival_and_departure(zone, monkeypatch):
     from apps.reservations.services.host_policy import check_in_datetime
 
     stay = manual_stay()
@@ -1207,8 +1218,43 @@ def test_same_day_link_uses_actual_property_arrival_not_midnight_intent_expiry(z
     clock = [arrival - timedelta(seconds=1)]
     monkeypatch.setattr(timezone, "now", lambda: clock[0])
     request = issue_request(stay.pk)
-    assert request.expires_at == arrival
-    assert request.expires_at > stay.booking_intent.expires_at
-    clock[0] = arrival
-    with pytest.raises(HyperPayCheckoutError, match="stay_already_started"):
-        issue_request(stay.pk)
+    assert request.expires_at is None
+    token = link_token(request)
+    for clock[0] in [arrival, arrival + timedelta(days=365)]:
+        assert issue_request(stay.pk).pk == request.pk
+        assert link_token(request) == token
+        assert b'name="billing_city"' in Client().get(page_url(request)).content
+    assert checkout(request).attempt.payment_request_id == request.pk
+
+
+def test_failed_checkout_can_retry_on_the_same_non_expiring_link():
+    request = issue_request(manual_stay().pk)
+    first = checkout(request).attempt
+    first.status = "failed"
+    first.save(update_fields=["status"])
+    second_gateway = HyperPayStub()
+    second_gateway.create_checkout = Mock(
+        return_value={
+            "id": "SECOND123456789.uat01-vm-tx04",
+            "integrity": "sha384-YWJj",
+            "result": {"code": "000.200.100"},
+        }
+    )
+    second = checkout(request, stub=second_gateway).attempt
+    assert second.pk != first.pk and second.payment_request_id == request.pk
+    assert issue_request(request.reservation_id).pk == request.pk
+    assert request.expires_at is None
+
+
+def test_non_expiring_link_closes_after_verified_payment():
+    request = issue_request(manual_stay().pk)
+    attempt = checkout(request).attempt
+    stub = HyperPayStub()
+    stub.payment_document = approved_document(attempt)
+    HyperPayService(client=stub).verify(attempt)
+    request.refresh_from_db()
+    assert request.status == "paid" and request.expires_at is None
+    assert b'name="billing_city"' not in Client().get(page_url(request)).content
+    with pytest.raises(HyperPayCheckoutError):
+        checkout(request)
+    assert PaymentAttempt.objects.count() == Reservation.objects.count() == 1
