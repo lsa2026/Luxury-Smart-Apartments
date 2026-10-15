@@ -13,10 +13,43 @@ from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
 from apps.integrations.monitoring import alert_operations
 from apps.integrations.tasks import distributed_task_lock
+from apps.payments.currency import CurrencyError, validate_payment_snapshot
 from apps.payments.models import HostawayFinancialEntry, PaymentAttempt
 from apps.reservations.models import Reservation
 
 logger = logging.getLogger(__name__)
+
+
+def _direct_receipt_value(attempt, reservation):
+    """Use the original source total only for a proven full initial collection.
+
+    A foreign-currency delta, partial collection or points allocation cannot be
+    represented as payment of the full stay. Leave those for accounting review;
+    never fetch today's exchange rate or multiply an arbitrary gateway amount.
+    Same-currency receipts keep the actual cash collected, including SAR/points.
+    """
+    if reservation.currency == attempt.currency:
+        return attempt.amount, attempt.currency
+    intent = attempt.booking_intent
+    if (
+        attempt.modification_request_id
+        or attempt.currency != "SAR"
+        or intent.currency != reservation.currency
+        or intent.total_price != reservation.total_price
+        or attempt.amount != intent.payment_amount_sar
+        or any(
+            reservation.loyalty_state.get(key)
+            for key in ("hold", "redemption", "checkout_frozen", "points_confirmation_started")
+        )
+    ):
+        raise ValueError("foreign_receipt_requires_full_initial_payment")
+    validate_payment_snapshot(
+        source_amount=intent.total_price,
+        source_currency=intent.currency,
+        payment_amount_sar=attempt.amount,
+        snapshot=intent.exchange_rate_snapshot,
+    )
+    return intent.total_price, intent.currency
 
 
 def queue_payment_receipt(attempt_id: object) -> None:
@@ -98,6 +131,8 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
             receipt_amount, receipt_currency = request.source_amount, request.source_currency
         marker = f"LSA HyperPay receipt {attempt.pk}"
         try:
+            if not attempt.payment_request_id:
+                receipt_amount, receipt_currency = _direct_receipt_value(attempt, reservation)
             with HostawayClient() as client:
                 snapshot = client.get_reservation(reservation.hostaway_reservation_id)
                 if (
@@ -143,7 +178,14 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
                 entry.error_code = ""
                 entry.completed_at = timezone.now()
                 entry.save()
-        except (HostawayError, ValueError, TypeError, KeyError, InvalidOperation) as exc:
+        except (
+            HostawayError,
+            CurrencyError,
+            ValueError,
+            TypeError,
+            KeyError,
+            InvalidOperation,
+        ) as exc:
             entry.status = "unknown" if entry.status == "posting" else "review"
             entry.error_code = type(exc).__name__
             entry.save()
