@@ -620,12 +620,18 @@ def test_branded_payment_text_and_owner_copy_are_separate(language, settings):
     text = payment_message(request)
     owner_copy = payment_message(request, owner_review=True)
     assert text in owner_copy and owner_copy != text
+    assert text.startswith("✨ *Luxury Smart Apartments*\n\n")
+    assert "Luxury Living" not in text and "لاكشري ليفينغ" not in text
+    assert all(icon in text for icon in ("📅", "💳", "🔗"))
+    assert "✅" not in text  # An unpaid link must not imply a successful payment.
     assert public_url(request) in text and "\n\n" in text
     assert request.reservation.public_reference not in text
     receipt = payment_message(request, "receipt")
     assert public_url(request) not in receipt
+    assert "✅" in receipt and "🔗" not in receipt
+    assert "Luxury Smart Apartments" in receipt
     if language == "ar":
-        assert "*لاكشري ليفينغ*" in text and "ريال سعودي" in text
+        assert "ريال سعودي" in text
         assert "للمالك" not in text and "للمالك" in owner_copy
 
 
