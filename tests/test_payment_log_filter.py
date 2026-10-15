@@ -17,6 +17,8 @@ from apps.core.payment_log_filter import PaymentCapabilityFilter
             (),
         ),
         ("Referer: https://booking.example/payments/pay/secret:signature/?source=message 200", ()),
+        ("Forbidden (Origin checking failed - null): /payments/pay/secret:signature/ 403", ()),
+        ("POST /payments/pay/secret:signature/address-suggestions/ 200", ()),
     ],
 )
 def test_redacts_capabilities_without_hiding_http_evidence(message, args):
@@ -24,7 +26,7 @@ def test_redacts_capabilities_without_hiding_http_evidence(message, args):
     assert PaymentCapabilityFilter().filter(record)
     result = record.getMessage()
     assert "secret:signature" not in result
-    assert "[redacted]" in result and "200" in result
+    assert "[redacted]" in result and any(code in result for code in ("200", "403"))
     assert PaymentCapabilityFilter().filter(record)
     assert record.getMessage() == result
 
@@ -39,3 +41,5 @@ def test_ordinary_logs_are_preserved_and_access_loggers_are_wired():
     assert config["loggers"]["gunicorn.access"]["handlers"] == ["console"]
     assert "payment_capabilities" in config["handlers"]["console"]["filters"]
     assert "payment_capabilities" in config["loggers"]["django.server"]["filters"]
+    assert "payment_capabilities" in config["loggers"]["django.security.csrf"]["filters"]
+    assert config["loggers"]["django.security.csrf"]["propagate"] is False

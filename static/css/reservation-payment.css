@@ -16,6 +16,18 @@
     font-size: 1rem;
     min-width: 0;
     max-width: 100%;
+    width: 100%;
+}
+.reservation-payment .guest-journey__billing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.reservation-payment .guest-journey__field--street {
+    grid-column: 1 / -1;
+}
+.reservation-payment .guest-journey__billing-grid .form-field:not(.guest-journey__field--street) {
+    grid-column: auto !important;
 }
 .reservation-payment details {
     margin-block: 1rem;
@@ -43,6 +55,9 @@
     white-space: normal;
 }
 @media (max-width: 600px) {
+    .reservation-payment .guest-journey__billing-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
     .reservation-payment .review-panel {
         padding: 1.25rem;
     }

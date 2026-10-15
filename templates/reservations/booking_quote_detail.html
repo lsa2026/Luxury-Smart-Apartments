@@ -280,39 +280,7 @@
                             <button type="button" class="guest-journey__back" data-journey-back hidden>→ {% trans "Back" %}</button>
                         </div>
 
-                        <div class="guest-journey__billing-note">
-                            <span aria-hidden="true">✓</span>
-                            <p>{% if current_language_code == "ar" %}استخدم العنوان المرتبط ببطاقة الدفع، وقد يختلف عن عنوان الشقة.{% elif current_language_code == "fr" %}Saisissez l’adresse associée à la carte de paiement ; elle peut différer de l’adresse de l’appartement.{% else %}Enter the address associated with the payment card. It may differ from the apartment address.{% endif %}</p>
-                        </div>
-
-                        {% if address_places_enabled %}{% include "reservations/_address_places.html" %}{% endif %}
-                        <div class="quote-review__form-grid guest-journey__billing-grid">
-                            <div class="form-field guest-journey__field--street{% if guest_form.billing_street1.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_street1.id_for_label }}">{{ guest_form.billing_street1.label }}</label>
-                                {{ guest_form.billing_street1 }}
-                                {% for error in guest_form.billing_street1.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="form-field guest-journey__field--country{% if guest_form.billing_country.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_country.id_for_label }}">{{ guest_form.billing_country.label }}</label>
-                                {{ guest_form.billing_country }}
-                                {% for error in guest_form.billing_country.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="form-field guest-journey__field--city{% if guest_form.billing_city.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_city.id_for_label }}">{{ guest_form.billing_city.label }}</label>
-                                {{ guest_form.billing_city }}
-                                {% for error in guest_form.billing_city.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="form-field guest-journey__field--state{% if guest_form.billing_state.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_state.id_for_label }}">{{ guest_form.billing_state.label }}</label>
-                                {{ guest_form.billing_state }}
-                                {% for error in guest_form.billing_state.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="form-field guest-journey__field--postcode{% if guest_form.billing_postcode.errors %} form-field--error{% endif %}" data-journey-field>
-                                <label for="{{ guest_form.billing_postcode.id_for_label }}">{{ guest_form.billing_postcode.label }}</label>
-                                {{ guest_form.billing_postcode }}
-                                {% for error in guest_form.billing_postcode.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                            </div>
-                        </div>
+                        {% include "reservations/_billing_fields.html" %}
 
                         {% if not stay_policy.is_empty %}
                         <div class="quote-review__policy">

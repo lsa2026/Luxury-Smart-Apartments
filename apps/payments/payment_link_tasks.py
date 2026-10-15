@@ -3,7 +3,7 @@
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.core.phone_numbers import normalize_phone_number
 from apps.notifications.services.ultramsg import UltraMsgClient
@@ -46,22 +46,75 @@ def _dispatch(delivery_id):
         pass
 
 
-def _body(request, kind):
+def payment_message(request, kind="link", *, owner_review=False):
+    """One branded text for queued guest delivery and explicit owner previews."""
+    from apps.core.templatetags.presentation import localized_date, localized_money_text
+
     from .payment_links import public_url
 
     reservation = request.reservation
-    intro = {
-        "ar": ("رابط سداد حجزك", "تم استلام دفعتك بنجاح. لا تدفع مرة أخرى."),
-        "en": ("Your booking payment link", "Payment received. Please do not pay again."),
-        "fr": ("Lien de paiement de votre réservation", "Paiement reçu. Ne payez pas à nouveau."),
-    }.get(request.language, ("رابط سداد حجزك", "تم استلام دفعتك بنجاح."))
-    body = (
-        f"{intro[kind == 'receipt']}\n{reservation.public_reference}\n"
-        f"{reservation.check_in} → {reservation.check_out}\n{request.amount_sar:.2f} SAR"
-    )
+    language = request.language if request.language in {"ar", "en", "fr"} else "ar"
+    copy = {
+        "ar": (
+            "لاكشري ليفينغ",
+            "أهلًا بك،",
+            "نود تزويدك برابط سداد حجزك:",
+            "فترة الإقامة",
+            "الإجمالي",
+            "يمكنك إتمام السداد عبر الرابط الآمن أدناه:",
+            "لا يتم تحصيل أي مبلغ بمجرد إرسال الرابط أو فتحه. "
+            "يتم السداد فقط بعد تأكيد عملية الدفع.",
+            "شكرًا لاختياركم لاكشري ليفينغ.",
+            "تم استلام دفعتك بنجاح. لا تدفع مرة أخرى.",
+            "نسخة مراجعة للمالك فقط، وليست رسالة للضيف.",
+        ),
+        "en": (
+            "Luxury Living",
+            "Welcome,",
+            "Here is the payment link for your booking:",
+            "Stay",
+            "Total",
+            "Complete your payment using the secure link below:",
+            "Sending or opening this link does not charge you. Payment requires your confirmation.",
+            "Thank you for choosing Luxury Living.",
+            "Payment received. Please do not pay again.",
+            "Owner review only — not a guest message.",
+        ),
+        "fr": (
+            "Luxury Living",
+            "Bienvenue,",
+            "Voici le lien de paiement de votre réservation :",
+            "Séjour",
+            "Total",
+            "Effectuez votre paiement via le lien sécurisé ci-dessous :",
+            "L’envoi ou l’ouverture du lien ne vous débite pas. "
+            "Le paiement nécessite votre confirmation.",
+            "Merci d’avoir choisi Luxury Living.",
+            "Paiement reçu. Ne payez pas à nouveau.",
+            "Copie de contrôle du propriétaire uniquement — pas un message au client.",
+        ),
+    }[language]
+    brand, greeting, intro, stay, total, cta, note, thanks, receipt, review = copy
+    with translation.override(language):
+        dates = f"{localized_date(reservation.check_in)} — {localized_date(reservation.check_out)}"
+        amount = localized_money_text(request.amount_sar, "SAR", language=language)
+        if language == "ar":
+            amount = localized_money_text(request.amount_sar, "", language=language) + " ريال سعودي"
+    blocks = [
+        f"*{brand}*",
+        greeting,
+        intro if kind == "link" else receipt,
+        f"{stay}: {dates}\n{total}: {amount}",
+    ]
+    if kind == "link":
+        blocks.extend([cta, public_url(request), note])
+    blocks.append(thanks)
+    body = "\n\n".join(blocks)
+    if owner_review:
+        body = review + "\n\n" + body
     if settings.HYPERPAY_ENVIRONMENT == "test":
         body = "TEST / تجربة فقط — لا تحصيل حقيقي\n" + body
-    return body + ("\n" + public_url(request) if kind == "link" else "")
+    return body
 
 
 @shared_task(
@@ -89,7 +142,7 @@ def deliver_payment_request_task(delivery_id):
             elif request.status != "paid":
                 raise ValueError("not_paid")
             recipient = normalize_phone_number(request.reservation.booking_intent.guest_phone)
-            body = _body(request, delivery.kind)
+            body = payment_message(request, delivery.kind)
         except ValueError:
             delivery.status, delivery.error_code = "failed", "request_not_deliverable"
             delivery.save(update_fields=["status", "error_code"])

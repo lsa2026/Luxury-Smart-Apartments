@@ -1,5 +1,6 @@
 """Existing-booking collection: disposable DB, fake providers, no live side effects."""
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from decimal import Decimal
@@ -200,7 +201,7 @@ def test_preview_never_contacts_provider_or_creates_payment(language):
     response = client.get(page_url(request))
     assert response.status_code == 200
     assert "no-store" in response["Cache-Control"]
-    assert response["Referrer-Policy"] == "no-referrer"
+    assert response["Referrer-Policy"] == "same-origin"
     assert "noindex" in response["X-Robots-Tag"]
     assert b"googletagmanager.com" not in response.content
     assert b"paymentWidgets.js" not in response.content
@@ -446,7 +447,7 @@ def test_cross_session_guest_post_and_csp_and_amount_tampering():
     assert b"paymentWidgets.js" in response.content
     assert "eu-test.oppwa.com" in response["Content-Security-Policy"]
     assert "payment=(self)" in response["Permissions-Policy"]
-    assert response["Referrer-Policy"] == "no-referrer"
+    assert response["Referrer-Policy"] == "same-origin"
     assert Decimal(stub.payload["amount"]) == request.amount_sar
     assert stay.booking_intent.guest_email.encode() not in response.content
     request.refresh_from_db()
@@ -459,6 +460,130 @@ def test_csrf_required_and_feature_off_hides_page(settings):
     assert Client(enforce_csrf_checks=True).post(page_url(request), form_data()).status_code == 403
     settings.RESERVATION_PAYMENT_LINKS_ENABLED = False
     assert Client().get(page_url(request)).status_code == 404
+
+
+@pytest.mark.parametrize("origin", ["https://testserver", None])
+def test_secure_payment_form_passes_real_csrf_then_renders_gateway(origin):
+    payment_request = issue_request(manual_stay().pk)
+    client = Client(enforce_csrf_checks=True)
+    page = client.get(page_url(payment_request), secure=True)
+    assert page["Referrer-Policy"] == "same-origin"
+    csrf = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', page.content.decode())[1]
+    headers = (
+        {"HTTP_ORIGIN": origin}
+        if origin
+        else {"HTTP_REFERER": "https://testserver" + page_url(payment_request)}
+    )
+    stub = HyperPayStub()
+    with (
+        patch("apps.payments.payment_links.HostawayClient") as hostaway,
+        patch(
+            "apps.payments.payment_links.HyperPayService", return_value=HyperPayService(client=stub)
+        ),
+    ):
+        hostaway.return_value.__enter__.return_value = remote(payment_request.reservation)
+        result = client.post(
+            page_url(payment_request),
+            form_data() | {"csrfmiddlewaretoken": csrf},
+            secure=True,
+            **headers,
+        )
+    assert result.status_code == 200
+    assert b"paymentWidgets.js" in result.content
+    assert stub.checkout_calls == 1
+
+
+@pytest.mark.parametrize("origin", ["null", "https://untrusted.example"])
+def test_null_or_cross_origin_is_still_rejected_even_with_valid_csrf(origin):
+    payment_request = issue_request(manual_stay().pk)
+    client = Client(enforce_csrf_checks=True)
+    page = client.get(page_url(payment_request), secure=True)
+    csrf = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', page.content.decode())[1]
+    result = client.post(
+        page_url(payment_request),
+        form_data() | {"csrfmiddlewaretoken": csrf},
+        secure=True,
+        HTTP_ORIGIN=origin,
+    )
+    assert result.status_code == 403
+    assert not PaymentAttempt.objects.exists()
+
+
+def test_payment_address_reuses_shared_ui_and_proxy_with_browser_scoped_tickets(settings):
+    settings.GOOGLE_PLACES_ENABLED = True
+    settings.GOOGLE_PLACES_API_KEY = "synthetic-key"
+    settings.GOOGLE_PLACES_REQUIRE_SHARED_CACHE = False
+    request = issue_request(manual_stay().pk)
+    client = Client(enforce_csrf_checks=True)
+    page = client.get(page_url(request), secure=True)
+    html = page.content.decode()
+    assert "reservations/_billing_fields.html" in [t.name for t in page.templates]
+    assert "data-checkout-address" in html and "checkout-address.js" in html
+    assert "maps.googleapis.com" not in html and "googletagmanager.com" not in html
+    csrf = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', html)[1]
+    ticket = page.context["address_places_ticket"]
+    endpoint = page.context["address_suggestions_url"]
+    headers = {"secure": True, "HTTP_ORIGIN": "https://testserver", "HTTP_X_CSRFTOKEN": csrf}
+    payload = {"ticket": ticket, "input": "King Street"}
+    with patch("apps.reservations.address_places.httpx.Client") as factory:
+        google = factory.return_value.__enter__.return_value
+        google.post.return_value.json.return_value = {
+            "suggestions": [
+                {"placePrediction": {"placeId": "ChIJ-example", "text": {"text": "King Street"}}}
+            ]
+        }
+        result = client.post(endpoint, payload, content_type="application/json", **headers)
+        assert result.status_code == 200 and result.json()["suggestions"]
+        assert "Referer" not in google.post.call_args.kwargs["headers"]
+        assert "ticket" not in google.post.call_args.kwargs["json"]
+        assert "payment:" not in str(google.post.call_args)
+        # Selection uses exactly the ordinary mapping and rotates its ticket.
+        google.get.return_value.json.return_value = {
+            "addressComponents": [
+                {"types": ["country"], "longText": "Saudi Arabia", "shortText": "SA"}
+            ]
+        }
+        details = client.post(
+            page.context["address_details_url"],
+            {"ticket": ticket, "place_id": "ChIJ-example"},
+            content_type="application/json",
+            **headers,
+        )
+        assert details.status_code == 200 and details.json()["fields"] == {"billing_country": "SA"}
+        assert details.json()["next_ticket"] != ticket
+        # An unrelated browser cannot reuse even a copied short-lived ticket.
+        another = Client()
+        another.get(page_url(request))
+        assert another.post(endpoint, payload, content_type="application/json").status_code == 400
+        request.status = "revoked"
+        request.save()
+        assert (
+            client.post(endpoint, payload, content_type="application/json", **headers).status_code
+            == 404
+        )
+        assert google.post.call_count == 1 and google.get.call_count == 1
+    assert not PaymentAttempt.objects.exists()
+    assert client.get(
+        reverse("reservations:manage", args=[request.reservation.public_reference])
+    ).status_code in {302, 403, 404}
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_branded_payment_text_and_owner_copy_are_separate(language, settings):
+    from apps.payments.payment_link_tasks import payment_message
+
+    request = issue_request(manual_stay(language=language).pk)
+    settings.HYPERPAY_ENVIRONMENT = "production"
+    text = payment_message(request)
+    owner_copy = payment_message(request, owner_review=True)
+    assert text in owner_copy and owner_copy != text
+    assert public_url(request) in text and "\n\n" in text
+    assert request.reservation.public_reference not in text
+    receipt = payment_message(request, "receipt")
+    assert public_url(request) not in receipt
+    if language == "ar":
+        assert "*لاكشري ليفينغ*" in text and "ريال سعودي" in text
+        assert "للمالك" not in text and "للمالك" in owner_copy
 
 
 def test_whatsapp_delivery_is_durable_and_not_repeated(settings):
