@@ -1,6 +1,7 @@
 """Website-owned content and future-only accounting policy regressions."""
 
 from datetime import timedelta
+from decimal import Decimal
 from unittest.mock import Mock, patch
 
 import httpx
@@ -221,6 +222,243 @@ def test_unknown_receipt_never_blindly_reposts():
     manager.__exit__ = Mock(return_value=None)
     with patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager):
         assert record_payment_receipt_task.run(str(entry.pk))["status"] == "review"
+    client.create_offline_paid_charge.assert_not_called()
+
+
+@pytest.fixture
+def foreign_receipt_settings(settings):
+    from tests.test_hyperpay import HYPERPAY_SETTINGS
+
+    for key, value in HYPERPAY_SETTINGS.items():
+        setattr(settings, key, value)
+    settings.HYPERPAY_ENVIRONMENT = "production"
+    settings.HOSTAWAY_FINANCIAL_RECEIPTS_ENABLED = True
+    settings.HOSTAWAY_FINANCIAL_RECEIPTS_START_AT = "2020-01-01T00:00:00+00:00"
+    with (
+        patch("httpx.Client.request", side_effect=AssertionError("unexpected live request")),
+        patch("apps.payments.hostaway_ledger.alert_operations"),
+    ):
+        yield
+
+
+def foreign_paid_reservation(source_amount=Decimal("1000")):
+    from tests.test_multi_currency_integration import create_flow
+
+    _, _, intent, _ = create_flow(
+        source_amount=source_amount,
+        source_currency="MAD",
+        display_currency="USD",
+        local_currency="MAD",
+    )
+    reservation = prepare_local_reservation(intent)
+    reservation.hostaway_reservation_id = 900112
+    reservation.normalized_status = "confirmed"
+    reservation.payment_status = "paid"
+    reservation.save()
+    payment = PaymentAttempt.objects.create(
+        booking_intent=intent,
+        provider="hyperpay",
+        amount=intent.payment_amount_sar,
+        currency="SAR",
+        status="succeeded",
+        verified_at=timezone.now(),
+        provider_payment_id="synthetic-foreign-payment",
+        idempotency_key="foreign-receipt-test",
+    )
+    return reservation, payment
+
+
+def foreign_receipt_client(reservation, payment, *, already_remote=False):
+    client = Mock()
+    client.get_reservation.return_value = Mock(
+        reservation_id=reservation.hostaway_reservation_id,
+        listing_map_id=reservation.hostaway_listing_map_id,
+        currency="MAD",
+    )
+    charge = {
+        "id": 124,
+        "title": f"LSA HyperPay receipt {payment.pk}",
+        "amount": str(reservation.total_price),
+        "currency": "MAD",
+        "status": "paid",
+    }
+    client.get_guest_charges.return_value = [charge] if already_remote else []
+    client.create_offline_paid_charge.return_value = charge
+    manager = Mock(__enter__=Mock(return_value=client), __exit__=Mock(return_value=None))
+    return client, manager
+
+
+@pytest.mark.parametrize("already_remote", [False, True])
+def test_direct_marrakech_receipt_uses_frozen_source_total_once(
+    foreign_receipt_settings, already_remote
+):
+    reservation, payment = foreign_paid_reservation()
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    client, manager = foreign_receipt_client(reservation, payment, already_remote=already_remote)
+    with (
+        patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager),
+        patch("apps.payments.currency.ExchangeRateProvider.fetch") as rates,
+    ):
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "succeeded"
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "already_recorded"
+    rates.assert_not_called()
+    assert client.create_offline_paid_charge.call_count == (0 if already_remote else 1)
+    if not already_remote:
+        assert client.create_offline_paid_charge.call_args.kwargs["amount"] == Decimal("1000")
+        assert client.create_offline_paid_charge.call_args.kwargs["currency"] == "MAD"
+    payment.refresh_from_db()
+    assert payment.amount == Decimal("400") and payment.currency == "SAR"
+    assert payment.payment_request_id is None
+    reservation.refresh_from_db()
+    assert reservation.total_price == Decimal("1000") and reservation.payment_status == "paid"
+
+
+def test_source_total_is_not_reconstructed_from_rounded_sar(foreign_receipt_settings):
+    reservation, payment = foreign_paid_reservation(Decimal("1000.01"))
+    assert payment.amount == Decimal("400.00")
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    client, manager = foreign_receipt_client(reservation, payment)
+    with patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager):
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "succeeded"
+    assert client.create_offline_paid_charge.call_args.kwargs["amount"] == Decimal("1000.01")
+
+
+def test_verified_direct_gateway_flow_queues_correct_foreign_receipt(
+    foreign_receipt_settings, django_capture_on_commit_callbacks
+):
+    from apps.payments.hyperpay.service import HyperPayService
+    from tests.test_hyperpay import HyperPayStub
+    from tests.test_reservation_payment_links import approved_document
+
+    reservation, payment = foreign_paid_reservation()
+    payment.status = "pending"
+    payment.verified_at = None
+    payment.provider_payment_id = None
+    payment.provider_checkout_id = "ABC123456789.uat01-vm-tx04"
+    payment.save()
+    gateway = HyperPayStub()
+    gateway.payment_document = approved_document(payment)
+    with (
+        patch("apps.payments.hostaway_ledger._dispatch_receipt") as dispatch,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        result = HyperPayService(client=gateway).verify(payment)
+    assert result.reservation.pk == reservation.pk
+    payment.refresh_from_db()
+    assert payment.status == "succeeded" and payment.verified_at
+    entry = HostawayFinancialEntry.objects.get(payment_attempt=payment)
+    dispatch.assert_called_once_with(entry.pk)
+    client, manager = foreign_receipt_client(reservation, payment)
+    with patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager):
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "succeeded"
+    assert client.create_offline_paid_charge.call_args.kwargs["amount"] == Decimal("1000")
+    assert client.create_offline_paid_charge.call_args.kwargs["currency"] == "MAD"
+    assert PaymentAttempt.objects.count() == Reservation.objects.count() == 1
+
+
+def test_foreign_receipt_timeout_never_retries_the_write(foreign_receipt_settings):
+    reservation, payment = foreign_paid_reservation()
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    client, manager = foreign_receipt_client(reservation, payment)
+    client.create_offline_paid_charge.side_effect = HostawayTimeoutError("synthetic")
+    with patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager):
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "unknown"
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "review"
+    client.create_offline_paid_charge.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "partial",
+        "overpayment",
+        "changed_total",
+        "changed_currency",
+        "points",
+        "missing_fx",
+        "bad_fx",
+    ],
+)
+def test_uncertain_foreign_cash_never_posts_full_booking_total(foreign_receipt_settings, problem):
+    reservation, payment = foreign_paid_reservation()
+    intent = payment.booking_intent
+    if problem == "partial":
+        payment.amount /= 2
+        payment.save()
+    elif problem == "overpayment":
+        payment.amount += 1
+        payment.save()
+    elif problem == "changed_total":
+        reservation.total_price += 1
+        reservation.save()
+    elif problem == "changed_currency":
+        intent.currency = "EUR"
+        intent.save()
+    elif problem == "points":
+        reservation.loyalty_state = {"redemption": {"value": "100"}}
+        reservation.save()
+    elif problem == "missing_fx":
+        intent.exchange_rate_snapshot = {}
+        intent.save()
+    else:
+        intent.exchange_rate_snapshot["source_amount"] = "1001"
+        intent.save()
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    with patch("apps.payments.hostaway_ledger.HostawayClient") as hostaway:
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "review"
+    hostaway.assert_not_called()
+    payment.refresh_from_db()
+    assert payment.status == "succeeded"
+
+
+def test_foreign_modification_cannot_be_recorded_as_full_initial_payment(foreign_receipt_settings):
+    from apps.reservations.models import BookingModificationRequest
+
+    reservation, payment = foreign_paid_reservation()
+    modification = BookingModificationRequest.objects.create(
+        reservation=reservation,
+        request_type="change_guests",
+        old_check_in=reservation.check_in,
+        old_check_out=reservation.check_out,
+        old_guests=reservation.guests,
+        old_total=reservation.total_price,
+        currency="MAD",
+        idempotency_key="foreign-modification-receipt",
+        session_key_hash="a" * 64,
+        expires_at=timezone.now() + timedelta(hours=1),
+    )
+    payment.modification_request = modification
+    payment.save()
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    with patch("apps.payments.hostaway_ledger.HostawayClient") as hostaway:
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "review"
+    hostaway.assert_not_called()
+
+
+def test_sar_points_receipt_keeps_only_cash_collected(foreign_receipt_settings):
+    reservation, payment = paid_reservation()
+    reservation.loyalty_state = {"redemption": {"value": "100"}}
+    reservation.save()
+    payment.amount -= 100
+    payment.save()
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    client, manager = foreign_receipt_client(reservation, payment)
+    client.get_reservation.return_value.currency = "SAR"
+    with patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager):
+        assert record_payment_receipt_task.run(entry.pk)["status"] == "succeeded"
+    assert client.create_offline_paid_charge.call_args.kwargs["amount"] == payment.amount
+    assert client.create_offline_paid_charge.call_args.kwargs["currency"] == "SAR"
+
+
+@pytest.mark.parametrize("entry_status", ["posting", "unknown", "review"])
+def test_foreign_receipt_never_reposts_an_uncertain_existing_entry(
+    foreign_receipt_settings, entry_status
+):
+    reservation, payment = foreign_paid_reservation()
+    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment, status=entry_status)
+    client, manager = foreign_receipt_client(reservation, payment)
+    with patch("apps.payments.hostaway_ledger.HostawayClient", return_value=manager):
+        assert record_payment_receipt_task.run(entry.pk)["status"] in {"review", "unknown"}
     client.create_offline_paid_charge.assert_not_called()
 
 

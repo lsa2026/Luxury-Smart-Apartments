@@ -1,4 +1,23 @@
 Existing manual reservation payment links — implementation / rollout checklist
+Direct foreign-currency receipt correction — 2026-10-16
+- A fully collected initial direct booking now records the validated original
+  intent total/currency in Hostaway, while retaining the actual SAR gateway
+  charge. It uses the frozen FX audit snapshot, never a fresh conversion or
+  reversal of rounded SAR (which can lose source-currency cents).
+- This does not alter checkout prices, gateway amounts, booking creation, guest
+  links, receipts by WhatsApp, credentials, schema, or the receipt activation cutoff.
+  Existing payment-request receipt mapping and same-currency cash/points behavior
+  remain unchanged. Partial/overpaid, changed or unverifiable foreign collections,
+  foreign amendments and foreign points allocations remain accounting review;
+  they must not be recorded as the full stay.
+- No backfill or reset of historical review/unknown/posting records. Previously
+  uncertain writes still require a matching remote marker before recovery, and
+  timeouts are never blindly posted again. Existing verified payments stay paid
+  even when secondary bookkeeping is unavailable.
+- Tests are synthetic and offline. They cover full direct MAD/SAR, exact source
+  cents, real verification-to-receipt flow using provider doubles, same-currency
+  points cash, amendment/partial guards, idempotency, stale/absent FX and timeouts.
+
 Current owner-approved policy update — 2026-10-15 (supersedes expiry/route guards below)
 - Open existing-reservation payment links have no temporal deadline. New expires_at
   values are NULL; historical timestamps are retained but no longer close open links.
