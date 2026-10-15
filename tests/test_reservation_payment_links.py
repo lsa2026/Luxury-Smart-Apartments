@@ -675,3 +675,22 @@ def test_postgres_parallel_checkout_never_creates_second_gateway_session():
         finally:
             release.set()
         first.result(timeout=20)
+
+
+@pytest.mark.parametrize("zone", ["Asia/Riyadh", "Africa/Casablanca", "Europe/Paris"])
+def test_same_day_link_uses_actual_property_arrival_not_midnight_intent_expiry(zone, monkeypatch):
+    from apps.reservations.services.host_policy import check_in_datetime
+
+    stay = manual_stay()
+    stay.property.time_zone_name = zone
+    stay.property.check_in_time_start = 15
+    stay.property.save()
+    arrival = check_in_datetime(stay.property, stay.check_in)
+    clock = [arrival - timedelta(seconds=1)]
+    monkeypatch.setattr(timezone, "now", lambda: clock[0])
+    request = issue_request(stay.pk)
+    assert request.expires_at == arrival
+    assert request.expires_at > stay.booking_intent.expires_at
+    clock[0] = arrival
+    with pytest.raises(HyperPayCheckoutError, match="stay_already_started"):
+        issue_request(stay.pk)

@@ -20,6 +20,7 @@ from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.reservation_validators import normalize_hostaway_reservation_status
 from apps.payments.currency import validate_payment_snapshot
 from apps.reservations.models import BookingIntent, Reservation
+from apps.reservations.services.host_policy import check_in_datetime
 
 from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .hyperpay.service import (
@@ -77,7 +78,7 @@ def _eligible(reservation):
         raise HyperPayCheckoutError("confirmed_direct_reservation_required")
     if (settings.HYPERPAY_ENVIRONMENT == "test") != reservation.is_test:
         raise HyperPayCheckoutError("payment_environment_mismatch")
-    if reservation.check_in <= timezone.localdate():
+    if timezone.now() >= check_in_datetime(reservation.property, reservation.check_in):
         raise HyperPayCheckoutError("stay_already_started")
     if reservation.payment_status.casefold() in {"paid", "fully_paid", "partially_paid"}:
         raise HyperPayCheckoutError("existing_collection_requires_review")
@@ -140,7 +141,7 @@ def issue_request(reservation_id):
             raise HyperPayCheckoutError("previous_collection_requires_review")
         expiry = min(
             timezone.now() + timedelta(seconds=settings.RESERVATION_PAYMENT_LINK_TTL_SECONDS),
-            intent.expires_at,
+            check_in_datetime(reservation.property, reservation.check_in),
         )
         if expiry <= timezone.now():
             raise HyperPayCheckoutError("payment_request_expired")

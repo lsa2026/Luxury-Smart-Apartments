@@ -24,7 +24,10 @@ Activation (NOT performed by this implementation)
    and future-only Hostaway financial receipt settings via approved private channels.
    Never print secrets or use production credentials in local tests.
 6. The configurable RESERVATION_PAYMENT_LINK_TTL_SECONDS default is 86400 seconds,
-   additionally capped by the existing manual intent expiry. Obtain owner approval for
+   additionally capped by actual check-in time in the property's timezone. An expired
+   provisional quote/intent cannot reprice an already-confirmed stay; the request freezes
+   the approved amount. Same-day requests remain allowed before actual arrival, not
+   rejected at midnight. Obtain owner approval for
    that policy before enabling. Expiring/revoking the local link does NOT cancel a stay
    or invalidate an already-open provider checkout; unresolved attempts prevent replacing
    or revoking the request. A late verified payment is retained, not discarded.
