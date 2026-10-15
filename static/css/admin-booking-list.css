@@ -1,0 +1,44 @@
+/* Scoped to the reservation list; other operations screens remain unchanged. */
+.lsa-booking-list-screen { min-width: 0; }
+.lsa-booking-list__table { width: 100%; }
+.lsa-booking-list__table table { width: 100%; min-width: 0; table-layout: fixed; }
+.lsa-booking-list__table th,
+.lsa-booking-list__table td { padding: 16px 10px; text-align: right; vertical-align: top; overflow-wrap: anywhere; }
+.lsa-list-col-guest { width: 19%; }
+.lsa-list-col-property { width: 19%; }
+.lsa-list-col-date { width: 13%; }
+.lsa-list-col-nights { width: 6%; }
+.lsa-list-col-money { width: 14%; }
+.lsa-list-col-status { width: 15%; }
+.lsa-booking-list-screen .lsa-booking-status { box-sizing: border-box; min-width: 0; max-width: 100%; white-space: normal; text-align: center; }
+.lsa-booking-paid { display: grid; gap: 6px; }
+.lsa-booking-paid strong { font-size: inherit; }
+.lsa-booking-paid small,
+.lsa-booking-card__property small { display: block; color: var(--lsa-muted); font-size: 12px; font-weight: 400; line-height: 1.7; }
+.lsa-booking-paid .lsa-booking-paid__refund { color: #875c23; }
+.lsa-booking-list__explanation { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--lsa-line); color: var(--lsa-muted); font-size: 12px; line-height: 1.9; }
+.lsa-booking-list__search .lsa-inline-form { display: flex; gap: 12px; align-items: end; }
+.lsa-booking-list__search .lsa-inline-form label { display: grid; gap: 8px; }
+.lsa-booking-list__search input { box-sizing: border-box; min-height: 48px; font: inherit; }
+.lsa-booking-list__search button { box-sizing: border-box; min-height: 48px; margin: 0; padding: 10px 25px; font: inherit; }
+.lsa-booking-card__property { min-width: 0; }
+.lsa-booking-card__property strong { display: block; color: var(--lsa-ink); font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
+.lsa-booking-card__summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; margin: 0; padding-top: 14px; border-top: 1px solid var(--lsa-line); }
+.lsa-booking-card__summary > div { min-width: 0; }
+.lsa-booking-card__summary dt { margin-bottom: 5px; color: var(--lsa-muted); font-size: 12px; line-height: 1.7; }
+.lsa-booking-card__summary dd { margin: 0; color: var(--lsa-ink); font-size: 14px; font-weight: 700; line-height: 1.7; overflow-wrap: anywhere; }
+.lsa-booking-card__summary .money { white-space: normal; }
+.lsa-booking-list-screen .lsa-booking-card:focus-visible { outline: 3px solid var(--lsa-gold); outline-offset: 3px; }
+@media (max-width: 1100px) {
+  .lsa-booking-list__table { display: none; }
+  .lsa-booking-list__cards { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lsa-booking-list-screen .lsa-booking-card { min-width: 0; padding: 20px; }
+  .lsa-booking-list-screen .lsa-booking-card__top { flex-wrap: wrap; gap: 8px; }
+  .lsa-booking-card__top strong { min-width: 0; overflow-wrap: anywhere; }
+}
+@media (max-width: 767px) {
+  .lsa-booking-list__cards { grid-template-columns: minmax(0, 1fr); }
+  .lsa-booking-list__search .lsa-inline-form { flex-direction: column; align-items: stretch; }
+  .lsa-booking-list__search button { width: 100%; }
+  .lsa-booking-list-screen .lsa-booking-card { padding: 16px; }
+}

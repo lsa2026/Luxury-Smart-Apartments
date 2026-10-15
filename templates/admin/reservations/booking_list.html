@@ -1,7 +1,10 @@
 {% extends "admin/base_site.html" %}
+{% load i18n presentation static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}">{% endblock %}
 {% block content_title %}{% endblock %}
 
 {% block content %}
+{% language "ar" %}
 <main class="lsa-dashboard lsa-operations-screen lsa-booking-list-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
@@ -20,7 +23,7 @@
   <section class="lsa-panel lsa-booking-list__search">
     <form method="get" class="lsa-inline-form" aria-label="البحث عن حجز">
       <label>البحث عن حجز<input type="search" name="q" value="{{ query }}" placeholder="الاسم أو الجوال أو البريد أو المرجع" autocomplete="off"></label>
-      <button type="submit">بحث</button>
+      <button type="submit" class="lsa-btn lsa-btn--gold">بحث</button>
     </form>
   </section>
 
@@ -28,13 +31,17 @@
     {% if bookings %}
     <div class="lsa-table-scroll lsa-booking-list__table">
       <table>
-        <thead><tr><th>الضيف</th><th>تاريخ الدخول</th><th>الليالي</th><th>الحالة</th></tr></thead>
+        <colgroup><col class="lsa-list-col-guest"><col class="lsa-list-col-property"><col class="lsa-list-col-date"><col class="lsa-list-col-nights"><col class="lsa-list-col-money"><col class="lsa-list-col-money"><col class="lsa-list-col-status"></colgroup>
+        <thead><tr><th scope="col">الضيف</th><th scope="col">الشقة</th><th scope="col">تاريخ الدخول</th><th scope="col">الليالي</th><th scope="col">إجمالي المدفوع</th><th scope="col">متوسط سعر الليلة</th><th scope="col">الحالة</th></tr></thead>
         <tbody>
           {% for booking in bookings %}
           <tr>
             <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>فتح تفاصيل الحجز ←</small></a></td>
-            <td dir="ltr">{{ booking.check_in }}</td>
+            <td>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</td>
+            <td>{{ booking.check_in|localized_date }}</td>
             <td>{{ booking.nights }}</td>
+            <td>{% include "admin/reservations/includes/booking_paid_summary.html" %}</td>
+            <td>{% if booking.admin_average_nightly_price != None %}{{ booking.admin_average_nightly_price|format_money:booking.currency }}{% else %}<small>غير متاح</small>{% endif %}</td>
             <td><span class="lsa-booking-status lsa-booking-status--{{ booking.admin_status_code }}">{{ booking.admin_status_label }}</span></td>
           </tr>
           {% endfor %}
@@ -45,12 +52,20 @@
       {% for booking in bookings %}
       <a class="lsa-booking-card" href="{% url 'notifications:booking_detail' booking.pk %}">
         <div class="lsa-booking-card__top"><strong>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</strong><span class="lsa-booking-status lsa-booking-status--{{ booking.admin_status_code }}">{{ booking.admin_status_label }}</span></div>
-        <div class="lsa-booking-card__facts"><span><small>تاريخ الدخول</small><b dir="ltr">{{ booking.check_in }}</b></span><span><small>الليالي</small><b>{{ booking.nights }}</b></span></div>
+        <div class="lsa-booking-card__property"><small>الشقة</small><strong>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</strong></div>
+        <dl class="lsa-booking-card__summary">
+          <div><dt>إجمالي المدفوع</dt><dd>{% include "admin/reservations/includes/booking_paid_summary.html" %}</dd></div>
+          <div><dt>متوسط سعر الليلة</dt><dd>{% if booking.admin_average_nightly_price != None %}{{ booking.admin_average_nightly_price|format_money:booking.currency }}{% else %}غير متاح{% endif %}</dd></div>
+          <div><dt>تاريخ الدخول</dt><dd>{{ booking.check_in|localized_date }}</dd></div>
+          <div><dt>الليالي</dt><dd>{{ booking.nights }}</dd></div>
+        </dl>
         <em>فتح الحجز ←</em>
       </a>
       {% endfor %}
     </div>
+    <p class="lsa-booking-list__explanation">المدفوع هو مجموع الدفعات الموثقة قبل خصم المسترد، ويُعرض المسترد منفصلًا عند وجوده. متوسط الليلة = إجمالي قيمة الحجز ÷ عدد الليالي، ويشمل الرسوم الداخلة في الإجمالي. تُعرض المبالغ بعملتها المسجلة دون تحويل.</p>
     {% else %}<p class="help">لا توجد حجوزات مدفوعة أو مؤكدة بانتظار الدفع أو ملغاة مطابقة للبحث.</p>{% endif %}
   </section>
 </main>
+{% endlanguage %}
 {% endblock %}
