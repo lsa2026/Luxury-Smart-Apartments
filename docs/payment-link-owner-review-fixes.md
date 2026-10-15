@@ -27,6 +27,11 @@ paid plan or infrastructure resource was added. Existing Places activation and
 shared allowances apply; manual entry remains available on provider failure.
 The capability and reservation data are not forwarded to Google. No address
 search creates a payment attempt or writes a reservation.
+The website project's read-only review found a language-renewal edge case:
+address endpoints now retain the payment request's language throughout ticket
+selection and expiry renewal, even when the browser requests another language.
+The regression also uses a consumed, expired original quote and verifies that
+the separate payment-link authorization remains valid without quote ownership.
 
 ## Message identity
 

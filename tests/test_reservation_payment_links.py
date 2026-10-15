@@ -513,7 +513,11 @@ def test_payment_address_reuses_shared_ui_and_proxy_with_browser_scoped_tickets(
     settings.GOOGLE_PLACES_ENABLED = True
     settings.GOOGLE_PLACES_API_KEY = "synthetic-key"
     settings.GOOGLE_PLACES_REQUIRE_SHARED_CACHE = False
-    request = issue_request(manual_stay().pk)
+    request = issue_request(manual_stay(language="fr").pk)
+    quote = request.reservation.booking_intent.quote
+    quote.status = "consumed"
+    quote.expires_at = timezone.now() - timedelta(hours=1)
+    quote.save(update_fields=["status", "expires_at"])
     client = Client(enforce_csrf_checks=True)
     page = client.get(page_url(request), secure=True)
     html = page.content.decode()
@@ -523,8 +527,23 @@ def test_payment_address_reuses_shared_ui_and_proxy_with_browser_scoped_tickets(
     csrf = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', html)[1]
     ticket = page.context["address_places_ticket"]
     endpoint = page.context["address_suggestions_url"]
-    headers = {"secure": True, "HTTP_ORIGIN": "https://testserver", "HTTP_X_CSRFTOKEN": csrf}
+    headers = {
+        "secure": True,
+        "HTTP_ORIGIN": "https://testserver",
+        "HTTP_X_CSRFTOKEN": csrf,
+        "HTTP_ACCEPT_LANGUAGE": "ar",
+    }
     payload = {"ticket": ticket, "input": "King Street"}
+    assert (
+        client.post(
+            endpoint,
+            payload,
+            content_type="application/json",
+            secure=True,
+            HTTP_ORIGIN="https://testserver",
+        ).status_code
+        == 403
+    )
     with patch("apps.reservations.address_places.httpx.Client") as factory:
         google = factory.return_value.__enter__.return_value
         google.post.return_value.json.return_value = {
@@ -534,6 +553,7 @@ def test_payment_address_reuses_shared_ui_and_proxy_with_browser_scoped_tickets(
         }
         result = client.post(endpoint, payload, content_type="application/json", **headers)
         assert result.status_code == 200 and result.json()["suggestions"]
+        assert google.post.call_args.kwargs["json"]["languageCode"] == "fr"
         assert "Referer" not in google.post.call_args.kwargs["headers"]
         assert "ticket" not in google.post.call_args.kwargs["json"]
         assert "payment:" not in str(google.post.call_args)
@@ -551,6 +571,29 @@ def test_payment_address_reuses_shared_ui_and_proxy_with_browser_scoped_tickets(
         )
         assert details.status_code == 200 and details.json()["fields"] == {"billing_country": "SA"}
         assert details.json()["next_ticket"] != ticket
+        renewed_payload = payload | {"ticket": details.json()["next_ticket"]}
+        assert (
+            client.post(
+                endpoint, renewed_payload, content_type="application/json", **headers
+            ).status_code
+            == 200
+        )
+        assert google.post.call_args.kwargs["json"]["languageCode"] == "fr"
+        with patch(
+            "apps.reservations.address_places.signing.loads", side_effect=signing.SignatureExpired
+        ):
+            expired = client.post(
+                endpoint, renewed_payload, content_type="application/json", **headers
+            )
+        assert expired.status_code == 409
+        renewed_payload["ticket"] = expired.json()["next_ticket"]
+        assert (
+            client.post(
+                endpoint, renewed_payload, content_type="application/json", **headers
+            ).status_code
+            == 200
+        )
+        assert google.post.call_args.kwargs["json"]["languageCode"] == "fr"
         # An unrelated browser cannot reuse even a copied short-lived ticket.
         another = Client()
         another.get(page_url(request))
@@ -561,7 +604,7 @@ def test_payment_address_reuses_shared_ui_and_proxy_with_browser_scoped_tickets(
             client.post(endpoint, payload, content_type="application/json", **headers).status_code
             == 404
         )
-        assert google.post.call_count == 1 and google.get.call_count == 1
+        assert google.post.call_count == 3 and google.get.call_count == 1
     assert not PaymentAttempt.objects.exists()
     assert client.get(
         reverse("reservations:manage", args=[request.reservation.public_reference])

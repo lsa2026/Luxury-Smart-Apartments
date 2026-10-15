@@ -207,7 +207,7 @@ def _address_scope(request, payment_request):
 
 
 class ReservationPaymentAddressView(CheckoutAddressView):
-    def get_address_scope(self, request, reference):
+    def dispatch(self, request, reference):
         if not settings.RESERVATION_PAYMENT_LINKS_ENABLED or not settings.HYPERPAY_ENABLED:
             raise Http404
         payment_request = resolve_token(reference)
@@ -217,7 +217,17 @@ class ReservationPaymentAddressView(CheckoutAddressView):
             validate_open(payment_request)
         except (ValueError, ValidationError, CurrencyError, HyperPayError) as exc:
             raise Http404 from exc
-        return _address_scope(request, payment_request)
+        self.payment_request = payment_request
+        language = payment_request.language if payment_request.language in COPY else "ar"
+        request.LANGUAGE_CODE = language
+        request._disable_google_integrations = True
+        # Renewals and post-selection tickets must retain the link's language,
+        # independently of Accept-Language or the site's language cookie.
+        with translation.override(language):
+            return private_response(super().dispatch(request, reference), form_page=True)
+
+    def get_address_scope(self, request, reference):
+        return _address_scope(request, self.payment_request)
 
 
 def render_request_result(request, attempt, outcome):
