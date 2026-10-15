@@ -105,7 +105,8 @@ services:
       # --- UAT safety -----------------------------------------------------
       # Production checkout: credentials remain dashboard-only secrets. A
       # verified payment must create the corresponding Hostaway reservation.
-      # Apple Pay rollout is a web-only opt-in, preserved across Blueprint syncs.
+      # Web owns the Apple Pay opt-in and domain file. The payment verifier
+      # mirrors the opt-in, but never receives the domain association file.
       - key: HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
         sync: false
       - key: APPLE_PAY_DOMAIN_ASSOCIATION_FILE
@@ -119,6 +120,13 @@ services:
       - key: HYPERPAY_ENTITY_ID
         sync: false
       - key: HYPERPAY_ACCESS_TOKEN
+        sync: false
+      # Owner-managed rollout decisions must survive future Blueprint syncs.
+      - key: RESERVATION_PAYMENT_LINKS_ENABLED
+        sync: false
+      - key: MANUAL_PAYMENT_RECEIPTS_ENABLED
+        sync: false
+      - key: RESERVATION_PAYMENT_LINK_TTL_SECONDS
         sync: false
       - key: HYPERPAY_CURRENCY
         value: SAR
@@ -442,17 +450,37 @@ services:
         value: "False"
 
       - key: HYPERPAY_ENABLED
-        value: "False"
+        # Approved payment recovery uses the same gateway as the web service.
+        # Do not restore the historical disabled/empty worker configuration.
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HYPERPAY_ENABLED
+      - key: HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HYPERPAY_APPLE_PAY_PRODUCTION_ENABLED
       - key: HYPERPAY_ENVIRONMENT
         value: production
       - key: HYPERPAY_BASE_URL
         value: https://eu-prod.oppwa.com/
       - key: HYPERPAY_ENTITY_ID
-        # No payment credentials are present until the explicit launch
-        # checkpoint.  HyperPay itself is disabled above.
-        value: ""
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HYPERPAY_ENTITY_ID
       - key: HYPERPAY_ACCESS_TOKEN
-        value: ""
+        fromService:
+          type: web
+          name: luxury-smart-apartments
+          envVarKey: HYPERPAY_ACCESS_TOKEN
+      - key: RESERVATION_PAYMENT_LINKS_ENABLED
+        sync: false
+      - key: MANUAL_PAYMENT_RECEIPTS_ENABLED
+        sync: false
+      - key: RESERVATION_PAYMENT_LINK_TTL_SECONDS
+        sync: false
       - key: HYPERPAY_CURRENCY
         value: SAR
       - key: HYPERPAY_PAYMENT_TYPE
