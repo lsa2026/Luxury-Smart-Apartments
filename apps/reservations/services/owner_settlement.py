@@ -53,6 +53,9 @@ def settlement_for(reservation: Reservation, final_total: Decimal) -> OwnerSettl
             currency=reservation.currency,
         )
     collected = payments.aggregate(total=Sum("amount"))["total"] or Decimal("0")
+    receipt = getattr(reservation, "offline_payment_receipt", None)
+    if receipt and receipt.payment_attempt_id is None and receipt.currency == reservation.currency:
+        collected += receipt.amount
     returned = reservation.refund_obligations.filter(
         status__in=[RefundObligation.Status.PROCESSING, RefundObligation.Status.TRANSFERRED],
         currency=reservation.currency,

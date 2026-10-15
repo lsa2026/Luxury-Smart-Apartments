@@ -33,6 +33,10 @@ CONTEXT = (
     "reservations.hostawayreservationoperation",
     "reservations.hostawaymodificationoperation",
     "reservations.refundobligation",
+    "payments.reservationpaymentrequest",
+    "payments.paymentrequestdelivery",
+    "payments.offlinepaymentreceipt",
+    "payments.manualreceiptreference",
     "payments.paymentattempt",
     "payments.hostawayfinancialentry",
 )
@@ -50,6 +54,10 @@ REVERSE = (
     ),
     ("reservations.refundobligation", "reservation", "reservations.reservation"),
     ("payments.paymentattempt", "booking_intent", "reservations.bookingintent"),
+    ("payments.reservationpaymentrequest", "reservation", "reservations.reservation"),
+    ("payments.paymentrequestdelivery", "request", "payments.reservationpaymentrequest"),
+    ("payments.offlinepaymentreceipt", "reservation", "reservations.reservation"),
+    ("payments.manualreceiptreference", "reservation", "reservations.reservation"),
     ("payments.hostawayfinancialentry", "payment_attempt", "payments.paymentattempt"),
 )
 MAX_ROWS = 100_000
@@ -81,7 +89,7 @@ def _fields(model):
     return [f.name for f in model._meta.concrete_fields if not f.primary_key]
 
 
-def _schema_hash():
+def _schema_hash(*, payment_links=True):
     # Deconstruction contains callable defaults; field metadata here is stable and JSON-safe.
     return _hash(
         {
@@ -96,8 +104,19 @@ def _schema_hash():
                     f.related_model._meta.label_lower if f.is_relation else None,
                 )
                 for f in model._meta.concrete_fields
+                if payment_links
+                or label != "payments.paymentattempt"
+                or f.name != "payment_request"
             ]
             for label, model in _models().items()
+            if payment_links
+            or label
+            not in {
+                "payments.reservationpaymentrequest",
+                "payments.paymentrequestdelivery",
+                "payments.offlinepaymentreceipt",
+                "payments.manualreceiptreference",
+            }
         }
     )
 
@@ -207,7 +226,10 @@ def validate(snapshot):
         "digest",
     }:
         _reject("invalid_snapshot_format")
-    if snapshot["version"] != VERSION or snapshot["schema"] != _schema_hash():
+    legacy_payment_schema = snapshot["schema"] == _schema_hash(payment_links=False)
+    if snapshot["version"] != VERSION or (
+        snapshot["schema"] != _schema_hash() and not legacy_payment_schema
+    ):
         _reject("incompatible_snapshot_schema")
     if seal(snapshot)["digest"] != snapshot["digest"]:
         _reject("snapshot_integrity_failed")
@@ -227,7 +249,20 @@ def validate(snapshot):
         if not isinstance(row, dict) or set(row) != {"model", "pk", "fields"}:
             _reject("invalid_record_format")
         model = models.get(row["model"])
-        if model is None or set(row["fields"]) != set(_fields(model)):
+        if model is None:
+            _reject("unreviewed_record_fields")
+        expected_fields = set(_fields(model))
+        if legacy_payment_schema:
+            if row["model"] in {
+                "payments.reservationpaymentrequest",
+                "payments.paymentrequestdelivery",
+                "payments.offlinepaymentreceipt",
+                "payments.manualreceiptreference",
+            }:
+                _reject("unreviewed_record_fields")
+            if row["model"] == "payments.paymentattempt":
+                expected_fields.remove("payment_request")
+        if set(row["fields"]) != expected_fields:
             _reject("unreviewed_record_fields")
         key = (row["model"], str(row["pk"]))
         if key in indexed:
@@ -236,6 +271,14 @@ def validate(snapshot):
     for (label, _), fields in indexed.items():
         for field in models[label]._meta.concrete_fields:
             if field.is_relation:
+                if (
+                    legacy_payment_schema
+                    and label == "payments.paymentattempt"
+                    and field.name == "payment_request"
+                ):
+                    # Exactly the known nullable field absent before this release.
+                    # Keep the original payload and seal intact; do not rewrite history.
+                    continue
                 value = fields[field.name]
                 if (
                     value is not None
@@ -369,6 +412,8 @@ def compare(previous, incoming):
     for key, row in old.items():
         if key not in new:
             _reject("financial_history_missing" if key[0] in CORE else "related_history_missing")
+        if key[0] == "payments.offlinepaymentreceipt" and new[key] != row:
+            _reject("offline_receipt_history_changed")
         if key[0] not in CORE:
             continue
         if key[0] != "loyalty.member" and new[key] != row:

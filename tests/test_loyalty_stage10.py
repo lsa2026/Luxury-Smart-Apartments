@@ -77,6 +77,72 @@ def test_master_example_snapshot_preserves_tree_balances_and_references(sequence
     assert row(data, "reservations.reservation")["fields"]["loyalty_state"]["arrival"]
 
 
+def test_snapshot_preserves_existing_booking_payment_requests_and_delivery_evidence(sequence):
+    from apps.payments.models import (
+        PaymentAttempt,
+        PaymentRequestDelivery,
+        ReservationPaymentRequest,
+    )
+
+    stay = Reservation.objects.first()
+    request = ReservationPaymentRequest.objects.create(
+        reservation=stay,
+        amount_sar=stay.total_price,
+        source_amount=stay.total_price,
+        source_currency=stay.currency,
+        fingerprint="fictional-snapshot-test",
+        expires_at=timezone.now() + timedelta(days=1),
+    )
+    delivery = PaymentRequestDelivery.objects.create(
+        request=request, kind="link", status="unknown", error_code="delivery_outcome_uncertain"
+    )
+    PaymentAttempt.objects.filter(booking_intent=stay.booking_intent).update(
+        payment_request=request
+    )
+    data = snapshot()
+    validate(data)
+    assert row(data, "payments.reservationpaymentrequest")["pk"] == str(request.pk)
+    assert row(data, "payments.paymentrequestdelivery")["pk"] == delivery.pk
+    assert row(data, "payments.paymentrequestdelivery")["fields"]["status"] == "unknown"
+
+
+def test_known_pre_payment_link_backup_survives_schema_transition(sequence, tmp_path):
+    from apps.loyalty.backup import _schema_hash
+
+    incoming = snapshot()
+    previous = copy.deepcopy(incoming)
+    previous["schema"] = _schema_hash(payment_links=False)
+    for record in previous["records"]:
+        if record["model"] == "payments.paymentattempt":
+            record["fields"].pop("payment_request")
+    previous = seal(previous)
+    original = copy.deepcopy(previous)
+    validate(previous)
+    compare(previous, incoming)
+    mirror = LocalMirror(tmp_path / "previous-schema.sqlite3")
+    mirror.update(previous)
+    assert mirror.read() == previous
+    mirror.update(incoming)
+    assert mirror.read() == incoming
+    assert previous == original
+    unsafe = copy.deepcopy(previous)
+    unsafe["schema"] = "unreviewed-older-schema"
+    with pytest.raises(BackupError) as error:
+        validate(seal(unsafe))
+    assert error.value.code == "incompatible_snapshot_schema"
+
+
+def test_legacy_schema_cannot_hide_a_missing_payment_reference(sequence):
+    from apps.loyalty.backup import _schema_hash
+
+    data = snapshot()
+    data["schema"] = _schema_hash(payment_links=False)
+    # Current fields cannot masquerade as an old snapshot to bypass closure checks.
+    with pytest.raises(BackupError) as error:
+        validate(seal(data))
+    assert error.value.code == "unreviewed_record_fields"
+
+
 def test_zero_points_member_and_pending_booking_hold_are_not_lost(sequence):
     a, _, _, _, members = sequence
     join(user("no-points"))

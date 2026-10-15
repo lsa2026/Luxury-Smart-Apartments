@@ -28,12 +28,17 @@
       <p><b>السعر المعتمد:</b> {{ draft.final_total_price|format_money:draft.currency }}</p>
       <section class="lsa-manual-payment-next">
         <span>الخطوة التالية</span><h2>رابط الدفع</h2>
+        {% if payment_links_enabled %}
+        <p>سيُنشأ الحجز أولًا في هوستاوي بالسعر المعتمد، ثم يُجهز رابط سداد على الموقع ويُرسل للضيف عبر واتساب. لن يُطلب إنشاء الرابط من المحاسبة في هذا المسار.</p>
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment"><button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز وإرسال رابط السداد للضيف</button></form>
+        {% else %}
         <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم يُرسل الموقع طلبًا تلقائيًا عبر WhatsApp إلى {{ accounting_whatsapp_name }} يتضمن بيانات الحجز ورابط Hostaway.</p>
         <form method="post" novalidate>
           {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
           <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز في Hostaway وإرسال الطلب للمحاسبة</button>
         </form>
         <div class="lsa-manual-payment-next__coming"><b>قريبًا:</b> إنشاء رابط HyperPay اليدوي وإرساله للضيف مباشرة من هذه الصفحة بعد اعتماد الواجهة من فريق HyperPay.</div>
+        {% endif %}
       </section>
     {% elif draft.status == "booked_awaiting_payment" %}
       <section class="lsa-manual-payment-next">

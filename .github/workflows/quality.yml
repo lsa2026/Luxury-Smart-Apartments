@@ -46,6 +46,8 @@ jobs:
           tests/test_ultramsg_accounting_notifications.py
           tests/test_hyperpay_refunds_phase94.py
           tests/test_hyperpay.py
+          tests/test_reservation_payment_links.py
+          tests/test_offline_payment_receipts.py
           tests/test_automatic_cancellation_refunds.py
           tests/test_property_price_calendar.py
           tests/test_indicative_rates.py

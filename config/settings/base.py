@@ -336,6 +336,12 @@ PAYMENT_SANDBOX_ENABLED = DEBUG and strict_bool("PAYMENT_SANDBOX_ENABLED")
 # HyperPay TEST and production are separate, explicit configurations. Credentials
 # are never shared between them and the base URL is pinned for each environment.
 HYPERPAY_ENABLED = strict_bool("HYPERPAY_ENABLED")
+# Rollout is explicit. Neither deploying code nor visiting a link enables collection.
+RESERVATION_PAYMENT_LINKS_ENABLED = strict_bool("RESERVATION_PAYMENT_LINKS_ENABLED")
+MANUAL_PAYMENT_RECEIPTS_ENABLED = strict_bool("MANUAL_PAYMENT_RECEIPTS_ENABLED")
+RESERVATION_PAYMENT_LINK_TTL_SECONDS = optional_positive_int(
+    "RESERVATION_PAYMENT_LINK_TTL_SECONDS", 86400
+)
 HYPERPAY_ENVIRONMENT = env("HYPERPAY_ENVIRONMENT", default="test").strip().lower()
 # Do not advertise Apple Pay on the live checkout until production onboarding
 # has been verified. This opt-in does not disable the separate TEST/UAT flow.
@@ -770,6 +776,9 @@ CELERY_BEAT_SCHEDULE = build_beat_schedule(globals())
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "payment_capabilities": {"()": "apps.core.payment_log_filter.PaymentCapabilityFilter"},
+    },
     "formatters": {
         "structured": {
             "format": ("time={asctime} level={levelname} logger={name} message={message}"),
@@ -780,10 +789,13 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "structured",
+            "filters": ["payment_capabilities"],
         },
     },
     "root": {"handlers": ["console"], "level": "INFO"},
     "loggers": {
+        "gunicorn.access": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.server": {"filters": ["payment_capabilities"], "level": "INFO"},
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "httpx": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "apps.integrations.hostaway": {

@@ -97,6 +97,7 @@ def _render_hyperpay_checkout(
     attempt: PaymentAttempt,
     intent: BookingIntent,
     modification: BookingModificationRequest | None = None,
+    payment_request=None,
 ) -> HttpResponse:
     """Render public widget identifiers for an already-created checkout."""
 
@@ -110,6 +111,7 @@ def _render_hyperpay_checkout(
     # The security middleware permits Apple resources only on this checkout,
     # not on payment results, account pages or unrelated public pages.
     request._apple_pay_checkout_enabled = apple_pay_enabled
+    request._hyperpay_checkout_enabled = True
     response = render(
         request,
         "payments/hyperpay_checkout.html",
@@ -117,6 +119,7 @@ def _render_hyperpay_checkout(
             "attempt": attempt,
             "intent": intent,
             "modification": modification,
+            "payment_request": payment_request,
             "cover_image": _cover_image(property_obj),
             "checkout_id": attempt.provider_checkout_id,
             "widget_integrity": attempt.widget_integrity,
@@ -329,6 +332,10 @@ class HyperPayResultView(View):
                 outcome = service.verify(attempt)
         except HyperPayError:
             outcome = None
+        if attempt.payment_request_id:
+            from .payment_link_views import render_request_result
+
+            return render_request_result(request, outcome.attempt if outcome else attempt, outcome)
         if outcome and outcome.reservation:
             grant_reservation_access(request, outcome.reservation.public_reference)
         display_attempt = outcome.attempt if outcome else attempt

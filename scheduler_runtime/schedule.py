@@ -7,7 +7,14 @@ from celery.schedules import crontab
 
 
 def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
-    schedule = {}
+    # Dispatch only. No payment credentials, Django import or provider calls in beat.
+    # The worker is a no-op until payment requests actually exist.
+    schedule = {
+        "recover-reservation-payments": {
+            "task": "apps.payments.payment_link_tasks.recover_payment_requests_task",
+            "schedule": 60,
+        }
+    }
     if settings.get("LOYALTY_MESSAGES_ENABLED", False):
         schedule["loyalty-guest-invitations"] = {
             "task": "apps.loyalty.tasks.guest_invitations_task",

@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
+{% load static presentation %}
 {% block content_title %}{% endblock %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script>{% endblock %}
@@ -38,6 +38,54 @@
       <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--gold" type="submit">إعداد واستعراض فاتورة الحجز</button></form>
     {% else %}<p class="help">تتوفر الفاتورة بعد تأكيد الحجز وربطه بـHostaway.</p>{% endif %}
   </section>
+  {% if payment_links_enabled and reservation.booking_intent and reservation.hostaway_reservation_id %}
+  <section class="lsa-panel">
+    <h2>رابط سداد الحجز</h2>
+    <p>يسدد الضيف من بوابة الموقع على الحجز نفسه، دون إنشاء حجز جديد أو تغيير السعر المعتمد.</p>
+    {% if guest_payment_request %}
+      <p>الحالة: {{ guest_payment_request.get_status_display }} · الصلاحية حتى: {{ guest_payment_request.expires_at }}</p>
+      {% for attempt in guest_payment_request.attempts.all %}
+      <p>محاولة السداد: {{ attempt.status|localized_payment_status }}{% if attempt.failure_code %} — تحتاج مراجعة سجل الدفع قبل محاولة جديدة{% endif %}</p>
+      {% endfor %}
+      {% for delivery in guest_payment_request.deliveries.all %}
+        <p>{% if delivery.kind == 'link' %}إرسال الرابط{% else %}تأكيد السداد{% endif %}:
+          {% if delivery.status == 'sent' %}أُرسل{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% else %}تحتاج مراجعة{% endif %}
+          {% if delivery.error_code %} — راجع سجل التسليم قبل إعادة المحاولة{% endif %}</p>
+      {% endfor %}
+    {% endif %}
+    {% if reservation.payment_status != 'paid' %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">تجهيز وإرسال رابط السداد للضيف</button></form>
+    {% if guest_payment_request.status == 'open' %}
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إعادة إرسال الرابط نفسه للضيف</button></form>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="revoke_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إيقاف الرابط دون إلغاء الحجز</button></form>
+    <p>لا يمكن استبدال الرابط أو إيقافه أثناء وجود محاولة دفع غير محسومة. راجع نتيجة البوابة أولًا.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+  {% endif %}
+  {% if manual_receipts_enabled %}
+  <section class="lsa-panel">
+    <h2>تسجيل الحجز مدفوعًا بحوالة بنكية أو نقدًا</h2>
+    {% if offline_receipt %}
+      <p>تم توثيق القبض اليدوي: {{ offline_receipt.amount|format_money:offline_receipt.currency }} — {% if offline_receipt.method == 'cash' %}نقدًا{% else %}حوالة بنكية{% endif %}</p>
+      <p>مرجع القبض: {{ offline_receipt.reference }} · وقت الاستلام: {{ offline_receipt.received_at }} · المسجّل: {{ offline_receipt.recorded_by.get_username }}</p>
+      <p>هذا قبض وثّقته الإدارة وليس عملية دفع مؤكدة من بوابة الدفع.</p>
+    {% elif reservation.payment_status != 'paid' %}
+      <p>توثيق مبلغ استلمته الإدارة فعلًا فقط، وليس تحصيلًا جديدًا. أدخل كامل مبلغ الحجز بعملته بعد مراجعة الحساب أو إيصال النقد. لا تدخل بيانات بطاقة أو رقم حساب بنكي.</p>
+      <form method="post" class="lsa-owner-form" novalidate>
+        {% csrf_token %}<input type="hidden" name="action" value="record_offline_payment">
+        {{ offline_receipt_form.non_field_errors }}
+        <div class="lsa-owner-form__grid">
+        {% for field in offline_receipt_form %}{% if field.is_hidden %}{{ field }}{% else %}
+          <label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>
+        {% endif %}{% endfor %}
+        </div>
+        <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد استلام المبلغ وتحويل الحجز إلى مدفوع</button>
+      </form>
+      <p class="help">تُرفض العملية أثناء محاولة دفع غير محسومة أو تحصيل سابق. تُحفظ هوية المدير والوقت والطريقة والمرجع، ولا يُرسل تأكيد بوابة أو طلب دفع جديد. هذا التوثيق محلي ولا يدّعي مزامنة إيصال إلى هوستاوي.</p>
+    {% else %}<p>الحجز مسدد بالفعل؛ لا يُسجل قبض آخر من هذا الزر.</p>{% endif %}
+  </section>
+  {% endif %}
   <section class="lsa-panel">
     <h2>تعديل التواريخ أو عدد الضيوف</h2>
     <p class="help">غيّر التواريخ أو عدد الضيوف، ثم افحص السعر قبل تأكيد أي تعديل.</p>

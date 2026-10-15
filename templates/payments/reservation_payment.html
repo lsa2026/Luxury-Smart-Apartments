@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load presentation i18n static %}
+{% block title %}{{ ui.title }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}">{% endblock %}
+{% block content %}
+<section class="section container narrow payment-result reservation-payment">
+  <div class="section-heading"><h1>{{ ui.title }}</h1></div>
+  {% if payment_request.status == 'paid' %}
+    <p class="notice" role="status">{{ ui.paid }}</p>
+  {% elif not payable %}
+    <article class="review-panel"><h2>{{ ui.unavailable }}</h2><p>{{ ui.closed }}</p></article>
+  {% else %}
+    <article class="review-panel">
+      <h2>{{ payment_request.reservation.property|localized_property_name }}</h2>
+      <p>{{ payment_request.reservation.check_in|localized_date }} — {{ payment_request.reservation.check_out|localized_date }}</p>
+      <dl class="quote-summary"><div><dt>{{ ui.total }}</dt><dd>{{ payment_request.amount_sar|format_money:'SAR' }}</dd></div></dl>
+      {% if error %}<p class="notice notice--important" role="alert">{{ error }}</p>{% endif %}
+      <details><summary>{{ ui.conditions }}</summary>
+        <p>{{ conditions.cancellation_policy_text }}</p>
+        <p>{{ payment_request.source_amount|format_money:payment_request.source_currency }}</p>
+      </details>
+      <form method="post" class="guest-form">
+        {% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
+        <fieldset><legend>{{ ui.billing }}</legend>
+          {% for field in form %}{% if 'billing_' in field.name %}
+          <div class="form-field{% if field.errors %} form-field--error{% endif %}">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>
+          {% endif %}{% endfor %}
+        </fieldset>
+        <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
+        <div class="form-field reservation-payment__consent"><label for="{{ form.terms_accepted.id_for_label }}">{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label>{{ form.terms_accepted.errors }}</div>
+        <details><summary>{{ guest_documents.house_rules.title }}</summary><p>{{ guest_documents.house_rules.body|linebreaksbr }}</p></details>
+        <div class="form-field reservation-payment__consent"><label for="{{ form.house_rules_accepted.id_for_label }}">{{ form.house_rules_accepted }} {{ guest_documents.house_rules.acceptance }}</label>{{ form.house_rules_accepted.errors }}</div>
+        {{ form.documents_digest.errors }}
+        <button class="button button--gold" type="submit">{{ ui.pay }}</button>
+      </form>
+    </article>
+  {% endif %}
+  <p><a href="{% url 'core:contact' %}">{{ ui.contact }}</a></p>
+</section>
+{% endblock %}
