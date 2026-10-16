@@ -24,10 +24,11 @@ from django.views.decorators.http import require_POST
 from apps.accounts.access import require_operations_owner
 from apps.accounts.dashboard_copy import account_copy
 from apps.accounts.models import CustomerProfile
+from apps.accounts.phone_copy import phone_copy
 from apps.reservations.models import Reservation
 
 from .copy import copy, transaction_label
-from .forms import JoinForm, TransferForm
+from .forms import GiftInvitationForm, JoinForm, PhoneGiftForm, TransferForm
 from .invitation_links import invitation_url
 from .launch import (
     participant_allowed,
@@ -45,10 +46,10 @@ from .services import (
     invitation_eligible,
     issue_invite,
     posting_transaction,
-    transfer,
 )
 
 SALT = "loyalty-transfer-confirmation-v1"
+GIFT_SALT = "loyalty-gift-invitation-confirmation-v1"
 ZERO = Decimal("0.00")
 
 
@@ -144,6 +145,9 @@ def guest_rewards(request):
     can_act = _actions_allowed(request)
     join_form = JoinForm(has_inviter=bool(inviter))
     transfer_form = TransferForm()
+    phone_gift_form = PhoneGiftForm()
+    gift_invitation = None
+    invitation_form = None
     error, confirmation = "", None
     if request.method == "POST":
         if not can_act:
@@ -177,7 +181,7 @@ def guest_rewards(request):
                 recipient = get_object_or_404(
                     Member, number=transfer_form.cleaned_data["recipient"], status="active"
                 )
-                if not participant_allowed(recipient.customer):
+                if not recipient.customer.is_active or not participant_allowed(recipient.customer):
                     raise ValidationError("invalid")
                 value = transfer_form.cleaned_data["amount"]
                 if recipient.pk == member.pk or value > available(member):
@@ -188,14 +192,102 @@ def guest_rewards(request):
                     "value": str(value),
                     "request": f"ui-{secrets.token_urlsafe(24)}",
                 }
-                confirmation = {**payload, "token": signing.dumps(payload, salt=SALT)}
+                from .phone_gifts import masked_name
+
+                confirmation = {
+                    **payload,
+                    "name": masked_name(recipient),
+                    "token": signing.dumps(payload, salt=SALT),
+                }
+            elif action == "gift_phone_review" and member and member.status == "active":
+                from apps.accounts.phone_auth import _limit
+
+                from .phone_gifts import (
+                    masked_name,
+                    phone_hash,
+                    recipient_for_phone,
+                    recipient_language,
+                )
+
+                phone_gift_form = PhoneGiftForm(request.POST)
+                if not phone_gift_form.is_valid() or not _limit(
+                    "gift-lookup-user", request.user.pk, 10, 300
+                ):
+                    raise ValidationError("invalid")
+                phone = phone_gift_form.cleaned_data["phone"]
+                value = phone_gift_form.cleaned_data["amount"]
+                if value > available(member):
+                    raise ValidationError("invalid")
+                recipient, binding = recipient_for_phone(phone)
+                if recipient:
+                    if recipient.pk == member.pk:
+                        raise ValidationError("invalid")
+                    payload = {
+                        "user": request.user.pk,
+                        "recipient": recipient.number,
+                        "value": str(value),
+                        "request": f"ui-{secrets.token_urlsafe(24)}",
+                        "phone_binding": {
+                            "id": binding.pk,
+                            "version": str(binding.version),
+                            "phone_hash": phone_hash(phone),
+                        },
+                    }
+                    confirmation = {
+                        **payload,
+                        "name": masked_name(recipient),
+                        "phone": "••••" + phone[-4:],
+                        "token": signing.dumps(payload, salt=SALT),
+                    }
+                else:
+                    fixed_language = recipient_language(phone)
+                    payload = {
+                        "user": request.user.pk,
+                        "member": member.pk,
+                        "phone": phone,
+                        "language": fixed_language,
+                        "key": "gift-invite:" + secrets.token_urlsafe(24),
+                    }
+                    gift_invitation = {
+                        "phone": "••••" + phone[-4:],
+                        "token": signing.dumps(payload, salt=GIFT_SALT),
+                        "eligible": bool(member.invitation_token and invitation_eligible(member)),
+                    }
+                    invitation_form = GiftInvitationForm(
+                        fixed_language=fixed_language,
+                        language=(get_language() or "ar").split("-")[0],
+                    )
+            elif action == "gift_invitation_confirm" and member and member.status == "active":
+                from .phone_gifts import queue_invitation
+
+                payload = signing.loads(
+                    request.POST.get("confirmation", ""), salt=GIFT_SALT, max_age=600
+                )
+                if payload["user"] != request.user.pk or payload["member"] != member.pk:
+                    raise PermissionDenied
+                invitation_form = GiftInvitationForm(
+                    request.POST, fixed_language=payload["language"]
+                )
+                if not invitation_form.is_valid():
+                    raise ValidationError("invalid")
+                pointer = queue_invitation(
+                    request.user,
+                    phone=payload["phone"],
+                    language=invitation_form.cleaned_data["language"],
+                    key=payload["key"],
+                    consent=invitation_form.cleaned_data["consent"],
+                )
+                request.session["loyalty_gift_invitation"] = pointer
+                return redirect("accounts:rewards")
             elif action == "transfer_confirm" and member and member.status == "active":
                 payload = signing.loads(
                     request.POST.get("confirmation", ""), salt=SALT, max_age=600
                 )
                 if payload["user"] != request.user.pk:
                     raise PermissionDenied
-                transfer(request.user, payload["request"], payload["recipient"], payload["value"])
+                from .phone_gifts import confirm_phone_transfer
+
+                confirm_phone_transfer(request.user, payload)
             elif action == "invite" and member and member.status == "active":
                 # Offer owned stays only; the service verifies arrival and completion.
                 r = get_object_or_404(
@@ -206,7 +298,7 @@ def guest_rewards(request):
                 issue_invite(request.user, r.pk)
             else:
                 raise ValidationError("invalid")
-            if confirmation is None:
+            if confirmation is None and gift_invitation is None:
                 messages.success(request, labels["success"])
                 return redirect("accounts:rewards")
         except (
@@ -265,6 +357,14 @@ def guest_rewards(request):
                     or stay_exception_allowed(r)
                 ]
     a_copy = account_copy()
+    from .phone_gifts import invitation_status
+
+    gift_status = invitation_status(request.user, request.session.get("loyalty_gift_invitation"))
+    gift_status_text = (
+        labels.get("gift_status_" + gift_status["status"], labels["gift_status_uncertain"])
+        if gift_status
+        else ""
+    )
     name = request.user.first_name.strip()
     return render(
         request,
@@ -294,6 +394,12 @@ def guest_rewards(request):
             "loyalty_terms_reference": settings.LOYALTY_TERMS_REFERENCE,
             "loyalty_join_form": join_form,
             "loyalty_transfer_form": transfer_form,
+            "loyalty_phone_gift_form": phone_gift_form,
+            "loyalty_phone_help": phone_copy()["phone_help"],
+            "loyalty_gift_invitation": gift_invitation,
+            "loyalty_gift_invitation_form": invitation_form,
+            "loyalty_gift_status": gift_status,
+            "loyalty_gift_status_text": gift_status_text,
             "loyalty_inviter": inviter,
             "loyalty_invitation_invalid": invitation_invalid,
             "loyalty_confirmation": confirmation,

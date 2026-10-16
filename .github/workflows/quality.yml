@@ -70,6 +70,7 @@ jobs:
           tests/test_loyalty_settlement_integration.py
           tests/test_loyalty_booking_operations.py
           tests/test_loyalty_admin_referrals.py
+          tests/test_loyalty_phone_gifts.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

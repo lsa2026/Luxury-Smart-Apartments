@@ -4,6 +4,8 @@ from decimal import Decimal
 
 from django import forms
 
+from apps.accounts.phone_views import PhoneForm
+
 from .copy import copy
 
 
@@ -44,3 +46,30 @@ class TransferForm(forms.Form):
                 "max_whole_digits",
             ):
                 field.error_messages[code] = labels["invalid"]
+
+
+class PhoneGiftForm(PhoneForm):
+    amount = forms.DecimalField(max_digits=16, decimal_places=2, min_value=Decimal("0.01"))
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("auto_id", "gift_%s")
+        super().__init__(*args, **kwargs)
+        self.fields["phone_country"].initial = "SA"
+        self.fields["amount"].label = copy()["amount"]
+        self.fields["amount"].widget.attrs.update(inputmode="decimal", step="0.01")
+        self.fields["phone"].widget.attrs["aria-describedby"] = (
+            "gift-phone-help gift-phone-validation"
+        )
+
+
+class GiftInvitationForm(forms.Form):
+    language = forms.ChoiceField(choices=[("ar", "العربية"), ("en", "English"), ("fr", "Français")])
+    consent = forms.BooleanField()
+
+    def __init__(self, *args, fixed_language="", language="ar", **kwargs):
+        kwargs.setdefault("initial", {"language": fixed_language or language})
+        super().__init__(*args, **kwargs)
+        labels = copy()
+        self.fields["language"].label = labels["gift_message_language"]
+        self.fields["language"].disabled = bool(fixed_language)
+        self.fields["consent"].label = labels["gift_invite_consent"]

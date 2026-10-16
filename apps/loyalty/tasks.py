@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from .backup import LocalMirror, _local_source_only
+from .phone_gifts import deliver_invitation as deliver_invitation
 
 
 @shared_task(ignore_result=True, soft_time_limit=45, time_limit=60)

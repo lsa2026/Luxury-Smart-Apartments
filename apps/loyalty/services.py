@@ -599,6 +599,10 @@ def transfer(user, request_reference, recipient_number, value):
                 number=recipient_number,
                 status="active",
             )
+            if not participant_allowed(recipient.customer):
+                raise PermissionDenied
+            if not recipient.customer.is_active:
+                raise ValidationError("حساب المستلم غير مؤهل لاستلام النقاط.")
             n = amount(cents(value))
             if n <= 0 or sender.pk == recipient.pk or n > available(sender):
                 raise ValidationError("تحويل غير صالح أو الرصيد لا يكفي.")

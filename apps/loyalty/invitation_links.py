@@ -14,13 +14,17 @@ from .services import invitation_eligible
 SHORT_LENGTH = 16  # 96 random bits from the existing URL-safe invitation token.
 
 
-def invitation_url(request, member):
+def invitation_path(member):
     token = member.invitation_token
     code = token[:SHORT_LENGTH]
     # Never attribute an ambiguous alias. Existing full-token links still work.
     if Member.objects.filter(invitation_token__startswith=code).exclude(pk=member.pk).exists():
         code = token
-    return request.build_absolute_uri(reverse("loyalty_invite_short", kwargs={"code": code}))
+    return reverse("loyalty_invite_short", kwargs={"code": code})
+
+
+def invitation_url(request, member):
+    return request.build_absolute_uri(invitation_path(member))
 
 
 @never_cache

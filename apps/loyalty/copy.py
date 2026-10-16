@@ -5,6 +5,92 @@ from django.utils.translation import get_language
 
 # Each row supplies Arabic, English and French; no UI translation fallback.
 LABELS = {
+    "gift_phone_heading": (
+        "إهداء النقاط برقم الجوال",
+        "Gift points by mobile",
+        "Offrir des points par mobile",
+    ),
+    "gift_phone_help": (
+        "أدخل جوال المستلم الموثق بحسابه. سنراجع العضوية ونعرض اسمًا مختصرًا قبل تأكيد التحويل.",
+        "Enter the mobile verified on the recipient’s account. We check membership and show a shortened name before confirmation.",
+        "Saisissez le mobile vérifié du destinataire. Nous vérifions l’adhésion et affichons un nom abrégé avant confirmation.",
+    ),
+    "gift_member_alternative": (
+        "أو استخدم رقم العضوية",
+        "Or use a membership number",
+        "Ou utiliser un numéro d’adhésion",
+    ),
+    "gift_recipient_name": (
+        "اسم المستلم المختصر",
+        "Shortened recipient name",
+        "Nom abrégé du destinataire",
+    ),
+    "gift_unavailable": (
+        "لا يمكن التحويل إلى هذا الرقم حاليًا. يستطيع صاحبه إنشاء حساب والانضمام إلى برنامج الولاء وتوثيق جواله، ثم تعيد البحث عنه.",
+        "This number cannot receive points yet. Its owner can create an account, join rewards and verify their mobile; then search again.",
+        "Ce numéro ne peut pas encore recevoir de points. Son titulaire peut créer un compte, adhérer et vérifier son mobile ; recherchez-le ensuite.",
+    ),
+    "gift_invite_explain": (
+        "بموافقتك، نرسل دعوة واحدة عبر رقم واتساب الأعمال الخاص بنا، باسمك وبرابط دعوتك. لن تُخصم أو تُحجز أي نقاط، ولن يحدث تحويل تلقائي بعد الانضمام.",
+        "With your approval, we send one invitation from our business WhatsApp, in your name with your invitation link. No points are deducted or reserved, and joining never triggers an automatic transfer.",
+        "Avec votre accord, nous envoyons une invitation depuis notre WhatsApp professionnel, en votre nom avec votre lien. Aucun point n’est débité ou réservé et l’adhésion ne déclenche aucun transfert automatique.",
+    ),
+    "gift_message_language": ("لغة رسالة الدعوة", "Invitation language", "Langue de l’invitation"),
+    "gift_invite_consent": (
+        "أؤكد أن صاحب الرقم يتوقع هذه الدعوة، وأوافق على إرسالها باسمي عبر واتساب الأعمال.",
+        "I confirm the recipient expects this invitation and approve sending it in my name through business WhatsApp.",
+        "Je confirme que le destinataire attend cette invitation et j’autorise son envoi en mon nom via WhatsApp professionnel.",
+    ),
+    "gift_invite_send": (
+        "إرسال دعوة للانضمام عبر واتساب",
+        "Send a WhatsApp invitation",
+        "Envoyer une invitation par WhatsApp",
+    ),
+    "gift_private_scope": (
+        "الدعوة لا تتجاوز نطاق التجربة الخاصة الحالية؛ يبقى الانضمام متاحًا لحسابات التجربة المعتمدة فقط.",
+        "Invitations do not bypass the private trial; rewards membership is still limited to approved trial accounts.",
+        "L’invitation ne contourne pas l’essai privé : l’adhésion reste réservée aux comptes approuvés.",
+    ),
+    "gift_status_queued": (
+        "طلب الدعوة محفوظ وينتظر الإرسال؛ لم تُخصم أي نقاط. حدّث الحالة للتحقق.",
+        "Your invitation is queued; no points were deducted. Refresh to check its status.",
+        "Votre invitation est en attente d’envoi ; aucun point débité. Actualisez son état.",
+    ),
+    "gift_status_sending": (
+        "جارٍ إرسال الدعوة؛ لم تُخصم أي نقاط.",
+        "The invitation is being sent; no points were deducted.",
+        "L’invitation est en cours d’envoi ; aucun point débité.",
+    ),
+    "gift_status_accepted": (
+        "قبلت خدمة واتساب طلب إرسال الدعوة. هذا لا يثبت وصولها أو قراءتها. بعد انضمام المستلم وتوثيق جواله، أعد البحث لتأكيد الهدية.",
+        "WhatsApp accepted the invitation for sending; this does not prove delivery or reading. Once the recipient joins and verifies their mobile, search again to confirm the gift.",
+        "WhatsApp a accepté l’envoi ; cela ne prouve ni réception ni lecture. Après adhésion et vérification du mobile, recherchez à nouveau pour confirmer le cadeau.",
+    ),
+    "gift_status_queue_failed": (
+        "تعذر تسليم الدعوة لخدمة الإرسال. لم تُخصم أي نقاط؛ يمكنك نسخ رابط دعوتك ومشاركته بنفسك.",
+        "The invitation could not be queued. No points were deducted; you can copy and share your invitation link yourself.",
+        "L’invitation n’a pas pu être mise en file. Aucun point débité ; vous pouvez copier et partager votre lien.",
+    ),
+    "gift_status_disabled": (
+        "لم تُرسل الدعوة لأن شروط الإرسال لم تعد متحققة. لم تُخصم نقاط.",
+        "The invitation was not sent because sending requirements were no longer met. No points were deducted.",
+        "L’invitation n’a pas été envoyée car les conditions n’étaient plus remplies. Aucun point débité.",
+    ),
+    "gift_status_recipient_ready": (
+        "أصبح الرقم مؤهلًا لاستقبال النقاط قبل إرسال الدعوة. أعد البحث عنه لمراجعة الهدية؛ لم يحدث تحويل تلقائي.",
+        "The number became eligible before the invitation was sent. Search again to review your gift; no automatic transfer occurred.",
+        "Le numéro est devenu éligible avant l’envoi. Recherchez-le à nouveau pour vérifier le cadeau ; aucun transfert automatique.",
+    ),
+    "gift_status_uncertain": (
+        "لم نتمكن من تأكيد نتيجة إرسال الدعوة، لذلك لن نعيد إرسالها تلقائيًا. لم تُخصم نقاط؛ يمكنك مشاركة رابط دعوتك بنفسك.",
+        "The sending outcome could not be confirmed, so we will not resend automatically. No points were deducted; you can share your invitation link yourself.",
+        "Le résultat de l’envoi est incertain ; aucun renvoi automatique. Aucun point débité ; vous pouvez partager votre lien vous-même.",
+    ),
+    "gift_refresh": (
+        "تحديث حالة الدعوة",
+        "Refresh invitation status",
+        "Actualiser l’état de l’invitation",
+    ),
     "title": ("مكافآتي", "My rewards", "Mes avantages"),
     "preview": (
         "تجربة داخلية — النقاط والعضويات هنا افتراضية، والبرنامج غير منشور.",
