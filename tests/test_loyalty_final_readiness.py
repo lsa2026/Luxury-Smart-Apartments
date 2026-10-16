@@ -293,6 +293,114 @@ def test_readiness_invalid_booking_identifier_fails_without_echoing_it():
         call_command("loyalty_readiness", reservation_id="not-a-booking")
 
 
+def future_stay(u, *, paid=True):
+    r = booking(u, paid=paid, arrived=False)
+    r.check_in += timedelta(days=60)
+    r.check_out += timedelta(days=60)
+    r.save(update_fields=["check_in", "check_out"])
+    intent = r.booking_intent
+    intent.check_in, intent.check_out = r.check_in, r.check_out
+    intent.save(update_fields=["check_in", "check_out"])
+    q = intent.quote
+    q.check_in, q.check_out = r.check_in, r.check_out
+    q.save(update_fields=["check_in", "check_out"])
+    return r
+
+
+def configure_stay_exception(settings, r, *others):
+    settings.LOYALTY_PILOT_ONLY = True
+    settings.LOYALTY_PILOT_EMAILS = [r.booking_intent.customer.email, *(u.email for u in others)]
+    settings.LOYALTY_PILOT_BOOKING_REFERENCES = [r.public_reference]
+    settings.LOYALTY_PILOT_STAY_EXCEPTION_REFERENCES = [r.public_reference]
+
+
+def test_explicit_test_stay_awards_once_and_invites_without_fabricated_arrival(settings):
+    from apps.loyalty.services import invitation_eligible
+
+    a, b = user("stay-exception"), user("invited-under-exception")
+    r = future_stay(a)
+    original_dates = r.check_in, r.check_out
+    configure_stay_exception(settings, r, b)
+    am = join(a)
+    assert balance(am) == pytest.approx(22.50)
+    row = Ledger.objects.get(member=am)
+    assert row.actual_arrival_at is None
+    assert row.evidence["arrival"]["at"] is None
+    assert row.evidence["stay_exception"] == "explicit-owner-test-only"
+    assert "اختباري" in row.reason
+    assert reconcile(r.pk)["status"] == "unchanged"
+    settings.LOYALTY_UI_ENABLED = True
+    c = Client()
+    c.force_login(a)
+    response = c.get("/my-bookings/rewards/")
+    assert [s.pk for s in response.context["loyalty_completed"]] == [r.pk]
+    assert response.context["loyalty_stay_exception"] is True
+    token = issue_invite(a, r.pk)
+    am.refresh_from_db()
+    assert invitation_eligible(am)
+    assert am.first_completed_at is None and am.first_completed_reservation_id is None
+    c.force_login(b)
+    response = c.get(f"/my-bookings/rewards/?invite={token}")
+    assert response.context["loyalty_inviter"].pk == am.pk
+    assert response.context["loyalty_stay_exception"] is False
+    bm = join(b, invitation_token=token, confirmed_inviter=am.pk)
+    assert bm.referral.inviter_id == am.pk and balance(bm) == 0
+    r.refresh_from_db()
+    assert not r.loyalty_state.get("arrival")
+    assert (r.check_in, r.check_out) == original_dates
+
+
+def test_stay_exception_never_fabricates_a_payment_receipt(settings):
+    u = user("unpaid-stay-exception")
+    r = future_stay(u, paid=False)
+    configure_stay_exception(settings, r)
+    m = join(u)
+    assert balance(m) == 0
+    assert reconcile(r.pk)["status"] == "verified_payment_incomplete"
+    with pytest.raises(ValidationError):
+        issue_invite(u, r.pk)
+    assert not Ledger.objects.exists()
+
+
+@pytest.mark.parametrize("invalid", ["not_private", "more_than_one", "not_selected"])
+def test_stay_exception_is_fail_closed_and_never_applies_to_other_bookings(settings, invalid):
+    from apps.loyalty.launch import stay_exception_allowed
+
+    u = user("invalid-stay-exception")
+    r = future_stay(u)
+    configure_stay_exception(settings, r)
+    if invalid == "not_private":
+        settings.LOYALTY_PILOT_ONLY = False
+    elif invalid == "more_than_one":
+        settings.LOYALTY_PILOT_STAY_EXCEPTION_REFERENCES.append("TEST-UNSELECTED")
+    else:
+        settings.LOYALTY_PILOT_BOOKING_REFERENCES = ["TEST-UNSELECTED"]
+    assert not stay_exception_allowed(r)
+    join(u)
+    assert not Ledger.objects.exists()
+
+
+def test_cancelling_test_stay_reverses_reward_and_retires_its_test_only_invitation(settings):
+    from apps.loyalty.services import invitation_eligible
+    from apps.reservations.models import Reservation
+
+    u = user("cancel-exception")
+    r = future_stay(u)
+    configure_stay_exception(settings, r)
+    m = join(u)
+    issue_invite(u, r.pk)
+    m.refresh_from_db()
+    assert invitation_eligible(m)
+    r.normalized_status = Reservation.Status.CANCELLED
+    r.save(update_fields=["normalized_status"])
+    assert reconcile(r.pk)["status"] == "settled"
+    assert balance(m) == 0 and Ledger.objects.filter(member=m).count() == 2
+    assert reconcile(r.pk)["status"] == "unchanged"
+    assert not invitation_eligible(m)
+    with pytest.raises(ValidationError):
+        issue_invite(u, r.pk)
+
+
 @pytest.mark.parametrize("paid,arrived", [(False, True), (True, False)])
 def test_historical_acceptance_still_requires_real_payment_and_arrival(
     local_program, settings, paid, arrived

@@ -2,6 +2,7 @@
 <div class="loyalty-workspace">
   {% if loyalty_preview %}<p class="loyalty-notice" role="status">{{ loyalty_copy.preview }}</p>{% endif %}
   {% if loyalty_pilot and not loyalty_preview %}<p class="loyalty-notice" role="status">{{ loyalty_copy.pilot_notice }}</p>{% endif %}
+  {% if loyalty_stay_exception %}<p class="loyalty-notice">{{ loyalty_copy.stay_exception_notice }}</p>{% endif %}
   {% if not loyalty_can_act %}<p class="loyalty-notice">{{ loyalty_copy.legal_wait }}</p>{% endif %}
   {% if loyalty_verify %}<p class="loyalty-notice"><a href="{% url 'accounts:verify_pending' %}">{{ loyalty_copy.verify }}</a></p>{% endif %}
   {% if loyalty_error or loyalty_invitation_invalid %}<p class="loyalty-error" role="alert">{{ loyalty_copy.invalid }}</p>{% endif %}

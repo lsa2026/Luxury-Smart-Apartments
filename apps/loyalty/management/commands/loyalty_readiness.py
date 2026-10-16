@@ -13,6 +13,7 @@ from apps.loyalty.launch import (
     pilot_emails,
     pilot_only,
     pilot_references,
+    stay_exception_allowed,
 )
 from apps.loyalty.services import launch_at
 from apps.loyalty.site_adapter import booking_facts
@@ -71,6 +72,7 @@ class Command(BaseCommand):
                 result["arrival_recorded"] = bool(booking.loyalty_state.get("arrival"))
                 result["booking_in_scope"] = booking_allowed(booking)
                 result["historical_acceptance_exception"] = historical_award_allowed(booking)
+                result["test_only_stay_exception"] = stay_exception_allowed(booking)
                 result["award_evidence_ready"] = not reason
                 result["blocker"] = reason
         # Configuring a reference is not a legal opinion, consent, or proof of

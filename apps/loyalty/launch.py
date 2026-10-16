@@ -63,3 +63,21 @@ def historical_award_allowed(booking):
     return bool(
         pilot_only() and settings.LOYALTY_PILOT_ALLOW_HISTORICAL and booking_allowed(booking)
     )
+
+
+def stay_exception_references():
+    # Owner-authorized acceptance only: at most one exact selected booking.
+    values = settings.LOYALTY_PILOT_STAY_EXCEPTION_REFERENCES
+    if not isinstance(values, list | tuple) or len(values) != 1:
+        return frozenset()
+    references = frozenset(str(value).strip() for value in values)
+    return references if references <= pilot_references() else frozenset()
+
+
+def stay_exception_allowed(booking):
+    # Never creates an arrival, checkout, provider receipt or completed stay.
+    return bool(
+        pilot_only()
+        and booking_allowed(booking)
+        and booking.public_reference in stay_exception_references()
+    )

@@ -16,6 +16,11 @@ LABELS = {
         "Private limited trial — recorded points are real. The programme is not open to all guests yet.",
         "Essai privé limité — les points enregistrés sont réels. Le programme n’est pas encore ouvert à tous les clients.",
     ),
+    "stay_exception_notice": (
+        "لهذا الحساب حجز واحد معتمد للتجربة دون اشتراط إقامة فعلية. لا يسجل ذلك وصولًا أو إقامة مكتملة، ولا يعفي من إثبات الدفع والموافقة، ولا يشمل الحجوزات الأخرى.",
+        "One booking on this account has an authorised test-only stay exception. This records neither arrival nor a completed stay, does not waive payment evidence or consent, and does not apply to other bookings.",
+        "Une seule réservation de ce compte bénéficie d’une dérogation de séjour pour cet essai. Elle ne constate ni arrivée ni séjour terminé, ne dispense pas de justificatif de paiement ni de consentement et ne concerne aucune autre réservation.",
+    ),
     "legal_wait": (
         "الانضمام والتحويل ينتظران اعتماد الأحكام وإطلاق البرنامج.",
         "Joining and transfers await approved terms and launch.",

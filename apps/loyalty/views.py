@@ -29,12 +29,19 @@ from apps.reservations.models import Reservation
 
 from .copy import copy, transaction_label
 from .forms import JoinForm, TransferForm
-from .launch import participant_allowed, pilot_only, pilot_references
+from .launch import (
+    participant_allowed,
+    pilot_only,
+    pilot_references,
+    stay_exception_allowed,
+    stay_exception_references,
+)
 from .models import Ledger, Member, Referral
 from .services import (
     available,
     confirm_arrival,
     enroll,
+    invitation_eligible,
     issue_invite,
     posting_transaction,
     transfer,
@@ -127,10 +134,10 @@ def guest_rewards(request):
     inviter = None
     invitation_invalid = False
     if invitation and member is None:
-        inviter = Member.objects.filter(
-            invitation_token=invitation, status="active", first_completed_at__isnull=False
-        ).first()
-        if inviter and not participant_allowed(inviter.customer):
+        inviter = Member.objects.filter(invitation_token=invitation, status="active").first()
+        if inviter and (
+            not participant_allowed(inviter.customer) or not invitation_eligible(inviter)
+        ):
             inviter = None
         invitation_invalid = inviter is None
     can_act = _actions_allowed(request)
@@ -227,7 +234,7 @@ def guest_rewards(request):
             rows, cursor = _rows(query, request)
         _decorate(rows)
         if member.status == "active":
-            if member.invitation_token:
+            if member.invitation_token and invitation_eligible(member):
                 invite_url = request.build_absolute_uri(
                     reverse("accounts:rewards")
                     + "?"
@@ -239,12 +246,15 @@ def guest_rewards(request):
                 )
                 if pilot_only() and settings.LOYALTY_PILOT_ALLOW_HISTORICAL:
                     eligible_dates |= Q(public_reference__in=pilot_references())
+                completed_dates = Q(check_out__lte=timezone.localdate())
+                if pilot_only():
+                    completed_dates |= Q(public_reference__in=stay_exception_references())
                 completed = Reservation.objects.filter(
                     eligible_dates,
+                    completed_dates,
                     booking_intent__customer=request.user,
                     source_type=Reservation.SourceType.DIRECT_WEBSITE,
                     normalized_status__in=Reservation.ACTIVE_STATUSES,
-                    check_out__lte=timezone.localdate(),
                 ).select_related("property")
                 if pilot_only():
                     completed = completed.filter(public_reference__in=pilot_references())
@@ -254,7 +264,8 @@ def guest_rewards(request):
                 completed = [
                     r
                     for r in completed
-                    if r.loyalty_state.get("arrival") and stay_times(r)[1] <= timezone.now()
+                    if (r.loyalty_state.get("arrival") and stay_times(r)[1] <= timezone.now())
+                    or stay_exception_allowed(r)
                 ]
     a_copy = account_copy()
     name = request.user.first_name.strip()
@@ -275,6 +286,11 @@ def guest_rewards(request):
             "loyalty_cursor": cursor,
             "loyalty_preview": preview_mode(),
             "loyalty_pilot": pilot_only(),
+            "loyalty_stay_exception": pilot_only()
+            and Reservation.objects.filter(
+                booking_intent__customer=request.user,
+                public_reference__in=stay_exception_references(),
+            ).exists(),
             "loyalty_can_act": can_act and _verified(request.user),
             "loyalty_verify": not _verified(request.user),
             "loyalty_terms_approved": approved_terms(),

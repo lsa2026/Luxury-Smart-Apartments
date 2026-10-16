@@ -17,7 +17,12 @@ from apps.accounts.models import CustomerProfile
 from apps.reservations.models import Reservation
 
 from .calculation import amount, cents, reward_plan
-from .launch import booking_allowed, historical_award_allowed, participant_allowed
+from .launch import (
+    booking_allowed,
+    historical_award_allowed,
+    participant_allowed,
+    stay_exception_allowed,
+)
 from .models import Ledger, Member, Referral
 
 RULES = "loyalty-approved-20261010-v1"
@@ -210,13 +215,13 @@ def enroll(
                 .filter(
                     invitation_token=invitation_token,
                     status="active",
-                    first_completed_at__isnull=False,
                 )
                 .first()
             )
             if (
                 parent is None
                 or not participant_allowed(parent.customer)
+                or not invitation_eligible(parent)
                 or str(parent.pk) != str(confirmed_inviter)
             ):
                 raise ValidationError("أكد الداعي المطابق لرابط الدعوة.")
@@ -314,18 +319,43 @@ def confirm_arrival(operator, reservation_id, *, arrived_at, reference):
         return reconcile(booking.pk)
 
 
+def invitation_eligible(member):
+    if member.first_completed_at is not None:
+        return True
+    qualification = member.command_receipts.get("__pilot_invitation__", {})
+    reference = qualification.get("reservation_reference")
+    if not reference:
+        return False
+    booking = (
+        Reservation.objects.select_related("booking_intent__customer", "property")
+        .filter(public_reference=reference, booking_intent__customer_id=member.customer_id)
+        .first()
+    )
+    if not booking or not stay_exception_allowed(booking):
+        return False
+    if booking.normalized_status not in Reservation.ACTIVE_STATUSES:
+        return False
+    from .site_adapter import booking_facts
+
+    _, blocker = booking_facts(booking)
+    return not blocker
+
+
 def issue_invite(user, reservation_id):
     with posting_transaction():
         member = member_for(user)
         if member.invitation_token:
-            return member.invitation_token
+            if invitation_eligible(member):
+                return member.invitation_token
+            raise ValidationError("الدعوة غير مؤهلة حاليًا.")
         booking = _booking(user, reservation_id)
         from .site_adapter import booking_facts, stay_times
 
         _, end = stay_times(booking)
+        test_stay_exception = stay_exception_allowed(booking)
         if (
-            not booking.loyalty_state.get("arrival")
-            or end > timezone.now()
+            (not booking.loyalty_state.get("arrival") and not test_stay_exception)
+            or (end > timezone.now() and not test_stay_exception)
             or booking.normalized_status not in Reservation.ACTIVE_STATUSES
             or (member.consent_at > end and not historical_award_allowed(booking))
         ):
@@ -336,14 +366,24 @@ def issue_invite(user, reservation_id):
         _facts, blocker = booking_facts(booking)
         if blocker:
             raise ValidationError("يلزم توثيق سداد الإقامة المؤهلة قبل إصدار الدعوة.")
-        member.first_completed_reservation = booking
-        member.first_completed_at = end
+        if test_stay_exception and (
+            not booking.loyalty_state.get("arrival") or end > timezone.now()
+        ):
+            member.command_receipts["__pilot_invitation__"] = {
+                "reservation_reference": booking.public_reference,
+                "reason": "explicit-owner-test-stay-exception",
+                "at": timezone.now().isoformat(),
+            }
+        else:
+            member.first_completed_reservation = booking
+            member.first_completed_at = end
         member.invitation_token = secrets.token_urlsafe(32)
         member.invitation_issued_at = timezone.now()
         member.save(
             update_fields=[
                 "first_completed_reservation",
                 "first_completed_at",
+                "command_receipts",
                 "invitation_token",
                 "invitation_issued_at",
                 "updated_at",
@@ -468,7 +508,9 @@ def reconcile(reservation_id):
                 booking_currency=booking.currency,
                 check_in_at=datetime.fromisoformat(facts["check_in"]),
                 check_out_at=datetime.fromisoformat(facts["check_out"]),
-                actual_arrival_at=datetime.fromisoformat(facts["arrival"]["at"]),
+                actual_arrival_at=datetime.fromisoformat(facts["arrival"]["at"])
+                if facts["arrival"]["at"]
+                else None,
                 arrival_reference=facts["arrival"]["reference"],
                 eligible_lodging_sar=Decimal(facts["base"]),
                 verified_cash_sar=Decimal(facts["cash"]),
@@ -495,7 +537,9 @@ def reconcile(reservation_id):
                     credit=target - current,
                     event_type="adjust" if original else "earn",
                     original=original,
-                    reason="استحقاق الإقامة بعد القبض والوصول والموافقة",
+                    reason="استحقاق اختباري مصرح به دون إقامة فعلية"
+                    if facts.get("stay_exception")
+                    else "استحقاق الإقامة بعد القبض والوصول والموافقة",
                     **common,
                 )
                 branch = _absorb(member, target - current, event, group, branch)

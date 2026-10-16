@@ -55,13 +55,14 @@ def _lodging(components, total):
 
 
 def booking_facts(booking):
-    from .launch import booking_allowed, historical_award_allowed
+    from .launch import booking_allowed, historical_award_allowed, stay_exception_allowed
     from .services import launch_at
 
     intent = booking.booking_intent
     if not booking_allowed(booking):
         return None, "outside_pilot_scope"
     historical_acceptance = historical_award_allowed(booking)
+    test_stay_exception = stay_exception_allowed(booking)
     if (
         booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
         or not intent
@@ -73,14 +74,14 @@ def booking_facts(booking):
     if not member or member.status != "active":
         return None, "membership_required"
     arrival = booking.loyalty_state.get("arrival")
-    if not arrival:
+    if not arrival and not test_stay_exception:
         return None, "arrival_required"
     try:
         start, end = stay_times(booking)
-        arrival_at = datetime.fromisoformat(arrival["at"])
+        arrival_at = datetime.fromisoformat(arrival["at"]) if arrival else None
         if (
-            timezone.is_naive(arrival_at)
-            or arrival_at > timezone.now()
+            (arrival_at is not None and timezone.is_naive(arrival_at))
+            or (arrival_at is not None and arrival_at > timezone.now())
             or member.consent_at > timezone.now()
             or (member.consent_at > end and not historical_acceptance)
         ):
@@ -207,7 +208,8 @@ def booking_facts(booking):
             "points": str(points.quantize(CENT)),
             "check_in": start.isoformat(),
             "check_out": end.isoformat(),
-            "arrival": arrival,
+            "arrival": arrival
+            or {"at": None, "reference": "explicit-owner-test-stay-exception"},
             "consent": member.consent_at.isoformat(),
             "terms_version": member.terms_version,
             "cancelled": cancelled,
@@ -228,6 +230,8 @@ def booking_facts(booking):
         }
         if historical_acceptance:
             facts["acceptance_scope"] = "explicit-historical-live-acceptance"
+        if test_stay_exception and not arrival:
+            facts["stay_exception"] = "explicit-owner-test-only"
         return facts, ""
     except (ValueError, KeyError, InvalidOperation, CurrencyError) as exc:
         return None, str(exc) if isinstance(exc, ValueError) else "financial_facts_invalid"
