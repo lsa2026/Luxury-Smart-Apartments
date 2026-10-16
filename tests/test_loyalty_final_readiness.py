@@ -2,6 +2,7 @@
 
 import json
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from html.parser import HTMLParser
 from io import StringIO
 from urllib.parse import parse_qs, urlparse
@@ -293,8 +294,8 @@ def test_readiness_invalid_booking_identifier_fails_without_echoing_it():
         call_command("loyalty_readiness", reservation_id="not-a-booking")
 
 
-def future_stay(u, *, paid=True):
-    r = booking(u, paid=paid, arrived=False)
+def future_stay(u, *, paid=True, value="750.00"):
+    r = booking(u, value, paid=paid, arrived=False)
     r.check_in += timedelta(days=60)
     r.check_out += timedelta(days=60)
     r.save(update_fields=["check_in", "check_out"])
@@ -360,6 +361,121 @@ def test_stay_exception_never_fabricates_a_payment_receipt(settings):
     with pytest.raises(ValidationError):
         issue_invite(u, r.pk)
     assert not Ledger.objects.exists()
+
+
+def legacy_accommodation_quote(r):
+    quote = r.booking_intent.quote
+    quote.components = [
+        {"type": "accommodation", "total": str(r.total_price), "included_in_total": True}
+    ]
+    quote.save(update_fields=["components"])
+    return quote
+
+
+def test_selected_owner_trial_legacy_quote_awards_once_without_rewriting_source(settings):
+    from apps.loyalty.site_adapter import booking_facts
+    from apps.reservations.models import Reservation
+
+    u = user("legacy-owner-trial")
+    r = future_stay(u, value="957.00")
+    quote = legacy_accommodation_quote(r)
+    original_components = quote.components.copy()
+    original_dates = r.check_in, r.check_out
+    configure_stay_exception(settings, r)
+    assert booking_facts(r)[1] == "membership_required"
+    member = join(u)
+    assert balance(member) == Decimal("28.71")
+    row = Ledger.objects.get(member=member, reservation=r)
+    assert row.rate_percent == 3 and row.credit == Decimal("28.71") and row.debit == 0
+    assert row.eligible_lodging_sar == 957 and row.verified_cash_sar == 957
+    assert row.actual_arrival_at is None
+    assert row.evidence["stay_exception"] == "explicit-owner-test-only"
+    assert row.evidence["price_adapter"] == "single-accommodation-owner-test-v1"
+    assert row.evidence["components"] == original_components
+    assert reconcile(r.pk)["status"] == "unchanged"
+    assert Ledger.objects.filter(reservation=r).count() == 1
+    quote.refresh_from_db()
+    r.refresh_from_db()
+    assert quote.components == original_components
+    assert (r.check_in, r.check_out) == original_dates
+    assert not r.loyalty_state.get("arrival")
+    assert r.total_price == 957 and r.booking_intent.total_price == 957
+    r.normalized_status = Reservation.Status.CANCELLED
+    r.save(update_fields=["normalized_status"])
+    assert reconcile(r.pk)["status"] == "settled"
+    assert balance(member) == 0 and Ledger.objects.filter(reservation=r).count() == 2
+    assert reconcile(r.pk)["status"] == "unchanged"
+
+
+@pytest.mark.parametrize("private_scope", [False, True])
+def test_legacy_accommodation_adapter_never_applies_to_ordinary_arrived_stays(
+    settings, private_scope
+):
+    u = user("ordinary-legacy")
+    r = booking(u, "957.00")
+    legacy_accommodation_quote(r)
+    if private_scope:
+        settings.LOYALTY_PILOT_ONLY = True
+        settings.LOYALTY_PILOT_EMAILS = [u.email]
+        settings.LOYALTY_PILOT_BOOKING_REFERENCES = [r.public_reference]
+    member = join(u)
+    assert balance(member) == 0
+    assert reconcile(r.pk)["status"] == "price_breakdown_mismatch"
+    assert not Ledger.objects.filter(reservation=r).exists()
+
+
+@pytest.mark.parametrize(
+    "components,blocker",
+    [
+        (
+            [{"type": "accommodation", "total": "956", "included_in_total": True}],
+            "price_breakdown_mismatch",
+        ),
+        (
+            [{"type": "accommodation", "total": "957", "included_in_total": False}],
+            "price_breakdown_unverified",
+        ),
+        (
+            [{"type": "accommodation", "total": "-957", "included_in_total": True}],
+            "discount_allocation_required",
+        ),
+        (
+            [{"type": "accommodation", "total": "NaN", "included_in_total": True}],
+            "price_breakdown_invalid",
+        ),
+        (
+            [
+                {"type": "accommodation", "total": "857", "included_in_total": True},
+                {"type": "cleaningFee", "total": "100", "included_in_total": True},
+            ],
+            "price_breakdown_mismatch",
+        ),
+    ],
+)
+def test_owner_trial_legacy_adapter_still_rejects_ambiguous_or_unverified_prices(
+    settings, components, blocker
+):
+    u = user("invalid-legacy-trial")
+    r = future_stay(u, value="957.00")
+    quote = r.booking_intent.quote
+    quote.components = components
+    quote.save(update_fields=["components"])
+    configure_stay_exception(settings, r)
+    member = join(u)
+    assert balance(member) == 0
+    assert reconcile(r.pk)["status"] == blocker
+    assert not Ledger.objects.filter(reservation=r).exists()
+
+
+def test_owner_trial_legacy_adapter_does_not_waive_payment(settings):
+    u = user("unpaid-legacy-trial")
+    r = future_stay(u, paid=False, value="957.00")
+    legacy_accommodation_quote(r)
+    configure_stay_exception(settings, r)
+    member = join(u)
+    assert balance(member) == 0
+    assert reconcile(r.pk)["status"] == "verified_payment_incomplete"
+    assert not Ledger.objects.filter(reservation=r).exists()
 
 
 @pytest.mark.parametrize("invalid", ["not_private", "more_than_one", "not_selected"])

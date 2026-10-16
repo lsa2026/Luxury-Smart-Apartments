@@ -159,6 +159,7 @@ def booking_facts(booking):
             components = [
                 {"type": "baseRate", "total": str(booking.total_price), "included_in_total": True}
             ]
+        legacy_trial_price = False
         if cancelled:
             # Cancellation is not proof that no nights were consumed.
             departure = booking.loyalty_state.get("departure_settlement")
@@ -170,7 +171,21 @@ def booking_facts(booking):
             gross = Decimal(previous["total"])
             base = Decimal(departure["consumed_cash_lodging"]) if departure else Decimal(0)
         else:
-            lodging = _lodging(components, booking.total_price)
+            pricing_components = components
+            # The single selected owner-test booking predates baseRate naming.
+            # Only an explicit one-line accommodation quote is adapted in memory;
+            # no broad legacy fallback, fee allocation, or source rewrite.
+            legacy_trial_price = bool(
+                test_stay_exception
+                and not modification
+                and isinstance(components, list)
+                and len(components) == 1
+                and isinstance(components[0], dict)
+                and components[0].get("type") == "accommodation"
+            )
+            if legacy_trial_price:
+                pricing_components = [{**components[0], "type": "baseRate"}]
+            lodging = _lodging(pricing_components, booking.total_price)
             gross = booking.total_price
             if booking.currency != "SAR":
                 if modification or points or refunds:
@@ -231,6 +246,8 @@ def booking_facts(booking):
             facts["acceptance_scope"] = "explicit-historical-live-acceptance"
         if test_stay_exception and not arrival:
             facts["stay_exception"] = "explicit-owner-test-only"
+        if legacy_trial_price:
+            facts["price_adapter"] = "single-accommodation-owner-test-v1"
         return facts, ""
     except (ValueError, KeyError, InvalidOperation, CurrencyError) as exc:
         return None, str(exc) if isinstance(exc, ValueError) else "financial_facts_invalid"
