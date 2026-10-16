@@ -1,195 +1,70 @@
 {% extends "admin/base_site.html" %}
-{% load static presentation %}
+{% load i18n static presentation %}
+{% block bodyclass %}{{ block.super }} lsa-booking-detail-page{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script><script src="{% static 'js/admin-booking-detail.js' %}" defer></script>{% endblock %}
 
 {% block content %}
-<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
-  <section class="lsa-page-head lsa-page-head--operations">
-    <div>
-      <span class="lsa-kicker"><i></i> إدارة حجز</span>
-      <h1>{% if reservation.booking_intent %}{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}{% else %}حجز قائم{% endif %}</h1>
-      <p>{{ reservation.property|default:"—" }} · <span dir="ltr">{{ reservation.check_in }} → {{ reservation.check_out }}</span> · <span dir="ltr">{{ reservation.total_price|floatformat:2 }} {{ reservation.currency }}</span></p>
+{% language "ar" %}
+<div class="lsa-dashboard lsa-operations-screen lsa-booking-detail" dir="rtl" data-booking-detail data-default-panel="{{ detail_default_panel }}">
+  <nav class="lsa-booking-detail__path" aria-label="مسار الحجز"><a href="{% url 'notifications:booking_list' %}">كل الحجوزات</a><span aria-hidden="true">‹</span><span>تفاصيل الحجز</span></nav>
+  <section class="lsa-booking-detail__overview" aria-label="ملخص الحجز">
+    <div class="lsa-booking-detail__hero">
+      <div><span class="lsa-booking-detail__kicker">إدارة الحجز</span><h1>{% if reservation.booking_intent %}{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}{% else %}حجز قائم{% endif %}</h1><p>{{ reservation.property|localized_property_name|default:"شقة غير محددة" }}</p></div>
+      <div class="lsa-booking-detail__hero-status"><span class="lsa-booking-detail__badge">{{ detail_status_label }}</span>{% if invoice.snapshot.platform_reference %}<small>مرجع حجز المنصة: <bdi>{{ invoice.snapshot.platform_reference }}</bdi></small>{% else %}<small>مرجع الحجز: <bdi>{{ reservation.public_reference }}</bdi></small>{% endif %}</div>
     </div>
-    <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">كل الحجوزات</a>
+    <dl class="lsa-booking-detail__facts">
+      <div><dt>تاريخ الدخول</dt><dd>{{ reservation.check_in|localized_date }}</dd></div>
+      <div><dt>تاريخ الخروج</dt><dd>{{ reservation.check_out|localized_date }}</dd></div>
+      <div><dt>عدد الليالي</dt><dd>{{ reservation.nights }}</dd></div>
+      <div><dt>إجمالي الحجز</dt><dd>{{ reservation.total_price|format_money:reservation.currency }}</dd></div>
+      <div><dt>إجمالي المدفوع الموثق</dt><dd class="lsa-booking-detail__paid">{% include "admin/reservations/includes/booking_paid_summary.html" with booking=reservation %}</dd></div>
+      <div><dt>متوسط سعر الليلة</dt><dd>{% if reservation.admin_average_nightly_price != None %}{{ reservation.admin_average_nightly_price|format_money:reservation.currency }}{% else %}غير متاح{% endif %}</dd></div>
+    </dl>
+    <p class="lsa-booking-detail__money-note">المدفوع قبل خصم المسترد الظاهر منفصلًا، ومتوسط الليلة من إجمالي الحجز شاملًا الرسوم الداخلة فيه. تُعرض كل قيمة بعملتها المسجلة دون تحويل.</p>
   </section>
-  <section class="lsa-panel">
-    <h2>بيانات الضيف</h2>
-    {% if reservation.booking_intent %}<p><b>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</b><br><span dir="ltr">{{ reservation.booking_intent.guest_email }} · {{ reservation.booking_intent.guest_phone }}</span></p>{% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
+  <nav class="lsa-booking-detail__tabs" aria-label="أقسام إدارة الحجز" data-booking-tabs>
+    <a href="#booking-overview" id="booking-tab-overview" data-booking-tab="overview" aria-controls="booking-overview">الملخص</a>
+    <a href="#booking-invoice" id="booking-tab-invoice" data-booking-tab="invoice" aria-controls="booking-invoice">الفاتورة</a>
+    <a href="#booking-payment" id="booking-tab-payment" data-booking-tab="payment" aria-controls="booking-payment">الدفع</a>
+    <a href="#booking-edit" id="booking-tab-edit" data-booking-tab="edit" aria-controls="booking-edit">تعديل الحجز</a>
+  </nav>
+  <section id="booking-overview" data-booking-panel="overview" aria-labelledby="booking-tab-overview">
+    <div class="lsa-booking-detail__grid">
+      <section class="lsa-panel">
+        <h2>بيانات الضيف</h2>
+        {% if reservation.booking_intent %}
+        <dl class="lsa-booking-detail__contact">
+          <div><dt>الاسم</dt><dd>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</dd></div>
+          <div><dt>رقم الجوال</dt><dd><bdi dir="ltr">{{ reservation.booking_intent.guest_phone }}</bdi></dd></div>
+          <div><dt>البريد الإلكتروني</dt><dd><bdi dir="ltr">{{ reservation.booking_intent.guest_email }}</bdi></dd></div>
+          <div><dt>لغة الضيف</dt><dd>{% if reservation.booking_intent.language == "ar" %}العربية{% elif reservation.booking_intent.language == "fr" %}الفرنسية{% elif reservation.booking_intent.language == "en" %}الإنجليزية{% else %}غير محددة{% endif %}</dd></div>
+        </dl>
+        {% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
+      </section>
+      <section class="lsa-panel">
+        <h2>فاتورة الضيف</h2>
+        <div class="lsa-booking-detail__invoice-state"><strong>فاتورة الإقامة</strong><span class="lsa-booking-detail__badge">{% if invoice.issued_at %}صادرة{% elif invoice %}مسودة{% else %}لم تُصدر{% endif %}</span></div>
+        <p class="help">{% if invoice.issued_at %}استعرض الفاتورة أو أرسلها إلى المستلم الذي تختاره.{% else %}راجع بيانات الفاتورة واعتمد إصدارها قبل إرسالها للضيف.{% endif %}</p>
+        <a class="lsa-btn lsa-btn--gold" href="#booking-invoice" data-booking-open="invoice">{% if invoice.issued_at %}استعراض وإرسال الفاتورة{% else %}فتح قسم الفاتورة{% endif %}</a>
+      </section>
+    </div>
   </section>
-  <section class="lsa-panel">
-    <h2>فاتورة الضيف</h2>
-    {% if invoice %}
-      <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:invoice_detail' invoice.pk %}">استعراض {% if invoice.issued_at %}الفاتورة{% else %}واعتماد الفاتورة{% endif %}</a>
-      {% if invoice.issued_at %}
-        <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:invoice_pdf' invoice.pk %}?download=1">تنزيل PDF</a>
-        <div class="lsa-invoices lsa-booking-invoice__send">
-          {% include "admin/notifications/invoice_send_card.html" with send_form=whatsapp_send_form channel="whatsapp" %}
-          {% include "admin/notifications/invoice_send_card.html" with send_form=email_send_form channel="email" %}
-        </div>
-        <p class="help">يمكن تغيير مستلم الإرسال دون تغيير بيانات الحجز أو الفاتورة. الإرسال لا يتم إلا بعد تأكيد المستلم والضغط على زر الإرسال.</p>
-      {% else %}
-        <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--ghost" type="submit">تحديث المسودة من الحجز</button></form>
-        <p class="help">إذا تغيّر الحجز، حدّث المسودة أولًا. التحديث يستبدل بيانات المسودة غير الصادرة فقط، ولا يرسل رسالة. راجع البيانات واعتمد الإصدار قبل الإرسال.</p>
-      {% endif %}
-    {% elif reservation.hostaway_reservation_id and reservation.booking_intent %}
-      <p class="help">تُعبّأ الفاتورة من هذا الحجز، ثم تراجعها قبل اعتماد الإصدار. لن تُرسل تلقائيًا.</p>
-      <form method="post" action="{% url 'notifications:booking_invoice' reservation.pk %}">{% csrf_token %}<button class="lsa-btn lsa-btn--gold" type="submit">إعداد واستعراض فاتورة الحجز</button></form>
-    {% else %}<p class="help">تتوفر الفاتورة بعد تأكيد الحجز وربطه بـHostaway.</p>{% endif %}
+  <section id="booking-invoice" data-booking-panel="invoice" aria-labelledby="booking-tab-invoice">
+    {% include "admin/reservations/includes/booking_detail_invoice.html" %}
   </section>
-  {% if payment_links_enabled and reservation.booking_intent and reservation.hostaway_reservation_id %}
-  <section class="lsa-panel">
-    <h2>رابط سداد الحجز</h2>
-    <p>يسدد الضيف من بوابة الموقع على الحجز نفسه، دون إنشاء حجز جديد أو تغيير السعر المعتمد.</p>
-    {% if guest_payment_request %}
-      <p>الحالة: {{ guest_payment_request.get_status_display }} · دون انتهاء زمني؛ يُغلق بعد السداد. يظل إيقاف الإدارة وحماية الحجز الملغى أو المعدّل قائمين.</p>
-      {% for attempt in guest_payment_request.attempts.all %}
-      <p>محاولة السداد: {{ attempt.status|localized_payment_status }}{% if attempt.failure_code %} — تحتاج مراجعة سجل الدفع قبل محاولة جديدة{% endif %}</p>
-      {% endfor %}
-      {% for delivery in guest_payment_request.deliveries.all %}
-        <p>{% if delivery.kind == 'link' %}إرسال الرابط{% else %}تأكيد السداد{% endif %}:
-          {% if delivery.status == 'sent' %}قبِل مزود الواتساب الرسالة{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% elif delivery.status == 'unknown' %}نتيجة الإرسال غير مؤكدة{% else %}تعذر الإرسال{% endif %}
-          {% if delivery.error_code %} — راجع سجل التسليم قبل إعادة المحاولة{% endif %}</p>
-      {% endfor %}
-    {% endif %}
-    {% if reservation.payment_status != 'paid' %}
-    {% if guest_payment_request.status == 'open' and latest_link_delivery %}
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">إعادة إرسال رابط السداد للضيف</button></form>
-    {% if latest_link_delivery.status == 'unknown' or latest_link_delivery.status == 'sending' or latest_link_delivery.status == 'queued' %}
-    <p>الإرسال السابق قيد التنفيذ أو غير مؤكد؛ إعادة الإرسال اليدوية قد توصل أكثر من نسخة من الرسالة.</p>
-    {% endif %}
-    {% else %}
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">إرسال رابط السداد للضيف</button></form>
-    {% endif %}
-    <p class="help">يمكن للمدير إعادة الإرسال يدويًا دون انتظار دقيقة أو منع بسبب إرسال سابق. يُستخدم الرابط نفسه دون تكرار تحصيل المبلغ. قبول المزود لا يؤكد وصول الرسالة إلى الجوال.</p>
-    {% if guest_payment_request.status == 'open' %}
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="revoke_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إيقاف الرابط دون إلغاء الحجز</button></form>
-    <p>لا يمكن استبدال الرابط أو إيقافه أثناء وجود محاولة دفع غير محسومة. راجع نتيجة البوابة أولًا.</p>
-    {% endif %}
-    {% endif %}
+  <section id="booking-payment" data-booking-panel="payment" aria-labelledby="booking-tab-payment">
+    <section class="lsa-panel lsa-booking-detail__payment">
+      <h2>الدفع والتحصيل</h2>
+      <div class="lsa-booking-detail__payment-notice"><strong>الدفعات الموثقة لهذا الحجز</strong><div>{% include "admin/reservations/includes/booking_paid_summary.html" with booking=reservation %}</div><p class="help">راجع حالة الدفع وسجل الإرسال قبل طلب رابط آخر أو توثيق قبض جديد. يظل منع ازدواج التحصيل قائمًا.</p></div>
+      {% include "admin/reservations/includes/booking_detail_payment.html" %}
+    </section>
   </section>
-  {% endif %}
-  {% if reservation.booking_intent and reservation.hostaway_reservation_id %}
-  {% if reservation.source_type == 'direct_website' or reservation.source_type == 'hostaway_manual' %}
-  <section class="lsa-panel">
-    <details>
-      <summary>خيار إضافي: طلب رابط دفع يدوي من أسيل</summary>
-      <p>اختياري فقط، ولا يُرسل تلقائيًا عند تعذر رابط الموقع. قرار الطلب للإدارة بعد مراجعة السداد، حتى مع وجود رابط للموقع أو دفعة قيد التحقق. إرسال الطلب لا يوقف الرابط ولا يثبت الدفع ولا يُحصّل مبلغًا.</p>
-      {% if accounting_link_delivery %}
-      <p>طلب أسيل: {% if accounting_link_delivery.status == 'sent' %}قبِل مزود الواتساب الرسالة؛ الوصول إلى جوالها غير مؤكد هنا{% elif accounting_link_delivery.status == 'sending' or accounting_link_delivery.status == 'queued' %}قيد الإرسال{% elif accounting_link_delivery.status == 'disabled' %}الإرسال غير مفعّل{% else %}تحتاج نتيجة الإرسال إلى مراجعة{% endif %}.</p>
-      <p>لمنع ازدواج التحصيل، راجع حالة السداد مع أسيل قبل استخدام أكثر من رابط. هذا تنبيه فقط ولا يمنع اختيار الإدارة. لا تُعاد طلبات المحاسبة تلقائيًا.</p>
-      {% else %}
-      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="request_accounting_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إرسال طلب إلى أسيل لتكوين رابط الدفع اليدوي</button></form>
-      {% endif %}
-    </details>
+  <section id="booking-edit" data-booking-panel="edit" aria-labelledby="booking-tab-edit">
+    {% include "admin/reservations/includes/booking_detail_edit.html" %}
   </section>
-  {% endif %}
-  {% endif %}
-  {% if manual_receipts_enabled %}
-  <section class="lsa-panel">
-    <h2>تسجيل الحجز مدفوعًا بحوالة بنكية أو نقدًا أو رابط دفع</h2>
-    {% if offline_receipt %}
-      <p>تم توثيق القبض اليدوي: {{ offline_receipt.amount|format_money:offline_receipt.currency }} — {% if offline_receipt.method == 'cash' %}نقدًا{% elif offline_receipt.method == 'external_link' %}رابط دفع{% else %}حوالة بنكية{% endif %}</p>
-      <p>{% if offline_receipt.has_internal_reference %}رقم توثيق داخلي، وليس مرجع بوابة: {{ offline_receipt.pk }}{% else %}مرجع القبض: {{ offline_receipt.reference }}{% endif %} · وقت الاستلام: {{ offline_receipt.received_at }} · المسجّل: {{ offline_receipt.recorded_by.get_username }}</p>
-      <p>هذا قبض وثّقته الإدارة وليس عملية دفع مؤكدة من بوابة الدفع.</p>
-    {% elif reservation.payment_status != 'paid' %}
-      <p>توثيق مبلغ استلمته الإدارة فعلًا فقط، وليس تحصيلًا جديدًا. أدخل كامل مبلغ الحجز بعملته بعد مراجعة الحساب أو إيصال النقد أو نتيجة رابط الدفع الخارجي الذي أعدّته المحاسبة. المرجع اختياري. لا تدخل بيانات بطاقة أو رقم حساب بنكي.</p>
-      <form method="post" class="lsa-owner-form" novalidate>
-        {% csrf_token %}<input type="hidden" name="action" value="record_offline_payment">
-        {{ offline_receipt_form.non_field_errors }}
-        <div class="lsa-owner-form__grid">
-        {% for field in offline_receipt_form %}{% if field.is_hidden %}{{ field }}{% else %}
-          <label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</label>
-        {% endif %}{% endfor %}
-        </div>
-        <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد استلام المبلغ وتحويل الحجز إلى مدفوع</button>
-      </form>
-      <p class="help">تُرفض العملية أثناء محاولة دفع غير محسومة أو تحصيل سابق. تُحفظ هوية المدير والوقت والطريقة والمرجع، ولا يُرسل تأكيد بوابة أو طلب دفع جديد. هذا التوثيق محلي ولا يدّعي مزامنة إيصال إلى هوستاوي.</p>
-    {% else %}<p>الحجز مسدد بالفعل؛ لا يُسجل قبض آخر من هذا الزر.</p>{% endif %}
-  </section>
-  {% endif %}
-  <section class="lsa-panel">
-    <h2>تعديل التواريخ أو عدد الضيوف</h2>
-    <p class="help">غيّر التواريخ أو عدد الضيوف، ثم افحص السعر قبل تأكيد أي تعديل.</p>
-    <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="quote_change">
-      <div class="lsa-owner-form__grid">
-        {% for field in date_form %}{% if field.name != "reason" %}<label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
-      </div>
-      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">فحص السعر والتوفر</button>
-    </form>
-  </section>
-  {% if pending_adjustments %}
-  <section class="lsa-panel">
-    <h2>طلب التعديل الحالي</h2>
-    {% for item in pending_adjustments %}
-      <div class="lsa-owner-request">
-        <b>{{ item.get_request_type_display }}</b> · <span dir="ltr">{{ item.old_check_in }} → {{ item.new_check_in|default:item.old_check_in }} / {{ item.old_check_out }} → {{ item.new_check_out|default:item.old_check_out }}</span><br>
-        {% if item.quote_snapshot.owner_final_total %}
-          <span>السعر النهائي: <b dir="ltr">{{ item.new_total|floatformat:2 }} {{ item.currency }}</b> · الفرق: <b dir="ltr">{{ item.price_difference|floatformat:2 }} {{ item.currency }}</b> · {{ item.get_status_display }}</span>
-        {% else %}
-          <span>السعر المحسوب من Hostaway: <b dir="ltr">{{ item.new_total|floatformat:2 }} {{ item.currency }}</b> · بانتظار السعر النهائي</span>
-        {% endif %}
-      </div>
-    {% endfor %}
-  </section>
-  {% endif %}
-  {% if current_adjustment and final_price_form and not final_price_confirmed %}
-  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
-    <h2>اعتماد السعر النهائي</h2>
-    <p>السعر المحسوب من Hostaway للفترة الجديدة هو <b dir="ltr">{{ current_adjustment.new_total|floatformat:2 }} {{ current_adjustment.currency }}</b>. أدخل السعر النهائي الذي اتفقت عليه مع الضيف، ثم سيحدد النظام هل يلزم تحصيل فرق أو استرداد.</p>
-    <form method="post" class="lsa-owner-form" novalidate>
-      {% csrf_token %}
-      <input type="hidden" name="action" value="set_final_price">
-      <input type="hidden" name="modification_id" value="{{ current_adjustment.pk }}">
-      <div class="form-row">{{ final_price_form.final_total_price.label_tag }}{{ final_price_form.final_total_price }}{{ final_price_form.final_total_price.errors }}</div>
-      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">اعتماد السعر ومتابعة التعديل</button>
-    </form>
-  </section>
-  {% endif %}
-  {% if ready_adjustment and execution_form %}
-  <section class="lsa-panel lsa-owner-action">
-    <h2>تأكيد التعديل{% if settlement.refund %} والاسترداد{% endif %}</h2>
-    {% if settlement.refund %}
-      <p>المدفوع الصافي <b dir="ltr">{{ settlement.paid|floatformat:2 }} {{ ready_adjustment.currency }}</b>. مبلغ الاسترداد المتاح <b dir="ltr">{{ settlement.refund|floatformat:2 }} {{ ready_adjustment.currency }}</b>. لن يُرسل الاسترداد إلا بعد نجاح التعديل في Hostaway.</p>
-    {% else %}
-      <p>لا يوجد مبلغ إضافي للتحصيل أو الاسترداد. سيُثبت السعر النهائي والتواريخ في Hostaway.</p>
-    {% endif %}
-    <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_adjustment"><input type="hidden" name="modification_id" value="{{ ready_adjustment.pk }}">
-      {% if settlement.refund %}
-        {% for field in execution_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
-        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">تأكيد التعديل والاسترداد</button>
-      {% else %}
-        <input type="hidden" name="approved_refund_amount" value="0">
-        <div class="form-row">{{ execution_form.confirm_external_modification.label_tag }}{{ execution_form.confirm_external_modification }}{{ execution_form.confirm_external_modification.errors }}</div>
-        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">تأكيد التعديل</button>
-      {% endif %}
-    </form>
-  </section>
-  {% endif %}
-  {% if increase_adjustment %}
-  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
-    <h2>تأكيد التعديل وطلب رابط الدفع</h2>
-    <p>السعر النهائي <b dir="ltr">{{ increase_adjustment.new_total|floatformat:2 }} {{ increase_adjustment.currency }}</b> · المدفوع الصافي <b dir="ltr">{{ settlement.paid|floatformat:2 }} {{ increase_adjustment.currency }}</b> · المتبقي للدفع <b dir="ltr">{{ settlement.due|floatformat:2 }} {{ increase_adjustment.currency }}</b>.</p>
-    {% if increase_delivery and increase_delivery.status == "sent" %}
-      <p class="help">تم إرسال طلب إنشاء رابط الدفع إلى أسيل. لن تُرسل رسالة أخرى لهذا التعديل.</p>
-    {% elif increase_delivery and increase_delivery.status == "failed" %}
-      <p class="help">تعذر إرسال الطلب سابقًا. راجع سجل WhatsApp قبل إعادة المحاولة يدويًا.</p>
-    {% else %}
-      <form method="post" class="lsa-owner-form">{% csrf_token %}<input type="hidden" name="action" value="send_modification_payment_link_request"><input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}"><button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إرسال طلب تكوين رابط الدفع إلى أسيل</button></form>
-    {% endif %}
-    <p class="help">يُثبت التعديل في Hostaway أولًا، ثم يُرسل إلى أسيل طلب إنشاء رابط للمبلغ المتبقي. الحجز يبقى مؤكدًا بانتظار الدفع.</p>
-  </section>
-  {% endif %}
-  <section class="lsa-panel lsa-manual-booking__delete">
-    <h2>إلغاء الحجز</h2>
-    {% if cancellation_blocked %}
-    <p class="help">لا يمكن إلغاء هذا الحجز لأن الإقامة اكتملت وانتهت. تبقى بياناته وفاتورته متاحة للمراجعة.</p>
-    <button class="lsa-btn" type="button" disabled>الإلغاء غير متاح — انتهت الإقامة</button>
-    {% else %}
-    <p class="help">اضغط الإلغاء ثم اختر كامل المبلغ أو صفرًا أو مبلغًا مخصصًا. لا يلزم إدخال سبب.</p>
-    <form method="post" class="lsa-owner-form lsa-owner-cancellation">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز</button></form>
-    {% endif %}
-  </section>
-</main>
+  {% include "admin/reservations/includes/booking_detail_cancel.html" %}
+</div>
+{% endlanguage %}
 {% endblock %}

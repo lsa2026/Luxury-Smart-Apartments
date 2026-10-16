@@ -1,0 +1,13 @@
+{% load presentation %}
+<details class="lsa-booking-detail__cancel">
+    <summary>إلغاء الحجز</summary>
+    <div class="lsa-booking-detail__fold-body">
+    {% if cancellation_blocked %}
+    <p class="help">لا يمكن إلغاء هذا الحجز لأن الإقامة اكتملت وانتهت. تبقى بياناته وفاتورته متاحة للمراجعة.</p>
+    <button class="lsa-btn" type="button" disabled>الإلغاء غير متاح — انتهت الإقامة</button>
+    {% else %}
+    <p class="help">اضغط الإلغاء ثم اختر كامل المبلغ أو صفرًا أو مبلغًا مخصصًا. لا يلزم إدخال سبب.</p>
+    <form method="post" class="lsa-owner-form lsa-owner-cancellation">{% csrf_token %}<input type="hidden" name="action" value="start_cancellation"><button class="lsa-btn lsa-btn--danger lsa-owner-form__submit" type="submit">إلغاء الحجز</button></form>
+    {% endif %}
+    </div>
+  </details>

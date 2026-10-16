@@ -58,6 +58,7 @@ jobs:
           tests/test_completed_stay_cancellation.py
           tests/test_operations_users.py
           tests/test_operations_booking_summary.py
+          tests/test_booking_detail_layout.py
           tests/test_loyalty_stage8.py
           tests/test_loyalty_final_readiness.py
           tests/test_loyalty_checkout_integration.py
@@ -102,6 +103,9 @@ jobs:
 
       - name: Test the lazy price calendar interactions
         run: node --test tests/price-calendar.test.cjs
+
+      - name: Test progressive admin booking tabs and form safety
+        run: node --test tests/admin-booking-detail.test.cjs
 
       - name: Test lazy airport driving estimates
         run: node --test tests/airport-directions.test.cjs
