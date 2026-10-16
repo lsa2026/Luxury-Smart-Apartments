@@ -639,6 +639,7 @@ class BookingIntentDetailView(View):
             .first()
         )
         from apps.loyalty.booking_ui import checkout_context
+        from apps.loyalty.checkout_account import account_context
 
         return _private_response(
             render(
@@ -652,6 +653,7 @@ class BookingIntentDetailView(View):
                     "hyperpay_enabled": settings.HYPERPAY_ENABLED,
                     "legal_ui": UI[document_language(intent.language)],
                     **checkout_context(request, intent),
+                    **account_context(request, intent),
                 },
             )
         )

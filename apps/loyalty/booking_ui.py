@@ -85,7 +85,11 @@ def checkout_context(request, intent):
         return {}
     if not request.user.is_authenticated or intent.customer_id != request.user.pk:
         return {}
-    if not _verified(request.user) or intent.status != BookingIntent.Status.AWAITING_PAYMENT:
+    if (
+        not _verified(request.user)
+        or intent.status != BookingIntent.Status.AWAITING_PAYMENT
+        or intent.expires_at <= timezone.now()
+    ):
         return {}
     if intent.currency != "SAR" or intent.payment_amount_sar != intent.total_price:
         return {}
