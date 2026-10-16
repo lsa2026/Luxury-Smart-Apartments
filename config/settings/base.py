@@ -198,6 +198,11 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 LOGIN_URL = "accounts:login"
+# Guest-only additional credential; never opens owner/admin authentication.
+# Sending remains closed until the sender's AI/archive exclusion is verified.
+ACCOUNT_WHATSAPP_AUTH_ENABLED = env.bool("ACCOUNT_WHATSAPP_AUTH_ENABLED", default=False)
+ACCOUNT_WHATSAPP_AUTH_ISOLATED = env.bool("ACCOUNT_WHATSAPP_AUTH_ISOLATED", default=False)
+ACCOUNT_WHATSAPP_AUTH_EMAILS = env.list("ACCOUNT_WHATSAPP_AUTH_EMAILS", default=[])
 LOGIN_REDIRECT_URL = "/ar/"
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]

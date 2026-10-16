@@ -94,6 +94,7 @@
             </button>
         </form>
 
+        {% if phone_auth_ready %}<a class="auth-alt" href="{% url 'accounts:phone_login' %}?next={{ next|urlencode }}">{{ phone_copy.option }}</a>{% endif %}
         {% include "accounts/_social_signin.html" %}
 
         <a class="auth-alt" href="{% url 'reservations:manage_access' %}">

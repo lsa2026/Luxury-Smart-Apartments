@@ -1,0 +1,6 @@
+.phone-access { max-width: 38rem; margin: 2rem auto; padding: 0 1rem; }
+.phone-access .auth-panel { width: 100%; min-width: 0; box-sizing: border-box; padding: clamp(1.25rem, 4vw, 2.5rem); border-radius: 1.5rem; }
+.phone-access input, .phone-access select { width: 100%; box-sizing: border-box; min-height: 3rem; }
+.phone-access button { min-height: 3rem; width: 100%; }
+.phone-access a { display: inline-block; padding-block: .75rem; overflow-wrap: anywhere; }
+.phone-access h1 { font-size: clamp(1.4rem, 5vw, 2rem); }

@@ -13,6 +13,17 @@ from .models import OperationsManager, profile_for
 from .services import claim_reservations_for_verified_email
 
 
+@receiver(user_logged_in)
+def record_guest_primary_auth(sender, request, user, **kwargs):
+    from .phone_auth import PRIMARY_AUTH
+
+    if request is None:
+        return
+    request.session.pop(PRIMARY_AUTH, None)
+    if not getattr(request, "_guest_phone_authenticated", False):
+        request.session[PRIMARY_AUTH] = {"user": user.pk, "at": int(timezone.now().timestamp())}
+
+
 @receiver(email_confirmed)
 def sync_allauth_verified_email(sender, request, email_address, **kwargs):  # type: ignore[no-untyped-def]
     """Google and Apple confirmations unlock existing direct reservations."""
