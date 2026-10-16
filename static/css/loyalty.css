@@ -34,6 +34,8 @@
 .loyalty-movement { border: 1px solid #dce3dd; border-radius: .75rem; padding: 1rem; background: #fff; }
 .loyalty-movement header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; }
 .loyalty-movement time { color: #586661; font-size: .8rem; }
+.loyalty-transfer-party { padding: .7rem; background: #f7f5ef; border-radius: .6rem; line-height: 1.8; overflow-wrap: anywhere; }
+.loyalty-transfer-party bdi { display: inline-block; margin-inline-start: .5rem; }
 .loyalty-movement-summary { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: .6rem; margin-block: .8rem; }
 .loyalty-movement .loyalty-credit { color: #096957; }
 .loyalty-detail-list { display: grid; gap: .5rem; }

@@ -414,6 +414,10 @@ def test_saved_ratio_is_a_percentage_not_multiplied_by_one_hundred():
             rate_percent=Decimal("1.00"),
         ),
     ]
+    for row in rows:
+        row.member_balance_after = Decimal("22.50")
+        row.credit, row.debit = Decimal("22.50"), Decimal("0.00")
+        row.rules_version = "loyalty-approved-20261010-v1"
     _decorate(rows)
     assert rows[0].ui_rate == Decimal("3")
     assert rows[1].ui_rate == Decimal("0.875")

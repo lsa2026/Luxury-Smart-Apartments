@@ -29,7 +29,7 @@ from apps.accounts.phone_auth import ready as phone_ready
 from apps.accounts.phone_copy import phone_copy
 from apps.reservations.models import Reservation
 
-from .copy import copy, transaction_label
+from .copy import copy
 from .forms import GiftInvitationForm, JoinForm, PhoneGiftForm, TransferForm
 from .invitation_links import invitation_url
 from .launch import (
@@ -50,6 +50,7 @@ from .services import (
     issue_invite,
     posting_transaction,
 )
+from .statement import decorate as _decorate
 
 SALT = "loyalty-transfer-confirmation-v1"
 GIFT_SALT = "loyalty-gift-invitation-confirmation-v1"
@@ -112,17 +113,6 @@ def _rows(query, request):
     rows = list(query.order_by("-sequence")[:21])
     cursor = rows[19].sequence if len(rows) > 20 else None
     return rows[:20], cursor
-
-
-def _decorate(rows):
-    for row in rows:
-        row.ui_kind = transaction_label(row)
-        # Exact allocation ratio, not the one-percent ceiling saved in the model.
-        row.ui_rate = (
-            Decimal(row.allocation_numerator) / Decimal(row.allocation_denominator)
-            if row.allocation_denominator
-            else row.rate_percent
-        )
 
 
 @never_cache

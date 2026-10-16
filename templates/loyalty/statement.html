@@ -3,6 +3,7 @@
 {% for row in loyalty_rows %}
 <article class="loyalty-movement">
   <header><strong>{{ row.ui_kind }}</strong><time datetime="{{ row.occurred_at|date:'c' }}">{{ row.occurred_at|localized_datetime }}</time></header>
+  {% if row.ui_transfer and row.ui_counterpart %}<p class="loyalty-transfer-party">{% if row.debit %}{{ loyalty_copy.gift_to }}{% else %}{{ loyalty_copy.gift_from }}{% endif %}: <strong>{{ row.ui_counterpart.name }}</strong> <bdi>{{ row.ui_counterpart.number }}</bdi></p>{% endif %}
   <dl class="loyalty-movement-summary">
     <div><dt>{{ loyalty_copy.credit }}</dt><dd class="loyalty-credit">{{ row.credit|floatformat:2|localized_number }}</dd></div>
     <div><dt>{{ loyalty_copy.debit }}</dt><dd>{{ row.debit|floatformat:2|localized_number }}</dd></div>
@@ -13,6 +14,15 @@
       <div><dt>{{ loyalty_copy.sequence }}</dt><dd>{{ row.sequence|localized_number }}</dd></div>
       <div><dt>{{ loyalty_copy.number }}</dt><dd><bdi>{{ row.membership_number }}</bdi></dd></div>
       <div><dt>{{ loyalty_copy.group }}</dt><dd><bdi>{{ row.operation_group }}</bdi></dd></div>
+      <div><dt>{{ loyalty_copy.transaction_status }}</dt><dd>{{ loyalty_copy.posted_status }}</dd></div>
+      {% if row.ui_transfer %}
+      {% if row.ui_counterpart %}
+      <div><dt>{% if row.debit %}{{ loyalty_copy.gift_to }}{% else %}{{ loyalty_copy.gift_from }}{% endif %}</dt><dd>{{ row.ui_counterpart.name }}</dd></div>
+      <div><dt>{{ loyalty_copy.counterpart_number }}</dt><dd><bdi>{{ row.ui_counterpart.number }}</bdi></dd></div>
+      <div><dt>{{ loyalty_copy.paired_operation }}</dt><dd><bdi>{{ row.ui_counterpart.operation }}</bdi></dd></div>
+      {% else %}<div><dd>{{ loyalty_copy.gift_pair_missing }}</dd></div>{% endif %}
+      <div><dt>{% if loyalty_admin %}{{ loyalty_copy.member_before }}{% else %}{{ loyalty_copy.before_balance }}{% endif %}</dt><dd>{{ row.ui_balance_before|floatformat:2|localized_number }}</dd></div>
+      {% endif %}
       {% if row.original_id %}<div><dt>{{ loyalty_copy.original }}</dt><dd><bdi>{{ row.original.operation_number }}</bdi></dd></div>{% endif %}
       {% if row.ui_rate != None %}<div><dt>{{ loyalty_copy.rate }}</dt><dd>{{ row.ui_rate|floatformat:"-6"|localized_number }} ٪</dd></div>{% endif %}
       {% if loyalty_admin or row.booking_customer_id == request.user.pk %}
@@ -25,8 +35,8 @@
       <div><dt>{{ loyalty_copy.member }}</dt><dd>{{ row.account_name }}</dd></div>
       <div><dt>{{ loyalty_copy.tree_number }}</dt><dd><bdi>{{ row.tree_number }}</bdi></dd></div>
       <div><dt>{{ loyalty_copy.member_after }}</dt><dd>{{ row.member_balance_after|floatformat:2|localized_number }}</dd></div>
-      <div><dt>{{ loyalty_copy.version }}</dt><dd><bdi>{{ row.rules_version }}</bdi></dd></div>
       {% endif %}
+      <div><dt>{{ loyalty_copy.version }}</dt><dd>{{ row.ui_rules }}<p class="loyalty-muted">{{ loyalty_copy.rules_help }}</p>{% if loyalty_admin %}<details><summary>{{ loyalty_copy.rules_reference }}</summary><bdi>{{ row.rules_version }}</bdi></details>{% endif %}</dd></div>
     </dl>
   </details>
 </article>

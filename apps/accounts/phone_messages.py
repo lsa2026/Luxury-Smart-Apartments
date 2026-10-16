@@ -1,8 +1,17 @@
-"""One-language authentication copy using the approved payment-message identity."""
+"""One-language authentication copy and the unchanged approved brand artwork."""
+
+from importlib.resources import files
 
 from apps.payments.payment_link_tasks import PAYMENT_MESSAGE_BRAND
 
 AUTH_MARKER = "[LSA-AUTH]"
+
+
+def phone_logo():
+    # The same approved square light monogram used in invoices. No OTP or guest
+    # data is baked into artwork, filenames or public media URLs.
+    return files("apps.notifications").joinpath("invoice_assets", "logo.png").read_bytes()
+
 
 AUTH_TITLES = {
     "ar": "🔐 *رمز الدخول الآمن*",

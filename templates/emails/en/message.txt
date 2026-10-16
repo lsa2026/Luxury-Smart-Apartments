@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if transaction_kind %}{{ transaction_kind }}{% endif %}
+{% if counterpart %}{% if gift_outgoing %}Points gifted to{% else %}Points received from{% endif %}: {{ counterpart.name }} — {{ counterpart.number }}
+Paired transaction: {{ counterpart.operation }}
+Your balance before this transaction: {{ balance_before }}{% endif %}
 {% if operation %}Transaction: {{ operation }}
 Points credited: {{ credit }}
 Points debited: {{ debit }}

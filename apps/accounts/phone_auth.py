@@ -21,7 +21,7 @@ from .models import (
     PhoneChallenge,
     VerifiedPhone,
 )
-from .phone_messages import phone_message, supported_language
+from .phone_messages import phone_logo, phone_message, supported_language
 
 PRIMARY_AUTH = "guest_primary_auth_at"
 PENDING = "guest_phone_challenge"
@@ -223,9 +223,10 @@ def deliver_phone_code(challenge_id):
             ).exists():
                 return
             phase = "send"
-            client.send_text(
+            client.send_image(
                 recipient=row.phone,
-                body=phone_message(code=code, language=row.language, purpose=row.purpose),
+                content=phone_logo(),
+                caption=phone_message(code=code, language=row.language, purpose=row.purpose),
                 reference_id=f"lsa-auth-{row.pk}",
             )
     except Exception:
