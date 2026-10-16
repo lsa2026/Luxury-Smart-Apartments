@@ -444,7 +444,7 @@ def admin_workspace(request):
             | Q(operation_group=query)
         )
     rows, cursor = _rows(rows_query, request)
-    _decorate(rows)
+    _decorate(rows, delivery=True)
     totals = Ledger.objects.aggregate(c=Sum("credit"), d=Sum("debit"))
     return render(
         request,

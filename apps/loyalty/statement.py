@@ -5,11 +5,21 @@ from decimal import Decimal
 from django.utils.html import strip_tags
 
 from .copy import copy, transaction_label
-from .models import Ledger
+from .models import Ledger, MovementNotice
 
 
-def decorate(rows):
+def decorate(rows, *, delivery=False):
     labels = copy()
+    if delivery:
+        from .whatsapp_notices import STATUSES
+
+        notices = dict(
+            MovementNotice.objects.filter(ledger_id__in=[r.pk for r in rows]).values_list(
+                "ledger_id", "status"
+            )
+        )
+        for row in rows:
+            row.ui_notice = STATUSES.get(notices.get(row.pk), "لا يوجد إشعار مسجّل لهذه العملية")
     groups = {r.operation_group for r in rows if r.event_type == "transfer" and r.counterpart_id}
     pairs = (
         {
