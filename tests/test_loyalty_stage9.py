@@ -308,6 +308,52 @@ def test_admin_shows_program_balance_and_search_without_edit_routes():
     assert c.post("/admin/loyalty/", {"credit": "9999"}).status_code == 405
 
 
+@pytest.mark.parametrize("language", ["en", "fr", "ar"])
+@pytest.mark.parametrize("path", ["/admin/loyalty/", "/admin/loyalty/tree/"])
+def test_admin_always_renders_arabic_without_changing_guest_language(settings, language, path):
+    from apps.loyalty.copy import copy
+
+    funded_pair()
+    c = login(owner())
+    c.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    response = c.get(path, HTTP_ACCEPT_LANGUAGE=language)
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert response["Content-Language"] == "ar"
+    assert response.wsgi_request.LANGUAGE_CODE == "ar"
+    assert response.context["loyalty_copy"] == copy("ar")
+    assert 'lang="ar"' in content and 'dir="rtl"' in content
+    assert "Rewards administration" not in content
+    assert "Programme ledger" not in content
+    assert "Member tree — administration only" not in content
+    if path == "/admin/loyalty/":
+        assert "سجل العمليات العام" in content
+        assert "مكافأة إقامة" in content
+        assert "رقم العضوية" in content
+        assert "٢٢" in content
+    assert settings.LANGUAGE_COOKIE_NAME not in response.cookies
+    guest_page = c.get("/my-bookings/rewards/", HTTP_ACCEPT_LANGUAGE=language)
+    assert guest_page.context["loyalty_copy"] == copy(language)
+    assert guest_page["Content-Language"] == language
+
+
+@pytest.mark.parametrize("language", ["en", "fr"])
+def test_admin_command_messages_and_method_guards_use_arabic(settings, language):
+    from django.contrib.messages import get_messages
+
+    from apps.loyalty.copy import copy
+
+    c = login(owner())
+    c.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    response = c.post("/admin/loyalty/arrival/", {})
+    assert response.status_code == 302
+    assert response["Content-Language"] == "ar"
+    assert [str(m) for m in get_messages(response.wsgi_request)] == [copy("ar")["invalid"]]
+    response = c.get("/admin/loyalty/settlement/")
+    assert response.status_code == 405
+    assert response["Content-Language"] == "ar"
+
+
 def test_admin_arrival_records_only_actual_evidence_and_auto_awards():
     u = user("a")
     am = join(u)
