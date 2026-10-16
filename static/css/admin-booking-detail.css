@@ -1,0 +1,102 @@
+/* Scoped implementation of the approved booking-detail layout. */
+@font-face {
+  font-family: LsaBookingCairo;
+  src: url('../fonts/checkout/cairo-arabic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+.lsa-booking-detail-page .lsa-shell-header__inner { min-height: 88px; }
+.lsa-booking-detail-page #header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved { width: 260px; }
+.lsa-booking-detail-page #content { box-sizing: border-box; width: auto; max-width: none; padding-top: 20px; }
+.lsa-booking-detail { min-width: 0; max-width: 1220px; font-family: LsaBookingCairo, Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.8; }
+.lsa-booking-detail *, .lsa-booking-detail *::before, .lsa-booking-detail *::after { box-sizing: border-box; }
+.lsa-booking-detail .lsa-panel { min-width: 0; padding: 22px; margin: 0 0 16px; box-shadow: none; }
+.lsa-booking-detail h2 { margin: 0 0 15px; font-size: 18px; line-height: 1.7; }
+.lsa-booking-detail p, .lsa-booking-detail .help { font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; }
+.lsa-booking-detail .help { color: var(--lsa-muted); }
+.lsa-booking-detail__path { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: var(--lsa-muted); margin-bottom: 16px; font-size: 12px; }
+.lsa-booking-detail__path a { color: var(--lsa-ink); padding-block: 6px; }
+.lsa-booking-detail__overview { overflow: hidden; border: 1px solid var(--lsa-line); border-radius: 18px; background: var(--lsa-paper); }
+.lsa-booking-detail__hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding: 22px 25px; background: #143e33; color: #fffaf0; }
+.lsa-booking-detail__hero > div { min-width: 0; }
+.lsa-booking-detail__kicker { color: #decca3; font-size: 11px; }
+.lsa-booking-detail__hero h1 { margin: 4px 0; color: inherit; font-size: 27px; font-weight: 750; line-height: 1.6; overflow-wrap: anywhere; }
+.lsa-booking-detail__hero p { margin: 0; color: #e5ece4; font-size: 13px; }
+.lsa-booking-detail__hero-status { display: grid; gap: 9px; justify-items: end; padding-top: 7px; }
+.lsa-booking-detail__hero-status small { color: #d5dfd8; font-size: 11px; overflow-wrap: anywhere; }
+.lsa-booking-detail__badge { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 30px; background: #eaf4ed; color: #22664d; padding: 4px 12px; font-size: 12px; font-weight: 700; text-align: center; }
+.lsa-booking-detail__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 6px 24px 0; }
+.lsa-booking-detail__facts > div { min-width: 0; padding: 12px 10px 12px 0; }
+.lsa-booking-detail__facts > div:nth-child(n+4) { border-top: 1px solid var(--lsa-line); }
+.lsa-booking-detail dt { margin: 0 0 4px; color: var(--lsa-muted); font-size: 12px; }
+.lsa-booking-detail dd { margin: 0; color: var(--lsa-ink); font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.lsa-booking-detail__paid .lsa-booking-paid { display: grid; gap: 4px; }
+.lsa-booking-detail__paid strong { font-size: 16px; color: #22664d; }
+.lsa-booking-detail__paid small { font-size: 12px; font-weight: 400; }
+.lsa-booking-detail__paid .lsa-booking-paid__refund { color: #875c23; }
+.lsa-booking-detail .lsa-booking-detail__money-note { margin: 0; padding: 0 24px 13px; font-size: 11px; color: var(--lsa-muted); }
+.lsa-booking-detail__tabs { display: flex; gap: 5px; flex-wrap: wrap; border: 1px solid var(--lsa-line); border-radius: 12px; background: var(--lsa-paper); padding: 6px; margin-block: 16px; }
+.lsa-booking-detail__tabs a { display: flex; flex: 1; justify-content: center; align-items: center; min-height: 46px; padding: 8px 12px; border-radius: 8px; color: var(--lsa-ink); font-size: 14px; font-weight: 700; text-align: center; }
+.lsa-booking-detail__tabs [aria-selected='true'] { background: #143e33; color: #fffcf5; }
+.lsa-booking-detail [data-booking-panel][hidden] { display: none !important; }
+.lsa-booking-detail__grid { display: grid; grid-template-columns: 1.04fr 1fr; gap: 16px; }
+.lsa-booking-detail__contact { display: grid; gap: 12px; margin: 0; }
+.lsa-booking-detail__contact > div { display: grid; grid-template-columns: 115px minmax(0, 1fr); gap: 9px; align-items: baseline; }
+.lsa-booking-detail__contact dd { font-size: 14px; font-weight: 500; text-align: right; }
+.lsa-booking-detail__contact bdi { overflow-wrap: anywhere; }
+.lsa-booking-detail__invoice-state { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-block: 12px; }
+.lsa-booking-detail .lsa-btn { min-height: 46px; padding: 10px 17px; margin-block: 6px; font: inherit; font-size: 13px; font-weight: 700; white-space: normal; max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+.lsa-booking-detail .lsa-btn--gold { background: linear-gradient(115deg, #e3cf9f, #b99751); color: #263c2e; }
+.lsa-booking-detail .lsa-btn--ghost { color: var(--lsa-ink); border: 1px solid #cfc6b5; background: var(--lsa-paper); }
+.lsa-booking-detail .lsa-owner-form { margin: 14px 0 0; }
+.lsa-booking-detail .lsa-owner-form__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; align-items: start; }
+.lsa-booking-detail .lsa-owner-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; min-width: 0; color: var(--lsa-ink); font-size: 13px; }
+.lsa-booking-detail .lsa-owner-field span { line-height: 1.8; }
+.lsa-booking-detail input:not([type='checkbox']):not([type='hidden']):not([type='submit']),
+.lsa-booking-detail select, .lsa-booking-detail textarea { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 48px; height: auto; border: 1px solid #cfc9bd; border-radius: 10px; background-color: var(--lsa-paper); color: var(--lsa-ink); padding: 10px 12px; font: inherit; font-size: 16px; line-height: 1.5; }
+.lsa-booking-detail input[type='date'], .lsa-booking-detail input[type='datetime-local'], .lsa-booking-detail input[type='number'] { direction: ltr; text-align: right; }
+.lsa-booking-detail select { padding-block: 10px; line-height: normal; }
+.lsa-booking-detail textarea { resize: vertical; }
+.lsa-booking-detail .lsa-owner-field small { font-size: 12px; line-height: 1.8; font-weight: 400; }
+.lsa-booking-detail .lsa-owner-form__grid > .lsa-booking-detail__check { grid-column: 1 / -1; }
+.lsa-booking-detail__check { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding-block: 8px; font-size: 13px; line-height: 1.9; min-width: 0; }
+.lsa-booking-detail__check input[type='checkbox'] { flex: 0 0 21px; width: 21px; height: 21px; margin: 3px 0 0; accent-color: #143e33; }
+.lsa-booking-detail__check span { min-width: 0; }
+.lsa-booking-detail__payment-notice { background: #edf4ee; border-radius: 11px; color: #22664d; padding: 15px 17px; margin-bottom: 14px; }
+.lsa-booking-detail__payment-notice .lsa-booking-paid { display: grid; gap: 4px; }
+.lsa-booking-detail__payment-notice small { color: inherit; }
+.lsa-booking-detail__payment-notice p { margin-bottom: 0; }
+.lsa-booking-detail__fold { border-top: 1px solid var(--lsa-line); margin-top: 14px; padding-top: 9px; }
+.lsa-booking-detail__fold summary { color: var(--lsa-ink); font-size: 14px; font-weight: 700; min-height: 44px; padding: 8px 0; line-height: 1.9; overflow-wrap: anywhere; cursor: pointer; }
+.lsa-booking-detail__fold-body { padding-top: 9px; }
+.lsa-booking-detail__cancel { border: 1px solid #dec9c4; border-radius: 12px; padding: 0 20px; background: var(--lsa-paper); margin-top: 2px; }
+.lsa-booking-detail__cancel summary { min-height: 54px; padding-block: 13px; font-size: 14px; font-weight: 700; color: #963f3b; cursor: pointer; }
+.lsa-booking-detail__cancel .lsa-booking-detail__fold-body { padding-block: 0 18px; }
+.lsa-booking-detail .lsa-invoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.lsa-booking-detail .invoice-send { min-width: 0; padding: 0; border: 0; background: transparent; }
+.lsa-booking-detail .invoice-send fieldset { min-width: 0; }
+.lsa-booking-detail .errorlist { color: #9b332e; margin-block: 5px; font-size: 13px; }
+.lsa-booking-detail .lsa-owner-request { overflow-wrap: anywhere; }
+.lsa-booking-detail .lsa-owner-action { margin-top: 16px; }
+@media (max-width: 767px) {
+  .lsa-booking-detail-page #content { padding: 15px !important; }
+  .lsa-booking-detail-page .lsa-shell-header__inner { min-height: 78px; }
+  .lsa-booking-detail-page #header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved { width: clamp(145px, 48vw, 210px); }
+  .lsa-booking-detail .lsa-panel { padding: 17px; margin-bottom: 13px; }
+  .lsa-booking-detail__hero { padding: 18px; flex-wrap: wrap; gap: 12px; }
+  .lsa-booking-detail__hero h1 { font-size: 23px; }
+  .lsa-booking-detail__hero-status { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; flex-wrap: wrap; padding-top: 0; }
+  .lsa-booking-detail__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px 18px 0; }
+  .lsa-booking-detail__facts > div { padding: 12px 0; }
+  .lsa-booking-detail__facts > div:nth-child(n+3) { border-top: 1px solid var(--lsa-line); }
+  .lsa-booking-detail__facts dd, .lsa-booking-detail__paid strong { font-size: 15px; }
+  .lsa-booking-detail .lsa-booking-detail__money-note { padding: 0 18px 12px; }
+  .lsa-booking-detail__tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 5px; }
+  .lsa-booking-detail__tabs a { padding: 8px 3px; font-size: 12px; line-height: 1.6; min-height: 48px; }
+  .lsa-booking-detail__grid, .lsa-booking-detail .lsa-owner-form__grid, .lsa-booking-detail .lsa-invoices { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .lsa-booking-detail__contact > div { grid-template-columns: 92px minmax(0, 1fr); }
+  .lsa-booking-detail .lsa-btn { display: flex; justify-content: center; align-items: center; width: 100%; min-height: 48px; }
+  .lsa-booking-detail .lsa-owner-form .form-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; }
+  .lsa-booking-detail .lsa-owner-form .form-row label { padding: 0; width: auto; }
+}

@@ -1,0 +1,73 @@
+{% load presentation %}
+<section class="lsa-panel">
+    <h2>تعديل التواريخ أو عدد الضيوف</h2>
+    <p class="help">غيّر التواريخ أو عدد الضيوف، ثم افحص السعر قبل تأكيد أي تعديل.</p>
+    <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="quote_change">
+      <div class="lsa-owner-form__grid">
+        {% for field in date_form %}{% if field.name != "reason" %}<label class="lsa-owner-field"><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endif %}{% endfor %}
+      </div>
+      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">فحص السعر والتوفر</button>
+    </form>
+  </section>
+  {% if pending_adjustments %}
+  <section class="lsa-panel">
+    <h2>طلب التعديل الحالي</h2>
+    {% for item in pending_adjustments %}
+      <div class="lsa-owner-request">
+        <b>{{ item.request_type|localized_modification_type }}</b> · <span dir="ltr">{{ item.old_check_in|localized_date }} → {{ item.new_check_in|default:item.old_check_in|localized_date }} / {{ item.old_check_out|localized_date }} → {{ item.new_check_out|default:item.old_check_out|localized_date }}</span><br>
+        {% if item.quote_snapshot.owner_final_total %}
+          <span>السعر النهائي: <b dir="ltr">{{ item.new_total|format_money:item.currency }}</b> · الفرق: <b dir="ltr">{{ item.price_difference|format_money:item.currency }}</b> · {{ item.status|localized_modification_status }}</span>
+        {% else %}
+          <span>السعر المحسوب من هوستاوي: <b dir="ltr">{{ item.new_total|format_money:item.currency }}</b> · بانتظار السعر النهائي</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+  {% if current_adjustment and final_price_form and not final_price_confirmed %}
+  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
+    <h2>اعتماد السعر النهائي</h2>
+    <p>السعر المحسوب من هوستاوي للفترة الجديدة هو <b dir="ltr">{{ current_adjustment.new_total|format_money:current_adjustment.currency }}</b>. أدخل السعر النهائي الذي اتفقت عليه مع الضيف، ثم سيحدد النظام هل يلزم تحصيل فرق أو استرداد.</p>
+    <form method="post" class="lsa-owner-form" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="set_final_price">
+      <input type="hidden" name="modification_id" value="{{ current_adjustment.pk }}">
+      <div class="form-row">{{ final_price_form.final_total_price.label_tag }}{{ final_price_form.final_total_price }}{{ final_price_form.final_total_price.errors }}</div>
+      <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">اعتماد السعر ومتابعة التعديل</button>
+    </form>
+  </section>
+  {% endif %}
+  {% if ready_adjustment and execution_form %}
+  <section class="lsa-panel lsa-owner-action">
+    <h2>تأكيد التعديل{% if settlement.refund %} والاسترداد{% endif %}</h2>
+    {% if settlement.refund %}
+      <p>المدفوع الصافي <b dir="ltr">{{ settlement.paid|format_money:ready_adjustment.currency }}</b>. مبلغ الاسترداد المتاح <b dir="ltr">{{ settlement.refund|format_money:ready_adjustment.currency }}</b>. لن يُرسل الاسترداد إلا بعد نجاح التعديل في هوستاوي.</p>
+    {% else %}
+      <p>لا يوجد مبلغ إضافي للتحصيل أو الاسترداد. سيُثبت السعر النهائي والتواريخ في هوستاوي.</p>
+    {% endif %}
+    <form method="post" class="lsa-owner-form" novalidate>{% csrf_token %}<input type="hidden" name="action" value="execute_adjustment"><input type="hidden" name="modification_id" value="{{ ready_adjustment.pk }}">
+      {% if settlement.refund %}
+        {% for field in execution_form %}<div class="form-row">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">تأكيد التعديل والاسترداد</button>
+      {% else %}
+        <input type="hidden" name="approved_refund_amount" value="0">
+        <div class="form-row">{{ execution_form.confirm_external_modification.label_tag }}{{ execution_form.confirm_external_modification }}{{ execution_form.confirm_external_modification.errors }}</div>
+        <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">تأكيد التعديل</button>
+      {% endif %}
+    </form>
+  </section>
+  {% endif %}
+  {% if increase_adjustment %}
+  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
+    <h2>تأكيد التعديل وطلب رابط الدفع</h2>
+    <p>السعر النهائي <b dir="ltr">{{ increase_adjustment.new_total|format_money:increase_adjustment.currency }}</b> · المدفوع الصافي <b dir="ltr">{{ settlement.paid|format_money:increase_adjustment.currency }}</b> · المتبقي للدفع <b dir="ltr">{{ settlement.due|format_money:increase_adjustment.currency }}</b>.</p>
+    {% if increase_delivery and increase_delivery.status == "sent" %}
+      <p class="help">تم إرسال طلب إنشاء رابط الدفع إلى أسيل. لن تُرسل رسالة أخرى لهذا التعديل.</p>
+    {% elif increase_delivery and increase_delivery.status == "failed" %}
+      <p class="help">تعذر إرسال الطلب سابقًا. راجع سجل واتساب قبل إعادة المحاولة يدويًا.</p>
+    {% else %}
+      <form method="post" class="lsa-owner-form">{% csrf_token %}<input type="hidden" name="action" value="send_modification_payment_link_request"><input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}"><button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إرسال طلب تكوين رابط الدفع إلى أسيل</button></form>
+    {% endif %}
+    <p class="help">يُثبت التعديل في هوستاوي أولًا، ثم يُرسل إلى أسيل طلب إنشاء رابط للمبلغ المتبقي. الحجز يبقى مؤكدًا بانتظار الدفع.</p>
+  </section>
+  {% endif %}
