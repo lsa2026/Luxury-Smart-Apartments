@@ -203,7 +203,7 @@ def test_guest_can_save_contact_and_residence_details_from_dashboard() -> None:
     assert profile.residence_country == "Saudi Arabia"
 
 
-def test_guest_profile_rejects_an_ambiguous_phone_number() -> None:
+def test_guest_profile_rejects_an_invalid_phone_number() -> None:
     guest = User.objects.create_user(
         username="guest@example.invalid",
         email="guest@example.invalid",
@@ -212,7 +212,7 @@ def test_guest_profile_rejects_an_ambiguous_phone_number() -> None:
     client = Client()
     assert client.login(username=guest.username, password="Correct-Horse-Battery-2026")
 
-    response = client.post("/my-bookings/", {"phone": "0501234567"})
+    response = client.post("/my-bookings/", {"phone": "12345", "phone_country": "SA"})
 
     assert response.status_code == 200
     assert "phone" in response.context["profile_form"].errors

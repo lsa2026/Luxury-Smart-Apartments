@@ -239,7 +239,7 @@ def test_profile_and_email_code_validation_are_french():
             profile=profile_for(user),
         )
         assert not form.is_valid()
-        assert "Saisissez un numéro de mobile valide" in str(form.errors)
+        assert "Vérifiez le numéro de mobile et le pays sélectionné" in str(form.errors)
         code = EmailVerificationCodeForm({"code": "abcdef"})
         assert not code.is_valid()
         assert "Saisissez le code à six chiffres" in str(code.errors)
