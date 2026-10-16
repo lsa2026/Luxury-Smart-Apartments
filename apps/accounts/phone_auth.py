@@ -9,9 +9,8 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare, salted_hmac
 
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.core.phone_numbers import normalize_phone_number
 from apps.notifications.services.ultramsg import UltraMsgClient, UltraMsgError
-from apps.reservations.models import Reservation
 from apps.reservations.security import session_key_hash
 
 from .models import (
@@ -64,21 +63,6 @@ def recent_primary(request):
     )
 
 
-def owns_booking_phone(user, phone):
-    # A contact field alone is never a credential. Only this user's own bookings
-    # qualify for the initial explicit binding; no matching/claiming other stays.
-    values = Reservation.objects.filter(booking_intent__customer=user).values_list(
-        "booking_intent__guest_phone", flat=True
-    )[:100]
-    for value in values:
-        try:
-            if normalize_phone_number(value or "") == phone:
-                return True
-        except InvalidPhoneNumber:
-            pass
-    return False
-
-
 def _digest(scope, value):
     return salted_hmac(f"accounts.whatsapp.{scope}.v1", str(value), algorithm="sha256").hexdigest()
 
@@ -129,10 +113,12 @@ def begin(request, phone, *, purpose):
     user = binding.user if binding else None
     if purpose == "bind":
         user = request.user
+        # A recent verified primary sign-in proves the account; consuming the
+        # WhatsApp code proves possession of the new number. A booking/contact
+        # match is neither required nor sufficient, and no stays are claimed.
         if (
             not allowed(user)
             or not recent_primary(request)
-            or not owns_booking_phone(user, phone)
             or VerifiedPhone.objects.filter(user=user).exists()
             or binding is not None
         ):
@@ -269,11 +255,7 @@ def consume(request, submitted):
             row.save(update_fields=["attempts", "status", "code_digest"])
             return None
         if row.purpose == "bind":
-            if (
-                request.user.pk != row.user_id
-                or not recent_primary(request)
-                or not owns_booking_phone(request.user, row.phone)
-            ):
+            if request.user.pk != row.user_id or not recent_primary(request):
                 return None
             try:
                 with transaction.atomic():

@@ -16,7 +16,7 @@ from django.views.decorators.http import require_http_methods
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.reservations.security import mask_phone, session_key_hash
 
-from .models import PhoneChallenge, VerifiedPhone
+from .models import CustomerProfile, PhoneChallenge, VerifiedPhone
 from .phone_auth import PENDING, _limit, allowed, begin, consume, ready, recent_primary
 from .phone_copy import phone_copy
 
@@ -129,7 +129,22 @@ def phone_start(request, *, binding=False):
             error, can_send = labels["recent"], False
         elif VerifiedPhone.objects.filter(user=request.user).exists():
             error, can_send = labels["existing"], False
-    form = PhoneForm(request.POST if request.method == "POST" else None)
+    initial = {}
+    if binding and request.method == "GET":
+        contact = (
+            CustomerProfile.objects.filter(user=request.user)
+            .values_list("phone", flat=True)
+            .first()
+        )
+        if contact:
+            initial["phone"] = contact
+            try:
+                region = phonenumbers.region_code_for_number(phonenumbers.parse(contact, None))
+                if region in phonenumbers.SUPPORTED_REGIONS:
+                    initial["phone_country"] = region
+            except phonenumbers.NumberParseException:
+                pass
+    form = PhoneForm(request.POST if request.method == "POST" else None, initial=initial)
     next_url = _next(
         request,
         request.POST.get("next", "") if request.method == "POST" else request.GET.get("next", ""),
