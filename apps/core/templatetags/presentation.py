@@ -428,6 +428,12 @@ def localized_reservation_status(value: object) -> str:
 
 
 @register.filter
+def normalized_payment_status(value: object) -> str:
+    """Presentation key only; never change the stored provider payment state."""
+    return str(value or "").strip().casefold()
+
+
+@register.filter
 def localized_payment_status(value: object) -> str:
     labels = {
         "": gettext_noop("Not paid"),
@@ -443,7 +449,7 @@ def localized_payment_status(value: object) -> str:
         "review": gettext_noop("Payment needs review"),
         "unknown": gettext_noop("Payment needs review"),
     }
-    source = str(value or "")
+    source = normalized_payment_status(value)
     return translation.gettext(labels.get(source, gettext_noop("Under review")))
 
 
