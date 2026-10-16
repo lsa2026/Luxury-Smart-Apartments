@@ -1,7 +1,7 @@
 {% load i18n presentation %}
 <section class="account-panel account-details" aria-labelledby="account-details-heading">
     <h2 id="account-details-heading">{{ account_copy.details }}</h2>
-    <form method="post" action="{% url 'accounts:details' %}" class="account-details-form" novalidate>
+    <form method="post" action="{% url 'accounts:details' %}" class="account-details-form" data-draft-server-bound="true" novalidate>
         {% csrf_token %}{% if profile_form.errors %}<div class="form-errors" role="alert">{{ account_copy.form_errors }}{{ profile_form.non_field_errors }}</div>{% endif %}
         <fieldset><legend>{{ account_copy.personal }}</legend><div class="account-fields">
             {% include "accounts/_field.html" with field=profile_form.first_name %}{% include "accounts/_field.html" with field=profile_form.last_name %}
@@ -12,7 +12,18 @@
                 <input id="account-email" type="email" value="{{ request.user.email }}" autocomplete="email" dir="ltr" readonly aria-describedby="account-email-help">
                 <small id="account-email-help">{{ account_copy.email_protected }}</small>
                 {% if not profile.is_email_verified %}<button class="account-text-link" type="submit" formaction="{% url 'accounts:resend_verification' %}" formnovalidate>{{ account_copy.verify_email }}</button>{% endif %}
-            </div>{% include "accounts/_field.html" with field=profile_form.phone full=True %}
+            </div>
+            <div class="field-group account-field--full">
+                <div class="checkout-phone" data-checkout-phone data-account-phone
+                     data-check-url="{% url 'accounts:profile_phone_format' %}"
+                     data-error-selector="#profile-phone-validation"
+                     data-invalid-message="{{ phone_copy.invalid_phone }}">
+                    <div><label for="{{ profile_form.phone_country.id_for_label }}">{{ profile_form.phone_country.label }}</label>{{ profile_form.phone_country }}{{ profile_form.phone_country.errors }}</div>
+                    <div><label for="{{ profile_form.phone.id_for_label }}">{{ profile_form.phone.label }}</label>{{ profile_form.phone }}{{ profile_form.phone.errors }}</div>
+                </div>
+                <small id="profile-phone-help">{{ phone_copy.phone_help }} {{ phone_copy.contact_hint }}</small>
+                <p id="profile-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
+            </div>
         </div></fieldset>
         <fieldset><legend>{{ account_copy.preferences }}</legend><div class="account-fields">{% include "accounts/_field.html" with field=profile_form.preferred_language full=True %}</div></fieldset>
         <fieldset><legend>{{ account_copy.address }}</legend><p class="account-field-hint">{{ account_copy.address_hint }}</p><div class="account-fields">

@@ -150,7 +150,7 @@ def test_invalid_language_and_phone_display_errors_without_partial_save(guest_cl
         "/my-bookings/details/",
         {
             "first_name": "Should not save",
-            "phone": "0501234567",
+            "phone": "12345",
             "preferred_language": "xx",
         },
     )
