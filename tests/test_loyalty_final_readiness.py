@@ -268,6 +268,31 @@ def test_readiness_command_performs_no_writes(local_program, settings):
     assert r.public_reference not in output.getvalue()
 
 
+def test_readiness_accepts_admin_booking_id_while_launch_is_unconfigured(settings):
+    u = user("not-launched")
+    r = booking(u)
+    settings.LOYALTY_ENABLED = False
+    settings.LOYALTY_LAUNCH_AT = ""
+    output = StringIO()
+    call_command("loyalty_readiness", reservation_id=str(r.pk), stdout=output)
+    result = json.loads(output.getvalue())
+    assert result["booking_found"] is True
+    assert result["linked_customer_recorded"] is True
+    assert result["arrival_recorded"] is True
+    assert result["gates"]["launch_date_configured"] is False
+    assert result["award_evidence_ready"] is False
+    assert result["blocker"] == "launch_date_required"
+    assert str(r.pk) not in output.getvalue()
+    assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+def test_readiness_invalid_booking_identifier_fails_without_echoing_it():
+    from django.core.management.base import CommandError
+
+    with pytest.raises(CommandError, match="valid reservation identifier"):
+        call_command("loyalty_readiness", reservation_id="not-a-booking")
+
+
 @pytest.mark.parametrize("paid,arrived", [(False, True), (True, False)])
 def test_historical_acceptance_still_requires_real_payment_and_arrival(
     local_program, settings, paid, arrived

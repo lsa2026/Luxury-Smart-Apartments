@@ -1,9 +1,11 @@
 """SELECT-only preflight. Never creates members, sends mail, or settles a booking."""
 
 import json
+from uuid import UUID
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.exceptions import ValidationError
+from django.core.management.base import BaseCommand, CommandError
 
 from apps.loyalty.launch import (
     booking_allowed,
@@ -12,6 +14,7 @@ from apps.loyalty.launch import (
     pilot_only,
     pilot_references,
 )
+from apps.loyalty.services import launch_at
 from apps.loyalty.site_adapter import booking_facts
 from apps.loyalty.views import approved_terms
 from apps.reservations.models import Reservation
@@ -21,12 +24,20 @@ class Command(BaseCommand):
     help = "Read-only loyalty launch checks, with no personal data in the result."
 
     def add_arguments(self, parser):
-        parser.add_argument("--reservation", default="")
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument("--reservation", default="")
+        group.add_argument("--reservation-id", default="")
 
     def handle(self, *args, **options):
+        try:
+            launch_at()
+            launch_configured = True
+        except ValidationError:
+            launch_configured = False
         gates = {
             "programme_enabled": settings.LOYALTY_ENABLED,
             "interface_enabled": settings.LOYALTY_UI_ENABLED,
+            "launch_date_configured": launch_configured,
             "terms_reference_configured": bool(approved_terms()),
             "pilot_only": pilot_only(),
             "pilot_accounts_configured": bool(pilot_emails()),
@@ -35,17 +46,29 @@ class Command(BaseCommand):
             or not settings.LOYALTY_MESSAGES_ENABLED,
         }
         result = {"read_only": True, "gates": gates}
-        if options["reservation"]:
+        if options["reservation"] or options["reservation_id"]:
+            lookup = {"public_reference": options["reservation"]}
+            if options["reservation_id"]:
+                try:
+                    lookup = {"pk": UUID(options["reservation_id"])}
+                except (ValueError, TypeError, AttributeError) as exc:
+                    raise CommandError("A valid reservation identifier is required.") from exc
             booking = (
                 Reservation.objects.select_related(
                     "booking_intent__customer", "booking_intent__quote", "property"
                 )
-                .filter(public_reference=options["reservation"])
+                .filter(**lookup)
                 .first()
             )
             result["booking_found"] = booking is not None
             if booking:
-                _, reason = booking_facts(booking)
+                reason = "launch_date_required"
+                if launch_configured:
+                    _, reason = booking_facts(booking)
+                result["linked_customer_recorded"] = bool(
+                    booking.booking_intent_id and booking.booking_intent.customer_id
+                )
+                result["arrival_recorded"] = bool(booking.loyalty_state.get("arrival"))
                 result["booking_in_scope"] = booking_allowed(booking)
                 result["historical_acceptance_exception"] = historical_award_allowed(booking)
                 result["award_evidence_ready"] = not reason
