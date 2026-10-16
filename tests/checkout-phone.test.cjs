@@ -7,12 +7,13 @@ class Element extends EventTarget {
     constructor(value = "") { super(); this.value = value; this.attributes = {}; }
     setAttribute(key, value) { this.attributes[key] = value; }
     removeAttribute(key) { delete this.attributes[key]; }
+    hasAttribute(key) { return Object.hasOwn(this.attributes, key); }
     setCustomValidity(message) { this.validityMessage = message; }
     focus() { this.focused = true; }
 }
-function setup(fetch, {saved = null, bound = false, initial = ""} = {}) {
+function setup(fetch, {saved = null, bound = false, initial = "", account = false} = {}) {
     const country = new Element("SA");
-    country.options = ["SA", "US", "FR", "MA", "IT"].map((value) => ({value, textContent: `${value} (+1)`}));
+    country.options = ["SA", "US", "CA", "FR", "MA", "IT"].map((value) => ({value, textContent: `${value} (+1)`}));
     const phone = new Element(initial);
     const error = new Element(); error.hidden = true;
     const storage = new Map(saved ? [["lsa-phone-country-v1", saved]] : []);
@@ -20,12 +21,20 @@ function setup(fetch, {saved = null, bound = false, initial = ""} = {}) {
     form.querySelector = (selector) => selector === "#guest-phone-validation" ? error : {value: "csrf"};
     const widget = new Element();
     widget.dataset = {checkUrl: "/phone-check/", invalidMessage: "invalid number"};
+    if (account) {
+        widget.setAttribute("data-account-phone", "");
+        widget.dataset.errorSelector = "#account-phone-validation";
+        form.querySelector = (selector) => selector === "#account-phone-validation" ? error : {value: "csrf"};
+    }
+    form.submitRequests = 0;
+    form.requestSubmit = () => { form.submitRequests++; form.dispatchEvent(new Event("submit", {cancelable: true})); };
     widget.closest = () => form;
     widget.querySelector = (selector) => selector === "[data-phone-country]" ? country : phone;
+    const window = new EventTarget();
     vm.runInNewContext(source, {document: {documentElement: {lang: "en"}, querySelectorAll: () => [widget]},
         localStorage: {getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value)},
-        Intl, Event, URLSearchParams, AbortController, setTimeout, clearTimeout, fetch});
-    return {form, country, phone, error, storage};
+        Intl, Event, URLSearchParams, AbortController, setTimeout, clearTimeout, fetch, window});
+    return {form, country, phone, error, storage, window};
 }
 const response = (body, status = 200) => ({ok: status === 200, status, json: async () => body});
 test("defaults to Saudi; remembers only country and never overwrites a bound form", () => {
@@ -84,4 +93,77 @@ test("stale response cannot overwrite edited phone; including edit-away-then-bac
     assert.equal(await pending, true);
     assert.equal(calls, 2);
     assert.equal(env.phone.value, "+966501234567");
+});
+
+test("account widget localizes countries and updates US from a double-zero number on blur", async () => {
+    const env = setup(async (url, options) => {
+        assert.equal(options.body.get("phone"), "0012125551234");
+        return response({phone: "+12125551234", country: "US"});
+    }, {account: true});
+    assert.match(env.country.options.find(o => o.value === "US").textContent, /United States/);
+    env.phone.value = "0012125551234";
+    env.phone.dispatchEvent(new Event("blur"));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(env.country.value, "US");
+    assert.equal(env.phone.value, "+12125551234");
+    assert.equal(env.form.submitRequests, 0); // Formatting never sends an OTP.
+});
+
+test("shared calling code does not force a Canadian number to US", async () => {
+    const env = setup(async () => response({phone: "+14165551234", country: "CA"}), {account: true});
+    env.phone.value = "+14165551234";
+    assert.equal(await env.form.validateGuestPhone(), true);
+    assert.equal(env.country.value, "CA");
+});
+
+test("account submit waits for formatting once, even for two quick clicks", async () => {
+    let release; let calls = 0;
+    const env = setup(async () => {
+        calls++;
+        await new Promise(resolve => {release = resolve;});
+        return response({phone: "+12125551234", country: "US"});
+    }, {account: true});
+    env.phone.value = "0012125551234";
+    const first = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(first);
+    env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+    assert.equal(first.defaultPrevented, true);
+    assert.equal(env.form.submitRequests, 0);
+    release();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls, 1);
+    assert.equal(env.form.submitRequests, 1);
+    assert.equal(env.country.value, "US");
+    const duplicate = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(duplicate);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(duplicate.defaultPrevented, true);
+    assert.equal(env.form.submitRequests, 1); // Navigation has not finished yet.
+    env.window.dispatchEvent(new Event("pageshow"));
+    env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(env.form.submitRequests, 2); // Browser-back remains usable.
+});
+
+test("account submit unlocks if another validator prevents the forwarded submit", async () => {
+    const env = setup(async () => response({phone: "+12125551234", country: "US"}), {account: true});
+    env.phone.value = "0012125551234";
+    env.form.addEventListener("submit", event => event.preventDefault());
+    for (let attempt = 0; attempt < 2; attempt++) {
+        env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+        await new Promise(resolve => setImmediate(resolve));
+    }
+    assert.equal(env.form.submitRequests, 2);
+});
+
+test("account malformed input blocks submit, but unavailable formatting retains server validation", async () => {
+    for (const [fetch, expected] of [
+        [async () => response({detail: "invalid_phone"}, 400), 0],
+        [async () => {throw Error("offline");}, 1],
+    ]) {
+        const env = setup(fetch, {account: true}); env.phone.value = "12345";
+        env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+        await new Promise(resolve => setImmediate(resolve));
+        assert.equal(env.form.submitRequests, expected);
+    }
 });

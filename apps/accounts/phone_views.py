@@ -6,7 +6,7 @@ import phonenumbers
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import login
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
@@ -16,7 +16,7 @@ from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.reservations.security import mask_phone, session_key_hash
 
 from .models import PhoneChallenge, VerifiedPhone
-from .phone_auth import PENDING, allowed, begin, consume, ready, recent_primary
+from .phone_auth import PENDING, _limit, allowed, begin, consume, ready, recent_primary
 from .phone_copy import phone_copy
 
 
@@ -28,6 +28,7 @@ class PhoneForm(forms.Form):
             (code, f"{code} (+{phonenumbers.country_code_for_region(code)})")
             for code in ["SA", *sorted(phonenumbers.SUPPORTED_REGIONS - {"SA"})]
         ],
+        widget=forms.Select(attrs={"data-phone-country": ""}),
     )
     phone = forms.CharField(
         max_length=32,
@@ -37,7 +38,9 @@ class PhoneForm(forms.Form):
                 "autocomplete": "tel",
                 "inputmode": "tel",
                 "dir": "ltr",
-                "placeholder": "+966 5…",
+                "placeholder": "0501234567",
+                "data-guest-phone": "",
+                "aria-describedby": "account-phone-help account-phone-validation",
             }
         ),
     )
@@ -54,7 +57,34 @@ class PhoneForm(forms.Form):
                 default_region=self.cleaned_data.get("phone_country") or None,
             )
         except InvalidPhoneNumber as exc:
-            raise forms.ValidationError(phone_copy()["invalid"]) from exc
+            raise forms.ValidationError(phone_copy()["invalid_phone"]) from exc
+
+
+@never_cache
+@require_http_methods(["POST"])
+def phone_format(request):
+    """Formatting only: never look up an account, bind a phone or send a code."""
+    if not ready():
+        raise Http404
+    if not _limit("format-global", "site", 300, 300) or not _limit(
+        "format-ip", request.META.get("REMOTE_ADDR", ""), 60, 300
+    ):
+        return JsonResponse({"detail": "temporarily_unavailable"}, status=429)
+    form = PhoneForm(
+        {"phone": request.POST.get("phone", ""), "phone_country": request.POST.get("country", "SA")}
+    )
+    if not form.is_valid():
+        return JsonResponse({"detail": "invalid_phone"}, status=400)
+    phone = form.cleaned_data["phone"]
+    region = phonenumbers.region_code_for_number(phonenumbers.parse(phone, None))
+    return JsonResponse(
+        {
+            "phone": phone,
+            "country": region
+            if region in phonenumbers.SUPPORTED_REGIONS
+            else form.cleaned_data["phone_country"] or "SA",
+        }
+    )
 
 
 def _next(request, value):

@@ -3,7 +3,7 @@ from django.urls import path, reverse_lazy
 
 from .operations_users import manager_list, manager_revoke
 from .password_reset import LuxurySetPasswordForm, QueuedPasswordResetForm
-from .phone_views import phone_confirm, phone_start
+from .phone_views import phone_confirm, phone_format, phone_start
 from .views import (
     LoginView,
     LogoutView,
@@ -27,6 +27,7 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="login"),
     path("account/mobile/", phone_start, name="phone_login"),
+    path("account/mobile/format/", phone_format, name="phone_format"),
     path("account/mobile/link/", phone_start, {"binding": True}, name="phone_bind"),
     path("account/mobile/confirm/", phone_confirm, name="phone_confirm"),
     path("logout/", LogoutView.as_view(), name="logout"),
