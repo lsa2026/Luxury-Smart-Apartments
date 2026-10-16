@@ -31,6 +31,9 @@ LOYALTY_PILOT_ONLY = env.bool("LOYALTY_PILOT_ONLY", default=False)
 LOYALTY_PILOT_EMAILS = env.list("LOYALTY_PILOT_EMAILS", default=[])
 LOYALTY_PILOT_BOOKING_REFERENCES = env.list("LOYALTY_PILOT_BOOKING_REFERENCES", default=[])
 LOYALTY_PILOT_ALLOW_HISTORICAL = env.bool("LOYALTY_PILOT_ALLOW_HISTORICAL", default=False)
+# Public launch may retain the already-posted single owner acceptance exception;
+# it cannot authorise a fresh trial award or waive any other guest's stay.
+LOYALTY_RETAIN_ACCEPTANCE_EXCEPTION = env.bool("LOYALTY_RETAIN_ACCEPTANCE_EXCEPTION", default=False)
 LOYALTY_PILOT_STAY_EXCEPTION_REFERENCES = env.list(
     "LOYALTY_PILOT_STAY_EXCEPTION_REFERENCES", default=[]
 )
@@ -202,6 +205,7 @@ LOGIN_URL = "accounts:login"
 # Sending remains closed until the sender's AI/archive exclusion is verified.
 ACCOUNT_WHATSAPP_AUTH_ENABLED = env.bool("ACCOUNT_WHATSAPP_AUTH_ENABLED", default=False)
 ACCOUNT_WHATSAPP_AUTH_ISOLATED = env.bool("ACCOUNT_WHATSAPP_AUTH_ISOLATED", default=False)
+ACCOUNT_WHATSAPP_AUTH_PUBLIC = env.bool("ACCOUNT_WHATSAPP_AUTH_PUBLIC", default=False)
 ACCOUNT_WHATSAPP_AUTH_EMAILS = env.list("ACCOUNT_WHATSAPP_AUTH_EMAILS", default=[])
 LOGIN_REDIRECT_URL = "/ar/"
 ACCOUNT_LOGIN_METHODS = {"email"}

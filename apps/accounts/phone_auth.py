@@ -45,7 +45,7 @@ def ready():
     return bool(
         settings.ACCOUNT_WHATSAPP_AUTH_ENABLED
         and settings.ACCOUNT_WHATSAPP_AUTH_ISOLATED
-        and settings.ACCOUNT_WHATSAPP_AUTH_EMAILS
+        and (settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC or settings.ACCOUNT_WHATSAPP_AUTH_EMAILS)
         and settings.ULTRAMSG_ENABLED
         and settings.ULTRAMSG_INSTANCE_ID
         and settings.ULTRAMSG_TOKEN
@@ -58,7 +58,10 @@ def allowed(user):
     email = (user.email or "").strip().casefold()
     return bool(
         email
-        and email in {str(v).strip().casefold() for v in settings.ACCOUNT_WHATSAPP_AUTH_EMAILS}
+        and (
+            settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC
+            or email in {str(v).strip().casefold() for v in settings.ACCOUNT_WHATSAPP_AUTH_EMAILS}
+        )
         and email != settings.OPERATIONS_OWNER_EMAIL.strip().casefold()
         and not user.is_staff
         and not user.is_superuser

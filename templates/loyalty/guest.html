@@ -6,6 +6,13 @@
   {% if not loyalty_can_act %}<p class="loyalty-notice">{{ loyalty_copy.legal_wait }}</p>{% endif %}
   {% if loyalty_verify %}<p class="loyalty-notice"><a href="{% url 'accounts:verify_pending' %}">{{ loyalty_copy.verify }}</a></p>{% endif %}
   {% if loyalty_error or loyalty_invitation_invalid %}<p class="loyalty-error" role="alert">{{ loyalty_copy.invalid }}</p>{% endif %}
+  {% if loyalty_mobile_verify %}
+  <section class="account-panel loyalty-panel" aria-labelledby="loyalty-mobile-heading">
+    <h2 id="loyalty-mobile-heading">{{ loyalty_mobile_copy.verify_mobile }}</h2>
+    <p>{{ loyalty_mobile_copy.bind_intro }}</p>
+    <a class="button account-primary" href="{% url 'accounts:phone_bind' %}">{{ loyalty_mobile_copy.verify_mobile }}</a>
+  </section>
+  {% endif %}
   {% if not loyalty_member %}
   <section class="account-panel loyalty-panel" aria-labelledby="account-rewards-heading">
     <h2 id="account-rewards-heading">{{ loyalty_copy.join_heading }}</h2><p>{{ loyalty_copy.join_intro }}</p>

@@ -23,7 +23,9 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.access import require_operations_owner
 from apps.accounts.dashboard_copy import account_copy
-from apps.accounts.models import CustomerProfile
+from apps.accounts.models import CustomerProfile, VerifiedPhone
+from apps.accounts.phone_auth import allowed as phone_allowed
+from apps.accounts.phone_auth import ready as phone_ready
 from apps.accounts.phone_copy import phone_copy
 from apps.reservations.models import Reservation
 
@@ -366,6 +368,7 @@ def guest_rewards(request):
         else ""
     )
     name = request.user.first_name.strip()
+    mobile_available = phone_ready() and phone_allowed(request.user)
     return render(
         request,
         "accounts/dashboard.html",
@@ -390,6 +393,9 @@ def guest_rewards(request):
             ).exists(),
             "loyalty_can_act": can_act and _verified(request.user),
             "loyalty_verify": not _verified(request.user),
+            "loyalty_mobile_verify": mobile_available
+            and not VerifiedPhone.objects.filter(user=request.user).exists(),
+            "loyalty_mobile_copy": phone_copy(),
             "loyalty_terms_approved": approved_terms(),
             "loyalty_terms_reference": settings.LOYALTY_TERMS_REFERENCE,
             "loyalty_join_form": join_form,
