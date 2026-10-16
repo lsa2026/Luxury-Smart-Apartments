@@ -1,5 +1,6 @@
 """Customer account forms with email-first authentication."""
 
+import phonenumbers
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -10,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 
 from .dashboard_copy import account_copy
+from .phone_copy import phone_copy
 
 User = get_user_model()
 
@@ -126,6 +128,15 @@ class CustomerProfileForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"autocomplete": "family-name"}),
     )
+    phone_country = forms.ChoiceField(
+        required=False,
+        initial="SA",
+        choices=[
+            (code, f"{code} (+{phonenumbers.country_code_for_region(code)})")
+            for code in ["SA", *sorted(phonenumbers.SUPPORTED_REGIONS - {"SA"})]
+        ],
+        widget=forms.Select(attrs={"data-phone-country": ""}),
+    )
     phone = forms.CharField(
         label=_("Phone number"),
         max_length=32,
@@ -135,6 +146,8 @@ class CustomerProfileForm(forms.Form):
                 "autocomplete": "tel",
                 "inputmode": "tel",
                 "dir": "ltr",
+                "data-guest-phone": "",
+                "aria-describedby": "profile-phone-help profile-phone-validation",
                 "placeholder": _("For example: +966 50 000 0000"),
             }
         ),
@@ -184,6 +197,7 @@ class CustomerProfileForm(forms.Form):
         kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
         copy = account_copy()
+        self.fields["phone_country"].label = phone_copy()["country"]
         labels = {
             "first_name": "first_name",
             "last_name": "last_name",
@@ -205,6 +219,13 @@ class CustomerProfileForm(forms.Form):
             ("fr", copy["french"]),
         ]
         if not self.is_bound:
+            try:
+                parsed = phonenumbers.parse(getattr(profile, "phone", ""), None)
+                region = phonenumbers.region_code_for_number(parsed)
+                if region in phonenumbers.SUPPORTED_REGIONS:
+                    self.initial["phone_country"] = region
+            except phonenumbers.NumberParseException:
+                pass
             self.initial.update(
                 {
                     "first_name": getattr(user, "first_name", ""),
@@ -224,11 +245,11 @@ class CustomerProfileForm(forms.Form):
         if not value:
             return ""
         try:
-            return normalize_phone_number(value)
+            return normalize_phone_number(
+                value, default_region=self.cleaned_data.get("phone_country") or "SA"
+            )
         except InvalidPhoneNumber:
-            raise forms.ValidationError(
-                _("Enter a valid mobile number in international format, starting with +."),
-            ) from None
+            raise forms.ValidationError(phone_copy()["invalid_phone"]) from None
 
     def clean(self) -> dict[str, str]:
         cleaned = super().clean()

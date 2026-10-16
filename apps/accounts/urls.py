@@ -3,7 +3,7 @@ from django.urls import path, reverse_lazy
 
 from .operations_users import manager_list, manager_revoke
 from .password_reset import LuxurySetPasswordForm, QueuedPasswordResetForm
-from .phone_views import phone_confirm, phone_format, phone_start
+from .phone_views import phone_confirm, phone_format, phone_start, profile_phone_format
 from .views import (
     LoginView,
     LogoutView,
@@ -34,6 +34,7 @@ urlpatterns = [
     path("my-bookings/", dashboard, name="dashboard"),
     path("my-bookings/rewards/", dashboard, {"section": "rewards"}, name="rewards"),
     path("my-bookings/details/", dashboard, {"section": "details"}, name="details"),
+    path("my-bookings/details/phone-format/", profile_phone_format, name="profile_phone_format"),
     path("account/confirm/", verify_pending, name="verify_pending"),
     path("account/confirm/code/", verify_email_code, name="verify_email_code"),
     path("account/confirm/resend/", resend_verification, name="resend_verification"),

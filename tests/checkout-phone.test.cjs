@@ -156,6 +156,16 @@ test("account submit unlocks if another validator prevents the forwarded submit"
     assert.equal(env.form.submitRequests, 2);
 });
 
+test("profile email verification bypasses unrelated phone formatting", async () => {
+    const env = setup(async () => {throw Error("must not format");}, {account: true});
+    env.phone.value = "12345";
+    const event = new Event("submit", {cancelable: true});
+    Object.defineProperty(event, "submitter", {value: {formNoValidate: true}});
+    env.form.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, false);
+    assert.equal(env.form.submitRequests, 0);
+});
+
 test("account malformed input blocks submit, but unavailable formatting retains server validation", async () => {
     for (const [fetch, expected] of [
         [async () => response({detail: "invalid_phone"}, 400), 0],

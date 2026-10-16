@@ -6,6 +6,7 @@ import phonenumbers
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -66,6 +67,18 @@ def phone_format(request):
     """Formatting only: never look up an account, bind a phone or send a code."""
     if not ready():
         raise Http404
+    return _phone_format_response(request)
+
+
+@login_required
+@never_cache
+@require_http_methods(["POST"])
+def profile_phone_format(request):
+    """Contact editing stays independent of the WhatsApp sign-in pilot."""
+    return _phone_format_response(request)
+
+
+def _phone_format_response(request):
     if not _limit("format-global", "site", 300, 300) or not _limit(
         "format-ip", request.META.get("REMOTE_ADDR", ""), 60, 300
     ):

@@ -102,6 +102,9 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
         let forwardedEvent = null;
         window.addEventListener("pageshow", () => { submitStarted = false; });
         form.addEventListener("submit", async (event) => {
+            // Profile email-verification buttons have a different action and
+            // must not be blocked by an unrelated optional contact number.
+            if (event.submitter?.formNoValidate) return;
             if (forwardingSubmit) { forwardedEvent = event; return; }
             event.preventDefault();
             if (submitStarted) return;

@@ -113,6 +113,80 @@ def test_phone_final_post_normalizes_double_zero_without_javascript(monkeypatch)
     assert received == ["+12125551234"]
 
 
+@pytest.mark.parametrize(
+    ("phone", "country", "expected"),
+    [
+        ("0012125551234", "SA", "+12125551234"),
+        ("٠٠١٢١٢٥٥٥١٢٣٤", "SA", "+12125551234"),
+        ("2125551234", "US", "+12125551234"),
+        ("0501234567", "SA", "+966501234567"),
+        ("", "US", ""),
+    ],
+)
+def test_profile_phone_save_normalizes_without_changing_signin_binding(
+    guest, isolated, phone, country, expected, settings
+):
+    settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = False
+    binding = VerifiedPhone.objects.create(user=guest.user, phone=PHONE)
+    original_email = guest.user.email
+    response = guest.client.post(
+        "/my-bookings/details/", {"phone": phone, "phone_country": country}
+    )
+    assert response.status_code == 302
+    assert profile_for(guest.user).phone == expected
+    binding.refresh_from_db()
+    assert binding.phone == PHONE
+    guest.user.refresh_from_db()
+    assert guest.user.email == original_email
+    assert not PhoneChallenge.objects.exists() and not isolated.dispatched and not isolated.sent
+
+
+def test_profile_phone_country_comes_from_saved_phone_not_residence(guest):
+    profile = profile_for(guest.user)
+    profile.phone = "+14165551234"
+    profile.residence_country = "Saudi Arabia"
+    profile.save(update_fields=["phone", "residence_country"])
+    response = guest.client.get("/my-bookings/details/")
+    assert response.context["profile_form"]["phone_country"].value() == "CA"
+    assert response.context["profile_form"]["phone"].value() == "+14165551234"
+
+
+def test_profile_format_is_login_protected_and_independent_of_phone_auth(guest, settings, isolated):
+    url = "/my-bookings/details/phone-format/"
+    settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = False
+    assert Client().post(url, {"phone": PHONE}).status_code == 302
+    strict = Client(enforce_csrf_checks=True)
+    strict.force_login(guest.user)
+    assert strict.post(url, {"phone": PHONE}).status_code == 403
+    before = profile_for(guest.user).phone
+    response = guest.client.post(url, {"phone": "0012125551234", "country": "SA"})
+    assert response.status_code == 200
+    assert response.json() == {"phone": "+12125551234", "country": "US"}
+    assert "no-store" in response["Cache-Control"]
+    assert profile_for(guest.user).phone == before
+    assert not VerifiedPhone.objects.exists() and not PhoneChallenge.objects.exists()
+    assert not isolated.dispatched and not isolated.sent
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_profile_phone_widget_is_localized_and_only_loaded_in_details(guest, language, settings):
+    guest.client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    content = guest.client.get("/my-bookings/details/").content.decode()
+    for marker in [
+        "data-account-phone",
+        'data-draft-server-bound="true"',
+        "checkout-phone.js",
+        "checkout-phone.css",
+        "/my-bookings/details/phone-format/",
+        TEXT[language]["phone_help"],
+        TEXT[language]["contact_hint"],
+    ]:
+        assert marker in content
+    bookings = guest.client.get("/my-bookings/").content.decode()
+    assert "checkout-phone.js" not in bookings
+    assert "checkout-phone.css" not in bookings
+
+
 @pytest.fixture(autouse=True)
 def isolated(settings, monkeypatch):
     settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = True
