@@ -1,6 +1,5 @@
 """Fictional identities only. Provider, queue and clock are isolated from production."""
 
-import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from threading import Barrier
@@ -101,7 +100,7 @@ def test_binding_requires_existing_primary_auth_then_one_use_code(
     response = start(guest.client, django_capture_on_commit_callbacks, binding=True)
     assert response.status_code == 302
     row = deliver(guest.client)
-    assert CODE not in row.code_digest and len(row.code_digest) == 64
+    assert row.code_digest == auth._digest("code", f"{row.pk}:{CODE}")
     assert isolated.dispatched == [str(row.pk)]
     assert auth.MARKER in isolated.sent[0]["body"]
     assert isolated.sent[0]["recipient"] == PHONE
@@ -411,4 +410,7 @@ def test_postgres_one_code_cannot_authenticate_twice(guest, django_capture_on_co
     assert sorted(results) == [False, True]
     row = PhoneChallenge.objects.get()
     assert row.status == "consumed" and row.attempts == 1
-    assert CODE not in json.dumps(row.__dict__, default=str)
+    # A numeric OTP can coincidentally be a substring of the phone/UUID.
+    # Audit the credential fields, rather than rejecting unrelated identifiers.
+    assert not {"code", "body", "message"} & {f.name for f in row._meta.concrete_fields}
+    assert row.code_digest == ""
