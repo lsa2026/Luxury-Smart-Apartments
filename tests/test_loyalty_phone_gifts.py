@@ -1,18 +1,25 @@
 """Private synthetic gifts, recorded queue stubs, no real sends or provider credentials."""
 
+import base64
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from hashlib import sha256
+from io import BytesIO
 from unittest.mock import MagicMock, patch
+from urllib.parse import parse_qs
 
+import httpx
 import pytest
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone, translation
+from PIL import Image
 
 from apps.accounts.models import VerifiedPhone, profile_for
+from apps.loyalty.invitation_design import TEMPLATE_VERSION, invitation_image
 from apps.loyalty.models import Ledger, Member, Referral
 from apps.loyalty.phone_gifts import (
     deliver_invitation,
@@ -22,6 +29,11 @@ from apps.loyalty.phone_gifts import (
     recipient_for_phone,
 )
 from apps.loyalty.services import balance, reconcile, transfer
+from apps.notifications.services.ultramsg import (
+    UltraMsgClient,
+    UltraMsgConnectionError,
+    UltraMsgResponseError,
+)
 from tests.test_loyalty_stage8 import booking, join, user
 
 pytestmark = pytest.mark.django_db
@@ -192,7 +204,12 @@ def test_queue_failure_does_not_claim_sent_or_change_points(django_capture_on_co
 
 
 @pytest.mark.parametrize(
-    "language,title", [("ar", "دعوة إلى مكافآت"), ("en", "An invitation"), ("fr", "Une invitation")]
+    "language,title",
+    [
+        ("ar", "دعوة خاصة إلى مكافآت"),
+        ("en", "A personal invitation"),
+        ("fr", "Une invitation personnelle"),
+    ],
 )
 def test_one_language_business_invitation_send_once_with_sender_link(language, title):
     _, am, _, _ = setup_pair(receiver_member=False)
@@ -202,14 +219,18 @@ def test_one_language_business_invitation_send_once_with_sender_link(language, t
     with patch("apps.loyalty.phone_gifts.UltraMsgClient", return_value=provider):
         deliver_invitation(am.pk, pointer["key"])
         deliver_invitation(am.pk, pointer["key"])
-    assert provider.send_text.call_count == 1
-    body = provider.send_text.call_args.kwargs["body"]
+    assert provider.send_image.call_count == 1 and not provider.send_text.called
+    body = provider.send_image.call_args.kwargs["caption"]
     assert (
         title in body
         and "/i/" in body
-        and provider.send_text.call_args.kwargs["recipient"] == UNKNOWN
+        and provider.send_image.call_args.kwargs["recipient"] == UNKNOWN
     )
-    other_titles = {"دعوة إلى مكافآت", "An invitation", "Une invitation"} - {title}
+    other_titles = {
+        "دعوة خاصة إلى مكافآت",
+        "A personal invitation",
+        "Une invitation personnelle",
+    } - {title}
     assert not any(t in body for t in other_titles)
     assert invitation_status(am.customer, pointer)["status"] == "accepted"
     assert balance(am) == Decimal("22.50")
@@ -220,11 +241,11 @@ def test_unknown_provider_outcome_never_resends():
     pointer = queue(am)
     provider = MagicMock()
     provider.__enter__.return_value = provider
-    provider.send_text.side_effect = RuntimeError("synthetic timeout with private request details")
+    provider.send_image.side_effect = RuntimeError("synthetic timeout with private request details")
     with patch("apps.loyalty.phone_gifts.UltraMsgClient", return_value=provider):
         deliver_invitation(am.pk, pointer["key"])
         deliver_invitation(am.pk, pointer["key"])
-    assert provider.send_text.call_count == 1
+    assert provider.send_image.call_count == 1 and not provider.send_text.called
     assert invitation_status(am.customer, pointer)["status"] == "uncertain"
 
 
@@ -295,7 +316,7 @@ def test_invitation_then_voluntary_join_and_phone_verification_then_manual_gift(
     c, am, _, b = setup_pair(receiver_member=False, verified=False)
     pointer = queue(am, phone=PHONE)
     with patch("apps.loyalty.phone_gifts.UltraMsgClient") as provider:
-        provider.return_value.__enter__.return_value.send_text.return_value = {
+        provider.return_value.__enter__.return_value.send_image.return_value = {
             "id": "fixture-accepted"
         }
         deliver_invitation(am.pk, pointer["key"])
@@ -327,7 +348,8 @@ def test_saved_recipient_language_wins_and_other_sender_cannot_use_confirmation(
     provider.__enter__.return_value = provider
     with patch("apps.loyalty.phone_gifts.UltraMsgClient", return_value=provider):
         deliver_invitation(am.pk, pointer["key"])
-    assert "Une invitation" in provider.send_text.call_args.kwargs["body"]
+    assert "Une invitation personnelle" in provider.send_image.call_args.kwargs["caption"]
+    assert provider.send_image.call_args.kwargs["content"] == invitation_image("fr")
     other = user("different-sender")
     join(other)
     client = Client()
@@ -344,3 +366,133 @@ def test_saved_recipient_language_wins_and_other_sender_cannot_use_confirmation(
         ).status_code
         == 403
     )
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_packaged_card_and_longest_caption_have_no_guest_data_and_fit_provider(language, settings):
+    _, am, _, _ = setup_pair(receiver_member=False)
+    am.customer.first_name = "أ" * 60
+    settings.LOYALTY_PILOT_ONLY = True
+    body = invitation_message(
+        am, language=language, url="https://luxurysmartapartments.com/i/" + "a" * 16 + "/"
+    )
+    assert len(body.encode("utf-16-le")) // 2 <= 1024
+    assert "Luxury Living" in body
+    assert "لاكشري" not in body and "ليفينغ" not in body
+    assert body.count("https://") == 1
+    content = invitation_image(language)
+    with Image.open(BytesIO(content)) as image:
+        assert image.format == "PNG" and image.size == (1200, 600)
+    assert len(content) < 100_000
+    assert b"synthetic-gift-sender-token" not in content and PHONE.encode() not in content
+
+
+def test_new_image_request_records_version_language_and_media_digest():
+    _, am, _, _ = setup_pair(receiver_member=False)
+    pointer = queue(am, language="ar")
+    am.refresh_from_db()
+    assert am.command_receipts[pointer["key"]]["result"]["template_version"] == TEMPLATE_VERSION
+    provider = MagicMock()
+    provider.__enter__.return_value = provider
+    provider.send_image.return_value = {"sent": "true", "id": "synthetic-image-accepted"}
+    with patch("apps.loyalty.phone_gifts.UltraMsgClient", return_value=provider):
+        deliver_invitation(am.pk, pointer["key"])
+    am.refresh_from_db()
+    row = am.command_receipts[pointer["key"]]["result"]
+    assert row["media_sha256"] == sha256(invitation_image("ar")).hexdigest()
+    assert row["delivery_language"] == "ar" and row["status"] == "accepted"
+    assert row["provider_reference"] == "synthetic-image-accepted"
+
+
+def test_preexisting_version_one_queue_keeps_text_format_without_image():
+    _, am, _, _ = setup_pair(receiver_member=False)
+    pointer = queue(am)
+    am.refresh_from_db()
+    am.command_receipts[pointer["key"]]["result"]["template_version"] = "gift-whatsapp-20261016-v1"
+    am.save(update_fields=["command_receipts"])
+    provider = MagicMock()
+    provider.__enter__.return_value = provider
+    with patch("apps.loyalty.phone_gifts.UltraMsgClient", return_value=provider):
+        deliver_invitation(am.pk, pointer["key"])
+    assert provider.send_text.call_count == 1 and not provider.send_image.called
+    assert "🎁" in provider.send_text.call_args.kwargs["body"]
+
+
+def test_missing_artwork_never_sends_an_incomplete_or_fallback_invitation():
+    _, am, _, _ = setup_pair(receiver_member=False)
+    pointer = queue(am)
+    with (
+        patch("apps.loyalty.phone_gifts.invitation_image", side_effect=FileNotFoundError),
+        patch("apps.loyalty.phone_gifts.UltraMsgClient") as provider,
+    ):
+        deliver_invitation(am.pk, pointer["key"])
+    assert not provider.called and invitation_status(am.customer, pointer)["status"] == "disabled"
+    assert balance(am) == Decimal("22.50")
+
+
+def test_image_transport_sends_bytes_and_exact_clickable_caption_in_one_request():
+    requests = []
+
+    def accepted(request):
+        requests.append(request)
+        return httpx.Response(200, json={"sent": "true", "id": "synthetic-image"})
+
+    content = invitation_image("ar")
+    caption = "دعوة خاصة\nhttps://luxurysmartapartments.com/i/synthetic/"
+    with httpx.Client(
+        transport=httpx.MockTransport(accepted), base_url="https://example.invalid"
+    ) as http:
+        client = UltraMsgClient(http=http)
+        result = client.send_image(
+            recipient=UNKNOWN, content=content, caption=caption, reference_id="synthetic-reference"
+        )
+    assert result["id"] == "synthetic-image" and len(requests) == 1
+    payload = parse_qs(requests[0].content.decode())
+    assert requests[0].url.path.endswith("/messages/image")
+    assert payload["caption"] == [caption]
+    assert base64.b64decode(payload["image"][0]) == content
+    assert payload["referenceId"] == ["synthetic-reference"]
+
+
+@pytest.mark.parametrize(
+    "status,document,error",
+    [
+        (200, {"sent": "false"}, UltraMsgResponseError),
+        (200, {"id": "unknown"}, UltraMsgConnectionError),
+        (200, [], UltraMsgResponseError),
+        (400, {}, UltraMsgResponseError),
+        (503, {}, UltraMsgConnectionError),
+    ],
+)
+def test_image_transport_does_not_treat_rejection_or_ambiguity_as_success(status, document, error):
+    with httpx.Client(
+        transport=httpx.MockTransport(lambda _: httpx.Response(status, json=document)),
+        base_url="https://example.invalid",
+    ) as http:
+        with pytest.raises(error):
+            UltraMsgClient(http=http).send_image(
+                recipient=UNKNOWN,
+                content=invitation_image("ar"),
+                caption="دعوة",
+                reference_id="test",
+            )
+
+
+@pytest.mark.parametrize(
+    "caption,content",
+    [
+        ("أ" * 1025, b"\x89PNG\r\n\x1a\n"),
+        ("دعوة", b"not-a-png"),
+        ("", b"\x89PNG\r\n\x1a\n"),
+        ("🎁" * 513, b"\x89PNG\r\n\x1a\n"),
+    ],
+)
+def test_invalid_image_or_oversize_caption_is_rejected_before_network(caption, content):
+    with httpx.Client(
+        transport=httpx.MockTransport(lambda _: pytest.fail("Network must not be reached")),
+        base_url="https://example.invalid",
+    ) as http:
+        with pytest.raises(UltraMsgResponseError):
+            UltraMsgClient(http=http).send_image(
+                recipient=UNKNOWN, content=content, caption=caption, reference_id="test"
+            )

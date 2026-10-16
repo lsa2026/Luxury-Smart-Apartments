@@ -1,6 +1,7 @@
 """Verified-phone gifts and explicitly requested invitations, never an automatic campaign."""
 
 from datetime import datetime, timedelta
+from hashlib import sha256
 from urllib.parse import urlparse
 
 from celery import shared_task
@@ -18,6 +19,7 @@ from apps.core.phone_numbers import normalize_phone_number
 from apps.notifications.services.ultramsg import UltraMsgClient
 from apps.payments.payment_link_tasks import PAYMENT_MESSAGE_BRAND
 
+from .invitation_design import TEMPLATE_VERSION, invitation_caption, invitation_image
 from .invitation_links import invitation_path
 from .launch import participant_allowed, pilot_only
 from .models import Member
@@ -124,7 +126,7 @@ def queue_invitation(user, *, phone, language, key, consent):
                 "status": "queued",
                 "requested_at": timezone.now().isoformat(),
                 "consent": True,
-                "template_version": "gift-whatsapp-20261016-v1",
+                "template_version": TEMPLATE_VERSION,
             }
             transaction.on_commit(lambda: _dispatch(sender.pk, key), robust=True)
             return result
@@ -166,16 +168,25 @@ def invitation_status(user, pointer):
     return {"phone": "••••" + row["phone"][-4:], "status": status}
 
 
-def invitation_message(sender, *, language, url):
+def _sender_name(sender, language):
     # A guest-controlled name must not inject links or WhatsApp formatting.
     name = " ".join(
         "".join(
             c for c in strip_tags(sender.customer.first_name) if c.isalpha() or c.isspace()
         ).split()
     )[:60]
-    name = (
+    return (
         name or {"ar": "أحد ضيوفنا", "en": "one of our guests", "fr": "un de nos clients"}[language]
     )
+
+
+def invitation_message(sender, *, language, url):
+    return invitation_caption(_sender_name(sender, language), language=language, url=url)
+
+
+def legacy_invitation_message(sender, *, language, url):
+    """Keep already queued version-one requests in their original text format."""
+    name = _sender_name(sender, language)
     title, intro, steps, optional = {
         "ar": (
             "🎁 *دعوة إلى مكافآت ضيوفنا*",
@@ -237,21 +248,39 @@ def deliver_invitation(member_id, key):
             row["status"] = "recipient_ready"
             sender.save(update_fields=["command_receipts", "updated_at"])
             return
-        row["status"] = "sending"
-        sender.save(update_fields=["command_receipts", "updated_at"])
         phone, language = row["phone"], recipient_language(row["phone"]) or row["language"]
         base = settings.SITE_BASE_URL.rstrip("/")
         url = base + invitation_path(sender)
-    if urlparse(base).scheme != "https" or not urlparse(base).netloc:
-        _finish(member_id, key, "disabled")
-        return
+        version = row.get("template_version", "gift-whatsapp-20261016-v1")
+        try:
+            if (
+                urlparse(base).scheme != "https"
+                or not urlparse(base).netloc
+                or version not in {TEMPLATE_VERSION, "gift-whatsapp-20261016-v1"}
+            ):
+                raise ValidationError("Invitation design unavailable.")
+            if version == TEMPLATE_VERSION:
+                content = invitation_image(language)
+                body = invitation_message(sender, language=language, url=url)
+                row["media_sha256"] = sha256(content).hexdigest()
+            else:
+                content = None
+                body = legacy_invitation_message(sender, language=language, url=url)
+        except (OSError, ValidationError, KeyError):
+            row["status"] = "disabled"
+            sender.save(update_fields=["command_receipts", "updated_at"])
+            return
+        row.update(status="sending", delivery_language=language)
+        sender.save(update_fields=["command_receipts", "updated_at"])
     try:
         with UltraMsgClient() as client:
-            response = client.send_text(
-                recipient=phone,
-                body=invitation_message(sender, language=language, url=url),
-                reference_id=f"lsa-gift-{phone_hash(str(member_id) + key)[:32]}",
-            )
+            reference_id = f"lsa-gift-{phone_hash(str(member_id) + key)[:32]}"
+            if content is not None:
+                response = client.send_image(
+                    recipient=phone, content=content, caption=body, reference_id=reference_id
+                )
+            else:
+                response = client.send_text(recipient=phone, body=body, reference_id=reference_id)
     except Exception:
         _finish(member_id, key, "uncertain")
         return
