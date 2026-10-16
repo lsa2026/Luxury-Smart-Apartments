@@ -31,7 +31,8 @@ from apps.loyalty.services import ancestors, balance, reconcile, statement
 from tests.test_loyalty_stage8 import booking, join, user
 from tests.test_loyalty_stage10 import recovery_db as recovery_db
 
-pytestmark = pytest.mark.django_db
+# Snapshot capture owns a repeatable-read transaction on PostgreSQL.
+pytestmark = pytest.mark.django_db(transaction=True)
 
 
 @pytest.fixture(autouse=True)
@@ -294,10 +295,12 @@ def test_backup_preserves_revision_history_and_accepts_previous_schema(operator,
     link(operator, b, a)
     after = capture(source_id="synthetic-referral-test")
     compare(old, after)
-    mirror = LocalMirror(tmp_path / "referrals.sqlite3")
-    mirror.update(old)
-    mirror.update(after)
-    assert mirror.read()["digest"] == after["digest"]
+    if connection.vendor == "sqlite":
+        # The local mirror intentionally rejects non-SQLite source connections.
+        mirror = LocalMirror(tmp_path / "referrals.sqlite3")
+        mirror.update(old)
+        mirror.update(after)
+        assert mirror.read()["digest"] == after["digest"]
     bad = {**after, "records": [dict(r) for r in after["records"]]}
     row = next(r for r in bad["records"] if r["model"] == "loyalty.referralrevision")
     row["fields"] = {**row["fields"], "reason": "rewritten"}
