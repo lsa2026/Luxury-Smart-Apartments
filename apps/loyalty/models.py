@@ -219,3 +219,31 @@ class Ledger(AppendOnly):
 
     def __str__(self):
         return self.operation_number
+
+
+class ReferralRevision(AppendOnly):
+    """Audited current-tree snapshots; original links and ledger rows stay immutable."""
+
+    member = models.ForeignKey(Member, on_delete=models.PROTECT)
+    inviter = models.ForeignKey(Member, on_delete=models.PROTECT, related_name="revised_invitees")
+    root = models.ForeignKey(Member, on_delete=models.PROTECT, related_name="revised_tree")
+    tree_number = models.TextField()
+    depth = models.PositiveIntegerField()
+    branch_order = models.PositiveBigIntegerField()
+    operation = models.UUIDField()
+    linked_member = models.ForeignKey(Member, on_delete=models.PROTECT, related_name="link_history")
+    operator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    reason = models.CharField(max_length=500)
+    fixed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        indexes = [models.Index(fields=["member", "-id"], name="loyalty_current_referral")]
+        constraints = [
+            models.UniqueConstraint(fields=["operation", "member"], name="loyalty_link_once"),
+            models.CheckConstraint(
+                condition=~Q(inviter=F("member")), name="loyalty_revision_no_self"
+            ),
+        ]
+
+    def __str__(self):
+        return self.tree_number

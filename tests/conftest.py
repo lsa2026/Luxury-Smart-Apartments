@@ -30,7 +30,11 @@ def postgres_test_history_cleanup(django_db_setup):
         statements = original(
             style, tables, reset_sequences=reset_sequences, allow_cascade=allow_cascade
         )
-        guarded = [t for t in ("loyalty_ledger", "loyalty_referral") if t in tables]
+        guarded = [
+            t
+            for t in ("loyalty_ledger", "loyalty_referral", "loyalty_referralrevision")
+            if t in tables
+        ]
         before = [f'ALTER TABLE "{t}" DISABLE TRIGGER USER;' for t in guarded]
         after = [f'ALTER TABLE "{t}" ENABLE TRIGGER USER;' for t in guarded]
         return [*before, *statements, *after]

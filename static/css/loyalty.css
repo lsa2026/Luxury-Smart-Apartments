@@ -82,3 +82,13 @@
 .loyalty-booking-result { display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid #d9c9a9; border-radius: 18px; text-decoration: none; color: #123c35; overflow-wrap: anywhere; }
 .loyalty-booking-result:focus-visible { outline: 3px solid #b58b40; outline-offset: 3px; }
 @media (max-width: 767px) { .loyalty-booking-results { grid-template-columns: 1fr; } }
+
+.loyalty-referral-entry { display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; }
+.loyalty-referral-entry .lsa-btn { min-height: 48px; flex-shrink: 0; }
+.loyalty-referral-options { border: 1px solid #ddd2bf; border-radius: 12px; padding: 1rem; min-width: 0; }
+.loyalty-referral-options label { display: flex; gap: .7rem; align-items: center; padding: .8rem 0; border-bottom: 1px solid #eee9df; }
+.loyalty-referral-options input { width: 22px; height: 22px; flex-shrink: 0; }
+.loyalty-referral-options span, .loyalty-referral-identities article { display: grid; gap: .5rem; overflow-wrap: anywhere; }
+.loyalty-referral-identities article { background: #f7f5ef; padding: 1rem; border-radius: 12px; }
+.loyalty-admin .loyalty-form .loyalty-consent input { width: 22px; height: 22px; }
+@media (max-width: 767px) { .loyalty-referral-entry { align-items: stretch; flex-direction: column; } .loyalty-referral-entry .lsa-btn { width: 100%; } }

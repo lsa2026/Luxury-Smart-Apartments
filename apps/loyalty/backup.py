@@ -23,6 +23,7 @@ from django.utils import timezone
 VERSION = 1
 CORE = ("loyalty.member", "loyalty.referral", "loyalty.ledger")
 CONTEXT = (
+    "loyalty.referralrevision",
     "accounts.customerprofile",
     "properties.property",
     "reservations.bookingquote",
@@ -42,6 +43,7 @@ CONTEXT = (
 )
 # Explicit reverse edges preserve operating receipts/holds, not the whole website.
 REVERSE = (
+    ("loyalty.referralrevision", "member", "loyalty.member"),
     ("accounts.customerprofile", "user", "user"),
     ("reservations.manualbookingdraft", "quote", "reservations.bookingquote"),
     ("reservations.reservation", "booking_intent", "reservations.bookingintent"),
@@ -89,7 +91,7 @@ def _fields(model):
     return [f.name for f in model._meta.concrete_fields if not f.primary_key]
 
 
-def _schema_hash(*, payment_links=True, legacy_link_expiry=False):
+def _schema_hash(*, payment_links=True, legacy_link_expiry=False, referral_revisions=True):
     # Deconstruction contains callable defaults; field metadata here is stable and JSON-safe.
     return _hash(
         {
@@ -115,14 +117,17 @@ def _schema_hash(*, payment_links=True, legacy_link_expiry=False):
                 or f.name != "payment_request"
             ]
             for label, model in _models().items()
-            if payment_links
-            or label
-            not in {
-                "payments.reservationpaymentrequest",
-                "payments.paymentrequestdelivery",
-                "payments.offlinepaymentreceipt",
-                "payments.manualreceiptreference",
-            }
+            if (referral_revisions or label != "loyalty.referralrevision")
+            and (
+                payment_links
+                or label
+                not in {
+                    "payments.reservationpaymentrequest",
+                    "payments.paymentrequestdelivery",
+                    "payments.offlinepaymentreceipt",
+                    "payments.manualreceiptreference",
+                }
+            )
         }
     )
 
@@ -232,10 +237,19 @@ def validate(snapshot):
         "digest",
     }:
         _reject("invalid_snapshot_format")
-    legacy_payment_schema = snapshot["schema"] == _schema_hash(payment_links=False)
+    legacy_payment_schema = snapshot["schema"] in {
+        _schema_hash(payment_links=False),
+        _schema_hash(payment_links=False, referral_revisions=False),
+    }
+    old_referral_schema = snapshot["schema"] in {
+        _schema_hash(referral_revisions=False),
+        _schema_hash(legacy_link_expiry=True, referral_revisions=False),
+        _schema_hash(payment_links=False, referral_revisions=False),
+    }
     if snapshot["version"] != VERSION or (
         snapshot["schema"] not in {_schema_hash(), _schema_hash(legacy_link_expiry=True)}
         and not legacy_payment_schema
+        and not old_referral_schema
     ):
         _reject("incompatible_snapshot_schema")
     if seal(snapshot)["digest"] != snapshot["digest"]:
@@ -256,6 +270,8 @@ def validate(snapshot):
         if not isinstance(row, dict) or set(row) != {"model", "pk", "fields"}:
             _reject("invalid_record_format")
         model = models.get(row["model"])
+        if old_referral_schema and row["model"] == "loyalty.referralrevision":
+            _reject("unreviewed_record_fields")
         if model is None:
             _reject("unreviewed_record_fields")
         expected_fields = set(_fields(model))
@@ -306,7 +322,17 @@ def validate(snapshot):
         _reject("duplicate_membership_identity")
     if len({r["tree_number"] for r in referrals.values()}) != len(referrals):
         _reject("duplicate_tree_number")
+    histories = defaultdict(list)
     for member_id, referral in referrals.items():
+        histories[member_id].append(referral)
+    revisions = sorted(
+        (r for r in snapshot["records"] if r["model"] == "loyalty.referralrevision"),
+        key=lambda r: int(r["pk"]),
+    )
+    for row in revisions:
+        histories[str(row["fields"]["member"])].append(row["fields"])
+    current_referrals = {key: rows[-1] for key, rows in histories.items()}
+    for member_id, referral in ((key, r) for key, rows in histories.items() for r in rows):
         inviter_id = str(referral["inviter"]) if referral["inviter"] is not None else None
         if inviter_id is None:
             valid = (
@@ -315,16 +341,33 @@ def validate(snapshot):
                 and referral["tree_number"] == f"{referral['branch_order']:04}"
             )
         else:
-            parent = referrals[inviter_id]
-            valid = (
+            valid = any(
                 inviter_id != member_id
                 and referral["root"] == parent["root"]
                 and referral["depth"] == parent["depth"] + 1
                 and referral["tree_number"]
                 == f"{parent['tree_number']}-{referral['branch_order']:04}"
+                for parent in histories[inviter_id]
             )
         if not valid:
             _reject("invalid_membership_tree")
+    if len({r["tree_number"] for r in current_referrals.values()}) != len(members):
+        _reject("duplicate_tree_number")
+    for member_id, row in current_referrals.items():
+        seen = {member_id}
+        while row["inviter"] is not None:
+            parent_id = str(row["inviter"])
+            if parent_id in seen:
+                _reject("invalid_membership_tree")
+            seen.add(parent_id)
+            parent = current_referrals[parent_id]
+            if (
+                row["root"] != parent["root"]
+                or row["depth"] != parent["depth"] + 1
+                or row["tree_number"] != f"{parent['tree_number']}-{row['branch_order']:04}"
+            ):
+                _reject("invalid_membership_tree")
+            row = parent
     ledger = sorted(
         [f for (label, _), f in indexed.items() if label == "loyalty.ledger"],
         key=lambda f: f["sequence"],
@@ -353,7 +396,7 @@ def validate(snapshot):
         if (
             row["customer"] != member["customer"]
             or row["membership_number"] != member["number"]
-            or row["tree_number"] != referrals[member_id]["tree_number"]
+            or row["tree_number"] not in {r["tree_number"] for r in histories[member_id]}
         ):
             _reject("ledger_identity_mismatch")
         credit, debit = _money(row["credit"]), _money(row["debit"])
@@ -419,8 +462,15 @@ def compare(previous, incoming):
     for key, row in old.items():
         if key not in new:
             _reject("financial_history_missing" if key[0] in CORE else "related_history_missing")
-        if key[0] == "payments.offlinepaymentreceipt" and new[key] != row:
-            _reject("offline_receipt_history_changed")
+        if (
+            key[0] in {"payments.offlinepaymentreceipt", "loyalty.referralrevision"}
+            and new[key] != row
+        ):
+            _reject(
+                "offline_receipt_history_changed"
+                if key[0] == "payments.offlinepaymentreceipt"
+                else "financial_history_changed"
+            )
         if key[0] not in CORE:
             continue
         if key[0] != "loyalty.member" and new[key] != row:
