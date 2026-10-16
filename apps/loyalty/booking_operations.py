@@ -19,6 +19,7 @@ from apps.accounts.access import is_operations_owner
 from apps.notifications.models import AuditLog
 from apps.reservations.models import BookingModificationRequest, Reservation
 
+from .accrual import policy_enabled
 from .calculation import amount, cents
 from .launch import booking_allowed
 from .localization import arabic_admin
@@ -60,7 +61,10 @@ def stay_controls(user, booking):
         "arrived": bool(arrival),
         "departure": departure,
         "pending": pending,
-        "can_arrive": active and not arrival and start <= timezone.now() < end,
+        "can_arrive": active
+        and not arrival
+        and (policy_enabled() or start <= timezone.now() < end),
+        "scheduled_accrual": bool(booking.loyalty_state.get("scheduled_accrual")),
         "can_end": active and bool(arrival) and not departure,
         "not_started": timezone.now() < start,
     }

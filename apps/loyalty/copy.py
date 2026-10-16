@@ -118,9 +118,14 @@ LABELS = {
         "Votre séjour marque le début de vos avantages",
     ),
     "join_intro": (
-        "عضوية مجانية واختيارية؛ تسجيل الدخول لا يعني الانضمام. تضاف مكافأتك بعد توثيق الوصول واستلام قيمة الإقامة.",
-        "Membership is free and optional. Signing in does not enrol you. Rewards follow verified arrival and payment for your stay.",
-        "L’adhésion est gratuite et facultative. Se connecter ne vous inscrit pas. Les points suivent l’arrivée et le paiement vérifiés.",
+        "عضوية مجانية واختيارية؛ تسجيل الدخول لا يعني الانضمام. بعد تأكيد السداد، تضاف مكافأتك تلقائيًا من الثالثة عصرًا يوم الدخول بتوقيت العقار، أو عند توثيق الإدارة للوصول في أي وقت، أيهما أسبق.",
+        "Membership is free and optional. Signing in does not enrol you. After confirmed payment, rewards are added automatically from 3 pm on check-in day in the property’s local time, or when administration records arrival at any time, whichever comes first.",
+        "L’adhésion est gratuite et facultative. Se connecter ne vous inscrit pas. Après confirmation du paiement, les points sont ajoutés automatiquement à partir de 15 h le jour d’arrivée, heure locale du logement, ou dès que l’administration enregistre l’arrivée à tout moment, selon la première éventualité.",
+    ),
+    "accrual_help": (
+        "متى تضاف مكافأتك؟ بعد تأكيد السداد، من الثالثة عصرًا يوم الدخول بتوقيت العقار، أو عند توثيق الإدارة للوصول في أي وقت، أيهما أسبق. تُضاف المكافأة مرة واحدة.",
+        "When are rewards added? After confirmed payment, from 3 pm on check-in day in the property’s local time, or when administration records arrival at any time, whichever comes first. Each reward is credited once.",
+        "Quand les points sont-ils ajoutés ? Après paiement confirmé, à partir de 15 h le jour d’arrivée, heure locale du logement, ou dès que l’administration enregistre l’arrivée à tout moment, selon la première éventualité. Chaque récompense est créditée une seule fois.",
     ),
     "draft": (
         "ملخص تجريبي للقواعد، وليس شروطًا قانونية منشورة",
@@ -355,9 +360,9 @@ LABELS = {
         "Heure réelle d’arrivée, heure de Riyad",
     ),
     "arrival_help": (
-        "تأكيد للوصول الفعلي فقط، وليس توثيقًا للدفع. احتساب النقاط تلقائي بعد تحقق الشروط.",
-        "This confirms actual arrival, not payment. Rewards follow automatically when eligible.",
-        "Confirme l’arrivée réelle, non le paiement. Les points suivent automatiquement si éligibles.",
+        "توثيق الإدارة للوصول يتيح الاستحقاق في أي وقت، ولو قبل يوم الدخول، مع بقاء السداد المؤكد والانضمام وأهلية الحجز شروطًا لازمة.",
+        "Administration may record arrival at any time, including before check-in day. Confirmed payment, membership and booking eligibility remain required.",
+        "L’administration peut enregistrer l’arrivée à tout moment, même avant le jour prévu. Paiement confirmé, adhésion et réservation admissible restent obligatoires.",
     ),
     "arrival_preview": (
         "هذه التجربة تقبل الحجوزات الافتراضية فقط.",

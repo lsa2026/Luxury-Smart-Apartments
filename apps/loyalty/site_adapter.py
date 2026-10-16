@@ -74,9 +74,12 @@ def booking_facts(booking):
     if not member or member.status != "active":
         return None, "membership_required"
     arrival = booking.loyalty_state.get("arrival")
-    if not arrival and not test_stay_exception:
-        return None, "arrival_required"
     try:
+        from .accrual import scheduled_eligibility
+
+        scheduled = scheduled_eligibility(booking) if not arrival else None
+        if not arrival and not scheduled and not test_stay_exception:
+            return None, "arrival_required"
         start, end = stay_times(booking)
         arrival_at = datetime.fromisoformat(arrival["at"]) if arrival else None
         if (
@@ -223,7 +226,13 @@ def booking_facts(booking):
             "points": str(points.quantize(CENT)),
             "check_in": start.isoformat(),
             "check_out": end.isoformat(),
-            "arrival": arrival or {"at": None, "reference": "explicit-owner-test-stay-exception"},
+            "arrival": arrival
+            or {
+                "at": None,
+                "reference": scheduled["reference"]
+                if scheduled
+                else "explicit-owner-test-stay-exception",
+            },
             "consent": member.consent_at.isoformat(),
             "terms_version": member.terms_version,
             "cancelled": cancelled,
@@ -244,7 +253,9 @@ def booking_facts(booking):
         }
         if historical_acceptance:
             facts["acceptance_scope"] = "explicit-historical-live-acceptance"
-        if test_stay_exception and not arrival:
+        if scheduled:
+            facts["accrual_eligibility"] = scheduled
+        if test_stay_exception and not arrival and not scheduled:
             facts["stay_exception"] = "explicit-owner-test-only"
         if legacy_trial_price:
             facts["price_adapter"] = "single-accommodation-owner-test-v1"
@@ -254,7 +265,7 @@ def booking_facts(booking):
 
 
 def schedule_reconciliation(reservation_id):
-    """Call only after a domain event; no minute polling, no external work."""
+    """Re-evaluate after a domain event, in addition to the due-stay scheduler."""
     from .services import enabled
 
     if enabled():

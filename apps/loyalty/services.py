@@ -316,10 +316,11 @@ def confirm_arrival(operator, reservation_id, *, arrived_at, reference):
             raise ValidationError("الحجز غير مؤهل لتأكيد الوصول.")
         if timezone.is_naive(arrived_at) or arrived_at > timezone.now() or not reference:
             raise ValidationError("يلزم وقت وصول فعلي سابق ومرجع موثق.")
+        from .accrual import policy_enabled
         from .site_adapter import stay_times
 
         start, end = stay_times(booking)
-        if arrived_at < start or arrived_at >= end:
+        if not policy_enabled() and (arrived_at < start or arrived_at >= end):
             raise ValidationError("وقت الوصول خارج فترة الإقامة المعتمدة.")
         old = booking.loyalty_state.get("arrival")
         evidence = {
@@ -472,6 +473,8 @@ def reconcile(reservation_id):
             booking.loyalty_state["review"] = {"reason": blocker, "at": timezone.now().isoformat()}
             _save_booking(booking)
             return {"status": blocker, "movements": 0}
+        if facts.get("accrual_eligibility"):
+            booking.loyalty_state["scheduled_accrual"] = facts["accrual_eligibility"]
         owner = Member.objects.select_related("customer", "referral").get(
             customer=booking.booking_intent.customer,
         )
@@ -566,7 +569,11 @@ def reconcile(reservation_id):
                     original=original,
                     reason="استحقاق اختباري مصرح به دون إقامة فعلية"
                     if facts.get("stay_exception")
-                    else "استحقاق الإقامة بعد القبض والوصول والموافقة",
+                    else (
+                        "استحقاق الإقامة بعد السداد وحلول موعد الاستحقاق التلقائي"
+                        if facts.get("accrual_eligibility")
+                        else "استحقاق الإقامة بعد القبض وتوثيق الإدارة للوصول والموافقة"
+                    ),
                     **common,
                 )
                 branch = _absorb(member, target - current, event, group, branch)
