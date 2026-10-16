@@ -1,6 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
+from .address_places import AccountAddressDetailsView, AccountAddressView
 from .operations_users import manager_list, manager_revoke
 from .password_reset import LuxurySetPasswordForm, QueuedPasswordResetForm
 from .phone_views import phone_confirm, phone_format, phone_start, profile_phone_format
@@ -34,6 +35,18 @@ urlpatterns = [
     path("my-bookings/", dashboard, name="dashboard"),
     path("my-bookings/rewards/", dashboard, {"section": "rewards"}, name="rewards"),
     path("my-bookings/details/", dashboard, {"section": "details"}, name="details"),
+    path(
+        "my-bookings/details/address-suggestions/",
+        AccountAddressView.as_view(),
+        {"reference": ""},
+        name="address_suggestions",
+    ),
+    path(
+        "my-bookings/details/address-details/",
+        AccountAddressDetailsView.as_view(),
+        {"reference": ""},
+        name="address_details",
+    ),
     path("my-bookings/details/phone-format/", profile_phone_format, name="profile_phone_format"),
     path("account/confirm/", verify_pending, name="verify_pending"),
     path("account/confirm/code/", verify_email_code, name="verify_email_code"),

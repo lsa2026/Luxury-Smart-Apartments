@@ -33,8 +33,9 @@
         </div></fieldset>
         <fieldset><legend>{{ account_copy.preferences }}</legend><div class="account-fields">{% include "accounts/_field.html" with field=profile_form.preferred_language full=True %}</div></fieldset>
         <fieldset><legend>{{ account_copy.address }}</legend><p class="account-field-hint">{{ account_copy.address_hint }}</p><div class="account-fields">
+            {% if address_places_enabled %}<div class="account-field--full">{% include "reservations/_address_places.html" %}</div>{% endif %}
             {% include "accounts/_field.html" with field=profile_form.residence_country %}{% include "accounts/_field.html" with field=profile_form.residence_city %}
-        </div><details class="account-address-details"{% if profile_form.residence_address_line1.errors or profile_form.residence_region.errors or profile_form.residence_postal_code.errors %} open{% endif %}>
+        </div><details class="account-address-details" data-account-address-details{% if profile_form.residence_address_line1.errors or profile_form.residence_region.errors or profile_form.residence_postal_code.errors %} open{% endif %}>
             <summary>{{ account_copy.address_more }}</summary><div class="account-fields">
                 {% include "accounts/_field.html" with field=profile_form.residence_address_line1 full=True %}
                 {% include "accounts/_field.html" with field=profile_form.residence_region %}{% include "accounts/_field.html" with field=profile_form.residence_postal_code %}

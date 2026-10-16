@@ -2,6 +2,7 @@
 {% if not address_suggestions_url %}{% url 'reservations:address_suggestions' quote_reference as address_suggestions_url %}{% endif %}
 {% if not address_details_url %}{% url 'reservations:address_details' quote_reference as address_details_url %}{% endif %}
 <div class="checkout-address" data-checkout-address hidden
+     {% if address_profile %}data-address-profile="true"{% endif %}
      data-address-ticket="{{ address_places_ticket }}"
      data-address-suggestions-url="{{ address_suggestions_url }}"
      data-address-details-url="{{ address_details_url }}"
@@ -11,7 +12,7 @@
      data-address-fallback="{% trans 'Address search is unavailable. Please enter your address manually below.' %}"
      data-address-review="{% trans 'Please check the filled fields and complete any missing details.' %}">
     <label for="payment-address-search">{% trans "Fill in your address easily" %}</label>
-    <p class="checkout-address__note" id="payment-address-help">{% trans "Enter your address code or part of your address, then choose a suggestion to fill in the available fields automatically." %}</p>
+    <p class="checkout-address__note" id="payment-address-help">{% if address_profile %}{{ guest_access_copy.address_disclosure }}{% else %}{% trans "Enter your address code or part of your address, then choose a suggestion to fill in the available fields automatically." %}{% endif %}</p>
     {# No name: do not save search text in form drafts or submit it with payment. #}
     <input id="payment-address-search" type="search" role="combobox" autocomplete="off" dir="auto"
            maxlength="150" placeholder="{% trans 'Address code, street or neighborhood' %}"

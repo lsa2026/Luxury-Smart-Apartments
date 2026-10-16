@@ -189,7 +189,7 @@ def test_guest_can_save_contact_and_residence_details_from_dashboard() -> None:
             "residence_city": "Riyadh",
             "residence_region": "Riyadh Region",
             "residence_postal_code": "12211",
-            "residence_country": "Saudi Arabia",
+            "residence_country": "SA",
         },
     )
 
@@ -200,7 +200,7 @@ def test_guest_can_save_contact_and_residence_details_from_dashboard() -> None:
     assert guest.last_name == "Guest"
     assert profile.phone == "+966501234567"
     assert profile.residence_city == "Riyadh"
-    assert profile.residence_country == "Saudi Arabia"
+    assert profile.residence_country == "SA"
 
 
 def test_guest_profile_rejects_an_invalid_phone_number() -> None:

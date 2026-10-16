@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
@@ -18,6 +19,7 @@ from django.views.decorators.cache import never_cache
 from apps.reservations.models import Reservation
 from apps.reservations.security import is_rate_limited
 
+from .address_places import account_address_ticket
 from .dashboard_copy import account_copy
 from .emails import queue_verification_email, queue_welcome_email
 from .forms import (
@@ -428,6 +430,9 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
     if phone_binding:
         sign_in_methods.append(phone_copy()["option"])
     name = request.user.first_name.strip()
+    from apps.reservations.address_places import places_enabled
+
+    address_available = section == "details" and places_enabled()
     return render(
         request,
         "accounts/dashboard.html",
@@ -448,6 +453,13 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
             "phone_auth_available": phone_auth_available,
             "phone_copy": phone_copy() if section == "details" else {},
             "phone_binding": phone_binding,
+            "address_places_enabled": address_available,
+            "address_places_ticket": account_address_ticket(request) if address_available else "",
+            "address_suggestions_url": reverse("accounts:address_suggestions")
+            if address_available
+            else "",
+            "address_details_url": reverse("accounts:address_details") if address_available else "",
+            "address_profile": address_available,
         },
     )
 

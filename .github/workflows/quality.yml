@@ -62,6 +62,8 @@ jobs:
           tests/test_loyalty_stage8.py
           tests/test_loyalty_final_readiness.py
           tests/test_guest_phone_auth.py
+          tests/test_guest_access_address.py
+          tests/test_checkout_address_places.py
           tests/test_loyalty_checkout_integration.py
           tests/test_loyalty_settlement_integration.py
   quality:

@@ -9,7 +9,9 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES
 
+from .access_copy import access_copy
 from .dashboard_copy import account_copy
 from .phone_copy import phone_copy
 
@@ -186,17 +188,25 @@ class CustomerProfileForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"autocomplete": "postal-code", "dir": "ltr"}),
     )
-    residence_country = forms.CharField(
+    residence_country = forms.ChoiceField(
         label=_("Country of residence"),
-        max_length=100,
+        choices=(),
         required=False,
-        widget=forms.TextInput(attrs={"autocomplete": "country-name"}),
+        widget=forms.Select(attrs={"autocomplete": "country", "data-country-select": ""}),
     )
 
     def __init__(self, *args: object, user: object, profile: object, **kwargs: object) -> None:
         kwargs.setdefault("label_suffix", "")
         super().__init__(*args, **kwargs)
         copy = account_copy()
+        countries = [("", access_copy()["choose_country"])]
+        countries.extend((code, code) for code in sorted(ISO_ALPHA2_COUNTRY_CODES))
+        legacy_country = _clean_profile_text(getattr(profile, "residence_country", ""))
+        if legacy_country and legacy_country not in ISO_ALPHA2_COUNTRY_CODES:
+            # Keep an existing free-text value selectable, never replace it
+            # with a guessed country or default merely by opening/saving.
+            countries.append((legacy_country, legacy_country))
+        self.fields["residence_country"].choices = countries
         self.fields["phone_country"].label = phone_copy()["country"]
         labels = {
             "first_name": "first_name",

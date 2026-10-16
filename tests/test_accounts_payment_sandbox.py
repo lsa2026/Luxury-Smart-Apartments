@@ -68,7 +68,7 @@ def test_account_fields_and_french_copy_are_customer_ready() -> None:
 
     assert login_page.status_code == register_page.status_code == 200
     assert "Se connecter" in login_content
-    assert "Toutes vos réservations au même endroit" in login_content
+    assert "Vos réservations et vos avantages réunis" in login_content
     assert 'autocomplete="email"' in login_content
     assert 'autocomplete="current-password"' not in login_content
     assert "Créer un compte" in register_content

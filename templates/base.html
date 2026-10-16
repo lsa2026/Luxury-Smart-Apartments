@@ -103,7 +103,7 @@
     {% endif %}
     <a class="skip-link" href="#main-content">{% trans "Skip to main content" %}</a>
     {% include "includes/header.html" %}
-    {% include "includes/alerts.html" %}
+    {% block alerts %}{% include "includes/alerts.html" %}{% endblock %}
     <main id="main-content" tabindex="-1">
         {% block content %}{% endblock %}
     </main>

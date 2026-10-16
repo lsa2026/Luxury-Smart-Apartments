@@ -1,43 +1,40 @@
-{% extends "accounts/_auth_base.html" %}
-{% load i18n %}
+{% extends "base.html" %}
+{% load i18n static %}
 {% block title %}{% trans "Confirm your email" %} | Luxury Smart Apartments{% endblock %}
-{% block aside_eyebrow %}{% trans "One step left" %}{% endblock %}
-{% block aside_heading %}{% trans "Confirm your email address" %}{% endblock %}
-{% block aside_copy %}{% trans "A confirmed address is how we send your booking details and how you recover your account." %}{% endblock %}
-{% block panel_eyebrow %}{% trans "Confirmation" %}{% endblock %}
-{% block panel_heading %}{{ verification_copy.title }}{% endblock %}
-{% block panel_copy %}{{ verification_copy.instructions }}{% endblock %}
-{% block panel_body %}
-<div class="auth-note">
-    <p><span aria-hidden="true">◆</span>{{ verification_copy.hint }}</p>
-    <p>{{ pending_email }}</p>
-</div>
-
-<form method="post" action="{% url 'accounts:verify_email_code' %}" class="auth-form">
-    {% csrf_token %}
-    <fieldset class="auth-fieldset">
-        <legend><i aria-hidden="true">01</i>{{ verification_copy.code_label }}</legend>
-        <div class="auth-fieldset__grid auth-fieldset__grid--single">
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block body_class %}guest-access guest-access--verification{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-access.css' %}">{% endblock %}
+{% block alerts %}{% endblock %}
+{% block contact_widget %}{% endblock %}
+{% block content %}
+<section class="guest-verification" aria-labelledby="verification-title">
+    <div class="auth-panel">
+        {% include "includes/alerts.html" %}
+        <header class="auth-panel__header">
+            <span class="guest-verification__mark" aria-hidden="true">✉</span>
+            <p class="eyebrow">{{ guest_access_copy.verify_eyebrow }}</p>
+            <h1 id="verification-title">{{ verification_copy.title }}</h1>
+            <p>{{ guest_access_copy.verify_hint }}</p>
+        </header>
+        <div class="guest-verification__destination">
+            <p>{{ verification_copy.instructions }}</p>
+            <bdi dir="ltr">{{ pending_email }}</bdi>
+        </div>
+        <form method="post" action="{% url 'accounts:verify_email_code' %}" class="auth-form">
+            {% csrf_token %}
             <div class="field-group">
                 <label for="{{ verification_form.code.id_for_label }}">{{ verification_copy.code_label }}</label>
                 {{ verification_form.code }}
                 {{ verification_form.code.errors }}
             </div>
-        </div>
-    </fieldset>
-    <button class="button button--gold auth-form__submit" type="submit">
-        {{ verification_copy.submit }}<span aria-hidden="true">↗</span>
-    </button>
-</form>
-
-<form method="post" action="{% url 'accounts:resend_verification' %}" class="auth-form">
-    {% csrf_token %}
-    <button class="button button--gold auth-form__submit" type="submit">
-        {{ verification_copy.resend }}<span aria-hidden="true">↗</span>
-    </button>
-</form>
-
-<p class="auth-panel__aside-link">
-    <a href="{% url 'accounts:dashboard' %}">{% trans "Continue to my bookings" %}</a>
-</p>
+            <p class="guest-verification__hint">{{ verification_copy.hint }}</p>
+            <button class="button button--gold auth-form__submit" type="submit">{{ verification_copy.submit }}</button>
+        </form>
+        <form method="post" action="{% url 'accounts:resend_verification' %}" class="guest-verification__resend">
+            {% csrf_token %}<button class="account-text-link" type="submit">{{ verification_copy.resend }}</button>
+        </form>
+        <a href="{% url 'accounts:login' %}" class="guest-verification__back">{{ guest_access_copy.change_email }}</a>
+    </div>
+</section>
 {% endblock %}
