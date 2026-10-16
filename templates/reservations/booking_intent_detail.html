@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n l10n presentation currency static %}
-{% block extra_head %}{{ block.super }}{% if points_checkout %}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=2">{% endif %}{% endblock %}
+{% block extra_head %}{{ block.super }}{% if points_checkout or checkout_account %}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=3">{% endif %}{% endblock %}
 {% block title %}{% trans "Review booking request" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
@@ -44,6 +44,7 @@
             <strong>{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}</strong>
         </div>
         {% include "loyalty/_booking_points.html" %}
+        {% include "loyalty/_checkout_account.html" %}
         <div class="notice notice--important"><strong>{% trans "Not a confirmed booking" %}</strong><p>{% trans "This request is not confirmed until payment is completed and the booking is created." %}</p></div>
         {% if points_checkout.full_points %}
         {% elif hyperpay_enabled %}<form method="post" action="{% url 'payments:hyperpay_booking' intent.public_reference %}" data-submit-once data-analytics-event="payment_checkout_requested" data-analytics-checkout-kind="booking" data-analytics-currency="{{ intent.currency }}" data-analytics-value="{{ intent.total_price|unlocalize }}">{% csrf_token %}<button class="button" type="submit">{% trans "Continue to secure payment" %}</button></form>

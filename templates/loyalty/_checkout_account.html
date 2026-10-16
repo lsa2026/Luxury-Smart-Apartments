@@ -1,0 +1,11 @@
+{% if checkout_account %}
+<section class="checkout-account" aria-labelledby="checkout-account-title">
+    <h2 id="checkout-account-title">{{ checkout_account.text.title }}</h2>
+    <p>{{ checkout_account.text.help }}</p>
+    <form method="post" action="{% url 'reservations:booking_account' intent.public_reference %}" data-submit-once>
+        {% csrf_token %}
+        <button class="button" type="submit">{% if request.user.is_authenticated %}{{ checkout_account.text.link }}{% else %}{{ checkout_account.text.login }}{% endif %}</button>
+    </form>
+    <p class="checkout-account__note">{{ checkout_account.text.identity }}</p>
+</section>
+{% endif %}

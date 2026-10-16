@@ -67,6 +67,7 @@ jobs:
           tests/test_guest_access_address.py
           tests/test_checkout_address_places.py
           tests/test_loyalty_checkout_integration.py
+          tests/test_loyalty_checkout_account.py
           tests/test_loyalty_settlement_integration.py
           tests/test_loyalty_booking_operations.py
           tests/test_loyalty_admin_referrals.py
