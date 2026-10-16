@@ -19,6 +19,7 @@ from django.utils import timezone, translation
 from PIL import Image
 
 from apps.accounts.models import VerifiedPhone, profile_for
+from apps.loyalty import phone_gifts
 from apps.loyalty.invitation_design import TEMPLATE_VERSION, invitation_image
 from apps.loyalty.models import Ledger, Member, Referral
 from apps.loyalty.phone_gifts import (
@@ -43,6 +44,8 @@ UNKNOWN = "+12025550124"
 
 @pytest.fixture(autouse=True)
 def programme(settings, monkeypatch):
+    # Fictional first members are not the production owner's membership.
+    monkeypatch.setattr(phone_gifts, "UNLIMITED_INVITATION_MEMBERS", frozenset())
     settings.LOYALTY_ENABLED = settings.LOYALTY_UI_ENABLED = True
     settings.LOYALTY_MESSAGES_ENABLED = (
         False  # User-initiated invitation is not an automatic campaign.
@@ -279,6 +282,56 @@ def test_caps_qualification_pilot_and_disabled_transport_fail_closed(settings):
     settings.ULTRAMSG_ENABLED = False
     with pytest.raises(ValidationError):
         queue(am, phone=PHONE)
+
+
+def test_owner_can_request_more_than_five_invitations_to_same_phone_without_any_counter(
+    monkeypatch, django_capture_on_commit_callbacks
+):
+    _, am, _, _ = setup_pair(receiver_member=False)
+    monkeypatch.setattr(phone_gifts, "UNLIMITED_INVITATION_MEMBERS", frozenset({am.number}))
+    before = Ledger.objects.count()
+    with (
+        patch("apps.loyalty.phone_gifts._limit", return_value=False) as limit,
+        patch("apps.loyalty.phone_gifts.deliver_invitation.delay") as dispatch,
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        for i in range(8):
+            queue(am, key=f"gift-invite:owner-synthetic-{i}")
+        queue(am, key="gift-invite:owner-synthetic-0")  # Replay must still be idempotent.
+    assert not limit.called and dispatch.call_count == 8
+    am.refresh_from_db()
+    assert len(am.command_receipts) >= 8
+    assert (
+        am.command_receipts["gift-invite:owner-synthetic-0"]["result"]["limit_policy"]
+        == "owner-unlimited"
+    )
+    assert balance(am) == Decimal("22.50") and Ledger.objects.count() == before
+
+
+def test_unlimited_invites_never_bypass_consent_membership_or_private_scope(monkeypatch, settings):
+    _, am, _, _ = setup_pair(receiver_member=False)
+    monkeypatch.setattr(phone_gifts, "UNLIMITED_INVITATION_MEMBERS", frozenset({am.number}))
+    with pytest.raises(PermissionDenied):
+        queue(am, consent=False)
+    settings.LOYALTY_PILOT_ONLY = True
+    settings.LOYALTY_PILOT_EMAILS = ["unrelated@example.invalid"]
+    with pytest.raises(PermissionDenied):
+        queue(am)
+    settings.LOYALTY_PILOT_ONLY = False
+    am.first_completed_at = None
+    am.save(update_fields=["first_completed_at"])
+    with pytest.raises(ValidationError):
+        queue(am)
+
+
+def test_other_members_and_near_matching_number_keep_existing_invite_limits(monkeypatch):
+    _, am, _, _ = setup_pair(receiver_member=False)
+    monkeypatch.setattr(phone_gifts, "UNLIMITED_INVITATION_MEMBERS", frozenset({am.number + "0"}))
+    with patch("apps.loyalty.phone_gifts._limit", return_value=False) as limit:
+        with pytest.raises(ValidationError):
+            queue(am)
+    assert limit.called
+    assert not phone_gifts.invitation_limits_exempt(am)
 
 
 def test_message_never_adds_guest_controlled_links_or_three_languages():

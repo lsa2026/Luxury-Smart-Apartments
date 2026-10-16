@@ -26,6 +26,14 @@ from .models import Member
 from .services import invitation_eligible, member_for, posting_transaction, receipt, transfer
 
 PREFIX = "gift-invite:"
+# Owner-approved invitation-count exception (2026-10-16). This is the existing
+# owner's server-owned membership number, never a form/email/recipient match.
+# Authentication, consent, eligibility and per-request idempotency still apply.
+UNLIMITED_INVITATION_MEMBERS = frozenset({"LSA-M000001"})
+
+
+def invitation_limits_exempt(member):
+    return bool(member.pk and member.number in UNLIMITED_INVITATION_MEMBERS)
 
 
 def phone_hash(phone):
@@ -114,7 +122,8 @@ def queue_invitation(user, *, phone, language, key, consent):
             raise ValidationError("Review the recipient again.")
 
         def work():
-            if not (
+            unlimited = invitation_limits_exempt(sender)
+            if not unlimited and not (
                 _limit("gift-invite-sender", sender.pk, 5, 86400)
                 and _limit("gift-invite-target", phone, 1, 86400)
                 and _limit("gift-invite-global", "site", 50, 86400)
@@ -127,6 +136,7 @@ def queue_invitation(user, *, phone, language, key, consent):
                 "requested_at": timezone.now().isoformat(),
                 "consent": True,
                 "template_version": TEMPLATE_VERSION,
+                "limit_policy": "owner-unlimited" if unlimited else "standard",
             }
             transaction.on_commit(lambda: _dispatch(sender.pk, key), robust=True)
             return result
