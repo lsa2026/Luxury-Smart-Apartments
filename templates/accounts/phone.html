@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ phone_copy.title }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block contact_widget %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/phone-auth.css' %}">{% endblock %}
+{% block content %}
+<section class="phone-access" aria-labelledby="phone-access-title">
+  <div class="auth-panel">
+    <h1 id="phone-access-title">{% if phone_binding %}{{ phone_copy.bind }}{% else %}{{ phone_copy.title }}{% endif %}</h1>
+    {% if phone_error %}<p role="alert" class="form-errors">{{ phone_error }}</p>{% endif %}
+    {% if phone_confirmation %}
+      <p>{{ phone_copy.sent }}</p><p><bdi>{{ phone_masked }}</bdi></p><p>{{ phone_copy.hint }}</p>
+      <form method="post" class="auth-form">{% csrf_token %}
+        <label for="phone-code">{{ phone_copy.code }}</label>
+        <input id="phone-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required>
+        <button type="submit" class="button button--gold">{{ phone_copy.confirm }}</button>
+      </form>
+      <a href="{% if phone_binding %}{% url 'accounts:phone_bind' %}{% else %}{% url 'accounts:phone_login' %}?next={{ next|urlencode }}{% endif %}">{{ phone_copy.new }}</a>
+    {% else %}
+      <p>{% if phone_binding %}{{ phone_copy.bind_intro }}{% else %}{{ phone_copy.intro }}{% endif %}</p>
+      {% if phone_can_send %}<form method="post" class="auth-form">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {{ phone_form.as_p }}<button type="submit" class="button button--gold">{{ phone_copy.send }}</button>
+      </form>{% endif %}
+      {% if not phone_binding %}<p>{{ phone_copy.binding_required }}</p>{% endif %}
+    {% endif %}
+    <p><a href="{% if phone_binding %}{% url 'accounts:details' %}{% else %}{% url 'accounts:login' %}?next={{ next|urlencode }}{% endif %}">{% if phone_binding %}{{ phone_copy.details }}{% else %}{{ phone_copy.other }}{% endif %}</a></p>
+  </div>
+</section>
+{% endblock %}

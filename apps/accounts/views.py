@@ -26,7 +26,10 @@ from .forms import (
     EmailCodeRequestForm,
     EmailVerificationCodeForm,
 )
-from .models import profile_for
+from .models import VerifiedPhone, profile_for
+from .phone_auth import allowed as phone_allowed
+from .phone_auth import ready as phone_ready
+from .phone_copy import phone_copy
 from .services import (
     claim_reservation,
     claim_reservations_for_verified_email,
@@ -257,6 +260,8 @@ class LoginView(View):
                 "next": request.GET.get("next", ""),
                 "claim": claimable_reference(request, request.GET.get(CLAIM_PARAM, "")),
                 "email_access_copy": _email_access_copy(request),
+                "phone_auth_ready": phone_ready(),
+                "phone_copy": phone_copy(),
             },
         )
 
@@ -273,6 +278,8 @@ class LoginView(View):
                     "next": request.POST.get("next", ""),
                     "claim": claimable_reference(request, request.POST.get(CLAIM_PARAM, "")),
                     "email_access_copy": _email_access_copy(request),
+                    "phone_auth_ready": phone_ready(),
+                    "phone_copy": phone_copy(),
                 },
                 status=400,
             )
@@ -288,6 +295,8 @@ class LoginView(View):
                     "next": request.POST.get("next", ""),
                     "claim": claimable_reference(request, request.POST.get(CLAIM_PARAM, "")),
                     "email_access_copy": _email_access_copy(request),
+                    "phone_auth_ready": phone_ready(),
+                    "phone_copy": phone_copy(),
                 },
                 status=400,
             )
@@ -412,6 +421,12 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
             for provider, name in (("google", "Google"), ("apple", "Apple"))
             if provider in providers
         )
+    phone_auth_available = section == "details" and phone_ready() and phone_allowed(request.user)
+    phone_binding = (
+        VerifiedPhone.objects.filter(user=request.user).first() if phone_auth_available else None
+    )
+    if phone_binding:
+        sign_in_methods.append(phone_copy()["option"])
     name = request.user.first_name.strip()
     return render(
         request,
@@ -430,6 +445,9 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
             "booking_page": booking_page,
             "booking_empty_heading": copy[f"empty_{booking_filter}"],
             "sign_in_methods": sign_in_methods,
+            "phone_auth_available": phone_auth_available,
+            "phone_copy": phone_copy() if section == "details" else {},
+            "phone_binding": phone_binding,
         },
     )
 

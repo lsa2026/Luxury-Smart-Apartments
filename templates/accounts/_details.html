@@ -30,3 +30,10 @@
         </dl>
     </section>
 </section>
+{% if phone_auth_available %}
+<section class="account-panel">
+  <h2>{{ phone_copy.option }}</h2>
+  {% if phone_binding %}<p>{{ phone_copy.bound }}: <bdi>****{{ phone_binding.phone|slice:"-4:" }}</bdi></p><p>{{ phone_copy.contact_hint }}</p>
+  {% else %}<p>{{ phone_copy.bind_intro }}</p><a class="button account-primary" href="{% url 'accounts:phone_bind' %}">{{ phone_copy.bind }}</a>{% endif %}
+</section>
+{% endif %}

@@ -1,10 +1,54 @@
 """Account state that does not belong on Django's own user row."""
 
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+
+class VerifiedPhone(models.Model):
+    """Separate credential, never inferred from an editable contact field."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=32, unique=True)
+    version = models.UUIDField(default=uuid.uuid4, editable=False)
+    verified_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"VerifiedPhone {self.pk}"
+
+
+class PhoneChallenge(models.Model):
+    """One session/purpose-bound OTP. No message or plaintext code is retained."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=32)
+    purpose = models.CharField(max_length=8, choices=[("bind", "bind"), ("login", "login")])
+    binding_version = models.UUIDField(null=True)
+    session_digest = models.CharField(max_length=64)
+    code_digest = models.CharField(max_length=64, blank=True)
+    status = models.CharField(max_length=12, default="pending")
+    attempts = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField(db_index=True)
+
+    def __str__(self):
+        return str(self.pk)
+
+
+class PhoneAuthLimit(models.Model):
+    """Database-shared fixed windows, independent of browser cookies/workers."""
+
+    key = models.CharField(max_length=64, primary_key=True)
+    count = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)
+
+    def __str__(self):
+        return self.key
 
 
 class CustomerProfile(models.Model):
