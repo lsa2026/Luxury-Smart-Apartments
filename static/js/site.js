@@ -1482,15 +1482,26 @@ document.querySelectorAll("[data-submit-once]").forEach((form) => {
             return;
         }
         if (form.dataset.submitting === "true") {
+            event.preventDefault();
             return;
         }
         form.dataset.submitting = "true";
         const loading = form.querySelector(".availability-form__loading");
-        const submit = form.querySelector("button[type='submit']");
+        const submit = event.submitter || form.querySelector("button[type='submit']");
         if (loading) {
             loading.hidden = false;
         }
         if (submit) {
+            // Disabled controls are omitted from native form submission. Preserve
+            // the clicked command (apply/remove/confirm, etc.) before disabling
+            // that exact button, not the first button in a multi-action form.
+            if (event.submitter && submit.name && !submit.disabled) {
+                const command = document.createElement("input");
+                command.type = "hidden";
+                command.name = submit.name;
+                command.value = submit.value;
+                form.appendChild(command);
+            }
             submit.disabled = true;
             submit.setAttribute("aria-busy", "true");
         }

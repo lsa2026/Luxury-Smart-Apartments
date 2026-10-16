@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.loyalty.checkout import cash_due, confirm_points_booking
 from apps.loyalty.models import Ledger
 from apps.loyalty.services import available, balance, hold, reconcile
+from apps.payments.currency import CurrencyService
 from apps.payments.hyperpay.service import HyperPayService
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingIntent, Reservation
@@ -115,6 +116,57 @@ def test_partial_points_visible_and_cash_collection_reduced_without_changing_quo
         session = HyperPayService(client=stub).create_checkout(intent)
     assert session.attempt.amount == 1000 and stub.payload["amount"] == "1000.00"
     assert not Ledger.objects.filter(reservation=reservation).exists()
+
+
+@pytest.mark.parametrize("input_points", ["25", "٢٥"])
+def test_guest_example_2571_balance_uses_25_on_1100_booking_without_spending(input_points):
+    guest = user("guest-25-points")
+    member = join(guest)
+    reconcile(booking(guest, "857.00").pk)
+    assert balance(member) == Decimal("25.71")
+    intent = payable_intent()
+    intent.customer = guest
+    intent.total_price = Decimal("1100.00")
+    with CurrencyService() as currency:
+        snapshot = currency.create_quote(
+            source_amount=intent.total_price,
+            source_currency="SAR",
+            display_currency="SAR",
+            quote_created_at=intent.created_at,
+            quote_expires_at=intent.expires_at,
+        )
+    intent.payment_amount_sar = snapshot.payment_amount_sar
+    intent.exchange_rate_snapshot = dict(snapshot.snapshot)
+    intent.save()
+    client = Client()
+    client.force_login(guest)
+    page = client.get(reverse("reservations:intent_detail", args=[intent.public_reference]))
+    reference = page.context["points_checkout"]["request_reference"]
+    response = client.post(
+        points_url(intent),
+        {"action": "apply", "points": input_points, "request_reference": reference},
+        follow=True,
+    )
+    assert Decimal(response.context["points_checkout"]["points"]) == Decimal("25.00")
+    assert response.context["points_checkout"]["cash"] == Decimal("1075.00")
+    assert available(member) == Decimal("0.71")
+    assert balance(member) == Decimal("25.71")
+    reservation = Reservation.objects.get(booking_intent=intent)
+    assert not Ledger.objects.filter(reservation=reservation).exists()
+    with override_settings(**HYPERPAY_SETTINGS):
+        stub = HyperPayStub()
+        session = HyperPayService(client=stub).create_checkout(intent)
+    assert session.attempt.amount == Decimal("1075.00")
+    assert stub.payload["amount"] == "1075.00"
+    session.attempt.status = PaymentAttempt.Status.FAILED
+    session.attempt.save(update_fields=["status"])
+    response = client.post(
+        points_url(intent),
+        {"action": "remove", "request_reference": "TEST-REMOVE-25-POINTS-01"},
+        follow=True,
+    )
+    assert available(member) == Decimal("25.71")
+    assert response.context["points_checkout"]["cash"] == Decimal("1100.00")
 
 
 def test_duplicate_apply_is_same_hold_not_a_second_reservation():

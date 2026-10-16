@@ -138,6 +138,9 @@ jobs:
       - name: Test guest invitation clipboard interactions
         run: node --test tests/loyalty-invite.test.cjs
 
+      - name: Test native submit commands and duplicate protection
+        run: node --test tests/submit-once.test.cjs
+
       - name: Test guest form validation in Arabic, English and French
         run: node --test tests/form-validation.test.cjs tests/property-map.test.cjs
 
