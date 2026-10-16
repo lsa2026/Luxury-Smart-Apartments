@@ -28,6 +28,11 @@ class PhoneChallenge(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE)
     phone = models.CharField(max_length=32)
     purpose = models.CharField(max_length=8, choices=[("bind", "bind"), ("login", "login")])
+    language = models.CharField(
+        max_length=2,
+        default="ar",
+        choices=[("ar", "Arabic"), ("en", "English"), ("fr", "French")],
+    )
     binding_version = models.UUIDField(null=True)
     session_digest = models.CharField(max_length=64)
     code_digest = models.CharField(max_length=64, blank=True)

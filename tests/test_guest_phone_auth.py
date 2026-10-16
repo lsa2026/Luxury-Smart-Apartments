@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.db import connection, connections
 from django.test import Client
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.accounts import phone_auth as auth
 from apps.accounts.models import (
@@ -22,6 +22,7 @@ from apps.accounts.models import (
     profile_for,
 )
 from apps.accounts.phone_copy import TEXT
+from apps.accounts.phone_messages import AUTH_MARKER, AUTH_TITLES, phone_message
 from apps.accounts.phone_views import PhoneForm
 from apps.accounts.tokens import make_verification_code
 from apps.loyalty.backup import _models, _schema_hash
@@ -262,7 +263,7 @@ def test_binding_requires_existing_primary_auth_then_one_use_code(
     row = deliver(guest.client)
     assert row.code_digest == auth._digest("code", f"{row.pk}:{CODE}")
     assert isolated.dispatched == [str(row.pk)]
-    assert auth.MARKER in isolated.sent[0]["body"]
+    assert AUTH_TITLES[row.language] in isolated.sent[0]["body"]
     assert isolated.sent[0]["recipient"] == PHONE
     assert not VerifiedPhone.objects.exists()
     assert (
@@ -274,6 +275,80 @@ def test_binding_requires_existing_primary_auth_then_one_use_code(
     guest.booking.refresh_from_db()
     assert not guest.booking.loyalty_state.get("arrival")
     assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+@pytest.mark.parametrize("purpose", ["bind", "login"])
+def test_code_message_uses_payment_identity_and_exactly_one_language(language, purpose):
+    from apps.payments.payment_link_tasks import PAYMENT_MESSAGE_BRAND
+
+    body = phone_message(code=CODE, language=language, purpose=purpose)
+    assert body.startswith(f"✨ *{PAYMENT_MESSAGE_BRAND}*\n\n")
+    assert body.count(CODE) == 1 and f"\n\n*{CODE}*\n\n" in body
+    assert AUTH_TITLES[language] in body
+    assert body.endswith(f"\n\n{AUTH_MARKER}")
+    assert body.count(AUTH_MARKER) == 1
+    assert "https://" not in body and "http://" not in body
+    for other in {"ar", "en", "fr"} - {language}:
+        assert AUTH_TITLES[other] not in body
+    assert {
+        "ar": "صالح لمدة خمس دقائق ولمرة واحدة.",
+        "en": "Valid for five minutes and one use only.",
+        "fr": "Valable cinq minutes et une seule fois.",
+    }[language] in body
+    assert {
+        "ar": "لا تشارك هذا الرمز",
+        "en": "Never share this code",
+        "fr": "ne partagez ce code",
+    }[language] in body
+
+
+@pytest.mark.parametrize(
+    ("preferred", "page", "expected"),
+    [
+        ("fr", "ar", "fr"),
+        ("en", "ar", "en"),
+        ("ar", "en", "ar"),
+        ("", "fr", "fr"),
+        ("", "en", "en"),
+        ("", "ar", "ar"),
+    ],
+)
+@pytest.mark.parametrize("binding", [True, False])
+def test_guest_language_is_saved_before_queue_and_not_taken_from_worker(
+    guest,
+    isolated,
+    preferred,
+    page,
+    expected,
+    binding,
+    settings,
+    django_capture_on_commit_callbacks,
+):
+    profile = profile_for(guest.user)
+    profile.preferred_language = preferred
+    profile.save(update_fields=["preferred_language"])
+    if not binding:
+        VerifiedPhone.objects.create(user=guest.user, phone=PHONE)
+    client = guest.client if binding else Client()
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = page
+    assert start(client, django_capture_on_commit_callbacks, binding=binding).status_code == 302
+    row = PhoneChallenge.objects.get(pk=client.session[auth.PENDING])
+    assert row.language == expected
+    # Neither a later account edit nor a worker's ambient locale can change it.
+    profile.preferred_language = "ar" if expected != "ar" else "en"
+    profile.save(update_fields=["preferred_language"])
+    with translation.override("en" if expected != "en" else "fr"):
+        row = deliver(client)
+    assert row.status == "sent" and AUTH_TITLES[expected] in isolated.sent[0]["body"]
+    assert isolated.sent[0]["body"].count(CODE) == 1
+
+
+@pytest.mark.parametrize("language", ["", "de", "unknown", None, "AR-sa"])
+def test_code_message_has_single_arabic_fallback(language):
+    body = phone_message(code=CODE, language=language, purpose="bind")
+    assert AUTH_TITLES["ar"] in body
+    assert AUTH_TITLES["en"] not in body and AUTH_TITLES["fr"] not in body
 
 
 def test_bound_guest_signs_in_without_password_and_cannot_rebind_with_phone_session(
