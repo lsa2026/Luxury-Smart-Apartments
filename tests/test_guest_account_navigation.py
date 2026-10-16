@@ -116,7 +116,11 @@ def test_authenticated_dashboard_keeps_booking_access_and_separate_rewards_page(
     content = response.content.decode()
     assert f"<h1>{LABELS[language][0]}</h1>" in unescape(content)
     assert 'class="loyalty-preview"' not in content
-    assert 'href="/reservations/manage/"' in content
+    # The old single-booking utility is replaced by verified one-click history.
+    # An account with no verified mobile gets the existing details verification path.
+    assert 'href="/reservations/manage/"' not in content
+    assert 'id="booking-history-recovery"' in content
+    assert 'href="/my-bookings/details/"' in content
     assert 'id="account-bookings-heading"' in content
     assert 'href="/my-bookings/?filter=past"' in content
     assert 'href="/my-bookings/?filter=cancelled"' in content

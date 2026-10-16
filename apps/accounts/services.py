@@ -14,7 +14,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db import transaction
 from django.http import HttpRequest
 
-from apps.reservations.models import BookingIntent, Reservation
+from apps.reservations.models import Reservation
 from apps.reservations.security import session_can_manage
 
 
@@ -69,24 +69,18 @@ def claimable_reference(request: HttpRequest, public_reference: str) -> str:
 
 
 def claim_reservations_for_verified_email(user: AbstractBaseUser) -> int:
-    """Attach direct bookings only after the guest proves their inbox."""
-    email = (getattr(user, "email", "") or "").strip().casefold()
-    if not email or not getattr(user, "pk", None):
+    """Legacy hook: historical backfill now requires BOTH verified identities.
+
+    Keep callers compatible, but never let an email-only login bypass the
+    explicit recovery policy. This hook does not create a new loyalty event.
+    """
+    from django.contrib.auth import get_user_model
+
+    from .booking_history import claim_local, identity_for
+
+    if not getattr(user, "pk", None):
         return 0
     with transaction.atomic():
-        intents = BookingIntent.objects.filter(
-            customer__isnull=True,
-            guest_email__iexact=email,
-        )
-        from apps.loyalty.services import enabled
-
-        ids = list(intents.values_list("pk", flat=True)) if enabled() else []
-        count = intents.update(customer=user)
-        if enabled():
-            from apps.loyalty.site_adapter import schedule_reconciliation
-
-            for pk in Reservation.objects.filter(booking_intent_id__in=ids).values_list(
-                "pk", flat=True
-            ):
-                schedule_reconciliation(pk)
-        return count
+        current_user = get_user_model().objects.select_for_update().get(pk=user.pk)
+        identity = identity_for(current_user)
+        return claim_local(current_user, identity) if identity else 0

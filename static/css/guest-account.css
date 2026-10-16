@@ -1,6 +1,17 @@
 /* Private account only; public pages retain their styles and marketing footer. */
 .guest-account { --account-navy: #101d3f; --account-green: #096957; --account-gold: #bb9450; }
 .guest-account--details { min-width: 0; }
+.guest-account { min-width: 0; }
+.account-history { padding: 1.2rem; }
+.account-history__heading { display: flex; align-items: center; gap: .7rem; }
+.account-history__heading h2 { margin: 0; }
+.account-history p { margin: .65rem 0; font-size: .9rem; line-height: 1.8; overflow-wrap: anywhere; }
+.account-history__status { padding: .7rem .85rem; border-radius: .65rem; background: #f1f5ef; color: #123d3a; }
+.account-history form { margin-block: .8rem; }
+.account-history .account-primary { min-width: 0; max-width: 100%; white-space: normal; }
+.account-history button[disabled] { opacity: .65; cursor: progress; }
+.account-history .account-history__help, .account-history-card__note { font-size: .8rem; color: #65706d; }
+.account-history-card small { color: #65706d; }
 .guest-account .brand-splash { display: none; }
 .guest-account .site-header { position: relative; }
 .guest-account .header-top { min-height: 4.6rem; }

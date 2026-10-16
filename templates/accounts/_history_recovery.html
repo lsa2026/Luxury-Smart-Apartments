@@ -1,0 +1,15 @@
+{% load i18n presentation %}
+<section class="account-panel account-history" id="booking-history-recovery" aria-labelledby="history-heading"
+         data-booking-history data-status-url="{% url 'accounts:restore_status' %}"
+         data-running="{{ history_running|yesno:'true,false' }}" data-waiting="{{ history_copy.waiting }}">
+    <div class="account-history__heading"><span class="account-utility__icon" aria-hidden="true">{% include "accounts/_icon.html" with icon="link" %}</span><h2 id="history-heading">{{ history_copy.title }}</h2></div>
+    <p>{{ history_copy.intro }}</p>
+    <p class="account-history__status" role="status" aria-live="polite" data-history-status>{{ history_message }}</p>
+    {% if history_job %}<p class="account-history__count">{{ history_copy.count }}: <strong>{{ history_job.added|localized_number }}</strong></p>
+        {% if history_job.conflicts or history_job.skipped %}<p>{{ history_copy.review }}</p>{% endif %}
+    {% endif %}
+    {% if history_verified %}<form method="post" action="{% url 'accounts:restore_bookings' %}" data-history-form>
+        {% csrf_token %}<button type="submit" class="button account-primary" data-history-submit{% if history_running %} disabled aria-busy="true"{% endif %}>{{ history_copy.button }}</button>
+    </form>{% else %}<a class="button account-primary" href="{% url 'accounts:details' %}">{{ history_copy.verify }}</a>{% endif %}
+    <p class="account-history__help">{{ history_copy.different }} <a href="{% url 'core:contact' %}">{{ history_copy.contact }}</a></p>
+</section>

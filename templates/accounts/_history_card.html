@@ -1,0 +1,17 @@
+{% load i18n presentation %}
+<article class="booking-list-card account-history-card">
+    <div class="booking-list-card__heading">
+        <div><p class="eyebrow">{{ history_copy.reference }} · {{ reservation.hostaway_reservation_id|localized_number }}</p>
+            <h3>{% if reservation.property %}{{ reservation.property|localized_property_name }}{% else %}{{ reservation.property_name|default:history_copy.property }}{% endif %}</h3></div>
+        <span class="status-pill status-pill--{{ reservation.normalized_status|reservation_status_tone }}">{{ reservation.normalized_status|localized_reservation_status }}</span>
+    </div>
+    <p>{{ history_copy.source }}: {{ reservation.channel_name|default:history_copy.hostaway }}</p>
+    <dl class="quote-summary">
+        <div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|localized_date }}</dd></div>
+        <div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|localized_date }}</dd></div>
+        <div><dt>{% trans "Guests" %}</dt><dd>{{ reservation.guests|localized_number }}</dd></div>
+        <div><dt>{% trans "Total" %}</dt><dd>{{ reservation.total_price|format_money:reservation.currency }}</dd></div>
+    </dl>
+    <p class="account-history-card__note">{{ history_copy.readonly }}</p>
+    <small>{{ history_copy.checked }}: {{ reservation.checked_at|localized_datetime }}</small>
+</article>

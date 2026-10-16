@@ -408,6 +408,31 @@ class HostawayClient:
             raise HostawayResponseError("Invoice search cursor did not advance.")
         return rows
 
+    def account_booking_history_page(self, *, email: str, after_id=None):
+        """Documented email filter; callers MUST recheck email AND verified phone.
+
+        No date/channel filter: past, future and cancelled records are included.
+        No request/response body, email or URL is logged by this boundary.
+        """
+        if not isinstance(email, str) or not email or len(email) > 254:
+            raise ValueError("Invalid history identity.")
+        params = [("limit", 100), ("includeResources", 0), ("guestEmail", email)]
+        if after_id is not None:
+            _validate_reservation_id(after_id)
+            params.append(("afterId", after_id))
+        payload = self._get_json("/reservations", params=params)
+        if not isinstance(payload, dict) or payload.get("status") != "success":
+            raise HostawayResponseError("Invalid account history response.")
+        rows, _ = validate_collection_response(payload)
+        if len(rows) > 100:
+            raise HostawayResponseError("Unbounded account history response.")
+        identifiers = [row.get("id") for row in rows]
+        if any(type(value) is not int or value <= 0 for value in identifiers):
+            raise HostawayResponseError("Invalid account history identities.")
+        if len(set(identifiers)) != len(identifiers):
+            raise HostawayResponseError("Repeated account history identities.")
+        return rows
+
     def guest_stay_page(self, departure_start: date, arrival_end: date, *, after_id=None):
         """Read one bounded date-window page for exact phone matching in memory."""
         params = [

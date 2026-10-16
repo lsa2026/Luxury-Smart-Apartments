@@ -292,7 +292,8 @@ def test_a_booking_already_owned_is_never_moved_between_accounts() -> None:
 
 
 def test_verified_email_claims_direct_bookings_made_on_another_device() -> None:
-    """Inbox proof is sufficient; a plain registration email is not."""
+    """Historical backfill requires both verified inbox and exact verified phone."""
+    from apps.accounts.models import VerifiedPhone
     from apps.accounts.services import claim_reservations_for_verified_email
 
     reservation = make_reservation("LSA-CLAIM-VERIFIED")
@@ -302,6 +303,10 @@ def test_verified_email_claims_direct_bookings_made_on_another_device() -> None:
         password="Correct-Horse-Battery-2026",
     )
 
+    assert claim_reservations_for_verified_email(guest) == 0
+    profile_for(guest).mark_verified()
+    assert claim_reservations_for_verified_email(guest) == 0
+    VerifiedPhone.objects.create(user=guest, phone=reservation.booking_intent.guest_phone)
     claimed = claim_reservations_for_verified_email(guest)
 
     assert claimed == 1
