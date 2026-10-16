@@ -195,6 +195,7 @@ def test_revoked_manager_cannot_send_or_modify_via_direct_post():
         api.assert_not_called()
 
 
+@override_settings(LOYALTY_ENABLED=True, LOYALTY_UI_ENABLED=True)
 def test_manager_can_use_booking_invoice_screens_but_not_owner_or_system_tools():
     grant = OperationsManager.objects.create(email=MANAGER)
     user, client = login_manager()
@@ -212,6 +213,8 @@ def test_manager_can_use_booking_invoice_screens_but_not_owner_or_system_tools()
     html = client.get(reverse("notifications:hub")).content.decode()
     assert html.count('class="lsa-admin-home__card"') == 2
     assert reverse("accounts:operations_users") not in html
+    assert reverse("loyalty:admin") not in html
+    assert "إدارة برنامج الولاء" not in html
     for path in (
         reverse("accounts:operations_users"),
         reverse("accounts:operations_user_revoke", args=[grant.pk]),

@@ -15,6 +15,11 @@
       <p>إدارة الفواتير وإرسالها، بما فيها حجوزات Airbnb وبوكينج من خارج الموقع.</p>
       <strong>فتح فواتير الضيوف ←</strong>
     </a>
+    {% if can_manage_loyalty %}<a class="lsa-admin-home__card" href="{% url 'loyalty:admin' %}">
+      <span aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg></span><h2>إدارة برنامج الولاء</h2>
+      <p>راجع الأعضاء وسجل النقاط والتحويلات، واطّلع على شجرة الدعوات وتفاصيل العمليات.</p>
+      <strong>فتح إدارة برنامج الولاء ←</strong>
+    </a>{% endif %}
     {% if can_manage_users %}<a class="lsa-admin-home__card" href="{% url 'accounts:operations_users' %}">
       <span aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 13a5 5 0 0 1 3 5v3"/></svg></span><h2>إدارة المستخدمين</h2>
       <p>أضف مديرًا ببريد Gmail، أو ألغِ وصوله إلى الحجوزات والفواتير.</p>

@@ -126,10 +126,17 @@ def operations_dashboard(request: HttpRequest) -> HttpResponse:
 def operations_hub(request: HttpRequest) -> HttpResponse:
     """A local-only entrance, separate from the reservations and invoice lists."""
 
+    owner = is_operations_owner(request.user)
     return render(
         request,
         "admin/notifications/operations_hub.html",
-        {"title": "مركز الإدارة", "can_manage_users": is_operations_owner(request.user)},
+        {
+            "title": "مركز الإدارة",
+            "can_manage_users": owner,
+            "can_manage_loyalty": owner
+            and settings.LOYALTY_ENABLED
+            and settings.LOYALTY_UI_ENABLED,
+        },
     )
 
 
