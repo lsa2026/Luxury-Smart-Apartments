@@ -4,7 +4,7 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block contact_widget %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/phone-auth.css' %}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/phone-auth.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{% endblock %}
 {% block content %}
 <section class="phone-access" aria-labelledby="phone-access-title">
   <div class="auth-panel">
@@ -20,13 +20,24 @@
       <a href="{% if phone_binding %}{% url 'accounts:phone_bind' %}{% else %}{% url 'accounts:phone_login' %}?next={{ next|urlencode }}{% endif %}">{{ phone_copy.new }}</a>
     {% else %}
       <p>{% if phone_binding %}{{ phone_copy.bind_intro }}{% else %}{{ phone_copy.intro }}{% endif %}</p>
-      {% if phone_can_send %}<form method="post" class="auth-form">{% csrf_token %}
+      {% if phone_can_send %}<form method="post" class="auth-form" data-draft-server-bound="{% if phone_form.is_bound %}true{% else %}false{% endif %}">{% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">
-        {{ phone_form.as_p }}<button type="submit" class="button button--gold">{{ phone_copy.send }}</button>
+        {{ phone_form.non_field_errors }}
+        <div class="checkout-phone" data-checkout-phone data-account-phone
+             data-check-url="{% url 'accounts:phone_format' %}"
+             data-error-selector="#account-phone-validation"
+             data-invalid-message="{{ phone_copy.invalid_phone }}">
+          <div><label for="{{ phone_form.phone_country.id_for_label }}">{{ phone_form.phone_country.label }}</label>{{ phone_form.phone_country }}{{ phone_form.phone_country.errors }}</div>
+          <div><label for="{{ phone_form.phone.id_for_label }}">{{ phone_form.phone.label }}</label>{{ phone_form.phone }}{{ phone_form.phone.errors }}</div>
+        </div>
+        <p id="account-phone-help">{{ phone_copy.phone_help }}</p>
+        <p id="account-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
+        <button type="submit" class="button button--gold">{{ phone_copy.send }}</button>
       </form>{% endif %}
       {% if not phone_binding %}<p>{{ phone_copy.binding_required }}</p>{% endif %}
     {% endif %}
     <p><a href="{% if phone_binding %}{% url 'accounts:details' %}{% else %}{% url 'accounts:login' %}?next={{ next|urlencode }}{% endif %}">{% if phone_binding %}{{ phone_copy.details }}{% else %}{{ phone_copy.other }}{% endif %}</a></p>
   </div>
 </section>
+{% if phone_can_send and not phone_confirmation %}<script src="{% static 'js/checkout-phone.js' %}" defer></script>{% endif %}
 {% endblock %}

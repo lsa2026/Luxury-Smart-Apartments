@@ -31,6 +31,88 @@ PHONE = "+966501234567"
 CODE = "123456"
 
 
+@pytest.mark.parametrize(
+    ("number", "country", "canonical", "region"),
+    [
+        ("0012125551234", "SA", "+12125551234", "US"),
+        ("+1 (416) 555-1234", "SA", "+14165551234", "CA"),
+        ("٠٠١٢١٢٥٥٥١٢٣٤", "SA", "+12125551234", "US"),
+        ("2125551234", "US", "+12125551234", "US"),
+        ("0501234567", "SA", "+966501234567", "SA"),
+        ("0033612345678", "SA", "+33612345678", "FR"),
+        ("02 36618 300", "IT", "+390236618300", "IT"),
+    ],
+)
+def test_phone_format_only_normalizes_without_sending_or_creating_accounts(
+    number, country, canonical, region, isolated
+):
+    response = Client().post("/account/mobile/format/", {"phone": number, "country": country})
+    assert response.status_code == 200
+    assert response.json() == {"phone": canonical, "country": region}
+    assert "no-store" in response["Cache-Control"]
+    assert not PhoneChallenge.objects.exists() and not VerifiedPhone.objects.exists()
+    assert not isolated.dispatched and not isolated.sent
+    assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+def test_phone_format_does_not_disclose_existing_binding(guest, isolated):
+    client = Client()
+    before = client.post("/account/mobile/format/", {"phone": PHONE, "country": "SA"})
+    VerifiedPhone.objects.create(user=guest.user, phone=PHONE)
+    after = client.post("/account/mobile/format/", {"phone": PHONE, "country": "SA"})
+    assert before.json() == after.json() == {"phone": PHONE, "country": "SA"}
+    assert not PhoneChallenge.objects.exists() and not isolated.sent
+
+
+def test_phone_format_csrf_gate_rate_limits_and_errors(settings, isolated, monkeypatch):
+    url = "/account/mobile/format/"
+    body = {"phone": PHONE, "country": "SA"}
+    assert Client(enforce_csrf_checks=True).post(url, body).status_code == 403
+    client = Client()
+    assert client.get(url).status_code == 405
+    for phone, country in [("12345", "SA"), (PHONE, "XX"), ("9" * 33, "SA")]:
+        response = client.post(url, {"phone": phone, "country": country})
+        assert response.status_code == 400
+        assert response.json() == {"detail": "invalid_phone"}
+    monkeypatch.setattr("apps.accounts.phone_views._limit", lambda *args: False)
+    assert client.post(url, body).status_code == 429
+    settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = False
+    assert client.post(url, body).status_code == 404
+    assert not PhoneChallenge.objects.exists() and not isolated.sent
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_phone_pages_share_checkout_widget_and_keep_primary_methods(language, guest, settings):
+    for client, url in [
+        (Client(), "/account/mobile/"),
+        (guest.client, "/account/mobile/link/"),
+    ]:
+        client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+        response = client.get(url)
+        html = response.content.decode()
+        assert response.status_code == 200
+        for marker in [
+            "data-account-phone",
+            "checkout-phone.js",
+            "checkout-phone.css",
+            "/account/mobile/format/",
+            "account-phone-validation",
+            TEXT[language]["phone_help"],
+        ]:
+            assert marker in html
+
+
+def test_phone_final_post_normalizes_double_zero_without_javascript(monkeypatch):
+    received = []
+    monkeypatch.setattr(
+        "apps.accounts.phone_views.begin",
+        lambda request, phone, **kwargs: received.append(phone),
+    )
+    response = Client().post("/account/mobile/", {"phone": "0012125551234", "phone_country": "SA"})
+    assert response.status_code == 200
+    assert received == ["+12125551234"]
+
+
 @pytest.fixture(autouse=True)
 def isolated(settings, monkeypatch):
     settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = True

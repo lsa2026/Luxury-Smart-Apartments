@@ -1,11 +1,11 @@
-/* Checkout-only enhancement. The same server parser validates the final POST,
+/* Shared booking/account enhancement. The same server parser validates the final POST,
  * so blocked JavaScript or an unavailable formatting check never loses a booking.
  * Only the country preference is remembered, never the phone number. */
 document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
     const form = widget.closest("form");
     const country = widget.querySelector("[data-phone-country]");
     const phone = widget.querySelector("[data-guest-phone]");
-    const error = form?.querySelector("#guest-phone-validation");
+    const error = form?.querySelector(widget.dataset.errorSelector || "#guest-phone-validation");
     if (!form || !country || !phone || !error) return;
     const preferenceKey = "lsa-phone-country-v1";
     const validCountries = new Set(Array.from(country.options, (option) => option.value));
@@ -95,4 +95,22 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
         remember();
         if (phone.value.trim()) validate();
     });
+    // Only account forms submit here. Checkout retains its existing step handler.
+    if (widget.hasAttribute("data-account-phone")) {
+        let validatingSubmit = false;
+        let checkedSubmit = false;
+        form.addEventListener("submit", async (event) => {
+            if (checkedSubmit) return;
+            event.preventDefault();
+            if (validatingSubmit) return;
+            validatingSubmit = true;
+            try {
+                if (await form.validateGuestPhone()) {
+                    checkedSubmit = true;
+                    try { form.requestSubmit(event.submitter || undefined); }
+                    finally { checkedSubmit = false; }
+                }
+            } finally { validatingSubmit = false; }
+        });
+    }
 });
