@@ -102,7 +102,7 @@ def test_email_pending_has_one_inline_notice_and_keeps_the_code_route(guest, lan
     assert "_auth_user_id" not in client.session
 
 
-@pytest.mark.parametrize("country", ["", "US", "السعودية", "United Kingdom"])
+@pytest.mark.parametrize("country", ["", "US", "السعودية", "United Kingdom", "Saudi Arabia"])
 def test_optional_country_select_preserves_existing_values_without_a_default(guest, country):
     user, client = guest
     profile = profile_for(user)
