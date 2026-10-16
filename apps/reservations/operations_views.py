@@ -14,7 +14,7 @@ from django.db.models import Exists, OuterRef, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required, require_operations_access
 from apps.notifications.models import AuditLog, GuestInvoice, WhatsAppDelivery
@@ -372,6 +372,56 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     )
 
 
+def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
+    """Presentation only: preserve the existing action handlers and permissions."""
+    reservation = context["reservation"]
+    attach_booking_list_summaries([reservation])
+    payment_status = (reservation.payment_status or "").strip().casefold()
+    if context["cancellation_blocked"]:
+        label = "انتهت الإقامة"
+    elif reservation.is_test:
+        label = "حجز تجريبي"
+    elif reservation.normalized_status == Reservation.Status.CANCELLED:
+        label = "ملغى"
+    elif reservation.normalized_status in Reservation.ACTIVE_STATUSES:
+        label = (
+            "مؤكد ومدفوع"
+            if payment_status in {"paid", "paid_with_points"}
+            else "مؤكد بسداد جزئي"
+            if payment_status == "partially_paid"
+            else "حجز مؤكد"
+        )
+    else:
+        label = "قيد متابعة الحجز"
+    action = request.POST.get("action", "") if request.method == "POST" else ""
+    selected = request.GET.get("section", "")
+    adjustment = context["current_adjustment"]
+    if action in {"record_offline_payment", "request_accounting_payment_link"}:
+        selected = "payment"
+    elif action in {"quote_change", "set_final_price", "execute_adjustment"}:
+        selected = "edit"
+    elif selected not in {"overview", "invoice", "payment", "edit"}:
+        selected = (
+            "edit"
+            if adjustment
+            and adjustment.status
+            not in {
+                BookingModificationRequest.Status.COMPLETED,
+                BookingModificationRequest.Status.REJECTED,
+                BookingModificationRequest.Status.EXPIRED,
+            }
+            else "overview"
+        )
+    context.update(
+        detail_default_panel=selected,
+        detail_status_label=label,
+        detail_payment_settled=payment_status in {"paid", "paid_with_points"},
+    )
+    # Scope Arabic to rendering; do not change provider/notification language.
+    with translation.override("ar"):
+        return render(request, "admin/reservations/booking_detail.html", context)
+
+
 @operations_access_required
 def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
     """One private place to price, modify, or begin a cancellation."""
@@ -696,9 +746,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         if guest_payment_request
         else None
     )
-    return render(
+    return _render_booking_detail(
         request,
-        "admin/reservations/booking_detail.html",
         {
             "title": "إدارة الحجز",
             "reservation": reservation,
