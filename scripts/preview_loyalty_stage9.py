@@ -46,6 +46,7 @@ from django.conf import settings  # noqa: E402
 from django.contrib.auth import login  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from django.core.wsgi import get_wsgi_application  # noqa: E402
+from django.http import HttpResponse  # noqa: E402
 from django.shortcuts import redirect  # noqa: E402
 from django.urls import path  # noqa: E402
 from django.utils import timezone  # noqa: E402
@@ -89,8 +90,17 @@ admin.save()
 
 
 def switch(request, role):
-    identities = {"guest": a, "new": new, "owner": admin, "checkout": a}
+    identities = {"guest": a, "new": new, "owner": admin, "checkout": a, "mobile": a}
     login(request, identities[role], backend="django.contrib.auth.backends.ModelBackend")
+    if role == "mobile":
+        return HttpResponse(
+            '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8">'
+            "<title>معاينة جوال افتراضية</title><style>"
+            "body{margin:0;padding:20px;background:#e8e5de;display:grid;justify-content:center}"
+            "iframe{width:390px;height:844px;border:0;border-radius:20px;background:#fff}"
+            '</style><iframe title="معاينة الجوال" '
+            'src="/my-bookings/rewards/#loyalty-invite-heading"></iframe></html>'
+        )
     if role == "checkout":
         from tests.test_hyperpay import payable_intent
 

@@ -45,9 +45,20 @@
     </form>{% endif %}
   </section>
   {% endif %}
-  <section class="account-panel loyalty-panel">
-    <h2>{{ loyalty_copy.invite }}</h2>
-    {% if loyalty_invite_url %}<label for="loyalty-invite-link">{{ loyalty_copy.invite_link }}</label><input id="loyalty-invite-link" class="loyalty-link" type="text" dir="ltr" readonly value="{{ loyalty_invite_url }}" autocomplete="off">
+  <section class="account-panel loyalty-panel" aria-labelledby="loyalty-invite-heading">
+    <h2 id="loyalty-invite-heading">{{ loyalty_copy.invite }}</h2>
+    {% if loyalty_invite_url %}
+    <div class="loyalty-invite-copy" data-invite-copy data-copy-success="{{ loyalty_copy.copy_success }}" data-copy-failed="{{ loyalty_copy.copy_failed }}">
+      <label for="loyalty-invite-link">{{ loyalty_copy.invite_link }}</label>
+      <div class="loyalty-invite-copy__controls">
+        <input id="loyalty-invite-link" class="loyalty-link" type="text" dir="ltr" readonly value="{{ loyalty_invite_url }}" autocomplete="off" spellcheck="false" data-invite-link>
+        <button class="button account-primary loyalty-invite-copy__button" type="button" data-invite-copy-button aria-describedby="loyalty-copy-status">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"></path></svg>
+          <span>{{ loyalty_copy.copy_invite }}</span>
+        </button>
+      </div>
+      <p id="loyalty-copy-status" class="loyalty-copy-status" role="status" aria-live="polite" aria-atomic="true" data-invite-copy-status></p>
+    </div>
     {% elif loyalty_completed and loyalty_can_act and loyalty_member.status == 'active' %}
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="invite"><input type="hidden" name="reservation" value="{{ loyalty_completed.0.pk }}"><button class="button account-primary" type="submit">{{ loyalty_copy.issue_invite }}</button></form>
     {% else %}<p>{{ loyalty_copy.invite_wait }}</p>{% endif %}

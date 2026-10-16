@@ -61,6 +61,7 @@ jobs:
           tests/test_booking_detail_layout.py
           tests/test_loyalty_stage8.py
           tests/test_loyalty_final_readiness.py
+          tests/test_loyalty_invitation_links.py
           tests/test_guest_phone_auth.py
           tests/test_guest_booking_history.py
           tests/test_guest_access_address.py
@@ -125,6 +126,9 @@ jobs:
 
       - name: Test explicit guest history recovery status and form safety
         run: node --test tests/booking-history.test.cjs
+
+      - name: Test guest invitation clipboard interactions
+        run: node --test tests/loyalty-invite.test.cjs
 
       - name: Test guest form validation in Arabic, English and French
         run: node --test tests/form-validation.test.cjs tests/property-map.test.cjs

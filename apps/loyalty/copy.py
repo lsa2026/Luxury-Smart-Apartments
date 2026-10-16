@@ -150,6 +150,13 @@ LABELS = {
         "Afficher mon lien d’invitation",
     ),
     "invite_link": ("رابط دعوتك", "Your invitation link", "Votre lien d’invitation"),
+    "copy_invite": ("نسخ رابط الدعوة", "Copy invite link", "Copier le lien d’invitation"),
+    "copy_success": ("تم نسخ الرابط", "Link copied", "Lien copié"),
+    "copy_failed": (
+        "تعذر النسخ التلقائي. اضغط مطولًا على الرابط لنسخه.",
+        "Automatic copying was unavailable. Select the link to copy it.",
+        "La copie automatique est indisponible. Sélectionnez le lien pour le copier.",
+    ),
     "redemption_help": (
         "استخدم نقاطك من صفحة مراجعة الحجز المؤهل؛ يظهر عدد النقاط والمبلغ المتبقي قبل التأكيد. هذه الصفحة لعرض حسابك وتحويل النقاط، وليست لتحصيل مبلغ أو تنفيذ استرداد.",
         "Apply points on an eligible booking’s review page, where the points and remaining payment are shown before confirmation. This page displays your account and transfers; it does not collect payments or process refunds.",
