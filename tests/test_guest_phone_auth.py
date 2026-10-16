@@ -223,8 +223,8 @@ def isolated(settings, monkeypatch):
         def __exit__(self, *args):
             pass
 
-        def send_text(self, **kwargs):
-            sent.append(kwargs)
+        def send_image(self, **kwargs):
+            sent.append({**kwargs, "body": kwargs["caption"], "kind": "image"})
 
     monkeypatch.setattr(auth, "UltraMsgClient", Provider)
     return SimpleNamespace(clock=clock, dispatched=dispatched, sent=sent)
@@ -350,6 +350,25 @@ def test_code_message_has_single_arabic_fallback(language):
     body = phone_message(code=CODE, language=language, purpose="bind")
     assert AUTH_TITLES["ar"] in body
     assert AUTH_TITLES["en"] not in body and AUTH_TITLES["fr"] not in body
+
+
+def test_auth_logo_is_fixed_private_upload_with_one_caption_and_no_duplicate(
+    guest, isolated, django_capture_on_commit_callbacks
+):
+    from apps.accounts.phone_messages import phone_logo
+
+    start(guest.client, django_capture_on_commit_callbacks, binding=True)
+    row = deliver(guest.client)
+    auth.deliver_phone_code(row.pk)
+    assert len(isolated.sent) == 1
+    sent = isolated.sent[0]
+    assert sent["kind"] == "image" and sent["content"] == phone_logo()
+    assert sent["content"].startswith(b"\x89PNG\r\n\x1a\n")
+    assert CODE.encode() not in sent["content"]
+    assert sent["caption"].count(CODE) == 1 and AUTH_MARKER in sent["caption"]
+    assert len(sent["caption"].encode("utf-16-le")) // 2 <= 1024
+    assert sent["reference_id"].startswith("lsa-auth-")
+    assert "https://" not in sent["caption"]
 
 
 def test_bound_guest_signs_in_without_password_and_cannot_rebind_with_phone_session(

@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import CharField, Exists, OuterRef
 from django.db.models.functions import Cast
 from django.utils import timezone
+from django.utils.translation import override
 
 from apps.notifications.services.email import EmailProviderError, queue_email
 from apps.reservations.models import Reservation
@@ -250,12 +251,20 @@ def resolve_recipient(delivery):
         }
     if delivery.recipient_source == "loyalty_ledger":
         row = Ledger.objects.select_related("member__customer").get(pk=delivery.recipient_reference)
+        from .statement import decorate
+
+        with override(delivery.language):
+            decorate([row])
         member = row.member
         values = {
             "operation": row.operation_number,
             "credit": str(row.credit),
             "debit": str(row.debit),
             "balance": str(row.member_balance_after),
+            "transaction_kind": row.ui_kind,
+            "counterpart": row.ui_counterpart,
+            "balance_before": str(row.ui_balance_before),
+            "gift_outgoing": bool(row.debit),
         }
     else:
         member = Member.objects.select_related("customer").get(pk=delivery.recipient_reference)

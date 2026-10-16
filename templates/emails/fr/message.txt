@@ -2,6 +2,10 @@
 
 {{ heading }}
 {{ message }}
+{% if transaction_kind %}{{ transaction_kind }}{% endif %}
+{% if counterpart %}{% if gift_outgoing %}Points offerts à{% else %}Points reçus de{% endif %} : {{ counterpart.name }} — {{ counterpart.number }}
+Opération correspondante : {{ counterpart.operation }}
+Votre solde avant l’opération : {{ balance_before }}{% endif %}
 {% if operation %}Opération : {{ operation }}
 Points crédités : {{ credit }}
 Points débités : {{ debit }}
