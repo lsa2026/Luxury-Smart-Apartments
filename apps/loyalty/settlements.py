@@ -12,6 +12,7 @@ from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingIntent, RefundObligation, Reservation
 
 from .calculation import cents, refund_split
+from .launch import booking_allowed
 from .services import amount, enabled, launch_at, posting_transaction, restore_points
 
 ZERO = Decimal("0.00")
@@ -23,7 +24,12 @@ PAID = [
 
 
 def eligible(booking):
-    if not enabled() or not booking.booking_intent_id or booking.currency != "SAR":
+    if (
+        not enabled()
+        or not booking.booking_intent_id
+        or booking.currency != "SAR"
+        or not booking_allowed(booking)
+    ):
         return False
     if (
         booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
@@ -208,6 +214,8 @@ def record_manual_receipt(
             .select_related("booking_intent")
             .get(pk=reservation_id)
         )
+        if not booking_allowed(booking):
+            raise ValidationError("الحجز خارج نطاق التجربة الخاصة.")
         if (
             booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
             or booking.created_at < launch_at()
@@ -341,6 +349,8 @@ def record_contract_nights(operator, reservation_id, *, nights, reference):
     require_operations_owner(operator)
     with posting_transaction():
         booking = Reservation.objects.select_for_update().get(pk=reservation_id)
+        if not booking_allowed(booking):
+            raise ValidationError("الحجز خارج نطاق التجربة الخاصة.")
         if (
             booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
             or booking.created_at < launch_at()

@@ -109,7 +109,7 @@
 
         <p class="auth-panel__footer">
             {% trans "New here?" %}
-            <a href="{% url 'accounts:register' %}">{% trans "Create account" %}</a>
+            <a href="{% url 'accounts:register' %}{% if next or claim %}?next={{ next|urlencode }}{% if claim %}&amp;claim={{ claim|urlencode }}{% endif %}{% endif %}">{% trans "Create account" %}</a>
         </p>
     </div>
 </section>

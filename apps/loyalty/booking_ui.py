@@ -18,6 +18,7 @@ from apps.reservations.services.hostaway_booking import (
     prepare_local_reservation,
 )
 
+from .launch import booking_allowed, pilot_only
 from .services import available, hold, member_for, release
 from .views import _actions_allowed, _throttle, _verified, interface_enabled
 
@@ -80,7 +81,7 @@ class PointsForm(forms.Form):
 
 
 def checkout_context(request, intent):
-    if not interface_enabled() or not _actions_allowed(request):
+    if not interface_enabled(request.user) or not _actions_allowed(request):
         return {}
     if not request.user.is_authenticated or intent.customer_id != request.user.pk:
         return {}
@@ -88,6 +89,10 @@ def checkout_context(request, intent):
         return {}
     if intent.currency != "SAR" or intent.payment_amount_sar != intent.total_price:
         return {}
+    if pilot_only():
+        scoped = Reservation.objects.filter(booking_intent=intent).first()
+        if not scoped or not booking_allowed(scoped):
+            return {}
     try:
         member = member_for(request.user)
         from .checkout import cash_due
@@ -122,12 +127,20 @@ def checkout_context(request, intent):
 @login_required
 @require_POST
 def booking_points(request, public_reference):
-    if not interface_enabled() or not _actions_allowed(request) or not _verified(request.user):
+    if (
+        not interface_enabled(request.user)
+        or not _actions_allowed(request)
+        or not _verified(request.user)
+    ):
         raise PermissionDenied
     _throttle(request.user)
     intent = get_object_or_404(
         BookingIntent, public_reference=public_reference, customer=request.user
     )
+    if pilot_only():
+        scoped = Reservation.objects.filter(booking_intent=intent).first()
+        if not scoped or not booking_allowed(scoped):
+            raise PermissionDenied
     text = TEXT.get(intent.language, TEXT["ar"])
     try:
         if (

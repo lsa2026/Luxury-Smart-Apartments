@@ -316,7 +316,7 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
     if section == "rewards":
         from apps.loyalty.views import guest_rewards, interface_enabled
 
-        if interface_enabled():
+        if interface_enabled(request.user):
             return guest_rewards(request)
     if request.method not in {"GET", "POST"} or (request.method == "POST" and section == "rewards"):
         return HttpResponseNotAllowed(["GET"] if section == "rewards" else ["GET", "POST"])
