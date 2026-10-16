@@ -13,7 +13,7 @@ from django.core import signing
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection
-from django.db.models import Count, Q, Sum
+from django.db.models import Q, Sum
 from django.http import Http404, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -37,7 +37,7 @@ from .launch import (
     stay_exception_references,
 )
 from .localization import arabic_admin
-from .models import Ledger, Member, Referral
+from .models import Ledger, Member
 from .services import (
     available,
     confirm_arrival,
@@ -367,33 +367,35 @@ def admin_tree(request):
     labels = _owner(request)
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
+    from .referrals import graph
+
+    links_by_member = graph()
     focus = None
     query = request.GET.get("q", "").strip()[:80]
     if query:
-        focus = get_object_or_404(
-            Referral.objects.select_related("member__customer", "inviter"), member__number=query
-        )
+        focus = next((r for r in links_by_member.values() if r.member.number == query), None)
+        if focus is None:
+            raise Http404
     else:
         parent = request.GET.get("parent")
         if parent:
             if not parent.isdigit() or len(parent) > 15:
                 raise Http404
-            focus = get_object_or_404(
-                Referral.objects.select_related("member__customer", "inviter"), member_id=parent
-            )
-    links = Referral.objects.filter(inviter_id=focus.member_id if focus else None)
+            focus = links_by_member.get(int(parent))
+            if focus is None:
+                raise Http404
+    links = [
+        r for r in links_by_member.values() if r.inviter_id == (focus.member_id if focus else None)
+    ]
     try:
         after = max(0, int(request.GET.get("after", "0")))
     except ValueError:
         after = 0
     if after > 9223372036854775807:
         after = 0
-    links = list(
-        links.filter(branch_order__gt=after)
-        .select_related("member__customer")
-        .annotate(child_count=Count("member__invitees"))
-        .order_by("branch_order")[:21]
-    )
+    links = sorted((r for r in links if r.branch_order > after), key=lambda r: r.branch_order)[:21]
+    for row in links:
+        row.child_count = sum(r.inviter_id == row.member_id for r in links_by_member.values())
     cursor = links[19].branch_order if len(links) > 20 else None
     return render(
         request,

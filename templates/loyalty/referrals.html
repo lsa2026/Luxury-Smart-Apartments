@@ -1,0 +1,64 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=4">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} loyalty-admin-page{% endblock %}
+{% block content %}
+<main class="loyalty-admin" dir="rtl">
+  <h1>{{ title }}</h1>
+  <nav class="loyalty-admin-nav"><a href="{% url 'loyalty:admin' %}">العودة إلى إدارة برنامج الولاء</a><a href="{% url 'loyalty:tree' %}">شجرة الأعضاء</a></nav>
+  <p class="loyalty-notice">للعضو داعٍ مباشر واحد، ويمكنه دعوة أي عدد من الأعضاء. هذه الأداة لإضافة علاقة ناقصة فقط، ولا تستبدل داعيًا مسجلًا أو تغيّر النقاط السابقة.</p>
+  {% if error %}<p class="loyalty-panel loyalty-error" role="alert">{{ error }}</p>{% endif %}
+  {% if confirmation %}
+  <section class="loyalty-panel">
+    <h2>مراجعة الربط قبل التأكيد</h2>
+    <div class="loyalty-fields loyalty-referral-identities">
+      <article><h3>العضو المدعو</h3><strong>{{ confirmation.member.customer.get_full_name|default:confirmation.member.number }}</strong><bdi>{{ confirmation.member.number }}</bdi></article>
+      <article><h3>الداعي المباشر</h3><strong>{{ confirmation.inviter.customer.get_full_name|default:confirmation.inviter.number }}</strong><bdi>{{ confirmation.inviter.number }}</bdi></article>
+    </div>
+    <p>سبب الربط: {{ confirmation.reason }}</p>
+    <p>سيُربط فرع العضو بالداعي، وتُحدّث أرقامه الشجرية تلقائيًا. تبقى أرقام العضويات وسجلات النقاط السابقة محفوظة. تسري العلاقة على الاستحقاقات الجديدة.</p>
+    <form method="post" class="loyalty-form">{% csrf_token %}
+      <input type="hidden" name="action" value="confirm"><input type="hidden" name="confirmation" value="{{ confirmation.token }}">
+      <label class="loyalty-consent"><input type="checkbox" name="verified" required>تحققت من هوية الطرفين وصحة الدعوة وموافقتهما على هذا الربط.</label>
+      <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد ربط العضو بداعيه</button>
+      <a href="{% url 'loyalty:referrals' %}">العودة دون تنفيذ الربط</a>
+    </form>
+  </section>
+  {% else %}
+  <section class="loyalty-panel">
+    <h2>١. ابحث عن الطرفين</h2>
+    <p>أدخل رقم الجوال أو رقم العضوية لكل طرف. يجب أن يكون الطرفان عضوين في البرنامج، وأن يستوفي الداعي أهلية الدعوة. عند تطابق أكثر من حساب، اختر العضوية الصحيحة بعد التحقق.</p>
+    <form method="get" class="loyalty-form">
+      <div class="loyalty-fields">
+        <div><label for="member-search">العضو المدعو</label><input id="member-search" name="member_q" value="{{ queries.member_q }}" maxlength="80" autocomplete="off" required placeholder="رقم الجوال أو العضوية"></div>
+        <div><label for="inviter-search">الداعي المباشر</label><input id="inviter-search" name="inviter_q" value="{{ queries.inviter_q }}" maxlength="80" autocomplete="off" required placeholder="رقم الجوال أو العضوية"></div>
+      </div>
+      <button class="lsa-btn lsa-btn--gold" type="submit">البحث عن العضوين</button>
+    </form>
+  </section>
+  {% if queries.member_q or queries.inviter_q %}
+  <section class="loyalty-panel"><h2>٢. اختر العضوين وراجع الربط</h2>
+    <form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="review">
+      <div class="loyalty-fields">
+        <fieldset class="loyalty-referral-options"><legend>العضو المدعو</legend>{% for member in member_matches %}
+          <label><input type="radio" name="member" value="{{ member.pk }}" required><span><strong>{{ member.customer.get_full_name|default:member.number }}</strong><bdi>{{ member.number }}</bdi></span></label>
+        {% empty %}<p>لم نجد عضوية نشطة مطابقة. تحقق من الرقم أو اطلب من الضيف الانضمام أولًا.</p>{% endfor %}</fieldset>
+        <fieldset class="loyalty-referral-options"><legend>الداعي المباشر</legend>{% for member in inviter_matches %}
+          <label><input type="radio" name="inviter" value="{{ member.pk }}" required><span><strong>{{ member.customer.get_full_name|default:member.number }}</strong><bdi>{{ member.number }}</bdi></span></label>
+        {% empty %}<p>لم نجد عضوية نشطة مطابقة. تحقق من الرقم أو اطلب من الضيف الانضمام أولًا.</p>{% endfor %}</fieldset>
+      </div>
+      <label for="link-reason">سبب الربط ومرجع التحقق من الطرفين</label><textarea id="link-reason" name="reason" rows="3" minlength="5" maxlength="500" required placeholder="مثلًا: فقد رابط الدعوة، وتم التحقق من الطرفين عبر التواصل المسجل.">{{ reason }}</textarea>
+      {% if member_matches and inviter_matches %}<button class="lsa-btn lsa-btn--gold" type="submit">مراجعة الربط قبل التأكيد</button>{% endif %}
+    </form>
+  </section>{% endif %}
+  {% endif %}
+  <section class="loyalty-panel"><h2>آخر عمليات الربط الإداري</h2>
+    {% for row in history %}<article class="loyalty-movement">
+      <p><strong>{{ row.member.customer.get_full_name|default:row.member.number }}</strong> ← الداعي: <strong>{{ row.inviter.customer.get_full_name|default:row.inviter.number }}</strong></p>
+      <p><bdi>{{ row.member.number }}</bdi> ← <bdi>{{ row.inviter.number }}</bdi></p>
+      <p><time datetime="{{ row.fixed_at|date:'c' }}">{{ row.fixed_at|localized_datetime }}</time> — {{ row.reason }}</p><p>نفّذها: {{ row.operator.get_full_name|default:row.operator.username }}</p>
+    </article>{% empty %}<p>لم تُسجّل عمليات ربط إداري حتى الآن.</p>{% endfor %}
+  </section>
+</main>
+{% endblock %}

@@ -116,6 +116,8 @@ def receipt(member, key, payload, work):
 
 
 def _post(member, group, branch, *, credit=ZERO, debit=ZERO, **fields):
+    from .referrals import current_link
+
     if not participant_allowed(member.customer):
         raise PermissionDenied("الحساب خارج نطاق التجربة الخاصة.")
     credit, debit = amount(cents(credit)), amount(cents(debit))
@@ -132,7 +134,7 @@ def _post(member, group, branch, *, credit=ZERO, debit=ZERO, **fields):
         member=member,
         customer=member.customer,
         membership_number=member.number,
-        tree_number=member.referral.tree_number,
+        tree_number=current_link(member.pk).tree_number,
         account_name=member.customer.get_full_name() or member.customer.email,
         credit=credit,
         debit=debit,
@@ -248,16 +250,17 @@ def enroll(
         )
         member.number = f"LSA-M{member.pk:06}"
         member.save(update_fields=["number"])
-        branch = (
-            Referral.objects.filter(inviter=parent).aggregate(n=Max("branch_order"))["n"] or 0
-        ) + 1
-        path = f"{parent.referral.tree_number}-{branch:04}" if parent else f"{branch:04}"
+        from .referrals import current_link, next_branch
+
+        parent_link = current_link(parent.pk) if parent else None
+        branch = next_branch(parent.pk if parent else None)
+        path = f"{parent_link.tree_number}-{branch:04}" if parent else f"{branch:04}"
         Referral.objects.create(
             member=member,
             inviter=parent,
-            root_id=parent.referral.root_id if parent else member.pk,
+            root_id=parent_link.root_id if parent else member.pk,
             tree_number=path,
-            depth=parent.referral.depth + 1 if parent else 0,
+            depth=parent_link.depth + 1 if parent else 0,
             branch_order=branch,
             evidence={
                 "confirmed_inviter": parent.pk if parent else None,
@@ -393,14 +396,16 @@ def issue_invite(user, reservation_id):
 
 
 def ancestors(member):
+    from .referrals import current_link
+
     result, seen = [], {member.pk}
-    parent = member.referral.inviter
-    while parent:
-        if parent.pk in seen:
+    link = current_link(member.pk)
+    while link.inviter_id is not None:
+        if link.inviter_id in seen:
             raise ValidationError("علاقة الدعوة تحتوي دورة غير صحيحة.")
-        seen.add(parent.pk)
-        result.append(parent)
-        parent = parent.referral.inviter
+        seen.add(link.inviter_id)
+        link = current_link(link.inviter_id)
+        result.append(link.member)
     return result
 
 
@@ -455,9 +460,16 @@ def reconcile(reservation_id):
         owner = Member.objects.select_related("customer", "referral").get(
             customer=booking.booking_intent.customer,
         )
-        chain = ancestors(owner)
         key = digest(facts)
         previous = booking.loyalty_state.get("settlement", {})
+        fixed_chain = booking.loyalty_state.get("referral_chain")
+        if fixed_chain is None:
+            chain = ancestors(owner)
+        else:
+            members = Member.objects.in_bulk(fixed_chain)
+            if len(members) != len(fixed_chain) or owner.pk in fixed_chain:
+                raise ValidationError("سلسلة استحقاق الحجز غير مكتملة.")
+            chain = [members[key] for key in fixed_chain]
         if previous.get("hash") == key:
             return {"status": "unchanged", "movements": 0}
         revision = previous.get("revision", 0) + 1
@@ -573,6 +585,7 @@ def reconcile(reservation_id):
                     member.save(update_fields=["deferred_corrections", "updated_at"])
         booking.loyalty_state.pop("review", None)
         booking.loyalty_state["settlement"] = {"revision": revision, "hash": key, "facts": facts}
+        booking.loyalty_state["referral_chain"] = [m.pk for m in chain]
         _save_booking(booking)
         return {"status": "settled", "movements": branch, "base": facts["base"]}
 
@@ -757,11 +770,13 @@ def restore_points(reservation_id, cumulative_value, evidence_reference):
 
 
 def statement(user):
+    from .referrals import current_link
+
     member = member_for(user, active=False)
     with posting_transaction():
         return {
             "membership": member.number,
-            "tree_number": member.referral.tree_number,
+            "tree_number": current_link(member.pk).tree_number,
             "balance": balance(member),
             "available": available(member),
             "rows": Ledger.objects.filter(member=member).order_by("sequence"),

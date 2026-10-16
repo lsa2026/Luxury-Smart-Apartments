@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load static presentation %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=3">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=4">{% endblock %}
 {% block content_title %}{% endblock %}
 {% block bodyclass %}{{ block.super }} loyalty-admin-page{% endblock %}
 {% block content %}
@@ -8,6 +8,10 @@
   <h1>{{ title }}</h1>{% if loyalty_preview %}<p class="loyalty-notice">{{ loyalty_copy.preview }}</p>{% endif %}
   <nav class="loyalty-admin-nav"><a href="{% url 'notifications:hub' %}">{{ loyalty_copy.bookings_admin }}</a><a href="{% url 'loyalty:tree' %}">{{ loyalty_copy.tree }}</a></nav>
   <p>{{ loyalty_copy.program_total }}: <strong>{{ program_balance|floatformat:2|localized_number }}</strong></p>
+  <section class="loyalty-panel loyalty-referral-entry" aria-labelledby="referral-title">
+    <div><h2 id="referral-title">ربط الأعضاء بالداعين</h2><p>فُقد رابط الدعوة أو انضم العضو دون تسجيل داعيه؟ ابحث عن الطرفين وأضف العلاقة بعد التحقق منهما.</p></div>
+    <a class="lsa-btn lsa-btn--gold" href="{% url 'loyalty:referrals' %}">فتح إدارة الربط</a>
+  </section>
   <section class="loyalty-panel loyalty-booking-search" aria-labelledby="stay-search-title">
     <h2 id="stay-search-title">ابحث عن الضيف برقم الجوال</h2>
     <p>افتح الحجز لتأكيد الوصول أو إنهاء الإقامة. تُحتسب النقاط تلقائيًا بعد تحقق الوصول والسداد والانضمام.</p>
