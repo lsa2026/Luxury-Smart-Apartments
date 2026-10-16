@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.db import connection, connections
 from django.test import Client
@@ -22,8 +23,10 @@ from apps.accounts.models import (
 )
 from apps.accounts.phone_copy import TEXT
 from apps.accounts.phone_views import PhoneForm
+from apps.accounts.tokens import make_verification_code
 from apps.loyalty.backup import _models, _schema_hash
 from apps.loyalty.models import Ledger, Member
+from apps.reservations.models import Reservation
 from tests.test_loyalty_stage8 import booking, user
 
 pytestmark = pytest.mark.django_db
@@ -206,7 +209,8 @@ def isolated(settings, monkeypatch):
             self.http = SimpleNamespace(
                 get=Mock(
                     return_value=SimpleNamespace(
-                        status_code=200, json=lambda: {"status": {"accountStatus": "authenticated"}}
+                        status_code=200,
+                        json=lambda: {"status": {"accountStatus": {"status": "authenticated"}}},
                     )
                 )
             )
@@ -368,6 +372,117 @@ def test_binding_prefills_saved_phone_and_country_without_sending(guest, isolate
     assert page.context["phone_form"]["phone"].value() == profile.phone
     assert page.context["phone_form"]["phone_country"].value() == "US"
     assert not PhoneChallenge.objects.exists() and not isolated.dispatched
+
+
+@pytest.mark.parametrize(
+    ("document", "expected"),
+    [
+        ({"status": {"accountStatus": {"status": "authenticated"}}}, True),
+        ({"status": {"accountStatus": "authenticated"}}, True),
+        ({"status": "authenticated"}, True),
+        ({"status": {"accountStatus": {"status": "disconnected"}}}, False),
+        ({"status": {"accountStatus": {"status": "qr"}}}, False),
+        ({"status": {"accountStatus": {"status": True}}}, False),
+        ({"status": {"accountStatus": {}}}, False),
+        ({"status": True}, False),
+        ({"accountStatus": {"status": "authenticated"}}, False),
+        (None, False),
+        (["authenticated"], False),
+    ],
+)
+def test_provider_status_reads_real_nested_response_fail_closed(document, expected):
+    assert auth._provider_authenticated(document) is expected
+
+
+def test_brand_new_guest_registers_and_verifies_phone_without_any_booking(
+    settings, isolated, django_capture_on_commit_callbacks
+):
+    settings.ACCOUNT_WHATSAPP_AUTH_EMAILS = ["new-guest@example.invalid"]
+    client = Client()
+    response = client.post(
+        "/register/",
+        {
+            "first_name": "ضيف",
+            "last_name": "جديد",
+            "email": "new-guest@example.invalid",
+            "accept_terms": "on",
+        },
+    )
+    assert response.status_code == 302
+    new_guest = get_user_model().objects.get(email="new-guest@example.invalid")
+    profile = profile_for(new_guest)
+    email_code = make_verification_code(new_guest.pk, new_guest.email, profile.verification_sent_at)
+    assert client.post("/account/confirm/code/", {"code": email_code}).status_code == 302
+    assert profile_for(new_guest).is_email_verified
+    assert not Reservation.objects.exists()
+    assert start(client, django_capture_on_commit_callbacks, binding=True).status_code == 302
+    row = deliver(client)
+    assert row.status == "sent" and len(isolated.sent) == 1
+    assert client.post("/account/mobile/confirm/", {"code": CODE}).status_code == 302
+    assert VerifiedPhone.objects.get().user_id == new_guest.pk
+    assert not Reservation.objects.exists() and not Ledger.objects.exists()
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+@pytest.mark.parametrize(
+    ("status", "state"),
+    [("pending", "waiting"), ("sending", "waiting"), ("sent", "accepted"), ("failed", "failed")],
+)
+def test_binding_shows_actual_delivery_state_not_account_eligibility(
+    guest, isolated, language, status, state, settings, django_capture_on_commit_callbacks
+):
+    guest.client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    start(guest.client, django_capture_on_commit_callbacks, binding=True)
+    row = PhoneChallenge.objects.get()
+    row.status = status
+    row.save(update_fields=["status"])
+    before = (PhoneChallenge.objects.count(), VerifiedPhone.objects.count())
+    response = guest.client.get("/account/mobile/confirm/")
+    html = response.content.decode()
+    assert TEXT[language][f"delivery_{state}"] in html
+    assert TEXT[language]["sent"] not in html
+    assert "phone-delivery.js" in html
+    result = guest.client.get("/account/mobile/confirm/?delivery=1")
+    assert result.json() == {"state": state}
+    assert "no-store" in result["Cache-Control"]
+    assert before == (PhoneChallenge.objects.count(), VerifiedPhone.objects.count())
+    assert not isolated.sent
+    assert len(isolated.dispatched) == 1  # Reading the status never sends again.
+
+
+def test_binding_delivery_state_expires_and_never_verifies(
+    guest, isolated, django_capture_on_commit_callbacks
+):
+    start(guest.client, django_capture_on_commit_callbacks, binding=True)
+    isolated.clock[0] += timedelta(seconds=301)
+    assert guest.client.get("/account/mobile/confirm/?delivery=1").json() == {"state": "expired"}
+    assert not VerifiedPhone.objects.exists() and not isolated.sent
+
+
+def test_delivery_status_is_not_an_anonymous_phone_lookup(
+    guest, isolated, django_capture_on_commit_callbacks
+):
+    for known in (False, True):
+        if known:
+            VerifiedPhone.objects.create(user=guest.user, phone=PHONE)
+        client = Client()
+        isolated.clock[0] += timedelta(seconds=901)
+        start(client, django_capture_on_commit_callbacks)
+        deliver(client)
+        assert client.get("/account/mobile/confirm/?delivery=1").status_code == 404
+        html = client.get("/account/mobile/confirm/").content.decode()
+        assert "phone-delivery.js" not in html
+    assert Client().get("/account/mobile/confirm/?delivery=1").status_code == 404
+
+
+def test_binding_status_is_bound_to_current_user_and_session(
+    guest, django_capture_on_commit_callbacks
+):
+    start(guest.client, django_capture_on_commit_callbacks, binding=True)
+    session = guest.client.session
+    session["booking_session_marker"] = "another-session"
+    session.save()
+    assert guest.client.get("/account/mobile/confirm/?delivery=1").status_code == 404
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])

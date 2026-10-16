@@ -308,6 +308,7 @@ def test_fee_exclusion_and_uncertain_breakdown_fail_closed():
 def test_transfer_two_sides_no_recipient_online_and_duplicate_request():
     u, v = user(1), user(2)
     m, target = join(u), join(v)
+    assert not Reservation.objects.filter(booking_intent__customer=v).exists()
     reconcile(booking(u).pk)
     first = transfer(u, "TEST-TX", target.number, "10.00")
     assert transfer(u, "TEST-TX", target.number, "10.00") == first
@@ -317,6 +318,7 @@ def test_transfer_two_sides_no_recipient_online_and_duplicate_request():
     assert rows[0].counterpart_id == rows[1].member_id
     assert rows[1].counterpart_id == rows[0].member_id
     assert rows[0].debit == rows[1].credit
+    assert not Reservation.objects.filter(booking_intent__customer=v).exists()
     with pytest.raises(ValidationError):
         transfer(u, "TEST-TX", target.number, "11.00")
 

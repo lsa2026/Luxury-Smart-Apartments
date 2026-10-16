@@ -118,7 +118,7 @@ jobs:
         run: node --test tests/checkout-address.test.cjs tests/guest-draft-country.test.cjs
 
       - name: Test checkout phone country and normalization
-        run: node --test tests/checkout-phone.test.cjs
+        run: node --test tests/checkout-phone.test.cjs tests/phone-delivery.test.cjs
 
       - name: Test guest form validation in Arabic, English and French
         run: node --test tests/form-validation.test.cjs tests/property-map.test.cjs

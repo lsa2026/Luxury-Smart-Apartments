@@ -9,6 +9,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
@@ -180,7 +181,32 @@ def phone_confirm(request):
         pk=request.session.get(PENDING), session_digest=session_key_hash(request)
     ).first()
     if not challenge:
+        if request.GET.get("delivery") == "1":
+            raise Http404
         return redirect("accounts:phone_login")
+    binding = challenge.purpose == "bind"
+    if binding and (
+        not request.user.is_authenticated
+        or request.user.pk != challenge.user_id
+        or not allowed(request.user)
+    ):
+        raise Http404
+    delivery = ""
+    if binding:
+        if challenge.expires_at <= timezone.now():
+            delivery = "expired"
+        elif challenge.status in {"pending", "sending"}:
+            delivery = "waiting"
+        elif challenge.status == "sent":
+            delivery = "accepted"
+        else:
+            delivery = "failed"
+    if request.GET.get("delivery") == "1":
+        # Authenticated binding only. Anonymous sign-in must not disclose whether
+        # a number/account exists or whether it received a message.
+        if not binding or request.method != "GET":
+            raise Http404
+        return JsonResponse({"state": delivery})
     labels, error = phone_copy(), ""
     if request.method == "POST":
         raw = request.POST.get("code", "").strip()
@@ -201,7 +227,8 @@ def phone_confirm(request):
         {
             "phone_copy": labels,
             "phone_confirmation": True,
-            "phone_binding": challenge.purpose == "bind",
+            "phone_binding": binding,
+            "phone_delivery": delivery,
             "phone_error": error,
             "phone_masked": mask_phone(challenge.phone),
             "next": _next(request, request.session.get("guest_phone_next", "")),
