@@ -79,6 +79,9 @@
 .account-details input[dir="ltr"] { direction: ltr; text-align: left; unicode-bidi: plaintext; }
 .account-details .field-group small, .account-field-hint { color: var(--color-muted); font-size: 0.8rem; line-height: 1.6; margin: 0.1rem 0 0.65rem; }
 .account-verification { display: inline-block; color: #17624e; border-radius: 1rem; background: #eef4ef; font-size: 0.72rem; padding: 0.1rem 0.5rem; margin-inline-start: 0.3rem; }
+.account-phone-verification { display: grid; gap: 0.5rem; margin-block: 0.35rem 0.7rem; min-width: 0; }
+.account-phone-verification p { margin: 0; font-size: 0.85rem; }
+.guest-account .account-phone-verification .account-primary { min-width: 0; max-width: 100%; white-space: normal; }
 .account-field-errors .errorlist { color: var(--color-danger); padding-inline-start: 1.2rem; margin: 0.2rem 0; font-size: 0.85rem; }
 .account-address-details { margin-block-start: 0.8rem; }
 .account-address-details summary { cursor: pointer; padding: 0.6rem 0; min-height: 2.75rem; color: var(--account-green); font-weight: 600; font-size: 0.85rem; }

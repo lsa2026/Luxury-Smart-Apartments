@@ -239,7 +239,7 @@ def start(client, callbacks, *, binding=False, phone=PHONE, target="/my-bookings
     with callbacks(execute=True):
         response = client.post(
             "/account/mobile/link/" if binding else "/account/mobile/",
-            {"phone": phone, "next": target},
+            {"phone": phone, "phone_country": "SA", "next": target},
         )
     return response
 
@@ -294,8 +294,6 @@ def test_bound_guest_signs_in_without_password_and_cannot_rebind_with_phone_sess
     [
         "stale",
         "no-proof",
-        "wrong-phone",
-        "contact-only",
         "staff",
         "super",
         "owner",
@@ -315,14 +313,6 @@ def test_binding_denies_untrusted_identity(
                 "at": int(timezone.now().timestamp()) - 901,
             }
         session.save()
-    elif reason == "wrong-phone":
-        guest.booking.booking_intent.guest_phone = "+966501234568"
-        guest.booking.booking_intent.save(update_fields=["guest_phone"])
-    elif reason == "contact-only":
-        guest.booking.booking_intent.customer = None
-        guest.booking.booking_intent.save(update_fields=["customer"])
-        profile_for(guest.user).phone = PHONE
-        profile_for(guest.user).save()
     elif reason in {"staff", "super"}:
         setattr(guest.user, "is_staff" if reason == "staff" else "is_superuser", True)
         guest.user.save()
@@ -338,6 +328,56 @@ def test_binding_denies_untrusted_identity(
     assert response.status_code in {200, 404}
     assert not PhoneChallenge.objects.exists()
     assert not VerifiedPhone.objects.exists()
+
+
+@pytest.mark.parametrize("has_booking", [True, False])
+def test_binding_proves_new_mobile_by_code_without_a_matching_booking(
+    guest, isolated, django_capture_on_commit_callbacks, has_booking
+):
+    number = "+12125551234"
+    if not has_booking:
+        guest.booking.booking_intent.customer = None
+        guest.booking.booking_intent.save(update_fields=["customer"])
+    before = guest.booking.booking_intent.guest_phone
+    profile = profile_for(guest.user)
+    profile.phone = number
+    profile.save(update_fields=["phone"])
+    response = start(
+        guest.client, django_capture_on_commit_callbacks, binding=True, phone="0012125551234"
+    )
+    assert response.status_code == 302
+    row = deliver(guest.client)
+    assert row.status == "sent" and isolated.sent[0]["recipient"] == number
+    assert not VerifiedPhone.objects.exists()  # Saving/dispatching is not proof.
+    assert guest.client.post("/account/mobile/confirm/", {"code": "000000"}).status_code == 200
+    assert not VerifiedPhone.objects.exists()
+    assert guest.client.post("/account/mobile/confirm/", {"code": CODE}).status_code == 302
+    assert VerifiedPhone.objects.get().phone == number
+    guest.booking.booking_intent.refresh_from_db()
+    assert guest.booking.booking_intent.guest_phone == before
+    if not has_booking:
+        assert guest.booking.booking_intent.customer_id is None
+    assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+def test_binding_prefills_saved_phone_and_country_without_sending(guest, isolated):
+    profile = profile_for(guest.user)
+    profile.phone = "+12125551234"
+    profile.save(update_fields=["phone"])
+    page = guest.client.get("/account/mobile/link/")
+    assert page.context["phone_form"]["phone"].value() == profile.phone
+    assert page.context["phone_form"]["phone_country"].value() == "US"
+    assert not PhoneChallenge.objects.exists() and not isolated.dispatched
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_phone_verification_entry_is_next_to_contact_number(guest, settings, language):
+    guest.client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    html = guest.client.get("/my-bookings/details/").content.decode()
+    assert html.count('href="/account/mobile/link/"') == 1
+    assert TEXT[language]["verify_mobile"] in html
+    assert TEXT[language]["unverified"] in html
+    assert html.index('href="/account/mobile/link/"') < html.index('id="id_preferred_language"')
 
 
 @pytest.mark.parametrize(

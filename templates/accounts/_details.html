@@ -23,6 +23,12 @@
                 </div>
                 <small id="profile-phone-help">{{ phone_copy.phone_help }} {{ phone_copy.contact_hint }}</small>
                 <p id="profile-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
+                {% if phone_auth_available %}
+                <div class="account-phone-verification">
+                    {% if phone_binding %}<p><span class="account-verification">{{ phone_copy.bound }}</span> <bdi>****{{ phone_binding.phone|slice:"-4:" }}</bdi></p>
+                    {% else %}<p>{{ phone_copy.unverified }}</p><a class="button account-primary" href="{% url 'accounts:phone_bind' %}">{{ phone_copy.verify_mobile }}</a>{% endif %}
+                </div>
+                {% endif %}
             </div>
         </div></fieldset>
         <fieldset><legend>{{ account_copy.preferences }}</legend><div class="account-fields">{% include "accounts/_field.html" with field=profile_form.preferred_language full=True %}</div></fieldset>
@@ -41,10 +47,3 @@
         </dl>
     </section>
 </section>
-{% if phone_auth_available %}
-<section class="account-panel">
-  <h2>{{ phone_copy.option }}</h2>
-  {% if phone_binding %}<p>{{ phone_copy.bound }}: <bdi>****{{ phone_binding.phone|slice:"-4:" }}</bdi></p><p>{{ phone_copy.contact_hint }}</p>
-  {% else %}<p>{{ phone_copy.bind_intro }}</p><a class="button account-primary" href="{% url 'accounts:phone_bind' %}">{{ phone_copy.bind }}</a>{% endif %}
-</section>
-{% endif %}

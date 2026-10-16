@@ -116,7 +116,7 @@ test("shared calling code does not force a Canadian number to US", async () => {
     assert.equal(env.country.value, "CA");
 });
 
-test("account submit waits for formatting once, even for two quick clicks", async () => {
+test("account native submit never waits for an in-flight formatting request", async () => {
     let release; let calls = 0;
     const env = setup(async () => {
         calls++;
@@ -124,36 +124,42 @@ test("account submit waits for formatting once, even for two quick clicks", asyn
         return response({phone: "+12125551234", country: "US"});
     }, {account: true});
     env.phone.value = "0012125551234";
+    env.phone.dispatchEvent(new Event("blur"));
     const first = new Event("submit", {cancelable: true});
     env.form.dispatchEvent(first);
-    env.form.dispatchEvent(new Event("submit", {cancelable: true}));
-    assert.equal(first.defaultPrevented, true);
+    assert.equal(first.defaultPrevented, false); // Native POST proceeds immediately.
     assert.equal(env.form.submitRequests, 0);
+    assert.equal(env.phone.value, "0012125551234"); // Server normalizes the final POST.
+    const duplicate = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(duplicate);
+    assert.equal(duplicate.defaultPrevented, true);
+    await new Promise(resolve => setImmediate(resolve));
     release();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(calls, 1);
-    assert.equal(env.form.submitRequests, 1);
+    assert.equal(env.form.submitRequests, 0); // No asynchronous requestSubmit replay.
     assert.equal(env.country.value, "US");
-    const duplicate = new Event("submit", {cancelable: true});
-    env.form.dispatchEvent(duplicate);
-    await new Promise(resolve => setImmediate(resolve));
-    assert.equal(duplicate.defaultPrevented, true);
-    assert.equal(env.form.submitRequests, 1); // Navigation has not finished yet.
     env.window.dispatchEvent(new Event("pageshow"));
-    env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+    const afterBack = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(afterBack);
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(env.form.submitRequests, 2); // Browser-back remains usable.
+    assert.equal(afterBack.defaultPrevented, false); // Browser-back remains usable.
 });
 
-test("account submit unlocks if another validator prevents the forwarded submit", async () => {
+test("account submit unlocks if another validator cancels the native submit", async () => {
     const env = setup(async () => response({phone: "+12125551234", country: "US"}), {account: true});
     env.phone.value = "0012125551234";
-    env.form.addEventListener("submit", event => event.preventDefault());
+    let prevent = true;
+    env.form.addEventListener("submit", event => { if (prevent) event.preventDefault(); });
     for (let attempt = 0; attempt < 2; attempt++) {
         env.form.dispatchEvent(new Event("submit", {cancelable: true}));
         await new Promise(resolve => setImmediate(resolve));
     }
-    assert.equal(env.form.submitRequests, 2);
+    prevent = false;
+    const valid = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(valid);
+    assert.equal(valid.defaultPrevented, false);
+    assert.equal(env.form.submitRequests, 0);
 });
 
 test("profile email verification bypasses unrelated phone formatting", async () => {
@@ -166,14 +172,11 @@ test("profile email verification bypasses unrelated phone formatting", async () 
     assert.equal(env.form.submitRequests, 0);
 });
 
-test("account malformed input blocks submit, but unavailable formatting retains server validation", async () => {
-    for (const [fetch, expected] of [
-        [async () => response({detail: "invalid_phone"}, 400), 0],
-        [async () => {throw Error("offline");}, 1],
-    ]) {
-        const env = setup(fetch, {account: true}); env.phone.value = "12345";
-        env.form.dispatchEvent(new Event("submit", {cancelable: true}));
-        await new Promise(resolve => setImmediate(resolve));
-        assert.equal(env.form.submitRequests, expected);
-    }
+test("account submit uses authoritative server validation without an extra formatting request", () => {
+    const env = setup(async () => {throw Error("submit must not call formatting");}, {account: true});
+    env.phone.value = "0012125551234";
+    const event = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, false);
+    assert.equal(env.form.submitRequests, 0);
 });

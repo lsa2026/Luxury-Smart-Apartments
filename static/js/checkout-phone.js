@@ -95,31 +95,25 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
         remember();
         if (phone.value.trim()) validate();
     });
-    // Only account forms submit here. Checkout retains its existing step handler.
+    // Account forms keep the browser's native POST. The authoritative server
+    // parser accepts local/international input even while blur formatting is
+    // pending, unavailable or unsupported. Never cancel then asynchronously
+    // replay an authentication submit; checkout retains its step handler.
     if (widget.hasAttribute("data-account-phone")) {
         let submitStarted = false;
-        let forwardingSubmit = false;
-        let forwardedEvent = null;
         window.addEventListener("pageshow", () => { submitStarted = false; });
-        form.addEventListener("submit", async (event) => {
+        form.addEventListener("submit", (event) => {
             // Profile email-verification buttons have a different action and
             // must not be blocked by an unrelated optional contact number.
             if (event.submitter?.formNoValidate) return;
-            if (forwardingSubmit) { forwardedEvent = event; return; }
-            event.preventDefault();
-            if (submitStarted) return;
+            if (event.defaultPrevented) return;
+            if (submitStarted) { event.preventDefault(); return; }
             submitStarted = true;
-            try {
-                if (await form.validateGuestPhone()) {
-                    forwardingSubmit = true;
-                    forwardedEvent = null;
-                    try { form.requestSubmit(event.submitter || undefined); }
-                    finally { forwardingSubmit = false; }
-                    // Stay locked through navigation, but allow correction when
-                    // native constraints or another handler prevent submission.
-                    if (!forwardedEvent || forwardedEvent.defaultPrevented) submitStarted = false;
-                } else submitStarted = false;
-            } catch (_) { submitStarted = false; }
+            // A later validator may cancel the same event. Do not leave that
+            // form locked; otherwise hold the lock until navigation/pageshow.
+            Promise.resolve().then(() => {
+                if (event.defaultPrevented) submitStarted = false;
+            });
         });
     }
 });
