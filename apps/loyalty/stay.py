@@ -9,6 +9,7 @@ from django.utils import timezone
 from apps.reservations.models import Reservation
 
 from .calculation import cents, departure_refund, refund_split
+from .launch import booking_allowed
 from .services import _save_booking, posting_transaction
 
 
@@ -27,6 +28,8 @@ def record_departure(operator, reservation_id, *, vacated_at, reference):
         ):
             raise PermissionDenied("تأكيد المغادرة للإدارة المخولة فقط.")
         booking = Reservation.objects.select_related("property").get(pk=reservation_id)
+        if not booking_allowed(booking):
+            raise PermissionDenied("الحجز خارج نطاق التجربة الخاصة.")
         state = booking.loyalty_state
         arrived = state.get("arrival")
         original = state.get("settlement", {}).get("facts")

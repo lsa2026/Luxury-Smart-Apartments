@@ -1,6 +1,8 @@
 {% load presentation %}
 <div class="loyalty-workspace">
   {% if loyalty_preview %}<p class="loyalty-notice" role="status">{{ loyalty_copy.preview }}</p>{% endif %}
+  {% if loyalty_pilot and not loyalty_preview %}<p class="loyalty-notice" role="status">{{ loyalty_copy.pilot_notice }}</p>{% endif %}
+  {% if loyalty_stay_exception %}<p class="loyalty-notice">{{ loyalty_copy.stay_exception_notice }}</p>{% endif %}
   {% if not loyalty_can_act %}<p class="loyalty-notice">{{ loyalty_copy.legal_wait }}</p>{% endif %}
   {% if loyalty_verify %}<p class="loyalty-notice"><a href="{% url 'accounts:verify_pending' %}">{{ loyalty_copy.verify }}</a></p>{% endif %}
   {% if loyalty_error or loyalty_invitation_invalid %}<p class="loyalty-error" role="alert">{{ loyalty_copy.invalid }}</p>{% endif %}
@@ -26,7 +28,7 @@
       <div class="loyalty-metric"><span>{{ loyalty_copy.balance }}</span><strong>{{ loyalty_metrics.balance|floatformat:2|localized_number }}</strong></div>
       <div class="loyalty-metric"><span>{{ loyalty_copy.held }}</span><strong>{{ loyalty_metrics.held|floatformat:2|localized_number }}</strong></div>
     </div>
-    <p class="loyalty-muted">{{ loyalty_copy.redemption_wait }}</p>
+    <p class="loyalty-muted">{{ loyalty_copy.redemption_help }}</p>
   </section>
   {% if loyalty_can_act and loyalty_member.status == 'active' %}
   <section class="account-panel loyalty-panel" aria-labelledby="loyalty-transfer-heading">

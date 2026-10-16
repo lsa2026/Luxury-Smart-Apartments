@@ -17,6 +17,12 @@ from apps.accounts.models import CustomerProfile
 from apps.reservations.models import Reservation
 
 from .calculation import amount, cents, reward_plan
+from .launch import (
+    booking_allowed,
+    historical_award_allowed,
+    participant_allowed,
+    stay_exception_allowed,
+)
 from .models import Ledger, Member, Referral
 
 RULES = "loyalty-approved-20261010-v1"
@@ -56,6 +62,8 @@ def digest(value):
 
 
 def member_for(user, *, active=True):
+    if not participant_allowed(user):
+        raise PermissionDenied("الحساب خارج نطاق التجربة الخاصة.")
     if not getattr(user, "is_authenticated", False) or not user.is_active:
         raise PermissionDenied("سجل الدخول بحسابك.")
     query = Member.objects.select_related("customer", "referral").filter(customer=user)
@@ -108,6 +116,8 @@ def receipt(member, key, payload, work):
 
 
 def _post(member, group, branch, *, credit=ZERO, debit=ZERO, **fields):
+    if not participant_allowed(member.customer):
+        raise PermissionDenied("الحساب خارج نطاق التجربة الخاصة.")
     credit, debit = amount(cents(credit)), amount(cents(debit))
     if (credit > 0) == (debit > 0) or debit > available(member):
         raise ValidationError("حركة غير متوازنة أو الرصيد المتاح لا يكفي.")
@@ -151,9 +161,11 @@ def _booking(user, reservation_id):
     ).get(pk=reservation_id)
     if not booking.booking_intent_id or booking.booking_intent.customer_id != user.pk:
         raise PermissionDenied("الحجز لا يخص هذا الحساب.")
+    if not booking_allowed(booking):
+        raise PermissionDenied("الحجز خارج نطاق التجربة الخاصة.")
     if booking.source_type != Reservation.SourceType.DIRECT_WEBSITE:
         raise ValidationError("الحجز ليس من موقعنا أو إدارة الموقع.")
-    if booking.created_at < launch_at():
+    if booking.created_at < launch_at() and not historical_award_allowed(booking):
         raise ValidationError("الحجوزات السابقة للإطلاق لا تدخل في البرنامج.")
     return booking
 
@@ -173,6 +185,8 @@ def enroll(
     confirmed_inviter=None,
 ):
     with posting_transaction():
+        if not participant_allowed(user):
+            raise PermissionDenied("الحساب خارج نطاق التجربة الخاصة.")
         if not getattr(user, "is_authenticated", False) or not user.is_active:
             raise PermissionDenied("يلزم حساب ضيف موثق.")
         if not CustomerProfile.objects.filter(user=user, email_verified_at__isnull=False).exists():
@@ -201,11 +215,15 @@ def enroll(
                 .filter(
                     invitation_token=invitation_token,
                     status="active",
-                    first_completed_at__isnull=False,
                 )
                 .first()
             )
-            if parent is None or str(parent.pk) != str(confirmed_inviter):
+            if (
+                parent is None
+                or not participant_allowed(parent.customer)
+                or not invitation_eligible(parent)
+                or str(parent.pk) != str(confirmed_inviter)
+            ):
                 raise ValidationError("أكد الداعي المطابق لرابط الدعوة.")
         elif confirmed_inviter is not None:
             raise ValidationError("تأكيد الداعي يحتاج رابط دعوة صالحًا.")
@@ -267,9 +285,13 @@ def confirm_arrival(operator, reservation_id, *, arrived_at, reference):
         )
         if not booking.booking_intent_id:
             raise ValidationError("لا يوجد حجز موقع مرتبط.")
+        if not booking_allowed(booking):
+            raise PermissionDenied("الحجز خارج نطاق التجربة الخاصة.")
         if booking.source_type != Reservation.SourceType.DIRECT_WEBSITE:
             raise ValidationError("هذا الحجز خارج برنامج الموقع.")
-        if booking.created_at < launch_at() or booking.normalized_status not in {
+        if (
+            booking.created_at < launch_at() and not historical_award_allowed(booking)
+        ) or booking.normalized_status not in {
             Reservation.Status.CONFIRMED,
             Reservation.Status.MODIFIED,
         }:
@@ -297,20 +319,45 @@ def confirm_arrival(operator, reservation_id, *, arrived_at, reference):
         return reconcile(booking.pk)
 
 
+def invitation_eligible(member):
+    if member.first_completed_at is not None:
+        return True
+    qualification = member.command_receipts.get("__pilot_invitation__", {})
+    reference = qualification.get("reservation_reference")
+    if not reference:
+        return False
+    booking = (
+        Reservation.objects.select_related("booking_intent__customer", "property")
+        .filter(public_reference=reference, booking_intent__customer_id=member.customer_id)
+        .first()
+    )
+    if not booking or not stay_exception_allowed(booking):
+        return False
+    if booking.normalized_status not in Reservation.ACTIVE_STATUSES:
+        return False
+    from .site_adapter import booking_facts
+
+    _, blocker = booking_facts(booking)
+    return not blocker
+
+
 def issue_invite(user, reservation_id):
     with posting_transaction():
         member = member_for(user)
         if member.invitation_token:
-            return member.invitation_token
+            if invitation_eligible(member):
+                return member.invitation_token
+            raise ValidationError("الدعوة غير مؤهلة حاليًا.")
         booking = _booking(user, reservation_id)
         from .site_adapter import booking_facts, stay_times
 
         _, end = stay_times(booking)
+        test_stay_exception = stay_exception_allowed(booking)
         if (
-            not booking.loyalty_state.get("arrival")
-            or end > timezone.now()
+            (not booking.loyalty_state.get("arrival") and not test_stay_exception)
+            or (end > timezone.now() and not test_stay_exception)
             or booking.normalized_status not in Reservation.ACTIVE_STATUSES
-            or member.consent_at > end
+            or (member.consent_at > end and not historical_award_allowed(booking))
         ):
             raise ValidationError("رابط الدعوة بعد أول إقامة مكتملة فقط.")
         # A recorded arrival and elapsed checkout alone do not prove a paid,
@@ -319,14 +366,24 @@ def issue_invite(user, reservation_id):
         _facts, blocker = booking_facts(booking)
         if blocker:
             raise ValidationError("يلزم توثيق سداد الإقامة المؤهلة قبل إصدار الدعوة.")
-        member.first_completed_reservation = booking
-        member.first_completed_at = end
+        if test_stay_exception and (
+            not booking.loyalty_state.get("arrival") or end > timezone.now()
+        ):
+            member.command_receipts["__pilot_invitation__"] = {
+                "reservation_reference": booking.public_reference,
+                "reason": "explicit-owner-test-stay-exception",
+                "at": timezone.now().isoformat(),
+            }
+        else:
+            member.first_completed_reservation = booking
+            member.first_completed_at = end
         member.invitation_token = secrets.token_urlsafe(32)
         member.invitation_issued_at = timezone.now()
         member.save(
             update_fields=[
                 "first_completed_reservation",
                 "first_completed_at",
+                "command_receipts",
                 "invitation_token",
                 "invitation_issued_at",
                 "updated_at",
@@ -388,6 +445,8 @@ def reconcile(reservation_id):
         ).get(pk=reservation_id)
         from .site_adapter import booking_facts
 
+        if not booking_allowed(booking):
+            return {"status": "outside_pilot_scope", "movements": 0}
         facts, blocker = booking_facts(booking)
         if blocker:
             booking.loyalty_state["review"] = {"reason": blocker, "at": timezone.now().isoformat()}
@@ -449,7 +508,9 @@ def reconcile(reservation_id):
                 booking_currency=booking.currency,
                 check_in_at=datetime.fromisoformat(facts["check_in"]),
                 check_out_at=datetime.fromisoformat(facts["check_out"]),
-                actual_arrival_at=datetime.fromisoformat(facts["arrival"]["at"]),
+                actual_arrival_at=datetime.fromisoformat(facts["arrival"]["at"])
+                if facts["arrival"]["at"]
+                else None,
                 arrival_reference=facts["arrival"]["reference"],
                 eligible_lodging_sar=Decimal(facts["base"]),
                 verified_cash_sar=Decimal(facts["cash"]),
@@ -476,7 +537,9 @@ def reconcile(reservation_id):
                     credit=target - current,
                     event_type="adjust" if original else "earn",
                     original=original,
-                    reason="استحقاق الإقامة بعد القبض والوصول والموافقة",
+                    reason="استحقاق اختباري مصرح به دون إقامة فعلية"
+                    if facts.get("stay_exception")
+                    else "استحقاق الإقامة بعد القبض والوصول والموافقة",
                     **common,
                 )
                 branch = _absorb(member, target - current, event, group, branch)
@@ -662,6 +725,8 @@ def restore_points(reservation_id, cumulative_value, evidence_reference):
         booking = Reservation.objects.select_related("booking_intent__customer", "property").get(
             pk=reservation_id,
         )
+        if not booking_allowed(booking):
+            raise PermissionDenied("الحجز خارج نطاق التجربة الخاصة.")
         member = member_for(booking.booking_intent.customer)
         r = booking.loyalty_state.get("redemption")
         if not r or not evidence_reference:

@@ -29,11 +29,19 @@ from apps.reservations.models import Reservation
 
 from .copy import copy, transaction_label
 from .forms import JoinForm, TransferForm
+from .launch import (
+    participant_allowed,
+    pilot_only,
+    pilot_references,
+    stay_exception_allowed,
+    stay_exception_references,
+)
 from .models import Ledger, Member, Referral
 from .services import (
     available,
     confirm_arrival,
     enroll,
+    invitation_eligible,
     issue_invite,
     posting_transaction,
     transfer,
@@ -43,8 +51,8 @@ SALT = "loyalty-transfer-confirmation-v1"
 ZERO = Decimal("0.00")
 
 
-def interface_enabled():
-    return settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED
+def interface_enabled(user=None):
+    return settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED and participant_allowed(user)
 
 
 def preview_mode():
@@ -114,7 +122,7 @@ def _decorate(rows):
 
 @never_cache
 def guest_rewards(request):
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated or not participant_allowed(request.user):
         raise PermissionDenied
     if request.method not in {"GET", "POST"}:
         return HttpResponseNotAllowed(["GET", "POST"])
@@ -126,9 +134,11 @@ def guest_rewards(request):
     inviter = None
     invitation_invalid = False
     if invitation and member is None:
-        inviter = Member.objects.filter(
-            invitation_token=invitation, status="active", first_completed_at__isnull=False
-        ).first()
+        inviter = Member.objects.filter(invitation_token=invitation, status="active").first()
+        if inviter and (
+            not participant_allowed(inviter.customer) or not invitation_eligible(inviter)
+        ):
+            inviter = None
         invitation_invalid = inviter is None
     can_act = _actions_allowed(request)
     join_form = JoinForm(has_inviter=bool(inviter))
@@ -166,6 +176,8 @@ def guest_rewards(request):
                 recipient = get_object_or_404(
                     Member, number=transfer_form.cleaned_data["recipient"], status="active"
                 )
+                if not participant_allowed(recipient.customer):
+                    raise ValidationError("invalid")
                 value = transfer_form.cleaned_data["amount"]
                 if recipient.pk == member.pk or value > available(member):
                     raise ValidationError("invalid")
@@ -222,30 +234,38 @@ def guest_rewards(request):
             rows, cursor = _rows(query, request)
         _decorate(rows)
         if member.status == "active":
-            if member.invitation_token:
+            if member.invitation_token and invitation_eligible(member):
                 invite_url = request.build_absolute_uri(
                     reverse("accounts:rewards")
                     + "?"
                     + urlencode({"invite": member.invitation_token})
                 )
             else:
-                completed = (
-                    Reservation.objects.filter(
-                        booking_intent__customer=request.user,
-                        source_type=Reservation.SourceType.DIRECT_WEBSITE,
-                        normalized_status__in=Reservation.ACTIVE_STATUSES,
-                        check_out__lte=timezone.localdate(),
-                        created_at__gte=datetime.fromisoformat(settings.LOYALTY_LAUNCH_AT),
-                    )
-                    .select_related("property")
-                    .order_by("-check_out")[:10]
+                eligible_dates = Q(
+                    created_at__gte=datetime.fromisoformat(settings.LOYALTY_LAUNCH_AT)
                 )
+                if pilot_only() and settings.LOYALTY_PILOT_ALLOW_HISTORICAL:
+                    eligible_dates |= Q(public_reference__in=pilot_references())
+                completed_dates = Q(check_out__lte=timezone.localdate())
+                if pilot_only():
+                    completed_dates |= Q(public_reference__in=stay_exception_references())
+                completed = Reservation.objects.filter(
+                    eligible_dates,
+                    completed_dates,
+                    booking_intent__customer=request.user,
+                    source_type=Reservation.SourceType.DIRECT_WEBSITE,
+                    normalized_status__in=Reservation.ACTIVE_STATUSES,
+                ).select_related("property")
+                if pilot_only():
+                    completed = completed.filter(public_reference__in=pilot_references())
+                completed = completed.order_by("-check_out")[:10]
                 from .site_adapter import stay_times
 
                 completed = [
                     r
                     for r in completed
-                    if r.loyalty_state.get("arrival") and stay_times(r)[1] <= timezone.now()
+                    if (r.loyalty_state.get("arrival") and stay_times(r)[1] <= timezone.now())
+                    or stay_exception_allowed(r)
                 ]
     a_copy = account_copy()
     name = request.user.first_name.strip()
@@ -265,6 +285,12 @@ def guest_rewards(request):
             "loyalty_rows": rows,
             "loyalty_cursor": cursor,
             "loyalty_preview": preview_mode(),
+            "loyalty_pilot": pilot_only(),
+            "loyalty_stay_exception": pilot_only()
+            and Reservation.objects.filter(
+                booking_intent__customer=request.user,
+                public_reference__in=stay_exception_references(),
+            ).exists(),
             "loyalty_can_act": can_act and _verified(request.user),
             "loyalty_verify": not _verified(request.user),
             "loyalty_terms_approved": approved_terms(),
@@ -283,7 +309,7 @@ def guest_rewards(request):
 
 def _owner(request):
     require_operations_owner(request.user)
-    if not interface_enabled():
+    if not (settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED):
         raise Http404
     return copy()
 

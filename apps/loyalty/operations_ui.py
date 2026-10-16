@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 from apps.integrations.hostaway.exceptions import HostawayError
 from apps.reservations.models import Reservation
 
+from .launch import booking_allowed
 from .settlements import record_contract_nights, record_manual_receipt
 from .stay import record_departure
 from .views import _actions_allowed, _owner, preview_mode
@@ -32,6 +33,8 @@ def settlement_command(request):
         source_type=Reservation.SourceType.DIRECT_WEBSITE,
     )
     if preview_mode() and not booking.is_test:
+        raise PermissionDenied
+    if not booking_allowed(booking):
         raise PermissionDenied
     try:
         reference = request.POST.get("reference", "").strip()[:255]

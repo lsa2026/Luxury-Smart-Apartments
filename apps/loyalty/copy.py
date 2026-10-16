@@ -11,6 +11,16 @@ LABELS = {
         "Internal preview — fictional points and memberships; not launched.",
         "Aperçu interne — points et adhésions fictifs ; programme non lancé.",
     ),
+    "pilot_notice": (
+        "تجربة خاصة محدودة — النقاط المسجلة هنا فعلية. البرنامج لم يُفتح لجميع الضيوف بعد.",
+        "Private limited trial — recorded points are real. The programme is not open to all guests yet.",
+        "Essai privé limité — les points enregistrés sont réels. Le programme n’est pas encore ouvert à tous les clients.",
+    ),
+    "stay_exception_notice": (
+        "لهذا الحساب حجز واحد معتمد للتجربة دون اشتراط إقامة فعلية. لا يسجل ذلك وصولًا أو إقامة مكتملة، ولا يعفي من إثبات الدفع والموافقة، ولا يشمل الحجوزات الأخرى.",
+        "One booking on this account has an authorised test-only stay exception. This records neither arrival nor a completed stay, does not waive payment evidence or consent, and does not apply to other bookings.",
+        "Une seule réservation de ce compte bénéficie d’une dérogation de séjour pour cet essai. Elle ne constate ni arrivée ni séjour terminé, ne dispense pas de justificatif de paiement ni de consentement et ne concerne aucune autre réservation.",
+    ),
     "legal_wait": (
         "الانضمام والتحويل ينتظران اعتماد الأحكام وإطلاق البرنامج.",
         "Joining and transfers await approved terms and launch.",
@@ -140,10 +150,10 @@ LABELS = {
         "Afficher mon lien d’invitation",
     ),
     "invite_link": ("رابط دعوتك", "Your invitation link", "Votre lien d’invitation"),
-    "redemption_wait": (
-        "استخدام النقاط في الحجز ينتظر استكمال ربط الاسترداد والاختبار؛ لا توجد هنا عملية دفع أو استرداد حقيقية.",
-        "Booking redemption awaits refund integration and testing; no real payment or refund is performed here.",
-        "L’utilisation des points attend l’intégration des remboursements et les tests ; aucun paiement ni remboursement réel n’est effectué ici.",
+    "redemption_help": (
+        "استخدم نقاطك من صفحة مراجعة الحجز المؤهل؛ يظهر عدد النقاط والمبلغ المتبقي قبل التأكيد. هذه الصفحة لعرض حسابك وتحويل النقاط، وليست لتحصيل مبلغ أو تنفيذ استرداد.",
+        "Apply points on an eligible booking’s review page, where the points and remaining payment are shown before confirmation. This page displays your account and transfers; it does not collect payments or process refunds.",
+        "Utilisez vos points sur la page de vérification d’une réservation éligible : les points et le montant restant s’affichent avant confirmation. Cette page présente votre compte et les transferts ; elle n’encaisse aucun paiement et n’exécute aucun remboursement.",
     ),
     "withdrawn": (
         "هذه العضوية ملغاة؛ يظهر السجل السابق للمراجعة فقط.",

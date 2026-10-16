@@ -80,9 +80,11 @@ MESSAGES = {
 
 
 def messages_enabled():
+    from .launch import pilot_only
     from .views import approved_terms
 
-    return enabled() and settings.LOYALTY_MESSAGES_ENABLED and approved_terms()
+    # An acceptance run never launches an automatic guest mailing campaign.
+    return enabled() and settings.LOYALTY_MESSAGES_ENABLED and approved_terms() and not pilot_only()
 
 
 def queue_movement(ledger_id):

@@ -8,6 +8,8 @@ from django.db import connection
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import Reservation
 
+from .launch import booking_allowed
+
 
 def cash_due(intent, *, freeze=False):
     from .services import enabled, member_for
@@ -44,6 +46,8 @@ def cash_due(intent, *, freeze=False):
     allocation = booking.loyalty_state.get("hold") or booking.loyalty_state.get("redemption")
     if not allocation:
         return gross
+    if not booking_allowed(booking):
+        raise ValidationError("الحجز خارج نطاق التجربة الخاصة؛ لا يُغيّر المبلغ المخصص للدفع.")
     if not intent.customer_id or intent.currency != "SAR" or gross != intent.total_price:
         raise ValidationError("يلزم تفصيل دفع نقاط موثق بالريال السعودي.")
     member = member_for(intent.customer)
@@ -85,6 +89,8 @@ def settle_booking_points(reservation_id):
     if not enabled():
         return
     booking = Reservation.objects.select_related("booking_intent__customer").get(pk=reservation_id)
+    if not booking_allowed(booking):
+        return
     if booking.normalized_status in Reservation.ACTIVE_STATUSES and booking.loyalty_state.get(
         "hold"
     ):
@@ -105,6 +111,8 @@ def release_expired_points(intent_id):
         )
         if not booking or not booking.loyalty_state.get("hold"):
             return
+        if not booking_allowed(booking):
+            return
         if booking.normalized_status in Reservation.ACTIVE_STATUSES:
             return
         if booking.booking_intent.status != BookingIntent.Status.EXPIRED:
@@ -124,6 +132,8 @@ def restore_cancelled_points(reservation_id):
     if not enabled():
         return
     booking = Reservation.objects.get(pk=reservation_id)
+    if not booking_allowed(booking):
+        return
     redeemed = booking.loyalty_state.get("redemption")
     if not redeemed or booking.normalized_status != Reservation.Status.CANCELLED:
         return

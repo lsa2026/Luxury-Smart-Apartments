@@ -40,6 +40,10 @@ def recover_points_booking(
     booking = Reservation.objects.select_related("property", "booking_intent__customer").get(
         pk=reservation_id
     )
+    from .launch import booking_allowed
+
+    if not booking_allowed(booking):
+        raise ValidationError("الحجز خارج نطاق التجربة الخاصة.")
     if not eligible(booking) or not booking.loyalty_state.get("points_confirmation_started"):
         raise ValidationError("لا توجد نتيجة حجز نقاط معلقة.")
     # No DB financial lock while reading the provider. Never re-send creation.
