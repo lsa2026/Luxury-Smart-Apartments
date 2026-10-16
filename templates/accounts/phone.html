@@ -11,8 +11,14 @@
     <h1 id="phone-access-title">{% if phone_binding %}{{ phone_copy.bind }}{% else %}{{ phone_copy.title }}{% endif %}</h1>
     {% if phone_error %}<p role="alert" class="form-errors">{{ phone_error }}</p>{% endif %}
     {% if phone_confirmation %}
-      <p>{{ phone_copy.sent }}</p><p><bdi>{{ phone_masked }}</bdi></p><p>{{ phone_copy.hint }}</p>
-      <form method="post" class="auth-form">{% csrf_token %}
+      {% if phone_binding %}
+        <p role="status" aria-live="polite" data-phone-delivery
+           data-state="{{ phone_delivery }}" data-url="{% url 'accounts:phone_confirm' %}?delivery=1"
+           data-waiting="{{ phone_copy.delivery_waiting }}" data-accepted="{{ phone_copy.delivery_accepted }}"
+           data-failed="{{ phone_copy.delivery_failed }}" data-expired="{{ phone_copy.delivery_expired }}">{% if phone_delivery == 'accepted' %}{{ phone_copy.delivery_accepted }}{% elif phone_delivery == 'failed' %}{{ phone_copy.delivery_failed }}{% elif phone_delivery == 'expired' %}{{ phone_copy.delivery_expired }}{% else %}{{ phone_copy.delivery_waiting }}{% endif %}</p>
+      {% else %}<p>{{ phone_copy.sent }}</p>{% endif %}
+      <p><bdi>{{ phone_masked }}</bdi></p><p>{{ phone_copy.hint }}</p>
+      <form method="post" class="auth-form" data-phone-code-form{% if phone_delivery == 'failed' or phone_delivery == 'expired' %} hidden{% endif %}>{% csrf_token %}
         <label for="phone-code">{{ phone_copy.code }}</label>
         <input id="phone-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required>
         <button type="submit" class="button button--gold">{{ phone_copy.confirm }}</button>
@@ -40,4 +46,5 @@
   </div>
 </section>
 {% if phone_can_send and not phone_confirmation %}<script src="{% static 'js/checkout-phone.js' %}" defer></script>{% endif %}
+{% if phone_confirmation and phone_binding %}<script src="{% static 'js/phone-delivery.js' %}" defer></script>{% endif %}
 {% endblock %}

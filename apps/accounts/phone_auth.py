@@ -1,5 +1,6 @@
 """Guest phone credential: explicit primary-auth binding, then one-use WhatsApp OTP."""
 
+import logging
 import secrets
 from datetime import timedelta
 
@@ -25,6 +26,19 @@ PRIMARY_AUTH = "guest_primary_auth_at"
 PENDING = "guest_phone_challenge"
 TTL = 300
 MARKER = "[LSA-AUTH]"
+logger = logging.getLogger(__name__)
+
+
+def _provider_authenticated(document):
+    """Read the provider's nested account status, never a truthy object/string."""
+    if not isinstance(document, dict):
+        return False
+    state = document.get("status")
+    if isinstance(state, dict):
+        state = state.get("accountStatus")
+    if isinstance(state, dict):
+        state = state.get("status")
+    return isinstance(state, str) and state == "authenticated"
 
 
 def ready():
@@ -179,17 +193,14 @@ def deliver_phone_code(challenge_id):
         row.code_digest = _digest("code", f"{row.pk}:{code}")
         row.status = "sending"
         row.save(update_fields=["code_digest", "status"])
+    phase = "connection_check"
     try:
         with UltraMsgClient() as client:
             status = client.http.get(
                 f"/{settings.ULTRAMSG_INSTANCE_ID}/instance/status",
                 params={"token": settings.ULTRAMSG_TOKEN},
             )
-            state = status.json() if status.status_code == 200 else {}
-            state = state.get("status", {})
-            if isinstance(state, dict):
-                state = state.get("accountStatus", "")
-            if state != "authenticated":
+            if status.status_code != 200 or not _provider_authenticated(status.json()):
                 raise UltraMsgError()
             # Recheck immediately before the provider call: queued/late tasks
             # cannot extend validity. Acceptance is NOT proof of delivery.
@@ -197,6 +208,7 @@ def deliver_phone_code(challenge_id):
                 pk=row.pk, status="sending", expires_at__gt=timezone.now()
             ).exists():
                 return
+            phase = "send"
             client.send_text(
                 recipient=row.phone,
                 body=(
@@ -213,6 +225,7 @@ def deliver_phone_code(challenge_id):
         PhoneChallenge.objects.filter(pk=row.pk, status="sending").update(
             status="failed", code_digest=""
         )
+        logger.warning("guest_whatsapp_delivery_failed stage=%s", phase)
         return
     PhoneChallenge.objects.filter(pk=row.pk, status="sending").update(status="sent")
 
