@@ -21,11 +21,11 @@ from .models import (
     PhoneChallenge,
     VerifiedPhone,
 )
+from .phone_messages import phone_message, supported_language
 
 PRIMARY_AUTH = "guest_primary_auth_at"
 PENDING = "guest_phone_challenge"
 TTL = 300
-MARKER = "[LSA-AUTH]"
 logger = logging.getLogger(__name__)
 
 
@@ -158,6 +158,17 @@ def begin(request, phone, *, purpose):
             user=user if allowed(user) else None,
             phone=phone,
             purpose=purpose,
+            language=(
+                supported_language(
+                    CustomerProfile.objects.filter(user=user)
+                    .values_list("preferred_language", flat=True)
+                    .first()
+                )
+                if user is not None
+                else ""
+            )
+            or supported_language(getattr(request, "LANGUAGE_CODE", ""))
+            or "ar",
             binding_version=binding.version if binding else None,
             session_digest=digest,
             expires_at=timezone.now() + timedelta(seconds=TTL),
@@ -211,12 +222,7 @@ def deliver_phone_code(challenge_id):
             phase = "send"
             client.send_text(
                 recipient=row.phone,
-                body=(
-                    f"{MARKER}\nرمز الدخول الخاص بك: {code}\n"
-                    "صالح لخمس دقائق ولمرة واحدة. لا تشاركه مع أحد.\n"
-                    f"Your sign-in code: {code}. Valid for 5 minutes. Never share it.\n"
-                    f"Votre code : {code}. Valable 5 minutes. Ne le partagez jamais."
-                ),
+                body=phone_message(code=code, language=row.language, purpose=row.purpose),
                 reference_id=f"lsa-auth-{row.pk}",
             )
     except Exception:
