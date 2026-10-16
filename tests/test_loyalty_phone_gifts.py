@@ -377,6 +377,8 @@ def test_packaged_card_and_longest_caption_have_no_guest_data_and_fit_provider(l
         am, language=language, url="https://luxurysmartapartments.com/i/" + "a" * 16 + "/"
     )
     assert len(body.encode("utf-16-le")) // 2 <= 1024
+    assert "Luxury Living" in body
+    assert "لاكشري" not in body and "ليفينغ" not in body
     assert body.count("https://") == 1
     content = invitation_image(language)
     with Image.open(BytesIO(content)) as image:
