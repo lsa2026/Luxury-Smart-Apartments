@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% load static %}
+{% block body_class %}rewards-terms-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/rewards-terms.css' %}?v=1">{% endblock %}
 {% block title %}{{ reward_terms.title }} | Luxury Living{% endblock %}
 {% block meta_description %}{{ reward_terms.intro }}{% endblock %}
 {% block content %}

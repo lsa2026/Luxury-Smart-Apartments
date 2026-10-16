@@ -51,6 +51,7 @@ def test_public_terms_available_to_anonymous_guests_in_each_language(language, s
     content = unescape(response.content.decode())
     issued = document(language)
     assert issued["title"] in content and issued["operator"] in content
+    assert "rewards-terms-page" in content and "css/rewards-terms.css" in content
     assert len(issued["sections"]) == 14
     assert response["X-Document-Version"] == VERSION
     assert response["X-Document-SHA256"] == issued["sha256"]
