@@ -5,7 +5,9 @@
         <span class="status-pill status-pill--{{ reservation.normalized_status|reservation_status_tone }}">{{ reservation.normalized_status|localized_reservation_status }}</span>
     </div>
     {% if reservation.is_test %}<p class="sandbox-chip">{% trans "Test booking — no live booking" %}</p>{% endif %}
-    <p class="payment-state{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %} payment-state--paid{% endif %}"><span aria-hidden="true">{% if reservation.payment_status == 'paid' or reservation.payment_status == 'sandbox_paid' %}✓{% else %}◷{% endif %}</span>{{ reservation.payment_status|localized_payment_status }}</p>
+    {% with payment_state=reservation.payment_status|normalized_payment_status %}
+    <p class="payment-state{% if payment_state == 'paid' or payment_state == 'succeeded' or payment_state == 'sandbox_paid' %} payment-state--paid{% endif %}"><span aria-hidden="true">{% if payment_state == 'paid' or payment_state == 'succeeded' or payment_state == 'sandbox_paid' %}✓{% else %}◷{% endif %}</span>{{ payment_state|localized_payment_status }}</p>
+    {% endwith %}
     <dl class="quote-summary">
         <div><dt>{% trans "Check-in" %}</dt><dd>{{ reservation.check_in|localized_date }}</dd></div>
         <div><dt>{% trans "Check-out" %}</dt><dd>{{ reservation.check_out|localized_date }}</dd></div>
