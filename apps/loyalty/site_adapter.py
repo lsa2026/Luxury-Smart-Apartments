@@ -208,8 +208,7 @@ def booking_facts(booking):
             "points": str(points.quantize(CENT)),
             "check_in": start.isoformat(),
             "check_out": end.isoformat(),
-            "arrival": arrival
-            or {"at": None, "reference": "explicit-owner-test-stay-exception"},
+            "arrival": arrival or {"at": None, "reference": "explicit-owner-test-stay-exception"},
             "consent": member.consent_at.isoformat(),
             "terms_version": member.terms_version,
             "cancelled": cancelled,
