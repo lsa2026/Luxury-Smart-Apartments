@@ -1,0 +1,14 @@
+/* Reuse the account's compact approved wordmark, scoped to this public page. */
+@media (max-width: 48rem) {
+    .rewards-terms-page .header-top > .brand .brand-wordmark {
+        width: auto;
+        gap: 0.1rem;
+        max-width: 100%;
+    }
+    .rewards-terms-page .header-top > .brand .brand-wordmark__word {
+        font-size: clamp(0.65rem, 2.8vw, 1.05rem);
+    }
+    .rewards-terms-page .header-top > .brand .brand-wordmark .brand-wordmark__monogram {
+        width: clamp(1.8rem, 8vw, 2.9rem);
+    }
+}
