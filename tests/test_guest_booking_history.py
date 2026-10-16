@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from django.contrib.auth import get_user_model
+from django.db.models.query import QuerySet
 from django.test import Client
 from django.utils import timezone
 
@@ -26,7 +27,7 @@ from apps.accounts.models import (
 from apps.integrations.hostaway.client import HostawayClient
 from apps.loyalty.models import Ledger
 from apps.reservations.models import BookingIntent, Reservation
-from tests.test_account_booking_claim import make_reservation
+from tests.test_account_booking_claim import client_holding, make_reservation
 
 pytestmark = pytest.mark.django_db
 EMAIL = "history@example.invalid"
@@ -439,3 +440,28 @@ def test_native_button_accepts_valid_csrf_and_uses_only_session_identity(guest):
     )
     assert response.status_code == 302
     assert BookingHistoryImport.objects.get().user_id == user.pk
+
+
+def test_original_session_claim_cannot_overwrite_a_concurrent_history_link(guest):
+    from apps.accounts.services import claim_reservation
+
+    user, _ = guest
+    other = get_user_model().objects.create_user(username="other-owner")
+    record = booking()
+    request = client_holding(record).request().wsgi_request
+    original_update = QuerySet.update
+
+    def attach_between_read_and_write(queryset, **kwargs):
+        if queryset.model is BookingIntent and kwargs.get("customer") == user:
+            original_update(
+                BookingIntent.objects.filter(pk=record.booking_intent_id), customer=other
+            )
+        return original_update(queryset, **kwargs)
+
+    with (
+        patch.object(QuerySet, "update", attach_between_read_and_write),
+        patch("apps.loyalty.site_adapter.schedule_reconciliation") as rewards,
+    ):
+        assert claim_reservation(request, user, record.public_reference) is None
+        rewards.assert_not_called()
+    assert BookingIntent.objects.get(pk=record.booking_intent_id).customer_id == other.pk

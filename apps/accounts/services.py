@@ -14,7 +14,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db import transaction
 from django.http import HttpRequest
 
-from apps.reservations.models import Reservation
+from apps.reservations.models import BookingIntent, Reservation
 from apps.reservations.security import session_can_manage
 
 
@@ -48,8 +48,14 @@ def claim_reservation(
         # move a booking between accounts.
         if intent is None or intent.customer_id is not None:
             return None
+        # The explicit history importer can attach the same intent concurrently.
+        # Never overwrite an ownership decision made after the read above.
+        changed = BookingIntent.objects.filter(pk=intent.pk, customer__isnull=True).update(
+            customer=user
+        )
+        if not changed:
+            return None
         intent.customer = user
-        intent.save(update_fields=["customer"])
         from apps.loyalty.site_adapter import schedule_reconciliation
 
         schedule_reconciliation(reservation.pk)
