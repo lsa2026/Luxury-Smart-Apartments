@@ -51,6 +51,11 @@ def test_new_invitee_keeps_inviter_through_login_register_and_verification(
     local_program, settings, language
 ):
     settings.LOYALTY_UI_ENABLED = settings.LOYALTY_UI_PREVIEW = settings.DEBUG = True
+    # PostgreSQL must never accept draft consent through the SQLite preview gate.
+    # Simulate a configured terms release for this fictional end-to-end test only.
+    settings.LOYALTY_TERMS_APPROVED = True
+    settings.LOYALTY_TERMS_VERSION = "test-fictional-terms-v1"
+    settings.LOYALTY_TERMS_REFERENCE = "/test-only-loyalty-terms/"
     inviter, token = completed_inviter(user("referrer"), local_program)
     target = f"/my-bookings/rewards/?invite={token}"
     client = Client()
@@ -205,6 +210,24 @@ def test_pilot_hides_interface_for_other_users_and_suppresses_automatic_messages
     c.force_login(a)
     assert c.get("/my-bookings/rewards/").context["loyalty_ui"] is True
     assert not messages_enabled()
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_live_pilot_banner_never_labels_real_points_as_fictional(settings, language):
+    from apps.loyalty.copy import copy
+
+    u = user("live-banner")
+    settings.LOYALTY_UI_ENABLED = settings.LOYALTY_PILOT_ONLY = True
+    settings.LOYALTY_UI_PREVIEW = False
+    settings.LOYALTY_PILOT_EMAILS = [u.email]
+    client = Client()
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    client.force_login(u)
+    response = client.get("/my-bookings/rewards/")
+    assert response.context["loyalty_pilot"] is True
+    assert response.context["loyalty_preview"] is False
+    assert copy(language)["pilot_notice"] in response.content.decode()
+    assert copy(language)["preview"] not in response.content.decode()
 
 
 def test_pilot_transfer_to_outside_account_rolls_back_both_sides(local_program, settings):

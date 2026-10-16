@@ -274,6 +274,7 @@ def guest_rewards(request):
             "loyalty_rows": rows,
             "loyalty_cursor": cursor,
             "loyalty_preview": preview_mode(),
+            "loyalty_pilot": pilot_only(),
             "loyalty_can_act": can_act and _verified(request.user),
             "loyalty_verify": not _verified(request.user),
             "loyalty_terms_approved": approved_terms(),
