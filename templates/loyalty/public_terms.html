@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ reward_terms.title }} | Luxury Living{% endblock %}
+{% block meta_description %}{{ reward_terms.intro }}{% endblock %}
+{% block content %}
+<header class="page-hero page-hero--compact"><div class="container">
+  <h1>{{ reward_terms.title }}</h1><p>{{ reward_terms.issued }}</p><p>{{ reward_terms.intro }}</p>
+</div></header>
+<section class="section container content-page-shell">
+  <article class="prose-card rich-copy structured-copy">
+    <p>{{ reward_terms.operator }}</p>
+    {% for heading, paragraph in reward_terms.sections %}<section><h2>{{ heading }}</h2><p>{{ paragraph }}</p></section>{% endfor %}
+    <nav aria-label="{{ reward_terms.title }}"><p><a href="{% url 'core:privacy' %}">{{ reward_terms.privacy }}</a></p><p><a href="{% url 'core:contact' %}">{{ reward_terms.contact }}</a></p><p><a href="{% url 'accounts:rewards' %}">{{ reward_terms.account }}</a></p></nav>
+  </article>
+</section>
+{% endblock %}

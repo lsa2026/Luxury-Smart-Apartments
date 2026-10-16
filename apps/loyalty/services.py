@@ -230,6 +230,9 @@ def enroll(
         elif confirmed_inviter is not None:
             raise ValidationError("تأكيد الداعي يحتاج رابط دعوة صالحًا.")
         now = timezone.now()
+        from .public_terms import consent_metadata
+
+        issued_terms = consent_metadata(terms_version, terms_reference, language)
         member = Member.objects.create(
             customer=user,
             number=f"pending-{secrets.token_hex(10)}",
@@ -245,6 +248,7 @@ def enroll(
                     "reference": terms_reference,
                     "language": language,
                     "source": "authenticated-account",
+                    **issued_terms,
                 }
             ],
         )

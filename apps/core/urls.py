@@ -1,10 +1,13 @@
 from django.urls import path
 
+from apps.loyalty.public_terms import terms_view
+
 from .views import ContactView, ContentPageView, FAQView, HomeView
 
 app_name = "core"
 
 urlpatterns = [
+    path("legal/rewards/<slug:version>/", terms_view, name="rewards_terms"),
     path("", HomeView.as_view(), name="home"),
     path(
         "about/",

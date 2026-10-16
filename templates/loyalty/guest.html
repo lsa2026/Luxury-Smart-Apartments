@@ -28,6 +28,7 @@
   {% else %}
   <section class="account-panel loyalty-panel">
     <h2 id="account-rewards-heading">{{ loyalty_copy.title }}</h2>
+    {% if loyalty_terms_approved %}<p><a class="account-text-link" href="{{ loyalty_terms_reference }}">{{ loyalty_copy.terms }}</a></p>{% endif %}
     <dl class="loyalty-identity"><div><dt>{{ loyalty_copy.number }}</dt><dd><bdi>{{ loyalty_member.number }}</bdi></dd></div><div><dt>{{ loyalty_copy.joined }}</dt><dd>{{ loyalty_member.joined_at|localized_datetime }}</dd></div></dl>
     {% if loyalty_member.status == 'withdrawn' %}<p class="loyalty-notice">{{ loyalty_copy.withdrawn }}</p>{% endif %}
     <div class="loyalty-metrics">

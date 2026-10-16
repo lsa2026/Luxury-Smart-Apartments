@@ -41,6 +41,7 @@ from .launch import (
 )
 from .localization import arabic_admin
 from .models import Ledger, Member
+from .public_terms import terms_reference
 from .services import (
     available,
     confirm_arrival,
@@ -169,7 +170,7 @@ def guest_rewards(request):
                     terms_version=settings.LOYALTY_TERMS_VERSION
                     if approved_terms()
                     else "local-preview-not-legal-v1",
-                    terms_reference=settings.LOYALTY_TERMS_REFERENCE
+                    terms_reference=terms_reference()
                     if approved_terms()
                     else "local-fictional-consent",
                     language=(get_language() or "ar").split("-")[0],
@@ -397,7 +398,7 @@ def guest_rewards(request):
             and not VerifiedPhone.objects.filter(user=request.user).exists(),
             "loyalty_mobile_copy": phone_copy(),
             "loyalty_terms_approved": approved_terms(),
-            "loyalty_terms_reference": settings.LOYALTY_TERMS_REFERENCE,
+            "loyalty_terms_reference": terms_reference(),
             "loyalty_join_form": join_form,
             "loyalty_transfer_form": transfer_form,
             "loyalty_phone_gift_form": phone_gift_form,
