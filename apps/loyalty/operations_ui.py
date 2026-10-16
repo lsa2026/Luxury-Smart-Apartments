@@ -15,11 +15,13 @@ from apps.integrations.hostaway.exceptions import HostawayError
 from apps.reservations.models import Reservation
 
 from .launch import booking_allowed
+from .localization import arabic_admin
 from .settlements import record_contract_nights, record_manual_receipt
 from .stay import record_departure
 from .views import _actions_allowed, _owner, preview_mode
 
 
+@arabic_admin
 @never_cache
 @staff_member_required
 @require_POST

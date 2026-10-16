@@ -36,6 +36,7 @@ from .launch import (
     stay_exception_allowed,
     stay_exception_references,
 )
+from .localization import arabic_admin
 from .models import Ledger, Member, Referral
 from .services import (
     available,
@@ -310,6 +311,7 @@ def _owner(request):
     return copy()
 
 
+@arabic_admin
 @never_cache
 @staff_member_required
 def admin_workspace(request):
@@ -343,6 +345,7 @@ def admin_workspace(request):
     )
 
 
+@arabic_admin
 @never_cache
 @staff_member_required
 def admin_tree(request):
@@ -391,6 +394,7 @@ def admin_tree(request):
     )
 
 
+@arabic_admin
 @never_cache
 @staff_member_required
 @require_POST
