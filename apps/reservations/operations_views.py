@@ -332,7 +332,9 @@ def booking_list(request: HttpRequest) -> HttpResponse:
         .order_by("-created_at")
     )
     if query:
-        bookings = bookings.filter(
+        from .phone_search import bookings_for_phone, phone_variants
+
+        search = (
             Q(booking_intent__guest_first_name__icontains=query)
             | Q(booking_intent__guest_last_name__icontains=query)
             | Q(booking_intent__guest_email__icontains=query)
@@ -340,6 +342,11 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             | Q(public_reference__icontains=query)
             | Q(property__name_ar__icontains=query)
             | Q(property__name_en__icontains=query)
+        )
+        bookings = (
+            bookings_for_phone(bookings, query)
+            if phone_variants(query)
+            else bookings.filter(search)
         )
     bookings = list(bookings[:100])
     attach_booking_list_summaries(bookings)
@@ -375,6 +382,9 @@ def booking_list(request: HttpRequest) -> HttpResponse:
 def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
     """Presentation only: preserve the existing action handlers and permissions."""
     reservation = context["reservation"]
+    from apps.loyalty.booking_operations import stay_controls
+
+    context["loyalty_stay"] = stay_controls(request.user, reservation)
     attach_booking_list_summaries([reservation])
     payment_status = (reservation.payment_status or "").strip().casefold()
     if context["cancellation_blocked"]:

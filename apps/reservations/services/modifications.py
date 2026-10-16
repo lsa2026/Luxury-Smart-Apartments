@@ -310,8 +310,8 @@ class ModificationService:
             )
         return ModificationCreation("priced", locked)
 
+    @staticmethod
     def create_cancellation_request(
-        self,
         reservation: Reservation,
         *,
         session_hash: str,

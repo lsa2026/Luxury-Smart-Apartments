@@ -2,7 +2,7 @@
 {% load i18n static presentation %}
 {% block bodyclass %}{{ block.super }} lsa-booking-detail-page{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=stay-1">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script><script src="{% static 'js/admin-booking-detail.js' %}" defer></script>{% endblock %}
 
 {% block content %}
@@ -31,6 +31,7 @@
     <a href="#booking-edit" id="booking-tab-edit" data-booking-tab="edit" aria-controls="booking-edit">تعديل الحجز</a>
   </nav>
   <section id="booking-overview" data-booking-panel="overview" aria-labelledby="booking-tab-overview">
+    {% include "admin/reservations/includes/booking_stay.html" %}
     <div class="lsa-booking-detail__grid">
       <section class="lsa-panel">
         <h2>بيانات الضيف</h2>
