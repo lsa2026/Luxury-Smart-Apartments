@@ -4,7 +4,7 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block body_class %}guest-account{% if account_section == 'details' %} guest-account--details{% endif %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=4">{% if account_section == 'details' %}<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{% endif %}{% if address_places_enabled %}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endif %}{% if loyalty_ui %}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=1">{% endif %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=4">{% if account_section == 'details' %}<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{% endif %}{% if address_places_enabled %}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endif %}{% if loyalty_ui %}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=2">{% endif %}{% endblock %}
 {% block contact_widget %}{% endblock %}
 {% block content %}
 <div class="container guest-account-shell">
@@ -63,6 +63,7 @@
 </div>
 {% if account_section == 'details' %}<script src="{% static 'js/checkout-phone.js' %}" defer></script>{% endif %}
 {% if account_section == 'bookings' %}<script type="module" src="{% static 'js/booking-history.js' %}"></script>{% endif %}
+{% if loyalty_ui %}<script type="module" src="{% static 'js/loyalty-invite.js' %}?v=1"></script>{% endif %}
 {% if address_places_enabled %}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endif %}
 {% endblock %}
 {% block footer %}<footer class="container account-footer"><a href="{% url 'core:privacy' %}">{{ account_copy.privacy }}</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="account-signout-button" type="submit">{% include "accounts/_icon.html" with icon="logout" %}<span>{{ account_copy.sign_out }}</span></button></form></footer>{% endblock %}

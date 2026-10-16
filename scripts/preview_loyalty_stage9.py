@@ -46,6 +46,7 @@ from django.conf import settings  # noqa: E402
 from django.contrib.auth import login  # noqa: E402
 from django.core.management import call_command  # noqa: E402
 from django.core.wsgi import get_wsgi_application  # noqa: E402
+from django.http import HttpResponse  # noqa: E402
 from django.shortcuts import redirect  # noqa: E402
 from django.urls import path  # noqa: E402
 from django.utils import timezone  # noqa: E402
@@ -89,8 +90,26 @@ admin.save()
 
 
 def switch(request, role):
-    identities = {"guest": a, "new": new, "owner": admin, "checkout": a}
+    identities = {"guest": a, "new": new, "owner": admin, "checkout": a, "mobile": a}
     login(request, identities[role], backend="django.contrib.auth.backends.ModelBackend")
+    if role == "mobile":
+        from html import escape
+
+        from apps.loyalty.views import guest_rewards
+
+        # Phone-width rendering of synthetic data, without changing production headers.
+        document = (
+            guest_rewards(request)
+            .content.decode()
+            .replace('id="loyalty-invite-link"', 'autofocus id="loyalty-invite-link"')
+        )
+        return HttpResponse(
+            '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8">'
+            '<title>معاينة جوال افتراضية</title><div align="center">'
+            "<p>معاينة جوال ببيانات افتراضية</p>"
+            f'<iframe title="معاينة الجوال" width="390" height="650" '
+            f'srcdoc="{escape(document, quote=True)}"></iframe></div></html>'
+        )
     if role == "checkout":
         from tests.test_hyperpay import payable_intent
 

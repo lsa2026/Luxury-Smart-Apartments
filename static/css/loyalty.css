@@ -18,6 +18,13 @@
 .loyalty-form label, .loyalty-rules summary { font-weight: 600; line-height: 1.8; }
 .loyalty-form input:not([type=checkbox]), .loyalty-form textarea, .loyalty-form select, .loyalty-link { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid #b9c3bd; border-radius: .6rem; padding: .8rem; font: inherit; font-size: 1rem; background: #fffefa; color: #101d3f; }
 .loyalty-fields { display: grid; grid-template-columns: 1.3fr 1fr; gap: .8rem; }
+.loyalty-invite-copy { display: grid; gap: .6rem; min-width: 0; }
+.loyalty-invite-copy > label { font-weight: 600; line-height: 1.8; }
+.loyalty-invite-copy__controls { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .7rem; align-items: stretch; min-width: 0; }
+.loyalty-invite-copy__button { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-height: 3rem; padding: .8rem 1.1rem; white-space: normal; line-height: 1.6; cursor: pointer; }
+.loyalty-invite-copy__button svg { flex: 0 0 auto; }
+.loyalty-copy-status { min-height: 1.7em; margin: 0; color: #096957; line-height: 1.7; font-size: .9rem; }
+.loyalty-copy-status[data-copy-error] { color: #8b231e; }
 .loyalty-consent { display: flex; align-items: start; gap: .6rem; padding-block: .5rem; }
 .loyalty-consent input { flex: 0 0 auto; width: 1.2rem; height: 1.2rem; margin-block-start: .35rem; }
 .loyalty-form button { min-height: 3rem; cursor: pointer; font: inherit; }
@@ -60,6 +67,8 @@
   .loyalty-metrics { grid-template-columns: 1fr 1fr; }
   .loyalty-metric--main { grid-column: 1/-1; }
   .loyalty-fields { grid-template-columns: 1fr; }
+  .loyalty-invite-copy__controls { grid-template-columns: minmax(0,1fr); }
+  .loyalty-invite-copy__button { width: 100%; box-sizing: border-box; }
   .loyalty-detail-list > div { grid-template-columns: 1fr; gap: .15rem; }
   .loyalty-movement { padding: .8rem; }
   .loyalty-tree-children { grid-template-columns: 1fr; }

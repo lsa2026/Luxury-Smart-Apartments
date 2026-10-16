@@ -3,7 +3,7 @@
 import secrets
 from datetime import datetime
 from decimal import Decimal
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -16,7 +16,6 @@ from django.db import connection
 from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import get_language
 from django.views.decorators.cache import never_cache
@@ -29,6 +28,7 @@ from apps.reservations.models import Reservation
 
 from .copy import copy, transaction_label
 from .forms import JoinForm, TransferForm
+from .invitation_links import invitation_url
 from .launch import (
     participant_allowed,
     pilot_only,
@@ -235,11 +235,7 @@ def guest_rewards(request):
         _decorate(rows)
         if member.status == "active":
             if member.invitation_token and invitation_eligible(member):
-                invite_url = request.build_absolute_uri(
-                    reverse("accounts:rewards")
-                    + "?"
-                    + urlencode({"invite": member.invitation_token})
-                )
+                invite_url = invitation_url(request, member)
             else:
                 eligible_dates = Q(
                     created_at__gte=datetime.fromisoformat(settings.LOYALTY_LAUNCH_AT)
