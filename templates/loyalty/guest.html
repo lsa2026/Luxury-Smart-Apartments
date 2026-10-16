@@ -33,16 +33,41 @@
   {% if loyalty_can_act and loyalty_member.status == 'active' %}
   <section class="account-panel loyalty-panel" aria-labelledby="loyalty-transfer-heading">
     <h2 id="loyalty-transfer-heading">{{ loyalty_copy.transfer }}</h2>
+    {% if loyalty_gift_status %}<div class="loyalty-notice" role="status"><p><bdi>{{ loyalty_gift_status.phone }}</bdi> — {{ loyalty_gift_status_text }}</p><a class="account-text-link" href="{% url 'accounts:rewards' %}">{{ loyalty_copy.gift_refresh }}</a></div>{% endif %}
     {% if loyalty_confirmation %}
-    <p>{{ loyalty_copy.confirmation }}</p><dl class="loyalty-identity"><div><dt>{{ loyalty_copy.recipient }}</dt><dd><bdi>{{ loyalty_confirmation.recipient }}</bdi></dd></div><div><dt>{{ loyalty_copy.amount }}</dt><dd>{{ loyalty_confirmation.value|localized_number }}</dd></div></dl>
+    <p>{{ loyalty_copy.confirmation }}</p><dl class="loyalty-identity"><div><dt>{{ loyalty_copy.gift_recipient_name }}</dt><dd>{{ loyalty_confirmation.name }}</dd></div><div><dt>{% if loyalty_confirmation.phone %}{{ loyalty_phone_gift_form.phone.label }}{% else %}{{ loyalty_copy.recipient }}{% endif %}</dt><dd><bdi>{% if loyalty_confirmation.phone %}{{ loyalty_confirmation.phone }}{% else %}{{ loyalty_confirmation.recipient }}{% endif %}</bdi></dd></div><div><dt>{{ loyalty_copy.amount }}</dt><dd>{{ loyalty_confirmation.value|localized_number }}</dd></div></dl>
     <form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="transfer_confirm"><input type="hidden" name="confirmation" value="{{ loyalty_confirmation.token }}">
       <button class="button account-primary" type="submit">{{ loyalty_copy.confirm_transfer }}</button><a class="account-text-link" href="{% url 'accounts:rewards' %}">{{ loyalty_copy.cancel }}</a>
     </form>
+    {% elif loyalty_gift_invitation %}
+    <p>{{ loyalty_copy.gift_unavailable }}</p><p><bdi>{{ loyalty_gift_invitation.phone }}</bdi></p>
+    {% if loyalty_gift_invitation.eligible %}
+    <p class="loyalty-notice">{{ loyalty_copy.gift_invite_explain }}</p>
+    {% if loyalty_pilot %}<p class="loyalty-muted">{{ loyalty_copy.gift_private_scope }}</p>{% endif %}
+    <form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="gift_invitation_confirm"><input type="hidden" name="confirmation" value="{{ loyalty_gift_invitation.token }}">
+      <label for="{{ loyalty_gift_invitation_form.language.id_for_label }}">{{ loyalty_gift_invitation_form.language.label }}</label>{{ loyalty_gift_invitation_form.language }}
+      <label class="loyalty-consent">{{ loyalty_gift_invitation_form.consent }}<span>{{ loyalty_gift_invitation_form.consent.label }}</span></label>
+      <button class="button account-primary" type="submit">{{ loyalty_copy.gift_invite_send }}</button>
+    </form>
+    {% else %}<p>{{ loyalty_copy.invite_wait }}</p>{% endif %}
+    <a class="account-text-link" href="{% url 'accounts:rewards' %}">{{ loyalty_copy.cancel }}</a>
     {% else %}
+    <p>{{ loyalty_copy.gift_phone_help }}</p>
+    <form method="post" class="loyalty-form" data-draft-server-bound="{% if loyalty_phone_gift_form.is_bound %}true{% else %}false{% endif %}">{% csrf_token %}<input type="hidden" name="action" value="gift_phone_review">
+      <div class="checkout-phone" data-checkout-phone data-account-phone data-check-url="{% url 'accounts:profile_phone_format' %}" data-error-selector="#gift-phone-validation" data-invalid-message="{{ loyalty_copy.invalid }}">
+        <div><label for="{{ loyalty_phone_gift_form.phone_country.id_for_label }}">{{ loyalty_phone_gift_form.phone_country.label }}</label>{{ loyalty_phone_gift_form.phone_country }}</div>
+        <div><label for="{{ loyalty_phone_gift_form.phone.id_for_label }}">{{ loyalty_phone_gift_form.phone.label }}</label>{{ loyalty_phone_gift_form.phone }}</div>
+      </div>
+      <p id="gift-phone-help" class="loyalty-muted">{{ loyalty_phone_help }}</p><p id="gift-phone-validation" class="loyalty-error" role="status" aria-live="polite" hidden></p>
+      <label for="{{ loyalty_phone_gift_form.amount.id_for_label }}">{{ loyalty_phone_gift_form.amount.label }}</label>{{ loyalty_phone_gift_form.amount }}
+      {% if loyalty_phone_gift_form.errors %}<p class="loyalty-error">{{ loyalty_copy.invalid }}</p>{% endif %}
+      <button class="button account-primary" type="submit">{{ loyalty_copy.review_transfer }}</button>
+    </form>
+    <details class="loyalty-rules"><summary>{{ loyalty_copy.gift_member_alternative }}</summary>
     <p>{{ loyalty_copy.transfer_help }}</p><form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="action" value="transfer_review">
       <div class="loyalty-fields">{% for field in loyalty_transfer_form %}<div><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<p class="loyalty-error">{{ loyalty_copy.invalid }}</p>{% endif %}</div>{% endfor %}</div>
       <button class="button account-primary" type="submit">{{ loyalty_copy.review_transfer }}</button>
-    </form>{% endif %}
+    </form></details>{% endif %}
   </section>
   {% endif %}
   <section class="account-panel loyalty-panel" aria-labelledby="loyalty-invite-heading">
