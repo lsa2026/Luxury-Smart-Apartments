@@ -165,17 +165,24 @@ def test_account_tickets_cannot_cross_accounts_or_checkout_namespace(guest, goog
     from tests.test_checkout_address_places import post
 
     user, client = guest
+    # Persist the browser marker first: the only changed identity below is
+    # the account, not an accidentally new session.
+    client.get("/my-bookings/details/")
     request = RequestFactory().get("/my-bookings/details/")
     request.session = client.session
     request.user = user
-    ticket = account_address_ticket(request)
     request.user = get_user_model().objects.create_user(username="other-address")
     different_account_ticket = account_address_ticket(request)
     assert search(client, different_account_ticket, input="Fictional Street").status_code == 400
 
     checkout_client, quote, reference = owned_client_quote()
+    checkout_client.force_login(user)
+    ticket = checkout_client.get("/my-bookings/details/").context["address_places_ticket"]
     assert post(checkout_client, reference, ticket, input="Fictional Street").status_code == 400
-    assert search(client, make_address_ticket(quote), input="Fictional Street").status_code == 400
+    assert (
+        search(checkout_client, make_address_ticket(quote), input="Fictional Street").status_code
+        == 400
+    )
     google.post.assert_not_called()
     google.get.assert_not_called()
 
