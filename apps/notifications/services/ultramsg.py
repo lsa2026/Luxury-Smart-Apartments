@@ -37,7 +37,7 @@ class UltraMsgResponseError(UltraMsgError):
 
 
 class UltraMsgClient:
-    """Small allowlisted client for UltraMsg's text-message endpoint."""
+    """Small allowlisted client for the existing business WhatsApp integration."""
 
     def __init__(self, http: httpx.Client | None = None) -> None:
         if (
@@ -94,6 +94,49 @@ class UltraMsgClient:
             raise UltraMsgResponseError()
         if str(document.get("sent", "")).casefold() not in {"true", "1", "yes"}:
             # An ambiguous response is not proof of delivery and must not be retried blindly.
+            raise UltraMsgConnectionError()
+        return document
+
+    def send_image(
+        self, *, recipient: str, content: bytes, caption: str, reference_id: str
+    ) -> dict[str, Any]:
+        """Send one PNG with its caption; never silently truncate or retry as text."""
+        encoded = base64.b64encode(content).decode("ascii")
+        if (
+            not content.startswith(b"\x89PNG\r\n\x1a\n")
+            or len(encoded) > 10_000_000
+            or len(caption.encode("utf-16-le")) // 2 > 1024
+            or not caption.strip()
+        ):
+            raise UltraMsgResponseError()
+        try:
+            response = self.http.post(
+                f"/{settings.ULTRAMSG_INSTANCE_ID}/messages/image",
+                data={
+                    "token": settings.ULTRAMSG_TOKEN,
+                    "to": recipient,
+                    "image": encoded,
+                    "caption": caption,
+                    "priority": "1",
+                    "referenceId": reference_id,
+                },
+            )
+        except httpx.HTTPError as exc:
+            raise UltraMsgConnectionError() from exc
+        if response.status_code >= 500:
+            raise UltraMsgConnectionError()
+        if response.status_code >= 400:
+            raise UltraMsgResponseError()
+        try:
+            document = response.json()
+        except (TypeError, ValueError) as exc:
+            raise UltraMsgResponseError() from exc
+        if not isinstance(document, dict):
+            raise UltraMsgResponseError()
+        sent = str(document.get("sent", "")).casefold()
+        if sent in {"false", "0", "no"}:
+            raise UltraMsgResponseError()
+        if sent not in {"true", "1", "yes"}:
             raise UltraMsgConnectionError()
         return document
 
