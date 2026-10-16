@@ -1,5 +1,6 @@
 /* Private account only; public pages retain their styles and marketing footer. */
 .guest-account { --account-navy: #101d3f; --account-green: #096957; --account-gold: #bb9450; }
+.guest-account--details { min-width: 0; }
 .guest-account .brand-splash { display: none; }
 .guest-account .site-header { position: relative; }
 .guest-account .header-top { min-height: 4.6rem; }

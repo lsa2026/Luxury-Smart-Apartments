@@ -47,6 +47,30 @@ function setup() {
         timers,
     };
 }
+
+test("profile lookup fills optional profile fields only, opens details, and never submits", async () => {
+    const {initCheckoutAddress} = await api;
+    const env = setup();
+    const map = {billing_street1:'residence_address_line1', billing_city:'residence_city',
+        billing_state:'residence_region', billing_country:'residence_country', billing_postcode:'residence_postal_code'};
+    for (const [oldName, newName] of Object.entries(map)) {
+        env.elements[newName] = env.elements[oldName];
+        delete env.elements[oldName];
+    }
+    env.panel.dataset.addressProfile = 'true';
+    const details = {open: false};
+    env.form.querySelector = () => details;
+    env.form.submit = () => assert.fail('lookup must not save the account');
+    initCheckoutAddress(env.panel, {...env, fetcher: async (url) => result(url.includes('suggestions')
+        ? {suggestions: [suggestion]}
+        : {fields: {billing_city:'London', billing_country:'GB', billing_postcode:'SW1A 1AA'}, next_ticket:'t2'})});
+    type(env, 'London'); await env.flush();
+    key(env.input, 'ArrowDown'); key(env.input, 'Enter'); await tick();
+    assert.equal(env.elements.residence_country.value, 'GB');
+    assert.equal(env.elements.residence_city.value, 'London');
+    assert.equal(env.elements.residence_postal_code.value, 'SW1A 1AA');
+    assert.equal(details.open, true);
+});
 const result = (body, status = 200) => ({ok: status === 200, status, json: async () => body});
 const suggestion = {place_id: "ChIJ_test", label: "10 King Street, London, UK"};
 const tick = () => new Promise((resolve) => setImmediate(resolve));

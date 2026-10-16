@@ -3,25 +3,34 @@ const fields = {
     billing_street1: 100, billing_city: 80, billing_state: 50,
     billing_country: 2, billing_postcode: 16,
 };
+const profileNames = {
+    billing_street1: 'residence_address_line1', billing_city: 'residence_city',
+    billing_state: 'residence_region', billing_country: 'residence_country',
+    billing_postcode: 'residence_postal_code',
+};
+const profileFields = Object.fromEntries(Object.entries(fields).map(([key, max]) => [profileNames[key], max]));
 
-export function addressSnapshot(form) {
-    return Object.fromEntries(Object.keys(fields).map((name) => [name, form.elements[name]?.value]));
+export function addressSnapshot(form, fieldSet = fields) {
+    return Object.fromEntries(Object.keys(fieldSet).map((name) => [name, form.elements[name]?.value]));
 }
 
-export function applyAddressFields(form, values, snapshot = addressSnapshot(form)) {
+export function applyAddressFields(form, values, snapshot = addressSnapshot(form), fieldSet = fields) {
     // A country change invalidates the whole pending selection. Do not mix
     // one country's street/postcode with the country chosen manually later.
-    if (form.elements.billing_country?.value !== snapshot.billing_country) return 0;
+    const country = fieldSet === profileFields ? 'residence_country' : 'billing_country';
+    if (form.elements[country]?.value !== snapshot[country]) return 0;
     let updated = 0;
-    for (const [name, max] of Object.entries(fields)) {
+    for (const [name, max] of Object.entries(fieldSet)) {
         const field = form.elements[name];
         const value = values?.[name];
         if (!field || field.value !== snapshot[name] || typeof value !== "string"
             || !value.trim() || value.length > max) continue;
-        if (name === "billing_country" && !Array.from(field.options).some(
+        if (name === country && !Array.from(field.options).some(
             (option) => option.value === value
         )) continue;
-        if (name === "billing_postcode" && !/^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$/.test(value)) continue;
+        if (name.endsWith('postcode') || name.endsWith('postal_code')) {
+            if (!/^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$/.test(value)) continue;
+        }
         field.value = value;
         field.dispatchEvent(new Event("input", { bubbles: true }));
         field.dispatchEvent(new Event("change", { bubbles: true }));
@@ -35,6 +44,8 @@ export function initCheckoutAddress(panel, {
     schedule = globalThis.setTimeout, cancel = globalThis.clearTimeout,
 } = {}) {
     const form = panel.closest("form");
+    const profile = panel.dataset.addressProfile === 'true';
+    const fieldSet = profile ? profileFields : fields;
     const input = panel.querySelector("[data-address-search]");
     const list = panel.querySelector("[data-address-options]");
     const results = panel.querySelector("[data-address-results]");
@@ -81,7 +92,7 @@ export function initCheckoutAddress(panel, {
 
     async function select(suggestion) {
         const current = stopPending();
-        const snapshot = addressSnapshot(form);
+        const snapshot = addressSnapshot(form, fieldSet);
         controller = new AbortController();
         announce("addressLoading");
         try {
@@ -93,10 +104,17 @@ export function initCheckoutAddress(panel, {
             if (!response.ok) throw new Error("unavailable");
             // Manual changes made during the request always win. Missing
             // components never erase a value already entered by the guest.
-            applyAddressFields(form, data.fields, snapshot);
+            const values = profile ? Object.fromEntries(Object.entries(data.fields || {}).map(
+                ([name, value]) => [profileNames[name] || name, value]
+            )) : data.fields;
+            applyAddressFields(form, values, snapshot, fieldSet);
             input.value = suggestion.label;
             announce("addressReview");
-            form.elements.billing_street1?.focus();
+            if (profile) {
+                const details = form.querySelector('[data-account-address-details]');
+                if (details) details.open = true;
+            }
+            form.elements[profile ? 'residence_address_line1' : 'billing_street1']?.focus();
         } catch (error) {
             if (current === sequence && error.name !== "AbortError") announce("addressFallback");
         }

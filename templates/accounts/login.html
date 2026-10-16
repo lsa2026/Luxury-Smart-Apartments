@@ -3,18 +3,13 @@
 {% block title %}{% trans "Sign in" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
+{% block body_class %}guest-access{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-access.css' %}">{% endblock %}
+{% block alerts %}{% endblock %}
+{% block contact_widget %}{% endblock %}
 {% block content %}
 <section class="auth-stage auth-stage--compact" aria-labelledby="login-title">
     <aside class="auth-aside">
-        <img
-            class="auth-aside__texture"
-            src="https://images.unsplash.com/photo-1674386491555-5b92161e4d04?auto=format&amp;fit=crop&amp;w=1400&amp;q=80"
-            alt=""
-            width="1400"
-            height="1750"
-            loading="lazy"
-            decoding="async"
-        >
         <span class="auth-aside__veil" aria-hidden="true"></span>
         <span class="auth-aside__glow" aria-hidden="true"></span>
 
@@ -30,9 +25,9 @@
             </a>
 
             <div class="auth-aside__copy">
-                <p class="eyebrow">{% trans "Welcome back" %}</p>
-                <h2>{% trans "Your bookings, in one place" %}</h2>
-                <p>{% trans "Continue with the email you booked with." %}</p>
+                <p class="eyebrow">{{ guest_access_copy.eyebrow }}</p>
+                <h2>{{ guest_access_copy.heading }}</h2>
+                <p>{{ guest_access_copy.intro }}</p>
             </div>
 
             <ul class="auth-benefits">
@@ -41,17 +36,15 @@
                         <svg viewBox="0 0 24 24" focusable="false"><path d="M12 6.5V12l3.4 2M12 3.7a8.3 8.3 0 1 1-8.3 8.3"/><path d="M3.7 8.3V4.6m0 3.7h3.7"/></svg>
                     </span>
                     <span>
-                        <strong>{% trans "Pick up where you left off" %}</strong>
-                        <small>{% trans "Quotes and stays stay ready in your dashboard." %}</small>
+                        <strong>{{ guest_access_copy.bookings }}</strong>
                     </span>
                 </li>
                 <li>
                     <span class="auth-benefits__icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3.5 18.5 6.1v5c0 4-2.7 7.5-6.5 8.9-3.8-1.4-6.5-4.9-6.5-8.9v-5L12 3.5Zm-2.4 8.3 1.9 1.9 3.9-3.9"/></svg>
+                        {% include "accounts/_icon.html" with icon="gift" %}
                     </span>
                     <span>
-                        <strong>{% trans "Secure access using your email" %}</strong>
-                        <small>{% trans "No card details are needed to open your account." %}</small>
+                        <strong>{{ guest_access_copy.rewards }}</strong>
                     </span>
                 </li>
                 <li>
@@ -59,17 +52,17 @@
                         <svg viewBox="0 0 24 24" focusable="false"><path d="M8 3.5h8a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 19V5A1.5 1.5 0 0 1 8 3.5Zm2.6 14.1h2.8"/></svg>
                     </span>
                     <span>
-                        <strong>{% trans "Designed for mobile and tablet" %}</strong>
-                        <small>{% trans "Open your bookings from anywhere, in your language." %}</small>
+                        <strong>{{ guest_access_copy.secure }}</strong>
                     </span>
                 </li>
             </ul>
 
-            <p class="auth-aside__signature"><span aria-hidden="true">◆</span>{% trans "We never store your card number" %}</p>
+            <p class="auth-aside__signature">{{ guest_access_copy.note }}</p>
         </div>
     </aside>
 
     <div class="auth-panel">
+        {% include "includes/alerts.html" %}
         <header class="auth-panel__header">
             <p class="eyebrow">{{ email_access_copy.eyebrow }}</p>
             <h1 id="login-title">{{ email_access_copy.title }}</h1>
