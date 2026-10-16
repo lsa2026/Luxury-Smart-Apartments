@@ -25,6 +25,7 @@ LOYALTY_LAUNCH_AT = env("LOYALTY_LAUNCH_AT", default="")
 # Stage-nine interfaces remain closed until a separately approved launch.
 LOYALTY_UI_ENABLED = env.bool("LOYALTY_UI_ENABLED", default=False)
 LOYALTY_MESSAGES_ENABLED = env.bool("LOYALTY_MESSAGES_ENABLED", default=False)
+LOYALTY_WHATSAPP_NOTICES_ENABLED = env.bool("LOYALTY_WHATSAPP_NOTICES_ENABLED", default=False)
 LOYALTY_UI_PREVIEW = env.bool("LOYALTY_UI_PREVIEW", default=False)
 # A live acceptance run is explicit and bounded; empty lists allow nobody.
 LOYALTY_PILOT_ONLY = env.bool("LOYALTY_PILOT_ONLY", default=False)

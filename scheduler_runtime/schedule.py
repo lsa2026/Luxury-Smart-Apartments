@@ -15,6 +15,11 @@ def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]
             "schedule": 60,
         }
     }
+    if settings.get("LOYALTY_WHATSAPP_NOTICES_ENABLED", False):
+        schedule["loyalty-movement-whatsapp"] = {
+            "task": "apps.loyalty.tasks.recover_movement_notices_task",
+            "schedule": 60,
+        }
     if settings.get("LOYALTY_MESSAGES_ENABLED", False):
         schedule["loyalty-guest-invitations"] = {
             "task": "apps.loyalty.tasks.guest_invitations_task",

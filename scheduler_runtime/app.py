@@ -46,6 +46,7 @@ schedule_settings = {
         "EMAIL_TASK_SCHEDULE_ENABLED",
         "LOYALTY_BACKUP_ENABLED",
         "LOYALTY_MESSAGES_ENABLED",
+        "LOYALTY_WHATSAPP_NOTICES_ENABLED",
     )
 }
 schedule_settings.update(

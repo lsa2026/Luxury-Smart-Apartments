@@ -74,6 +74,7 @@ jobs:
           tests/test_loyalty_public_launch.py
           tests/test_loyalty_public_terms.py
           tests/test_loyalty_statement_details.py
+          tests/test_loyalty_whatsapp_notices.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

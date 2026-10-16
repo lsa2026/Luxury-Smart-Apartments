@@ -1,5 +1,7 @@
 """Three financial master tables. Booking operating state stays on Reservation."""
 
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -108,6 +110,45 @@ class Referral(AppendOnly):
 
     def __str__(self):
         return self.tree_number
+
+
+class MovementNotice(models.Model):
+    """Delivery outbox, not a fourth financial master. Never backfilled from history.
+
+    The financial mirror intentionally excludes transport state. Restoring it
+    must not reconstruct notices and resend already-notified historical rows.
+    Message bodies, raw mobile numbers and provider responses are not retained.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ledger = models.OneToOneField("Ledger", on_delete=models.PROTECT)
+    recipient_binding = models.ForeignKey(
+        "accounts.VerifiedPhone", on_delete=models.SET_NULL, null=True, editable=False
+    )
+    binding_version = models.UUIDField(null=True, editable=False)
+    phone_digest = models.CharField(max_length=64, blank=True, editable=False)
+    language = models.CharField(max_length=2)
+    template_version = models.CharField(max_length=40, default="movement-whatsapp-v1")
+    status = models.CharField(
+        max_length=12,
+        default="queued",
+        choices=[
+            (v, v) for v in ("queued", "sending", "accepted", "uncertain", "failed", "skipped")
+        ],
+    )
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now, db_index=True)
+    started_at = models.DateTimeField(null=True)
+    accepted_at = models.DateTimeField(null=True)
+    error_code = models.CharField(max_length=40, blank=True)
+    provider_reference = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        indexes = [models.Index(fields=["status", "next_attempt_at"], name="loyalty_notice_due")]
+
+    def __str__(self):
+        return f"MovementNotice {self.pk} — {self.status}"
 
 
 class Ledger(AppendOnly):

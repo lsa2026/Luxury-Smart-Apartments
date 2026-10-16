@@ -8,6 +8,14 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .backup import LocalMirror, _local_source_only
 from .phone_gifts import deliver_invitation as deliver_invitation
+from .whatsapp_notices import deliver_movement_notice as deliver_movement_notice
+
+
+@shared_task(ignore_result=True, soft_time_limit=45, time_limit=60)
+def recover_movement_notices_task():
+    from .whatsapp_notices import recover_notices
+
+    return recover_notices()
 
 
 @shared_task(ignore_result=True, soft_time_limit=45, time_limit=60)

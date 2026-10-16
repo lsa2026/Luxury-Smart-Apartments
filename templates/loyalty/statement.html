@@ -15,6 +15,7 @@
       <div><dt>{{ loyalty_copy.number }}</dt><dd><bdi>{{ row.membership_number }}</bdi></dd></div>
       <div><dt>{{ loyalty_copy.group }}</dt><dd><bdi>{{ row.operation_group }}</bdi></dd></div>
       <div><dt>{{ loyalty_copy.transaction_status }}</dt><dd>{{ loyalty_copy.posted_status }}</dd></div>
+      {% if loyalty_admin %}<div><dt>إشعار واتساب</dt><dd>{{ row.ui_notice }}</dd></div>{% endif %}
       {% if row.ui_transfer %}
       {% if row.ui_counterpart %}
       <div><dt>{% if row.debit %}{{ loyalty_copy.gift_to }}{% else %}{{ loyalty_copy.gift_from }}{% endif %}</dt><dd>{{ row.ui_counterpart.name }}</dd></div>

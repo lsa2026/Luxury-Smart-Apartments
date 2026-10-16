@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import logging
 import secrets
 from contextlib import contextmanager
 from datetime import datetime
@@ -147,6 +148,16 @@ def _post(member, group, branch, *, credit=ZERO, debit=ZERO, **fields):
         from .notifications import queue_movement
 
         transaction.on_commit(lambda: queue_movement(row.pk), robust=True)
+    if settings.LOYALTY_WHATSAPP_NOTICES_ENABLED:
+        from .whatsapp_notices import queue_notice
+
+        try:
+            # A savepoint isolates an outbox failure from the financial posting.
+            # The network task is dispatched only after the enclosing commit.
+            with transaction.atomic():
+                queue_notice(row)
+        except Exception:
+            logging.getLogger(__name__).warning("loyalty_notice_queue_failed ledger=%s", row.pk)
     return row
 
 
