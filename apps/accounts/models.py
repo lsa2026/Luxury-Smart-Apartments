@@ -56,6 +56,68 @@ class PhoneAuthLimit(models.Model):
         return self.key
 
 
+class BookingHistoryImport(models.Model):
+    """One user-initiated cursor job; no contact details in task arguments."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    generation = models.UUIDField(default=uuid.uuid4, editable=False)
+    identity_digest = models.CharField(max_length=64)
+    status = models.CharField(max_length=16, default="queued")
+    cursor = models.PositiveBigIntegerField(null=True)
+    seen_cursors = models.JSONField(default=list)
+    pages = models.PositiveIntegerField(default=0)
+    added = models.PositiveIntegerField(default=0)
+    conflicts = models.PositiveIntegerField(default=0)
+    skipped = models.PositiveIntegerField(default=0)
+    lease = models.UUIDField(null=True)
+    locked_until = models.DateTimeField(null=True)
+    error_code = models.CharField(max_length=32, blank=True)
+    requested_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"BookingHistoryImport {self.pk}"
+
+
+class GuestBookingHistory(models.Model):
+    """Read-only matched Hostaway projection, never an operational reservation."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    hostaway_reservation_id = models.PositiveBigIntegerField(unique=True)
+    property = models.ForeignKey("properties.Property", null=True, on_delete=models.SET_NULL)
+    property_name = models.CharField(max_length=200, blank=True)
+    channel_id = models.PositiveIntegerField(null=True)
+    channel_name = models.CharField(max_length=100, blank=True)
+    normalized_status = models.CharField(max_length=30)
+    check_in = models.DateField()
+    check_out = models.DateField()
+    guests = models.PositiveSmallIntegerField()
+    currency = models.CharField(max_length=3)
+    total_price = models.DecimalField(max_digits=14, decimal_places=4)
+    last_seen_generation = models.UUIDField()
+    identity_digest = models.CharField(max_length=64)
+    is_visible = models.BooleanField(default=True)
+    checked_at = models.DateTimeField(default=timezone.now)
+
+    history_only = True
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "is_visible", "check_out"])]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(check_out__gt=models.F("check_in")),
+                name="guest_history_dates_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(total_price__gte=0), name="guest_history_total_valid"
+            ),
+        ]
+
+    def __str__(self):
+        return f"GuestBookingHistory {self.pk}"
+
+
 class CustomerProfile(models.Model):
     """Verification state for a customer account.
 

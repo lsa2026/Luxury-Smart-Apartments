@@ -2,6 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
 from .address_places import AccountAddressDetailsView, AccountAddressView
+from .history_views import restore_bookings, restore_status
 from .operations_users import manager_list, manager_revoke
 from .password_reset import LuxurySetPasswordForm, QueuedPasswordResetForm
 from .phone_views import phone_confirm, phone_format, phone_start, profile_phone_format
@@ -33,6 +34,8 @@ urlpatterns = [
     path("account/mobile/confirm/", phone_confirm, name="phone_confirm"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("my-bookings/", dashboard, name="dashboard"),
+    path("my-bookings/restore/", restore_bookings, name="restore_bookings"),
+    path("my-bookings/restore/status/", restore_status, name="restore_status"),
     path("my-bookings/rewards/", dashboard, {"section": "rewards"}, name="rewards"),
     path("my-bookings/details/", dashboard, {"section": "details"}, name="details"),
     path(

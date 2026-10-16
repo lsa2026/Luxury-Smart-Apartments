@@ -4,7 +4,7 @@
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
 {% block body_class %}guest-account{% if account_section == 'details' %} guest-account--details{% endif %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=3">{% if account_section == 'details' %}<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{% endif %}{% if address_places_enabled %}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endif %}{% if loyalty_ui %}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=1">{% endif %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/guest-account.css' %}?v=4">{% if account_section == 'details' %}<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{% endif %}{% if address_places_enabled %}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endif %}{% if loyalty_ui %}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=1">{% endif %}{% endblock %}
 {% block contact_widget %}{% endblock %}
 {% block content %}
 <div class="container guest-account-shell">
@@ -25,6 +25,7 @@
         </aside>
         <div class="account-main">
             {% if account_section == 'bookings' %}
+            {% include "accounts/_history_recovery.html" %}
             <section class="account-panel account-bookings" aria-labelledby="account-bookings-heading">
                 <h2 id="account-bookings-heading">{{ account_copy.bookings }}</h2>
                 <nav class="account-booking-filters" aria-label="{{ account_copy.bookings }}">
@@ -33,7 +34,7 @@
                     <a href="{% url 'accounts:dashboard' %}?filter=cancelled"{% if booking_filter == 'cancelled' %} aria-current="page"{% endif %}>{{ account_copy.cancelled }} <span>{{ booking_counts.cancelled|localized_number }}</span></a>
                 </nav>
                 {% if booking_page.object_list %}
-                <div class="account-booking-results">{% for reservation in booking_page %}{% include "accounts/_booking_card.html" %}{% endfor %}</div>
+                <div class="account-booking-results">{% for reservation in booking_page %}{% if reservation.history_only %}{% include "accounts/_history_card.html" %}{% else %}{% include "accounts/_booking_card.html" %}{% endif %}{% endfor %}</div>
                 {% if booking_page.has_other_pages %}<nav class="account-pagination" aria-label="{{ account_copy.bookings }}">
                     {% if booking_page.has_previous %}<a href="?filter={{ booking_filter }}&amp;page={{ booking_page.previous_page_number }}">{{ account_copy.previous_page }}</a>{% endif %}
                     <span>{{ account_copy.page }} {{ booking_page.number|localized_number }} {{ account_copy.of }} {{ booking_page.paginator.num_pages|localized_number }}</span>
@@ -45,7 +46,6 @@
                     <a class="button account-primary" href="{% url 'properties:list' %}#property-search">{{ account_copy.choose_stay }}</a>
                 </div>{% endif %}
             </section>
-            <a class="account-utility account-panel" href="{% url 'reservations:manage_access' %}"><span class="account-utility__icon">{% include "accounts/_icon.html" with icon="link" %}</span><span><strong>{{ account_copy.missing_booking }}</strong><small>{{ account_copy.access_hint }}</small><b>{{ account_copy.access_booking }}</b></span>{% include "accounts/_icon.html" with icon="arrow" %}</a>
             {% elif account_section == 'rewards' %}
             {% if loyalty_ui %}{% include "loyalty/guest.html" %}{% else %}
             <section class="account-panel account-rewards" aria-labelledby="account-rewards-heading">
@@ -62,6 +62,7 @@
     </div>
 </div>
 {% if account_section == 'details' %}<script src="{% static 'js/checkout-phone.js' %}" defer></script>{% endif %}
+{% if account_section == 'bookings' %}<script type="module" src="{% static 'js/booking-history.js' %}"></script>{% endif %}
 {% if address_places_enabled %}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endif %}
 {% endblock %}
 {% block footer %}<footer class="container account-footer"><a href="{% url 'core:privacy' %}">{{ account_copy.privacy }}</a><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="account-signout-button" type="submit">{% include "accounts/_icon.html" with icon="logout" %}<span>{{ account_copy.sign_out }}</span></button></form></footer>{% endblock %}

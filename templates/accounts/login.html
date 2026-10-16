@@ -74,6 +74,7 @@
         <form method="post" class="auth-form" novalidate>
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next }}">
+            {% if claim %}<input type="hidden" name="claim" value="{{ claim }}">{% endif %}
 
             <fieldset class="auth-fieldset">
                 <legend><i aria-hidden="true">01</i>{% trans "How we reach you" %}</legend>

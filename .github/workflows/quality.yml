@@ -62,6 +62,7 @@ jobs:
           tests/test_loyalty_stage8.py
           tests/test_loyalty_final_readiness.py
           tests/test_guest_phone_auth.py
+          tests/test_guest_booking_history.py
           tests/test_guest_access_address.py
           tests/test_checkout_address_places.py
           tests/test_loyalty_checkout_integration.py
@@ -121,6 +122,9 @@ jobs:
 
       - name: Test checkout phone country and normalization
         run: node --test tests/checkout-phone.test.cjs tests/phone-delivery.test.cjs
+
+      - name: Test explicit guest history recovery status and form safety
+        run: node --test tests/booking-history.test.cjs
 
       - name: Test guest form validation in Arabic, English and French
         run: node --test tests/form-validation.test.cjs tests/property-map.test.cjs

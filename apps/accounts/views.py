@@ -28,7 +28,8 @@ from .forms import (
     EmailCodeRequestForm,
     EmailVerificationCodeForm,
 )
-from .models import VerifiedPhone, profile_for
+from .history_views import history_context
+from .models import GuestBookingHistory, VerifiedPhone, profile_for
 from .phone_auth import allowed as phone_allowed
 from .phone_auth import ready as phone_ready
 from .phone_copy import phone_copy
@@ -187,7 +188,12 @@ def _claim_after_authentication(request: HttpRequest, user: object) -> None:
     registered afterwards finds the stay waiting on the dashboard instead of an
     empty page.
     """
-    reference = request.POST.get(CLAIM_PARAM) or request.GET.get(CLAIM_PARAM) or ""
+    reference = (
+        request.POST.get(CLAIM_PARAM)
+        or request.GET.get(CLAIM_PARAM)
+        or request.session.get(PENDING_EMAIL_CODE_CLAIM)
+        or ""
+    )
     reservation = claim_reservation(request, user, reference)
     if reservation is not None:
         messages.success(
@@ -399,6 +405,7 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
         booking_filter = "upcoming"
     counts = {}
     booking_page = None
+    recovery_context = {}
     if section == "bookings":
         counts = reservations.aggregate(
             upcoming=Count(
@@ -409,7 +416,47 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
             ),
             cancelled=Count("pk", filter=Q(normalized_status=Reservation.Status.CANCELLED)),
         )
-        booking_page = Paginator(groups[booking_filter], 6).get_page(request.GET.get("page"))
+        history = (
+            GuestBookingHistory.objects.select_related("property")
+            .filter(
+                user=request.user,
+                is_visible=True,
+            )
+            .exclude(
+                hostaway_reservation_id__in=reservations.filter(
+                    hostaway_reservation_id__isnull=False
+                ).values("hostaway_reservation_id")
+            )
+        )
+        history_counts = history.aggregate(
+            upcoming=Count(
+                "pk", filter=~Q(normalized_status__in=closed_statuses) & Q(check_out__gte=today)
+            ),
+            past=Count(
+                "pk", filter=~Q(normalized_status__in=closed_statuses) & Q(check_out__lt=today)
+            ),
+            cancelled=Count("pk", filter=Q(normalized_status=Reservation.Status.CANCELLED)),
+        )
+        for key in counts:
+            counts[key] += history_counts[key]
+        history_groups = {
+            "upcoming": history.exclude(normalized_status__in=closed_statuses).filter(
+                check_out__gte=today
+            ),
+            "past": history.exclude(normalized_status__in=closed_statuses).filter(
+                check_out__lt=today
+            ),
+            "cancelled": history.filter(normalized_status=Reservation.Status.CANCELLED),
+        }
+        items = [*groups[booking_filter], *history_groups[booking_filter]]
+        items.sort(
+            key=lambda booking: (
+                booking.check_in if booking_filter == "upcoming" else booking.check_out
+            ),
+            reverse=booking_filter != "upcoming",
+        )
+        booking_page = Paginator(items, 6).get_page(request.GET.get("page"))
+        recovery_context = history_context(request.user)
     sign_in_methods = []
     if section == "details":
         from allauth.socialaccount.models import SocialAccount
@@ -460,6 +507,7 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
             else "",
             "address_details_url": reverse("accounts:address_details") if address_available else "",
             "address_profile": address_available,
+            **recovery_context,
         },
     )
 
