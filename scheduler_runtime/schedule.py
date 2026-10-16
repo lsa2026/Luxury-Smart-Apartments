@@ -13,7 +13,12 @@ def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]
         "recover-reservation-payments": {
             "task": "apps.payments.payment_link_tasks.recover_payment_requests_task",
             "schedule": 60,
-        }
+        },
+        # Dispatch only; the worker checks the approved policy and payment facts.
+        "loyalty-due-stays": {
+            "task": "apps.loyalty.tasks.accrue_due_stays_task",
+            "schedule": 60,
+        },
     }
     if settings.get("LOYALTY_WHATSAPP_NOTICES_ENABLED", False):
         schedule["loyalty-movement-whatsapp"] = {

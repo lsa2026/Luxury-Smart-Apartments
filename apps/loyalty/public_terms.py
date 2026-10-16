@@ -4,6 +4,7 @@
 
 import hashlib
 import json
+from copy import deepcopy
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -13,6 +14,8 @@ from django.urls import reverse
 from django.utils.translation import get_language, override
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
+
+from .accrual import TERMS_REFERENCE, TERMS_URL_VERSION, TERMS_VERSION
 
 VERSION = "loyalty-public-20261016-v1"
 URL_VERSION = "2026-10-16-v1"
@@ -232,41 +235,69 @@ CONTENT = {
 }
 
 
-def document(language=None):
+UPDATED_CONTENT = deepcopy(CONTENT)
+for code, issued in {
+    "ar": "الإصدار الثاني — ١٦ أكتوبر ٢٠٢٦؛ تحديث موعد استحقاق المكافآت",
+    "en": "Second edition — 16 October 2026; reward eligibility timing updated",
+    "fr": "Deuxième édition — 16 octobre 2026 ; mise à jour du moment d’acquisition des points",
+}.items():
+    UPDATED_CONTENT[code]["issued"] = issued
+for code, paragraph in {
+    "ar": "تُكتسب مكافآت الإقامة عن حجوزات الموقع المؤهلة، بما فيها الحجوزات التي تنشئها الإدارة من خلاله وتثبت مدفوعاتها. لا تمنح حجوزات القنوات الخارجية نقاط إقامة، ولا تمنح الحجوزات السابقة لبدء تشغيل البرنامج مكافآت بأثر رجعي. يُشترط الانضمام وتأكيد سداد قيمة الإقامة. يتحقق الاستحقاق تلقائيًا عند الثالثة عصرًا من يوم الدخول بتوقيت العقار، أو عند توثيق الإدارة للوصول في أي وقت، ولو قبل يوم الدخول، أيهما أسبق. يعالج الفحص الدوري الاستحقاق من ذلك الموعد؛ وإذا اكتمل السداد أو الانضمام بعده أثناء الإقامة، يعاد التحقق عند اكتمالهما. لا يلزم انتظار نهاية الإقامة، ولا تكفي كتابة رقم حجز أو تسجيل الدخول للحساب وحدهما. حلول الموعد لا يسجل وصولًا فعليًا، ولا تكرر المكافأة عند توثيق الوصول لاحقًا. تطبق تصحيحات التعديل والإلغاء والاسترداد الواردة أدناه، دون إعادة كتابة العمليات أو نسبها التاريخية. الحجوزات والاستثناءات الاختبارية المحددة سابقًا لا تمنح الآخرين استثناءً.",
+    "en": "Stay rewards apply to eligible website bookings, including those created by administration through the website with verified payments. External-channel bookings earn no stay rewards, and bookings made before programme launch receive no retrospective rewards. Membership and confirmed payment for the stay are required. Eligibility begins automatically at 3 pm on check-in day in the property’s local time, or when administration records arrival at any time, including before check-in day, whichever comes first. A periodic check processes rewards from that time; payment or enrolment completed later during the stay triggers another eligibility check. There is no need to wait until departure; entering a booking number or signing in alone is insufficient. Reaching the scheduled time does not record physical arrival, and later arrival confirmation never repeats the reward. The modification, cancellation and refund corrections below still apply without rewriting historical entries or rates. Previously authorised test bookings and exceptions do not create exceptions for other guests.",
+    "fr": "Les récompenses de séjour concernent les réservations admissibles du site, y compris celles créées par l’administration sur le site avec paiement vérifié. Les réservations de canaux externes ne donnent pas de points de séjour ; celles antérieures au lancement n’en donnent pas rétroactivement. L’adhésion et le paiement confirmé du séjour sont obligatoires. L’admissibilité commence automatiquement à 15 h le jour d’arrivée, heure locale du logement, ou lorsque l’administration enregistre l’arrivée à tout moment, même avant le jour prévu, selon la première éventualité. Un contrôle périodique traite les points à partir de cet instant ; un paiement ou une adhésion finalisés plus tard pendant le séjour déclenchent un nouveau contrôle. Il n’est pas nécessaire d’attendre le départ ; saisir un numéro de réservation ou se connecter ne suffit pas. L’heure prévue ne constate pas une arrivée physique et une confirmation ultérieure ne répète jamais la récompense. Les corrections pour modification, annulation et remboursement ci-dessous restent applicables, sans réécrire les écritures ni leurs taux historiques. Les anciennes dérogations d’essai ne créent aucune exception pour d’autres clients.",
+}.items():
+    UPDATED_CONTENT[code]["sections"][1] = (CONTENT[code]["sections"][1][0], paragraph)
+
+# The first edition and its consent hashes remain addressable, unchanged.
+EDITIONS = {
+    VERSION: (URL_VERSION, REFERENCE, CONTENT),
+    TERMS_VERSION: (TERMS_URL_VERSION, TERMS_REFERENCE, UPDATED_CONTENT),
+}
+
+
+def document(language=None, *, version=None):
+    version = version or settings.LOYALTY_TERMS_VERSION
+    version = version if version in EDITIONS else VERSION
+    content_by_language = EDITIONS[version][2]
     code = (language or get_language() or "ar").split("-")[0]
-    code = code if code in CONTENT else "ar"
-    content = CONTENT[code]
+    code = code if code in content_by_language else "ar"
+    content = content_by_language[code]
     digest = hashlib.sha256(
         json.dumps(content, ensure_ascii=False, sort_keys=True).encode("utf-8")
     ).hexdigest()
-    return {**content, "version": VERSION, "language": code, "sha256": digest}
+    return {**content, "version": version, "language": code, "sha256": digest}
 
 
 def terms_reference():
-    if settings.LOYALTY_TERMS_REFERENCE == REFERENCE and settings.LOYALTY_TERMS_VERSION == VERSION:
+    edition = EDITIONS.get(settings.LOYALTY_TERMS_VERSION)
+    if edition and settings.LOYALTY_TERMS_REFERENCE == edition[1]:
         with override(document()["language"]):
-            return reverse("core:rewards_terms", kwargs={"version": URL_VERSION})
+            return reverse("core:rewards_terms", kwargs={"version": edition[0]})
     return settings.LOYALTY_TERMS_REFERENCE
 
 
 def consent_metadata(version, reference, language):
-    if version != VERSION:
+    edition = EDITIONS.get(version)
+    if not edition:
         return {}
     if language not in CONTENT:
         raise ValidationError("Unsupported terms language.")
     with override(language):
-        expected = reverse("core:rewards_terms", kwargs={"version": URL_VERSION})
+        expected = reverse("core:rewards_terms", kwargs={"version": edition[0]})
     if reference != expected:
         raise ValidationError("Use the issued terms reference for this language.")
-    return {"terms_content_sha256": document(language)["sha256"]}
+    return {"terms_content_sha256": document(language, version=version)["sha256"]}
 
 
 @require_safe
 @never_cache
 def terms_view(request, version):
-    if version != URL_VERSION:
+    issued_version = next((key for key, value in EDITIONS.items() if value[0] == version), None)
+    if not issued_version:
         raise Http404
-    response = render(request, "loyalty/public_terms.html", {"reward_terms": document()})
-    response["X-Document-Version"] = VERSION
-    response["X-Document-SHA256"] = document()["sha256"]
+    issued = document(version=issued_version)
+    response = render(request, "loyalty/public_terms.html", {"reward_terms": issued})
+    response["X-Document-Version"] = issued_version
+    response["X-Document-SHA256"] = issued["sha256"]
     return response

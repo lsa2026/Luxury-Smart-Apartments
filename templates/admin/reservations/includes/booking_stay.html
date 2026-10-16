@@ -9,12 +9,13 @@
       {% if loyalty_stay.arrived %}<p class="lsa-stay-controls__success">تم توثيق الوصول</p>
       <p class="help">تُحتسب النقاط تلقائيًا بعد التحقق من السداد الإلكتروني والانضمام وأهلية الحجز.</p>
       {% elif loyalty_stay.can_arrive %}
-      <p>اضغط بعد وصول الضيف فعليًا. سيُسجل الوقت الحالي تلقائيًا، ثم يفحص النظام استحقاق النقاط.</p>
+      <p>يمكن للإدارة توثيق الوصول الآن، ولو قبل يوم الدخول. يفحص النظام السداد المؤكد والانضمام وأهلية الحجز قبل إضافة النقاط، دون تكرار مكافأة سبق احتسابها.</p>
       <form method="post" action="{% url 'loyalty:booking_stay' reservation.pk %}">{% csrf_token %}
         <input type="hidden" name="action" value="arrival">
         <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد وصول الضيف الآن</button>
       </form>
-      {% else %}<p class="help">{% if loyalty_stay.not_started %}لم تبدأ فترة الإقامة بعد؛ لا نسجل وصولًا قبل حدوثه.{% else %}تأكيد الوصول غير متاح في حالة الحجز الحالية.{% endif %}</p>{% endif %}
+      {% else %}<p class="help">تأكيد الوصول غير متاح في حالة الحجز الحالية.</p>{% endif %}
+      {% if loyalty_stay.scheduled_accrual %}<p class="help">سبق تحقق موعد الاستحقاق التلقائي. لا يُعد ذلك توثيقًا لوصول الضيف الفعلي.</p>{% endif %}
     </article>
     <article>
       <h3>إنهاء الإقامة</h3>
