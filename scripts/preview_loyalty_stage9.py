@@ -93,13 +93,22 @@ def switch(request, role):
     identities = {"guest": a, "new": new, "owner": admin, "checkout": a, "mobile": a}
     login(request, identities[role], backend="django.contrib.auth.backends.ModelBackend")
     if role == "mobile":
+        from html import escape
+
+        from apps.loyalty.views import guest_rewards
+
+        # Phone-width rendering of synthetic data, without changing production headers.
+        document = (
+            guest_rewards(request)
+            .content.decode()
+            .replace('id="loyalty-invite-link"', 'autofocus id="loyalty-invite-link"')
+        )
         return HttpResponse(
             '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8">'
-            "<title>معاينة جوال افتراضية</title><style>"
-            "body{margin:0;padding:20px;background:#e8e5de;display:grid;justify-content:center}"
-            "iframe{width:390px;height:844px;border:0;border-radius:20px;background:#fff}"
-            '</style><iframe title="معاينة الجوال" '
-            'src="/my-bookings/rewards/#loyalty-invite-heading"></iframe></html>'
+            '<title>معاينة جوال افتراضية</title><div align="center">'
+            "<p>معاينة جوال ببيانات افتراضية</p>"
+            f'<iframe title="معاينة الجوال" width="390" height="650" '
+            f'srcdoc="{escape(document, quote=True)}"></iframe></div></html>'
         )
     if role == "checkout":
         from tests.test_hyperpay import payable_intent
