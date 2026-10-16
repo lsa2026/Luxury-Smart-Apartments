@@ -193,6 +193,7 @@ def test_profile_phone_widget_is_localized_and_only_loaded_in_details(guest, lan
 
 @pytest.fixture(autouse=True)
 def isolated(settings, monkeypatch):
+    settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = False
     settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = True
     settings.ACCOUNT_WHATSAPP_AUTH_ISOLATED = True
     settings.ACCOUNT_WHATSAPP_AUTH_EMAILS = ["loyalty-phone@example.invalid"]
@@ -581,6 +582,68 @@ def test_closed_gates_preserve_original_login(guest, settings, field):
     assert page.status_code == 200
     assert b'name="email"' in page.content
     assert b"/account/mobile/" not in page.content
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_public_phone_verification_is_visible_to_non_allowlisted_guest(
+    guest, settings, language, isolated
+):
+    settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = True
+    settings.ACCOUNT_WHATSAPP_AUTH_EMAILS = []
+    guest.client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    assert auth.ready() and auth.allowed(guest.user)
+    page = guest.client.get("/my-bookings/details/")
+    assert page.status_code == 200
+    assert 'href="/account/mobile/link/"' in page.content.decode()
+    assert TEXT[language]["verify_mobile"] in page.content.decode()
+    assert guest.client.get("/account/mobile/link/").status_code == 200
+    assert not isolated.sent and not isolated.dispatched
+
+
+def test_public_guest_can_bind_without_booking_then_sign_in_with_one_use_code(
+    guest, settings, isolated, django_capture_on_commit_callbacks
+):
+    settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = True
+    settings.ACCOUNT_WHATSAPP_AUTH_EMAILS = []
+    guest.booking.booking_intent.customer = None
+    guest.booking.booking_intent.save(update_fields=["customer"])
+    assert start(guest.client, django_capture_on_commit_callbacks, binding=True).status_code == 302
+    assert deliver(guest.client).status == "sent"
+    assert guest.client.post("/account/mobile/confirm/", {"code": CODE}).status_code == 302
+    assert VerifiedPhone.objects.get(user=guest.user).phone == PHONE
+    guest.client.logout()
+    isolated.clock[0] += timedelta(seconds=61)
+    assert start(guest.client, django_capture_on_commit_callbacks).status_code == 302
+    login_code = deliver(guest.client)
+    assert login_code.status == "sent"
+    assert guest.client.post("/account/mobile/confirm/", {"code": CODE}).status_code == 302
+    assert int(guest.client.session["_auth_user_id"]) == guest.user.pk
+    login_code.refresh_from_db()
+    assert login_code.status == "consumed" and not login_code.code_digest
+    assert auth.PENDING not in guest.client.session
+    assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+@pytest.mark.parametrize("reason", ["inactive", "staff", "super", "owner", "manager", "unverified"])
+def test_public_phone_keeps_identity_and_administration_guards(guest, settings, reason):
+    settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = True
+    settings.ACCOUNT_WHATSAPP_AUTH_EMAILS = []
+    if reason == "inactive":
+        guest.user.is_active = False
+        guest.user.save()
+    elif reason in {"staff", "super"}:
+        setattr(guest.user, "is_staff" if reason == "staff" else "is_superuser", True)
+        guest.user.save()
+    elif reason == "owner":
+        settings.OPERATIONS_OWNER_EMAIL = guest.user.email
+    elif reason == "manager":
+        OperationsManager.objects.create(email=guest.user.email, is_enabled=True)
+    else:
+        profile = profile_for(guest.user)
+        profile.email_verified_at = None
+        profile.save()
+    assert not auth.allowed(guest.user)
+    assert not PhoneChallenge.objects.exists() and not VerifiedPhone.objects.exists()
 
 
 def test_unknown_number_never_looks_up_an_unverified_contact(

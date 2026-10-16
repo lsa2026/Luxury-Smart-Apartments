@@ -71,6 +71,7 @@ jobs:
           tests/test_loyalty_booking_operations.py
           tests/test_loyalty_admin_referrals.py
           tests/test_loyalty_phone_gifts.py
+          tests/test_loyalty_public_launch.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
