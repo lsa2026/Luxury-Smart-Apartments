@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=stay-1">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen lsa-booking-detail" dir="rtl">
+  <section class="lsa-page-head"><div><h1>مراجعة إنهاء الإقامة</h1><p>لم يتغير الحجز أو الرصيد أو المبلغ المدفوع في هذه المراجعة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_detail' reservation.pk %}">العودة إلى الحجز</a></section>
+  <section class="lsa-panel lsa-stay-controls">
+    <h2>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</h2>
+    <p>{{ reservation.property|localized_property_name }}</p>
+    <p>وقت المغادرة: {{ moment|localized_datetime }}</p>
+    <dl class="lsa-stay-settlement">
+      <div><dt>إجمالي الحجز</dt><dd>{{ reservation.total_price|format_money:reservation.currency }}</dd></div>
+      <div><dt>قيمة الإقامة المستخدمة</dt><dd>{{ consumed|format_money:reservation.currency }}</dd></div>
+      <div><dt>المبلغ المتبقي المستحق للاسترداد</dt><dd>{{ plan.cash_refund|format_money:reservation.currency }}</dd></div>
+      <div><dt>نقاط الدفع المستحقة للإعادة</dt><dd>{{ plan.points_refund|floatformat:2|localized_number }} نقطة</dd></div>
+      <div><dt>مكافأة الإقامة بعد التسوية</dt><dd>{{ reward_after|floatformat:2|localized_number }} نقطة</dd></div>
+    </dl>
+    {% if plan.normal %}<p>انتهت مدة الإقامة؛ لا يُلغى الحجز ولا يُرسل استرداد. تُراجع مكافأته وفق السداد الموثق.</p>
+    {% else %}<p>المغادرة قبل الثامنة مساءً تعيد ليلة يوم المغادرة وما بعدها؛ وعند الثامنة أو بعدها تُحسب ليلة المغادرة.</p><p>بعد تأكيد المغادرة ستنتقل إلى مسار الإلغاء والاسترداد الحالي. لا تُعاد الأموال أو نقاط الدفع، ولا تُصحح المكافآت، قبل تأكيد إلغاء الحجز.</p>{% endif %}
+    <form method="post" action="{% url 'loyalty:booking_stay' reservation.pk %}">{% csrf_token %}
+      <input type="hidden" name="action" value="end"><input type="hidden" name="confirmation" value="{{ confirmation }}">
+      <label class="lsa-stay-confirm"><input type="checkbox" name="confirm_vacated" required>أؤكد أن الضيف أخلى الشقة فعليًا في الوقت المعروض، وقد راجعت الحساب.</label>
+      <button class="lsa-btn lsa-btn--gold" type="submit">{% if plan.normal %}تأكيد إنهاء الإقامة{% else %}تأكيد المغادرة ومتابعة الاسترداد{% endif %}</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -319,6 +319,19 @@ def admin_workspace(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
     query = request.GET.get("q", "").strip()[:80]
+    phone = request.GET.get("phone", "").strip()[:80]
+    matches = []
+    if phone:
+        from apps.reservations.phone_search import bookings_for_phone
+
+        matches = list(
+            bookings_for_phone(
+                Reservation.objects.filter(booking_intent__isnull=False).select_related(
+                    "property", "booking_intent"
+                ),
+                phone,
+            ).order_by("-check_in", "-created_at")[:30]
+        )
     rows_query = Ledger.objects.select_related("original")
     if query:
         rows_query = rows_query.filter(
@@ -339,6 +352,8 @@ def admin_workspace(request):
             "loyalty_rows": rows,
             "loyalty_cursor": cursor,
             "loyalty_search": query,
+            "booking_phone": phone,
+            "booking_matches": matches,
             "loyalty_preview": preview_mode(),
             "program_balance": (totals["c"] or ZERO) - (totals["d"] or ZERO),
         },

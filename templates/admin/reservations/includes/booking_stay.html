@@ -1,0 +1,36 @@
+{% load presentation %}
+{% if loyalty_stay %}
+<section class="lsa-panel lsa-stay-controls" aria-labelledby="stay-controls-title">
+  <h2 id="stay-controls-title">الوصول وإنهاء الإقامة</h2>
+  <p class="help">بيانات الحجز مرتبطة تلقائيًا. لا تحتاج إلى نسخ رقم الحجز أو إدخال مرجع آخر.</p>
+  <div class="lsa-stay-controls__grid">
+    <article>
+      <h3>وصول الضيف</h3>
+      {% if loyalty_stay.arrived %}<p class="lsa-stay-controls__success">تم توثيق الوصول</p>
+      <p class="help">تُحتسب النقاط تلقائيًا بعد التحقق من السداد الإلكتروني والانضمام وأهلية الحجز.</p>
+      {% elif loyalty_stay.can_arrive %}
+      <p>اضغط بعد وصول الضيف فعليًا. سيُسجل الوقت الحالي تلقائيًا، ثم يفحص النظام استحقاق النقاط.</p>
+      <form method="post" action="{% url 'loyalty:booking_stay' reservation.pk %}">{% csrf_token %}
+        <input type="hidden" name="action" value="arrival">
+        <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد وصول الضيف الآن</button>
+      </form>
+      {% else %}<p class="help">{% if loyalty_stay.not_started %}لم تبدأ فترة الإقامة بعد؛ لا نسجل وصولًا قبل حدوثه.{% else %}تأكيد الوصول غير متاح في حالة الحجز الحالية.{% endif %}</p>{% endif %}
+    </article>
+    <article>
+      <h3>إنهاء الإقامة</h3>
+      {% if loyalty_stay.departure %}
+        <p class="lsa-stay-controls__success">تم توثيق المغادرة</p>
+        {% if loyalty_stay.pending %}<p>راجع نتيجة الإلغاء والاسترداد قبل اعتبار التسوية مكتملة.</p><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:cancellation_detail' loyalty_stay.pending.pk %}">متابعة الإلغاء والاسترداد</a>
+        {% else %}<p class="help">لا توجد ليالٍ متبقية بعد انتهاء مدة العقد.</p>{% endif %}
+      {% elif loyalty_stay.can_end %}
+        <p>احسب المتبقي من قيمة الإقامة ومكافأتها قبل تأكيد المغادرة. هذه الخطوة لا تلغي الحجز أو تعيد المال.</p>
+        <form method="post" action="{% url 'loyalty:booking_stay' reservation.pk %}">{% csrf_token %}
+          <input type="hidden" name="action" value="preview">
+          <details><summary>تحديد وقت مغادرة سابق — اختياري</summary><label for="stay-vacated-at">وقت المغادرة الفعلي بتوقيت العقار</label><input id="stay-vacated-at" type="datetime-local" name="vacated_at"><small>اتركه فارغًا لاستخدام الوقت الحالي.</small></details>
+          <button class="lsa-btn lsa-btn--gold" type="submit">إنهاء الإقامة — مراجعة الحساب</button>
+        </form>
+      {% else %}<p class="help">{% if loyalty_stay.arrived %}إنهاء الإقامة غير متاح في حالة الحجز الحالية.{% else %}أكد الوصول الفعلي أولًا لإتاحة حساب إنهاء الإقامة.{% endif %}</p>{% endif %}
+    </article>
+  </div>
+</section>
+{% endif %}

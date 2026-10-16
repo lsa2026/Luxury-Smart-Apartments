@@ -100,3 +100,18 @@
   .lsa-booking-detail .lsa-owner-form .form-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; }
   .lsa-booking-detail .lsa-owner-form .form-row label { padding: 0; width: auto; }
 }
+.lsa-stay-controls { margin-bottom: 24px; }
+.lsa-stay-controls__grid, .lsa-stay-settlement { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.lsa-stay-controls__grid article { min-width: 0; padding: 20px; border: 1px solid #d9c9a9; border-radius: 20px; }
+.lsa-stay-controls form { display: grid; gap: 18px; }
+.lsa-stay-controls .lsa-btn { min-height: 48px; width: 100%; box-sizing: border-box; text-align: center; }
+.lsa-stay-controls input[type="datetime-local"] { min-width: 0; width: 100%; min-height: 48px; font-size: 16px; box-sizing: border-box; }
+.lsa-stay-controls details { margin-bottom: 16px; }
+.lsa-stay-controls details label, .lsa-stay-controls details small { display: block; margin: 12px 0; }
+.lsa-stay-controls__success { color: #0c6b58; font-weight: 700; }
+.lsa-stay-settlement div { min-width: 0; padding: 16px; background: #f5f1e8; border-radius: 16px; }
+.lsa-stay-settlement dt { font-size: 14px; line-height: 1.8; }
+.lsa-stay-settlement dd { margin: 8px 0 0; font-weight: 700; }
+.lsa-stay-confirm { display: flex; align-items: flex-start; gap: 12px; line-height: 1.9; }
+.lsa-stay-confirm input { flex: 0 0 22px; width: 22px; height: 22px; margin-top: 6px; }
+@media (max-width: 767px) { .lsa-stay-controls__grid, .lsa-stay-settlement { grid-template-columns: 1fr; } .lsa-stay-controls__grid article { padding: 16px; } }

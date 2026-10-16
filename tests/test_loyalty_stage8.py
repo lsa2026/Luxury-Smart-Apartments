@@ -738,7 +738,7 @@ def test_native_departure_snapshot_preserves_consumed_nights(local_program, hour
     at = local_program[0].replace(hour=hour - 3)
     local_program[0] = at
     result = record_departure(operator, r.pk, vacated_at=at, reference="TEST-EXIT")
-    assert result["cash_refund"] == ("500" if hour == 19 else "0")
+    assert result["cash_refund"] == ("500.00" if hour == 19 else "0.00")
     r.refresh_from_db()
     r.normalized_status = Reservation.Status.CANCELLED
     r.save(update_fields=["normalized_status"])
