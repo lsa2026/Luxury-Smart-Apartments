@@ -97,20 +97,26 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
     });
     // Only account forms submit here. Checkout retains its existing step handler.
     if (widget.hasAttribute("data-account-phone")) {
-        let validatingSubmit = false;
-        let checkedSubmit = false;
+        let submitStarted = false;
+        let forwardingSubmit = false;
+        let forwardedEvent = null;
+        window.addEventListener("pageshow", () => { submitStarted = false; });
         form.addEventListener("submit", async (event) => {
-            if (checkedSubmit) return;
+            if (forwardingSubmit) { forwardedEvent = event; return; }
             event.preventDefault();
-            if (validatingSubmit) return;
-            validatingSubmit = true;
+            if (submitStarted) return;
+            submitStarted = true;
             try {
                 if (await form.validateGuestPhone()) {
-                    checkedSubmit = true;
+                    forwardingSubmit = true;
+                    forwardedEvent = null;
                     try { form.requestSubmit(event.submitter || undefined); }
-                    finally { checkedSubmit = false; }
-                }
-            } finally { validatingSubmit = false; }
+                    finally { forwardingSubmit = false; }
+                    // Stay locked through navigation, but allow correction when
+                    // native constraints or another handler prevent submission.
+                    if (!forwardedEvent || forwardedEvent.defaultPrevented) submitStarted = false;
+                } else submitStarted = false;
+            } catch (_) { submitStarted = false; }
         });
     }
 });

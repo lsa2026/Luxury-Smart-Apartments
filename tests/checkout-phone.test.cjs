@@ -30,10 +30,11 @@ function setup(fetch, {saved = null, bound = false, initial = "", account = fals
     form.requestSubmit = () => { form.submitRequests++; form.dispatchEvent(new Event("submit", {cancelable: true})); };
     widget.closest = () => form;
     widget.querySelector = (selector) => selector === "[data-phone-country]" ? country : phone;
+    const window = new EventTarget();
     vm.runInNewContext(source, {document: {documentElement: {lang: "en"}, querySelectorAll: () => [widget]},
         localStorage: {getItem: (key) => storage.get(key), setItem: (key, value) => storage.set(key, value)},
-        Intl, Event, URLSearchParams, AbortController, setTimeout, clearTimeout, fetch});
-    return {form, country, phone, error, storage};
+        Intl, Event, URLSearchParams, AbortController, setTimeout, clearTimeout, fetch, window});
+    return {form, country, phone, error, storage, window};
 }
 const response = (body, status = 200) => ({ok: status === 200, status, json: async () => body});
 test("defaults to Saudi; remembers only country and never overwrites a bound form", () => {
@@ -133,6 +134,26 @@ test("account submit waits for formatting once, even for two quick clicks", asyn
     assert.equal(calls, 1);
     assert.equal(env.form.submitRequests, 1);
     assert.equal(env.country.value, "US");
+    const duplicate = new Event("submit", {cancelable: true});
+    env.form.dispatchEvent(duplicate);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(duplicate.defaultPrevented, true);
+    assert.equal(env.form.submitRequests, 1); // Navigation has not finished yet.
+    env.window.dispatchEvent(new Event("pageshow"));
+    env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(env.form.submitRequests, 2); // Browser-back remains usable.
+});
+
+test("account submit unlocks if another validator prevents the forwarded submit", async () => {
+    const env = setup(async () => response({phone: "+12125551234", country: "US"}), {account: true});
+    env.phone.value = "0012125551234";
+    env.form.addEventListener("submit", event => event.preventDefault());
+    for (let attempt = 0; attempt < 2; attempt++) {
+        env.form.dispatchEvent(new Event("submit", {cancelable: true}));
+        await new Promise(resolve => setImmediate(resolve));
+    }
+    assert.equal(env.form.submitRequests, 2);
 });
 
 test("account malformed input blocks submit, but unavailable formatting retains server validation", async () => {
