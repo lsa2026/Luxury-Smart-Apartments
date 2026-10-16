@@ -32,7 +32,7 @@ from tests.test_loyalty_stage8 import booking, join, user
 from tests.test_loyalty_stage10 import recovery_db as recovery_db
 
 # Snapshot capture owns a repeatable-read transaction on PostgreSQL.
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = pytest.mark.django_db(transaction=connection.vendor == "postgresql")
 
 
 @pytest.fixture(autouse=True)
