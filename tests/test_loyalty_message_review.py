@@ -43,6 +43,8 @@ def test_all_previews_are_synthetic_single_language_and_have_no_database_writes(
             assert content.startswith(b"%PDF")
         else:
             assert content.startswith(b"\x89PNG")
+            if key != "invitation":
+                assert content == notices.phone_logo()
         if key.startswith("auth-"):
             assert caption.count("[LSA-AUTH]") == 1 and caption.count("000000") == 1
         if language == "fr" and key == "stay":
@@ -68,9 +70,13 @@ def test_correction_explains_reason_and_negative_balance_without_exposing_bookin
         assert expected[other][0] not in caption
 
 
-def test_approved_horizontal_artwork_is_packaged_unchanged():
+def test_approved_light_horizontal_artwork_is_packaged_unchanged():
+    assert hashlib.sha256(notices.phone_logo()).hexdigest() == (
+        "eb4d7a6eb5d8bff20c8a187798f6c6e3354db34e1e6cc5869a47a4134d66c7e7"
+    )
     with Image.open(BytesIO(notices.phone_logo())) as artwork:
-        assert artwork.size == (1200, 300) and artwork.format == "PNG"
+        assert artwork.size == (1920, 450) and artwork.format == "PNG"
+        assert artwork.convert("RGB").getpixel((0, 0)) == (255, 255, 255)
 
 
 def test_new_join_notifies_once_without_adding_points(rig):
