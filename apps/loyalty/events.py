@@ -2,6 +2,7 @@
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -43,7 +44,18 @@ def record(
     )
     if occurred_at is not None:
         values["occurred_at"] = occurred_at
-    event, _ = GuestEvent.objects.get_or_create(reference=reference, defaults=values)
+    event, created = GuestEvent.objects.get_or_create(reference=reference, defaults=values)
+    if created and kind in {GuestEvent.Kind.JOIN, GuestEvent.Kind.CLOSE, GuestEvent.Kind.READY}:
+        from .whatsapp_notices import queue_lifecycle
+
+        # An outbox failure must not undo a membership operation.
+        try:
+            with transaction.atomic():
+                queue_lifecycle(event)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning("loyalty_lifecycle_notice_queue_failed")
     return event
 
 
@@ -75,6 +87,15 @@ def phone_verified(sender, instance, created, raw=False, **kwargs):
         occurred_at=instance.verified_at,
         after={"phone": instance.phone},
     )
+    from .whatsapp_notices import resume_welcome
+
+    try:
+        with transaction.atomic():
+            resume_welcome(instance)
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).warning("loyalty_welcome_resume_failed")
 
 
 @receiver(post_save, sender="notifications.AuditLog", dispatch_uid="loyalty_identity_event")

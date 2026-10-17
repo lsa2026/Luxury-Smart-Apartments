@@ -643,17 +643,18 @@ def test_whatsapp_delivery_is_durable_and_not_repeated(settings):
     delivery = queue_delivery(request.pk)
     assert queue_delivery(request.pk).pk == delivery.pk
     fake = Mock()
-    fake.send_text.return_value = {"sent": "true", "id": "test-message-1"}
+    fake.send_image.return_value = {"sent": "true", "id": "test-message-1"}
     with patch("apps.payments.payment_link_tasks.UltraMsgClient") as cls:
         cls.return_value.__enter__.return_value = fake
         assert deliver_payment_request_task.run(delivery.pk)["status"] == "sent"
         assert deliver_payment_request_task.run(delivery.pk)["status"] == "sent"
-    fake.send_text.assert_called_once()
+    fake.send_image.assert_called_once()
+    fake.send_text.assert_not_called()
     assert (
-        fake.send_text.call_args.kwargs["recipient"]
+        fake.send_image.call_args.kwargs["recipient"]
         == request.reservation.booking_intent.guest_phone
     )
-    assert public_url(request) in fake.send_text.call_args.kwargs["body"]
+    assert public_url(request) in fake.send_image.call_args.kwargs["caption"]
     assert request.deliveries.count() == 1
     resent = queue_delivery(request.pk, resend=True)
     assert resent.pk != delivery.pk and resent.sequence == 2
@@ -666,10 +667,10 @@ def test_whatsapp_timeout_never_blindly_retries(settings):
     request = issue_request(manual_stay().pk)
     delivery = queue_delivery(request.pk)
     with patch("apps.payments.payment_link_tasks.UltraMsgClient") as cls:
-        cls.return_value.__enter__.return_value.send_text.side_effect = TimeoutError()
+        cls.return_value.__enter__.return_value.send_image.side_effect = TimeoutError()
         assert deliver_payment_request_task.run(delivery.pk)["status"] == "unknown"
         assert deliver_payment_request_task.run(delivery.pk)["status"] == "unknown"
-        assert cls.return_value.__enter__.return_value.send_text.call_count == 1
+        assert cls.return_value.__enter__.return_value.send_image.call_count == 1
     assert queue_delivery(request.pk).pk == delivery.pk
     resent = queue_delivery(request.pk, resend=True)
     assert resent.pk != delivery.pk and resent.status == "queued"
@@ -968,15 +969,15 @@ def test_admin_send_and_resend_each_request_new_delivery_even_from_old_page(sett
     assert ReservationPaymentRequest.objects.count() == 1
     assert not PaymentAttempt.objects.exists()
     fake = Mock()
-    fake.send_text.return_value = {"sent": "true", "id": "test-message-repeat"}
+    fake.send_image.return_value = {"sent": "true", "id": "test-message-repeat"}
     with patch("apps.payments.payment_link_tasks.UltraMsgClient") as cls:
         cls.return_value.__enter__.return_value = fake
         for delivery in request.deliveries.all():
             assert deliver_payment_request_task.run(delivery.pk)["status"] == "sent"
             assert deliver_payment_request_task.run(delivery.pk)["status"] == "sent"
-    assert fake.send_text.call_count == 3
-    assert len({call.kwargs["reference_id"] for call in fake.send_text.call_args_list}) == 3
-    assert len({call.kwargs["body"] for call in fake.send_text.call_args_list}) == 1
+    assert fake.send_image.call_count == 3
+    assert len({call.kwargs["reference_id"] for call in fake.send_image.call_args_list}) == 3
+    assert len({call.kwargs["caption"] for call in fake.send_image.call_args_list}) == 1
 
 
 @pytest.mark.parametrize("status", ["paid", "revoked", "review"])
