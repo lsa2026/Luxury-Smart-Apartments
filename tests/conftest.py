@@ -19,10 +19,12 @@ def postgres_test_history_cleanup(django_db_setup):
     """
     from django.db import connection
 
-    if connection.vendor != "postgresql":
+    if connection.vendor not in {"postgresql", "sqlite"}:
         yield
         return
-    if not str(connection.settings_dict["NAME"]).startswith("test_"):
+    if connection.vendor == "postgresql" and not str(connection.settings_dict["NAME"]).startswith(
+        "test_"
+    ):
         raise RuntimeError("History cleanup is restricted to a disposable test database.")
     original = connection.ops.sql_flush
 
@@ -30,9 +32,29 @@ def postgres_test_history_cleanup(django_db_setup):
         statements = original(
             style, tables, reset_sequences=reset_sequences, allow_cascade=allow_cascade
         )
+        if connection.vendor == "sqlite":
+            if "loyalty_guestevent" not in tables:
+                return statements
+            # Disposable test cleanup only. Drop/recreate within the flush transaction;
+            # ordinary runtime writes still exercise the real immutable triggers.
+            before = [
+                f"DROP TRIGGER IF EXISTS loyalty_event_{a}_immutable;" for a in ("update", "delete")
+            ]
+            after = [
+                f"CREATE TRIGGER loyalty_event_{a.lower()}_immutable BEFORE {a} "
+                "ON loyalty_guestevent BEGIN "
+                "SELECT RAISE(ABORT, 'Guest history is append-only'); END;"
+                for a in ("UPDATE", "DELETE")
+            ]
+            return [*before, *statements, *after]
         guarded = [
             t
-            for t in ("loyalty_ledger", "loyalty_referral", "loyalty_referralrevision")
+            for t in (
+                "loyalty_ledger",
+                "loyalty_referral",
+                "loyalty_referralrevision",
+                "loyalty_guestevent",
+            )
             if t in tables
         ]
         before = [f'ALTER TABLE "{t}" DISABLE TRIGGER USER;' for t in guarded]

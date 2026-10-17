@@ -170,4 +170,21 @@ def link_members(operator, member_id, inviter_id, *, reason, operation):
                     reason=reason,
                 )
             )
+            from .events import record
+            from .models import GuestEvent
+
+            revision = rows[-1]
+            record(
+                customer=before.member.customer,
+                member=before.member,
+                actor=operator,
+                kind=GuestEvent.Kind.REFERRAL,
+                source="admin",
+                reference=f"referral-revision:{revision.pk}",
+                reason=reason,
+                occurred_at=revision.fixed_at,
+                before={"inviter": before.inviter_id, "tree_number": before.tree_number},
+                after={"inviter": revision.inviter_id, "tree_number": revision.tree_number},
+                evidence={"operation": str(operation), "linked_member": member_id},
+            )
         return rows[0]
