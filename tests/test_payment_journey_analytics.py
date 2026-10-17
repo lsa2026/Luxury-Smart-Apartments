@@ -6,6 +6,7 @@ import pytest
 from django.test import Client, RequestFactory, override_settings
 
 from apps.core.marketing import payment_analytics_fields, prepare_purchase_event
+from apps.payments.hyperpay.analytics import verified_payment_wallet
 from apps.payments.models import PaymentAttempt
 from apps.payments.views import _render_hyperpay_checkout
 from tests.test_booking_modifications_phase6 import confirmed_reservation
@@ -15,9 +16,9 @@ from tests.test_hyperpay import HYPERPAY_SETTINGS, payable_intent
 @pytest.mark.parametrize(
     ("raw", "kind", "brand"),
     [
-        ("MADA", "card", "mada"),
-        ("VISA", "card", "visa"),
-        ("MASTER", "card", "mastercard"),
+        ("MADA", "unknown", "mada"),
+        ("VISA", "unknown", "visa"),
+        ("MASTER", "unknown", "mastercard"),
         ("APPLEPAY", "apple_pay", "apple_pay"),
         ("", "unknown", "unknown"),
         ("private-token", "unknown", "unknown"),
@@ -28,6 +29,51 @@ def test_gateway_brand_is_allowlisted_without_inferred_wallet_network(raw, kind,
         "payment_type": kind,
         "payment_brand": brand,
     }
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        {"walletProvider": "APPLE_PAY"},
+        {"connector": {"walletProvider": "APPLE_PAY"}},
+        {"ConnectorLogEntry": '{"walletProvider":"APPLE_PAY"}'},
+        {"ConnectorLogEntry": "walletProvider=APPLE_PAY"},
+    ],
+)
+def test_observed_wallet_marker_keeps_visa_network_independent(details):
+    wallet = verified_payment_wallet({"paymentBrand": "VISA", "resultDetails": details})
+    assert wallet == "apple_pay"
+    assert payment_analytics_fields(
+        SimpleNamespace(payment_brand="VISA", payment_wallet=wallet)
+    ) == {
+        "payment_type": "apple_pay",
+        "payment_brand": "visa",
+    }
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        {},
+        {"paymentBrand": "VISA"},
+        {"paymentMethod": "CC", "source": "OPPUI", "paymentBrand": "VISA"},
+        {"customParameters": {"walletProvider": "APPLE_PAY"}},
+        {"resultDetails": {"customParameters": {"walletProvider": "APPLE_PAY"}}},
+        {"walletProvider": "GOOGLE_PAY"},
+        {"walletProvider": None},
+        {"walletProvider": "APPLE_PAY", "resultDetails": {"walletProvider": "OTHER"}},
+        {"resultDetails": {"ConnectorLogEntry": "walletProvider=APPLE_PAY_SUFFIX"}},
+        {"resultDetails": {"walletProvider": {"private": "APPLE_PAY"}}},
+    ],
+)
+def test_absent_unknown_or_conflicting_wallet_evidence_never_infers_apple_pay(document):
+    assert verified_payment_wallet(document) == ""
+
+
+def test_root_wallet_marker_is_supported_without_retaining_other_fields():
+    assert (
+        verified_payment_wallet({"walletProvider": "APPLE_PAY", "card": "private"}) == "apple_pay"
+    )
 
 
 @pytest.mark.django_db

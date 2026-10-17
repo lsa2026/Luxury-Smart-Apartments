@@ -33,6 +33,7 @@ from apps.reservations.services.hostaway_booking import (
 from apps.reservations.services.modifications import ModificationService
 
 from ..countries import normalize_country_code
+from .analytics import verified_payment_wallet
 from .client import HyperPayClient
 from .exceptions import HyperPayCheckoutError, HyperPayVerificationError
 from .result_codes import HyperPayStatus, map_result_code
@@ -442,6 +443,7 @@ class HyperPayService:
             attempt.provider_result_code = _safe_text(code, 100)
             attempt.provider_result_description = _safe_text(description, 255)
             attempt.payment_brand = _safe_text(document.get("paymentBrand"), 30)
+            attempt.payment_wallet = verified_payment_wallet(document)
             attempt.verified_at = timezone.now()
             attempt.status = {
                 HyperPayStatus.SUCCESS: PaymentAttempt.Status.SUCCEEDED,

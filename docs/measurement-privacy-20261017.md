@@ -19,13 +19,28 @@ Meta keeps its separate public-page/referrer restrictions unchanged.
 The ordinary HyperPay result response also sets `Referrer-Policy: no-referrer`
 to prevent the functional return URL leaking through HTTP referrer headers.
 
-## Important incomplete work
+## Owner-approved provisional wallet extraction
 
-This is NOT a completed Apple Pay classification fix. Existing code stores only
-the provider's `paymentBrand` and infers `payment_type` from that brand. A Visa
-Apple Pay payment can therefore be emitted as card/visa. Do not replace all
-Visa payments with Apple Pay, trust a query parameter, or treat a selected tab
-or card-form submission callback as proof of wallet settlement.
+The payment project observed `walletProvider=APPLE_PAY` in the original
+transaction's production connector log and `Payment Brand=VISA` independently.
+The owner declined contacting HyperPay and explicitly approved adopting that
+marker provisionally, with future Analytics validation rather than another
+charge or historical purchase replay. The exact API position remains unverified.
+
+Persist only the allowlisted normalized wallet in a new optional
+`PaymentAttempt.payment_wallet` column. Inspect a root walletProvider field or
+provider resultDetails, including serialized connector entries. Do not use
+merchant customParameters, query arguments or selected UI tabs. Unknown,
+missing, conflicting or unsupported markers yield an unknown payment_type
+while preserving the reported network. Legacy paymentBrand=APPLEPAY remains
+recognized. Never convert all VISA/MADA/MASTER payments into Apple Pay, and
+never infer a direct card solely from the network.
+
+This optional measurement field does not change payment acceptance, amounts,
+currency, result code validation, financial reconciliation or receipt identity.
+The migration is additive with no historical backfill. Existing purchases are
+not reprocessed or resent. Arrival in future verified provider responses and
+GA4 export remains a runtime validation item, not a completed assertion.
 
 The payment project was requested by the owner to review the authoritative
 response contract, read-only, on 2026-10-17. Request-only fields documented by
@@ -51,9 +66,9 @@ an authorized non-purchase runtime test. Never send a fabricated conversion or
 replay the owner's existing purchase to validate this. Preserve any unresolved
 destination behavior as an explicit release blocker.
 
-Publication of the combined repair/upgrade remains pending those gates and a
-verified wallet source. No deployment or GTM publication is implied by this
-draft. Existing backup and upgrade workspace remain intact.
+Owner approved publication with provisional wallet mapping and later checks;
+no external contact or schedule is authorized by this decision. Deployment and
+GTM publication must still be evidenced separately. Keep the existing backup.
 
 References inspected:
 - https://hyperpay.docs.oppwa.com/reference/parameters
