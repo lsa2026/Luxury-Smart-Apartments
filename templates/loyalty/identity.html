@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=4"><link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}<main class="loyalty-admin" dir="rtl">
+<h1>{{ title }}</h1><nav class="loyalty-admin-nav"><a href="{% url 'loyalty:admin' %}">العودة لإدارة برنامج الولاء</a></nav>
+<section class="loyalty-panel"><h2>ابحث عن العضو</h2><form method="get" class="loyalty-form"><label for="identity-query">رقم الجوال أو العضوية أو البريد</label><input id="identity-query" name="q" value="{{ query }}" maxlength="100" required><button class="lsa-btn lsa-btn--gold" type="submit">البحث عن العضو</button></form>
+{% for member in members %}<p><a href="?member={{ member.pk }}">{{ member.customer.get_full_name }} — <bdi>{{ member.number }}</bdi></a></p>{% empty %}{% if query and not selected %}<p>لا توجد عضوية مطابقة.</p>{% endif %}{% endfor %}</section>
+{% if selected %}<section class="loyalty-panel"><h2>{{ selected.customer.get_full_name }} — <bdi>{{ selected.number }}</bdi></h2>
+<p>الجوال الموثق هو وسيلة التعرف الأساسية على الحساب. لا تتغير العضوية أو النقاط أو الداعي عند تعديل البيانات. بعد تغيير الجوال يُوقف الرقم السابق للدخول، ويؤكد الضيف الرقم الجديد عبر واتساب من شاشة الدخول بالجوال. لا تُرسل رسالة من هذه الصفحة.</p>
+<p>تغيير البيانات ينهي جلسات الدخول السابقة. تغيير البريد لا يُعد توثيقًا للبريد الجديد، ولا يمنع الدخول بالجوال الموثق.</p>
+{% if pending_verification %}<p class="loyalty-notice" role="status">الجوال الجديد معتمد من الإدارة، وبانتظار أن يؤكده الضيف برمز واتساب من صفحة الدخول بالجوال.</p>{% endif %}
+{% if error %}<p class="loyalty-error" role="alert">{{ error }}</p>{% endif %}
+<form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="member" value="{{ selected.pk }}">{{ form.non_field_errors }}{{ form.snapshot }}
+<div class="checkout-phone" data-checkout-phone data-account-phone data-check-url="{% url 'accounts:profile_phone_format' %}" data-error-selector="#identity-phone-error" data-invalid-message="تحقق من رقم الجوال وبلده.">
+<div><label for="{{ form.phone_country.id_for_label }}">{{ form.phone_country.label }}</label>{{ form.phone_country }}{{ form.phone_country.errors }}</div><div><label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>{{ form.phone }}{{ form.phone.errors }}</div></div>
+<p id="identity-phone-error" class="form-error" role="status" hidden></p>
+<label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}
+<label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>{{ form.reason }}{{ form.reason.errors }}
+<label class="loyalty-consent">{{ form.verified }} <span>{{ form.verified.label }}</span></label>{{ form.verified.errors }}
+<button class="lsa-btn lsa-btn--gold" type="submit">حفظ تعديل الإدارة</button></form></section>
+<section class="loyalty-panel"><h2>سجل تعديلات الهوية</h2>{% for entry in identity_history %}<details><summary>{{ entry.created_at|localized_datetime }} — {{ entry.actor_user.get_full_name }}</summary><dl class="loyalty-identity"><div><dt>السبب والتحقق</dt><dd>{{ entry.metadata.reason }}</dd></div><div><dt>الجوال السابق</dt><dd><bdi>{{ entry.metadata.old_phone }}</bdi></dd></div><div><dt>الجوال الجديد</dt><dd><bdi>{{ entry.metadata.new_phone }}</bdi></dd></div><div><dt>البريد السابق</dt><dd><bdi>{{ entry.metadata.old_email }}</bdi></dd></div><div><dt>البريد الجديد</dt><dd><bdi>{{ entry.metadata.new_email }}</bdi></dd></div></dl></details>{% empty %}<p>لا توجد تعديلات إدارية مسجلة.</p>{% endfor %}</section>{% endif %}
+</main>{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/checkout-phone.js' %}" defer></script>{% endblock %}

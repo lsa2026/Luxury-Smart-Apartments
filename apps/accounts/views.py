@@ -29,7 +29,8 @@ from .forms import (
     EmailVerificationCodeForm,
 )
 from .history_views import history_context
-from .models import GuestBookingHistory, VerifiedPhone, profile_for
+from .identity import identity_transaction
+from .models import CustomerProfile, GuestBookingHistory, VerifiedPhone, profile_for
 from .phone_auth import allowed as phone_allowed
 from .phone_auth import ready as phone_ready
 from .phone_copy import phone_copy
@@ -347,6 +348,8 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
         profile_form = CustomerProfileForm(request.POST, user=request.user, profile=profile)
         if profile_form.is_valid():
             with transaction.atomic():
+                get_user_model().objects.select_for_update().get(pk=request.user.pk)
+                profile = CustomerProfile.objects.select_for_update().get(pk=profile.pk)
                 request.user.first_name = profile_form.cleaned_data["first_name"]
                 request.user.last_name = profile_form.cleaned_data["last_name"]
                 request.user.save(update_fields=["first_name", "last_name"])
@@ -358,6 +361,11 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
                     "residence_postal_code",
                     "residence_country",
                 ):
+                    if field == "phone":
+                        from .identity import identity_locked
+
+                        if identity_locked(request.user) and profile.phone:
+                            continue
                     setattr(profile, field, profile_form.cleaned_data[field])
                 if "preferred_language" in request.POST:
                     profile.preferred_language = profile_form.cleaned_data["preferred_language"]
@@ -512,6 +520,7 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
     )
 
 
+@identity_transaction()
 def verify_email(request: HttpRequest, token: str) -> HttpResponse:
     """Confirm an address from a signed link.
 
@@ -565,6 +574,7 @@ def verify_pending(request: HttpRequest) -> HttpResponse:
     )
 
 
+@identity_transaction()
 def verify_email_code(request: HttpRequest) -> HttpResponse:
     if request.method != "POST":
         return redirect("accounts:verify_pending")

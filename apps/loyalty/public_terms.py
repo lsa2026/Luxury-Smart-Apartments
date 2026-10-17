@@ -15,7 +15,14 @@ from django.utils.translation import get_language, override
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
 
-from .accrual import TERMS_REFERENCE, TERMS_URL_VERSION, TERMS_VERSION
+from .accrual import (
+    IDENTITY_TERMS_REFERENCE,
+    IDENTITY_TERMS_URL_VERSION,
+    IDENTITY_TERMS_VERSION,
+    TERMS_REFERENCE,
+    TERMS_URL_VERSION,
+    TERMS_VERSION,
+)
 
 VERSION = "loyalty-public-20261016-v1"
 URL_VERSION = "2026-10-16-v1"
@@ -250,9 +257,40 @@ for code, paragraph in {
     UPDATED_CONTENT[code]["sections"][1] = (CONTENT[code]["sections"][1][0], paragraph)
 
 # The first edition and its consent hashes remain addressable, unchanged.
+IDENTITY_CONTENT = deepcopy(UPDATED_CONTENT)
+for code, issued, paragraph in [
+    (
+        "ar",
+        "الإصدار الثالث — ١٧ أكتوبر ٢٠٢٦؛ الجوال الموثق وإدارة بيانات العضوية",
+        "يجوز لصاحب حساب ضيف نشط ممن تتوفر لديه أهلية التعاقد الانضمام بموافقة صريحة بعد توثيق جواله أو بريده. لا يشترط حجز سابق للانضمام أو لتوثيق الجوال أو لاستلام هدية نقاط. الجوال الموثق هو وسيلة التعرف الأساسية على حساب الضيف وعضويته وربط حجوزاته المؤهلة؛ يلزم إثبات ملكيته برمز واتساب عند الدخول أو الربط غير الموثق، ولا تكفي كتابة رقم شخص آخر. يبقى البريد وجوجل وأبل خيارات إضافية قائمة، ولا يتطلب الدخول بالجوال الوصول إلى البريد. تغيير الجوال أو البريد المرتبط بالعضوية من صلاحية الإدارة فقط بعد التحقق من هوية صاحبها، ويسجل المنفذ والوقت والسبب. لا يعد اعتماد الإدارة للرقم الجديد توثيقًا لملكيته حتى يؤكده صاحبه عبر واتساب، ولا يعد تعديل البريد إثباتًا لملكيته. تبقى العضوية ورصيدها وسجلها وعلاقة الداعي محفوظة عند التعديل، وتنتهي جلسات الدخول السابقة لحماية الحساب. توثيق الجوال لأول مرة متاح للضيف، وحفظ رقم تواصل وحده لا يوثقه. تحفظ نسخة الشروط ولغتها وتاريخ الموافقة.",
+    ),
+    (
+        "en",
+        "Third edition — 17 October 2026; verified mobile and membership identity management",
+        "An active guest with contractual capacity may join with explicit consent after verifying a mobile or email. No prior booking is needed to join, verify a mobile or receive a points gift. The verified mobile is the primary identifier for the guest account, membership and eligible booking links; WhatsApp proof of possession is required for mobile sign-in or an unverified link, not merely entering somebody’s number. Email, Google and Apple remain additional sign-in choices; mobile sign-in does not require access to the email inbox. Only administration may change a membership’s mobile or email after checking the owner’s identity; the operator, time and reason are recorded. Administrative approval of a new number is not proof of possession until its owner verifies it with WhatsApp; changing an email does not verify it. Membership, points, history and inviter relationship are preserved, and previous sessions end to protect the account. Guests may verify their first mobile themselves; saving a contact number does not verify it. The terms edition, language and consent time are retained.",
+    ),
+    (
+        "fr",
+        "Troisième édition — 17 octobre 2026 ; mobile vérifié et gestion de l’identité du membre",
+        "Un client actif ayant la capacité de contracter peut adhérer avec son consentement explicite après vérification de son mobile ou de son e-mail. Aucune réservation préalable n’est nécessaire pour adhérer, vérifier un mobile ou recevoir des points. Le mobile vérifié est l’identifiant principal du compte, de l’adhésion et des réservations admissibles ; une preuve de possession par code WhatsApp est requise pour la connexion ou un rattachement non vérifié, et non la simple saisie du numéro d’autrui. L’e-mail, Google et Apple restent des options supplémentaires ; la connexion mobile ne nécessite pas l’accès à la messagerie. Seule l’administration peut modifier le mobile ou l’e-mail d’une adhésion après contrôle de l’identité du titulaire ; l’auteur, l’heure et le motif sont enregistrés. L’approbation administrative d’un nouveau numéro ne prouve pas sa possession : son titulaire doit le vérifier par WhatsApp ; modifier un e-mail ne le vérifie pas. L’adhésion, les points, l’historique et le parrain sont conservés, et les anciennes sessions sont fermées pour protéger le compte. Le client peut vérifier lui-même son premier mobile ; enregistrer un numéro de contact ne le vérifie pas. L’édition des conditions, la langue et la date du consentement sont conservées.",
+    ),
+]:
+    IDENTITY_CONTENT[code]["issued"] = issued
+    paragraph += {
+        "ar": " تربط حجوزات الموقع الجديدة المسددة بالعضوية تلقائيًا عند تطابق جوال الحجز مع جوال موثق للعضو قبل إنشاء الحجز، حتى دون تسجيل الدخول وبغض النظر عن اختلاف البريد. لا يمنح هذا التطابق جلسة دخول أو حق صرف النقاط لمن كتب الرقم؛ الدخول واستخدام الرصيد يتطلبان إثبات صاحب الحساب. تبقى الحجوزات القديمة خاضعة لمسار الاسترجاع المعتمد.",
+        "en": " New paid website bookings link automatically to a membership when the booking mobile matches a number already verified for that member before the booking was created, even without sign-in and regardless of email differences. This matching grants no login session or right to spend points to whoever entered the number; account access and spending require authentication. Historical bookings retain the approved recovery process.",
+        "fr": " Les nouvelles réservations du site réglées sont rattachées automatiquement à l’adhésion lorsque leur mobile correspond à un numéro déjà vérifié pour ce membre avant la création de la réservation, même sans connexion et indépendamment de l’e-mail. Cette correspondance ne donne ni session de connexion ni droit de dépenser des points à la personne ayant saisi le numéro ; l’accès au compte et l’utilisation du solde exigent une authentification. Les anciennes réservations conservent la procédure de récupération approuvée.",
+    }[code]
+    IDENTITY_CONTENT[code]["sections"][0] = (CONTENT[code]["sections"][0][0], paragraph)
+
 EDITIONS = {
     VERSION: (URL_VERSION, REFERENCE, CONTENT),
     TERMS_VERSION: (TERMS_URL_VERSION, TERMS_REFERENCE, UPDATED_CONTENT),
+    IDENTITY_TERMS_VERSION: (
+        IDENTITY_TERMS_URL_VERSION,
+        IDENTITY_TERMS_REFERENCE,
+        IDENTITY_CONTENT,
+    ),
 }
 
 

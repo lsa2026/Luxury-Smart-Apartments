@@ -150,7 +150,7 @@ def queue_notice(row):
     language = (
         supported_language(profile.preferred_language if profile else "") or row.member.language
     )
-    eligible = bool(binding and profile and profile.is_email_verified)
+    eligible = bool(binding and profile)
     notice, created = MovementNotice.objects.get_or_create(
         ledger=row,
         defaults={
@@ -203,7 +203,6 @@ def deliver_movement_notice(key):
             not customer.is_active
             or not participant_allowed(customer)
             or not profile
-            or not profile.is_email_verified
             or not binding
             or binding.user_id != row.customer_id
             or binding.version != notice.binding_version

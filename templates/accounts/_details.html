@@ -21,7 +21,7 @@
                     <div><label for="{{ profile_form.phone_country.id_for_label }}">{{ profile_form.phone_country.label }}</label>{{ profile_form.phone_country }}{{ profile_form.phone_country.errors }}</div>
                     <div><label for="{{ profile_form.phone.id_for_label }}">{{ profile_form.phone.label }}</label>{{ profile_form.phone }}{{ profile_form.phone.errors }}</div>
                 </div>
-                <small id="profile-phone-help">{{ phone_copy.phone_help }} {{ phone_copy.contact_hint }}</small>
+                <small id="profile-phone-help">{% if profile_form.identity_phone_locked %}{{ phone_copy.admin_only }}{% else %}{{ phone_copy.phone_help }} {{ phone_copy.contact_hint }}{% endif %}</small>
                 <p id="profile-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
                 {% if phone_auth_available %}
                 <div class="account-phone-verification">

@@ -19,6 +19,7 @@ def record_guest_primary_auth(sender, request, user, **kwargs):
 
     if request is None:
         return
+    request.session["guest_identity_version"] = str(profile_for(user).auth_version)
     request.session.pop(PRIMARY_AUTH, None)
     if not getattr(request, "_guest_phone_authenticated", False):
         request.session[PRIMARY_AUTH] = {"user": user.pk, "at": int(timezone.now().timestamp())}
@@ -28,6 +29,8 @@ def record_guest_primary_auth(sender, request, user, **kwargs):
 def sync_allauth_verified_email(sender, request, email_address, **kwargs):  # type: ignore[no-untyped-def]
     """Google and Apple confirmations unlock existing direct reservations."""
     del sender, kwargs
+    if normalize_email(email_address.email) != normalize_email(email_address.user.email):
+        return
     profile = profile_for(email_address.user)
     if profile.is_email_verified:
         return

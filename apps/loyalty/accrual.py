@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -13,14 +14,20 @@ POLICY = "paid-checkin-1500-or-admin-v1"
 TERMS_VERSION = "loyalty-public-20261016-v2"
 TERMS_URL_VERSION = "2026-10-16-v2"
 TERMS_REFERENCE = f"/ar/legal/rewards/{TERMS_URL_VERSION}/"
+IDENTITY_TERMS_VERSION = "loyalty-public-20261017-v3"
+IDENTITY_TERMS_URL_VERSION = "2026-10-17-v3"
+IDENTITY_TERMS_REFERENCE = f"/ar/legal/rewards/{IDENTITY_TERMS_URL_VERSION}/"
 
 
 def policy_enabled():
     return bool(
         settings.LOYALTY_ENABLED
         and settings.LOYALTY_TERMS_APPROVED
-        and settings.LOYALTY_TERMS_VERSION == TERMS_VERSION
-        and settings.LOYALTY_TERMS_REFERENCE == TERMS_REFERENCE
+        and (settings.LOYALTY_TERMS_VERSION, settings.LOYALTY_TERMS_REFERENCE)
+        in {
+            (TERMS_VERSION, TERMS_REFERENCE),
+            (IDENTITY_TERMS_VERSION, IDENTITY_TERMS_REFERENCE),
+        }
     )
 
 
@@ -51,19 +58,30 @@ def accrue_due_stays():
     """Catch up current stays only; no retrospective sweep of finished bookings."""
     if not policy_enabled():
         return {"status": "disabled", "checked": 0, "settled": 0, "movements": 0}
+    from apps.accounts.models import VerifiedPhone
+
     from .services import launch_at
     from .site_adapter import _safe_reconcile
+
+    known_phones = VerifiedPhone.objects.filter(
+        user__is_active=True, user__member__status="active"
+    ).values("phone")
 
     day = timezone.now().date()
     bookings = (
         Reservation.objects.filter(
+            Q(
+                booking_intent__customer__is_active=True,
+                booking_intent__customer__member__status="active",
+            )
+            | Q(
+                booking_intent__customer__isnull=True, booking_intent__guest_phone__in=known_phones
+            ),
             source_type=Reservation.SourceType.DIRECT_WEBSITE,
             normalized_status__in=Reservation.ACTIVE_STATUSES,
             created_at__gte=launch_at(),
             check_in__lte=day + timedelta(days=1),
             check_out__gte=day - timedelta(days=1),
-            booking_intent__customer__is_active=True,
-            booking_intent__customer__member__status="active",
         )
         .exclude(loyalty_state__has_key="arrival")
         .exclude(loyalty_state__has_key="settlement")

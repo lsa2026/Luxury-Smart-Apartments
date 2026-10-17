@@ -62,7 +62,7 @@ ACCOUNT_COPY = {
         "save": "Save changes",
         "saved": "Your changes have been saved.",
         "email_protected": (
-            "Your sign-in email is protected. Changing it requires verifying the new address."
+            "Only administration can change your membership email after checking your identity."
         ),
         "form_errors": "Please review the highlighted fields.",
         "previous_page": "Previous page",
@@ -128,7 +128,7 @@ ACCOUNT_COPY = {
         "email_code": "رمز التحقق بالبريد الإلكتروني",
         "save": "حفظ التغييرات",
         "saved": "تم حفظ التغييرات بنجاح.",
-        "email_protected": "بريد تسجيل الدخول محمي؛ تغييره يتطلب التحقق من البريد الجديد.",
+        "email_protected": "تغيير بريد العضوية من صلاحية الإدارة فقط بعد التحقق من هويتك.",
         "form_errors": "يرجى مراجعة الحقول الموضّحة أدناه.",
         "previous_page": "الصفحة السابقة",
         "next_page": "الصفحة التالية",
@@ -196,8 +196,8 @@ ACCOUNT_COPY = {
         "save": "Enregistrer les modifications",
         "saved": "Vos modifications ont été enregistrées.",
         "email_protected": (
-            "Votre adresse de connexion est protégée. "
-            "Toute modification nécessite de vérifier la nouvelle adresse."
+            "Seule l’administration peut modifier l’e-mail de votre adhésion "
+            "après vérification de votre identité."
         ),
         "form_errors": "Veuillez vérifier les champs indiqués ci-dessous.",
         "previous_page": "Page précédente",

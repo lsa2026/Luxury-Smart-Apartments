@@ -145,7 +145,7 @@ def test_missing_proof_is_recorded_without_sending_or_preventing_points(rig):
     assert not rig.provider.send_image.called and balance(rig.bm) == Decimal("3.00")
 
 
-@pytest.mark.parametrize("change", ["version", "phone", "deleted", "inactive", "email"])
+@pytest.mark.parametrize("change", ["version", "phone", "deleted", "inactive"])
 def test_recipient_change_fails_closed_without_disclosing_to_a_new_number(rig, change):
     rig.gift()
     row = MovementNotice.objects.get(ledger__member=rig.bm)
@@ -163,13 +163,20 @@ def test_recipient_change_fails_closed_without_disclosing_to_a_new_number(rig, c
     elif change == "inactive":
         rig.b.is_active = False
         rig.b.save()
-    else:
-        profile = profile_for(rig.b)
-        profile.email_verified_at = None
-        profile.save()
     notices.deliver_movement_notice(row.pk)
     row.refresh_from_db()
     assert row.status == "skipped" and not rig.provider.send_image.called
+
+
+def test_verified_mobile_notice_does_not_require_access_to_old_email(rig):
+    rig.gift()
+    row = MovementNotice.objects.get(ledger__member=rig.bm)
+    profile = profile_for(rig.b)
+    profile.email_verified_at = None
+    profile.save(update_fields=["email_verified_at"])
+    notices.deliver_movement_notice(row.pk)
+    row.refresh_from_db()
+    assert row.status == "accepted" and rig.provider.send_image.called
 
 
 def test_unknown_provider_outcome_is_not_retried_or_logged_and_keeps_balances(rig, caplog):

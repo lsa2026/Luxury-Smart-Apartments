@@ -131,6 +131,16 @@ def phone_start(request, *, binding=False):
         elif VerifiedPhone.objects.filter(user=request.user).exists():
             error, can_send = labels["existing"], False
     initial = {}
+    if not binding and request.method == "GET":
+        contact = request.session.pop("guest_checkout_phone", "")
+        if contact:
+            initial["phone"] = contact
+            try:
+                region = phonenumbers.region_code_for_number(phonenumbers.parse(contact, None))
+                if region in phonenumbers.SUPPORTED_REGIONS:
+                    initial["phone_country"] = region
+            except phonenumbers.NumberParseException:
+                pass
     if binding and request.method == "GET":
         contact = (
             CustomerProfile.objects.filter(user=request.user)

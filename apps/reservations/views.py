@@ -20,6 +20,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy
 from django.views import View
 
+from apps.accounts.identity import booking_identity_matches
 from apps.core.guest_documents import UI, document_language, guest_documents
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.currency import selected_currency
@@ -417,6 +418,15 @@ class BookingQuoteDetailView(View):
                 "guest_last_name": request.user.last_name,
                 "guest_email": request.user.email,
             }
+            from apps.accounts.models import VerifiedPhone
+
+            phone = (
+                VerifiedPhone.objects.filter(user=request.user)
+                .values_list("phone", flat=True)
+                .first()
+            )
+            if phone:
+                initial["guest_phone"] = phone
         return render(
             request,
             "reservations/booking_quote_detail.html",
@@ -573,11 +583,14 @@ class GuestDetailsView(View):
         if outcome.intent is not None:
             if (
                 request.user.is_authenticated
-                and request.user.email
-                and request.user.email.casefold() == outcome.intent.guest_email.casefold()
-                and outcome.intent.customer_id != request.user.pk
+                and booking_identity_matches(
+                    request.user, outcome.intent.guest_email, outcome.intent.guest_phone
+                )
+                and outcome.intent.customer_id is None
             ):
-                BookingIntent.objects.filter(pk=outcome.intent.pk).update(customer=request.user)
+                BookingIntent.objects.filter(pk=outcome.intent.pk, customer__isnull=True).update(
+                    customer=request.user
+                )
             return redirect(
                 "reservations:intent_detail",
                 public_reference=outcome.intent.public_reference,
@@ -982,13 +995,16 @@ class ReservationAccessView(View):
         grant_reservation_access(request, reservation.public_reference)
         if (
             request.user.is_authenticated
-            and request.user.email
-            and request.user.email.casefold() == reservation.booking_intent.guest_email.casefold()
-            and reservation.booking_intent.customer_id != request.user.pk
-        ):
-            BookingIntent.objects.filter(pk=reservation.booking_intent_id).update(
-                customer=request.user
+            and booking_identity_matches(
+                request.user,
+                reservation.booking_intent.guest_email,
+                reservation.booking_intent.guest_phone,
             )
+            and reservation.booking_intent.customer_id is None
+        ):
+            BookingIntent.objects.filter(
+                pk=reservation.booking_intent_id, customer__isnull=True
+            ).update(customer=request.user)
         try:
             from apps.notifications.services.audit import record_audit
 
@@ -1045,13 +1061,16 @@ class ReservationAccessLinkView(View):
         grant_reservation_access(request, reservation.public_reference)
         if (
             request.user.is_authenticated
-            and request.user.email
-            and request.user.email.casefold() == reservation.booking_intent.guest_email.casefold()
-            and reservation.booking_intent.customer_id != request.user.pk
-        ):
-            BookingIntent.objects.filter(pk=reservation.booking_intent_id).update(
-                customer=request.user
+            and booking_identity_matches(
+                request.user,
+                reservation.booking_intent.guest_email,
+                reservation.booking_intent.guest_phone,
             )
+            and reservation.booking_intent.customer_id is None
+        ):
+            BookingIntent.objects.filter(
+                pk=reservation.booking_intent_id, customer__isnull=True
+            ).update(customer=request.user)
         try:
             from apps.notifications.services.audit import record_audit
 

@@ -64,3 +64,34 @@ class GoogleOnlyAdminLoginMiddleware:
         ):
             return HttpResponseNotAllowed(["GET"])
         return self.get_response(request)
+
+
+class GuestIdentityLockMiddleware:
+    """Close allauth's alternate email-management POST route for locked guests."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if request.user.is_authenticated and not request.user.is_staff:
+            from .models import CustomerProfile
+
+            profile = CustomerProfile.objects.filter(user=request.user).first()
+            if (
+                profile
+                and profile.identity_changed_at
+                and request.session.get("guest_identity_version") != str(profile.auth_version)
+            ):
+                from django.contrib.auth import logout
+                from django.shortcuts import redirect
+
+                logout(request)
+                return redirect("accounts:phone_login")
+        if request.method == "POST" and request.user.is_authenticated:
+            from .identity import identity_locked
+
+            if request.resolver_match.url_name == "account_email" and identity_locked(request.user):
+                raise PermissionDenied("تغيير بريد العضوية من صلاحية الإدارة فقط.")

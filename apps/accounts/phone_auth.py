@@ -15,6 +15,7 @@ from apps.notifications.services.ultramsg import UltraMsgClient, UltraMsgError
 from apps.reservations.security import session_key_hash
 
 from .models import (
+    ApprovedPhoneChange,
     CustomerProfile,
     OperationsManager,
     PhoneAuthLimit,
@@ -66,7 +67,12 @@ def allowed(user):
         and not user.is_staff
         and not user.is_superuser
         and not OperationsManager.objects.filter(email__iexact=email, is_enabled=True).exists()
-        and CustomerProfile.objects.filter(user=user, email_verified_at__isnull=False).exists()
+        and CustomerProfile.objects.filter(user=user).exists()
+        and (
+            CustomerProfile.objects.filter(user=user, email_verified_at__isnull=False).exists()
+            or VerifiedPhone.objects.filter(user=user).exists()
+            or ApprovedPhoneChange.objects.filter(user=user).exists()
+        )
     )
 
 
@@ -127,7 +133,8 @@ def begin(request, phone, *, purpose):
         return None
     phone = normalize_phone_number(phone)
     binding = VerifiedPhone.objects.select_related("user").filter(phone=phone).first()
-    user = binding.user if binding else None
+    pending = ApprovedPhoneChange.objects.select_related("user").filter(phone=phone).first()
+    user = binding.user if binding else pending.user if pending else None
     if purpose == "bind":
         user = request.user
         # A recent verified primary sign-in proves the account; consuming the
@@ -135,10 +142,18 @@ def begin(request, phone, *, purpose):
         # match is neither required nor sufficient, and no stays are claimed.
         if (
             not allowed(user)
+            or not CustomerProfile.objects.filter(
+                user=user, email_verified_at__isnull=False
+            ).exists()
             or not recent_primary(request)
             or VerifiedPhone.objects.filter(user=user).exists()
             or binding is not None
+            or pending is not None
         ):
+            return None
+        from .identity import can_bind_phone
+
+        if not can_bind_phone(user, phone):
             return None
     elif request.user.is_authenticated:
         return None
@@ -172,7 +187,7 @@ def begin(request, phone, *, purpose):
             )
             or supported_language(getattr(request, "LANGUAGE_CODE", ""))
             or "ar",
-            binding_version=binding.version if binding else None,
+            binding_version=binding.version if binding else pending.version if pending else None,
             session_digest=digest,
             expires_at=timezone.now() + timedelta(seconds=TTL),
         )
@@ -183,9 +198,14 @@ def begin(request, phone, *, purpose):
 
 
 def _current_binding(row):
-    return VerifiedPhone.objects.filter(
-        user_id=row.user_id, phone=row.phone, version=row.binding_version
-    ).exists()
+    return (
+        VerifiedPhone.objects.filter(
+            user_id=row.user_id, phone=row.phone, version=row.binding_version
+        ).exists()
+        or ApprovedPhoneChange.objects.filter(
+            user_id=row.user_id, phone=row.phone, version=row.binding_version
+        ).exists()
+    )
 
 
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=40)
@@ -203,6 +223,11 @@ def deliver_phone_code(challenge_id):
             return
         if row.purpose == "login" and not _current_binding(row):
             return
+        if row.purpose == "bind":
+            from .identity import can_bind_phone
+
+            if not can_bind_phone(row.user, row.phone):
+                return
         code = f"{secrets.randbelow(1_000_000):06d}"
         row.code_digest = _digest("code", f"{row.pk}:{code}")
         row.status = "sending"
@@ -248,7 +273,9 @@ def consume(request, submitted):
         return None
     if not _limit("verify-ip", request.META.get("REMOTE_ADDR", ""), 30, 900):
         return None
-    with transaction.atomic():
+    from .identity import can_bind_phone, identity_transaction
+
+    with identity_transaction():
         row = (
             PhoneChallenge.objects.select_for_update(of=("self",))
             .select_related("user")
@@ -278,15 +305,30 @@ def consume(request, submitted):
             row.save(update_fields=["attempts", "status", "code_digest"])
             return None
         if row.purpose == "bind":
-            if request.user.pk != row.user_id or not recent_primary(request):
+            if (
+                request.user.pk != row.user_id
+                or not recent_primary(request)
+                or not can_bind_phone(row.user, row.phone)
+            ):
                 return None
             try:
                 with transaction.atomic():
                     VerifiedPhone.objects.create(user=row.user, phone=row.phone)
             except IntegrityError:
                 return None
-        elif request.user.is_authenticated or not _current_binding(row):
-            return None
+        else:
+            if request.user.is_authenticated or not _current_binding(row):
+                return None
+            pending = ApprovedPhoneChange.objects.filter(
+                user_id=row.user_id, phone=row.phone, version=row.binding_version
+            ).first()
+            if pending:
+                if VerifiedPhone.objects.filter(user=row.user).exists():
+                    return None
+                VerifiedPhone.objects.create(user=row.user, phone=row.phone)
+                pending.delete()
+        if row.purpose == "bind":
+            CustomerProfile.objects.filter(user=row.user).update(phone=row.phone)
         row.status, row.code_digest = "consumed", ""
         row.save(update_fields=["attempts", "status", "code_digest"])
         request.session.pop(PENDING, None)
