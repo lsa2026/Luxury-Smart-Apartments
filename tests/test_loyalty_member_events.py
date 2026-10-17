@@ -344,6 +344,7 @@ def test_historical_backfill_preserves_times_and_is_idempotent(owner):
     assert GuestEvent.objects.count() == before
 
 
+@pytest.mark.django_db(transaction=True)
 def test_events_in_backup_and_immutable_comparison():
     join(user("backup"))
     data = capture(source_id="fictional-events")
@@ -356,6 +357,7 @@ def test_events_in_backup_and_immutable_comparison():
         compare(data, seal(changed))
 
 
+@pytest.mark.django_db(transaction=True)
 def test_previous_backup_schema_still_valid_without_forging_events():
     join(user("legacy-backup"))
     current = capture(source_id="fictional-legacy-events")
