@@ -107,3 +107,10 @@ test('curved arrows connect toward left, right or centered children with finite 
   }
   assert.doesNotMatch(source, /fetch\(|XMLHttpRequest|localStorage|sendBeacon|innerHTML/);
 });
+
+test('single-child arrow starts below the name and branch control', async () => {
+  const {arrowPath} = await api;
+  const path = arrowPath({x: 200, y: 10, width: 42, height: 74, foot: 150}, {x: 200, y: 200, width: 42, height: 74});
+  assert.ok(path.startsWith('M221,150 '));
+  assert.ok(path.endsWith('221,191'));
+});
