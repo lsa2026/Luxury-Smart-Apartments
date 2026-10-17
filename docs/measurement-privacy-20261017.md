@@ -40,7 +40,9 @@ card data, credentials, guest data or payment URL tokens are recorded here.
 - Final focused Django payment/consent/Meta/URL-header revision: 95 passed.
 - All Node tests in this revision: 173 passed (48 focused tests also passed).
 - Ruff lint/format and migration drift checks passed.
-- Full Python suite is separate and must be reported with its actual outcome.
+- Full local Python suite at be9552b: 3526 passed, 14 skipped (SQLite cannot
+  exercise the PostgreSQL row-lock cases). Final HTTP-header revision is covered
+  separately by the 95 focused tests. These are not production runtime proofs.
 - New tests use synthetic values only and make no payment or measurement calls.
 
 Global Google metadata is not proof that every Ads request honors an override.
