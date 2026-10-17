@@ -5,6 +5,7 @@
 {% block hreflang %}{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/checkout-methods.css' %}?v=1">
+{% if loyalty_payment_summary %}<link rel="stylesheet" href="{% static 'css/loyalty-payment-summary.css' %}?v=1">{% endif %}
 <script src="{% static 'js/payment-journey.js' %}?v=1"></script>
 {% if apple_pay_enabled %}
 <script src="{% static 'js/apple-pay-checkout.js' %}?v=1"></script>
@@ -243,10 +244,14 @@ var wpwlOptions = {
             </div>
             {% endif %}
 
+            {% if loyalty_payment_summary %}
+            {% include "loyalty/_payment_summary.html" %}
+            {% else %}
             <div class="checkout__total checkout__total--display">
                 <span>{% trans "Total" %}</span>
                 <strong>{% if modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
             </div>
+            {% endif %}
             <p class="checkout__fx-note">{% trans "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference." %}</p>
 
             {% if payment_request %}

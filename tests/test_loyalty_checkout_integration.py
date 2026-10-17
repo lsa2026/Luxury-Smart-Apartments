@@ -292,3 +292,102 @@ def test_csrf_required_before_placing_hold():
     client.force_login(guest)
     assert client.post(points_url(intent), {"action": "apply"}).status_code == 403
     assert not Reservation.objects.filter(booking_intent=intent).exists()
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_card_entry_and_result_show_frozen_gross_points_and_actual_card_amount(
+    language, monkeypatch
+):
+    from types import SimpleNamespace
+
+    from apps.loyalty.payment_summary import COPY
+    from apps.payments.hyperpay.result_codes import HyperPayStatus
+
+    guest, member, intent, client = checkout()
+    intent.language = language
+    intent.save(update_fields=["language"])
+    client.cookies["django_language"] = language
+    client.post(
+        points_url(intent),
+        {
+            "action": "apply",
+            "points": "200.00",
+            "request_reference": "TEST-SUMMARY-FROZEN-01",
+        },
+    )
+    with override_settings(**HYPERPAY_SETTINGS):
+        stub = HyperPayStub()
+        attempt = HyperPayService(client=stub).create_checkout(intent).attempt
+        page = client.get(reverse("payments:hyperpay_booking", args=[intent.public_reference]))
+        assert page.status_code == 200
+        summary = page.context["loyalty_payment_summary"]
+        assert (summary["gross"], summary["points"], summary["cash"]) == (1250, 200, 1050)
+        assert summary["cash_label"] == COPY[language]["cash"]
+        assert COPY[language]["title"] in page.content.decode()
+        assert page.content.count(b"data-loyalty-payment-summary") == 1
+        attempt.status, attempt.verified_at = "succeeded", timezone.now()
+        attempt.save(update_fields=["status", "verified_at"])
+        monkeypatch.setattr(
+            HyperPayService,
+            "verify",
+            lambda self, value: SimpleNamespace(
+                attempt=attempt,
+                status=HyperPayStatus.SUCCESS,
+                reservation=None,
+                modification=None,
+            ),
+        )
+        result = client.get(reverse("payments:hyperpay_result", args=[attempt.pk]))
+        assert result.status_code == 200
+        assert COPY[language]["paid"] in result.content.decode()
+        assert result.context["loyalty_payment_summary"]["cash"] == 1050
+    intent.refresh_from_db()
+    assert intent.total_price == 1250 and attempt.amount == 1050
+    assert balance(member) == 1500  # Presentation never posts a redemption.
+
+
+@pytest.mark.parametrize("points", ["200.00", "1250.00"])
+def test_hostaway_booking_keeps_full_gross_regardless_of_points_funding(points):
+    from apps.reservations.services.reservation_payloads import build_hostaway_reservation_request
+
+    _, _, intent, client = checkout()
+    client.post(
+        points_url(intent),
+        {
+            "action": "apply",
+            "points": points,
+            "request_reference": "TEST-HOSTAWAY-GROSS-01",
+        },
+    )
+    reservation = Reservation.objects.get(booking_intent=intent)
+    request = build_hostaway_reservation_request(
+        reservation,
+        current_quote=complete_availability(intent).quote,
+    )
+    assert request.total_price == Decimal("1250.00")
+    assert request.to_payload()["totalPrice"] == 1250.0
+    assert cash_due(intent) == Decimal("1250.00") - Decimal(points)
+    assert not PaymentAttempt.objects.filter(booking_intent=intent).exists()
+
+
+@pytest.mark.parametrize("invalid", ["NaN", "Infinity", "-1", "1.001", "9999"])
+def test_unproven_or_inconsistent_split_is_not_presented_as_a_discount(invalid):
+    from apps.loyalty.payment_summary import for_attempt
+
+    _, _, intent, client = checkout()
+    client.post(
+        points_url(intent),
+        {
+            "action": "apply",
+            "points": "200.00",
+            "request_reference": "TEST-SUMMARY-TAMPER-01",
+        },
+    )
+    with override_settings(**HYPERPAY_SETTINGS):
+        attempt = HyperPayService(client=HyperPayStub()).create_checkout(intent).attempt
+    reservation = Reservation.objects.get(booking_intent=intent)
+    reservation.loyalty_state["checkout_frozen"]["points"] = invalid
+    reservation.save(update_fields=["loyalty_state"])
+    assert for_attempt(attempt) is None
+    attempt.refresh_from_db()
+    assert attempt.amount == 1050
