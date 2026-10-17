@@ -440,6 +440,17 @@ def issue_invite(user, reservation_id):
             member.first_completed_reservation = booking
             member.first_completed_at = end
         member.invitation_token = secrets.token_urlsafe(32)
+        from .events import record
+        from .models import GuestEvent
+
+        record(
+            customer=user,
+            member=member,
+            kind=GuestEvent.Kind.READY,
+            reference=f"invitation-ready:{member.pk}",
+            source="system",
+            after={"invitation_available": True},
+        )
         member.invitation_issued_at = timezone.now()
         member.save(
             update_fields=[

@@ -7,10 +7,11 @@ from django.utils import timezone, translation
 
 from apps.core.phone_numbers import normalize_phone_number
 from apps.notifications.services.ultramsg import UltraMsgClient
+from apps.notifications.whatsapp_style import BRAND
 
 from .models import PaymentRequestDelivery, ReservationPaymentRequest
 
-PAYMENT_MESSAGE_BRAND = "Luxury Smart Apartments"
+PAYMENT_MESSAGE_BRAND = BRAND
 
 
 def queue_delivery(request_id, *, kind="link", resend=False):
@@ -155,9 +156,14 @@ def deliver_payment_request_task(delivery_id):
         delivery.status = "sending"
         delivery.save(update_fields=["status"])
     try:
+        from apps.accounts.phone_messages import phone_logo
+
         with UltraMsgClient() as client:
-            result = client.send_text(
-                recipient=recipient, body=body, reference_id=f"payment-request:{delivery.pk}"
+            result = client.send_image(
+                recipient=recipient,
+                content=phone_logo(),
+                caption=body,
+                reference_id=f"payment-request:{delivery.pk}",
             )
         provider_id = str(result.get("id") or "")
         if not provider_id:

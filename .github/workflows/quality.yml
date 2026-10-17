@@ -82,6 +82,7 @@ jobs:
           tests/test_loyalty_unified_stay_fx.py
           tests/test_loyalty_statement_details.py
           tests/test_loyalty_whatsapp_notices.py
+          tests/test_loyalty_message_review.py
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15

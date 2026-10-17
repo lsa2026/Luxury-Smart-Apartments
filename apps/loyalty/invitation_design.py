@@ -4,6 +4,8 @@ from importlib.resources import files
 
 from django.core.exceptions import ValidationError
 
+from apps.notifications.whatsapp_style import BRAND
+
 from .launch import pilot_only
 
 TEMPLATE_VERSION = "gift-whatsapp-20261016-v2"
@@ -24,7 +26,7 @@ def invitation_caption(name, *, language, url):
     title, intro, steps, action, note, trial = {
         "ar": (
             "*دعوة خاصة إلى مكافآت ضيوفنا*",
-            f"أهلًا بك،\n{name} يدعوك للانضمام إلى برنامج الولاء لدى Luxury Living.",
+            f"أهلًا بك،\n{name} يدعوك للانضمام إلى برنامج الولاء لدى {BRAND}.",
             "انضم مجانًا، ووثّق جوالك لتتمكن من استلام هدايا النقاط من أصدقائك، "
             "حتى إن لم يسبق لك الحجز معنا.",
             "*ابدأ من هنا:*",
@@ -34,7 +36,7 @@ def invitation_caption(name, *, language, url):
         ),
         "en": (
             "*A personal invitation to guest rewards*",
-            f"Welcome,\n{name} invites you to join the Luxury Living rewards programme.",
+            f"Welcome,\n{name} invites you to join the {BRAND} rewards programme.",
             "Join for free and verify your mobile to receive gifts of points from friends. "
             "No previous booking is needed to join.",
             "*Your invitation:*",
@@ -44,7 +46,7 @@ def invitation_caption(name, *, language, url):
         ),
         "fr": (
             "*Une invitation personnelle à nos avantages*",
-            f"Bienvenue,\n{name} vous invite à rejoindre le programme de fidélité Luxury Living.",
+            f"Bienvenue,\n{name} vous invite à rejoindre le programme de fidélité {BRAND}.",
             "Adhérez gratuitement et vérifiez votre mobile pour recevoir des points en cadeau "
             "de vos proches. Aucun séjour préalable n’est nécessaire pour adhérer.",
             "*Votre invitation :*",

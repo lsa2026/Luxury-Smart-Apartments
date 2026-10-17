@@ -121,7 +121,8 @@ class MovementNotice(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    ledger = models.OneToOneField("Ledger", on_delete=models.PROTECT)
+    ledger = models.OneToOneField("Ledger", on_delete=models.PROTECT, null=True, blank=True)
+    event = models.OneToOneField("GuestEvent", on_delete=models.PROTECT, null=True, blank=True)
     recipient_binding = models.ForeignKey(
         "accounts.VerifiedPhone", on_delete=models.SET_NULL, null=True, editable=False
     )
@@ -146,6 +147,15 @@ class MovementNotice(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["status", "next_attempt_at"], name="loyalty_notice_due")]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(ledger__isnull=False, event__isnull=True)
+                    | Q(ledger__isnull=True, event__isnull=False)
+                ),
+                name="loyalty_notice_one_source",
+            )
+        ]
 
     def __str__(self):
         return f"MovementNotice {self.pk} — {self.status}"
@@ -301,6 +311,7 @@ class GuestEvent(AppendOnly):
     class Kind(models.TextChoices):
         ACCOUNT = "account_created", "إنشاء حساب الضيف"
         JOIN = "joined", "الانضمام إلى برنامج الولاء"
+        READY = "invitation_ready", "إتاحة رابط الدعوة"
         CLOSE = "closed", "إلغاء عضوية الولاء"
         IDENTITY = "identity_changed", "تعديل الجوال أو البريد"
         PHONE = "phone_verified", "توثيق جوال الدخول"
