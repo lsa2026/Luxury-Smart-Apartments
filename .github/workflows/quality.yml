@@ -72,6 +72,7 @@ jobs:
           tests/test_loyalty_settlement_integration.py
           tests/test_loyalty_booking_operations.py
           tests/test_loyalty_admin_referrals.py
+          tests/test_loyalty_visual_tree.py
           tests/test_loyalty_phone_gifts.py
           tests/test_loyalty_public_launch.py
           tests/test_loyalty_public_terms.py
@@ -139,6 +140,9 @@ jobs:
 
       - name: Test guest invitation clipboard interactions
         run: node --test tests/loyalty-invite.test.cjs
+
+      - name: Test private member tree expansion and safe branch loading
+        run: node --test tests/loyalty-tree.test.cjs
 
       - name: Test native submit commands and duplicate protection
         run: node --test tests/submit-once.test.cjs

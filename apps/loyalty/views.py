@@ -14,7 +14,7 @@ from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection
 from django.db.models import Q, Sum
-from django.http import Http404, HttpResponseNotAllowed
+from django.http import Http404, HttpResponseBadRequest, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import get_language
@@ -473,47 +473,57 @@ def admin_tree(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
     from .referrals import graph
+    from .tree import presentation, search
 
-    links_by_member = graph()
+    tree_error = ""
+    try:
+        links_by_member = graph()
+    except ValidationError:
+        links_by_member = {}
+        tree_error = "تجاوزت الشجرة حد العرض الحالي؛ يلزم توسيع الأداة قبل عرضها كاملة."
     focus = None
+    results = []
     query = request.GET.get("q", "").strip()[:80]
     if query:
-        focus = next((r for r in links_by_member.values() if r.member.number == query), None)
-        if focus is None:
-            raise Http404
+        results = search(links_by_member, query)
+        if len(results) == 1:
+            focus = results[0]
     else:
         parent = request.GET.get("parent")
         if parent:
-            if not parent.isdigit() or len(parent) > 15:
+            if not parent.isdecimal() or len(parent) > 15:
                 raise Http404
             focus = links_by_member.get(int(parent))
-            if focus is None:
+            if focus is None and not tree_error:
                 raise Http404
-    links = [
-        r for r in links_by_member.values() if r.inviter_id == (focus.member_id if focus else None)
-    ]
     try:
         after = max(0, int(request.GET.get("after", "0")))
     except ValueError:
         after = 0
     if after > 9223372036854775807:
         after = 0
-    links = sorted((r for r in links if r.branch_order > after), key=lambda r: r.branch_order)[:21]
-    for row in links:
-        row.child_count = sum(r.inviter_id == row.member_id for r in links_by_member.values())
-    cursor = links[19].branch_order if len(links) > 20 else None
-    return render(
+    context = {
+        "title": labels["tree"],
+        "loyalty_copy": labels,
+        "focus": focus,
+        "tree_query": query,
+        "tree_results": results[:20] if len(results) != 1 else [],
+        "tree_results_limited": len(results) > 20,
+        "tree_error": tree_error,
+        "loyalty_preview": preview_mode(),
+        **presentation(links_by_member, focus, after),
+    }
+    fragment = request.GET.get("fragment") == "children"
+    if fragment and (query or tree_error):
+        return HttpResponseBadRequest("تعذر تحميل هذا الفرع؛ حدّث الشجرة وأعد المحاولة.")
+    response = render(
         request,
-        "loyalty/tree.html",
-        {
-            "title": labels["tree"],
-            "loyalty_copy": labels,
-            "focus": focus,
-            "tree_children": links[:20],
-            "tree_cursor": cursor,
-            "loyalty_preview": preview_mode(),
-        },
+        "loyalty/_tree_children.html" if fragment else "loyalty/tree.html",
+        context,
     )
+    if fragment:
+        response["X-Loyalty-Tree-Fragment"] = "children"
+    return response
 
 
 @arabic_admin

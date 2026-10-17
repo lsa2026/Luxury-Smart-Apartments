@@ -8,6 +8,7 @@
   <h1>{{ title }}</h1>{% if loyalty_preview %}<p class="loyalty-notice">{{ loyalty_copy.preview }}</p>{% endif %}
   <nav class="loyalty-admin-nav"><a href="{% url 'notifications:hub' %}">{{ loyalty_copy.bookings_admin }}</a><a href="{% url 'loyalty:tree' %}">{{ loyalty_copy.tree }}</a></nav>
   <p>{{ loyalty_copy.program_total }}: <strong>{{ program_balance|floatformat:2|localized_number }}</strong></p>
+  <section class="loyalty-panel loyalty-referral-entry"><div><h2>شجرة الأعضاء والدعوات</h2><p>رسم تفاعلي يوضح ارتباط الأعضاء بداعيهم ومدعويهم، مع البحث وفتح الفروع وطيّها.</p></div><a class="lsa-btn lsa-btn--gold" href="{% url 'loyalty:tree' %}">فتح شجرة الأعضاء</a></section>
   <section class="loyalty-panel loyalty-referral-entry"><div><h2>إدارة جوال وبريد الأعضاء</h2><p>تعديل بيانات الحساب بعد التحقق من هوية الضيف، مع حفظ العضوية والنقاط وسجل التعديل.</p></div><a class="lsa-btn lsa-btn--gold" href="{% url 'loyalty:identity' %}">فتح إدارة بيانات الأعضاء</a></section>
   <section class="loyalty-panel loyalty-referral-entry" aria-labelledby="referral-title">
     <div><h2 id="referral-title">ربط الأعضاء بالداعين</h2><p>فُقد رابط الدعوة أو انضم العضو دون تسجيل داعيه؟ ابحث عن الطرفين وأضف العلاقة بعد التحقق منهما.</p></div>
