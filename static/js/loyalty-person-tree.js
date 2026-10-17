@@ -1,8 +1,9 @@
 /* Native, read-only diagram. No guest data is sent to third-party drawing services. */
 export function arrowPath(from, to) {
-  const direction = Math.sign(to.x + to.width / 2 - from.x - from.width / 2);
+  const delta = to.x + to.width / 2 - from.x - from.width / 2;
+  const direction = Math.abs(delta) < 1 ? 0 : Math.sign(delta);
   const x = from.x + from.width / 2 + direction * (from.width / 2 + 9);
-  const y = from.y + (direction ? from.height * .36 : from.height + 4);
+  const y = direction ? from.y + from.height * .36 : (from.foot ?? from.y + from.height + 4);
   const endX = to.x + to.width / 2, endY = to.y - 9;
   const bend = Math.max(12, (endY - y) * .55);
   return `M${x},${y} C${x + direction * 24},${y + bend} ${endX},${endY - bend} ${endX},${endY}`;
@@ -156,7 +157,9 @@ export function bindPersonTree(tree, {page = document, win = window} = {}) {
       const source = parent.querySelector(':scope > .loyalty-person [data-person-icon]');
       if (!source || !source.getClientRects().length) continue;
       const path = page.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', arrowPath(rect(source), rect(target)));
+      const from = rect(source);
+      from.foot = (source.closest('.loyalty-person').getBoundingClientRect().bottom - bounds.top) / scale + 6;
+      path.setAttribute('d', arrowPath(from, rect(target)));
       paths.push(path);
     }
     wires.replaceChildren(...paths);
