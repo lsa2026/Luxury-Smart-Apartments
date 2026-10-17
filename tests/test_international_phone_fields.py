@@ -9,16 +9,17 @@ from apps.reservations.booking_forms import GuestDetailsForm
 pytestmark = pytest.mark.django_db
 
 
-def test_checkout_uses_country_picker_while_other_phone_fields_remain_international() -> None:
+def test_guest_forms_use_country_pickers_while_admin_settings_remain_international() -> None:
     expected_placeholder = "+<country code> <number>"
     expected_help = (
-        "Enter an international number, starting with + and its country code, "
-        "for example +966500000000."
+        "Choose your phone number's country, then enter your usual number, "
+        "including the starting zero if needed. You can also paste a full international number."
     )
 
     with override("en"):
-        assert ContactForm().fields["phone"].widget.attrs["placeholder"] == "+966 50 000 0000"
+        assert ContactForm().fields["phone"].widget.attrs["placeholder"] == "0501234567"
         assert str(ContactForm().fields["phone"].help_text) == expected_help
+        assert ContactForm().fields["phone_country"].initial == "SA"
         assert GuestDetailsForm().fields["guest_phone"].widget.attrs["placeholder"] == "0501234567"
         assert "Choose your phone number's country" in str(
             GuestDetailsForm().fields["guest_phone"].help_text
@@ -60,9 +61,7 @@ def test_contact_form_accepts_and_normalizes_international_numbers(
     assert form.cleaned_data["phone"] == expected
 
 
-@pytest.mark.parametrize(
-    "value", ["0500000000", "0033 6 12 34 56 78", "12345", "+9999999999999999"]
-)
+@pytest.mark.parametrize("value", ["050ABC1234567", "++966501234567", "12345", "+9999999999999999"])
 def test_contact_form_rejects_ambiguous_or_invalid_numbers(value: str) -> None:
     form = ContactForm(
         {
@@ -95,11 +94,13 @@ def test_contact_form_keeps_phone_optional() -> None:
     assert form.cleaned_data["phone"] == ""
 
 
-def test_contact_page_displays_the_international_phone_format_help() -> None:
+def test_contact_page_displays_the_easy_phone_format_help() -> None:
     with override("ar"):
         content = Client().get("/ar/contact/").content.decode()
 
-    assert "اكتب رقمًا دوليًا يبدأ بعلامة + ورمز الدولة" in content
+    assert "اختر بلد رقم جوالك" in content
+    assert 'name="phone_country"' in content
+    assert "اكتب رقمًا دوليًا يبدأ بعلامة + ورمز الدولة" not in content
 
 
 def test_site_settings_phone_fields_use_the_same_international_format() -> None:

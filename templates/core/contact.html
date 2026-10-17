@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% load i18n presentation %}
+{% load i18n presentation static %}
 {% block title %}{{ page|localized_page_title }} | Luxury Smart Apartments{% endblock %}
 {% block meta_description %}{{ page|localized_field:"meta_description" }}{% endblock %}
+{% block extra_head %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/contact-phone.css' %}"><script src="{% static 'js/contact-phone.js' %}" defer></script>{% endblock %}
 {% block content %}
 <header class="page-hero page-hero--compact">
     <div class="container">
@@ -72,7 +73,21 @@
         <form method="post" novalidate data-submit-once>
             {% csrf_token %}<div class="honeypot" aria-hidden="true">{{ contact_form.website }}</div>
             {% for field in contact_form.visible_fields %}
-                {% if field.name != "website" %}
+                {% if field.name == "phone" %}
+                <div class="contact-phone" data-contact-phone>
+                    <div class="form-field{% if contact_form.phone_country.errors %} form-field--error{% endif %}">
+                        <label for="{{ contact_form.phone_country.id_for_label }}">{{ contact_form.phone_country.label }}</label>
+                        {{ contact_form.phone_country }}
+                        {% for error in contact_form.phone_country.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="form-field{% if field.errors %} form-field--error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+                <small id="contact-phone-help">{{ field.help_text }}</small>
+                {% elif field.name != "website" and field.name != "phone_country" %}
                 <div class="form-field{% if field.errors %} form-field--error{% endif %}">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
