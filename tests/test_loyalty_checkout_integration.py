@@ -325,6 +325,7 @@ def test_card_entry_and_result_show_frozen_gross_points_and_actual_card_amount(
         assert summary["cash_label"] == COPY[language]["cash"]
         assert COPY[language]["title"] in page.content.decode()
         assert page.content.count(b"data-loyalty-payment-summary") == 1
+        assert page.content.count(b"data-card-collection") == 1
         attempt.status, attempt.verified_at = "succeeded", timezone.now()
         attempt.save(update_fields=["status", "verified_at"])
         monkeypatch.setattr(

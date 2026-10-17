@@ -7,4 +7,6 @@
 .loyalty-payment-summary small { display: block; font-weight: 400; font-size: .85rem; margin-top: .25rem; }
 .loyalty-payment-summary__cash { color: #0b6555; font-size: 1.1rem; font-weight: 700; }
 .loyalty-payment-summary p { margin: .65rem 0 0; font-size: .85rem; line-height: 1.8; }
+.loyalty-card-payable { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin: 1rem 0; padding: 1rem; border-radius: 1rem; background: #f4f1e8; color: #173f38; }
+.loyalty-card-payable strong { font-size: 1.5rem; }
 @media (max-width: 420px) { .loyalty-payment-summary { margin: .8rem; padding: .9rem; } .loyalty-payment-summary dl > div { flex-direction: column; gap: .4rem; } .loyalty-payment-summary dd { text-align: start; } }

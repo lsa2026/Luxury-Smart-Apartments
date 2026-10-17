@@ -90,6 +90,9 @@ var wpwlOptions = {
                 </span>
             </header>
 
+            {% if loyalty_payment_summary %}
+            <p class="loyalty-card-payable" data-card-collection><span>{{ loyalty_payment_summary.cash_label }}</span><strong>{{ loyalty_payment_summary.cash|format_money:'SAR' }}</strong></p>
+            {% endif %}
             <div class="checkout__methods" role="tablist" aria-label="{% trans 'Payment methods' %}">
                 <button
                     class="checkout__method is-active"
