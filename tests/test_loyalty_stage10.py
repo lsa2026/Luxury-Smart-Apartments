@@ -193,14 +193,19 @@ def test_zero_points_member_and_pending_booking_hold_are_not_lost(sequence):
     assert validate(data)["member_balances"][str(Member.objects.last().pk)] == "0.00"
 
 
-def test_unrelated_guest_data_and_auth_sessions_are_not_exported(sequence):
+def test_registration_events_do_not_export_unrelated_bookings_or_auth_sessions(sequence):
     stranger = user("unrelated")
-    booking(stranger)
+    unrelated_booking = booking(stranger)
     data = snapshot()
-    assert validate(data)["counts"]["auth.user"] == 4
+    # Registration/proof events are now in scope even before loyalty enrollment.
+    assert validate(data)["counts"]["auth.user"] == 5
     assert not any(r["model"].startswith(("sessions.", "socialaccount.")) for r in data["records"])
     assert "groups" not in row(data, "auth.user")["fields"]
-    assert not any(r["fields"].get("email") == stranger.email for r in data["records"])
+    assert any(r["fields"].get("email") == stranger.email for r in data["records"])
+    assert not any(
+        r["model"] == "reservations.reservation" and str(r["pk"]) == str(unrelated_booking.pk)
+        for r in data["records"]
+    )
 
 
 def test_fixed_tables_are_updated_not_duplicated(sequence, tmp_path):

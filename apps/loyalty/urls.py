@@ -3,11 +3,13 @@ from django.urls import path
 from . import views
 from .booking_operations import booking_stay
 from .identity_ui import admin_identity
+from .membership_ui import admin_memberships
 from .operations_ui import settlement_command
 from .referral_ui import admin_referrals
 
 app_name = "loyalty"
 urlpatterns = [
+    path("memberships/", admin_memberships, name="memberships"),
     path("identity/", admin_identity, name="identity"),
     path("referrals/", admin_referrals, name="referrals"),
     path("booking/<uuid:reservation_id>/stay/", booking_stay, name="booking_stay"),

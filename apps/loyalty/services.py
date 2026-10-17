@@ -299,6 +299,30 @@ def enroll(
                 "source": "authenticated-account",
             },
         )
+        from .events import record
+        from .models import GuestEvent
+
+        record(
+            customer=user,
+            member=member,
+            actor=user,
+            kind=GuestEvent.Kind.JOIN,
+            reference=f"join:{member.pk}",
+            source="guest",
+            occurred_at=now,
+            after={
+                "status": "active",
+                "membership_number": member.number,
+                "tree_number": path,
+                "inviter": parent.number if parent else "",
+            },
+            evidence={
+                "terms_version": terms_version,
+                "terms_reference": terms_reference,
+                "language": language,
+                **issued_terms,
+            },
+        )
         # Joining during a current stay re-evaluates its authoritative facts.
         for booking in Reservation.objects.filter(booking_intent__customer=user):
             reconcile(booking.pk)
@@ -782,7 +806,7 @@ def statement(user):
         }
 
 
-def withdraw(user, request_reference):
+def withdraw(user, request_reference, *, operator=None, reason=""):
     """Voluntary closing only; legal effects on active stays remain unapproved."""
     with posting_transaction():
         member = member_for(user, active=False)
@@ -800,10 +824,13 @@ def withdraw(user, request_reference):
                     booking.normalized_status != Reservation.Status.CANCELLED
                     and stay_times(booking)[1] > timezone.now()
                 ):
-                    raise ValidationError("إقفال العضوية مع حجز قائم ينتظر اعتماد الأحكام.")
-            value = balance(member)
+                    raise ValidationError(
+                        "لا يمكن إلغاء العضوية مع حجز قائم أو نقاط محجوزة؛ سوِّ الحجز أولًا."
+                    )
+            value = balance(member).quantize(Decimal("0.01"))
+            closing = None
             if value > ZERO:
-                _post(
+                closing = _post(
                     member,
                     _group(),
                     1,
@@ -817,6 +844,26 @@ def withdraw(user, request_reference):
                 )
             member.status, member.withdrawn_at = "withdrawn", timezone.now()
             member.save(update_fields=["status", "withdrawn_at", "updated_at"])
+            from .events import record
+            from .models import GuestEvent
+
+            record(
+                customer=user,
+                member=member,
+                actor=operator,
+                kind=GuestEvent.Kind.CLOSE,
+                reference=f"close:{member.pk}",
+                source="admin" if operator else "system",
+                ledger=closing,
+                occurred_at=member.withdrawn_at,
+                reason=reason,
+                before={"status": "active", "balance": str(value)},
+                after={"status": "withdrawn", "balance": str(min(value, ZERO))},
+                evidence={
+                    "request_reference": request_reference,
+                    "forfeited_points": str(max(value, ZERO)),
+                },
+            )
             return {"status": "withdrawn", "forfeited": str(max(value, ZERO))}
 
         return receipt(member, request_reference, ["withdraw"], work)

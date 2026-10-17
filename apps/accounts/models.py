@@ -208,9 +208,24 @@ class CustomerProfile(models.Model):
         return self.email_verified_at is not None
 
     def mark_verified(self) -> None:
-        self.email_verified_at = timezone.now()
-        self.verification_sent_for = ""
-        self.save(update_fields=["email_verified_at", "verification_sent_for", "updated_at"])
+        from django.db import transaction
+
+        from apps.loyalty.events import record
+        from apps.loyalty.models import GuestEvent
+
+        with transaction.atomic():
+            self.email_verified_at = timezone.now()
+            self.verification_sent_for = ""
+            self.save(update_fields=["email_verified_at", "verification_sent_for", "updated_at"])
+            record(
+                customer=self.user,
+                kind=GuestEvent.Kind.EMAIL,
+                reference=f"email-proof:{self.user_id}:{self.email_verified_at.isoformat()}",
+                source="guest",
+                actor=self.user,
+                occurred_at=self.email_verified_at,
+                after={"email": self.user.email},
+            )
 
 
 def profile_for(user: object) -> CustomerProfile:

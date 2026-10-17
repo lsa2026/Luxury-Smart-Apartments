@@ -1,0 +1,58 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=5">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} loyalty-admin-page{% endblock %}
+{% block content %}
+<main class="loyalty-admin" dir="rtl">
+  <h1>{{ title }}</h1>
+  <nav class="loyalty-admin-nav"><a href="{% url 'loyalty:admin' %}">إدارة برنامج الولاء</a><a href="{% url 'loyalty:identity' %}">إدارة الجوال والبريد</a></nav>
+  <section class="loyalty-panel">
+    <h2>ابحث عن الضيف</h2>
+    <p>بالجوال الحالي أو السابق، أو البريد، أو رقم العضوية. سجل الأحداث منفصل عن سجل النقاط.</p>
+    <form method="get" class="loyalty-form">
+      <label for="event-search">الجوال أو البريد أو رقم العضوية</label><input id="event-search" name="q" value="{{ query }}" maxlength="254" autocomplete="off">
+      {% if selected %}<input type="hidden" name="customer" value="{{ selected.pk }}">{% endif %}
+      <label for="event-kind">نوع الحدث</label><select id="event-kind" name="kind"><option value="">جميع الأحداث</option>{% for value,label in event_kinds %}<option value="{{ value }}" {% if kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      <button class="lsa-btn lsa-btn--gold" type="submit">بحث وعرض السجل</button>
+    </form>
+    {% if selected %}<p><a href="{% url 'loyalty:memberships' %}">العودة إلى جميع الضيوف</a></p>{% endif %}
+    {% if matches %}<div class="loyalty-booking-results">{% for guest in matches %}<a class="loyalty-booking-result" href="?customer={{ guest.pk }}"><strong>{{ guest.get_full_name|default:"ضيف" }}</strong><bdi>{{ guest.email }}</bdi><span>فتح سجل الضيف وإدارة عضويته</span></a>{% endfor %}</div>{% endif %}
+  </section>
+  {% if selected %}<section class="loyalty-panel">
+    <h2>{{ selected.get_full_name|default:"ملف الضيف" }}</h2><p><bdi>{{ selected.email }}</bdi></p>
+    {% if member %}<dl class="loyalty-detail-list"><div><dt>رقم العضوية</dt><dd><bdi>{{ member.number }}</bdi></dd></div><div><dt>حالة العضوية</dt><dd>{{ member.get_status_display }}</dd></div><div><dt>رصيد النقاط</dt><dd><bdi>{{ member_balance|floatformat:2|localized_number }}</bdi></dd></div><div><dt>النقاط المحجوزة</dt><dd><bdi>{{ member_held|floatformat:2|localized_number }}</bdi></dd></div></dl>
+    {% else %}<p>للضيف حساب موقع، ولم ينضم إلى برنامج الولاء.</p>{% endif %}
+    {% if error %}<p class="loyalty-notice" role="alert">{{ error }}</p>{% endif %}
+    {% if closure_form %}<details class="loyalty-closure"><summary>إلغاء عضوية الولاء — للإدارة فقط</summary>
+      <p>تُلغى عضوية الولاء فقط. يُسقط الرصيد الموجب بحركة مستقلة، ولا تُسترجع هدايا الآخرين. الرصيد السالب لا يُمحى، ولا يُخصم شيء من البطاقة. لا يُحذف حساب الموقع أو أي حجز، ولا تُعاد العضوية تلقائيًا.</p>
+      <p>لا يُنفذ الإلغاء مع حجز قائم أو نقاط محجوزة؛ يلزم تسويتها أولًا. تحقق من طلب الضيف قبل التأكيد.</p>
+      <form method="post" class="loyalty-form">{% csrf_token %}<input type="hidden" name="customer" value="{{ selected.pk }}">{{ closure_form.snapshot }}{{ closure_form.non_field_errors }}
+        <label for="{{ closure_form.reason.id_for_label }}">{{ closure_form.reason.label }}</label>{{ closure_form.reason }}{{ closure_form.reason.errors }}
+        <label class="loyalty-consent">{{ closure_form.identity_confirmed }}<span>{{ closure_form.identity_confirmed.label }}</span></label>{{ closure_form.identity_confirmed.errors }}
+        <label class="loyalty-consent">{{ closure_form.forfeiture_confirmed }}<span>{{ closure_form.forfeiture_confirmed.label }}</span></label>{{ closure_form.forfeiture_confirmed.errors }}
+        {{ closure_form.snapshot.errors }}<button class="lsa-btn lsa-btn--gold" type="submit">تأكيد إلغاء العضوية والتنازل عن النقاط</button>
+      </form>
+    </details>{% endif %}
+  </section>{% endif %}
+  <section class="loyalty-panel"><h2>السجل الزمني لأحداث الضيوف</h2>
+    <p>الأحداث السابقة مستخرجة فقط من أدلة محفوظة، وليست إعادة بناء لتفاصيل لم تُسجل. كل حدث جديد يُضاف دون تعديل السابق. تفاصيل الاتصال للإدارة المخولة فقط.</p>
+    {% for event in event_page %}<article class="loyalty-movement">
+      <header><h3>{{ event.get_kind_display }}</h3><time>{{ event.occurred_at|date:"j F Y H:i:s" }}</time></header>
+      <dl class="loyalty-detail-list">
+        <div><dt>رقم الحدث</dt><dd>{{ event.pk|localized_number }}</dd></div>
+        <div><dt>الضيف</dt><dd><a href="?customer={{ event.customer_id }}">{{ event.customer.get_full_name|default:"ضيف" }}</a></dd></div>
+        {% if event.member %}<div><dt>رقم العضوية</dt><dd><bdi>{{ event.member.number }}</bdi></dd></div>{% endif %}
+        <div><dt>مصدر الحدث</dt><dd>{{ event.get_source_display }}</dd></div>
+        <div><dt>منفذ العملية</dt><dd>{% if event.actor %}{{ event.actor.get_full_name|default:event.actor.email }}{% else %}غير مسجل كشخص؛ راجع مصدر الحدث{% endif %}</dd></div>
+        <div><dt>وقت حفظ السجل</dt><dd>{{ event.recorded_at|date:"j F Y H:i:s" }}</dd></div>
+        {% if event.reason %}<div><dt>السبب</dt><dd>{{ event.reason }}</dd></div>{% endif %}
+        {% if event.ledger %}<div><dt>حركة النقاط المرتبطة</dt><dd><a href="{% url 'loyalty:admin' %}?q={{ event.ledger.operation_number|urlencode }}"><bdi>{{ event.ledger.operation_number }}</bdi></a></dd></div>{% endif %}
+      </dl>
+      {% if event.before_display or event.after_display %}<details><summary>البيانات قبل الحدث وبعده</summary><div class="loyalty-event-changes"><section><h4>قبل الحدث</h4><dl class="loyalty-detail-list">{% for label,value in event.before_display %}<div><dt>{{ label }}</dt><dd><bdi>{{ value|default_if_none:"غير محدد" }}</bdi></dd></div>{% empty %}<p>لا توجد بيانات سابقة موثقة لهذا الحدث.</p>{% endfor %}</dl></section><section><h4>بعد الحدث</h4><dl class="loyalty-detail-list">{% for label,value in event.after_display %}<div><dt>{{ label }}</dt><dd><bdi>{{ value|default_if_none:"غير محدد" }}</bdi></dd></div>{% endfor %}</dl></section></div></details>{% endif %}
+      <details><summary>مرجع التدقيق{% if event.kind == "joined" %} والموافقة{% endif %}</summary><p><bdi>{{ event.reference }}</bdi></p>{% if event.evidence.terms_version %}<p>نسخة الشروط: <bdi>{{ event.evidence.terms_version }}</bdi></p>{% endif %}{% if event.evidence.terms_reference %}<p>مرجع الشروط: <bdi>{{ event.evidence.terms_reference }}</bdi></p>{% endif %}</details>
+    </article>{% empty %}<p>لا توجد أحداث مطابقة.</p>{% endfor %}
+    {% if event_page.has_other_pages %}<nav class="loyalty-pagination" aria-label="صفحات أحداث الضيوف">{% if event_page.has_previous %}<a href="?{{ page_query }}&amp;page={{ event_page.previous_page_number }}">السابق</a>{% endif %}<span>الصفحة {{ event_page.number|localized_number }} من {{ event_page.paginator.num_pages|localized_number }}</span>{% if event_page.has_next %}<a href="?{{ page_query }}&amp;page={{ event_page.next_page_number }}">التالي</a>{% endif %}</nav>{% endif %}
+  </section>
+</main>
+{% endblock %}

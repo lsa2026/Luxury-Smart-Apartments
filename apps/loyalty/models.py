@@ -293,3 +293,57 @@ class ReferralRevision(AppendOnly):
 
     def __str__(self):
         return self.tree_number
+
+
+class GuestEvent(AppendOnly):
+    """Private lifecycle audit, not a second points ledger. No secrets or OTPs."""
+
+    class Kind(models.TextChoices):
+        ACCOUNT = "account_created", "إنشاء حساب الضيف"
+        JOIN = "joined", "الانضمام إلى برنامج الولاء"
+        CLOSE = "closed", "إلغاء عضوية الولاء"
+        IDENTITY = "identity_changed", "تعديل الجوال أو البريد"
+        PHONE = "phone_verified", "توثيق جوال الدخول"
+        EMAIL = "email_verified", "توثيق البريد الإلكتروني"
+        REFERRAL = "referral_changed", "تعديل ارتباط الدعوة"
+        PROFILE = "profile_changed", "تحديث بيانات الضيف"
+
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    member = models.ForeignKey(Member, on_delete=models.PROTECT, null=True, blank=True)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="performed_guest_events",
+    )
+    ledger = models.ForeignKey(Ledger, on_delete=models.PROTECT, null=True, blank=True)
+    kind = models.CharField(max_length=24, choices=Kind.choices)
+    reference = models.CharField(max_length=200, unique=True)
+    source = models.CharField(
+        max_length=16,
+        choices=[
+            ("guest", "الضيف"),
+            ("admin", "الإدارة"),
+            ("system", "النظام"),
+            ("history", "سجل سابق موثق"),
+        ],
+    )
+    reason = models.CharField(max_length=500, blank=True)
+    before = models.JSONField(default=dict)
+    after = models.JSONField(default=dict)
+    evidence = models.JSONField(default=dict)
+    occurred_at = models.DateTimeField(default=timezone.now)
+    recorded_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-occurred_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["customer", "-occurred_at", "-id"], name="loyalty_guest_event_time"
+            ),
+            models.Index(fields=["kind", "-occurred_at"], name="loyalty_event_kind_time"),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} — {self.pk}"

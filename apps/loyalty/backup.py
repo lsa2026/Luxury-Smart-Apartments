@@ -23,6 +23,7 @@ from django.utils import timezone
 VERSION = 1
 CORE = ("loyalty.member", "loyalty.referral", "loyalty.ledger")
 CONTEXT = (
+    "loyalty.guestevent",
     "loyalty.referralrevision",
     "accounts.customerprofile",
     "properties.property",
@@ -110,7 +111,9 @@ def _canonical_record(row, models):
     return {**row, "fields": fields}
 
 
-def _schema_hash(*, payment_links=True, legacy_link_expiry=False, referral_revisions=True):
+def _schema_hash(
+    *, payment_links=True, legacy_link_expiry=False, referral_revisions=True, guest_events=True
+):
     # Deconstruction contains callable defaults; field metadata here is stable and JSON-safe.
     return _hash(
         {
@@ -137,6 +140,7 @@ def _schema_hash(*, payment_links=True, legacy_link_expiry=False, referral_revis
             ]
             for label, model in _models().items()
             if (referral_revisions or label != "loyalty.referralrevision")
+            and (guest_events or label != "loyalty.guestevent")
             and (
                 payment_links
                 or label
@@ -174,6 +178,8 @@ def capture(*, source_id, using="default"):
         captured_at = timezone.now().isoformat()
         for label in CORE:
             add(label, models[label].objects.using(using).all())
+        # Include pre-membership registration/proof events as well as member history.
+        add("loyalty.guestevent", models["loyalty.guestevent"].objects.using(using).all())
         members = models["loyalty.member"].objects.using(using)
         member_users = set(members.values_list("customer_id", flat=True))
         add(
@@ -256,19 +262,36 @@ def validate(snapshot):
         "digest",
     }:
         _reject("invalid_snapshot_format")
-    legacy_payment_schema = snapshot["schema"] in {
-        _schema_hash(payment_links=False),
-        _schema_hash(payment_links=False, referral_revisions=False),
-    }
-    old_referral_schema = snapshot["schema"] in {
-        _schema_hash(referral_revisions=False),
-        _schema_hash(legacy_link_expiry=True, referral_revisions=False),
-        _schema_hash(payment_links=False, referral_revisions=False),
+    legacy_payment_schema = any(
+        snapshot["schema"]
+        in {
+            _schema_hash(payment_links=False, guest_events=events),
+            _schema_hash(payment_links=False, referral_revisions=False, guest_events=events),
+        }
+        for events in (True, False)
+    )
+    old_referral_schema = any(
+        snapshot["schema"]
+        in {
+            _schema_hash(referral_revisions=False, guest_events=events),
+            _schema_hash(legacy_link_expiry=True, referral_revisions=False, guest_events=events),
+            _schema_hash(payment_links=False, referral_revisions=False, guest_events=events),
+        }
+        for events in (True, False)
+    )
+    old_event_schema = snapshot["schema"] in {
+        _schema_hash(guest_events=False),
+        _schema_hash(legacy_link_expiry=True, guest_events=False),
+        _schema_hash(referral_revisions=False, guest_events=False),
+        _schema_hash(legacy_link_expiry=True, referral_revisions=False, guest_events=False),
+        _schema_hash(payment_links=False, guest_events=False),
+        _schema_hash(payment_links=False, referral_revisions=False, guest_events=False),
     }
     if snapshot["version"] != VERSION or (
         snapshot["schema"] not in {_schema_hash(), _schema_hash(legacy_link_expiry=True)}
         and not legacy_payment_schema
         and not old_referral_schema
+        and not old_event_schema
     ):
         _reject("incompatible_snapshot_schema")
     if seal(snapshot)["digest"] != snapshot["digest"]:
@@ -289,6 +312,8 @@ def validate(snapshot):
         if not isinstance(row, dict) or set(row) != {"model", "pk", "fields"}:
             _reject("invalid_record_format")
         model = models.get(row["model"])
+        if old_event_schema and row["model"] == "loyalty.guestevent":
+            _reject("unreviewed_record_fields")
         if old_referral_schema and row["model"] == "loyalty.referralrevision":
             _reject("unreviewed_record_fields")
         if model is None:
@@ -328,6 +353,21 @@ def validate(snapshot):
                 ):
                     _reject("missing_related_record")
     members = {pk: f for (label, pk), f in indexed.items() if label == "loyalty.member"}
+    event_references = set()
+    for (label, _), event in indexed.items():
+        if label != "loyalty.guestevent":
+            continue
+        member_id = str(event["member"]) if event["member"] is not None else None
+        ledger_row = indexed.get(("loyalty.ledger", str(event["ledger"])))
+        if (
+            event["reference"] in event_references
+            or event["kind"] not in models[label].Kind.values
+            or event["source"] not in {"guest", "admin", "system", "history"}
+            or (member_id and members[member_id]["customer"] != event["customer"])
+            or (ledger_row and str(ledger_row["member"]) != member_id)
+        ):
+            _reject("invalid_guest_event")
+        event_references.add(event["reference"])
     referrals = {
         str(f["member"]): f for (label, _), f in indexed.items() if label == "loyalty.referral"
     }
@@ -487,7 +527,8 @@ def compare(previous, incoming):
         if key not in new:
             _reject("financial_history_missing" if key[0] in CORE else "related_history_missing")
         if (
-            key[0] in {"payments.offlinepaymentreceipt", "loyalty.referralrevision"}
+            key[0]
+            in {"payments.offlinepaymentreceipt", "loyalty.referralrevision", "loyalty.guestevent"}
             and new[key] != row
         ):
             _reject(

@@ -348,8 +348,19 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
         profile_form = CustomerProfileForm(request.POST, user=request.user, profile=profile)
         if profile_form.is_valid():
             with transaction.atomic():
-                get_user_model().objects.select_for_update().get(pk=request.user.pk)
+                locked_user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
                 profile = CustomerProfile.objects.select_for_update().get(pk=profile.pk)
+                audit_fields = (
+                    "phone",
+                    "preferred_language",
+                    "residence_address_line1",
+                    "residence_city",
+                    "residence_region",
+                    "residence_postal_code",
+                    "residence_country",
+                )
+                before = {field: getattr(profile, field) for field in audit_fields}
+                before.update(first_name=locked_user.first_name, last_name=locked_user.last_name)
                 request.user.first_name = profile_form.cleaned_data["first_name"]
                 request.user.last_name = profile_form.cleaned_data["last_name"]
                 request.user.save(update_fields=["first_name", "last_name"])
@@ -370,6 +381,25 @@ def dashboard(request: HttpRequest, section: str = "bookings") -> HttpResponse:
                 if "preferred_language" in request.POST:
                     profile.preferred_language = profile_form.cleaned_data["preferred_language"]
                 profile.save()
+                after = {field: getattr(profile, field) for field in audit_fields}
+                after.update(first_name=request.user.first_name, last_name=request.user.last_name)
+                changed = [field for field in before if before[field] != after[field]]
+                if changed:
+                    from uuid import uuid4
+
+                    from apps.loyalty.events import record
+                    from apps.loyalty.models import GuestEvent
+
+                    record(
+                        customer=request.user,
+                        actor=request.user,
+                        kind=GuestEvent.Kind.PROFILE,
+                        reference=f"profile:{uuid4()}",
+                        source="guest",
+                        before={field: before[field] for field in changed},
+                        after={field: after[field] for field in changed},
+                        reason="حفظ الضيف بياناته من حسابه؛ ليس توثيقًا للجوال.",
+                    )
             messages.success(request, copy["saved"])
             response = redirect("accounts:details")
             if profile.preferred_language:
