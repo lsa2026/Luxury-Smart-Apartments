@@ -1,6 +1,7 @@
 /* Native, read-only diagram. No guest data is sent to third-party drawing services. */
 export function arrowPath(from, to) {
-  const direction = Math.sign(to.x + to.width / 2 - from.x - from.width / 2);
+  const delta = to.x + to.width / 2 - from.x - from.width / 2;
+  const direction = Math.abs(delta) < 1 ? 0 : Math.sign(delta);
   const x = from.x + from.width / 2 + direction * (from.width / 2 + 9);
   const y = direction ? from.y + from.height * .36 : (from.foot ?? from.y + from.height + 4);
   const endX = to.x + to.width / 2, endY = to.y - 9;
