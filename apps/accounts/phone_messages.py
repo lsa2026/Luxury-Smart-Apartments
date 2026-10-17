@@ -8,9 +8,9 @@ AUTH_MARKER = "[LSA-AUTH]"
 
 
 def phone_logo():
-    # Reuse the approved horizontal lockup verbatim; never redraw the logo.
+    # Owner-approved LIGHT horizontal lockup, reused verbatim; never redraw the logo.
     # No OTP or guest data is baked into artwork or public media URLs.
-    return files("apps.notifications").joinpath("invoice_assets", "whatsapp-brand.png").read_bytes()
+    return files("apps.notifications").joinpath("invoice_assets", "lockup-light.png").read_bytes()
 
 
 AUTH_TITLES = {
