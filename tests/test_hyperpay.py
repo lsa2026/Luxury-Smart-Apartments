@@ -404,6 +404,41 @@ def test_verified_success_creates_one_local_reservation_without_duplicate(paymen
 
 
 @pytest.mark.parametrize(
+    "wallet_value,expected_wallet", [("APPLE_PAY", "apple_pay"), (None, ""), ("OTHER", "")]
+)
+@override_settings(**HYPERPAY_SETTINGS, HOSTAWAY_LIVE_BOOKING_ENABLED=False)
+def test_verified_wallet_metadata_is_optional_and_never_changes_the_charge(
+    wallet_value, expected_wallet
+):
+    intent = payable_intent()
+    client = HyperPayStub()
+    service = HyperPayService(client=client)
+    checkout = service.create_checkout(intent)
+    client.payment_document = {
+        "id": "wallet_metadata_payment_12345678",
+        "amount": "1250.00",
+        "currency": "SAR",
+        "paymentType": "DB",
+        "paymentBrand": "VISA",
+        "merchantTransactionId": checkout.attempt.merchant_transaction_id,
+        "entityId": "test-entity-id",
+        "result": {"code": "000.100.110", "description": "Test success"},
+        "resultDetails": {"walletProvider": wallet_value},
+    }
+    first = service.verify(checkout.attempt)
+    second = service.verify(checkout.attempt)
+    checkout.attempt.refresh_from_db()
+    assert first.status is HyperPayStatus.SUCCESS and second.status is HyperPayStatus.SUCCESS
+    assert checkout.attempt.payment_brand == "VISA"
+    assert checkout.attempt.payment_wallet == expected_wallet
+    assert checkout.attempt.amount == Decimal("1250")
+    assert checkout.attempt.currency == "SAR"
+    assert client.payment_calls == 1
+    assert client.checkout_calls == 1
+    assert Reservation.objects.filter(booking_intent=intent).count() == 1
+
+
+@pytest.mark.parametrize(
     ("field", "value", "failure_code"),
     [
         ("amount", "1251.00", "amount_mismatch"),
@@ -870,6 +905,7 @@ def test_fake_browser_success_is_only_a_verification_trigger(monkeypatch) -> Non
     assert ResultViewServiceStub.calls == 1
     assert Reservation.objects.count() == 0
     assert "No booking was confirmed" in response.content.decode()
+    assert response["Referrer-Policy"] == "no-referrer"
 
 
 @override_settings(**HYPERPAY_SETTINGS)

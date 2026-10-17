@@ -43,10 +43,11 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/brand/apple-touch-icon.png' %}">
     <link rel="preconnect" href="https://images.unsplash.com">
     <link rel="stylesheet" href="{% static 'css/site.css' %}?v=49">
+    <script src="{% static 'js/measurement-privacy.js' %}?v=1" defer></script>
     {% if meta_measurement_page_allowed %}<script src="{% static 'js/meta-measurement.js' %}?v=1" defer></script>{% endif %}
-    <script src="{% static 'js/consent.js' %}?v=15" defer></script>
+    <script src="{% static 'js/consent.js' %}?v=16" defer></script>
     {% block google_purchase_data %}{% endblock %}
-    <script src="{% static 'js/analytics.js' %}?v=19" defer></script>
+    <script src="{% static 'js/analytics.js' %}?v=20" defer></script>
     <script src="{% static 'js/form-validation.js' %}?v=1" defer></script>
     <script src="{% static 'js/site.js' %}?v=30" defer></script>
     {% json_ld organization_data csp_nonce %}

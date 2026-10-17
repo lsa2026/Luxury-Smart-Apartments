@@ -386,6 +386,9 @@ class HyperPayResultView(View):
             status=200 if outcome else 503,
         )
         response["Cache-Control"] = "no-store, private"
+        # The return URL contains private gateway parameters. Do not expose
+        # them as an HTTP referrer even to same-origin measurement gateways.
+        response["Referrer-Policy"] = "no-referrer"
         return response
 
 

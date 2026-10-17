@@ -80,6 +80,7 @@
     let tagManagerAttempts = 0;
     let tagManagerStarted = false;
     function loadTagManager() {
+        window.LSAMeasurementPrivacy?.apply();
         const gtmEnabled = body.dataset.gtmEnabled === "true";
         if (
             !googleEnabled
@@ -142,7 +143,10 @@
             script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
             document.head.append(script);
             window.gtag("js", new Date());
-            window.gtag("config", id, {debug_mode: body.dataset.ga4Debug === "true"});
+            window.gtag("config", id, {
+                debug_mode: body.dataset.ga4Debug === "true",
+                ...window.LSAMeasurementPrivacy?.fields(),
+            });
         }
     }
 

@@ -279,14 +279,14 @@ def prepare_purchase_event(
 
 
 def payment_analytics_fields(attempt: PaymentAttempt) -> dict[str, str]:
-    """Only a gateway-reported brand; never infer a wallet's underlying network."""
+    """Keep the wallet separate from the network; missing evidence is unknown."""
     brands = {"MADA": "mada", "VISA": "visa", "MASTER": "mastercard", "APPLEPAY": "apple_pay"}
     brand = brands.get(getattr(attempt, "payment_brand", ""), "unknown")
     return {
         "payment_brand": brand,
         "payment_type": "apple_pay"
-        if brand == "apple_pay"
-        else ("card" if brand != "unknown" else "unknown"),
+        if getattr(attempt, "payment_wallet", "") == "apple_pay" or brand == "apple_pay"
+        else "unknown",
     }
 
 
