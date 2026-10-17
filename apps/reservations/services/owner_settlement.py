@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db.models import Sum
 
 from apps.payments.models import PaymentAttempt
@@ -19,8 +20,18 @@ class OwnerSettlement:
 
 def settlement_blocker(reservation: Reservation) -> str:
     """Do not mistake an unmatched-currency collection for an unpaid booking."""
+    from apps.loyalty.settlements import eligible
+    from apps.loyalty.valuation import total_sar
+
+    loyalty_fx = eligible(reservation) and reservation.currency != "SAR"
+    if loyalty_fx:
+        try:
+            total_sar(reservation)
+        except ValidationError:
+            return "payment_currency_reconciliation_required"
     if (
-        reservation.booking_intent_id
+        not loyalty_fx
+        and reservation.booking_intent_id
         and PaymentAttempt.objects.filter(
             booking_intent_id=reservation.booking_intent_id,
             status__in=[PaymentAttempt.Status.SUCCEEDED, PaymentAttempt.Status.PARTIALLY_REFUNDED],
@@ -65,7 +76,9 @@ def settlement_for(reservation: Reservation, final_total: Decimal) -> OwnerSettl
 
     if eligible(reservation):
         cash, points = funding(reservation)
-        paid = cash + points
+        from apps.loyalty.valuation import to_source
+
+        paid = to_source(reservation, cash + points)
     return OwnerSettlement(
         paid, max(final_total - paid, Decimal("0")), max(paid - final_total, Decimal("0"))
     )

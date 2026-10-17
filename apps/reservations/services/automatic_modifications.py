@@ -115,9 +115,15 @@ def execute_automatic_modification(
             preview = locked.quote_snapshot.get("owner_settlement", {})
             if preview and Decimal(preview["paid"]) != settlement.paid:
                 return AutomaticModificationOutcome("payment_changed_reprice_required", locked)
+            refund_ceiling = settlement.refund
+            from apps.loyalty.settlements import eligible
+            from apps.loyalty.valuation import to_sar
+
+            if eligible(locked.reservation):
+                refund_ceiling = to_sar(locked.reservation, refund_ceiling)
             if (
                 approved_refund_amount is not None
-                and not Decimal("0") <= approved_refund_amount <= settlement.refund
+                and not Decimal("0") <= approved_refund_amount <= refund_ceiling
             ):
                 return AutomaticModificationOutcome("invalid_refund_amount", locked)
         if locked.request_type == BookingModificationRequest.RequestType.CANCEL_RESERVATION:

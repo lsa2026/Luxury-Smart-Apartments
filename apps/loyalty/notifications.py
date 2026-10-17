@@ -142,7 +142,9 @@ def dispatch_due(limit=100):
         .order_by("pk")
     )
     for booking in bookings.iterator(chunk_size=100):
-        arrival = booking.loyalty_state.get("arrival")
+        from .accrual import effective_arrival
+
+        arrival = effective_arrival(booking)
         intent = booking.booking_intent
         if not arrival or not intent or not intent.marketing_consent or not intent.guest_email:
             continue
@@ -228,7 +230,9 @@ def resolve_recipient(delivery):
             public_reference=delivery.recipient_reference
         )
         intent = booking.booking_intent
-        arrival = booking.loyalty_state.get("arrival", {})
+        from .accrual import effective_arrival
+
+        arrival = effective_arrival(booking)
         if (
             not intent
             or not intent.marketing_consent

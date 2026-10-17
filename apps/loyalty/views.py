@@ -29,6 +29,7 @@ from apps.accounts.phone_auth import ready as phone_ready
 from apps.accounts.phone_copy import phone_copy
 from apps.reservations.models import Reservation
 
+from .accrual import effective_arrival
 from .copy import copy
 from .forms import GiftInvitationForm, JoinForm, PhoneGiftForm, TransferForm
 from .invitation_links import invitation_url
@@ -349,7 +350,7 @@ def guest_rewards(request):
                 completed = [
                     r
                     for r in completed
-                    if (r.loyalty_state.get("arrival") and stay_times(r)[1] <= timezone.now())
+                    if (effective_arrival(r) and stay_times(r)[1] <= timezone.now())
                     or stay_exception_allowed(r)
                 ]
     a_copy = account_copy()

@@ -91,7 +91,11 @@ def checkout_context(request, intent):
         or intent.expires_at <= timezone.now()
     ):
         return {}
-    if intent.currency != "SAR" or intent.payment_amount_sar != intent.total_price:
+    from .valuation import intent_total_sar
+
+    try:
+        intent_total_sar(intent)
+    except ValidationError:
         return {}
     if pilot_only():
         scoped = Reservation.objects.filter(booking_intent=intent).first()

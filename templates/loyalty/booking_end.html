@@ -11,8 +11,8 @@
     <p>وقت المغادرة: {{ moment|localized_datetime }}</p>
     <dl class="lsa-stay-settlement">
       <div><dt>إجمالي الحجز</dt><dd>{{ reservation.total_price|format_money:reservation.currency }}</dd></div>
-      <div><dt>قيمة الإقامة المستخدمة</dt><dd>{{ consumed|format_money:reservation.currency }}</dd></div>
-      <div><dt>المبلغ المتبقي المستحق للاسترداد</dt><dd>{{ plan.cash_refund|format_money:reservation.currency }}</dd></div>
+      <div><dt>قيمة الإقامة المستخدمة</dt><dd>{{ consumed|format_money:'SAR' }}</dd></div>
+      <div><dt>المبلغ المتبقي المستحق للاسترداد</dt><dd>{{ plan.cash_refund|format_money:'SAR' }}</dd></div>
       <div><dt>نقاط الدفع المستحقة للإعادة</dt><dd>{{ plan.points_refund|floatformat:2|localized_number }} نقطة</dd></div>
       <div><dt>مكافأة الإقامة بعد التسوية</dt><dd>{{ reward_after|floatformat:2|localized_number }} نقطة</dd></div>
     </dl>

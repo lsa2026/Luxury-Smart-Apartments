@@ -48,7 +48,9 @@ def cash_due(intent, *, freeze=False):
         return gross
     if not booking_allowed(booking):
         raise ValidationError("الحجز خارج نطاق التجربة الخاصة؛ لا يُغيّر المبلغ المخصص للدفع.")
-    if not intent.customer_id or intent.currency != "SAR" or gross != intent.total_price:
+    from .valuation import intent_total_sar
+
+    if not intent.customer_id or gross != intent_total_sar(intent):
         raise ValidationError("يلزم تفصيل دفع نقاط موثق بالريال السعودي.")
     member = member_for(intent.customer)
     if allocation.get("member", member.pk) != member.pk:
@@ -137,7 +139,9 @@ def restore_cancelled_points(reservation_id):
     redeemed = booking.loyalty_state.get("redemption")
     if not redeemed or booking.normalized_status != Reservation.Status.CANCELLED:
         return
-    if booking.loyalty_state.get("arrival"):
+    from .accrual import effective_arrival
+
+    if effective_arrival(booking):
         # Actual departure + priced-night snapshot must be supplied by the
         # trusted stay-ending workflow. Never assume cancellation == departure.
         departure = booking.loyalty_state.get("departure_settlement")

@@ -6,7 +6,9 @@
   <div class="lsa-stay-controls__grid">
     <article>
       <h3>وصول الضيف</h3>
-      {% if loyalty_stay.arrived %}<p class="lsa-stay-controls__success">تم توثيق الوصول</p>
+      {% if loyalty_stay.automatic_arrival %}<p class="lsa-stay-controls__success">تم اعتماد الدخول آليًا من الثالثة عصرًا</p>
+      <p class="help">يُعتمد هذا الموعد لاحتساب النقاط وإنهاء الإقامة، ولإتاحة الدعوة بعد اكتمال أول إقامة مؤهلة ومدفوعة. لا يلزم تأكيد إداري إضافي.</p>
+      {% elif loyalty_stay.arrived %}<p class="lsa-stay-controls__success">تم توثيق الوصول</p>
       <p class="help">تُحتسب النقاط تلقائيًا بعد التحقق من السداد الإلكتروني والانضمام وأهلية الحجز.</p>
       {% elif loyalty_stay.can_arrive %}
       <p>يمكن للإدارة توثيق الوصول الآن، ولو قبل يوم الدخول. يفحص النظام السداد المؤكد والانضمام وأهلية الحجز قبل إضافة النقاط، دون تكرار مكافأة سبق احتسابها.</p>
@@ -15,7 +17,6 @@
         <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد وصول الضيف الآن</button>
       </form>
       {% else %}<p class="help">تأكيد الوصول غير متاح في حالة الحجز الحالية.</p>{% endif %}
-      {% if loyalty_stay.scheduled_accrual %}<p class="help">سبق تحقق موعد الاستحقاق التلقائي. لا يُعد ذلك توثيقًا لوصول الضيف الفعلي.</p>{% endif %}
     </article>
     <article>
       <h3>إنهاء الإقامة</h3>
@@ -30,7 +31,7 @@
           <details><summary>تحديد وقت مغادرة سابق — اختياري</summary><label for="stay-vacated-at">وقت المغادرة الفعلي بتوقيت العقار</label><input id="stay-vacated-at" type="datetime-local" name="vacated_at"><small>اتركه فارغًا لاستخدام الوقت الحالي.</small></details>
           <button class="lsa-btn lsa-btn--gold" type="submit">إنهاء الإقامة — مراجعة الحساب</button>
         </form>
-      {% else %}<p class="help">{% if loyalty_stay.arrived %}إنهاء الإقامة غير متاح في حالة الحجز الحالية.{% else %}أكد الوصول الفعلي أولًا لإتاحة حساب إنهاء الإقامة.{% endif %}</p>{% endif %}
+      {% else %}<p class="help">{% if loyalty_stay.arrived %}إنهاء الإقامة غير متاح في حالة الحجز الحالية.{% else %}يتاح إنهاء الإقامة من موعد الدخول المعتمد، أو بعد توثيق الإدارة للوصول قبل الموعد.{% endif %}</p>{% endif %}
     </article>
   </div>
 </section>

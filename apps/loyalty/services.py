@@ -412,9 +412,11 @@ def issue_invite(user, reservation_id):
         from .site_adapter import booking_facts, stay_times
 
         _, end = stay_times(booking)
+        from .accrual import effective_arrival
+
         test_stay_exception = stay_exception_allowed(booking)
         if (
-            (not booking.loyalty_state.get("arrival") and not test_stay_exception)
+            (not effective_arrival(booking) and not test_stay_exception)
             or (end > timezone.now() and not test_stay_exception)
             or booking.normalized_status not in Reservation.ACTIVE_STATUSES
             or (member.consent_at > end and not historical_award_allowed(booking))
@@ -675,13 +677,9 @@ def hold(user, request_reference, reservation_id, value):
                     "اختر النقاط قبل إنشاء عملية الدفع؛ توجد عملية قائمة لهذا الحجز."
                 )
             n = amount(cents(value))
-            # Until mixed-currency/allocation approval, redemption integration is SAR only.
-            if (
-                booking.currency != "SAR"
-                or n <= 0
-                or n > booking.total_price
-                or n > available(member)
-            ):
+            from .valuation import total_sar
+
+            if n <= 0 or n > total_sar(booking) or n > available(member):
                 raise ValidationError("قيمة النقاط غير متاحة لهذا الحجز.")
             booking.loyalty_state["hold"] = {
                 "value": str(n),

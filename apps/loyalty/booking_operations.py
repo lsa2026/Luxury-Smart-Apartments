@@ -19,7 +19,7 @@ from apps.accounts.access import is_operations_owner
 from apps.notifications.models import AuditLog
 from apps.reservations.models import BookingModificationRequest, Reservation
 
-from .accrual import policy_enabled
+from .accrual import effective_arrival, policy_enabled
 from .calculation import amount, cents
 from .launch import booking_allowed
 from .localization import arabic_admin
@@ -46,7 +46,7 @@ def stay_controls(user, booking):
     except (ValidationError, ValueError, KeyError):
         return None
     active = booking.normalized_status in Reservation.ACTIVE_STATUSES
-    arrival = booking.loyalty_state.get("arrival")
+    arrival = effective_arrival(booking)
     departure = booking.loyalty_state.get("departure_settlement")
     pending = (
         booking.modification_requests.filter(
@@ -59,6 +59,7 @@ def stay_controls(user, booking):
     )
     return {
         "arrived": bool(arrival),
+        "automatic_arrival": bool(arrival and arrival.get("kind") == "scheduled_checkin"),
         "departure": departure,
         "pending": pending,
         "can_arrive": active
@@ -166,7 +167,8 @@ def booking_stay(request, reservation_id):
                     "plan": plan,
                     "moment": timezone.localtime(moment, ZoneInfo(booking.property.time_zone_name)),
                     "reward_after": amount(cents(plan["consumed_cash_lodging"]) * 3 // 100),
-                    "consumed": booking.total_price - Decimal(plan["refundable_total"]),
+                    "consumed": Decimal(plan["settlement_total"])
+                    - Decimal(plan["refundable_total"]),
                     "confirmation": token,
                 },
             )

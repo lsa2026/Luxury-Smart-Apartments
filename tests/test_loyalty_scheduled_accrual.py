@@ -223,6 +223,21 @@ def test_cancellation_after_automatic_accrual_corrects_but_preserves_original(po
     original = Ledger.objects.get()
     snapshot = original.evidence.copy()
     r.refresh_from_db()
+    from apps.loyalty.stay import record_departure
+
+    # Operational admission now governs cancellation too. An explicit same-day
+    # exit before 20:00 settles all unused nights without faking physical arrival.
+    r.booking_intent.quote.night_prices = {
+        "currency": "SAR",
+        "reference": "fictional-two-night-contract",
+        "nights": [
+            {"date": (r.check_in + timedelta(days=n)).isoformat(), "value": "375.00"}
+            for n in range(2)
+        ],
+    }
+    r.booking_intent.quote.save(update_fields=["night_prices"])
+    record_departure(owner(), r.pk, vacated_at=policy[0], reference="fictional-exit")
+    r.refresh_from_db()
     r.normalized_status = Reservation.Status.CANCELLED
     r.save(update_fields=["normalized_status"])
     assert reconcile(r.pk)["status"] == "settled"

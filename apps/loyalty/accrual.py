@@ -58,6 +58,23 @@ def scheduled_eligibility(booking):
     }
 
 
+def effective_arrival(booking):
+    """One operational start for rewards, invitations and stay settlement.
+
+    Keep timed admission separate from physical reception evidence. An award's
+    saved timed admission survives checkout/cancellation and never moves with
+    a later change to dates. Merely viewing a booking does not write evidence.
+    """
+    manual = booking.loyalty_state.get("arrival")
+    scheduled = scheduled_eligibility(booking)
+    if manual and scheduled:
+        manual_at = parse_datetime(manual.get("at", ""))
+        scheduled_at = parse_datetime(scheduled["at"])
+        if manual_at and timezone.is_aware(manual_at) and scheduled_at < manual_at:
+            return scheduled
+    return manual or scheduled
+
+
 def accrue_due_stays():
     """Catch up current stays only; no retrospective sweep of finished bookings."""
     if not policy_enabled():
