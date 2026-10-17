@@ -112,7 +112,7 @@ def test_existing_hold_is_honoured_after_reward_correction():
     assert balance(am) == Decimal("-23.00")
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=connection.vendor == "postgresql")
 def test_signed_balances_backup_and_reopened_mirror(tmp_path):
     a, b, am, bm, r = example()
     # The recipient forfeits their own points; later reversal can make the
@@ -130,7 +130,7 @@ def test_signed_balances_backup_and_reopened_mirror(tmp_path):
     assert balance(am) == Decimal("-3.00")
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=connection.vendor == "postgresql")
 def test_old_deferred_corrections_become_append_only_rows_once():
     a, b = user("legacy-a"), user("legacy-b")
     am, bm = join(a), join(b)
