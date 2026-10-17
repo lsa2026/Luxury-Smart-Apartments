@@ -1,4 +1,4 @@
 <ul class="loyalty-forest">
-{% for link in tree_children %}<li class="loyalty-branch">{% include "loyalty/_tree_node.html" with expanded=False %}<div id="member-children-{{ link.member_id }}" class="loyalty-branch-children" data-tree-children hidden></div></li>{% empty %}<li class="loyalty-tree-empty">{% if focus %}لا يوجد مدعوون في هذا الفرع.{% else %}لا توجد عضويات لعرضها بعد.{% endif %}</li>{% endfor %}
+{% for branch in tree_diagram_children %}{% include "loyalty/_tree_branch.html" %}{% empty %}<li class="loyalty-tree-empty">{% if focus %}لا يوجد مدعوون في هذا الفرع.{% else %}لا توجد عضويات لعرضها بعد.{% endif %}</li>{% endfor %}
 </ul>
 {% if tree_cursor %}<a class="loyalty-tree-more" data-tree-more href="{% url 'loyalty:tree' %}?{% if focus %}parent={{ focus.member_id }}&amp;{% endif %}after={{ tree_cursor }}">عرض المزيد من {% if focus %}المدعوين{% else %}الجذور{% endif %}</a>{% endif %}

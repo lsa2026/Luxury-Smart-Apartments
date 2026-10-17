@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +15,7 @@ from django.utils import timezone
 from apps.accounts.models import VerifiedPhone, profile_for
 from apps.loyalty.models import Ledger, Member, Referral, ReferralRevision
 from apps.loyalty.referrals import graph, link_members
-from apps.loyalty.tree import presentation
+from apps.loyalty.tree import DIAGRAM_NODES, diagram, presentation
 from tests.test_loyalty_admin_referrals import programme as programme  # noqa: F401
 from tests.test_loyalty_stage8 import join, user
 
@@ -215,3 +216,60 @@ def test_admin_entry_and_locale_are_arabic_without_changing_guest_cookie(family,
 def test_invalid_member_reference_is_a_normal_not_found(family, value):
     client, *_ = family
     assert client.get(endpoint(), {"parent": value}).status_code == 404
+
+
+def flatten_diagram(nodes):
+    return [node for root in nodes for node in [root, *flatten_diagram(root["children"])]]
+
+
+def test_people_diagram_preloads_real_descendants_and_safe_profile_details(family):
+    client, _, (a, b, c, d, e) = family
+    response = client.get(endpoint())
+    nodes = flatten_diagram(response.context["tree_diagram_children"])
+    assert {node["link"].member_id for node in nodes} == {a.pk, b.pk, c.pk, d.pk, e.pk}
+    html = response.content.decode()
+    assert html.count("data-tree-person href=") == 5
+    assert html.count("<template data-tree-profile>") == 5
+    assert 'id="tree-member-profile"' in html
+    assert 'role="dialog"' in html
+    assert "مرّر الماوس على الشخص" in html
+    assert "عرض معلومات" in html
+    assert "تاريخ الانضمام" in html
+    assert graph()[c.pk].tree_number in html
+    assert "loyalty-person-tree.js" in html
+    assert response.context["tree_diagram_children"][0]["loaded"]
+    for row in response.context["tree_children"]:
+        assert row.inviter_name == "بدون داعٍ"
+    focused = client.get(endpoint(), {"parent": b.pk})
+    assert focused.context["focus"].inviter_name == a.customer.get_full_name()
+
+
+def test_people_diagram_depth_and_node_limits_do_not_discard_unloaded_branches():
+    links = {
+        i: SimpleNamespace(member_id=i, inviter_id=i - 1 if i > 1 else None, branch_order=1)
+        for i in range(1, 100)
+    }
+    nodes = flatten_diagram(diagram(links, [links[1]]))
+    assert len(nodes) == 5
+    assert nodes[-1]["link"].member_id == 5
+    assert nodes[-1]["loaded"] is False  # Its button still loads generation six.
+    links = {
+        i: SimpleNamespace(member_id=i, inviter_id=(i // 5 or None), branch_order=i)
+        for i in range(1, 1000)
+    }
+    roots = [row for row in links.values() if row.inviter_id is None]
+    nodes = flatten_diagram(diagram(links, roots))
+    assert len(nodes) == DIAGRAM_NODES
+    assert len({node["link"].member_id for node in nodes}) == len(nodes)
+    assert any(node.get("cursor") for node in nodes)
+
+
+def test_people_diagram_never_invents_a_binary_split_or_repeats_cycles():
+    links = {
+        i: SimpleNamespace(member_id=i, inviter_id=1 if i > 1 else None, branch_order=i)
+        for i in range(1, 9)
+    }
+    result = diagram(links, [links[1]])
+    assert len(result[0]["children"]) == 7
+    links[1].inviter_id = 2
+    assert len(flatten_diagram(diagram(links, [links[1]]))) == 8
