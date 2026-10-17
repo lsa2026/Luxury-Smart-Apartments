@@ -3,6 +3,7 @@
 import hashlib
 from datetime import date
 from decimal import Decimal
+from hmac import compare_digest
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -22,6 +23,10 @@ from apps.payments.payment_link_tasks import payment_message
 from .invitation_design import invitation_caption, invitation_image
 from .models import GuestEvent, Ledger, Member
 from .whatsapp_notices import lifecycle_caption, movement_caption, phone_digest
+
+# Exact owner-approved E.164 destination, not a suffix or an editable profile field.
+# Retain only its digest in source; a changed destination needs explicit confirmation.
+OWNER_PREVIEW_PHONE_SHA256 = "cd8af36a4b176ad5b18b7cd6d93f501872c16a70f9eb14ecc39e90485b9ebd2b"
 
 
 def catalogue(language="ar"):
@@ -131,7 +136,9 @@ def send_catalogue(*, batch, language="ar"):
     if not owner.customer.is_active:
         raise ValidationError("Owner account inactive.")
     binding = VerifiedPhone.objects.get(user=owner.customer)
-    if not binding.phone.endswith("7246"):
+    if not compare_digest(
+        hashlib.sha256(binding.phone.encode()).hexdigest(), OWNER_PREVIEW_PHONE_SHA256
+    ):
         raise ValidationError("Owner destination requires confirmation.")
     packets = catalogue(language)
     results = []
@@ -147,7 +154,12 @@ def send_catalogue(*, batch, language="ar"):
             ).exists():
                 results.append((key, "already_attempted"))
                 continue
-            if not VerifiedPhone.objects.filter(pk=binding.pk, version=binding.version).exists():
+            if not VerifiedPhone.objects.filter(
+                pk=binding.pk,
+                version=binding.version,
+                phone=binding.phone,
+                user_id=owner.customer_id,
+            ).exists():
                 raise ValidationError("Owner phone changed.")
             AuditLog.objects.create(
                 action="whatsapp.preview.started",

@@ -1,3 +1,4 @@
+import hashlib
 from decimal import Decimal
 from io import BytesIO
 from unittest.mock import Mock
@@ -167,6 +168,9 @@ def test_notice_requires_exactly_one_business_source():
 
 
 def test_preview_guard_and_once_only_audit_without_financial_changes(rig, monkeypatch):
+    monkeypatch.setattr(
+        message_previews, "OWNER_PREVIEW_PHONE_SHA256", hashlib.sha256(b"+16465557246").hexdigest()
+    )
     rig.bindings[0].phone = "+16465557246"
     rig.bindings[0].save(update_fields=["phone"])
     rig.am.number = "LSA-M000001"
@@ -184,13 +188,17 @@ def test_preview_guard_and_once_only_audit_without_financial_changes(rig, monkey
     assert fake.send_image.call_count == 19 and fake.send_document.call_count == 1
     assert Ledger.objects.count() == before
     assert "000000" not in str(list(AuditLog.objects.values_list("metadata", flat=True)))
-    rig.bindings[0].phone = "+12025550100"
+    # Same suffix is NOT the same destination.
+    rig.bindings[0].phone = "+12025557246"
     rig.bindings[0].save(update_fields=["phone"])
     with pytest.raises(ValidationError):
         message_previews.send_catalogue(batch="wrong-destination")
 
 
 def test_preview_unknown_outcome_stops_and_never_retries(rig, monkeypatch):
+    monkeypatch.setattr(
+        message_previews, "OWNER_PREVIEW_PHONE_SHA256", hashlib.sha256(b"+16465557246").hexdigest()
+    )
     rig.bindings[0].phone = "+16465557246"
     rig.bindings[0].save(update_fields=["phone"])
     rig.am.number = "LSA-M000001"
