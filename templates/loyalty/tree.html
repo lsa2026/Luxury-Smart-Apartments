@@ -1,27 +1,28 @@
 {% extends "admin/base_site.html" %}
 {% load static presentation %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=1">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/loyalty.css' %}?v=4"><link rel="stylesheet" href="{% static 'css/loyalty-tree.css' %}?v=1">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/loyalty-tree.js' %}?v=1" defer></script>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block bodyclass %}{{ block.super }} loyalty-admin-page{% endblock %}
 {% block content %}
-<main class="loyalty-admin" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}">
-  <h1>{{ title }}</h1>{% if loyalty_preview %}<p class="loyalty-notice">{{ loyalty_copy.preview }}</p>{% endif %}
-  <nav class="loyalty-admin-nav"><a href="{% url 'loyalty:admin' %}">{{ loyalty_copy.ledger }}</a><a href="{% url 'loyalty:tree' %}">{{ loyalty_copy.root }}</a>
-    {% if focus.inviter_id %}<a href="?parent={{ focus.inviter_id }}">{{ loyalty_copy.parent }}</a>{% endif %}
-  </nav>
-  <form method="get" class="loyalty-form"><label for="tree-query">{{ loyalty_copy.number }}</label><input id="tree-query" name="q" maxlength="32" dir="ltr"><button type="submit">{{ loyalty_copy.filter }}</button></form>
-  <section class="loyalty-tree{% if not focus %} loyalty-tree--roots{% endif %}">
-    {% if focus %}<article class="loyalty-tree-node loyalty-tree-focus"><strong>{{ focus.member.customer.get_full_name|default:focus.member.number }}</strong><bdi>{{ focus.member.number }}</bdi><bdi>{{ focus.tree_number }}</bdi></article>{% endif %}
-    <ul class="loyalty-tree-children">{% for link in tree_children %}<li>
-      <article class="loyalty-tree-node">
-        <strong>{{ link.member.customer.get_full_name|default:link.member.number }}</strong>
-        <bdi>{{ link.member.number }}</bdi><bdi>{{ link.tree_number }}</bdi>
-        <small>{{ loyalty_copy.children }}: {{ link.child_count|localized_number }}</small>
-        <a href="?parent={{ link.member_id }}">{{ loyalty_copy.open_branch }}</a>
-      </article>
-    </li>{% empty %}<li>{{ loyalty_copy.children }}: {{ 0|localized_number }}</li>{% endfor %}</ul>
+<main class="loyalty-admin loyalty-tree-page" dir="rtl">
+  <header class="loyalty-tree-heading"><div><p class="loyalty-tree-eyebrow">برنامج مكافآت ضيوفنا</p><h1>شجرة الأعضاء</h1><p>تعرّف على الداعي والمدعوين عبر روابط العضوية الحالية، حتى قبل اكتساب أي نقاط.</p></div><a class="lsa-btn lsa-btn--gold" href="{% url 'loyalty:admin' %}">العودة إلى إدارة الولاء</a></header>
+  {% if loyalty_preview %}<p class="loyalty-notice">{{ loyalty_copy.preview }}</p>{% endif %}
+  {% if not tree_error %}<div class="loyalty-tree-stats" aria-label="ملخص الشجرة"><div><span>إجمالي الأعضاء</span><strong>{{ tree_total|localized_number }}</strong></div><div><span>أعضاء بلا داعٍ</span><strong>{{ tree_roots|localized_number }}</strong></div><div><span>أعضاء مرتبطون بداعٍ</span><strong>{{ tree_linked|localized_number }}</strong></div></div>{% endif %}
+  <section class="loyalty-panel"><form method="get" class="loyalty-tree-search"><label for="tree-query">ابحث بالجوال الموثق أو الاسم أو رقم العضوية أو الرقم الشجري</label><div><input id="tree-query" name="q" value="{{ tree_query }}" maxlength="80" autocomplete="off" type="search"><button class="lsa-btn lsa-btn--gold" type="submit">بحث عن عضو</button></div></form><p class="loyalty-muted">للجوال غير السعودي أضف رمز الدولة. البحث والعرض لا يغيّران العلاقات أو رصيد النقاط.</p>
+    {% if tree_query and not focus %}<div role="status">{% if tree_results %}<h2>اختر العضو لعرض فرعه</h2><ul class="loyalty-tree-results">{% for link in tree_results %}<li><a href="?parent={{ link.member_id }}"><strong>{{ link.member.customer.get_full_name|default:link.member.number }}</strong><bdi>{{ link.member.number }}</bdi><bdi>{{ link.tree_number }}</bdi></a></li>{% endfor %}</ul>{% if tree_results_limited %}<p>نعرض أول عشرين نتيجة؛ حدّد البحث أكثر للوصول إلى العضو المطلوب.</p>{% endif %}{% else %}<p>لا يوجد عضو مطابق. تحقق من الجوال الموثق أو جرّب رقم العضوية.</p>{% endif %}</div>{% endif %}
   </section>
-  {% if tree_cursor %}<a href="?{% if focus %}parent={{ focus.member_id }}&amp;{% endif %}after={{ tree_cursor }}">{{ loyalty_copy.more }}</a>{% endif %}
+  {% if tree_error %}<p class="loyalty-notice" role="alert">{{ tree_error }}</p>{% else %}
+  <section class="loyalty-panel loyalty-tree-section" aria-labelledby="tree-title" data-loyalty-tree{% if tree_roots == 1 and not focus %} data-tree-initial{% endif %}>
+    <div class="loyalty-tree-toolbar"><div><h2 id="tree-title">{% if focus %}فرع العضو{% else %}الشجرة العامة{% endif %}</h2><p class="loyalty-muted">افتح المدعوين من بطاقة العضو، أو اطوِ الفرع لتبسيط العرض. على الشاشة الكبيرة يمكنك تمرير مساحة الرسم أفقيًا.</p></div><nav><a href="{% url 'loyalty:tree' %}">كل الأعضاء</a><a href="{% if focus %}?parent={{ focus.member_id }}{% else %}{% url 'loyalty:tree' %}{% endif %}">تحديث الشجرة</a><button type="button" data-tree-collapse hidden>طي الفروع</button></nav></div>
+    {% if focus %}<nav class="loyalty-tree-breadcrumb" aria-label="مسار الداعين"><a href="{% url 'loyalty:tree' %}">الجذور</a>{% if tree_path_shortened %}<span>…</span>{% endif %}{% for ancestor in tree_ancestors %}<span aria-hidden="true">←</span><a href="?parent={{ ancestor.member_id }}">{{ ancestor.member.customer.get_full_name|default:ancestor.member.number }}</a>{% endfor %}<span aria-hidden="true">←</span><strong>{{ focus.member.customer.get_full_name|default:focus.member.number }}</strong></nav>{% endif %}
+    <p class="loyalty-tree-status" role="status" aria-live="polite" data-tree-status></p>
+    <div class="loyalty-tree-canvas" tabindex="0" role="region" aria-label="رسم شجرة الأعضاء">
+      {% if focus %}<ul class="loyalty-forest"><li class="loyalty-branch">{% include "loyalty/_tree_node.html" with link=focus expanded=True %}<div id="member-children-{{ focus.member_id }}" class="loyalty-branch-children" data-tree-children data-loaded="true">{% include "loyalty/_tree_children.html" %}</div></li></ul>{% else %}<div data-tree-children data-loaded="true">{% include "loyalty/_tree_children.html" %}</div>{% endif %}
+    </div>
+    <p class="loyalty-muted">تتكوّن الشجرة من سجلات الأعضاء وعلاقات الدعوة تلقائيًا، وليست من عمليات الإهداء. تُظهر إعادة تحميل الصفحة أحدث العلاقات المحفوظة. هذا العرض خاص بالإدارة فقط.</p>
+  </section>
+  {% endif %}
 </main>
 {% endblock %}
 

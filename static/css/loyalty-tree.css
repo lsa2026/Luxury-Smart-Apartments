@@ -1,0 +1,70 @@
+/* Private owner tree; connectors are presentation only, never editable relationships. */
+.loyalty-tree-page { min-width: 0; }
+.loyalty-tree-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-block-end: 1.5rem; }
+.loyalty-tree-heading h1 { color: #143d36; margin: .3rem 0; font-size: 2rem; }
+.loyalty-tree-heading p { line-height: 1.8; margin-block: .3rem; }
+.loyalty-tree-eyebrow { color: #82622c; font-weight: 700; font-size: .9rem; }
+.loyalty-tree-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .8rem; }
+.loyalty-tree-stats > div { padding: 1.1rem; border-radius: 1rem; border: 1px solid #e1d6bf; background: #fffcf6; display: grid; gap: .6rem; }
+.loyalty-tree-stats span { color: #56665d; font-size: .85rem; }
+.loyalty-tree-stats strong { color: #145548; font-size: 1.8rem; }
+.loyalty-tree-search label { display: block; font-weight: 700; line-height: 1.8; margin-bottom: .6rem; }
+.loyalty-tree-search > div { display: flex; gap: .7rem; }
+.loyalty-tree-search input { min-width: 0; flex: 1; box-sizing: border-box; border: 1px solid #b6c2ba; border-radius: .7rem; padding: .8rem; font: inherit; font-size: 16px; background: #fff; color: #122b29; }
+.loyalty-tree-page .lsa-btn { white-space: normal; text-align: center; min-height: 48px; box-sizing: border-box; }
+.loyalty-tree-toolbar { display: flex; gap: 1rem; justify-content: space-between; align-items: start; }
+.loyalty-tree-toolbar nav { display: flex; flex-wrap: wrap; gap: .6rem; flex-shrink: 0; }
+.loyalty-tree-toolbar nav a, .loyalty-tree-toolbar button, .loyalty-tree-more { border: 1px solid #d1b77d; border-radius: .6rem; padding: .5rem .8rem; color: #17483d; background: #fffcf6; font: inherit; cursor: pointer; text-decoration: none; min-height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; }
+.loyalty-tree-toolbar button[hidden] { display: none; }
+.loyalty-tree-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding: .8rem; background: #f6f2e9; border-radius: .6rem; line-height: 1.8; }
+.loyalty-tree-breadcrumb a { color: #155448; }
+.loyalty-tree-status { color: #17483d; line-height: 1.8; min-height: 1.8em; margin-block: .6rem; }
+.loyalty-tree-canvas { overflow: auto; max-height: 75vh; padding: 1rem .5rem 1.5rem; background: #f9f8f3; border: 1px solid #e2ddcd; border-radius: .9rem; direction: rtl; }
+.loyalty-tree-page #content, .loyalty-tree-section { min-width: 0; }
+.loyalty-tree-page .loyalty-tree-canvas .loyalty-forest { display: flex; justify-content: center; list-style: none; padding: 0; margin: 0; width: max-content; min-width: 100%; box-sizing: border-box; }
+.loyalty-tree-page .loyalty-tree-canvas .loyalty-branch { position: relative; display: flex; flex-direction: column; align-items: center; list-style: none; padding: 1.4rem .5rem 0; margin: 0; min-width: 0; }
+.loyalty-branch::before, .loyalty-branch::after { content: ''; position: absolute; top: 0; width: 50%; height: 1.4rem; border-top: 2px solid #b99a60; box-sizing: border-box; }
+.loyalty-branch::before { right: 0; border-left: 2px solid #b99a60; }
+.loyalty-branch::after { left: 0; }
+.loyalty-branch:first-child::before, .loyalty-branch:last-child::after { border-top: 0; }
+.loyalty-tree-canvas > .loyalty-forest > .loyalty-branch::before, .loyalty-tree-canvas > .loyalty-forest > .loyalty-branch::after,
+.loyalty-tree-canvas > [data-tree-children] > .loyalty-forest > .loyalty-branch::before, .loyalty-tree-canvas > [data-tree-children] > .loyalty-forest > .loyalty-branch::after { display: none; }
+.loyalty-branch-children { position: relative; padding-top: 1.4rem; }
+.loyalty-branch-children::before { content: ''; position: absolute; top: 0; right: 50%; height: 1.4rem; border-right: 2px solid #b99a60; }
+.loyalty-branch-children[hidden] { display: none; }
+.loyalty-member-card { width: 15rem; box-sizing: border-box; padding: 1rem; background: #fff; border: 1px solid #d5c8ab; border-top: 4px solid #b99754; border-radius: .85rem; box-shadow: 0 3px 12px #103d3310; color: #142d2a; text-align: start; }
+.loyalty-member-card--focus { border-top-color: #116453; background: #f0f7f3; }
+.loyalty-member-status { display: inline-block; color: #17604e; background: #e8f4ed; border-radius: 2rem; padding: .3rem .6rem; font-size: .75rem; }
+.loyalty-member-status--inactive { color: #73582e; background: #f5ecdb; }
+.loyalty-tree-page .loyalty-member-card h3 { font-size: 1.05rem; color: #153e36; margin: .8rem 0; line-height: 1.7; overflow-wrap: anywhere; }
+.loyalty-member-card dl { margin: 0; }
+.loyalty-member-card dl > div { margin-block: .55rem; }
+.loyalty-member-card dt { font-size: .75rem; color: #59675f; margin-block-end: .2rem; }
+.loyalty-member-card dd { margin: 0; font-size: .85rem; font-weight: 600; overflow-wrap: anywhere; }
+.loyalty-member-card a { color: #175747; line-height: 1.7; display: block; padding-block: .45rem; font-size: .8rem; }
+.loyalty-member-card button { width: 100%; min-height: 44px; border: 1px solid #176452; border-radius: .6rem; color: #fff; background: #116453; padding: .6rem; font: inherit; font-size: .85rem; cursor: pointer; }
+.loyalty-member-card button:disabled { opacity: .65; cursor: wait; }
+.loyalty-member-leaf { display: block; font-size: .8rem; color: #637168; padding-block: .6rem; }
+.loyalty-tree-more { margin: 1rem; }
+.loyalty-tree-empty { list-style: none; padding: 1rem; line-height: 1.8; }
+.loyalty-tree-results { display: grid; grid-template-columns: repeat(auto-fit,minmax(13rem,1fr)); gap: .6rem; list-style: none; padding: 0; }
+.loyalty-tree-results a { display: grid; gap: .4rem; border: 1px solid #d5c8ab; padding: .8rem; border-radius: .6rem; color: #175747; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .loyalty-tree-heading, .loyalty-tree-toolbar { flex-direction: column; align-items: stretch; }
+  .loyalty-tree-search > div { flex-direction: column; }
+  .loyalty-tree-stats { gap: .4rem; }
+  .loyalty-tree-stats > div { padding: .7rem .5rem; }
+  .loyalty-tree-stats strong { font-size: 1.4rem; }
+  .loyalty-tree-stats span { font-size: .75rem; line-height: 1.7; }
+  .loyalty-tree-canvas { padding: .5rem; max-height: none; }
+  .loyalty-tree-page .loyalty-tree-canvas .loyalty-forest { display: block; width: auto; min-width: 0; }
+  .loyalty-tree-page .loyalty-tree-canvas .loyalty-branch { display: block; padding: 0; margin-block: .8rem; }
+  .loyalty-branch::before, .loyalty-branch::after { display: none; }
+  .loyalty-member-card { width: 100%; }
+  .loyalty-branch-children { padding-block: .1rem; padding-inline-start: .65rem; margin-inline-start: .25rem; border-inline-start: 2px solid #b99a60; }
+  .loyalty-branch-children::before { display: none; }
+  .loyalty-branch-children .loyalty-branch::before { display: block; width: .65rem; height: 0; border: 0; border-top: 2px solid #b99a60; top: 1.3rem; right: -.65rem; }
+  /* Stop cumulative indent on very deep branches; tree numbers still show full ancestry. */
+  .loyalty-branch-children .loyalty-branch-children .loyalty-branch-children .loyalty-branch-children { padding-inline-start: 0; margin-inline-start: 0; border-inline-start: 0; }
+  .loyalty-branch-children .loyalty-branch-children .loyalty-branch-children .loyalty-branch-children .loyalty-branch::before { display: none; }
+}
