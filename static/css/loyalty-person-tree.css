@@ -1,0 +1,79 @@
+/* Compact people diagram. The topology never changes to a list on small screens. */
+.loyalty-tree-page { min-width: 0; }
+.loyalty-tree-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-block-end: 1.5rem; }
+.loyalty-tree-heading h1 { color: #143d36; margin: .3rem 0; font-size: 2rem; }
+.loyalty-tree-heading p { line-height: 1.8; margin-block: .3rem; }
+.loyalty-tree-eyebrow { color: #82622c; font-weight: 700; font-size: .9rem; }
+.loyalty-tree-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .8rem; }
+.loyalty-tree-stats > div { padding: 1rem; border-radius: 1rem; border: 1px solid #e1d6bf; background: #fffcf6; display: grid; gap: .6rem; }
+.loyalty-tree-stats span { color: #56665d; font-size: .85rem; }
+.loyalty-tree-stats strong { color: #145548; font-size: 1.8rem; }
+.loyalty-tree-search label { display: block; font-weight: 700; line-height: 1.8; margin-bottom: .6rem; }
+.loyalty-tree-search > div { display: flex; gap: .7rem; }
+.loyalty-tree-search input { min-width: 0; flex: 1; box-sizing: border-box; border: 1px solid #b6c2ba; border-radius: .7rem; padding: .8rem; font: inherit; font-size: 16px; background: #fff; color: #122b29; }
+.loyalty-tree-page .lsa-btn { white-space: normal; text-align: center; min-height: 48px; box-sizing: border-box; }
+.loyalty-tree-toolbar { display: flex; gap: 1rem; justify-content: space-between; align-items: start; }
+.loyalty-tree-toolbar nav { display: flex; flex-wrap: wrap; gap: .6rem; flex-shrink: 0; }
+.loyalty-tree-toolbar nav a, .loyalty-tree-toolbar button, .loyalty-tree-more, .loyalty-tree-zoom button { border: 1px solid #d1b77d; border-radius: .6rem; padding: .5rem .8rem; color: #17483d; background: #fffcf6; font: inherit; cursor: pointer; text-decoration: none; min-height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; }
+.loyalty-tree-toolbar button[hidden], .loyalty-tree-zoom[hidden] { display: none; }
+.loyalty-tree-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding: .8rem; background: #f6f2e9; border-radius: .6rem; line-height: 1.8; }
+.loyalty-tree-breadcrumb a { color: #155448; }
+.loyalty-tree-status { color: #17483d; line-height: 1.8; min-height: 1.8em; margin-block: .5rem; }
+.loyalty-tree-zoom { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; padding-block: .4rem 1rem; }
+.loyalty-tree-zoom output { min-width: 4rem; text-align: center; font-variant-numeric: tabular-nums; }
+.loyalty-tree-zoom span { color: #657168; font-size: .8rem; line-height: 1.7; }
+.loyalty-tree-canvas { direction: ltr; position: relative; overflow: auto; height: min(70vh,750px); min-height: 420px; padding: 0; background: #fff; border: 1px solid #e5e1d7; border-radius: 1rem; cursor: grab; overscroll-behavior: contain; touch-action: pan-x pan-y; }
+.loyalty-tree-canvas[data-dragging] { cursor: grabbing; user-select: none; }
+.loyalty-tree-space { position: relative; min-width: 100%; min-height: 100%; }
+.loyalty-tree-stage { position: relative; width: max-content; direction: rtl; padding: 28px 20px; box-sizing: border-box; isolation: isolate; }
+.loyalty-tree-canvas[data-enhanced] .loyalty-tree-stage { position: absolute; transform-origin: top left; }
+.loyalty-tree-wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; overflow: visible; }
+.loyalty-tree-wires > g > path { fill: none; stroke: #858c84; stroke-width: 2.2; marker-end: url(#loyalty-person-arrow); }
+.loyalty-tree-page .loyalty-forest { display: flex; align-items: flex-start; justify-content: center; list-style: none; padding: 0; margin: 0; width: max-content; }
+.loyalty-tree-page .loyalty-forest > .loyalty-branch { position: relative; display: flex; flex-direction: column; align-items: center; list-style: none; padding: 0 10px; margin: 0; flex: 0 0 auto; }
+.loyalty-branch-children { position: relative; padding-top: 45px; }
+.loyalty-branch-children[hidden] { display: none; }
+.loyalty-person { position: relative; width: 100px; height: 230px; text-align: center; color: #121e1b; flex: 0 0 auto; }
+.loyalty-person-target { display: flex; flex-direction: column; align-items: center; border: 0; background: transparent; border-radius: 10px; color: inherit !important; text-decoration: none; padding: 5px 2px; cursor: pointer; }
+.loyalty-person-icon { display: block; fill: currentColor; width: 80px; height: 140px; flex: 0 0 auto; transition: color .15s; }
+.loyalty-branch .loyalty-branch .loyalty-person { height: 200px; }
+.loyalty-branch .loyalty-branch .loyalty-person-icon { width: 64px; height: 112px; }
+.loyalty-branch .loyalty-branch .loyalty-branch .loyalty-person { height: 178px; }
+.loyalty-branch .loyalty-branch .loyalty-branch .loyalty-person-icon { width: 49px; height: 86px; }
+.loyalty-branch .loyalty-branch .loyalty-branch .loyalty-branch .loyalty-person { height: 160px; }
+.loyalty-branch .loyalty-branch .loyalty-branch .loyalty-branch .loyalty-person-icon { width: 39px; height: 68px; }
+.loyalty-branch .loyalty-branch .loyalty-branch .loyalty-branch .loyalty-branch .loyalty-person { height: 130px; }
+.loyalty-branch .loyalty-branch .loyalty-branch .loyalty-branch .loyalty-branch .loyalty-person-icon { width: 31px; height: 54px; }
+.loyalty-person--inactive { color: #7c817c; }
+.loyalty-tree-page .loyalty-person-target h3 { font: inherit; font-size: 12px; font-weight: 600; line-height: 1.5; margin: 7px 0 0; color: inherit; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.loyalty-person-target:hover, .loyalty-person-target[aria-expanded=true] { color: #08705a !important; background: #eff7f230; }
+.loyalty-person-branch { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); min-height: 44px; min-width: 46px; border: 1px solid #dfd7c7; border-radius: 16px; background: #faf7f0; color: #345348; padding: 3px 8px; font: inherit; font-size: 11px; cursor: pointer; white-space: nowrap; }
+.loyalty-person-branch[hidden] { display: none; }
+.loyalty-tree-more { font-size: 12px; margin: 10px; }
+.loyalty-tree-empty { list-style: none; padding: 1rem; line-height: 1.8; }
+.loyalty-tree-results { display: grid; grid-template-columns: repeat(auto-fit,minmax(13rem,1fr)); gap: .6rem; list-style: none; padding: 0; }
+.loyalty-tree-results a { display: grid; gap: .4rem; border: 1px solid #d5c8ab; padding: .8rem; border-radius: .6rem; color: #175747; overflow-wrap: anywhere; }
+.loyalty-tree-profile { position: fixed; z-index: 2000; box-sizing: border-box; width: min(320px,calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; border: 1px solid #cbb277; border-top: 4px solid #14705a; border-radius: 14px; background: #fffefa; color: #163d35; box-shadow: 0 15px 45px #132c2840; padding: 22px 18px 14px; direction: rtl; text-align: start; }
+.loyalty-tree-profile[hidden] { display: none; }
+.loyalty-tree-profile h3 { margin: 10px 0; padding-inline-end: 24px; color: #173f35; font-size: 1.1rem; line-height: 1.7; overflow-wrap: anywhere; }
+.loyalty-tree-profile-close { position: absolute; top: 4px; inset-inline-end: 5px; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: #edf2eb; color: #17483d; font: inherit; font-size: 24px; cursor: pointer; }
+.loyalty-member-status { display: inline-block; font-size: .75rem; border-radius: 20px; padding: .25rem .6rem; background: #ecf3eb; }
+.loyalty-tree-profile dl { margin: .7rem 0; }
+.loyalty-tree-profile dl > div { display: grid; grid-template-columns: 1fr 1.2fr; gap: .7rem; border-bottom: 1px solid #eae5d9; padding: .5rem 0; line-height: 1.6; }
+.loyalty-tree-profile dt { color: #667268; font-size: .75rem; }
+.loyalty-tree-profile dd { margin: 0; font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
+.loyalty-tree-profile a { display: block; padding: .5rem 0; color: #075b48; font-size: .85rem; }
+.loyalty-tree-profile small { color: #6b756e; display: block; line-height: 1.7; font-size: .7rem; }
+.loyalty-tree-profile :focus-visible { outline: 3px solid #12614e; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .loyalty-person-icon { transition: none; } }
+@media (max-width: 767px) {
+  .loyalty-tree-heading, .loyalty-tree-toolbar { flex-direction: column; align-items: stretch; }
+  .loyalty-tree-search > div { flex-direction: column; }
+  .loyalty-tree-stats { gap: .4rem; }
+  .loyalty-tree-stats > div { padding: .7rem .5rem; }
+  .loyalty-tree-stats strong { font-size: 1.4rem; }
+  .loyalty-tree-stats span { font-size: .75rem; line-height: 1.7; }
+  .loyalty-tree-zoom button { padding-inline: .65rem; }
+  .loyalty-tree-canvas { height: 520px; min-height: 350px; }
+  .loyalty-tree-profile { max-height: min(70dvh,520px); }
+}

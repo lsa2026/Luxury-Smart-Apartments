@@ -142,7 +142,7 @@ jobs:
         run: node --test tests/loyalty-invite.test.cjs
 
       - name: Test private member tree expansion and safe branch loading
-        run: node --test tests/loyalty-tree.test.cjs
+        run: node --test tests/loyalty-tree.test.cjs tests/loyalty-person-tree.test.cjs
 
       - name: Test native submit commands and duplicate protection
         run: node --test tests/submit-once.test.cjs

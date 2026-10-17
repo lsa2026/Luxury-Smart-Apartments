@@ -6,12 +6,19 @@
   const status = tree.querySelector('[data-tree-status]');
   const activate = (root) => root.querySelectorAll('[data-tree-toggle], [data-tree-collapse]').forEach((button) => { button.hidden = false; });
   const targetFor = (button) => document.getElementById(button.getAttribute('aria-controls'));
+  const changed = () => { if (tree.dispatchEvent) tree.dispatchEvent(new Event('loyalty-tree-layout')); };
   const setExpanded = (button, expanded) => {
     const target = targetFor(button);
     if (!target) return;
     target.hidden = !expanded;
     button.setAttribute('aria-expanded', String(expanded));
-    button.textContent = expanded ? 'طي المدعوين' : 'عرض المدعوين';
+    if (button.classList?.contains('loyalty-person-branch')) {
+      const sign = button.querySelector('span');
+      if (sign) sign.textContent = expanded ? '−' : '+';
+      const label = button.getAttribute('aria-label') || '';
+      button.setAttribute('aria-label', label.replace(/^(عرض|طي)/, expanded ? 'طي' : 'عرض'));
+    } else button.textContent = expanded ? 'طي المدعوين' : 'عرض المدعوين';
+    changed();
   };
   const fragment = async (url) => {
     const address = new URL(url, window.location.href);
@@ -60,6 +67,7 @@
         const nextMore = content.querySelector('[data-tree-more]');
         if (nextMore) more.replaceWith(nextMore); else more.remove();
         activate(container);
+        changed();
         status.textContent = 'تم عرض المزيد من الأعضاء.';
         // The old link may have been removed; keep keyboard focus in this branch.
         const nextTarget = nextMore || container.querySelector('.loyalty-branch:last-child a');

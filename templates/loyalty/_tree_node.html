@@ -1,9 +1,14 @@
 {% load presentation %}
-<article class="loyalty-member-card{% if expanded %} loyalty-member-card--focus{% endif %}">
-  <span class="loyalty-member-status{% if link.member.status != 'active' or not link.member.customer.is_active %} loyalty-member-status--inactive{% endif %}">{% if link.member.status == 'active' and link.member.customer.is_active %}عضوية نشطة{% else %}عضوية غير نشطة{% endif %}</span>
-  <h3>{{ link.member.customer.get_full_name|default:link.member.number }}</h3>
-  <dl><div><dt>رقم العضوية</dt><dd><bdi>{{ link.member.number }}</bdi></dd></div><div><dt>الرقم الشجري</dt><dd><bdi>{{ link.tree_number }}</bdi></dd></div><div><dt>المدعوون المباشرون</dt><dd>{{ link.child_count|localized_number }}</dd></div></dl>
-  <a class="loyalty-member-ledger" href="{% url 'loyalty:admin' %}?q={{ link.member.number|urlencode }}">عرض سجل نقاط العضو</a>
-  {% if link.child_count %}<button type="button" data-tree-toggle data-tree-url="{% url 'loyalty:tree' %}?parent={{ link.member_id }}&amp;fragment=children" aria-expanded="{% if expanded %}true{% else %}false{% endif %}" aria-controls="member-children-{{ link.member_id }}" hidden>{% if expanded %}طي المدعوين{% else %}عرض المدعوين{% endif %}</button><noscript><a href="?parent={{ link.member_id }}">فتح فرع العضو</a></noscript>{% else %}<span class="loyalty-member-leaf">لم يدعُ أعضاء بعد</span>{% endif %}
-  {% if not expanded %}<a class="loyalty-member-focus" href="?parent={{ link.member_id }}">التركيز على هذا العضو</a>{% endif %}
+<article class="loyalty-person{% if expanded %} loyalty-person--expanded{% endif %}{% if link.member.status != 'active' or not link.member.customer.is_active %} loyalty-person--inactive{% endif %}">
+  <a class="loyalty-person-target" data-tree-person href="?parent={{ link.member_id }}" role="button" aria-label="عرض معلومات {{ link.member.customer.get_full_name|default:link.member.number }}" aria-haspopup="dialog" aria-controls="tree-member-profile" aria-expanded="false">
+    <svg class="loyalty-person-icon" data-person-icon viewBox="0 0 48 84" width="48" height="84" aria-hidden="true" focusable="false"><circle cx="24" cy="8" r="7"/><path d="M15 18c-4 0-6 3-7 7L3 47c-1 5 5 6 6 2l5-20v48c0 7 8 7 8 0V51h4v26c0 7 8 7 8 0V29l5 20c1 4 7 3 6-2l-5-22c-1-4-3-7-7-7Z"/></svg>
+    <h3>{{ link.member.customer.get_full_name|default:link.member.number }}</h3>
+  </a>
+  {% if link.child_count %}<button class="loyalty-person-branch" type="button" data-tree-toggle data-tree-url="{% url 'loyalty:tree' %}?parent={{ link.member_id }}&amp;fragment=children" aria-label="{% if expanded %}طي{% else %}عرض{% endif %} مدعوي {{ link.member.customer.get_full_name|default:link.member.number }}" aria-expanded="{% if expanded %}true{% else %}false{% endif %}" aria-controls="member-children-{{ link.member_id }}" hidden><span aria-hidden="true">{% if expanded %}−{% else %}+{% endif %}</span> {{ link.child_count|localized_number }}</button>{% endif %}
+  <template data-tree-profile>
+    <h3>{{ link.member.customer.get_full_name|default:link.member.number }}</h3>
+    <span class="loyalty-member-status">{% if link.member.status == 'active' and link.member.customer.is_active %}عضوية نشطة{% else %}عضوية غير نشطة{% endif %}</span>
+    <dl><div><dt>رقم العضوية</dt><dd><bdi>{{ link.member.number }}</bdi></dd></div><div><dt>الرقم الشجري</dt><dd><bdi>{{ link.tree_number }}</bdi></dd></div><div><dt>الداعي المباشر</dt><dd>{{ link.inviter_name }}</dd></div><div><dt>المدعوون المباشرون</dt><dd>{{ link.child_count|localized_number }}</dd></div><div><dt>تاريخ الانضمام</dt><dd>{{ link.member.joined_at|localized_date }}</dd></div></dl>
+    <a href="{% url 'loyalty:admin' %}?q={{ link.member.number|urlencode }}">عرض سجل نقاط العضو</a><a href="?parent={{ link.member_id }}">التركيز على هذا العضو</a>
+  </template>
 </article>

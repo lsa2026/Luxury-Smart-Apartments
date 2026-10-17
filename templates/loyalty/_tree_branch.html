@@ -1,0 +1,6 @@
+<li class="loyalty-branch" data-member-id="{{ branch.link.member_id }}">
+  {% include "loyalty/_tree_node.html" with link=branch.link expanded=branch.loaded %}
+  <div id="member-children-{{ branch.link.member_id }}" class="loyalty-branch-children" data-tree-children{% if branch.loaded %} data-loaded="true"{% else %} hidden{% endif %}>
+    {% if branch.loaded %}{% include "loyalty/_tree_children.html" with tree_diagram_children=branch.children tree_cursor=branch.cursor focus=branch.link %}{% endif %}
+  </div>
+</li>
