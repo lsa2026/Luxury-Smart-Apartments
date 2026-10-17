@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 from django.apps import apps
 from django.core.exceptions import ValidationError
-from django.db import connection
+from django.db import connection, transaction
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -112,6 +112,7 @@ def test_existing_hold_is_honoured_after_reward_correction():
     assert balance(am) == Decimal("-23.00")
 
 
+@pytest.mark.django_db(transaction=True)
 def test_signed_balances_backup_and_reopened_mirror(tmp_path):
     a, b, am, bm, r = example()
     # The recipient forfeits their own points; later reversal can make the
@@ -129,6 +130,7 @@ def test_signed_balances_backup_and_reopened_mirror(tmp_path):
     assert balance(am) == Decimal("-3.00")
 
 
+@pytest.mark.django_db(transaction=True)
 def test_old_deferred_corrections_become_append_only_rows_once():
     a, b = user("legacy-a"), user("legacy-b")
     am, bm = join(a), join(b)
@@ -150,12 +152,14 @@ def test_old_deferred_corrections_become_append_only_rows_once():
     editor = SimpleNamespace(
         connection=connection, execute=lambda sql: connection.cursor().execute(sql)
     )
-    migrate.materialize_deferred(apps, editor)
+    with transaction.atomic():
+        migrate.materialize_deferred(apps, editor)
     assert balance(am) == Decimal("-4.50") and balance(bm) == Decimal("22.50")
     am.refresh_from_db()
     assert not am.deferred_corrections
     count = Ledger.objects.count()
-    migrate.materialize_deferred(apps, editor)
+    with transaction.atomic():
+        migrate.materialize_deferred(apps, editor)
     assert Ledger.objects.count() == count
     completed_change(r, "600.00")
     assert reconcile(r.pk)["movements"] == 0
