@@ -405,12 +405,16 @@ def validate(snapshot):
         program += credit - debit
         balances[member_id] += credit - debit
         if (
-            program < 0
-            or balances[member_id] < 0
-            or _money(row["program_balance_after"]) != program
+            _money(row["program_balance_after"]) != program
             or _money(row["member_balance_after"]) != balances[member_id]
         ):
             _reject("ledger_balance_mismatch")
+        if balances[member_id] < 0 and not (
+            credit > 0
+            or (row["event_type"] == "adjust" and row.get("original"))
+            or row["event_type"] == "redeem"
+        ):
+            _reject("invalid_negative_posting")
         if row["event_type"] == "transfer":
             transfers[row["operation_group"]].append(row)
         # Financial evidence also contains JSON references, not just foreign keys.

@@ -7,7 +7,7 @@
   <dl class="loyalty-movement-summary">
     <div><dt>{{ loyalty_copy.credit }}</dt><dd class="loyalty-credit">{{ row.credit|floatformat:2|localized_number }}</dd></div>
     <div><dt>{{ loyalty_copy.debit }}</dt><dd>{{ row.debit|floatformat:2|localized_number }}</dd></div>
-    <div><dt>{% if loyalty_admin %}{{ loyalty_copy.program_balance }}{% else %}{{ loyalty_copy.account_balance }}{% endif %}</dt><dd>{% if loyalty_admin %}{{ row.program_balance_after|floatformat:2|localized_number }}{% else %}{{ row.member_balance_after|floatformat:2|localized_number }}{% endif %}</dd></div>
+    <div><dt>{% if loyalty_admin %}{{ loyalty_copy.program_balance }}{% else %}{{ loyalty_copy.account_balance }}{% endif %}</dt><dd><bdi>{% if loyalty_admin %}{{ row.program_balance_after|floatformat:2|localized_number }}{% else %}{{ row.member_balance_after|floatformat:2|localized_number }}{% endif %}</bdi></dd></div>
   </dl>
   <details><summary>{{ loyalty_copy.details }} <bdi>{{ row.operation_number }}</bdi></summary>
     <dl class="loyalty-detail-list">
@@ -35,7 +35,7 @@
       {% if loyalty_admin %}
       <div><dt>{{ loyalty_copy.member }}</dt><dd>{{ row.account_name }}</dd></div>
       <div><dt>{{ loyalty_copy.tree_number }}</dt><dd><bdi>{{ row.tree_number }}</bdi></dd></div>
-      <div><dt>{{ loyalty_copy.member_after }}</dt><dd>{{ row.member_balance_after|floatformat:2|localized_number }}</dd></div>
+      <div><dt>{{ loyalty_copy.member_after }}</dt><dd><bdi>{{ row.member_balance_after|floatformat:2|localized_number }}</bdi></dd></div>
       {% endif %}
       <div><dt>{{ loyalty_copy.version }}</dt><dd>{{ row.ui_rules }}<p class="loyalty-muted">{{ loyalty_copy.rules_help }}</p>{% if loyalty_admin %}<details><summary>{{ loyalty_copy.rules_reference }}</summary><bdi>{{ row.rules_version }}</bdi></details>{% endif %}</dd></div>
     </dl>

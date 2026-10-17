@@ -19,6 +19,9 @@ from .accrual import (
     IDENTITY_TERMS_REFERENCE,
     IDENTITY_TERMS_URL_VERSION,
     IDENTITY_TERMS_VERSION,
+    SIGNED_TERMS_REFERENCE,
+    SIGNED_TERMS_URL_VERSION,
+    SIGNED_TERMS_VERSION,
     TERMS_REFERENCE,
     TERMS_URL_VERSION,
     TERMS_VERSION,
@@ -283,6 +286,27 @@ for code, issued, paragraph in [
     }[code]
     IDENTITY_CONTENT[code]["sections"][0] = (CONTENT[code]["sections"][0][0], paragraph)
 
+SIGNED_CONTENT = deepcopy(IDENTITY_CONTENT)
+for code, issued, paragraph in [
+    (
+        "ar",
+        "الإصدار الرابع — ١٧ أكتوبر ٢٠٢٦؛ إظهار رصيد النقاط السالب بعد التصحيح",
+        "عند زيادة الحجز أو تخفيضه أو إلغائه أو استرداده، يعاد احتساب مكافآت المستفيدين على المبلغ المؤهل الصحيح. يسجل الفرق كاملًا بحركة جديدة مرتبطة بالأصل، دون حذف الحركة السابقة أو تغيير نسبتها التاريخية. إذا انخفضت إقامة من ٧٥٠ إلى ٦٠٠ ريال، تصحح مكافأة صاحبها من ٢٢٫٥٠ إلى ١٨ نقطة. إذا لم يكف رصيده بسبب الصرف أو الإهداء، يظهر رصيد حسابه سالبًا بمقدار الفرق، وتغطيه النقاط التي تدخل حسابه لاحقًا، سواء كانت مكافآت أو هدايا أو إعادة نقاط. يبقى المتاح للاستخدام صفرًا حتى يغطي الرصيد النقاط المحجوزة ويصبح المتاح موجبًا، فلا تنشأ إمكانية اقتراض نقاط أو إهدائها بالسالب. تبقى النقاط المحجوزة مسبقًا لحجز آخر محفوظة لذلك الحجز حتى تأكيده أو تحريرها. لا تسحب نقاط من مستلم الهدية، ولا تخصم أموال من بطاقة العضو؛ السالب تسوية داخل حساب النقاط وليس طلب دفع نقدي. مثال: مكافأة ٢٨٫٧١ نقطة أُهدي منها ٣ نقاط، ثم أُلغي كامل استحقاقها؛ يخصم ٢٨٫٧١ ويصبح رصيد المرسل ناقص ٣، وتبقى ٣ نقاط لدى المستلم. يعرض الكشف والإشعار قيمة التصحيح والرصيد الناتج. تحفظ نسخ الشروط والموافقات السابقة دون إعادة كتابتها.",
+    ),
+    (
+        "en",
+        "Fourth edition — 17 October 2026; signed points balances after corrections",
+        "Booking changes, cancellations and refunds recalculate beneficiaries’ rewards on the corrected eligible amount. The full difference is a new linked entry; original entries and historical rates remain unchanged. Reducing eligible accommodation from SAR 750 to SAR 600 changes its guest’s reward from 22.50 to 18 points. If spent or gifted points leave a shortfall, the account balance becomes negative. Later incoming rewards, gifts or restored points cover it first. Spendable points stay at zero until the balance covers existing holds and a positive amount is available; this is not permission to borrow or gift points on credit. Points already held for another booking remain allocated until that booking confirms or the hold is released. We do not reclaim the gift recipient’s points or charge the member’s card; a negative points balance is an internal adjustment, not a cash payment demand. For example, earning 28.71 points and gifting 3 before the entire reward is reversed results in a 28.71 debit and a sender balance of minus 3; the recipient keeps 3. Statements and notices show the correction and resulting balance. Earlier terms and consent records remain archived without rewriting them.",
+    ),
+    (
+        "fr",
+        "Quatrième édition — 17 octobre 2026 ; solde de points négatif après correction",
+        "Les modifications, annulations et remboursements recalculent les récompenses sur le montant admissible corrigé. L’écart intégral fait l’objet d’une nouvelle écriture liée ; les écritures et taux historiques restent inchangés. Une réduction de 750 à 600 riyals ramène la récompense du client de 22,50 à 18 points. Si des points ont déjà été utilisés ou offerts, le solde du compte devient négatif ; les récompenses, cadeaux et points restitués reçus ensuite couvrent d’abord l’écart. Les points disponibles restent à zéro jusqu’à couverture des réservations de points existantes et disponibilité d’un solde positif : aucun emprunt ni cadeau à découvert n’est permis. Les points déjà réservés pour un autre séjour restent affectés jusqu’à confirmation ou libération. Aucun point n’est repris au bénéficiaire du cadeau et aucun montant n’est prélevé sur la carte ; le solde négatif est une correction interne, non une demande de paiement en espèces. Exemple : 28,71 points acquis, dont 3 offerts, puis récompense annulée intégralement ; un débit de 28,71 donne un solde de moins 3 à l’expéditeur, tandis que le destinataire conserve ses 3 points. Le relevé et l’avis indiquent la correction et le solde résultant. Les versions antérieures et consentements sont conservés sans réécriture.",
+    ),
+]:
+    SIGNED_CONTENT[code]["issued"] = issued
+    SIGNED_CONTENT[code]["sections"][10] = (CONTENT[code]["sections"][10][0], paragraph)
+
 EDITIONS = {
     VERSION: (URL_VERSION, REFERENCE, CONTENT),
     TERMS_VERSION: (TERMS_URL_VERSION, TERMS_REFERENCE, UPDATED_CONTENT),
@@ -291,11 +315,23 @@ EDITIONS = {
         IDENTITY_TERMS_REFERENCE,
         IDENTITY_CONTENT,
     ),
+    SIGNED_TERMS_VERSION: (SIGNED_TERMS_URL_VERSION, SIGNED_TERMS_REFERENCE, SIGNED_CONTENT),
 }
 
 
+def current_terms_version():
+    # The owner-authorised release advances the already approved v3 pair only.
+    # Disabled, preview and custom references retain their existing safety gates.
+    if settings.LOYALTY_TERMS_APPROVED and (
+        settings.LOYALTY_TERMS_VERSION,
+        settings.LOYALTY_TERMS_REFERENCE,
+    ) == (IDENTITY_TERMS_VERSION, IDENTITY_TERMS_REFERENCE):
+        return SIGNED_TERMS_VERSION
+    return settings.LOYALTY_TERMS_VERSION
+
+
 def document(language=None, *, version=None):
-    version = version or settings.LOYALTY_TERMS_VERSION
+    version = version or current_terms_version()
     version = version if version in EDITIONS else VERSION
     content_by_language = EDITIONS[version][2]
     code = (language or get_language() or "ar").split("-")[0]
@@ -308,8 +344,13 @@ def document(language=None, *, version=None):
 
 
 def terms_reference():
-    edition = EDITIONS.get(settings.LOYALTY_TERMS_VERSION)
-    if edition and settings.LOYALTY_TERMS_REFERENCE == edition[1]:
+    version = current_terms_version()
+    edition = EDITIONS.get(version)
+    if edition and (
+        settings.LOYALTY_TERMS_REFERENCE == edition[1]
+        or version == SIGNED_TERMS_VERSION
+        and settings.LOYALTY_TERMS_REFERENCE == IDENTITY_TERMS_REFERENCE
+    ):
         with override(document()["language"]):
             return reverse("core:rewards_terms", kwargs={"version": edition[0]})
     return settings.LOYALTY_TERMS_REFERENCE

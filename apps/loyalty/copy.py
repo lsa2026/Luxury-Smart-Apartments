@@ -5,6 +5,16 @@ from django.utils.translation import get_language
 
 # Each row supplies Arabic, English and French; no UI translation fallback.
 LABELS = {
+    "rules_signed": (
+        "قواعد الاحتساب مع إظهار رصيد التصحيح السالب",
+        "Reward rules with signed correction balances",
+        "Règles avec solde de correction négatif",
+    ),
+    "negative_balance_help": (
+        "رصيدك سالب بسبب تصحيح نقاط حجز عُدّل أو أُلغي بعد صرف المكافأة أو إهدائها. النقاط التي تدخل حسابك لاحقًا تغطي الفرق أولًا، ولا يمكنك استخدام أو إهداء نقاط حتى يتوفر رصيد موجب. لا تُسحب أموال من بطاقتك ولا نقاط من مستلم هديتك.",
+        "Your balance is negative because a booking reward was corrected after you spent or gifted it. Incoming points cover the shortfall first; spending and gifting resume once a positive available balance remains. We do not charge your card or take points from the gift recipient.",
+        "Votre solde est négatif après correction de points déjà utilisés ou offerts pour un séjour modifié ou annulé. Les points reçus couvrent d’abord l’écart ; utilisation et cadeaux reprennent avec un solde disponible positif. Aucun prélèvement sur votre carte ni sur les points du bénéficiaire.",
+    ),
     "gift_phone_heading": (
         "إهداء النقاط برقم الجوال",
         "Gift points by mobile",

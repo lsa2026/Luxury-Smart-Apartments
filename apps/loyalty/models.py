@@ -243,8 +243,13 @@ class Ledger(AppendOnly):
                 name="loyalty_one_posting_side",
             ),
             models.CheckConstraint(
-                condition=Q(member_balance_after__gte=0) & Q(program_balance_after__gte=0),
-                name="loyalty_nonnegative_balances",
+                condition=(
+                    Q(member_balance_after__gte=0)
+                    | Q(credit__gt=0)
+                    | Q(event_type="adjust", original__isnull=False)
+                    | Q(event_type="redeem")
+                ),
+                name="loyalty_negative_correction_only",
             ),
             models.CheckConstraint(
                 condition=Q(executed_by="system"), name="loyalty_system_executor"

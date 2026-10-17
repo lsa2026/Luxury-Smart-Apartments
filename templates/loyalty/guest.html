@@ -34,9 +34,10 @@
     {% if loyalty_member.status == 'withdrawn' %}<p class="loyalty-notice">{{ loyalty_copy.withdrawn }}</p>{% endif %}
     <div class="loyalty-metrics">
       <div class="loyalty-metric loyalty-metric--main"><span>{{ loyalty_copy.available }}</span><strong>{{ loyalty_metrics.available|floatformat:2|localized_number }} <small>{{ loyalty_copy.points }}</small></strong></div>
-      <div class="loyalty-metric"><span>{{ loyalty_copy.balance }}</span><strong>{{ loyalty_metrics.balance|floatformat:2|localized_number }}</strong></div>
+      <div class="loyalty-metric"><span>{{ loyalty_copy.balance }}</span><strong><bdi>{{ loyalty_metrics.balance|floatformat:2|localized_number }}</bdi></strong></div>
       <div class="loyalty-metric"><span>{{ loyalty_copy.held }}</span><strong>{{ loyalty_metrics.held|floatformat:2|localized_number }}</strong></div>
     </div>
+    {% if loyalty_metrics.balance < 0 %}<p class="loyalty-notice" role="status">{{ loyalty_copy.negative_balance_help }}</p>{% endif %}
     <p class="loyalty-muted">{{ loyalty_copy.redemption_help }}</p>
   </section>
   {% if loyalty_can_act and loyalty_member.status == 'active' %}

@@ -389,7 +389,7 @@ def test_full_points_stay_creates_no_new_points():
     assert balance(m) == Decimal("2.50")
 
 
-def test_cancel_after_transfer_deferred_claim_only_from_future_rewards():
+def test_cancel_after_transfer_posts_negative_balance_without_recipient_clawback():
     u, v = user(1), user(2)
     m, target = join(u), join(v)
     r = booking(u)
@@ -407,14 +407,14 @@ def test_cancel_after_transfer_deferred_claim_only_from_future_rewards():
     r.save()
     assert reconcile(r.pk)["status"] == "settled"
     m.refresh_from_db()
-    assert m.deferred_corrections[0]["remaining"] == "22.50"
-    assert balance(m) == 0 and balance(target) == Decimal("22.50")
+    assert not m.deferred_corrections
+    assert balance(m) == Decimal("-22.50") and balance(target) == Decimal("22.50")
     transfer(v, "TEST-INCOMING-NOT-CLAWED", m.number, "5.00")
-    assert balance(m) == Decimal("5.00")
+    assert balance(m) == Decimal("-17.50")
     reconcile(booking(u, "100.00").pk)
-    assert balance(m) == Decimal("5.00")
+    assert balance(m) == Decimal("-14.50")
     m.refresh_from_db()
-    assert Decimal(m.deferred_corrections[0]["remaining"]) == Decimal("19.50")
+    assert not m.deferred_corrections
 
 
 def test_actual_payment_domain_hook_then_arrival(django_capture_on_commit_callbacks):
@@ -570,7 +570,7 @@ def test_real_modification_records_recompute_both_guest_and_inviter(local_progra
     assert reconcile(r.pk)["movements"] == 0
 
 
-def test_reextension_removes_deferred_claim_without_duplicating_reward(local_program):
+def test_reextension_corrects_negative_balance_without_duplicating_reward(local_program):
     u, v = user(1), user(2)
     m, target = join(u), join(v)
     r = booking(u)
@@ -579,7 +579,7 @@ def test_reextension_removes_deferred_claim_without_duplicating_reward(local_pro
     completed_change(r, "600.00")
     reconcile(r.pk)
     m.refresh_from_db()
-    assert Decimal(m.deferred_corrections[0]["remaining"]) == Decimal("4.50")
+    assert balance(m) == Decimal("-4.50") and not m.deferred_corrections
     local_program[0] += timedelta(minutes=1)
     completed_change(r, "750.00")
     reconcile(r.pk)

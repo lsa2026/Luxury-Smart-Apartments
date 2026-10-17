@@ -344,7 +344,7 @@ def test_third_terms_edition_retains_both_prior_editions_and_timed_policy(langua
     c = Client()
     for version in ["2026-10-16-v1", "2026-10-16-v2", "2026-10-17-v3"]:
         assert c.get(f"/{language}/legal/rewards/{version}/").status_code == 200
-    assert document(language)["version"] == IDENTITY_TERMS_VERSION
+    assert document(language, version=IDENTITY_TERMS_VERSION)["version"] == IDENTITY_TERMS_VERSION
     assert policy_enabled()
 
 
