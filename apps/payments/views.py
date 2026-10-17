@@ -20,6 +20,7 @@ from apps.core.marketing import (
     prepare_purchase_event,
     purchase_receipt_token,
 )
+from apps.loyalty.payment_summary import for_attempt as loyalty_payment_summary
 from apps.properties.models import PropertyImage
 from apps.reservations.models import BookingIntent, BookingModificationRequest
 from apps.reservations.security import grant_reservation_access, session_can_manage, session_owns
@@ -120,6 +121,7 @@ def _render_hyperpay_checkout(
             "intent": intent,
             "modification": modification,
             "payment_request": payment_request,
+            "loyalty_payment_summary": loyalty_payment_summary(attempt),
             "cover_image": _cover_image(property_obj),
             "checkout_id": attempt.provider_checkout_id,
             "widget_integrity": attempt.widget_integrity,
@@ -360,6 +362,7 @@ class HyperPayResultView(View):
             "payments/hyperpay_result.html",
             {
                 "attempt": display_attempt,
+                "loyalty_payment_summary": loyalty_payment_summary(display_attempt),
                 "outcome": outcome,
                 "success": HyperPayStatus.SUCCESS,
                 "claimable_reference": claimable,

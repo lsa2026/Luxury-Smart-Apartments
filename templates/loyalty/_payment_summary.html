@@ -1,0 +1,10 @@
+{% load presentation %}
+<section class="loyalty-payment-summary" aria-label="{{ loyalty_payment_summary.text.title }}" data-loyalty-payment-summary>
+    <h3>{{ loyalty_payment_summary.text.title }}</h3>
+    <dl>
+        <div><dt>{{ loyalty_payment_summary.text.total }}</dt><dd data-booking-gross>{{ loyalty_payment_summary.gross|format_money:'SAR' }}</dd></div>
+        <div><dt>{{ loyalty_payment_summary.text.points }}</dt><dd data-booking-points>{{ loyalty_payment_summary.points|localized_number }} {{ loyalty_payment_summary.text.unit }}<small>{{ loyalty_payment_summary.points|format_money:'SAR' }}</small></dd></div>
+        <div class="loyalty-payment-summary__cash"><dt>{{ loyalty_payment_summary.cash_label }}</dt><dd data-booking-card>{{ loyalty_payment_summary.cash|format_money:'SAR' }}</dd></div>
+    </dl>
+    <p>{{ loyalty_payment_summary.text.help }}</p>
+</section>
