@@ -1,0 +1,24 @@
+.contact-phone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 0.75rem;
+}
+.contact-phone > div { min-width: 0; }
+.contact-phone .form-field select,
+.contact-phone .form-field input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 3.5rem;
+    min-height: 3.5rem;
+    font-size: 1rem;
+    line-height: normal;
+}
+.contact-phone .form-field select {
+    padding-block: 0;
+    padding-inline-end: 2.5rem;
+    text-overflow: ellipsis;
+}
+@media (max-width: 600px) {
+    .contact-phone { grid-template-columns: minmax(0, 1fr); }
+}

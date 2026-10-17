@@ -1,5 +1,6 @@
 """Explicit public forms for the local contact inbox."""
 
+import phonenumbers
 from django import forms
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
@@ -22,20 +23,31 @@ class ContactForm(forms.Form):
         max_length=254,
         widget=forms.EmailInput(attrs={"autocomplete": "email", "inputmode": "email"}),
     )
+    phone_country = forms.ChoiceField(
+        label=_("Phone number country"),
+        required=False,
+        initial="SA",
+        choices=[
+            (code, f"{code} (+{phonenumbers.country_code_for_region(code)})")
+            for code in ["SA", *sorted(phonenumbers.SUPPORTED_REGIONS - {"SA"})]
+        ],
+        widget=forms.Select(attrs={"data-contact-phone-country": ""}),
+    )
     phone = forms.CharField(
         label=_("Phone (optional)"),
-        max_length=30,
+        max_length=64,
         required=False,
         help_text=_(
-            "Enter an international number, starting with + and its country code, "
-            "for example +966500000000."
+            "Choose your phone number's country, then enter your usual number, "
+            "including the starting zero if needed. You can also paste a full international number."
         ),
         widget=forms.TextInput(
             attrs={
                 "autocomplete": "tel",
                 "inputmode": "tel",
                 "dir": "ltr",
-                "placeholder": "+966 50 000 0000",
+                "placeholder": "0501234567",
+                "aria-describedby": "contact-phone-help",
             }
         ),
     )
@@ -75,17 +87,18 @@ class ContactForm(forms.Form):
         return _clean_text(self.cleaned_data["name"])
 
     def clean_phone(self) -> str:
-        value = _clean_text(self.cleaned_data["phone"])
+        value = "".join(
+            char for char in _clean_text(self.cleaned_data["phone"]) if char.isprintable()
+        )
         if not value:
             return ""
         try:
-            return normalize_phone_number(value)
+            return normalize_phone_number(
+                value, default_region=self.cleaned_data.get("phone_country") or "SA"
+            )
         except InvalidPhoneNumber:
             raise forms.ValidationError(
-                _(
-                    "Enter a valid mobile number in international format, starting "
-                    "with +, for example +966500000000."
-                )
+                _("Check your phone number and the selected country.")
             ) from None
 
     def clean_subject(self) -> str:
