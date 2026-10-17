@@ -48,6 +48,8 @@
                 && parsed.userProvidedDataVersion === 1;
             // Existing Google choices are not permission for the new Meta destination.
             parsed.metaMeasurement = parsed.metaMeasurement === true;
+            // Existing choices are not permission for the new recording destination.
+            parsed.clarityMeasurement = parsed.analytics === true && parsed.clarityMeasurement === true;
             return parsed;
         } catch {
             return null;
@@ -62,6 +64,7 @@
             userProvidedData: choice.userProvidedData === true,
             userProvidedDataVersion: 1,
             metaMeasurement: choice.marketing === true && choice.metaMeasurement === true,
+            clarityMeasurement: choice.analytics === true && choice.clarityMeasurement === true,
             timestamp: new Date().toISOString(),
         };
         const attributes = [
@@ -169,6 +172,7 @@
     const dialog = document.querySelector("[data-consent-dialog]");
     const analyticsInput = dialog?.querySelector("[data-consent-analytics]");
     const marketingInput = dialog?.querySelector("[data-consent-marketing]");
+    const clarityInput = dialog?.querySelector("[data-consent-clarity]");
     const providedDataInputs = [...document.querySelectorAll("[data-consent-upd]")];
     const dialogProvidedDataInput = dialog?.querySelector("[data-consent-upd]");
     let returnFocus = null;
@@ -192,6 +196,7 @@
         const current = parseConsent() || {analytics: false, marketing: false};
         analyticsInput.checked = current.analytics;
         marketingInput.checked = current.marketing;
+        if (clarityInput) clarityInput.checked = current.clarityMeasurement === true;
         syncProvidedDataControls(current);
         returnFocus = document.activeElement;
         dialog.showModal();
@@ -205,9 +210,9 @@
         }
     }
 
-    function choose(analytics, marketing, userProvidedData = false) {
+    function choose(analytics, marketing, userProvidedData = false, clarityMeasurement = false) {
         const choice = writeConsent({analytics, marketing, userProvidedData,
-            metaMeasurement: marketing});
+            metaMeasurement: marketing, clarityMeasurement});
         syncProvidedDataControls(choice);
         applyConsent(choice, true);
         if (banner) {
@@ -222,7 +227,7 @@
     banner?.querySelector("[data-consent-accept]")?.addEventListener(
         "click",
         // Accepting cookies is not consent to share first-party identity data.
-        () => choose(true, true, parseConsent()?.userProvidedData === true),
+        () => choose(true, true, parseConsent()?.userProvidedData === true, true),
     );
     banner?.querySelector("[data-consent-reject]")?.addEventListener(
         "click",
@@ -236,7 +241,7 @@
     dialog?.querySelector("[data-consent-save]")?.addEventListener(
         "click",
         () => choose(analyticsInput.checked, marketingInput.checked,
-            dialogProvidedDataInput?.checked === true),
+            dialogProvidedDataInput?.checked === true, clarityInput?.checked === true),
     );
     providedDataInputs.filter((input) => input !== dialogProvidedDataInput).forEach((input) => {
         input.addEventListener("change", () => {
