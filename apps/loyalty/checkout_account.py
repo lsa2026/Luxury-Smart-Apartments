@@ -8,6 +8,7 @@ It never changes guest contacts, price, consent, points or payment records.
 from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import Http404
 from django.shortcuts import redirect
@@ -105,11 +106,15 @@ def _text(intent):
 
 
 def _payable(intent):
+    from .valuation import intent_total_sar
+
+    try:
+        intent_total_sar(intent)
+    except ValidationError:
+        return False
     return (
         intent.status == BookingIntent.Status.AWAITING_PAYMENT
         and intent.expires_at > timezone.now()
-        and intent.currency == "SAR"
-        and intent.payment_amount_sar == intent.total_price
     )
 
 

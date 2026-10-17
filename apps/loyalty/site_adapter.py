@@ -9,11 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.payments.currency import (
-    CurrencyError,
-    rates_from_audit_snapshot,
-    validate_payment_snapshot,
-)
+from apps.payments.currency import CurrencyError
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingModificationRequest, RefundObligation, Reservation
 
@@ -75,7 +71,7 @@ def booking_facts(booking):
         return None, "membership_required"
     arrival = booking.loyalty_state.get("arrival")
     try:
-        from .accrual import scheduled_eligibility
+        from .accrual import effective_arrival, scheduled_eligibility
 
         scheduled = scheduled_eligibility(booking) if not arrival else None
         if not arrival and not scheduled and not test_stay_exception:
@@ -166,7 +162,7 @@ def booking_facts(booking):
         if cancelled:
             # Cancellation is not proof that no nights were consumed.
             departure = booking.loyalty_state.get("departure_settlement")
-            if arrival and not departure:
+            if effective_arrival(booking) and not departure:
                 return None, "departure_refund_evidence_required"
             previous = booking.loyalty_state.get("settlement", {}).get("facts")
             if not previous:
@@ -191,19 +187,10 @@ def booking_facts(booking):
             lodging = _lodging(pricing_components, booking.total_price)
             gross = booking.total_price
             if booking.currency != "SAR":
-                if modification or points or refunds:
-                    return None, "modified_fx_allocation_required"
-                validate_payment_snapshot(
-                    source_amount=intent.total_price,
-                    source_currency=intent.currency,
-                    payment_amount_sar=intent.payment_amount_sar,
-                    snapshot=intent.exchange_rate_snapshot,
-                )
-                rate = rates_from_audit_snapshot(intent.exchange_rate_snapshot).rate(
-                    booking.currency
-                )
-                gross = intent.payment_amount_sar
-                lodging = (lodging / rate).quantize(CENT, rounding=ROUND_DOWN)
+                from .valuation import to_sar
+
+                gross = to_sar(booking, booking.total_price)
+                lodging = to_sar(booking, lodging)
             if gross.quantize(CENT) != gross:
                 return None, "booking_rounding_allocation_required"
             if cash - returned + points < gross:
@@ -260,7 +247,7 @@ def booking_facts(booking):
         if legacy_trial_price:
             facts["price_adapter"] = "single-accommodation-owner-test-v1"
         return facts, ""
-    except (ValueError, KeyError, InvalidOperation, CurrencyError) as exc:
+    except (ValueError, KeyError, InvalidOperation, CurrencyError, ValidationError) as exc:
         return None, str(exc) if isinstance(exc, ValueError) else "financial_facts_invalid"
 
 

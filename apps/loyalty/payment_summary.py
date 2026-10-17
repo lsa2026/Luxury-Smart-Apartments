@@ -2,6 +2,8 @@
 
 from decimal import Decimal, InvalidOperation
 
+from django.core.exceptions import ValidationError
+
 from apps.reservations.models import Reservation
 
 COPY = {
@@ -46,7 +48,7 @@ def for_attempt(attempt):
     if attempt.modification_request_id or attempt.payment_request_id:
         return None
     intent = attempt.booking_intent
-    if intent.currency != "SAR" or attempt.currency != "SAR":
+    if attempt.currency != "SAR":
         return None
     state = (
         Reservation.objects.filter(booking_intent=intent)
@@ -59,7 +61,9 @@ def for_attempt(attempt):
     try:
         points = Decimal(frozen.get("points", "0"))
         cash = Decimal(frozen.get("cash", "0"))
-        gross = intent.total_price
+        from .valuation import intent_total_sar
+
+        gross = intent_total_sar(intent)
         if (
             not points.is_finite()
             or not cash.is_finite()
@@ -70,7 +74,7 @@ def for_attempt(attempt):
             or intent.payment_amount_sar != gross
         ):
             return None
-    except (InvalidOperation, ValueError, TypeError):
+    except (InvalidOperation, ValueError, TypeError, ValidationError):
         return None
     text = COPY.get(intent.language, COPY["ar"])
     paid = bool(

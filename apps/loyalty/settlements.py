@@ -24,12 +24,7 @@ PAID = [
 
 
 def eligible(booking):
-    if (
-        not enabled()
-        or not booking.booking_intent_id
-        or booking.currency != "SAR"
-        or not booking_allowed(booking)
-    ):
+    if not enabled() or not booking.booking_intent_id or not booking_allowed(booking):
         return False
     if (
         booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
@@ -92,10 +87,14 @@ def cancellation_plan(booking):
     if not eligible(booking):
         return None
     cash, points = funding(booking)
-    if booking.loyalty_state.get("arrival"):
+    from .accrual import effective_arrival
+    from .valuation import total_sar
+
+    total_sar(booking)
+    if effective_arrival(booking):
         departure = booking.loyalty_state.get("departure_settlement")
         if not departure:
-            raise ValidationError("يلزم توثيق المغادرة الفعلية قبل إلغاء إقامة بدأت.")
+            raise ValidationError("بدأت الإقامة المعتمدة؛ أنهِ الإقامة وراجع المتبقي قبل الإلغاء.")
         restored = Decimal(booking.loyalty_state.get("redemption", {}).get("restored", "0"))
         target = Decimal(departure["points_refund"])
         pending_points = max(target - restored, ZERO)
@@ -131,7 +130,9 @@ def decrease_plan(booking, final_total):
     if not eligible(booking):
         return None
     cash, points = funding(booking)
-    difference = max(cash + points - Decimal(final_total), ZERO)
+    from .valuation import to_sar
+
+    difference = max(cash + points - to_sar(booking, final_total), ZERO)
     split = refund_split(difference, cash, points)
     old_restored = Decimal(booking.loyalty_state.get("redemption", {}).get("restored", "0"))
     return {
@@ -313,7 +314,7 @@ def record_manual_receipt(
 def priced_nights(availability):
     """Capture the offered calendar only if exact dates and contract total agree."""
     quote, calendar = availability.quote, availability.calendar_document
-    if not quote or not calendar or quote.currency != "SAR":
+    if not quote or not calendar:
         return {}
     rows = [day for day in calendar.days if quote.check_in <= day.date < quote.check_out]
     if len(rows) != quote.nights or any(
@@ -354,9 +355,11 @@ def record_contract_nights(operator, reservation_id, *, nights, reference):
         if (
             booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
             or booking.created_at < launch_at()
-            or booking.currency != "SAR"
         ):
             raise ValidationError("حجز غير متاح لتوثيق الليالي.")
+        from .valuation import total_sar
+
+        total_sar(booking)
         if booking.loyalty_state.get("departure_settlement"):
             raise ValidationError("لا تُعدّل أسعار تسوية مغادرة موثقة.")
         if not reference.strip() or not isinstance(nights, list) or len(nights) != booking.nights:
@@ -374,7 +377,7 @@ def record_contract_nights(operator, reservation_id, *, nights, reference):
         ):
             raise ValidationError("الليالي أو مجموع أسعارها لا يطابق الحجز.")
         snapshot = {
-            "currency": "SAR",
+            "currency": booking.currency,
             "nights": sorted(normalized, key=lambda row: row["date"]),
             "reference": reference.strip(),
             "operator": operator.pk,

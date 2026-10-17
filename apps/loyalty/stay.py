@@ -15,11 +15,13 @@ from .services import _save_booking, posting_transaction
 
 def departure_plan(booking, *, vacated_at):
     """Read-only preview using payment facts and historical prices, never today's rates."""
+    from .accrual import effective_arrival
     from .site_adapter import booking_facts, stay_times
+    from .valuation import to_sar
 
-    arrived = booking.loyalty_state.get("arrival")
+    arrived = effective_arrival(booking)
     if not arrived:
-        raise ValidationError("أكد وصول الضيف الفعلي أولًا من داخل الحجز.")
+        raise ValidationError("لم يحل وقت الدخول المعتمد؛ يمكن للإدارة توثيق الوصول قبل الموعد.")
     if timezone.is_naive(vacated_at) or vacated_at > timezone.now():
         raise ValidationError("وقت المغادرة يجب أن يكون فعليًا، لا وقتًا مستقبليًا.")
     if vacated_at < datetime.fromisoformat(arrived["at"]):
@@ -28,7 +30,7 @@ def departure_plan(booking, *, vacated_at):
     if blocker:
         raise ValidationError("يلزم حجز مؤهل وسداد إلكتروني موثق وعضوية نشطة لحساب التسوية.")
     total = Decimal(original["total"])
-    if booking.currency != "SAR" or total != booking.total_price:
+    if total != to_sar(booking, booking.total_price):
         raise ValidationError("يلزم تطابق قيمة الحجز بالريال قبل إنهاء الإقامة.")
     if any(p["type"] != "baseRate" and Decimal(p["total"]) != 0 for p in original["components"]):
         raise ValidationError("توزيع استرداد المكونات الإضافية يحتاج مراجعة.")
@@ -47,15 +49,17 @@ def departure_plan(booking, *, vacated_at):
             if (quote.check_in, quote.check_out, quote.total_price) == (
                 booking.check_in,
                 booking.check_out,
-                total,
+                booking.total_price,
             ):
                 priced = quote.night_prices or {}
         # A single-night contract is exact; never invent an average for several nights.
         if not priced and booking.nights == 1:
             priced = {
-                "currency": "SAR",
+                "currency": booking.currency,
                 "reference": "single-night-contract",
-                "nights": [{"date": booking.check_in.isoformat(), "value": str(total)}],
+                "nights": [
+                    {"date": booking.check_in.isoformat(), "value": str(booking.total_price)}
+                ],
             }
         nights = priced.get("nights", [])
         dates = [
@@ -64,17 +68,21 @@ def departure_plan(booking, *, vacated_at):
         ]
         if (
             [n["date"] for n in nights] != dates
-            or sum((Decimal(n["value"]) for n in nights), Decimal(0)) != total
-            or priced.get("currency") != "SAR"
+            or sum((Decimal(n["value"]) for n in nights), Decimal(0)) != booking.total_price
+            or priced.get("currency") != booking.currency
             or not priced.get("reference")
         ):
             raise ValidationError(
                 "أسعار هذا الحجز القديم غير مكتملة؛ لم نحسب استردادًا تقديريًا أو نغيّر الحجز."
             )
         reference = priced["reference"]
-        refundable = departure_refund(nights, vacated_at, booking.property.time_zone_name)
+        refundable = to_sar(
+            booking, departure_refund(nights, vacated_at, booking.property.time_zone_name)
+        )
     split = refund_split(refundable, funded_cash, original["points"])
     return {
+        "settlement_total": str(total),
+        "settlement_currency": "SAR",
         "priced_nights_reference": reference,
         "cash_refund": format(split["cash"], ".2f"),
         "points_refund": format(split["points"], ".2f"),

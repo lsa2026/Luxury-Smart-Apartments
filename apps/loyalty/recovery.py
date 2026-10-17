@@ -72,7 +72,9 @@ def recover_points_booking(
         held = locked.loyalty_state.get("hold", {})
         if held.get("member") != booking.booking_intent.customer.member.pk:
             raise ValidationError("حساب النقاط لا يطابق صاحب الحجز.")
-        if not held or Decimal(held["value"]) != locked.total_price:
+        from .valuation import total_sar
+
+        if not held or Decimal(held["value"]) != total_sar(locked):
             raise ValidationError("هذا المسار مخصص للحجز المغطى كاملًا بالنقاط.")
         if (
             locked.check_in != snapshot.check_in
