@@ -7,11 +7,13 @@ function run(stored) {
     const control = () => ({checked: false, listeners: {},
         addEventListener(n, fn) {this.listeners[n] = fn;}, focus() {}});
     const analytics = control(), marketing = control(), upd = control(), checkoutUpd = control();
+    const clarity = control();
     const accept = control(), reject = control(), save = control();
     class Dialog {
         open = false;
         querySelector(s) {return {'[data-consent-analytics]': analytics,
             '[data-consent-marketing]': marketing, '[data-consent-upd]': upd,
+            '[data-consent-clarity]': clarity,
             '[data-consent-save]': save}[s] || null;}
         querySelectorAll() {return [];}
         addEventListener() {} showModal() {this.open = true;} close() {this.open = false;}
@@ -29,7 +31,7 @@ function run(stored) {
     const window = {dataLayer: []};
     vm.runInNewContext(code, {window, document, HTMLDialogElement: Dialog,
         CustomEvent: class {constructor(n, v) {this.type = n; this.detail = v.detail;}}});
-    return {window, analytics, marketing, upd, checkoutUpd, accept, reject, save,
+    return {window, analytics, marketing, clarity, upd, checkoutUpd, accept, reject, save,
         choice: () => window.LSAConsent.parseConsent()};
 }
 test('legacy choices and Accept all cannot silently grant UPD', () => {
@@ -86,5 +88,24 @@ test('fresh marketing choice grants Meta separately from Google UPD; rejection c
     assert.equal(r.choice().userProvidedData, false);
     r.reject.listeners.click(); assert.equal(r.choice().metaMeasurement, false);
     r.accept.listeners.click(); assert.equal(r.choice().metaMeasurement, true);
+    assert.equal(r.choice().userProvidedData, false);
+});
+
+test('legacy analytics and independent email opt-in never grant Clarity', () => {
+    const r = run({version: 1, analytics: true, marketing: true});
+    assert.equal(r.choice().clarityMeasurement, false);
+    r.checkoutUpd.checked = true; r.checkoutUpd.listeners.change();
+    assert.equal(r.choice().clarityMeasurement, false);
+});
+
+test('Clarity requires its checkbox and analytics, not marketing or email matching', () => {
+    const r = run(); r.clarity.checked = true; r.save.listeners.click();
+    assert.equal(r.choice().clarityMeasurement, false);
+    r.analytics.checked = true; r.clarity.checked = true; r.save.listeners.click();
+    assert.equal(r.choice().clarityMeasurement, true);
+    assert.equal(r.choice().marketing, false);
+    assert.equal(r.choice().userProvidedData, false);
+    r.reject.listeners.click(); assert.equal(r.choice().clarityMeasurement, false);
+    r.accept.listeners.click(); assert.equal(r.choice().clarityMeasurement, true);
     assert.equal(r.choice().userProvidedData, false);
 });

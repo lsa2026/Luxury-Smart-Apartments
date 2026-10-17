@@ -1,0 +1,7 @@
+{% if current_language_code == "ar" %}
+<p class="help-text">كلاريتي من مايكروسوفت: تسجيل تفاعلات الصفحات العامة وخرائط النقر والتمرير مع إخفاء النصوص وحقول الإدخال، بعد موافقتك على التحليلات وهذا الخيار، أو اختيار قبول الكل. لا نسجل صفحات الدفع والحجوزات الخاصة والحسابات والإدارة. قد تتلقى مايكروسوفت بيانات المتصفح وعنوان الشبكة ومعرّفات القياس؛ التسجيل ليس مجهول الهوية بالكامل. الرفض أو سحب الموافقة لا يؤثر على الحجز.</p>
+{% elif current_language_code == "fr" %}
+<p class="help-text">Microsoft Clarity : enregistrement des interactions sur les pages publiques et cartes de clics/défilement, avec masquage du texte et des champs, après accord pour l’analyse et cette option, ou « Tout accepter ». Paiement, réservations privées, comptes et administration exclus. Microsoft peut recevoir des informations sur le navigateur, l’adresse réseau et des identifiants de mesure ; ce traitement n’est pas entièrement anonyme. Refuser ou retirer le consentement n’affecte pas la réservation.</p>
+{% else %}
+<p class="help-text">Microsoft Clarity: public-page interaction recordings and click/scroll maps with text and input masking, after enabling analytics and this option, or Accept all. Payment, private reservation, account and admin pages are excluded. Microsoft may receive browser information, network address and measurement identifiers; this is not fully anonymous. Refusal or withdrawal does not affect booking.</p>
+{% endif %}

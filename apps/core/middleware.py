@@ -32,6 +32,21 @@ PUBLIC_LOCALIZED_VIEW_NAMES = frozenset(
     }
 )
 
+CLARITY_PUBLIC_VIEW_NAMES = frozenset(
+    {
+        "core:home",
+        "core:about",
+        "core:faq",
+        "core:terms",
+        "core:house_rules",
+        "core:privacy",
+        "core:cancellation",
+        "core:cookies",
+        "properties:list",
+        "properties:detail",
+    }
+)
+
 
 class GuestJourneyLanguageMiddleware:
     """Remember a public language URL for later unprefixed guest pages.
@@ -338,6 +353,21 @@ class SecurityHeadersMiddleware:
                     "https://www.googleadservices.com",
                 ]
             )
+        if (
+            google_allowed
+            and settings.GOOGLE_TAG_MANAGER_ENABLED
+            and request.method == "GET"
+            and response.status_code == 200
+            and not request.GET
+            and request.resolver_match is not None
+            and request.resolver_match.view_name in CLARITY_PUBLIC_VIEW_NAMES
+        ):
+            # GTM loads a same-origin external consent bridge: never enable
+            # unsafe-inline/eval. Private/payment/error/query pages keep the
+            # original policy. Runtime also gates consent, URL and referrer.
+            script_sources.extend(["https://www.clarity.ms", "https://scripts.clarity.ms"])
+            connect_sources.append("https://*.clarity.ms")
+            google_image_sources.extend(["https://*.clarity.ms", "https://c.bing.com"])
         if google_image_sources:
             image_sources = f"{image_sources} {' '.join(google_image_sources)}"
         response.setdefault(
