@@ -149,6 +149,8 @@ class PaymentAttempt(models.Model):
     idempotency_key = models.CharField(max_length=64, unique=True)
     failure_code = models.CharField(max_length=100, blank=True)
     payment_brand = models.CharField(max_length=30, blank=True, editable=False)
+    # Analytics only; never an input to authorization or financial reconciliation.
+    payment_wallet = models.CharField(max_length=20, blank=True, editable=False)
     verified_at = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
