@@ -58,3 +58,11 @@ membership closure, UI explanation and three-language versioned consent.
 Run PostgreSQL CI to verify the production-engine migration and history guards.
 Verify live schema metadata, aggregate balances and the new public document after
 deployment. Do not cancel, refund, transfer or send a real message for validation.
+
+An intermittent local restore failure was reproduced during verification: Django
+serialized a sub-millisecond timestamp as `...48.000Z` and reloaded it as
+`...48Z`. Canonicalization now removes only the redundant `.000` from declared
+datetime fields when capturing/comparing records. Legacy snapshot payloads and
+checksums remain untouched; JSON evidence and arbitrary strings are not
+normalized. Tests cover legacy member/ledger/user timestamps and continue to
+reject an actual one-second change in financial history.

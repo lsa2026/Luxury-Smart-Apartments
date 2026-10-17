@@ -91,6 +91,25 @@ def _fields(model):
     return [f.name for f in model._meta.concrete_fields if not f.primary_key]
 
 
+def _canonical_record(row, models):
+    """Django's millisecond serializer emits .000Z, then omits it on reload.
+
+    Normalise only declared datetime fields, never JSON evidence or text. The
+    instant is unchanged; snapshot checksum verification still precedes any
+    comparisons of historical snapshots.
+    """
+    fields = dict(row["fields"])
+    for field in models[row["model"]]._meta.concrete_fields:
+        value = fields.get(field.name)
+        if (
+            field.get_internal_type() == "DateTimeField"
+            and isinstance(value, str)
+            and value.endswith(".000Z")
+        ):
+            fields[field.name] = value[:-5] + "Z"
+    return {**row, "fields": fields}
+
+
 def _schema_hash(*, payment_links=True, legacy_link_expiry=False, referral_revisions=True):
     # Deconstruction contains callable defaults; field metadata here is stable and JSON-safe.
     return _hash(
@@ -196,7 +215,7 @@ def capture(*, source_id, using="default"):
                 model.objects.using(using).filter(pk__in=selected[label]).order_by("pk"),
                 fields=_fields(model),
             )
-            records.extend(json.loads(data))
+            records.extend(_canonical_record(row, models) for row in json.loads(data))
     snapshot = seal(
         {
             "version": VERSION,
@@ -461,8 +480,9 @@ def compare(previous, incoming):
         previous["captured_at"]
     ):
         _reject("stale_snapshot")
-    old = {(r["model"], str(r["pk"])): r for r in previous["records"]}
-    new = {(r["model"], str(r["pk"])): r for r in incoming["records"]}
+    models = _models()
+    old = {(r["model"], str(r["pk"])): _canonical_record(r, models) for r in previous["records"]}
+    new = {(r["model"], str(r["pk"])): _canonical_record(r, models) for r in incoming["records"]}
     for key, row in old.items():
         if key not in new:
             _reject("financial_history_missing" if key[0] in CORE else "related_history_missing")
@@ -686,8 +706,12 @@ def restore_local(snapshot, *, using):
         recovered = capture(source_id=snapshot["source_id"], using=using)
         if {k: v for k, v in validate(recovered).items()} != validate(snapshot):
             _reject("restore_totals_mismatch")
-        original = {(r["model"], str(r["pk"])): r for r in snapshot["records"]}
-        restored = {(r["model"], str(r["pk"])): r for r in recovered["records"]}
+        original = {
+            (r["model"], str(r["pk"])): _canonical_record(r, models) for r in snapshot["records"]
+        }
+        restored = {
+            (r["model"], str(r["pk"])): _canonical_record(r, models) for r in recovered["records"]
+        }
         if original != restored:
             _reject("restore_content_mismatch")
     return validate(recovered)
