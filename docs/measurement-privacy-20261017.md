@@ -16,6 +16,8 @@ receipt/acknowledgement logic are unchanged.
 
 The script does not transmit anything, change browser history or grant consent.
 Meta keeps its separate public-page/referrer restrictions unchanged.
+The ordinary HyperPay result response also sets `Referrer-Policy: no-referrer`
+to prevent the functional return URL leaking through HTTP referrer headers.
 
 ## Important incomplete work
 
@@ -35,7 +37,8 @@ card data, credentials, guest data or payment URL tokens are recorded here.
 
 - Focused Django purchase/payment/marketing tests: 204 passed before final
   template-order assertions; rerun affected tests for the final revision.
-- Focused Node consent/purchase/measurement/Meta/payment tests: 48 passed.
+- Final focused Django payment/consent/Meta/URL-header revision: 95 passed.
+- All Node tests in this revision: 173 passed (48 focused tests also passed).
 - Ruff lint/format and migration drift checks passed.
 - Full Python suite is separate and must be reported with its actual outcome.
 - New tests use synthetic values only and make no payment or measurement calls.

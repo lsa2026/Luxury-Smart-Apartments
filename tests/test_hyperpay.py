@@ -870,6 +870,7 @@ def test_fake_browser_success_is_only_a_verification_trigger(monkeypatch) -> Non
     assert ResultViewServiceStub.calls == 1
     assert Reservation.objects.count() == 0
     assert "No booking was confirmed" in response.content.decode()
+    assert response["Referrer-Policy"] == "no-referrer"
 
 
 @override_settings(**HYPERPAY_SETTINGS)
