@@ -53,7 +53,7 @@ def test_checkout_scope_has_optional_controls_without_changing_booking_fields(la
     assert 'name="guest_email"' in content
     assert 'name="terms_accepted"' in content and 'name="house_rules_accepted"' in content
     assert 'data-analytics-event="begin_checkout"' in content
-    assert "js/analytics.js" in content and "?v=19" in content
+    assert "js/analytics.js" in content and "?v=20" in content
     assert 'dir="rtl"' in content if language == "ar" else 'dir="ltr"' in content
 
 

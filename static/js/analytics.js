@@ -148,6 +148,7 @@
             return false;
         }
         window.dataLayer = window.dataLayer || [];
+        window.LSAMeasurementPrivacy?.apply();
         // Clear on EVERY event: a contact click must not inherit an earlier
         // apartment, checkout amount or transaction from GTM's merged model.
         window.dataLayer.push({ecommerce: null});

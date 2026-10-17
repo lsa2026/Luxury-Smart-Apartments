@@ -73,6 +73,8 @@ def test_secure_payment_exposes_only_public_context(language):
     assert "onBeforeSubmitCard:" not in content
     assert intent.guest_email not in content
     assert response["Cache-Control"] == "no-store, private"
+    assert content.index("js/measurement-privacy.js") < content.index("js/consent.js")
+    assert content.index("js/measurement-privacy.js") < content.index("js/analytics.js")
 
 
 def test_journey_does_not_read_pci_fields_or_change_payment_flow():
