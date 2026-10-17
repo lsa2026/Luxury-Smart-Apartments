@@ -41,11 +41,12 @@ from .launch import (
 )
 from .localization import arabic_admin
 from .models import Ledger, Member
-from .public_terms import terms_reference
+from .public_terms import current_terms_version, terms_reference
 from .services import (
     available,
     confirm_arrival,
     enroll,
+    held_points,
     invitation_eligible,
     issue_invite,
     posting_transaction,
@@ -159,7 +160,7 @@ def guest_rewards(request):
                 member = enroll(
                     request.user,
                     consent=True,
-                    terms_version=settings.LOYALTY_TERMS_VERSION
+                    terms_version=current_terms_version()
                     if approved_terms()
                     else "local-preview-not-legal-v1",
                     terms_reference=terms_reference()
@@ -318,7 +319,7 @@ def guest_rewards(request):
             sums = query.aggregate(c=Sum("credit"), d=Sum("debit"))
             posted = (sums["c"] or ZERO) - (sums["d"] or ZERO)
             usable = available(member)
-            metrics = {"balance": posted, "available": usable, "held": posted - usable}
+            metrics = {"balance": posted, "available": usable, "held": held_points(member)}
             rows, cursor = _rows(query, request)
         _decorate(rows)
         if member.status == "active":

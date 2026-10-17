@@ -81,8 +81,8 @@ def audit_ledger():
         assert row.sequence == expected_sequence
         accounts[row.member_id] = accounts.get(row.member_id, Decimal(0)) + row.credit - row.debit
         program += row.credit - row.debit
-        assert row.member_balance_after == accounts[row.member_id] >= 0
-        assert row.program_balance_after == program >= 0
+        assert row.member_balance_after == accounts[row.member_id]
+        assert row.program_balance_after == program
         assert row.membership_number == row.member.number
         assert row.tree_number == row.member.referral.tree_number
         assert row.executed_by == "system"
@@ -219,7 +219,7 @@ def test_reservation_holds_prevent_a_second_booking_or_transfer_spending_same_po
     assert audit_ledger() == Decimal("22.50")
 
 
-def test_deferred_correction_multiple_future_stays_and_backup_restart(tmp_path):
+def test_signed_correction_multiple_future_stays_and_backup_restart(tmp_path):
     a, b = user("offset-a"), user("offset-b")
     am, bm = join(a), join(b)
     first = booking(a)
@@ -228,12 +228,12 @@ def test_deferred_correction_multiple_future_stays_and_backup_restart(tmp_path):
     completed_change(first, "250.00")
     reconcile(first.pk)
     am.refresh_from_db()
-    assert am.deferred_corrections[0]["remaining"] == "15.00"
+    assert not am.deferred_corrections and balance(am) == Decimal("-15.00")
     for n in range(1, 4):
         reconcile(booking(a, "100.00", reference=f"TEST-NEXT-{n}").pk)
-        assert balance(am) == 0
+        assert balance(am) == Decimal("-15.00") + Decimal("3.00") * n
     am.refresh_from_db()
-    assert am.deferred_corrections[0]["remaining"] == "6.00"
+    assert not am.deferred_corrections and balance(am) == Decimal("-6.00")
     final = booking(a, "250.00")
     reconcile(final.pk)
     assert balance(am) == Decimal("1.50")

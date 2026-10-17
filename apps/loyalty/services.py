@@ -25,7 +25,7 @@ from .launch import (
 )
 from .models import Ledger, Member, Referral
 
-RULES = "loyalty-approved-20261010-v1"
+RULES = "loyalty-signed-balance-20261017-v2"
 ZERO = Decimal("0.00")
 
 
@@ -80,7 +80,7 @@ def balance(member):
     return (sums["c"] or ZERO) - (sums["d"] or ZERO)
 
 
-def available(member):
+def held_points(member):
     held = sum(
         (
             Decimal(row.get("hold", {}).get("value", "0"))
@@ -90,7 +90,11 @@ def available(member):
         ),
         ZERO,
     )
-    return balance(member) - held
+    return held
+
+
+def available(member):
+    return max(ZERO, balance(member) - held_points(member))
 
 
 def receipt(member, key, payload, work):
@@ -115,13 +119,25 @@ def receipt(member, key, payload, work):
     return result
 
 
-def _post(member, group, branch, *, credit=ZERO, debit=ZERO, **fields):
+def _post(member, group, branch, *, credit=ZERO, debit=ZERO, allow_negative=False, **fields):
     from .referrals import current_link
 
     if not participant_allowed(member.customer):
         raise PermissionDenied("الحساب خارج نطاق التجربة الخاصة.")
     credit, debit = amount(cents(credit)), amount(cents(debit))
-    if (credit > 0) == (debit > 0) or debit > available(member):
+    if allow_negative and fields.get("event_type") not in {"adjust", "redeem"}:
+        raise ValidationError("الرصيد السالب مخصص للتصحيح أو صرف نقاط محجوزة سابقًا فقط.")
+    if allow_negative and fields.get("event_type") == "adjust":
+        original = fields.get("original")
+        if (
+            not original
+            or original.member_id != member.pk
+            or original.event_type != "earn"
+            or original.reservation_id != getattr(fields.get("reservation"), "pk", None)
+            or original.component != fields.get("component")
+        ):
+            raise ValidationError("التصحيح السالب يحتاج استحقاقًا أصليًا للحساب والحجز نفسيهما.")
+    if (credit > 0) == (debit > 0) or (debit > available(member) and not allow_negative):
         raise ValidationError("حركة غير متوازنة أو الرصيد المتاح لا يكفي.")
     sequence = (Ledger.objects.aggregate(n=Max("sequence"))["n"] or 0) + 1
     totals = Ledger.objects.aggregate(c=Sum("credit"), d=Sum("debit"))
@@ -426,35 +442,6 @@ def ancestors(member):
     return result
 
 
-def _absorb(member, budget, event, group, branch):
-    member.refresh_from_db()
-    remaining = []
-    for claim in member.deferred_corrections:
-        due = Decimal(claim["remaining"])
-        take = min(budget, due, available(member))
-        if take:
-            branch += 1
-            _post(
-                member,
-                group,
-                branch,
-                debit=take,
-                event_type="adjust",
-                operation_type=claim["type"],
-                component=claim["component"],
-                reservation_id=claim["booking"],
-                original_id=claim["original"],
-                event_reference=f"{event}:offset:{claim['booking']}:{claim['component']}",
-                reason="تعويض نقص سابق من مكافأة جديدة فقط",
-            )
-        budget -= take
-        if due > take:
-            remaining.append({**claim, "remaining": str(due - take)})
-    member.deferred_corrections = remaining
-    member.save(update_fields=["deferred_corrections", "updated_at"])
-    return branch
-
-
 def reconcile(reservation_id):
     """Re-read site facts, never accept base/payment/arrival assertions from a guest."""
     if not enabled():
@@ -521,14 +508,6 @@ def reconcile(reservation_id):
             totals = rows.aggregate(c=Sum("credit"), d=Sum("debit"))
             current = (totals["c"] or ZERO) - (totals["d"] or ZERO)
             original = rows.filter(event_type="earn").first()
-            # Re-compute this booking's claim, preserving claims from other stays.
-            claims = [
-                c
-                for c in member.deferred_corrections
-                if not (c["booking"] == str(booking.pk) and c["component"] == kind)
-            ]
-            member.deferred_corrections = claims
-            member.save(update_fields=["deferred_corrections", "updated_at"])
             common = dict(
                 reservation=booking,
                 property=booking.property,
@@ -580,35 +559,22 @@ def reconcile(reservation_id):
                     ),
                     **common,
                 )
-                branch = _absorb(member, target - current, event, group, branch)
             elif target < current:
                 due = current - target
-                take = min(due, available(member))
                 if not original:
                     raise ValidationError("التصحيح يحتاج حركة أصلية.")
-                if take:
-                    branch += 1
-                    _post(
-                        member,
-                        group,
-                        branch,
-                        debit=take,
-                        event_type="adjust",
-                        original=original,
-                        reason="تصحيح الاستحقاق بعد تعديل أو إلغاء الإقامة",
-                        **common,
-                    )
-                if due > take:
-                    member.deferred_corrections = claims + [
-                        {
-                            "booking": str(booking.pk),
-                            "component": kind,
-                            "type": kind,
-                            "original": original.pk,
-                            "remaining": str(due - take),
-                        }
-                    ]
-                    member.save(update_fields=["deferred_corrections", "updated_at"])
+                branch += 1
+                _post(
+                    member,
+                    group,
+                    branch,
+                    debit=due,
+                    allow_negative=True,
+                    event_type="adjust",
+                    original=original,
+                    reason="تصحيح الاستحقاق بعد تعديل أو إلغاء الإقامة؛ قد يصبح الرصيد سالبًا",
+                    **common,
+                )
         booking.loyalty_state.pop("review", None)
         booking.loyalty_state["settlement"] = {"revision": revision, "hash": key, "facts": facts}
         booking.loyalty_state["referral_chain"] = [m.pk for m in chain]
@@ -746,6 +712,9 @@ def redeem(user, request_reference, reservation_id):
                 _group(),
                 1,
                 debit=n,
+                # Honour only the hold already authorised while funds existed.
+                # A later reward reversal must not break a paid booking.
+                allow_negative=True,
                 reservation=booking,
                 property=booking.property,
                 operation_type="transfer",
@@ -833,7 +802,7 @@ def withdraw(user, request_reference):
                 ):
                     raise ValidationError("إقفال العضوية مع حجز قائم ينتظر اعتماد الأحكام.")
             value = balance(member)
-            if value:
+            if value > ZERO:
                 _post(
                     member,
                     _group(),
@@ -848,6 +817,6 @@ def withdraw(user, request_reference):
                 )
             member.status, member.withdrawn_at = "withdrawn", timezone.now()
             member.save(update_fields=["status", "withdrawn_at", "updated_at"])
-            return {"status": "withdrawn", "forfeited": str(value)}
+            return {"status": "withdrawn", "forfeited": str(max(value, ZERO))}
 
         return receipt(member, request_reference, ["withdraw"], work)

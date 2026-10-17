@@ -379,6 +379,51 @@ def test_restore_into_separate_database_matches_every_row(sequence, recovery_db)
     assert error.value.code == "restore_target_not_empty"
 
 
+def test_capture_canonicalizes_only_redundant_datetime_zero_fraction(sequence, recovery_db):
+    account = sequence[0]
+    type(account).objects.filter(pk=account.pk).update(
+        date_joined=datetime(2026, 10, 1, 8, 0, 0, 500, tzinfo=UTC)
+    )
+    data = snapshot()
+    account_row = next(
+        r for r in data["records"] if r["model"] == "auth.user" and r["pk"] == account.pk
+    )
+    assert account_row["fields"]["date_joined"] == "2026-10-01T08:00:00Z"
+    restore_local(data, using=recovery_db)
+    assert capture(source_id=data["source_id"], using=recovery_db)["records"] == data["records"]
+
+
+@pytest.mark.parametrize(
+    "model,field",
+    [
+        ("auth.user", "date_joined"),
+        ("loyalty.member", "joined_at"),
+        ("loyalty.ledger", "check_in_at"),
+    ],
+)
+def test_legacy_zero_fraction_restore_and_history_checks(sequence, recovery_db, model, field):
+    data = snapshot()
+    legacy = copy.deepcopy(data)
+    record = row(legacy, model)
+    # A known same instant is used on both sides, not an arbitrary date change.
+    if model == "auth.user":
+        record["fields"][field] = "2026-10-10T13:00:00.000Z"
+    else:
+        record["fields"][field] = record["fields"][field][:-1] + ".000Z"
+    legacy = seal(legacy)
+    saved = copy.deepcopy(legacy)
+    restore_local(legacy, using=recovery_db)
+    recovered = capture(source_id=legacy["source_id"], using=recovery_db)
+    compare(legacy, recovered)
+    assert legacy == saved
+    if model == "loyalty.ledger":
+        changed = copy.deepcopy(recovered)
+        row(changed, model)["fields"][field] = "2026-10-10T12:00:01Z"
+        with pytest.raises(BackupError) as error:
+            compare(legacy, seal(changed))
+        assert error.value.code == "financial_history_changed"
+
+
 def test_empty_initial_copy_is_valid_but_not_after_a_real_history(sequence, tmp_path):
     mirror = LocalMirror(tmp_path / "latest.sqlite3")
     nonempty = snapshot()

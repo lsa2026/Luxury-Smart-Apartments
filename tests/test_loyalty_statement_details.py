@@ -9,7 +9,7 @@ from django.utils.translation import override
 from apps.loyalty.copy import copy
 from apps.loyalty.models import Ledger
 from apps.loyalty.notifications import resolve_recipient
-from apps.loyalty.services import balance, transfer
+from apps.loyalty.services import RULES, balance, transfer
 from apps.loyalty.statement import decorate
 from apps.notifications.services.email import EmailMessageRequest, build_guest_email
 from tests.test_loyalty_stage9 import funded_pair, login, owner
@@ -40,8 +40,8 @@ def test_transfer_both_sides_have_snapshot_counterparty_and_private_balance(lang
         assert row.ui_counterpart["number"] == other.number
         assert labels["gift_out" if debit else "gift_in"] in html
         assert labels["paired_operation"] in html and labels["before_balance"] in html
-        assert "loyalty-approved-20261010-v1" not in html
-        assert labels["rules_first"] in html and labels["rules_help"] in html
+        assert RULES not in html
+        assert labels["rules_signed"] in html and labels["rules_help"] in html
         assert labels["program_balance"] not in html
         assert "Renamed after transfer" not in str(row.ui_counterpart)
         assert other.customer.email not in html
@@ -80,7 +80,7 @@ def test_admin_keeps_internal_rules_reference_without_changing_it():
     transfer(a, "fictional-admin-details", bm.number, "3.00")
     html = login(owner()).get("/admin/loyalty/").content.decode()
     assert "المرجع التقني للقواعد" in html
-    assert "loyalty-approved-20261010-v1" in html
+    assert RULES in html
     assert "رقم العملية المقابلة" in html
 
 

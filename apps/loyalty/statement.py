@@ -46,11 +46,12 @@ def decorate(rows, *, delivery=False):
             else row.rate_percent
         )
         row.ui_balance_before = row.member_balance_after - row.credit + row.debit
-        row.ui_rules = (
-            labels["rules_first"]
-            if row.rules_version == "loyalty-approved-20261010-v1"
-            else labels["rules_other"]
-        )
+        row.ui_rules = labels[
+            {
+                "loyalty-approved-20261010-v1": "rules_first",
+                "loyalty-signed-balance-20261017-v2": "rules_signed",
+            }.get(row.rules_version, "rules_other")
+        ]
         row.ui_transfer = row.event_type == "transfer"
         row.ui_counterpart = None
         if not row.ui_transfer:
