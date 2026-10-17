@@ -123,9 +123,12 @@ def test_signed_balances_backup_and_reopened_mirror(tmp_path):
     result = validate(data)
     assert result["program_balance"] == "-3.00"
     assert result["member_balances"][str(am.pk)] == "-3.00"
-    path = tmp_path / "signed.sqlite3"
-    LocalMirror(path).update(data)
-    assert LocalMirror(path).read() == data
+    # LocalMirror deliberately refuses PostgreSQL sources; that engine proves
+    # capture/validation here, while SQLite also rehearses the local mirror.
+    if connection.vendor == "sqlite":
+        path = tmp_path / "signed.sqlite3"
+        LocalMirror(path).update(data)
+        assert LocalMirror(path).read() == data
     assert withdraw(a, "TEST-NEGATIVE-CLOSE")["forfeited"] == "0.00"
     assert balance(am) == Decimal("-3.00")
 
