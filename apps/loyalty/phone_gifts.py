@@ -94,6 +94,8 @@ def delivery_ready():
 
 
 def _enabled(user):
+    from apps.accounts.identity import account_verified
+
     from .views import approved_terms
 
     return (
@@ -102,7 +104,7 @@ def _enabled(user):
         and approved_terms()
         and user.is_active
         and participant_allowed(user)
-        and CustomerProfile.objects.filter(user=user, email_verified_at__isnull=False).exists()
+        and account_verified(user)
     )
 
 

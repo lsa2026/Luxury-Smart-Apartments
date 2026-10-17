@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST
 
 from apps.accounts.access import require_operations_owner
 from apps.accounts.dashboard_copy import account_copy
-from apps.accounts.models import CustomerProfile, VerifiedPhone
+from apps.accounts.models import VerifiedPhone
 from apps.accounts.phone_auth import allowed as phone_allowed
 from apps.accounts.phone_auth import ready as phone_ready
 from apps.accounts.phone_copy import phone_copy
@@ -85,7 +85,9 @@ def _actions_allowed(request):
 
 
 def _verified(user):
-    return CustomerProfile.objects.filter(user=user, email_verified_at__isnull=False).exists()
+    from apps.accounts.identity import account_verified
+
+    return account_verified(user)
 
 
 def _throttle(user):

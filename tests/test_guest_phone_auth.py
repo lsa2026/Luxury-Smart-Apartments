@@ -127,7 +127,7 @@ def test_phone_final_post_normalizes_double_zero_without_javascript(monkeypatch)
         ("", "US", ""),
     ],
 )
-def test_profile_phone_save_normalizes_without_changing_signin_binding(
+def test_profile_phone_cannot_change_a_verified_identity_even_when_auth_flag_off(
     guest, isolated, phone, country, expected, settings
 ):
     settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = False
@@ -137,7 +137,7 @@ def test_profile_phone_save_normalizes_without_changing_signin_binding(
         "/my-bookings/details/", {"phone": phone, "phone_country": country}
     )
     assert response.status_code == 302
-    assert profile_for(guest.user).phone == expected
+    assert profile_for(guest.user).phone == PHONE
     binding.refresh_from_db()
     assert binding.phone == PHONE
     guest.user.refresh_from_db()

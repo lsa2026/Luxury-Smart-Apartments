@@ -16,8 +16,6 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
-from apps.accounts.models import VerifiedPhone
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingIntent, Reservation
 from apps.reservations.security import session_owns
@@ -27,16 +25,17 @@ from .views import _actions_allowed, _verified, interface_enabled
 PENDING = "loyalty_checkout_account_returns"
 TEXT = {
     "ar": {
-        "title": "لديك نقاط مكافآت؟",
+        "title": "لديك عضوية أو حساب سابق؟",
         "help": (
-            "سجّل الدخول لاستخدام نقاطك في هذا الحجز. "
+            "سجّل الدخول بجوالك الموثق لربط الحجز بعضويتك واكتساب مكافآتك أو استخدام نقاطك. "
             "سنحتفظ بالشقة والتواريخ والبيانات ونُعيدك إلى الطلب نفسه."
         ),
         "identity": (
-            "استخدم حسابًا يطابق بريد الحجز أو جواله الموثّق. تسجيل الدخول لا يصرف نقاطك تلقائيًا."
+            "الجوال الموثق هو وسيلة التعرف الأساسية. لا تحتاج إلى فتح بريدك للدخول بالجوال، "
+            "ولا تُصرف نقاطك تلقائيًا."
         ),
-        "login": "سجّل الدخول لاستخدام نقاطك",
-        "link": "استخدم نقاط حسابي لهذا الحجز",
+        "login": "متابعة بجوالي لربط الحجز والمكافآت",
+        "link": "اربط الحجز بحسابي ومكافآتي",
         "linked": "تم ربط طلب الحجز بحسابك. يمكنك الآن اختيار النقاط قبل الدفع.",
         "mismatch": (
             "تعذر ربط الطلب بهذا الحساب. استخدم الحساب المطابق لبريد الحجز "
@@ -48,17 +47,18 @@ TEXT = {
         ),
     },
     "en": {
-        "title": "Have reward points?",
+        "title": "Already a member or returning guest?",
         "help": (
-            "Sign in to use your points for this stay. We will keep your apartment, "
+            "Sign in with your verified mobile to link this stay, earn rewards or use points. "
+            "We will keep your apartment, "
             "dates and details and bring you back to this booking request."
         ),
         "identity": (
-            "Use an account matching the booking email or a verified mobile number. "
+            "Your verified mobile is the primary identifier; email access is not required. "
             "Signing in never spends points automatically."
         ),
-        "login": "Sign in to use your points",
-        "link": "Use my account’s points for this booking",
+        "login": "Continue with my mobile for bookings and rewards",
+        "link": "Link this booking to my account and rewards",
         "linked": (
             "This booking request is now linked to your account. Choose your points before paying."
         ),
@@ -72,17 +72,18 @@ TEXT = {
         ),
     },
     "fr": {
-        "title": "Vous avez des points ?",
+        "title": "Déjà membre ou déjà client ?",
         "help": (
-            "Connectez-vous pour utiliser vos points. Votre appartement, vos dates et vos "
+            "Connectez-vous avec votre mobile vérifié pour rattacher ce séjour, "
+            "gagner ou utiliser des points. Votre appartement, vos dates et vos "
             "coordonnées seront conservés et vous retrouverez cette demande de réservation."
         ),
         "identity": (
-            "Utilisez le compte correspondant à l’e-mail de réservation ou au mobile vérifié. "
+            "Votre mobile vérifié est l’identifiant principal ; l’accès à l’e-mail est inutile. "
             "La connexion ne dépense jamais vos points automatiquement."
         ),
-        "login": "Me connecter pour utiliser mes points",
-        "link": "Utiliser les points de mon compte",
+        "login": "Continuer avec mon mobile pour mon séjour et mes points",
+        "link": "Rattacher ce séjour à mon compte et à mes avantages",
         "linked": (
             "Cette demande est maintenant liée à votre compte. "
             "Choisissez vos points avant de payer."
@@ -113,16 +114,11 @@ def _payable(intent):
 
 
 def _identity_matches(user, intent):
+    from apps.accounts.identity import booking_identity_matches
+
     if not user.is_active or not _verified(user):
         return False
-    if user.email and user.email.strip().casefold() == intent.guest_email.strip().casefold():
-        return True
-    try:
-        phone = normalize_phone_number(intent.guest_phone)
-    except InvalidPhoneNumber:
-        return False
-    # An editable profile contact is not a verified sign-in credential.
-    return VerifiedPhone.objects.filter(user=user, phone=phone).exists()
+    return booking_identity_matches(user, intent.guest_email, intent.guest_phone)
 
 
 def account_context(request, intent):
@@ -155,7 +151,10 @@ def _payment_started(intent):
 def _login_url(reference):
     # Never accept an arbitrary client-supplied return destination.
     target = reverse("reservations:booking_account", args=[reference])
-    return reverse("accounts:login") + "?" + urlencode({"next": target})
+    from apps.accounts.phone_auth import ready
+
+    route = "accounts:phone_login" if ready() else "accounts:login"
+    return reverse(route) + "?" + urlencode({"next": target})
 
 
 @never_cache
@@ -187,6 +186,7 @@ def booking_account(request, public_reference):
                 pending = dict(list(pending.items())[-4:])
                 pending[public_reference] = min(now + 1200, int(intent.expires_at.timestamp()))
                 request.session[PENDING] = pending
+                request.session["guest_checkout_phone"] = intent.guest_phone
             return redirect(_login_url(public_reference))
         elif intent.customer_id == request.user.pk:
             pass

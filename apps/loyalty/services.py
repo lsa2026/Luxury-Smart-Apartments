@@ -14,7 +14,6 @@ from django.db import connection, transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
-from apps.accounts.models import CustomerProfile
 from apps.reservations.models import Reservation
 
 from .calculation import amount, cents, reward_plan
@@ -202,8 +201,10 @@ def enroll(
             raise PermissionDenied("الحساب خارج نطاق التجربة الخاصة.")
         if not getattr(user, "is_authenticated", False) or not user.is_active:
             raise PermissionDenied("يلزم حساب ضيف موثق.")
-        if not CustomerProfile.objects.filter(user=user, email_verified_at__isnull=False).exists():
-            raise PermissionDenied("تحقق من بريد الحساب أولًا.")
+        from apps.accounts.identity import account_verified
+
+        if not account_verified(user):
+            raise PermissionDenied("تحقق من جوال الحساب أو بريده أولًا.")
         if (
             consent is not True
             or not terms_version
@@ -464,6 +465,9 @@ def reconcile(reservation_id):
             "booking_intent__quote",
             "property",
         ).get(pk=reservation_id)
+        from apps.accounts.identity import attach_paid_phone_account
+
+        attach_paid_phone_account(booking)
         from .site_adapter import booking_facts
 
         if not booking_allowed(booking):

@@ -21,6 +21,21 @@ class VerifiedPhone(models.Model):
         return f"VerifiedPhone {self.pk}"
 
 
+class ApprovedPhoneChange(models.Model):
+    """Admin-authorised destination; not a credential until WhatsApp proof succeeds."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=32, unique=True)
+    version = models.UUIDField(default=uuid.uuid4, editable=False)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="approved_guest_phones"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"ApprovedPhoneChange {self.pk}"
+
+
 class PhoneChallenge(models.Model):
     """One session/purpose-bound OTP. No message or plaintext code is retained."""
 
@@ -139,6 +154,8 @@ class CustomerProfile(models.Model):
         blank=True,
         verbose_name=_("Email verified at"),
     )
+    auth_version = models.UUIDField(default=uuid.uuid4, editable=False)
+    identity_changed_at = models.DateTimeField(null=True, blank=True)
     # Stored so a verification issued for one address cannot confirm another
     # after the customer edits it mid-flight.
     verification_sent_for = models.EmailField(blank=True, verbose_name=_("Address awaiting proof"))

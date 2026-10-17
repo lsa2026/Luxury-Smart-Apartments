@@ -106,6 +106,13 @@ TEXT = {
     },
 }
 
+for language, text in {
+    "ar": "تغيير الجوال أو البريد المرتبط بالعضوية من صلاحية الإدارة فقط بعد التحقق من هويتك. توثيق الجوال لأول مرة متاح عبر واتساب.",
+    "en": "Only administration can change your membership mobile or email after checking your identity. You can verify your first mobile with WhatsApp.",
+    "fr": "Seule l’administration peut modifier le mobile ou l’e-mail de votre adhésion après vérification de votre identité. Vous pouvez vérifier votre premier mobile par WhatsApp.",
+}.items():
+    TEXT[language]["admin_only"] = text
+
 
 def phone_copy():
     return TEXT.get((get_language() or "ar").split("-")[0], TEXT["ar"])

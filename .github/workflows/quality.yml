@@ -63,6 +63,7 @@ jobs:
           tests/test_loyalty_final_readiness.py
           tests/test_loyalty_invitation_links.py
           tests/test_guest_phone_auth.py
+          tests/test_guest_identity_management.py
           tests/test_guest_booking_history.py
           tests/test_guest_access_address.py
           tests/test_checkout_address_places.py

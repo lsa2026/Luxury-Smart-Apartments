@@ -249,6 +249,23 @@ class CustomerProfileForm(forms.Form):
                     "residence_country": getattr(profile, "residence_country", ""),
                 }
             )
+        from .identity import identity_locked
+        from .models import ApprovedPhoneChange, VerifiedPhone
+
+        binding = VerifiedPhone.objects.filter(user=user).first()
+        pending = ApprovedPhoneChange.objects.filter(user=user).first()
+        locked_phone = pending.phone if pending else binding.phone if binding else profile.phone
+        self.identity_phone_locked = bool(locked_phone and identity_locked(user))
+        if self.identity_phone_locked:
+            self.initial["phone"] = locked_phone
+            try:
+                region = phonenumbers.region_code_for_number(phonenumbers.parse(locked_phone, None))
+                if region in phonenumbers.SUPPORTED_REGIONS:
+                    self.initial["phone_country"] = region
+            except phonenumbers.NumberParseException:
+                pass
+            self.fields["phone"].disabled = True
+            self.fields["phone_country"].disabled = True
 
     def clean_phone(self) -> str:
         value = _clean_profile_text(self.cleaned_data["phone"])
