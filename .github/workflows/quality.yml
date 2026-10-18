@@ -78,6 +78,7 @@ jobs:
           tests/test_loyalty_phone_gifts.py
           tests/test_loyalty_public_launch.py
           tests/test_loyalty_public_terms.py
+          tests/test_loyalty_program_terms.py
           tests/test_loyalty_scheduled_accrual.py
           tests/test_loyalty_unified_stay_fx.py
           tests/test_loyalty_statement_details.py

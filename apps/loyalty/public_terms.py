@@ -19,6 +19,9 @@ from .accrual import (
     IDENTITY_TERMS_REFERENCE,
     IDENTITY_TERMS_URL_VERSION,
     IDENTITY_TERMS_VERSION,
+    PROGRAM_TERMS_REFERENCE,
+    PROGRAM_TERMS_URL_VERSION,
+    PROGRAM_TERMS_VERSION,
     SIGNED_TERMS_REFERENCE,
     SIGNED_TERMS_URL_VERSION,
     SIGNED_TERMS_VERSION,
@@ -307,6 +310,88 @@ for code, issued, paragraph in [
     SIGNED_CONTENT[code]["issued"] = issued
     SIGNED_CONTENT[code]["sections"][10] = (CONTENT[code]["sections"][10][0], paragraph)
 
+# Owner-approved publication: new consents only; earlier editions stay immutable.
+PROGRAM_CONTENT = deepcopy(SIGNED_CONTENT)
+PROGRAM_SECTIONS = {
+    "ar": (
+        "الإصدار الخامس — ١٨ أكتوبر ٢٠٢٦؛ تعديل البرنامج وتعليقه وإنهاؤه",
+        (
+            "١٣. إلغاء العضوية وتعديل الشروط",
+            "عند طلب إلغاء العضوية نهائيًا، يبين للعضو رصيده الذي سيسقط ويطلب تأكيده الصريح؛ تسقط نقاطه المتبقية عند إتمام الإلغاء. تنفذ الإدارة إلغاء العضوية وتسجل الطلب والتأكيد والوقت والسبب. تسوى الحجوزات والحقوق القائمة قبل الإقفال، ولا يلغى حجز أو تصادر دفعة بطاقة تلقائيًا. إيقاف التسويق أو عدم استخدام الحساب ليس إلغاءً للعضوية ولا يسقط النقاط. يعلن أي إصدار جديد وتاريخ نفاذه، ولا تغير نسب العمليات السابقة بأثر رجعي، وتحفظ نسخ الشروط والموافقات السابقة.",
+        ),
+        (
+            "١٤. تعديل برنامج الولاء وتعليقه وإنهاؤه",
+            "تحتفظ المؤسسة بحق تعديل برنامج الولاء أو تعليقه أو إنهائه كليًا أو جزئيًا لأسباب تجارية أو تشغيلية مشروعة، ومنها الخسارة أو تعذر استمرار توفير الإقامة أو خروج العقارات المشاركة من التشغيل، دون اشتراط موافقة لاحقة من العضو، مع إعلان القرار وإبلاغ الأعضاء بموعد نفاذه وآثاره على النقاط.\n\nويوافق العضو مسبقًا، في الحدود الجائزة نظامًا، على إعفاء المؤسسة من التعويض عن الأضرار الناشئة عن تعديل البرنامج أو تعليقه أو إنهائه، وعدم مطالبتها بالتعويض عن تلك الأضرار ضمن هذه الحدود.\n\nإذا ثبت أن قوة قاهرة أو سببًا خارجًا عن إرادة المؤسسة أدى إلى استحالة نهائية لتنفيذ المكافآت غير المستخدمة ضمن نطاق البرنامج، ينقضي الالتزام المتأثر بقدر الاستحالة ومن وقت تحققها، وفق الأحكام النظامية وما يترتب عليها من آثار. ولا يُعد قرار الإنهاء وحده إثباتًا للاستحالة، ولا ينقضي الالتزام فيما بقي تنفيذه ممكنًا وفق شروطه.\n\nتبقى الحجوزات المؤكدة نافذة وتُنفذ وفق شروطها، ولا يترتب على إنهاء البرنامج إلغاؤها تلقائيًا. ولا يُفترض سريان أي تعديل على حقوق سابقة بالمخالفة للشروط التي نشأت بموجبها أو الأحكام النظامية.",
+        ),
+        "١٥. الخصوصية والتواصل والحقوق",
+        (
+            "١٦. النظام الواجب التطبيق والمحاكم المختصة",
+            "تخضع هذه الشروط والعلاقة الخاصة ببرنامج الولاء لأنظمة المملكة العربية السعودية. وتختص محاكم المملكة العربية السعودية المختصة نوعيًا ومكانيًا بالمنازعات الناشئة عن البرنامج أو تفسير شروطه أو تنفيذها أو إنهائه، بالقدر الذي تجيزه قواعد تنازع القوانين والاختصاص القضائي الدولي والأحكام الآمرة والاتفاقيات النافذة. يخص هذا الاتفاق منازعات برنامج الولاء والتزام المؤسسة بالنقاط؛ ولا ينقل تلقائيًا جميع منازعات عقارات خارج المملكة إلى المحاكم السعودية. وتستثنى الدعاوى العينية المتعلقة بعقار خارج المملكة، ولا يستبعد هذا البند اختصاصًا أو حماية إلزامية لا يجوز الاتفاق على خلافها، بما فيها القواعد المنطبقة على الإقامة وحماية المستهلك في دولة العقار المشارك.",
+        ),
+        (
+            "١٧. إقرار العضو وموافقته الإلكترونية",
+            "أقر بأنني قرأت هذه الشروط وإشعار الخصوصية وفهمتهما، وأن انضمامي مجاني واختياري وبإرادتي مع توافر أهلية التعاقد. وأوافق على حق المؤسسة في تعديل البرنامج أو تعليقه أو إنهائه وفق البند الرابع عشر دون اشتراط موافقتي مجددًا، وعلى الإعفاء من التعويض بالحدود المبينة فيه. وأفهم أثر الاستحالة النهائية على المكافآت غير المستخدمة وفق البند نفسه، وأن قرار الإنهاء وحده لا يثبت الاستحالة ولا يلغي الحجوزات المؤكدة تلقائيًا. تحفظ موافقتي مع نسخة الشروط ولغتها وتاريخها، ولا تعني هذه الموافقة تنازلًا عما لا يجوز التنازل عنه نظامًا.",
+        ),
+    ),
+    "en": (
+        "Fifth edition — 18 October 2026; programme changes, suspension and termination",
+        (
+            "13. Membership closure and changes to terms",
+            "A request to close membership permanently shows the points to be forfeited and requires the member’s explicit confirmation; remaining points are forfeited when closure is completed. Administration carries out closure and records the request, confirmation, time and reason. Existing bookings and rights are settled before closure; no booking is automatically cancelled and no card payment is confiscated. Opting out of marketing or not using the account does not close membership or forfeit points. New editions and their effective dates are announced; rates of earlier transactions are not changed retrospectively, and previous editions and consent records are preserved.",
+        ),
+        (
+            "14. Programme changes, suspension and termination",
+            "The establishment reserves the right to modify, suspend or terminate the loyalty programme, in whole or in part, for legitimate commercial or operational reasons, including losses, inability to continue providing accommodation or participating properties ceasing operations, without requiring the member’s subsequent consent. The decision will be announced and members informed of its effective date and its effects on points.\n\nTo the extent permitted by law, the member agrees in advance to exempt the establishment from compensation for damage arising from modification, suspension or termination of the programme, and not to claim compensation for such damage within those limits.\n\nIf it is established that force majeure or a cause beyond the establishment’s control has made performance of unused rewards within the programme permanently impossible, the affected obligation is extinguished to the extent of that impossibility and from the time it arises, subject to applicable law and its consequences. A termination decision alone does not establish impossibility; an obligation is not extinguished insofar as performance remains possible under its terms.\n\nConfirmed bookings remain effective and are performed under their terms; terminating the programme does not automatically cancel them. No amendment is presumed to apply to earlier rights contrary to the terms under which they arose or applicable law.",
+        ),
+        "15. Privacy, contact and rights",
+        (
+            "16. Governing law and competent courts",
+            "These terms and the relationship concerning the loyalty programme are governed by the laws of the Kingdom of Saudi Arabia. Disputes arising from the programme or the interpretation, performance or termination of these terms fall within the jurisdiction of the Saudi courts competent by subject matter and venue, to the extent permitted by conflict-of-laws rules, international jurisdiction, mandatory law and applicable treaties. This agreement concerns loyalty programme disputes and the establishment’s points obligations; it does not automatically transfer all disputes concerning properties outside Saudi Arabia to Saudi courts. Actions concerning rights in rem over property outside Saudi Arabia are excluded. This provision does not displace mandatory jurisdiction or protections that cannot lawfully be excluded, including applicable accommodation and consumer protection rules in the participating property’s country.",
+        ),
+        (
+            "17. Member acknowledgment and electronic consent",
+            "I acknowledge that I have read and understood these terms and the privacy notice, that joining is free and optional, and that I join voluntarily with contractual capacity. I agree to the establishment’s right to modify, suspend or terminate the programme under section 14 without requiring my renewed consent, and to the compensation exemption within the limits set out there. I understand the effect of permanent impossibility on unused rewards under that section, and that a termination decision alone does not establish impossibility or automatically cancel confirmed bookings. My consent is retained with the terms edition, language and time; it does not waive rights that cannot lawfully be waived.",
+        ),
+    ),
+    "fr": (
+        "Cinquième édition — 18 octobre 2026 ; modification, suspension et résiliation du programme",
+        (
+            "13. Clôture de l’adhésion et modification des conditions",
+            "Une demande de clôture définitive indique les points qui seront perdus et nécessite la confirmation expresse du membre ; les points restants sont perdus lors de la clôture effective. L’administration effectue la clôture et enregistre la demande, la confirmation, la date et le motif. Les réservations et droits en cours sont réglés avant la clôture ; aucune réservation n’est automatiquement annulée et aucun paiement par carte n’est confisqué. Refuser le marketing ou ne pas utiliser le compte ne clôture pas l’adhésion et ne supprime pas les points. Les nouvelles éditions et leurs dates d’effet sont annoncées ; les taux des opérations antérieures ne sont pas modifiés rétroactivement et les anciennes éditions et consentements sont conservés.",
+        ),
+        (
+            "14. Modification, suspension et résiliation du programme",
+            "L’établissement se réserve le droit de modifier, suspendre ou résilier le programme de fidélité, en tout ou partie, pour des motifs commerciaux ou opérationnels légitimes, notamment des pertes, l’impossibilité de continuer à fournir l’hébergement ou la cessation d’exploitation de logements participants, sans exiger un nouveau consentement du membre. La décision est annoncée et les membres sont informés de sa date d’effet et de ses conséquences sur les points.\n\nDans les limites autorisées par la loi, le membre accepte par avance d’exonérer l’établissement de l’indemnisation des dommages résultant de la modification, de la suspension ou de la résiliation du programme, et de ne pas réclamer d’indemnisation pour ces dommages dans ces limites.\n\nS’il est établi qu’un cas de force majeure ou une cause indépendante de la volonté de l’établissement rend définitivement impossible l’exécution des récompenses non utilisées dans le cadre du programme, l’obligation concernée s’éteint à concurrence de cette impossibilité et à compter de sa survenance, sous réserve du droit applicable et de ses conséquences. La seule décision de résiliation ne prouve pas l’impossibilité ; l’obligation ne s’éteint pas dans la mesure où son exécution demeure possible selon ses conditions.\n\nLes réservations confirmées restent valables et sont exécutées selon leurs conditions ; la résiliation du programme ne les annule pas automatiquement. Aucune modification n’est présumée s’appliquer aux droits antérieurs en violation des conditions dans lesquelles ils sont nés ou du droit applicable.",
+        ),
+        "15. Confidentialité, contact et droits",
+        (
+            "16. Droit applicable et juridictions compétentes",
+            "Les présentes conditions et la relation concernant le programme de fidélité sont régies par le droit du Royaume d’Arabie saoudite. Les litiges découlant du programme ou de l’interprétation, de l’exécution ou de la résiliation de ses conditions relèvent des tribunaux saoudiens compétents matériellement et territorialement, dans les limites permises par les règles de conflit de lois, de compétence internationale, les dispositions impératives et les conventions applicables. Cet accord concerne les litiges du programme et les obligations de points de l’établissement ; il ne transfère pas automatiquement aux tribunaux saoudiens tous les litiges relatifs aux logements situés hors du Royaume. Les actions portant sur des droits réels immobiliers relatifs à un bien situé hors du Royaume sont exclues. Cette clause n’écarte aucune compétence ou protection impérative à laquelle il ne peut être dérogé, notamment les règles applicables à l’hébergement et à la protection des consommateurs dans le pays du logement participant.",
+        ),
+        (
+            "17. Déclaration du membre et consentement électronique",
+            "Je reconnais avoir lu et compris ces conditions et la notice de confidentialité, que l’adhésion est gratuite et facultative et que j’adhère librement en ayant la capacité de contracter. J’accepte le droit de l’établissement de modifier, suspendre ou résilier le programme conformément à l’article 14 sans exiger un nouveau consentement de ma part, ainsi que l’exonération d’indemnisation dans les limites qui y sont précisées. Je comprends l’effet de l’impossibilité définitive sur les récompenses non utilisées selon cet article, et que la seule décision de résiliation ne prouve pas l’impossibilité ni n’annule automatiquement les réservations confirmées. Mon consentement est conservé avec l’édition, la langue et la date des conditions ; il n’emporte aucune renonciation aux droits auxquels il ne peut être renoncé légalement.",
+        ),
+    ),
+}
+for code, (
+    issued,
+    closure,
+    termination,
+    privacy_heading,
+    jurisdiction,
+    acknowledgment,
+) in PROGRAM_SECTIONS.items():
+    PROGRAM_CONTENT[code]["issued"] = issued
+    PROGRAM_CONTENT[code]["sections"] = [
+        *SIGNED_CONTENT[code]["sections"][:12],
+        closure,
+        termination,
+        (privacy_heading, SIGNED_CONTENT[code]["sections"][13][1]),
+        jurisdiction,
+        acknowledgment,
+    ]
+
 EDITIONS = {
     VERSION: (URL_VERSION, REFERENCE, CONTENT),
     TERMS_VERSION: (TERMS_URL_VERSION, TERMS_REFERENCE, UPDATED_CONTENT),
@@ -316,17 +401,21 @@ EDITIONS = {
         IDENTITY_CONTENT,
     ),
     SIGNED_TERMS_VERSION: (SIGNED_TERMS_URL_VERSION, SIGNED_TERMS_REFERENCE, SIGNED_CONTENT),
+    PROGRAM_TERMS_VERSION: (PROGRAM_TERMS_URL_VERSION, PROGRAM_TERMS_REFERENCE, PROGRAM_CONTENT),
 }
 
 
 def current_terms_version():
-    # The owner-authorised release advances the already approved v3 pair only.
+    # Advance only the owner's previously approved v3/v4 pairs to the new edition.
     # Disabled, preview and custom references retain their existing safety gates.
     if settings.LOYALTY_TERMS_APPROVED and (
         settings.LOYALTY_TERMS_VERSION,
         settings.LOYALTY_TERMS_REFERENCE,
-    ) == (IDENTITY_TERMS_VERSION, IDENTITY_TERMS_REFERENCE):
-        return SIGNED_TERMS_VERSION
+    ) in {
+        (IDENTITY_TERMS_VERSION, IDENTITY_TERMS_REFERENCE),
+        (SIGNED_TERMS_VERSION, SIGNED_TERMS_REFERENCE),
+    }:
+        return PROGRAM_TERMS_VERSION
     return settings.LOYALTY_TERMS_VERSION
 
 
@@ -348,8 +437,12 @@ def terms_reference():
     edition = EDITIONS.get(version)
     if edition and (
         settings.LOYALTY_TERMS_REFERENCE == edition[1]
-        or version == SIGNED_TERMS_VERSION
-        and settings.LOYALTY_TERMS_REFERENCE == IDENTITY_TERMS_REFERENCE
+        or version == PROGRAM_TERMS_VERSION
+        and (settings.LOYALTY_TERMS_VERSION, settings.LOYALTY_TERMS_REFERENCE)
+        in {
+            (IDENTITY_TERMS_VERSION, IDENTITY_TERMS_REFERENCE),
+            (SIGNED_TERMS_VERSION, SIGNED_TERMS_REFERENCE),
+        }
     ):
         with override(document()["language"]):
             return reverse("core:rewards_terms", kwargs={"version": edition[0]})
