@@ -196,7 +196,7 @@ def test_signed_terms_are_new_version_and_join_records_it(client, settings, lang
     from apps.loyalty.accrual import (
         IDENTITY_TERMS_REFERENCE,
         IDENTITY_TERMS_VERSION,
-        SIGNED_TERMS_VERSION,
+        PROGRAM_TERMS_VERSION,
     )
     from apps.loyalty.models import Member
     from apps.loyalty.public_terms import document
@@ -206,10 +206,10 @@ def test_signed_terms_are_new_version_and_join_records_it(client, settings, lang
     settings.LOYALTY_TERMS_VERSION = IDENTITY_TERMS_VERSION
     settings.LOYALTY_TERMS_REFERENCE = IDENTITY_TERMS_REFERENCE
     new = document(language)
-    assert new["version"] == SIGNED_TERMS_VERSION and new["sha256"] != old["sha256"]
+    assert new["version"] == PROGRAM_TERMS_VERSION and new["sha256"] != old["sha256"]
     old_response = client.get(f"/{language}/legal/rewards/2026-10-17-v3/")
     assert old_response["X-Document-SHA256"] == old["sha256"]
-    new_response = client.get(f"/{language}/legal/rewards/2026-10-17-v4/")
+    new_response = client.get(f"/{language}/legal/rewards/2026-10-18-v5/")
     assert new_response["X-Document-SHA256"] == new["sha256"]
     a = user("new-consent-" + language)
     client.force_login(a)
@@ -217,6 +217,6 @@ def test_signed_terms_are_new_version_and_join_records_it(client, settings, lang
     response = client.post(reverse("accounts:rewards"), {"action": "join", "consent": "on"})
     assert response.status_code == 302
     member = Member.objects.get(customer=a)
-    assert member.terms_version == SIGNED_TERMS_VERSION
-    assert member.terms_reference == f"/{language}/legal/rewards/2026-10-17-v4/"
+    assert member.terms_version == PROGRAM_TERMS_VERSION
+    assert member.terms_reference == f"/{language}/legal/rewards/2026-10-18-v5/"
     assert member.consent_history[0]["terms_content_sha256"] == new["sha256"]
