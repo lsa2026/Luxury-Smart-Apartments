@@ -38,7 +38,7 @@ def test_operations_hub_is_private_and_does_not_call_providers(db):
     assert "البحث عن حجز" not in content
     assert 'href="' + reverse("notifications:booking_list") + '"' in content
     assert 'href="' + reverse("notifications:invoice_list") + '"' in content
-    assert content.count('class="lsa-admin-home__card"') == 4
+    assert content.count('class="lsa-admin-home__card"') == 3
     assert "إدارة المستخدمين" in content
     assert content.count("<h1>") == 1
 
@@ -66,6 +66,6 @@ def test_owner_loyalty_card_uses_existing_programme_gates(
     assert "no-store" in response["Cache-Control"]
     assert ('href="' + reverse("loyalty:admin") + '"' in content) is visible
     assert ("إدارة برنامج الولاء" in content) is visible
-    assert content.count('class="lsa-admin-home__card"') == 4 + int(visible)
+    assert content.count('class="lsa-admin-home__card"') == 3 + int(visible)
     assert 'dir="rtl"' in content
     assert content.count("<h1>") == 1

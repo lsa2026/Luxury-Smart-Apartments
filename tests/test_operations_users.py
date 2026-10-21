@@ -213,7 +213,7 @@ def test_manager_can_use_booking_invoice_screens_but_not_owner_or_system_tools()
             assert "no-store" in response["Cache-Control"]
         api.assert_not_called()
     html = client.get(reverse("notifications:hub")).content.decode()
-    assert html.count('class="lsa-admin-home__card"') == 3
+    assert html.count('class="lsa-admin-home__card"') == 2
     assert reverse("accounts:operations_users") not in html
     assert reverse("loyalty:admin") not in html
     assert "إدارة برنامج الولاء" not in html

@@ -364,9 +364,10 @@ def test_admin_navigation_and_real_create_form_are_private():
     url = reverse("notifications:morning_create")
     assert client.get(url).status_code == 302
     client.force_login(actor)
-    for name in ("hub", "booking_list"):
-        page = client.get(reverse("notifications:" + name))
-        assert url.encode() in page.content
+    hub = client.get(reverse("notifications:hub"))
+    assert url.encode() not in hub.content
+    bookings = client.get(reverse("notifications:booking_list"))
+    assert url.encode() in bookings.content
     page = client.get(url)
     key = page.context["form"].initial["request_id"]
     start, _ = window()
