@@ -1,6 +1,6 @@
 # Independent morning stays
 
-The operations hub and booking list expose **إنشاء حجز صباحي**. An authorized
+Only booking management exposes **إنشاء حجز صباحي**. An authorized
 operations user selects the apartment, one local calendar date, arrival after
 00:00, departure strictly before 12:00, full guest name, international phone,
 email, occupancy, and the approved all-inclusive **SAR** amount. Riyadh and
