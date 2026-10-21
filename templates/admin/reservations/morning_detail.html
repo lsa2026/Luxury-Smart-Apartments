@@ -1,0 +1,17 @@
+{% extends "admin/base_site.html" %}
+{% load presentation tz %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations"><div><h1>تفاصيل الحجز الصباحي</h1><p>{{ stay }}</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:morning_list' %}">الحجوزات الصباحية</a></section>
+  <section class="lsa-panel">
+    <h2>{{ stay.property|localized_property_name }}</h2>
+    <dl class="quote-summary"><div><dt>الضيف</dt><dd>{{ stay.guest_name }}</dd></div><div><dt>الجوال</dt><dd dir="ltr">{{ stay.guest_phone }}</dd></div><div><dt>البريد الإلكتروني</dt><dd>{{ stay.guest_email }}</dd></div><div><dt>الدخول</dt><dd dir="ltr">{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>الخروج</dt><dd dir="ltr">{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>المنطقة الزمنية</dt><dd>{{ stay.time_zone }}</dd></div><div><dt>الإجمالي المعتمد</dt><dd>{{ stay.amount_sar|format_money:'SAR' }}</dd></div><div><dt>الحالة</dt><dd>{% if expired %}انتهت مهلة الدفع{% else %}{{ stay.get_status_display }}{% endif %}</dd></div></dl>
+    <p>حجز صباحي داخلي؛ لم يُنشأ حجز في Hostaway. يُسمح بحجز لاحق عندما تكفي فترة تجهيز الشقة قبله.</p>
+    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>آخر موعد لبدء الدفع: {{ stay.expires_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}. لم تُرسل رسالة للضيف تلقائيًا.</p>{% endif %}
+    {% if stay.paid_at %}<p>تم توثيق استلام الدفعة: {{ stay.paid_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}.</p>{% endif %}
+    <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">التحقق من حالة الدفع</button>{% if not stay.paid_at %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الطلب غير المدفوع</button>{% endif %}</form>
+  </section>
+  <section class="lsa-panel"><h2>محاولات الدفع</h2><ul>{% for attempt in attempts %}<li>{{ attempt.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }} — {{ attempt.status }}{% if attempt.failure_code %} — تحتاج مراجعة{% endif %}</li>{% empty %}<li>لم تبدأ محاولة دفع.</li>{% endfor %}</ul></section>
+</main>
+{% endblock %}

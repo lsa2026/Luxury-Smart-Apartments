@@ -474,6 +474,10 @@ class AvailabilityService:
             and request.guests > request.property.person_capacity
         ):
             return AvailabilityService._result(CAPACITY_EXCEEDED, nights=nights)
+        from ..morning_stays import overnight_conflicts
+
+        if overnight_conflicts(request.property, request.check_in, request.check_out):
+            return AvailabilityService._result(INVENTORY_CONFLICT, nights=nights)
         return None
 
     @staticmethod

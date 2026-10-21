@@ -193,6 +193,9 @@ def recover_payment_requests_task():
         if not acquired:
             return {"status": "already_running"}
         result = reconcile_requests()
+        from .morning_payments import reconcile_mornings
+
+        reconcile_mornings()
         # Recover a durable bookkeeping request if broker dispatch failed after payment.
         from django.db.models import Q
 

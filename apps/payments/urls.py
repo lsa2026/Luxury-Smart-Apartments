@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .morning_views import MorningPaymentResultView, MorningPaymentView
 from .payment_link_views import ReservationPaymentAddressView, ReservationPaymentView
 from .views import (
     CurrencyPreferenceView,
@@ -13,6 +14,12 @@ from .views import (
 app_name = "payments"
 
 urlpatterns = [
+    path("morning-pay/<str:token>/", MorningPaymentView.as_view(), name="morning_payment"),
+    path(
+        "hyperpay/morning-result/<uuid:payment_id>/",
+        MorningPaymentResultView.as_view(),
+        name="morning_result",
+    ),
     path("pay/<str:token>/", ReservationPaymentView.as_view(), name="reservation_payment"),
     path(
         "pay/<str:reference>/address-suggestions/",

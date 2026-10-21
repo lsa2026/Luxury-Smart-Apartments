@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n l10n presentation currency static %}
+{% load i18n l10n presentation currency static tz %}
 {% block title %}{% trans "Secure payment" %} | Luxury Smart Apartments{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
@@ -63,7 +63,7 @@ var wpwlOptions = {
     data-analytics-currency="{{ attempt.currency }}"
     data-analytics-checkout-kind="{% if modification %}modification{% else %}booking{% endif %}"
 >
-    {% include "includes/progress_indicator.html" with step=4 %}
+    {% if not morning_stay %}{% include "includes/progress_indicator.html" with step=4 %}{% endif %}
 
     <div class="section-heading checkout__heading">
         <p class="eyebrow">{% trans "Step four" %}</p>
@@ -227,7 +227,9 @@ var wpwlOptions = {
                 </div>
             </div>
 
-            {% if modification %}
+            {% if morning_stay %}
+            <dl class="checkout__facts"><div><dt>الإقامة الصباحية</dt><dd>{{ morning_stay.starts_at|timezone:morning_stay.time_zone|date:'Y-m-d' }}</dd></div><div><dt>الدخول</dt><dd>{{ morning_stay.starts_at|timezone:morning_stay.time_zone|date:'H:i' }}</dd></div><div><dt>الخروج</dt><dd>{{ morning_stay.ends_at|timezone:morning_stay.time_zone|date:'H:i' }}</dd></div><div><dt>التوقيت</dt><dd>{{ morning_stay.time_zone }}</dd></div></dl>
+            {% elif modification %}
             <dl class="checkout__facts">
                 <div><dt>{% trans "Requested check-in" %}</dt><dd>{{ modification.new_check_in|localized_date }}</dd></div>
                 <div><dt>{% trans "Requested check-out" %}</dt><dd>{{ modification.new_check_out|localized_date }}</dd></div>
@@ -241,7 +243,7 @@ var wpwlOptions = {
             </dl>
             {% endif %}
 
-            {% if not modification and not payment_request %}
+            {% if not modification and not payment_request and not morning_stay %}
             <div class="checkout__breakdown">
                 {% include "reservations/_price_breakdown.html" with quote=intent.quote %}
             </div>
@@ -252,7 +254,7 @@ var wpwlOptions = {
             {% else %}
             <div class="checkout__total checkout__total--display">
                 <span>{% trans "Total" %}</span>
-                <strong>{% if modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
+                <strong>{% if morning_stay %}{{ morning_stay.amount_sar|format_money:'SAR' }}{% elif modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
             </div>
             {% endif %}
             <p class="checkout__fx-note">{% trans "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference." %}</p>

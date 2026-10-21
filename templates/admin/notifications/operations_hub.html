@@ -5,6 +5,7 @@
 <main class="lsa-dashboard lsa-admin-home" dir="rtl">
   <h1>مركز الإدارة</h1>
   <section class="lsa-admin-home__grid" aria-label="أقسام الإدارة الرئيسية">
+    <a class="lsa-admin-home__card" href="{% url 'notifications:morning_create' %}"><span aria-hidden="true">☀</span><h2>إنشاء حجز صباحي</h2><p>دخول بعد منتصف الليل وخروج قبل الظهر، وتسجيل الضيف وتجهيز رابط السداد.</p><strong>إنشاء حجز صباحي ←</strong></a>
     <a class="lsa-admin-home__card" href="{% url 'notifications:booking_list' %}">
       <span aria-hidden="true">▦</span><h2>إدارة الحجوزات</h2>
       <p>استعرض حجوزات الموقع، أنشئ حجزًا جديدًا، وافتح الحجز لإدارته أو إرسال فاتورته.</p>

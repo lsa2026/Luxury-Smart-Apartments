@@ -99,10 +99,12 @@ def _render_hyperpay_checkout(
     intent: BookingIntent,
     modification: BookingModificationRequest | None = None,
     payment_request=None,
+    morning_stay=None,
 ) -> HttpResponse:
     """Render public widget identifiers for an already-created checkout."""
 
-    result_url = request.build_absolute_uri(reverse("payments:hyperpay_result", args=[attempt.pk]))
+    result_name = "payments:morning_result" if morning_stay else "payments:hyperpay_result"
+    result_url = request.build_absolute_uri(reverse(result_name, args=[attempt.pk]))
     result_url = f"{result_url}?{urlencode({'return_token': _hyperpay_return_token(attempt)})}"
     property_obj = modification.reservation.property if modification else intent.property
     apple_pay_enabled = settings.HYPERPAY_ENVIRONMENT == "test" or (
@@ -121,7 +123,8 @@ def _render_hyperpay_checkout(
             "intent": intent,
             "modification": modification,
             "payment_request": payment_request,
-            "loyalty_payment_summary": loyalty_payment_summary(attempt),
+            "morning_stay": morning_stay,
+            "loyalty_payment_summary": None if morning_stay else loyalty_payment_summary(attempt),
             "cover_image": _cover_image(property_obj),
             "checkout_id": attempt.provider_checkout_id,
             "widget_integrity": attempt.widget_integrity,

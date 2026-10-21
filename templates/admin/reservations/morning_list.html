@@ -1,0 +1,9 @@
+{% extends "admin/base_site.html" %}
+{% load presentation tz %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations"><div><h1>الحجوزات الصباحية</h1><p>دخول بعد منتصف الليل وخروج قبل الظهر، برابط سداد مستقل.</p></div><div class="lsa-page-head__actions"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:morning_create' %}">＋ إنشاء حجز صباحي</a><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></div></section>
+  <section class="lsa-panel"><div class="lsa-table-scroll"><table><thead><tr><th>الضيف</th><th>الشقة</th><th>الدخول</th><th>الخروج</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody>{% for stay in stays %}<tr><td><a href="{% url 'notifications:morning_detail' stay.pk %}">{{ stay.guest_name }}</a></td><td>{{ stay.property|localized_property_name }}</td><td dir="ltr">{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</td><td dir="ltr">{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</td><td>{{ stay.amount_sar|format_money:'SAR' }}</td><td>{{ stay.get_status_display }}</td></tr>{% empty %}<tr><td colspan="6">لا توجد حجوزات صباحية بعد.</td></tr>{% endfor %}</tbody></table></div></section>
+</main>
+{% endblock %}

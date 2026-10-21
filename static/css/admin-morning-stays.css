@@ -1,0 +1,9 @@
+.lsa-morning-form { max-width: 960px; }
+.lsa-morning-form .lsa-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
+.lsa-morning-form .form-row { display: grid; gap: 8px; padding: 0; border: 0; min-width: 0; }
+.lsa-morning-form .form-row label { font-weight: 700; color: var(--lsa-ink); }
+.lsa-morning-form .form-row input, .lsa-morning-form .form-row select { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; box-sizing: border-box; border: 1px solid var(--lsa-line); border-radius: 10px; background: var(--lsa-paper); color: var(--lsa-ink); font: inherit; }
+.lsa-morning-form .form-row input[type="time"], .lsa-morning-form .form-row input[type="date"], .lsa-morning-form .form-row input[type="email"] { direction: ltr; text-align: right; }
+.lsa-morning-form .errorlist { margin: 0; color: #9a3636; }
+.lsa-morning-form .lsa-btn { margin-top: 12px; min-height: 48px; }
+@media (max-width: 767px) { .lsa-morning-form .lsa-form-grid { grid-template-columns: minmax(0, 1fr); } .lsa-morning-form .form-row input, .lsa-morning-form .form-row select { font-size: 16px; } .lsa-morning-form .lsa-btn { width: 100%; } }

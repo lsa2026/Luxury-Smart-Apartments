@@ -3,7 +3,7 @@
 import logging
 import re
 
-_PATH = re.compile(r"(/payments/pay/)[^/?#\s\"'<>]+", re.IGNORECASE)
+_PATH = re.compile(r"(/payments/(?:pay|morning-pay)/)[^/?#\s\"'<>]+", re.IGNORECASE)
 _RETURN = re.compile(r"([?&]return_token=)[^&\s\"'<>]+", re.IGNORECASE)
 
 
