@@ -1,12 +1,21 @@
 from django.urls import path
 
-from apps.reservations import operations_views
+from apps.reservations import morning_views, operations_views
 
 from . import health, invoice_views, views
 
 app_name = "notifications"
 
 urlpatterns = [
+    path("admin/operations/morning-stays/", morning_views.morning_list, name="morning_list"),
+    path(
+        "admin/operations/morning-stays/new/", morning_views.morning_create, name="morning_create"
+    ),
+    path(
+        "admin/operations/morning-stays/<uuid:stay_id>/",
+        morning_views.morning_detail,
+        name="morning_detail",
+    ),
     path(
         "admin/operations/bookings/<uuid:reservation_id>/invoice/",
         invoice_views.booking_invoice,

@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>إنشاء حجز صباحي</h1><p>دخول بعد منتصف الليل وخروج قبل ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
+  <section class="lsa-panel">
+    <p>سجّل بيانات الضيف والمبلغ المعتمد شاملًا الرسوم. يُفحص التوفر قبل تجهيز رابط الدفع، ولا يُنشأ حجز في Hostaway.</p>
+    <p>توقيت شقق الرياض: Asia/Riyadh. توقيت شقق مراكش: Africa/Casablanca. المبلغ المطلوب أدناه بالريال السعودي.</p>
+    <form method="post" class="lsa-manual-booking-form lsa-morning-form">
+      {% csrf_token %}{{ form.non_field_errors }}{{ form.request_id }}{{ form.request_id.errors }}
+      <div class="lsa-form-grid">{% for field in form.visible_fields %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div>
+      <p>رابط السداد صالح خمس دقائق كحد أقصى وحتى وقت الدخول، ويعاد فحص التوفر قبل الدفع. فتح الرابط وحده لا يحصّل مبلغًا.</p>
+      <button type="submit" class="lsa-btn lsa-btn--gold">فحص التوفر وإنشاء رابط الدفع</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load presentation static tz %}
+{% block title %}سداد الحجز الصباحي{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}">{% endblock %}
+{% block content %}
+<section class="section container narrow reservation-payment" dir="rtl">
+  <h1>سداد الحجز الصباحي</h1>
+  {% if stay.paid_at %}<p class="notice">تم استلام الدفعة. لا تدفع مرة أخرى.{% if stay.status == 'review' %} يرجى تأكيد موعد الدخول مع الإدارة.{% endif %}</p>
+  {% elif not payable %}<p class="notice">الرابط غير متاح أو انتهت مهلته. تواصل مع الإدارة قبل الدفع.</p>
+  {% else %}
+  <article class="review-panel"><h2>{{ stay.property|localized_property_name }}</h2>
+    <p>إقامة صباحية في {{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d' }}: من {{ stay.starts_at|timezone:stay.time_zone|date:'H:i' }} إلى {{ stay.ends_at|timezone:stay.time_zone|date:'H:i' }}، بتوقيت الشقة {{ stay.time_zone }}.</p>
+    <p><strong>الإجمالي شامل الرسوم: {{ stay.amount_sar|format_money:'SAR' }}</strong></p>
+    {% if error %}<p class="notice notice--important" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" class="guest-form">{% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
+      <fieldset><legend>عنوان الفوترة</legend>{% include 'reservations/_billing_fields.html' with guest_form=form %}</fieldset>
+      <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
+      <div class="form-field"><label>{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label>{{ form.terms_accepted.errors }}</div>
+      <details><summary>{{ guest_documents.house_rules.title }} — يرجى مراجعة بند التدخين</summary><p>{{ guest_documents.house_rules.body|linebreaksbr }}</p></details>
+      <div class="form-field"><label>{{ form.house_rules_accepted }} {{ guest_documents.house_rules.acceptance }}</label>{{ form.house_rules_accepted.errors }}</div>
+      {{ form.documents_digest.errors }}<button class="button button--gold" type="submit">الموافقة والمتابعة إلى الدفع الآمن</button>
+    </form>
+  </article>{% endif %}
+  <p><a href="{% url 'core:contact' %}">التواصل مع الإدارة</a></p>
+</section>
+{% endblock %}

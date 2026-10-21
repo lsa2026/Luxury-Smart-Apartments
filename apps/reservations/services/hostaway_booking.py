@@ -359,6 +359,11 @@ class HostawayBookingService:
         assert availability.quote is not None
         fingerprint = _request_fingerprint(reservation, availability)
         with transaction.atomic():
+            from apps.properties.models import Property
+
+            from ..morning_stays import overnight_conflicts
+
+            Property.objects.select_for_update().get(pk=reservation.property_id)
             locked = Reservation.objects.select_for_update().get(pk=reservation.pk)
             operation, created = (
                 HostawayReservationOperation.objects.select_for_update().get_or_create(
@@ -378,6 +383,11 @@ class HostawayBookingService:
             }:
                 return operation, False
             if not created and operation.attempt_count > 0:
+                return operation, False
+            if overnight_conflicts(locked.property, locked.check_in, locked.check_out):
+                operation.status = HostawayReservationOperation.Status.BLOCKED
+                operation.error_code = "morning_stay_conflict"
+                operation.save()
                 return operation, False
             operation.status = HostawayReservationOperation.Status.IN_PROGRESS
             operation.attempt_count += 1

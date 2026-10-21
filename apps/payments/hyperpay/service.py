@@ -208,6 +208,12 @@ class HyperPayService:
         if settings.HYPERPAY_PREPAYMENT_REVALIDATION_ENABLED:
             self._revalidate_booking_intent(intent)
         with transaction.atomic():
+            from apps.properties.models import Property
+            from apps.reservations.morning_stays import overnight_conflicts
+
+            Property.objects.select_for_update().get(pk=intent.property_id)
+            if overnight_conflicts(intent.property, intent.check_in, intent.check_out):
+                raise HyperPayCheckoutError("prepayment_morning_stay_conflict")
             locked = BookingIntent.objects.select_for_update().get(pk=intent.pk)
             if (
                 locked.status != BookingIntent.Status.AWAITING_PAYMENT
