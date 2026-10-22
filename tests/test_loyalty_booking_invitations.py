@@ -97,10 +97,17 @@ def whatsapp_row(booking):
     return booking.loyalty_state[invitations.REQUESTS][booking.loyalty_state[invitations.LATEST]]
 
 
-def deliver_latest(booking):
+def email_row(booking):
+    return booking.loyalty_state[invitations.EMAIL_REQUESTS][
+        booking.loyalty_state[invitations.EMAIL_LATEST]
+    ]
+
+
+def deliver_latest(booking, channel="whatsapp"):
     booking.refresh_from_db()
+    latest = invitations.LATEST if channel == "whatsapp" else invitations.EMAIL_LATEST
     return invitations.deliver_booking_invitation(
-        str(booking.pk), "whatsapp", booking.loyalty_state[invitations.LATEST]
+        str(booking.pk), channel, booking.loyalty_state[latest]
     )
 
 
@@ -113,7 +120,8 @@ def test_get_has_icon_confirmation_and_no_side_effects(rig):
     assert "دعوة لبرنامج الولاء" in html and '<svg viewBox="0 0 24 24"' in html
     assert 'data-booking-tab="loyalty"' in html
     assert 'data-booking-tab="overview"' not in html
-    assert 'name="confirm_loyalty_invitation" required' in html
+    assert 'name="confirm_loyalty_invitation"' not in html
+    assert html.count("معاينة نص الرسالة قبل الإرسال") == 2
     assert 'name="csrfmiddlewaretoken"' in html
     assert 'value="send_loyalty_invitation"' in html
     assert response.context["loyalty_invitation"]["phone"] == "+12025550123"
@@ -123,7 +131,7 @@ def test_get_has_icon_confirmation_and_no_side_effects(rig):
     assert not Member.objects.exists() and not Ledger.objects.exists()
 
 
-def test_ineligible_booking_keeps_invitation_action_and_explains_reason(rig):
+def test_owner_can_choose_both_channels_without_saved_marketing_consent(rig):
     client, _, provider, dispatched = rig
     booking = past_booking()
     booking.booking_intent.marketing_consent = False
@@ -132,13 +140,85 @@ def test_ineligible_booking_keeps_invitation_action_and_explains_reason(rig):
     html = response.content.decode()
     assert 'data-booking-tab="loyalty"' in html
     assert response.context["detail_default_panel"] == "loyalty"
-    assert "لا توجد موافقة محفوظة" in html
+    assert "لا توجد موافقة محفوظة" not in html
     assert "إرسال الدعوة عبر واتساب" in html
     assert "إرسال الدعوة عبر البريد الإلكتروني" in html
-    assert html.count('disabled aria-describedby="invitation-') == 1
+    assert 'disabled aria-describedby="invitation-' not in html
     assert 'value="send_loyalty_invitation"' in html
     assert response.context["loyalty_invitation"]["confirmation"]
     assert not dispatched and not provider.send_image.called
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_preview_matches_delivered_message_without_sending_on_get(rig, mailoutbox, language):
+    client, _, provider, dispatched = rig
+    booking = past_booking()
+    booking.booking_intent.language = language
+    booking.booking_intent.save()
+    page = client.get(url(booking))
+    whatsapp, email = page.context["loyalty_invitation"]["channels"]
+    assert not dispatched and not mailoutbox and not provider.send_image.called
+    for channel, context in (("whatsapp", whatsapp), ("email", email)):
+        client.post(
+            url(booking),
+            {
+                "action": "send_loyalty_invitation",
+                "channel": channel,
+                "confirmation": context["confirmation"],
+            },
+        )
+        deliver_latest(booking, channel)
+    assert provider.send_image.call_args.kwargs["caption"] == whatsapp["preview_text"]
+    assert mailoutbox[0].body == email["preview_text"]
+    assert mailoutbox[0].subject == email["preview_subject"]
+
+
+def test_owner_can_send_three_emails_and_legacy_history_is_preserved(rig, mailoutbox):
+    client, _, _, _ = rig
+    booking = past_booking()
+    legacy = {"status": "accepted", "requested_at": timezone.now().isoformat()}
+    booking.loyalty_state[invitations.EMAIL_STATE] = legacy.copy()
+    booking.save()
+    booking.booking_intent.marketing_consent = False
+    booking.booking_intent.save()
+    request_ids = []
+    for _ in range(3):
+        data = payload(client, booking, "email")
+        data.pop("confirm_loyalty_invitation")
+        client.post(url(booking), data)
+        booking.refresh_from_db()
+        request_ids.append(booking.loyalty_state[invitations.EMAIL_LATEST])
+    for request_id in reversed(request_ids):
+        invitations.deliver_booking_invitation(str(booking.pk), "email", request_id)
+        invitations.deliver_booking_invitation(str(booking.pk), "email", request_id)
+    booking.refresh_from_db()
+    assert len(mailoutbox) == 3 and len(set(request_ids)) == 3
+    assert booking.loyalty_state[invitations.EMAIL_STATE] == legacy
+    assert all(
+        row["status"] == "accepted"
+        for row in booking.loyalty_state[invitations.EMAIL_REQUESTS].values()
+    )
+    assert not booking.booking_intent.marketing_consent
+
+
+def test_legacy_email_task_can_still_finish_after_a_new_manual_request(rig, mailoutbox):
+    client, owner, _, _ = rig
+    booking = past_booking()
+    booking.loyalty_state[invitations.EMAIL_STATE] = {
+        "status": "queued",
+        "requested_at": timezone.now().isoformat(),
+        "operator": owner.pk,
+        "target_digest": invitations.digest(invitations._target(booking, "email")),
+    }
+    booking.save()
+    client.post(url(booking), payload(client, booking, "email"))
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    deliver_latest(booking, "email")
+    booking.refresh_from_db()
+    assert len(mailoutbox) == 2
+    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "accepted"
+    assert email_row(booking)["status"] == "accepted"
 
 
 def test_email_invitation_renders_and_sends_once_without_membership(
@@ -151,8 +231,8 @@ def test_email_invitation_renders_and_sends_once_without_membership(
         client.post(url(booking), data)
         client.post(url(booking), data)
     assert dispatched == [(str(booking.pk), "email")]
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    deliver_latest(booking, "email")
+    deliver_latest(booking, "email")
     assert len(mailoutbox) == 1
     message = mailoutbox[0]
     assert message.to == [booking.booking_intent.guest_email]
@@ -160,7 +240,7 @@ def test_email_invitation_renders_and_sends_once_without_membership(
     assert "أثر رجعي" in message.body and message.alternatives
     assert "دعوة" in message.subject
     booking.refresh_from_db()
-    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "accepted"
+    assert email_row(booking)["status"] == "accepted"
     assert not provider.send_image.called
     assert not Member.objects.exists() and not Ledger.objects.exists()
 
@@ -175,13 +255,13 @@ def test_each_channel_has_independent_proof_and_duplicate_guard(rig, mailoutbox)
     client.post(url(booking), whatsapp)
     client.post(url(booking), payload(client, booking, "email"))
     deliver_latest(booking)
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    deliver_latest(booking, "email")
+    deliver_latest(booking, "email")
     assert provider.send_image.call_count == 1 and len(mailoutbox) == 1
 
 
 @pytest.mark.parametrize("change", ["consent", "address", "member"])
-def test_email_worker_rechecks_consent_identity_and_address(rig, mailoutbox, change):
+def test_email_worker_rechecks_address_without_overriding_owner_decision(rig, mailoutbox, change):
     client, _, provider, _ = rig
     booking = past_booking()
     client.post(url(booking), payload(client, booking, "email"))
@@ -194,10 +274,11 @@ def test_email_worker_rechecks_consent_identity_and_address(rig, mailoutbox, cha
         join(guest)
         booking.booking_intent.customer = guest
     booking.booking_intent.save()
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    deliver_latest(booking, "email")
     booking.refresh_from_db()
-    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "blocked"
-    assert not mailoutbox and not provider.send_image.called
+    assert email_row(booking)["status"] == ("blocked" if change == "address" else "accepted")
+    assert len(mailoutbox) == (0 if change == "address" else 1)
+    assert not provider.send_image.called
 
 
 @pytest.mark.parametrize("disabled", ["email", "whatsapp"])
@@ -234,14 +315,14 @@ def test_email_timeout_is_uncertain_and_never_automatically_retried(rig, monkeyp
     client.post(url(booking), payload(client, booking, "email"))
     send = Mock(side_effect=TimeoutError("Synthetic outcome unknown"))
     monkeypatch.setattr(invitations.DjangoEmailProvider, "send", send)
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
-    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    deliver_latest(booking, "email")
+    deliver_latest(booking, "email")
     booking.refresh_from_db()
-    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "uncertain"
+    assert email_row(booking)["status"] == "uncertain"
     assert send.call_count == 1
 
 
-def test_email_invitation_cannot_repeat_from_another_booking(rig, mailoutbox):
+def test_owner_can_send_email_from_another_booking(rig, mailoutbox):
     client, _, _, _ = rig
     first, second = past_booking("EMAIL-ONE"), past_booking("EMAIL-TWO")
     second.booking_intent.guest_email = first.booking_intent.guest_email.upper()
@@ -249,8 +330,9 @@ def test_email_invitation_cannot_repeat_from_another_booking(rig, mailoutbox):
     proof = payload(client, second, "email")
     client.post(url(first), payload(client, first, "email"))
     client.post(url(second), proof)
-    second.refresh_from_db()
-    assert invitations.EMAIL_STATE not in second.loyalty_state and not mailoutbox
+    deliver_latest(first, "email")
+    deliver_latest(second, "email")
+    assert len(mailoutbox) == 2
 
 
 def test_confirmed_post_queues_after_commit_sends_once_and_changes_no_membership(
@@ -289,7 +371,7 @@ def test_confirmed_post_queues_after_commit_sends_once_and_changes_no_membership
 
 
 @pytest.mark.parametrize(
-    "change", ["consent", "cancelled", "future", "phone", "member", "disabled"]
+    "change", ["consent", "cancelled", "future", "phone", "member", "disabled", "address"]
 )
 def test_recheck_after_page_open_before_queue(rig, settings, change):
     client, _, provider, _ = rig
@@ -312,11 +394,17 @@ def test_recheck_after_page_open_before_queue(rig, settings, change):
         join(guest)
         booking.booking_intent.customer = guest
         booking.booking_intent.save()
+    elif change == "address":
+        booking.booking_intent.guest_email = "changed@example.invalid"
+        booking.booking_intent.save()
     else:
         settings.LOYALTY_ENABLED = False
     assert client.post(url(booking), data).status_code == 302
     booking.refresh_from_db()
-    assert invitations.EMAIL_STATE not in booking.loyalty_state and not provider.send_image.called
+    assert bool(booking.loyalty_state.get(invitations.EMAIL_REQUESTS)) == (
+        change not in {"disabled", "address"}
+    )
+    assert not provider.send_image.called
 
 
 @pytest.mark.parametrize("change", ["phone", "disabled", "operator", "expired"])
@@ -386,8 +474,9 @@ def test_owner_can_send_three_independent_requests_without_marketing_consent(rig
     assert not any([Member.objects.exists(), Ledger.objects.exists(), Referral.objects.exists()])
 
 
+@pytest.mark.parametrize("channel", ["whatsapp", "email"])
 @pytest.mark.parametrize("state", ["member", "future", "cancelled"])
-def test_whatsapp_manual_send_is_an_owner_decision(rig, state):
+def test_manual_send_is_an_owner_decision(rig, mailoutbox, channel, state):
     client, _, provider, _ = rig
     booking = past_booking()
     if state == "member":
@@ -402,9 +491,10 @@ def test_whatsapp_manual_send_is_an_owner_decision(rig, state):
     else:
         booking.normalized_status = Reservation.Status.CANCELLED
         booking.save()
-    client.post(url(booking), payload(client, booking))
-    deliver_latest(booking)
-    assert provider.send_image.call_count == 1
+    client.post(url(booking), payload(client, booking, channel))
+    deliver_latest(booking, channel)
+    assert provider.send_image.call_count == (1 if channel == "whatsapp" else 0)
+    assert len(mailoutbox) == (1 if channel == "email" else 0)
 
 
 def test_prior_or_uncertain_whatsapp_request_never_blocks_a_fresh_manual_send(rig):
@@ -469,15 +559,14 @@ def test_guest_forbidden_and_csrf_enforced(rig):
     assert not provider.send_image.called
 
 
-def test_membership_identified_by_verified_phone_cannot_be_reinvited(rig):
+def test_membership_identified_by_verified_phone_does_not_block_manual_invitation(rig):
     client, _, provider, _ = rig
     guest = user("existing-member")
     join(guest)
     booking = past_booking()
     VerifiedPhone.objects.create(user=guest, phone=booking.booking_intent.guest_phone)
     page = client.get(url(booking))
-    assert "سجل عضوية قائم" in page.context["loyalty_invitation"]["channels"][1]["reason"]
-    assert page.context["loyalty_invitation"]["confirmation"]
+    assert all(row["confirmation"] for row in page.context["loyalty_invitation"]["channels"])
     assert not provider.send_image.called
 
 
@@ -528,6 +617,8 @@ def test_queue_failure_does_not_fall_back_to_direct_send(
         ("email", "different"),
         ("whatsapp", "same_request"),
         ("whatsapp", "same_booking"),
+        ("email", "same_request"),
+        ("email", "same_booking"),
     ],
 )
 def test_postgres_concurrent_manual_requests(rig, channel, mode):
@@ -561,10 +652,8 @@ def test_postgres_concurrent_manual_requests(rig, channel, mode):
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(run, requests))
-    expected_count = 2 if channel == "whatsapp" and mode != "same_request" else 1
-    assert sorted(results) == (
-        ["queued", "queued"] if channel == "whatsapp" else ["duplicate", "queued"]
-    )
+    expected_count = 2 if mode != "same_request" else 1
+    assert results == ["queued", "queued"]
     assert len(dispatched) == expected_count and not provider.send_image.called
     assert (
         AuditLog.objects.filter(action="loyalty.booking_invitation_requested").count()
