@@ -382,9 +382,11 @@ def booking_list(request: HttpRequest) -> HttpResponse:
 def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
     """Presentation only: preserve the existing action handlers and permissions."""
     reservation = context["reservation"]
+    from apps.loyalty.booking_invitations import invitation_context
     from apps.loyalty.booking_operations import stay_controls
 
     context["loyalty_stay"] = stay_controls(request.user, reservation)
+    context["loyalty_invitation"] = invitation_context(request.user, reservation)
     attach_booking_list_summaries([reservation])
     payment_status = (reservation.payment_status or "").strip().casefold()
     if context["cancellation_blocked"]:
@@ -441,6 +443,16 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
     )
     intent = reservation.booking_intent
+    if request.method == "POST" and request.POST.get("action") == "send_loyalty_invitation":
+        from apps.loyalty.booking_invitations import queue_booking_invitation
+
+        try:
+            result = queue_booking_invitation(request, reservation.pk)
+        except ValidationError as exc:
+            messages.error(request, "؛ ".join(exc.messages))
+        else:
+            messages.info(request, result)
+        return redirect("notifications:booking_detail", reservation_id=reservation.pk)
     from apps.payments.offline_receipts import receipt_snapshot, record_offline_receipt
 
     from .operations_forms import OfflinePaymentReceiptForm

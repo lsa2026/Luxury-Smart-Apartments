@@ -2,7 +2,7 @@
 {% load i18n static presentation %}
 {% block bodyclass %}{{ block.super }} lsa-booking-detail-page{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=stay-1">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=invite-1">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script><script src="{% static 'js/admin-booking-detail.js' %}" defer></script>{% endblock %}
 
 {% block content %}
@@ -43,6 +43,7 @@
           <div><dt>لغة الضيف</dt><dd>{% if reservation.booking_intent.language == "ar" %}العربية{% elif reservation.booking_intent.language == "fr" %}الفرنسية{% elif reservation.booking_intent.language == "en" %}الإنجليزية{% else %}غير محددة{% endif %}</dd></div>
         </dl>
         {% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
+        {% include "admin/reservations/includes/booking_loyalty_invitation.html" %}
       </section>
       <section class="lsa-panel">
         <h2>فاتورة الضيف</h2>
