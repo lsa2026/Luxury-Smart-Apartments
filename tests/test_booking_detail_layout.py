@@ -56,7 +56,7 @@ def test_detail_uses_actual_amounts_arabic_dates_and_complete_form_actions(owner
     nodes = PageElements(html).elements
     panels = [attrs for _, attrs in nodes if "data-booking-panel" in attrs]
     assert {attrs["data-booking-panel"] for attrs in panels} == {
-        "overview",
+        "loyalty",
         "invoice",
         "payment",
         "edit",
@@ -84,7 +84,10 @@ def test_detail_uses_actual_amounts_arabic_dates_and_complete_form_actions(owner
         "quote_change",
         "start_cancellation",
     }
-    assert b'data-default-panel="overview"' in response.content
+    assert b'data-default-panel="invoice"' in response.content
+    assert 'data-booking-tab="overview"' not in html
+    assert 'data-booking-tab="loyalty"' in html
+    assert 'id="booking-overview" aria-label="بيانات الإقامة والضيف"' in html
     assert response.context["reservation"].admin_paid_totals[0].amount == booking.total_price
     assert not OfflinePaymentReceipt.objects.exists()
     assert not GuestInvoiceDelivery.objects.exists()
@@ -102,7 +105,7 @@ def test_pending_adjustment_reopens_edit_and_keeps_final_price_form(owner_client
     assert 'value="quote_change"' in html
 
 
-@pytest.mark.parametrize("section", ["overview", "invoice", "payment", "edit"])
+@pytest.mark.parametrize("section", ["invoice", "payment", "edit", "loyalty"])
 def test_explicit_sections_are_allowlisted(owner_client, section):
     response = owner_client.get(detail_url(confirmed_reservation()), {"section": section})
     assert response.context["detail_default_panel"] == section
@@ -110,7 +113,7 @@ def test_explicit_sections_are_allowlisted(owner_client, section):
 
 def test_invalid_section_is_never_used_as_markup(owner_client):
     response = owner_client.get(detail_url(confirmed_reservation()), {"section": "<script>"})
-    assert response.context["detail_default_panel"] == "overview"
+    assert response.context["detail_default_panel"] == "invoice"
     assert "<script>" not in response.content.decode()
 
 

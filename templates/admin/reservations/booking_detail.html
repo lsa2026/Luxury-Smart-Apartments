@@ -2,8 +2,8 @@
 {% load i18n static presentation %}
 {% block bodyclass %}{{ block.super }} lsa-booking-detail-page{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=invite-1">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script><script src="{% static 'js/admin-booking-detail.js' %}" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=invite-2">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/invoice-phone-search.js' %}" defer></script><script src="{% static 'js/admin-booking-detail.js' %}?v=invite-2" defer></script>{% endblock %}
 
 {% block content %}
 {% language "ar" %}
@@ -25,34 +25,15 @@
     <p class="lsa-booking-detail__money-note">المدفوع قبل خصم المسترد الظاهر منفصلًا، ومتوسط الليلة من إجمالي الحجز شاملًا الرسوم الداخلة فيه. تُعرض كل قيمة بعملتها المسجلة دون تحويل.</p>
   </section>
   <nav class="lsa-booking-detail__tabs" aria-label="أقسام إدارة الحجز" data-booking-tabs>
-    <a href="#booking-overview" id="booking-tab-overview" data-booking-tab="overview" aria-controls="booking-overview">الملخص</a>
     <a href="#booking-invoice" id="booking-tab-invoice" data-booking-tab="invoice" aria-controls="booking-invoice">الفاتورة</a>
     <a href="#booking-payment" id="booking-tab-payment" data-booking-tab="payment" aria-controls="booking-payment">الدفع</a>
     <a href="#booking-edit" id="booking-tab-edit" data-booking-tab="edit" aria-controls="booking-edit">تعديل الحجز</a>
+    {% if loyalty_invitation %}<a href="#booking-loyalty" id="booking-tab-loyalty" data-booking-tab="loyalty" aria-controls="booking-loyalty"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m3 10 18-7-7 18-4-7-7-4Z M10 14 21 3"/></svg> دعوة لبرنامج الولاء</a>{% endif %}
   </nav>
-  <section id="booking-overview" data-booking-panel="overview" aria-labelledby="booking-tab-overview">
-    {% include "admin/reservations/includes/booking_stay.html" %}
-    <div class="lsa-booking-detail__grid">
-      <section class="lsa-panel">
-        <h2>بيانات الضيف</h2>
-        {% if reservation.booking_intent %}
-        <dl class="lsa-booking-detail__contact">
-          <div><dt>الاسم</dt><dd>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</dd></div>
-          <div><dt>رقم الجوال</dt><dd><bdi dir="ltr">{{ reservation.booking_intent.guest_phone }}</bdi></dd></div>
-          <div><dt>البريد الإلكتروني</dt><dd><bdi dir="ltr">{{ reservation.booking_intent.guest_email }}</bdi></dd></div>
-          <div><dt>لغة الضيف</dt><dd>{% if reservation.booking_intent.language == "ar" %}العربية{% elif reservation.booking_intent.language == "fr" %}الفرنسية{% elif reservation.booking_intent.language == "en" %}الإنجليزية{% else %}غير محددة{% endif %}</dd></div>
-        </dl>
-        {% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
-        {% include "admin/reservations/includes/booking_loyalty_invitation.html" %}
-      </section>
-      <section class="lsa-panel">
-        <h2>فاتورة الضيف</h2>
-        <div class="lsa-booking-detail__invoice-state"><strong>فاتورة الإقامة</strong><span class="lsa-booking-detail__badge">{% if invoice.issued_at %}صادرة{% elif invoice %}مسودة{% else %}لم تُصدر{% endif %}</span></div>
-        <p class="help">{% if invoice.issued_at %}استعرض الفاتورة أو أرسلها إلى المستلم الذي تختاره.{% else %}راجع بيانات الفاتورة واعتمد إصدارها قبل إرسالها للضيف.{% endif %}</p>
-        <a class="lsa-btn lsa-btn--gold" href="#booking-invoice" data-booking-open="invoice">{% if invoice.issued_at %}استعراض وإرسال الفاتورة{% else %}فتح قسم الفاتورة{% endif %}</a>
-      </section>
-    </div>
-  </section>
+  {% if loyalty_invitation %}<section id="booking-loyalty" data-booking-panel="loyalty" aria-labelledby="booking-tab-loyalty" class="lsa-panel">
+    <h2>دعوة لبرنامج الولاء</h2>
+    {% include "admin/reservations/includes/booking_loyalty_invitation.html" %}
+  </section>{% endif %}
   <section id="booking-invoice" data-booking-panel="invoice" aria-labelledby="booking-tab-invoice">
     {% include "admin/reservations/includes/booking_detail_invoice.html" %}
   </section>
@@ -65,6 +46,20 @@
   </section>
   <section id="booking-edit" data-booking-panel="edit" aria-labelledby="booking-tab-edit">
     {% include "admin/reservations/includes/booking_detail_edit.html" %}
+  </section>
+  <section id="booking-overview" aria-label="بيانات الإقامة والضيف">
+    <section class="lsa-panel">
+      <h2>بيانات الضيف</h2>
+      {% if reservation.booking_intent %}
+      <dl class="lsa-booking-detail__contact">
+        <div><dt>الاسم</dt><dd>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</dd></div>
+        <div><dt>رقم الجوال</dt><dd><bdi dir="ltr">{{ reservation.booking_intent.guest_phone }}</bdi></dd></div>
+        <div><dt>البريد الإلكتروني</dt><dd><bdi dir="ltr">{{ reservation.booking_intent.guest_email }}</bdi></dd></div>
+        <div><dt>لغة الضيف</dt><dd>{% if reservation.booking_intent.language == "ar" %}العربية{% elif reservation.booking_intent.language == "fr" %}الفرنسية{% elif reservation.booking_intent.language == "en" %}الإنجليزية{% else %}غير محددة{% endif %}</dd></div>
+      </dl>
+      {% else %}<p>لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.</p>{% endif %}
+    </section>
+    {% include "admin/reservations/includes/booking_stay.html" %}
   </section>
   {% include "admin/reservations/includes/booking_detail_cancel.html" %}
 </div>

@@ -412,7 +412,9 @@ def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
         selected = "payment"
     elif action in {"quote_change", "set_final_price", "execute_adjustment"}:
         selected = "edit"
-    elif selected not in {"overview", "invoice", "payment", "edit"}:
+    elif selected not in {"invoice", "payment", "edit"} and not (
+        selected == "loyalty" and context["loyalty_invitation"]
+    ):
         selected = (
             "edit"
             if adjustment
@@ -422,7 +424,7 @@ def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
                 BookingModificationRequest.Status.REJECTED,
                 BookingModificationRequest.Status.EXPIRED,
             }
-            else "overview"
+            else "invoice"
         )
     context.update(
         detail_default_panel=selected,
@@ -452,7 +454,10 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             messages.error(request, "؛ ".join(exc.messages))
         else:
             messages.info(request, result)
-        return redirect("notifications:booking_detail", reservation_id=reservation.pk)
+        return redirect(
+            reverse("notifications:booking_detail", kwargs={"reservation_id": reservation.pk})
+            + "?section=loyalty"
+        )
     from apps.payments.offline_receipts import receipt_snapshot, record_offline_receipt
 
     from .operations_forms import OfflinePaymentReceiptForm

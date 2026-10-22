@@ -86,6 +86,8 @@ def test_get_has_icon_confirmation_and_no_side_effects(rig):
     html = response.content.decode()
     assert response.status_code == 200
     assert "دعوة لبرنامج الولاء" in html and '<svg viewBox="0 0 24 24"' in html
+    assert 'data-booking-tab="loyalty"' in html
+    assert 'data-booking-tab="overview"' not in html
     assert 'name="confirm_loyalty_invitation" required' in html
     assert 'name="csrfmiddlewaretoken"' in html
     assert 'value="send_loyalty_invitation"' in html
@@ -94,6 +96,20 @@ def test_get_has_icon_confirmation_and_no_side_effects(rig):
     assert invitations.STATE not in booking.loyalty_state
     assert not dispatched and not provider.send_image.called
     assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+def test_ineligible_booking_keeps_invitation_action_and_explains_reason(rig):
+    client, _, provider, dispatched = rig
+    booking = past_booking()
+    booking.booking_intent.marketing_consent = False
+    booking.booking_intent.save()
+    response = client.get(url(booking), {"section": "loyalty"})
+    html = response.content.decode()
+    assert 'data-booking-tab="loyalty"' in html
+    assert response.context["detail_default_panel"] == "loyalty"
+    assert "لا توجد موافقة محفوظة" in html
+    assert 'value="send_loyalty_invitation"' not in html
+    assert not dispatched and not provider.send_image.called
 
 
 def test_confirmed_post_queues_after_commit_sends_once_and_changes_no_membership(
@@ -107,6 +123,7 @@ def test_confirmed_post_queues_after_commit_sends_once_and_changes_no_membership
         response = client.post(url(booking), data)
         client.post(url(booking), data)
     assert response.status_code == 302 and dispatched == [str(booking.pk)]
+    assert response.url.endswith("?section=loyalty")
     invitations.deliver_booking_invitation(str(booking.pk))
     invitations.deliver_booking_invitation(str(booking.pk))
     provider.send_image.assert_called_once()
