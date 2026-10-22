@@ -339,8 +339,10 @@ def confirm_arrival(operator, reservation_id, *, arrived_at, reference):
             )
         ):
             raise PermissionDenied("تأكيد الوصول للإدارة أو الاستقبال المخول فقط.")
-        booking = Reservation.objects.select_related("booking_intent", "property").get(
-            pk=reservation_id,
+        booking = (
+            Reservation.objects.select_for_update(of=("self",))
+            .select_related("booking_intent", "property")
+            .get(pk=reservation_id)
         )
         if not booking.booking_intent_id:
             raise ValidationError("لا يوجد حجز موقع مرتبط.")
@@ -361,6 +363,10 @@ def confirm_arrival(operator, reservation_id, *, arrived_at, reference):
         from .site_adapter import stay_times
 
         start, end = stay_times(booking)
+        if timezone.now() >= end or booking.loyalty_state.get("departure_settlement"):
+            raise ValidationError("انتهت فترة الإقامة أو وُثقت المغادرة؛ لا يمكن تأكيد وصول جديد.")
+        if arrived_at >= end:
+            raise ValidationError("وقت الوصول خارج فترة الإقامة المعتمدة.")
         if not policy_enabled() and (arrived_at < start or arrived_at >= end):
             raise ValidationError("وقت الوصول خارج فترة الإقامة المعتمدة.")
         old = booking.loyalty_state.get("arrival")

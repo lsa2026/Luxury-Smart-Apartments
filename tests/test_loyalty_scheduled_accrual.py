@@ -114,6 +114,40 @@ def test_future_december_booking_manual_confirmation_awards_now(policy):
     assert Ledger.objects.count() == 1
 
 
+@pytest.mark.parametrize("zone", ["Asia/Riyadh", "Africa/Casablanca"])
+@pytest.mark.parametrize("seconds_after", [0, 86400])
+def test_completed_stay_cannot_record_new_arrival_or_award(policy, zone, seconds_after):
+    from django.urls import reverse
+
+    r, _ = stay()
+    r.property.time_zone_name = zone
+    r.property.save(update_fields=["time_zone_name"])
+    end = datetime.combine(r.check_out, datetime.min.time(), ZoneInfo(zone)).replace(hour=12)
+    policy[0] = end.astimezone(UTC) + timedelta(seconds=seconds_after)
+    administrator = owner()
+    assert stay_controls(administrator, r)["ended"]
+    assert not stay_controls(administrator, r)["can_arrive"]
+    with pytest.raises(ValidationError, match="انتهت فترة الإقامة"):
+        confirm_arrival(administrator, r.pk, arrived_at=policy[0], reference="late-click")
+    client = Client()
+    client.force_login(administrator)
+    page = client.get(reverse("notifications:booking_detail", args=[r.pk]))
+    assert "تأكيد وصول الضيف الآن" not in page.content.decode()
+    client.post(reverse("loyalty:booking_stay", args=[r.pk]), {"action": "arrival"})
+    r.refresh_from_db()
+    assert not r.loyalty_state.get("arrival") and not Ledger.objects.exists()
+
+
+def test_recorded_departure_blocks_another_arrival_even_before_checkout(policy):
+    r, _ = stay()
+    r.loyalty_state["departure_settlement"] = {"normal": True}
+    r.save()
+    administrator = owner()
+    assert not stay_controls(administrator, r)["can_arrive"]
+    with pytest.raises(ValidationError, match="وُثقت المغادرة"):
+        confirm_arrival(administrator, r.pk, arrived_at=policy[0], reference="after-departure")
+
+
 def test_automatic_then_staff_confirmation_does_not_post_again(policy):
     r, member = stay()
     policy[0] += timedelta(minutes=2)
