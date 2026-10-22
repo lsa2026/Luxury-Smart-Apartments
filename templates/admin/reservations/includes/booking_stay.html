@@ -10,6 +10,7 @@
       <p class="help">يُعتمد هذا الموعد لاحتساب النقاط وإنهاء الإقامة، ولإتاحة الدعوة بعد اكتمال أول إقامة مؤهلة ومدفوعة. لا يلزم تأكيد إداري إضافي.</p>
       {% elif loyalty_stay.arrived %}<p class="lsa-stay-controls__success">تم توثيق الوصول</p>
       <p class="help">تُحتسب النقاط تلقائيًا بعد التحقق من السداد الإلكتروني والانضمام وأهلية الحجز.</p>
+      {% elif loyalty_stay.ended %}<p class="help">انتهت فترة الإقامة؛ لا يمكن تأكيد وصول جديد لهذا الحجز.</p>
       {% elif loyalty_stay.can_arrive %}
       <p>يمكن للإدارة توثيق الوصول الآن، ولو قبل يوم الدخول. يفحص النظام السداد المؤكد والانضمام وأهلية الحجز قبل إضافة النقاط، دون تكرار مكافأة سبق احتسابها.</p>
       <form method="post" action="{% url 'loyalty:booking_stay' reservation.pk %}">{% csrf_token %}
@@ -31,7 +32,7 @@
           <details><summary>تحديد وقت مغادرة سابق — اختياري</summary><label for="stay-vacated-at">وقت المغادرة الفعلي بتوقيت العقار</label><input id="stay-vacated-at" type="datetime-local" name="vacated_at"><small>اتركه فارغًا لاستخدام الوقت الحالي.</small></details>
           <button class="lsa-btn lsa-btn--gold" type="submit">إنهاء الإقامة — مراجعة الحساب</button>
         </form>
-      {% else %}<p class="help">{% if loyalty_stay.arrived %}إنهاء الإقامة غير متاح في حالة الحجز الحالية.{% else %}يتاح إنهاء الإقامة من موعد الدخول المعتمد، أو بعد توثيق الإدارة للوصول قبل الموعد.{% endif %}</p>{% endif %}
+      {% else %}<p class="help">{% if loyalty_stay.ended %}انتهت فترة الإقامة. لا توجد مغادرة إدارية موثقة ضمن هذا السجل.{% elif loyalty_stay.arrived %}إنهاء الإقامة غير متاح في حالة الحجز الحالية.{% else %}يتاح إنهاء الإقامة من موعد الدخول المعتمد، أو بعد توثيق الإدارة للوصول قبل الموعد.{% endif %}</p>{% endif %}
     </article>
   </div>
 </section>

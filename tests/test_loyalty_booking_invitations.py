@@ -36,13 +36,22 @@ def rig(settings, monkeypatch, client):
     settings.ULTRAMSG_ENABLED = True
     settings.ULTRAMSG_INSTANCE_ID = settings.ULTRAMSG_TOKEN = "synthetic-only"
     settings.SITE_BASE_URL = "https://example.invalid"
+    settings.EMAIL_DELIVERY_ENABLED = True
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.DEFAULT_FROM_EMAIL = "invitations@example.invalid"
     settings.HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED = False
     monkeypatch.setattr(timezone, "now", lambda: datetime(2026, 10, 22, 15, tzinfo=UTC))
     monkeypatch.setattr("httpx.Client.send", Mock(side_effect=AssertionError("Offline only")))
     owner = get_user_model().objects.create_superuser(username="invitation-owner")
     client.force_login(owner)
     dispatched = []
-    monkeypatch.setattr(invitations, "_dispatch", lambda key: dispatched.append(key))
+    monkeypatch.setattr(
+        invitations,
+        "_dispatch",
+        lambda key, channel="whatsapp": dispatched.append(
+            key if channel == "whatsapp" else (key, channel)
+        ),
+    )
     provider = Mock()
     provider.send_image.return_value = {"sent": True, "id": "synthetic-message"}
     provider.__enter__ = Mock(return_value=provider)
@@ -70,10 +79,15 @@ def url(booking):
     return reverse("notifications:booking_detail", args=[booking.pk])
 
 
-def payload(client, booking):
-    context = client.get(url(booking)).context["loyalty_invitation"]
+def payload(client, booking, channel="whatsapp"):
+    context = next(
+        row
+        for row in client.get(url(booking)).context["loyalty_invitation"]["channels"]
+        if row["channel"] == channel
+    )
     return {
         "action": "send_loyalty_invitation",
+        "channel": channel,
         "confirm_loyalty_invitation": "on",
         "confirmation": context["confirmation"],
     }
@@ -108,8 +122,123 @@ def test_ineligible_booking_keeps_invitation_action_and_explains_reason(rig):
     assert 'data-booking-tab="loyalty"' in html
     assert response.context["detail_default_panel"] == "loyalty"
     assert "لا توجد موافقة محفوظة" in html
+    assert "إرسال الدعوة عبر واتساب" in html
+    assert "إرسال الدعوة عبر البريد الإلكتروني" in html
+    assert html.count('disabled aria-describedby="invitation-') == 2
     assert 'value="send_loyalty_invitation"' not in html
     assert not dispatched and not provider.send_image.called
+
+
+def test_email_invitation_renders_and_sends_once_without_membership(
+    rig, mailoutbox, django_capture_on_commit_callbacks
+):
+    client, _, provider, dispatched = rig
+    booking = past_booking()
+    data = payload(client, booking, "email")
+    with django_capture_on_commit_callbacks(execute=True):
+        client.post(url(booking), data)
+        client.post(url(booking), data)
+    assert dispatched == [(str(booking.pk), "email")]
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    assert len(mailoutbox) == 1
+    message = mailoutbox[0]
+    assert message.to == [booking.booking_intent.guest_email]
+    assert "https://example.invalid/my-bookings/rewards/" in message.body
+    assert "أثر رجعي" in message.body and message.alternatives
+    assert "دعوة" in message.subject
+    booking.refresh_from_db()
+    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "accepted"
+    assert not provider.send_image.called
+    assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+def test_each_channel_has_independent_proof_and_duplicate_guard(rig, mailoutbox):
+    client, _, provider, _ = rig
+    booking = past_booking()
+    whatsapp = payload(client, booking)
+    client.post(url(booking), dict(whatsapp, channel="email"))
+    booking.refresh_from_db()
+    assert not booking.loyalty_state.get(invitations.EMAIL_STATE)
+    client.post(url(booking), whatsapp)
+    client.post(url(booking), payload(client, booking, "email"))
+    invitations.deliver_booking_invitation(str(booking.pk))
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    assert provider.send_image.call_count == 1 and len(mailoutbox) == 1
+
+
+@pytest.mark.parametrize("change", ["consent", "address", "member"])
+def test_email_worker_rechecks_consent_identity_and_address(rig, mailoutbox, change):
+    client, _, provider, _ = rig
+    booking = past_booking()
+    client.post(url(booking), payload(client, booking, "email"))
+    if change == "consent":
+        booking.booking_intent.marketing_consent = False
+    elif change == "address":
+        booking.booking_intent.guest_email = "changed@example.invalid"
+    else:
+        guest = user("email-member")
+        join(guest)
+        booking.booking_intent.customer = guest
+    booking.booking_intent.save()
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    booking.refresh_from_db()
+    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "blocked"
+    assert not mailoutbox and not provider.send_image.called
+
+
+@pytest.mark.parametrize("disabled", ["email", "whatsapp"])
+def test_channels_have_independent_provider_readiness(rig, settings, disabled):
+    client, _, _, _ = rig
+    if disabled == "email":
+        settings.EMAIL_DELIVERY_ENABLED = False
+    else:
+        settings.ULTRAMSG_ENABLED = False
+    rows = client.get(url(past_booking())).context["loyalty_invitation"]["channels"]
+    assert next(row for row in rows if row["channel"] == disabled).get("reason")
+    assert next(row for row in rows if row["channel"] != disabled).get("confirmation")
+
+
+@pytest.mark.parametrize("invalid", ["address", "console", "sender"])
+def test_invalid_email_or_non_sending_backend_is_not_offered(rig, settings, invalid):
+    client, _, _, _ = rig
+    booking = past_booking()
+    if invalid == "address":
+        booking.booking_intent.guest_email = "invalid-address"
+        booking.booking_intent.save()
+    elif invalid == "console":
+        settings.EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    else:
+        settings.DEFAULT_FROM_EMAIL = ""
+    rows = client.get(url(booking)).context["loyalty_invitation"]["channels"]
+    assert rows[1].get("reason") and not rows[1].get("confirmation")
+    assert rows[0].get("confirmation")
+
+
+def test_email_timeout_is_uncertain_and_never_automatically_retried(rig, monkeypatch):
+    client, _, _, _ = rig
+    booking = past_booking()
+    client.post(url(booking), payload(client, booking, "email"))
+    send = Mock(side_effect=TimeoutError("Synthetic outcome unknown"))
+    monkeypatch.setattr(invitations.DjangoEmailProvider, "send", send)
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    invitations.deliver_booking_invitation(str(booking.pk), "email")
+    booking.refresh_from_db()
+    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "uncertain"
+    assert send.call_count == 1
+
+
+def test_email_invitation_cannot_repeat_from_another_booking(rig, mailoutbox):
+    client, _, _, _ = rig
+    first, second = past_booking("EMAIL-ONE"), past_booking("EMAIL-TWO")
+    second.booking_intent.guest_email = first.booking_intent.guest_email.upper()
+    second.booking_intent.save()
+    proof = payload(client, second, "email")
+    client.post(url(first), payload(client, first, "email"))
+    client.post(url(second), proof)
+    second.refresh_from_db()
+    assert invitations.EMAIL_STATE not in second.loyalty_state and not mailoutbox
 
 
 def test_confirmed_post_queues_after_commit_sends_once_and_changes_no_membership(
@@ -312,14 +441,15 @@ def test_queue_failure_does_not_fall_back_to_direct_send(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_postgres_concurrent_bookings_queue_one_invitation(rig):
+@pytest.mark.parametrize("channel", ["whatsapp", "email"])
+def test_postgres_concurrent_bookings_queue_one_invitation(rig, channel):
     if connection.vendor != "postgresql":
         pytest.skip("Requires independent PostgreSQL connections and advisory locks.")
     client, owner, provider, dispatched = rig
     bookings = [past_booking("CONCURRENT-ONE"), past_booking("CONCURRENT-TWO")]
     requests = []
     for booking in bookings:
-        request = RequestFactory().post(url(booking), payload(client, booking))
+        request = RequestFactory().post(url(booking), payload(client, booking, channel))
         request.user = owner
         requests.append((request, booking.pk))
     barrier = Barrier(2)

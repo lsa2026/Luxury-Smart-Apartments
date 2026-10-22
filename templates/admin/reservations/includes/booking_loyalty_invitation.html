@@ -1,19 +1,24 @@
 {% if loyalty_invitation %}
-<div class="lsa-booking-invitation">
-  {% if loyalty_invitation.confirmation %}
-    <p>إرسال رابط الانضمام عبر واتساب إلى <bdi dir="ltr">{{ loyalty_invitation.phone }}</bdi> باللغة {{ loyalty_invitation.language }}، وفق موافقة الرسائل المحفوظة في الحجز.</p>
-    <p class="help">الدعوة مجانية واختيارية؛ يقرأ الضيف الشروط ويوافق بنفسه. لا تُنشأ عضوية أو نقاط بأثر رجعي، ولا يُربط بداعٍ تلقائيًا.</p>
-    <form method="post" action="{% url 'notifications:booking_detail' reservation_id=reservation.pk %}">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="send_loyalty_invitation">
-      <input type="hidden" name="confirmation" value="{{ loyalty_invitation.confirmation }}">
-      <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_loyalty_invitation" required><span>راجعت رقم الضيف والموافقة المحفوظة وأؤكد إرسال دعوة واحدة.</span></label>
-      <button type="submit" class="lsa-btn lsa-btn--gold">إرسال الدعوة عبر واتساب</button>
-    </form>
-  {% elif loyalty_invitation.status %}
-  <p role="status"><strong>دعوة برنامج الولاء:</strong> {{ loyalty_invitation.status }}</p>
-  {% else %}
-  <p class="help"><strong>دعوة برنامج الولاء:</strong> {{ loyalty_invitation.reason }}</p>
-  {% endif %}
+<div class="lsa-stay-controls__grid">
+  {% for invitation in loyalty_invitation.channels %}
+  <article class="lsa-booking-invitation">
+    <h3>الدعوة عبر {{ invitation.label }}</h3>
+    {% if invitation.confirmation %}
+      <p>إرسال رابط الانضمام إلى <bdi dir="ltr">{{ invitation.recipient }}</bdi> باللغة {{ invitation.language }}، وفق موافقة الرسائل المحفوظة في الحجز.</p>
+      <p class="help">الدعوة مجانية واختيارية؛ يقرأ الضيف الشروط ويوافق بنفسه. لا تُنشأ عضوية أو نقاط بأثر رجعي، ولا يُربط بداعٍ تلقائيًا.</p>
+      <form method="post" action="{% url 'notifications:booking_detail' reservation_id=reservation.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="send_loyalty_invitation">
+        <input type="hidden" name="channel" value="{{ invitation.channel }}">
+        <input type="hidden" name="confirmation" value="{{ invitation.confirmation }}">
+        <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_loyalty_invitation" required><span>راجعت بيانات المستلم والموافقة المحفوظة وأؤكد إرسال دعوة واحدة عبر {{ invitation.label }}.</span></label>
+        <button type="submit" class="lsa-btn lsa-btn--gold">{% include "admin/reservations/includes/booking_invitation_icon.html" %} إرسال الدعوة عبر {{ invitation.label }}</button>
+      </form>
+    {% else %}
+      <button type="button" class="lsa-btn lsa-btn--gold" disabled aria-describedby="invitation-{{ invitation.channel }}-reason">{% include "admin/reservations/includes/booking_invitation_icon.html" %} إرسال الدعوة عبر {{ invitation.label }}</button>
+      <p id="invitation-{{ invitation.channel }}-reason" role="status">{% if invitation.status %}{{ invitation.status }}{% else %}{{ invitation.reason }}{% endif %}</p>
+    {% endif %}
+  </article>
+  {% endfor %}
 </div>
 {% endif %}

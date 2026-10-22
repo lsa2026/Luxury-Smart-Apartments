@@ -49,6 +49,8 @@
 .lsa-booking-invitation summary.lsa-btn { display: flex; align-items: center; justify-content: center; gap: 9px; cursor: pointer; list-style: none; }
 .lsa-booking-invitation summary::-webkit-details-marker { display: none; }
 .lsa-booking-invitation svg { flex: 0 0 20px; }
+.lsa-booking-invitation button.lsa-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.lsa-booking-invitation button:disabled { opacity: .55; cursor: not-allowed; }
 .lsa-booking-invitation summary:focus-visible { outline: 3px solid #22664d; outline-offset: 3px; }
 .lsa-booking-detail__invoice-state { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-block: 12px; }
 .lsa-booking-detail .lsa-btn { min-height: 46px; padding: 10px 17px; margin-block: 6px; font: inherit; font-size: 13px; font-weight: 700; white-space: normal; max-width: 100%; overflow-wrap: anywhere; text-align: center; }

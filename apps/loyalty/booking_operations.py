@@ -48,6 +48,7 @@ def stay_controls(user, booking):
     active = booking.normalized_status in Reservation.ACTIVE_STATUSES
     arrival = effective_arrival(booking)
     departure = booking.loyalty_state.get("departure_settlement")
+    now = timezone.now()
     pending = (
         booking.modification_requests.filter(
             request_type=BookingModificationRequest.RequestType.CANCEL_RESERVATION
@@ -64,10 +65,13 @@ def stay_controls(user, booking):
         "pending": pending,
         "can_arrive": active
         and not arrival
-        and (policy_enabled() or start <= timezone.now() < end),
+        and not departure
+        and now < end
+        and (policy_enabled() or start <= now),
+        "ended": now >= end,
         "scheduled_accrual": bool(booking.loyalty_state.get("scheduled_accrual")),
         "can_end": active and bool(arrival) and not departure,
-        "not_started": timezone.now() < start,
+        "not_started": now < start,
     }
 
 
