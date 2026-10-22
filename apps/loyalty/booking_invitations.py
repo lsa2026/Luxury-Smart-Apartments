@@ -80,8 +80,13 @@ def _target(booking, channel="whatsapp"):
     if channel == "whatsapp" and not delivery_ready():
         raise ValidationError("إرسال واتساب غير متاح ضمن إعدادات الإرسال الحالية.")
     if channel == "email":
-        if not settings.EMAIL_DELIVERY_ENABLED or not settings.DEFAULT_FROM_EMAIL or any(
-            backend in settings.EMAIL_BACKEND for backend in (".console.", ".dummy.", ".filebased.")
+        if (
+            not settings.EMAIL_DELIVERY_ENABLED
+            or not settings.DEFAULT_FROM_EMAIL
+            or any(
+                backend in settings.EMAIL_BACKEND
+                for backend in (".console.", ".dummy.", ".filebased.")
+            )
         ):
             raise ValidationError("إرسال البريد الإلكتروني غير متاح ضمن الإعدادات الحالية.")
         try:
@@ -275,6 +280,7 @@ def invitation_copy(language):
             "points rétroactifs. Cette invitation ne crée aucune adhésion ni transfert de points."
         ),
     }[language]
+
 
 def invitation_caption(language, url):
     return f"✨ *{BRAND}*\n\n{invitation_copy(language)}\n\n{url}"
