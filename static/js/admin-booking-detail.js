@@ -7,7 +7,7 @@
     const tabs = Array.from(root.querySelectorAll("[data-booking-tab]"));
     const panels = Array.from(root.querySelectorAll("[data-booking-panel]"));
     const navigation = root.querySelector("[data-booking-tabs]");
-    if (!navigation || tabs.length !== 4 || panels.length !== 4) return null;
+    if (!navigation || !tabs.length || tabs.length !== panels.length) return null;
     const names = panels.map((panel) => panel.dataset.bookingPanel);
     if (!tabs.every((tab) => names.includes(tab.dataset.bookingTab))) return null;
 
@@ -73,7 +73,8 @@
     root.addEventListener("invalid", (event) => reveal(event.target), true);
     browser.addEventListener("hashchange", () => activate(hashPanel()));
     const initial = root.dataset.defaultPanel;
-    activate(initial && initial !== "overview" ? initial : hashPanel() || "overview");
+    activate(initial && initial !== "invoice" && names.includes(initial)
+      ? initial : hashPanel() || "invoice");
     const error = root.querySelector(".errorlist li");
     if (error) reveal(error);
     return {activate, reveal};

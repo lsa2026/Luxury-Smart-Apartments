@@ -8,8 +8,8 @@ function element(dataset = {}) {
     addEventListener(name, fn) { this.listeners[name] = fn; },
     focus() { this.focused = true; }};
 }
-function fixture(initial = 'overview', hash = '') {
-  const names = ['overview', 'invoice', 'payment', 'edit'];
+function fixture(initial = 'invoice', hash = '') {
+  const names = ['invoice', 'payment', 'edit', 'loyalty'];
   const root = element({defaultPanel: initial});
   const tabs = names.map(bookingTab => element({bookingTab}));
   const panels = names.map(bookingPanel => element({bookingPanel}));
@@ -30,9 +30,9 @@ function active(f) { return f.panels.filter(p => !p.hidden).map(p => p.dataset.b
 
 test('progressively enhances only complete markup, initializes once', () => {
   const f = fixture();
-  assert.deepEqual(active(f), ['overview', 'invoice', 'payment', 'edit']);
+  assert.deepEqual(active(f), ['invoice', 'payment', 'edit', 'loyalty']);
   assert.ok(initializeBookingDetail(f.root, f.browser));
-  assert.deepEqual(active(f), ['overview']);
+  assert.deepEqual(active(f), ['invoice']);
   assert.equal(initializeBookingDetail(f.root, f.browser), null);
   const broken = fixture();
   broken.panels.pop();
@@ -42,16 +42,16 @@ test('progressively enhances only complete markup, initializes once', () => {
 });
 test('tab and quick invoice links navigate without submitting any form', () => {
   const f = fixture(); initializeBookingDetail(f.root, f.browser);
-  const click = event(); f.tabs[2].listeners.click(click);
+  const click = event(); f.tabs[1].listeners.click(click);
   assert.ok(click.prevented); assert.deepEqual(active(f), ['payment']);
   assert.equal(f.browser.location.hash, '#booking-payment');
   f.link.listeners.click(event()); assert.deepEqual(active(f), ['invoice']);
-  assert.equal(f.tabs[1].attributes['aria-selected'], 'true');
+  assert.equal(f.tabs[0].attributes['aria-selected'], 'true');
 });
 test('RTL keyboard navigation, first and last tab remain accessible', () => {
   const f = fixture(); initializeBookingDetail(f.root, f.browser);
-  for (const [index, key, expected] of [[0,'ArrowLeft','invoice'], [0,'ArrowRight','edit'],
-    [1,'Home','overview'], [1,'End','edit']]) {
+  for (const [index, key, expected] of [[0,'ArrowLeft','payment'], [0,'ArrowRight','loyalty'],
+    [1,'Home','invoice'], [1,'End','loyalty']]) {
     const e = event({key}); f.tabs[index].listeners.keydown(e);
     assert.ok(e.prevented); assert.deepEqual(active(f), [expected]);
   }
@@ -59,10 +59,10 @@ test('RTL keyboard navigation, first and last tab remain accessible', () => {
   assert.equal(enter.prevented, false);
 });
 test('only known hash panels accepted and server workflow takes priority', () => {
-  const f = fixture('overview', '#booking-invoice'); initializeBookingDetail(f.root, f.browser);
-  assert.deepEqual(active(f), ['invoice']);
+  const f = fixture('invoice', '#booking-loyalty'); initializeBookingDetail(f.root, f.browser);
+  assert.deepEqual(active(f), ['loyalty']);
   f.browser.location.hash = '#booking-<script>'; f.browser.listeners.hashchange();
-  assert.deepEqual(active(f), ['invoice']);
+  assert.deepEqual(active(f), ['loyalty']);
   const pending = fixture('edit', '#booking-payment');
   initializeBookingDetail(pending.root, pending.browser);
   assert.deepEqual(active(pending), ['edit']);
@@ -70,7 +70,7 @@ test('only known hash panels accepted and server workflow takes priority', () =>
 test('invalid fields and server errors reveal their tab and closed details', () => {
   const f = fixture();
   const fold = {open: false, parentElement: null};
-  const field = {closest(selector) {return selector === 'details' ? fold : f.panels[2];}};
+  const field = {closest(selector) {return selector === 'details' ? fold : f.panels[1];}};
   f.root.error = field; initializeBookingDetail(f.root, f.browser);
   assert.deepEqual(active(f), ['payment']); assert.equal(fold.open, true);
   f.tabs[0].listeners.click(event()); fold.open = false;
@@ -80,9 +80,17 @@ test('invalid fields and server errors reveal their tab and closed details', () 
 test('genuine form submission is never prevented or rewritten', () => {
   const f = fixture(); initializeBookingDetail(f.root, f.browser);
   const form = {action:'/real-action/', method:'post', value:'unchanged',
-    closest(selector) { return selector === 'details' ? null : f.panels[3]; }};
+    closest(selector) { return selector === 'details' ? null : f.panels[2]; }};
   const e = event({target:form}); f.root.listeners.submit(e);
   assert.equal(e.prevented, false); assert.equal(form.action, '/real-action/');
   assert.equal(form.method, 'post'); assert.equal(form.value, 'unchanged');
+  assert.deepEqual(active(f), ['edit']);
+});
+
+test('three action tabs work when the owner-only loyalty panel is absent', () => {
+  const f = fixture();
+  f.tabs.pop(); f.panels.pop();
+  assert.ok(initializeBookingDetail(f.root, f.browser));
+  f.tabs[2].listeners.click(event());
   assert.deepEqual(active(f), ['edit']);
 });

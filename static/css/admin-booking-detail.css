@@ -37,7 +37,7 @@
 .lsa-booking-detail__paid .lsa-booking-paid__refund { color: #875c23; }
 .lsa-booking-detail .lsa-booking-detail__money-note { margin: 0; padding: 0 24px 13px; font-size: 11px; color: var(--lsa-muted); }
 .lsa-booking-detail__tabs { display: flex; gap: 5px; flex-wrap: wrap; border: 1px solid var(--lsa-line); border-radius: 12px; background: var(--lsa-paper); padding: 6px; margin-block: 16px; }
-.lsa-booking-detail__tabs a { display: flex; flex: 1; justify-content: center; align-items: center; min-height: 46px; padding: 8px 12px; border-radius: 8px; color: var(--lsa-ink); font-size: 14px; font-weight: 700; text-align: center; }
+.lsa-booking-detail__tabs a { display: flex; flex: 1; gap: 8px; justify-content: center; align-items: center; min-height: 46px; padding: 8px 12px; border-radius: 8px; color: var(--lsa-ink); font-size: 14px; font-weight: 700; text-align: center; }
 .lsa-booking-detail__tabs [aria-selected='true'] { background: #143e33; color: #fffcf5; }
 .lsa-booking-detail [data-booking-panel][hidden] { display: none !important; }
 .lsa-booking-detail__grid { display: grid; grid-template-columns: 1.04fr 1fr; gap: 16px; }
@@ -97,7 +97,7 @@
   .lsa-booking-detail__facts > div:nth-child(n+3) { border-top: 1px solid var(--lsa-line); }
   .lsa-booking-detail__facts dd, .lsa-booking-detail__paid strong { font-size: 15px; }
   .lsa-booking-detail .lsa-booking-detail__money-note { padding: 0 18px 12px; }
-  .lsa-booking-detail__tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 5px; }
+  .lsa-booking-detail__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; padding: 5px; }
   .lsa-booking-detail__tabs a { padding: 8px 3px; font-size: 12px; line-height: 1.6; min-height: 48px; }
   .lsa-booking-detail__grid, .lsa-booking-detail .lsa-owner-form__grid, .lsa-booking-detail .lsa-invoices { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .lsa-booking-detail__contact > div { grid-template-columns: 92px minmax(0, 1fr); }
