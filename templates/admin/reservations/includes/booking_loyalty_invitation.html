@@ -4,14 +4,16 @@
   <article class="lsa-booking-invitation">
     <h3>الدعوة عبر {{ invitation.label }}</h3>
     {% if invitation.confirmation %}
-      <p>إرسال رابط الانضمام إلى <bdi dir="ltr">{{ invitation.recipient }}</bdi> باللغة {{ invitation.language }}، وفق موافقة الرسائل المحفوظة في الحجز.</p>
+      <p>إرسال رابط الانضمام إلى <bdi dir="ltr">{{ invitation.recipient }}</bdi> باللغة {{ invitation.language }}.</p>
+      {% if invitation.channel == "whatsapp" %}<p>الإرسال بقرارك كمالك. يمكنك إرسال دعوة جديدة متى أردت، دون سقف عددي أو منع بسبب دعوة سابقة.</p>{% endif %}
+      {% if invitation.last_status %}<p role="status">حالة آخر طلب: {{ invitation.last_status }}</p>{% endif %}
       <p class="help">الدعوة مجانية واختيارية؛ يقرأ الضيف الشروط ويوافق بنفسه. لا تُنشأ عضوية أو نقاط بأثر رجعي، ولا يُربط بداعٍ تلقائيًا.</p>
       <form method="post" action="{% url 'notifications:booking_detail' reservation_id=reservation.pk %}">
         {% csrf_token %}
         <input type="hidden" name="action" value="send_loyalty_invitation">
         <input type="hidden" name="channel" value="{{ invitation.channel }}">
         <input type="hidden" name="confirmation" value="{{ invitation.confirmation }}">
-        <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_loyalty_invitation" required><span>راجعت بيانات المستلم والموافقة المحفوظة وأؤكد إرسال دعوة واحدة عبر {{ invitation.label }}.</span></label>
+        {% if invitation.channel == "email" %}<label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_loyalty_invitation" required><span>راجعت بيانات المستلم والموافقة المحفوظة وأؤكد إرسال دعوة واحدة عبر {{ invitation.label }}.</span></label>{% endif %}
         <button type="submit" class="lsa-btn lsa-btn--gold">{% include "admin/reservations/includes/booking_invitation_icon.html" %} إرسال الدعوة عبر {{ invitation.label }}</button>
       </form>
     {% else %}
