@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from .backup import LocalMirror, _local_source_only
+from .booking_invitations import deliver_booking_invitation as deliver_booking_invitation
 from .phone_gifts import deliver_invitation as deliver_invitation
 from .whatsapp_notices import deliver_movement_notice as deliver_movement_notice
 

@@ -1,0 +1,22 @@
+{% if loyalty_invitation %}
+<div class="lsa-booking-invitation">
+  {% if loyalty_invitation.confirmation %}
+  <details>
+    <summary class="lsa-btn lsa-btn--gold"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m3 10 18-7-7 18-4-7-7-4Z M10 14 21 3"/></svg> دعوة لبرنامج الولاء</summary>
+    <p>إرسال رابط الانضمام عبر واتساب إلى <bdi dir="ltr">{{ loyalty_invitation.phone }}</bdi> باللغة {{ loyalty_invitation.language }}، وفق موافقة الرسائل المحفوظة في الحجز.</p>
+    <p class="help">الدعوة مجانية واختيارية؛ يقرأ الضيف الشروط ويوافق بنفسه. لا تُنشأ عضوية أو نقاط بأثر رجعي، ولا يُربط بداعٍ تلقائيًا.</p>
+    <form method="post" action="{% url 'notifications:booking_detail' reservation_id=reservation.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="send_loyalty_invitation">
+      <input type="hidden" name="confirmation" value="{{ loyalty_invitation.confirmation }}">
+      <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_loyalty_invitation" required><span>راجعت رقم الضيف والموافقة المحفوظة وأؤكد إرسال دعوة واحدة.</span></label>
+      <button type="submit" class="lsa-btn lsa-btn--gold">إرسال الدعوة عبر واتساب</button>
+    </form>
+  </details>
+  {% elif loyalty_invitation.status %}
+  <p role="status"><strong>دعوة برنامج الولاء:</strong> {{ loyalty_invitation.status }}</p>
+  {% else %}
+  <p class="help"><strong>دعوة برنامج الولاء:</strong> {{ loyalty_invitation.reason }}</p>
+  {% endif %}
+</div>
+{% endif %}
