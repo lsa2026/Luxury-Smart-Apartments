@@ -130,8 +130,8 @@ def catalogue(language="ar"):
     return result
 
 
-def send_catalogue(*, batch, language="ar"):
-    """No recipient override; only the owner's existing verified membership phone."""
+def owner_preview_binding():
+    """Resolve the existing pinned owner destination, never a contact-name match."""
     owner = Member.objects.select_related("customer").get(number="LSA-M000001")
     if not owner.customer.is_active:
         raise ValidationError("Owner account inactive.")
@@ -140,7 +140,34 @@ def send_catalogue(*, batch, language="ar"):
         hashlib.sha256(binding.phone.encode()).hexdigest(), OWNER_PREVIEW_PHONE_SHA256
     ):
         raise ValidationError("Owner destination requires confirmation.")
-    packets = catalogue(language)
+    return owner, binding
+
+
+def send_catalogue(*, batch, language="ar", kind=None):
+    """No recipient override; only the owner's existing verified membership phone."""
+    owner, binding = owner_preview_binding()
+    if kind == "booking-invitation":
+        from .booking_invitations import invitation_caption as booking_caption
+
+        note = {
+            "ar": "نموذج دعوة للمعاينة — إلى المالك فقط",
+            "en": "Invitation preview — owner only",
+            "fr": "Aperçu d’invitation — propriétaire uniquement",
+        }[language]
+        caption = (
+            note
+            + "\n\n"
+            + booking_caption(
+                language, settings.SITE_BASE_URL.rstrip("/") + "/my-bookings/rewards/"
+            )
+        )
+        if len(caption.encode("utf-16-le")) // 2 > 1024:
+            raise ValidationError("Preview caption too long.")
+        packets = [(kind, caption, invitation_image(language))]
+    elif kind is None:
+        packets = catalogue(language)
+    else:
+        raise ValidationError("Unsupported preview kind.")
     results = []
     for key, caption, content in packets:
         reference = f"{batch}:{language}:{key}"
@@ -183,12 +210,16 @@ def send_catalogue(*, batch, language="ar"):
                         filename="preview-only.pdf",
                     )
                 else:
-                    client.send_image(
+                    result = client.send_image(
                         recipient=binding.phone,
                         content=content,
                         caption=caption,
                         reference_id="owner-preview:" + reference,
                     )
+                    if key == "booking-invitation" and (
+                        not isinstance(result, dict) or not result.get("id")
+                    ):
+                        raise ValueError("Unconfirmed provider outcome.")
         except Exception:
             AuditLog.objects.create(
                 action="whatsapp.preview.uncertain",

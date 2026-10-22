@@ -1,5 +1,6 @@
 """Offline former-guest invitations; no real guest, provider or external writes."""
 
+from base64 import b64decode
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from threading import Barrier
@@ -171,6 +172,13 @@ def test_preview_matches_delivered_message_without_sending_on_get(rig, mailoutbo
     assert provider.send_image.call_args.kwargs["caption"] == whatsapp["preview_text"]
     assert mailoutbox[0].body == email["preview_text"]
     assert mailoutbox[0].subject == email["preview_subject"]
+    assert (
+        b64decode(whatsapp["preview_image"].split(",", 1)[1])
+        == (provider.send_image.call_args.kwargs["content"])
+        == invitations.invitation_image(language)
+    )
+    assert "Luxury Living" in whatsapp["preview_text"]
+    assert "<br>" in mailoutbox[0].alternatives[0].content
 
 
 def test_owner_can_send_three_emails_and_legacy_history_is_preserved(rig, mailoutbox):
@@ -557,6 +565,38 @@ def test_guest_forbidden_and_csrf_enforced(rig):
     csrf_client.force_login(owner)
     assert csrf_client.post(url(booking), data).status_code == 403
     assert not provider.send_image.called
+
+
+def test_owner_sample_page_is_read_only_until_signed_csrf_protected_post(rig, monkeypatch):
+    from types import SimpleNamespace
+
+    from apps.loyalty import booking_invitation_previews as previews
+
+    client, owner, provider, dispatched = rig
+    destination = reverse("notifications:loyalty_invitation_preview")
+    send = Mock(return_value=[("booking-invitation", "accepted")])
+    monkeypatch.setattr(previews, "send_catalogue", send)
+    monkeypatch.setattr(
+        previews, "owner_preview_binding", lambda: (owner, SimpleNamespace(phone="+12025550100"))
+    )
+    page = client.get(destination)
+    assert page.status_code == 200
+    assert "••••0100" in page.content.decode()
+    assert "data:image/png;base64," in page.content.decode()
+    assert not send.called and not provider.send_image.called and not dispatched
+    proof = page.context["confirmation"]
+    client.post(destination, {"confirmation": "tampered"})
+    assert not send.called
+    csrf_client = Client(enforce_csrf_checks=True)
+    csrf_client.force_login(owner)
+    assert csrf_client.post(destination, {"confirmation": proof}).status_code == 403
+    client.post(destination, {"confirmation": proof, "phone": "+12025559999"})
+    assert send.call_args.kwargs["kind"] == "booking-invitation"
+    assert "phone" not in send.call_args.kwargs
+    client.force_login(user("sample-guest"))
+    assert client.get(destination).status_code == 403
+    assert client.post(destination, {"confirmation": proof}).status_code == 403
+    send.assert_called_once()
 
 
 def test_membership_identified_by_verified_phone_does_not_block_manual_invitation(rig):

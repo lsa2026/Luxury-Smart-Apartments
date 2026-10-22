@@ -1,0 +1,17 @@
+{% extends "admin/base_site.html" %}{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}?v=invite-5">{% endblock %}
+{% block content %}
+<section class="lsa-booking-detail" dir="rtl">
+  <h1>{{ title }}</h1>
+  <p>نفس بطاقة فيقما ونص الدعوة الظاهرين داخل الحجز. يُرسل نموذج واحد إلى واتساب المالك المعتمد فقط، مع عبارة توضح أنه نموذج للمعاينة.</p>
+  <nav aria-label="لغة النموذج"><a href="?language=ar">العربية</a> · <a href="?language=en">English</a> · <a href="?language=fr">Français</a></nav>
+  <article class="lsa-booking-invitation__preview">
+    <img class="lsa-booking-invitation__artwork" src="{{ preview_image }}" alt="بطاقة دعوة برنامج الولاء المعتمدة من فيقما" width="1200" height="600">
+    <pre lang="{{ language_code }}" dir="auto">{{ preview_text }}</pre>
+  </article>
+  {% if reason %}<p role="status">{{ reason }}</p>{% else %}
+  <p>رقم واتساب المالك المعتمد: <bdi dir="ltr">{{ masked_phone }}</bdi></p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit" class="lsa-btn lsa-btn--gold">إرسال نموذج إلى واتسابي</button></form>
+  {% endif %}
+</section>
+{% endblock %}

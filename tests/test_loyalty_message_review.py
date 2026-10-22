@@ -218,3 +218,41 @@ def test_preview_unknown_outcome_stops_and_never_retries(rig, monkeypatch):
     result = message_previews.send_catalogue(batch="uncertain-review")
     assert result == [("auth-bind", "uncertain")]
     assert AuditLog.objects.filter(action="whatsapp.preview.uncertain").count() == 1
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_booking_invitation_sample_sends_one_figma_card_only_to_pinned_owner(
+    rig, monkeypatch, language
+):
+    from apps.loyalty.booking_invitations import invitation_caption
+    from apps.loyalty.invitation_design import invitation_image
+
+    monkeypatch.setattr(
+        message_previews, "OWNER_PREVIEW_PHONE_SHA256", hashlib.sha256(b"+16465557246").hexdigest()
+    )
+    rig.bindings[0].phone = "+16465557246"
+    rig.bindings[0].save(update_fields=["phone"])
+    rig.am.number = "LSA-M000001"
+    rig.am.save(update_fields=["number"])
+    provider = Mock()
+    provider.send_image.return_value = {"sent": True, "id": "synthetic-only"}
+    provider.__enter__ = Mock(return_value=provider)
+    provider.__exit__ = Mock(return_value=False)
+    monkeypatch.setattr(message_previews, "UltraMsgClient", Mock(return_value=provider))
+    before = (Ledger.objects.count(), Member.objects.count())
+    assert message_previews.send_catalogue(
+        batch="booking-sample", language=language, kind="booking-invitation"
+    ) == [("booking-invitation", "accepted")]
+    assert message_previews.send_catalogue(
+        batch="booking-sample", language=language, kind="booking-invitation"
+    ) == [("booking-invitation", "already_attempted")]
+    packet = provider.send_image.call_args.kwargs
+    assert packet["recipient"] == "+16465557246"
+    assert packet["content"] == invitation_image(language)
+    assert packet["caption"].endswith(
+        invitation_caption(language, "https://example.invalid/my-bookings/rewards/")
+    )
+    assert len(packet["caption"].encode("utf-16-le")) // 2 <= 1024
+    provider.send_image.assert_called_once()
+    assert not provider.send_document.called
+    assert before == (Ledger.objects.count(), Member.objects.count())

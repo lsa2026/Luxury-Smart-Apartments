@@ -1,7 +1,7 @@
 {% extends "emails/fr/base.html" %}{% block content %}
-<h1>{{ heading }}</h1><p>{% if first_name %}Bonjour {{ first_name }}, {% endif %}{{ message }}</p>
+<h1>{{ heading }}</h1><p>{% if first_name %}Bonjour {{ first_name }}, {% endif %}{% if invitation %}{{ message|linebreaksbr }}{% else %}{{ message }}{% endif %}</p>
 {% if transaction_kind %}<h2>{{ transaction_kind }}</h2>{% endif %}
 {% if counterpart %}<p>{% if gift_outgoing %}Points offerts à{% else %}Points reçus de{% endif %} : <strong>{{ counterpart.name }}</strong> — <bdi>{{ counterpart.number }}</bdi></p><p>Opération correspondante : <bdi>{{ counterpart.operation }}</bdi></p><p>Votre solde avant l’opération : {{ balance_before }}</p>{% endif %}
 {% if operation %}<dl><dt>Référence de l’opération</dt><dd>{{ operation }}</dd><dt>Points crédités</dt><dd>{{ credit }}</dd><dt>Points utilisés</dt><dd>{{ debit }}</dd><dt>Votre solde après cette opération</dt><dd>{{ balance }}</dd></dl>{% endif %}
-<p><a href="{{ action_url }}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:#096957;color:#ffffff;text-decoration:none;font-weight:bold">Voir mes réservations et mes avantages</a></p>
+<p><a href="{{ action_url }}" style="display:inline-block;padding:14px 22px;border-radius:10px;background:#096957;color:#ffffff;text-decoration:none;font-weight:bold">{% if action_label %}{{ action_label }}{% else %}Voir mes réservations et mes avantages{% endif %}</a></p>
 {% endblock %}

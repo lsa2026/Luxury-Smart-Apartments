@@ -1,5 +1,6 @@
 """Owner-requested invitations; each manual click is an independent request."""
 
+from base64 import b64encode
 from datetime import datetime, timedelta
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -15,7 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.access import is_operations_owner, require_operations_owner
-from apps.accounts.phone_messages import phone_logo, supported_language
+from apps.accounts.phone_messages import supported_language
 from apps.core.phone_numbers import normalize_phone_number
 from apps.notifications.models import AuditLog
 from apps.notifications.services.email import (
@@ -25,9 +26,9 @@ from apps.notifications.services.email import (
     recipient_hmac,
 )
 from apps.notifications.services.ultramsg import UltraMsgClient
-from apps.notifications.whatsapp_style import BRAND
 from apps.reservations.models import Reservation
 
+from .invitation_design import invitation_image
 from .launch import booking_allowed
 from .phone_gifts import delivery_ready, phone_hash, recipient_language
 from .services import digest, posting_transaction
@@ -155,7 +156,11 @@ def _channel_context(user, booking, channel):
         message = build_guest_email(invitation_email_request(target))
         preview = {"preview_subject": message.subject, "preview_text": message.body}
     else:
-        preview = {"preview_text": invitation_caption(target["language"], target["url"])}
+        preview = {
+            "preview_text": invitation_caption(target["language"], target["url"]),
+            "preview_image": "data:image/png;base64,"
+            + b64encode(invitation_image(target["language"])).decode("ascii"),
+        }
     return {
         **info,
         **preview,
@@ -282,28 +287,53 @@ def _dispatch(booking_id, channel="whatsapp", request_id=None):
 def invitation_copy(language):
     return {
         "ar": (
-            "يسعدنا دعوتك للانضمام إلى برنامج مكافآت ضيوفنا.\n"
-            "أنشئ حسابك أو سجّل الدخول، واقرأ الشروط ثم انضم بموافقتك. "
-            "الانضمام مجاني واختياري، ولا تُضاف نقاط بأثر رجعي لإقامتك السابقة. "
-            "هذه دعوة فقط؛ لم تُفعّل عضوية ولم تُحوّل نقاط."
+            "أهلًا بك 🌿\n\n"
+            "إقامتك معنا بداية لتجارب أجمل. يسعدنا دعوتك إلى برنامج الولاء لدى Luxury Living، "
+            "لتستمتع بمكافآت إقاماتك القادمة وتتبادل هدايا النقاط مع أحبائك.\n\n"
+            "الانضمام بخطوات بسيطة:\n"
+            "١. أنشئ حسابك أو سجّل الدخول.\n"
+            "٢. اقرأ الشروط، ثم انضم بموافقتك ووثّق جوالك.\n\n"
+            "الانضمام مجاني واختياري. تُحتسب المكافآت وفق شروط البرنامج، "
+            "ولا تُضاف نقاط بأثر رجعي. هذه دعوة فقط؛ لا تُفعّل عضوية ولا تُحوّل نقاط تلقائيًا.\n\n"
+            "نسعد بعودتك إلى Luxury Living 💚"
         ),
         "en": (
-            "You are invited to join our guest rewards programme.\n"
-            "Create an account or sign in, read the terms and choose to join. "
-            "Membership is free and optional. Your previous stay does not earn retrospective "
-            "points. This invitation creates no membership and transfers no points."
+            "Welcome 🌿\n\n"
+            "Let your next stay bring more to enjoy. Join the Luxury Living rewards programme "
+            "to earn rewards on future stays and share gifts of points with loved ones.\n\n"
+            "Getting started is simple:\n"
+            "1. Create an account or sign in.\n"
+            "2. Read the terms, choose to join and verify your mobile.\n\n"
+            "Membership is free and optional. Rewards follow the programme terms; "
+            "previous stays do not earn retrospective points. This invitation does not "
+            "activate membership or transfer points automatically.\n\n"
+            "We look forward to welcoming you back to Luxury Living 💚"
         ),
         "fr": (
-            "Nous vous invitons à rejoindre notre programme de fidélité.\n"
-            "Créez un compte ou connectez-vous, lisez les conditions et choisissez d’adhérer. "
-            "L’adhésion est gratuite et facultative. Votre séjour précédent ne donne pas de "
-            "points rétroactifs. Cette invitation ne crée aucune adhésion ni transfert de points."
+            "Bienvenue 🌿\n\n"
+            "Prolongez le plaisir de vos séjours avec le programme de fidélité Luxury Living : "
+            "des récompenses pour vos prochains séjours et des points à offrir à vos proches.\n\n"
+            "Pour nous rejoindre :\n"
+            "1. Créez un compte ou connectez-vous.\n"
+            "2. Lisez les conditions, choisissez d’adhérer et vérifiez votre mobile.\n\n"
+            "L’adhésion est gratuite et facultative. Les récompenses suivent les conditions "
+            "du programme, sans points rétroactifs. Cette invitation n’active aucune adhésion "
+            "et ne transfère pas de points automatiquement.\n\n"
+            "Au plaisir de vous retrouver chez Luxury Living 💚"
         ),
     }[language]
 
 
 def invitation_caption(language, url):
-    return f"✨ *{BRAND}*\n\n{invitation_copy(language)}\n\n{url}"
+    title, action = {
+        "ar": ("دعوة خاصة إلى مكافآت ضيوفنا", "ابدأ رحلتك مع المكافآت"),
+        "en": ("A personal invitation to guest rewards", "Start your rewards journey"),
+        "fr": ("Une invitation à nos avantages", "Découvrez vos récompenses"),
+    }[language]
+    caption = f"🎁 *{title}*\n\n{invitation_copy(language)}\n\n*{action}:*\n{url}"
+    if len(caption.encode("utf-16-le")) // 2 > 1024:
+        raise ValidationError("Invitation caption exceeds the provider limit.")
+    return caption
 
 
 def invitation_email_request(target):
@@ -322,6 +352,12 @@ def invitation_email_request(target):
             "heading": heading,
             "message": invitation_copy(target["language"]),
             "action_url": target["url"],
+            "invitation": True,
+            "action_label": {
+                "ar": "الانضمام إلى برنامج الولاء",
+                "en": "Join the rewards programme",
+                "fr": "Rejoindre le programme de fidélité",
+            }[target["language"]],
         },
     )
 
@@ -349,7 +385,7 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
             ) > timedelta(minutes=15):
                 raise ValidationError("Invitation changed or expired.")
             if channel == "whatsapp":
-                content = phone_logo()
+                content = invitation_image(target["language"])
                 caption = invitation_caption(target["language"], target["url"])
             else:
                 email_request = invitation_email_request(target)
