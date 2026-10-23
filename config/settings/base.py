@@ -790,6 +790,15 @@ COOKIE_CONSENT_MAX_AGE_DAYS = optional_positive_int(
 ANALYTICS_EVENT_DEBUG_ENABLED = strict_bool("ANALYTICS_EVENT_DEBUG_ENABLED")
 SITEMAP_CACHE_SECONDS = 300
 
+MORNING07_N8N_ENABLED = strict_bool("MORNING07_N8N_ENABLED")
+MORNING07_N8N_WEBHOOK_URL = env("MORNING07_N8N_WEBHOOK_URL", default="").strip()
+MORNING07_WORK_GROUP_ID = "120363408128237629@g.us"
+if (
+    MORNING07_N8N_ENABLED
+    and MORNING07_N8N_WEBHOOK_URL != "https://lsa25.app.n8n.cloud/webhook/lsa07-morning-stay-v1"
+):
+    raise ImproperlyConfigured("Scenario 07 requires its dedicated n8n webhook URL.")
+
 CELERY_BEAT_SCHEDULE = build_beat_schedule(globals())
 
 LOGGING = {

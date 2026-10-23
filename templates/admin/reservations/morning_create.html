@@ -2,15 +2,16 @@
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endblock %}
+{% block extrahead %}{{ block.super }}{% if not editing %}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
-  <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>إنشاء حجز صباحي</h1><p>دخول بعد منتصف الليل وخروج قبل ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
+  <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>{{ title }}</h1><p>دخول بعد منتصف الليل وخروج قبل ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
   <section class="lsa-panel">
-    <p>سجّل بيانات الضيف والمبلغ المعتمد شاملًا الرسوم. يُفحص التوفر قبل تجهيز رابط الدفع، ولا يُنشأ حجز في Hostaway.</p>
+    {% if editing %}<p>حدّث بيانات الضيف أو فترة الإقامة. يُعاد فحص التوفر عند تغيير الشقة أو الفترة. يبقى المبلغ المدفوع كما هو.</p>{% else %}<p>سجّل بيانات الضيف والمبلغ المعتمد شاملًا الرسوم. يُفحص التوفر قبل تجهيز رابط الدفع، ولا يُنشأ حجز في Hostaway.</p>{% endif %}
     <p>توقيت شقق الرياض: Asia/Riyadh. توقيت شقق مراكش: Africa/Casablanca. المبلغ المطلوب أدناه بالريال السعودي.</p>
-    <form method="post" class="lsa-manual-booking-form lsa-morning-form" data-morning-availability="{% url 'notifications:morning_available_properties' %}">
-      {% csrf_token %}{{ form.non_field_errors }}{{ form.request_id }}{{ form.request_id.errors }}
+    <form method="post" class="lsa-manual-booking-form lsa-morning-form"{% if not editing %} data-morning-availability="{% url 'notifications:morning_available_properties' %}"{% endif %}>
+      {% csrf_token %}{{ form.non_field_errors }}{% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+      {% if not editing %}
       <section class="lsa-morning-availability" aria-labelledby="morning-availability-title">
         <h2 id="morning-availability-title">الشقق المتاحة للحجز الصباحي</h2>
         <p>تحقق من الشقق حسب التاريخ ووقت الدخول والخروج وعدد الضيوف أدناه، ثم اختر الشقة المناسبة. لا يلزم إدخال بيانات الضيف للفحص.</p>
@@ -23,9 +24,10 @@
         <div class="lsa-morning-availability__results" data-morning-results></div>
         <details data-morning-exclusions hidden><summary>الشقق المستبعدة وسبب الاستبعاد</summary><ul data-morning-excluded-list></ul></details>
       </section>
+      {% endif %}
       <div class="lsa-form-grid">{% for field in form.visible_fields %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div>
-      <p>رابط السداد صالح خمس دقائق كحد أقصى وحتى وقت الدخول، ويعاد فحص التوفر قبل الدفع. فتح الرابط وحده لا يحصّل مبلغًا.</p>
-      <button type="submit" class="lsa-btn lsa-btn--gold">فحص التوفر وإنشاء رابط الدفع</button>
+      {% if editing %}<p>سيُرسل تحديث الحجز وتُحدّث التذكيرات بحسب بيانات الحجز الجديدة.</p>{% else %}<p>رابط السداد صالح خمس دقائق كحد أقصى وحتى وقت الدخول، ويعاد فحص التوفر قبل الدفع. فتح الرابط وحده لا يحصّل مبلغًا.</p>{% endif %}
+      <button type="submit" class="lsa-btn lsa-btn--gold">{% if editing %}حفظ تعديل الحجز{% else %}فحص التوفر وإنشاء رابط الدفع{% endif %}</button>
     </form>
   </section>
 </main>

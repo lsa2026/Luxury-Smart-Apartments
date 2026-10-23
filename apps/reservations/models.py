@@ -15,7 +15,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
-from .morning_models import MorningCommunicationEvent, MorningStay  # noqa: F401
+from .morning_models import (  # noqa: F401
+    Morning07DeliveryAttempt,
+    MorningCommunicationEvent,
+    MorningStay,
+)
 
 
 def booking_intent_reference() -> str:
