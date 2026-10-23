@@ -1,0 +1,42 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+const {render}=require('./render.cjs');const {evidence}=require('./evidence.cjs');
+test('only website events start the journey; per-booking waits resume the same execution',()=>{
+ const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../../docs/automation07/workflow.json')));
+ assert.ok(!w.nodes.some(n=>n.type.endsWith('.scheduleTrigger')));
+ assert.equal(w.nodes.filter(n=>n.type.endsWith('.webhook')).length,1);
+ const wait=w.nodes.find(n=>n.name==='D50 Wait for Receipt Window');
+ assert.equal(wait.parameters.resume,'specificTime');assert.equal(wait.parameters.dateTime,'={{ $json.wake_at }}');
+ for(const name of ['B00 Claim Pending Morning Booking','D00 Claim Next Morning07 Delivery','C00 Claim Morning07 Contact Work']){
+  const n=w.nodes.find(n=>n.name===name);assert.match(n.parameters.url,/lsa07_event_/);
+  assert.match(n.parameters.jsonBody,/p_stay:/);assert.match(n.parameters.jsonBody,/p_revision:/);
+ }
+ assert.equal(w.connections['B03 Persist Independent Morning Jobs'].main[0][0].node,'C00 Claim Morning07 Contact Work');
+ assert.equal(w.connections['C90 Record Morning07 Contact Outcome'].main[0][0].node,'D00 Claim Next Morning07 Delivery');
+});
+function fixture(){return {now:'2032-01-01T00:00:00Z',work_group_id:'synthetic-group',booking:{source:'morning07',payment_verified:true,status:'paid',morning_stay_id:'07000000-0000-4000-8000-000000000001',source_revision:1,phone:'+16502530000',guest_name:'Synthetic Guest',listing_map_id:123,listing_name:'Synthetic apartment',guest_language:'en',starts_at:'2032-01-01T01:00:00Z',ends_at:'2032-01-01T08:00:00Z',arrival_date:'2032-01-01',departure_date:'2032-01-01',check_in_time:'04:00',check_out_time:'11:00',timezone:'Asia/Riyadh',management_url:'https://example.invalid/admin'},previous:{},apartment:{wifi_net:'synthetic',wifi_pass:'fixture-only',address_en:'synthetic address'},templates:[{template_name:'house_rules',content_en:'<b>No smoking</b><br>{{guest_name}}',content_ar:'ممنوع التدخين'},{template_name:'checkin_guide',content_en:'{{listing_name}}: {{address_en}}<br>Contact support for access.',content_ar:'تعليمات'}]};}
+test('verified stay prepares exactly one group notice and an absolute checkout reminder',()=>{const f=fixture(),r=render(f);assert.equal(r.jobs.length,5);assert.equal(r.jobs.filter(x=>x.recipient_kind==='group').length,1);assert.equal(r.jobs.find(x=>x.kind==='reminder_checkout').due_at,'2032-01-01T07:00:00.000Z');assert.ok(r.jobs[0].body.includes('11:00'));assert.ok(!r.jobs.some(x=>/tomorrow|nights/i.test(x.body)));});
+test('unverified payment and missing mandatory phone reject without a recovery path',()=>{for(const patch of [{payment_verified:false},{phone:''},{phone:'invalid'}]){const f=fixture();Object.assign(f.booking,patch);assert.throws(()=>render(f),/Invalid/);}});
+test('cancellation contains only status and one group notice',()=>{const f=fixture();f.booking.status='cancelled';const r=render(f);assert.deepEqual(r.jobs.map(x=>x.kind),['status_cancelled','group_notice']);});
+test('duplicate events keep durable keys and metadata edits preserve the checkout key',()=>{const f=fixture(),first=render(f);assert.deepEqual(render(f).jobs,first.jobs);f.previous={...f.booking};f.booking={...f.booking,source_revision:2,guest_name:'Updated synthetic name'};const r=render(f);assert.equal(r.jobs.length,3);assert.notEqual(r.jobs[0].job_key,first.jobs[0].job_key);assert.equal(r.jobs.find(x=>x.kind==='reminder_checkout').job_key,first.jobs.find(x=>x.kind==='reminder_checkout').job_key);});
+test('same-day window change rekeys checkout and never schedules at the old time',()=>{const f=fixture();f.previous={...f.booking};f.booking={...f.booking,source_revision:2,ends_at:'2032-01-01T07:00:00Z',check_out_time:'10:00'};const r=render(f);assert.equal(r.jobs.find(x=>x.kind==='reminder_checkout').due_at,'2032-01-01T06:00:00.000Z');});
+test('less than an hour left puts checkout in confirmation without an extra reminder',()=>{const f=fixture();f.now='2032-01-01T07:30:00Z';const r=render(f);assert.ok(!r.jobs.some(x=>x.kind==='reminder_checkout'));assert.ok(r.jobs[0].body.includes('11:00'));});
+test('provider acceptance is not delivery and an unrelated receipt cannot complete a job',()=>{const j={action:'send',reference_id:'ref',provider_message_id:null};assert.equal(evidence(j,{body:{sent:'true',id:'123'}}).delivered,false);j.action='check';assert.equal(evidence(j,{body:{messages:[{id:'999',referenceId:'another',ack:3}]}}).delivered,false);assert.equal(evidence(j,{body:{messages:[{id:'123',referenceId:'ref',ack:'server'}]}}).delivered,false);assert.equal(evidence(j,{body:{messages:[{id:'123',referenceId:'ref',ack:2}]}}).delivered,true);});
+test('the complete draft has only local node references and scenario07 RPCs',()=>{const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../../docs/automation07/workflow.json'))),names=new Set(w.nodes.map(n=>n.name));assert.equal(w.active,false);assert.ok(!w.nodes.some(n=>/formTrigger|executeWorkflow/.test(n.type)));const AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;for(const n of w.nodes){if(n.type.endsWith('.code'))new AsyncFunction(n.parameters.jsCode);const raw=JSON.stringify(n.parameters);for(const m of raw.matchAll(/\/rpc\/([a-zA-Z0-9_]+)/g))assert.ok(m[1].startsWith('lsa07_'));for(const m of raw.matchAll(/\$\(\s*(['"])(.*?)\1\s*\)/g))assert.ok(names.has(m[2]),m[2]);}assert.ok(!JSON.stringify(w).includes('lsa06_'));assert.ok(!JSON.stringify(w).includes('Hostaway API'));});
+
+test('the actual admission Code node accepts the verified website payload and rejects missing phone',()=>{const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../../docs/automation07/workflow.json'))),n=w.nodes.find(x=>x.name==='M03 Validate Verified Morning Booking'),run=new Function('$json',n.parameters.jsCode);const d={...fixture().booking,source_event_id:'07000000-0000-4000-8000-000000000002',state_fingerprint:'a'.repeat(64),delivery_token:'synthetic-capability-'.repeat(4)};assert.equal(run({statusCode:200,body:d})[0].json.valid,true);for(const patch of [{phone:''},{payment_verified:false},{source_revision:0}])assert.equal(run({statusCode:200,body:{...d,...patch}})[0].json.valid,false);});
+test('ended paid stays prepare no delayed confirmation, guide or group notice',()=>{const f=fixture();f.now='2032-01-01T08:00:00Z';assert.deepEqual(render(f).jobs,[]);f.booking.status='cancelled';assert.equal(render(f).jobs.length,2);});
+
+test('the actual Contacts Code nodes accept Morning07 claims and verify a created contact',()=>{
+ const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../../docs/automation07/workflow.json')));
+ const execute=(name,input,reference)=>new Function('$input','$','$runIndex',w.nodes.find(n=>n.name===name).parameters.jsCode)({first:()=>({json:input}),all:()=>[{json:input}]},()=>({first:()=>({json:reference})}),0);
+ const booking={...fixture().booking,has_contact:true,guest_email:'synthetic@example.invalid'};
+ const guest=execute('GC00 Prepare English Guest Contact',booking)[0]?.json;
+ assert.ok(guest,'Morning07 claim must not be silently discarded');assert.equal(guest.phone,'+16502530000');
+ const create=execute('GC02 Match Phone Email and Plan Merge',{},guest)[0].json;
+ assert.equal(create.request.method,'POST');assert.ok(create.request.url.includes(':createContact'));
+ const verify=execute('GC06 Verify Contact and Continue Merge',{statusCode:201,body:{resourceName:'people/synthetic'}},create)[0].json;
+ assert.equal(verify.request.role,'verify_target');
+ const complete=execute('GC06 Verify Contact and Continue Merge',{statusCode:200,body:{resourceName:'people/synthetic',...create.desired}},verify)[0].json;
+ assert.equal(complete.status,'created');assert.equal(complete.request,null);assert.equal(complete.contact_error,undefined);
+ for(const change of [{status:'cancelled'},{payment_verified:false},{source:'other'}])assert.deepEqual(execute('GC00 Prepare English Guest Contact',{...booking,...change}),[]);
+});

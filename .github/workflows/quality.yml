@@ -48,6 +48,8 @@ jobs:
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
           tests/test_morning_stays.py
+          tests/test_morning07_communications.py
+          tests/test_morning07_gateway.py
           tests/test_offline_payment_receipts.py
           tests/test_automatic_cancellation_refunds.py
           tests/test_property_price_calendar.py
@@ -132,6 +134,9 @@ jobs:
 
       - name: Test progressive admin booking tabs and form safety
         run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
+
+      - name: Test independent morning communication and delivery evidence
+        run: node --test scripts/automation07/test.cjs
 
       - name: Test lazy airport driving estimates
         run: node --test tests/airport-directions.test.cjs

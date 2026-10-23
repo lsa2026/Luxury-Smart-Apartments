@@ -14,6 +14,10 @@ if [[ "${1:-}" == "--require-owner-login" ]]; then
     python manage.py check_owner_login
 fi
 
+# Check the approved event-only morning bridge before migration or release writes.
+# This prints configuration presence only; it never sends a guest message.
+python manage.py check_morning07_readiness
+
 # Compiled catalogs (.mo) are committed, so gettext is not needed at build time.
 python manage.py collectstatic --no-input
 python manage.py migrate --no-input
