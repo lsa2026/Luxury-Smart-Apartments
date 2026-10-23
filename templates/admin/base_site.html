@@ -6,7 +6,7 @@
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/admin-luxury.css' %}?v=20261015-booking-actions">
-  <link rel="stylesheet" href="{% static 'css/admin-navigation.css' %}?v=20261011-users-1">
+  <link rel="stylesheet" href="{% static 'css/admin-navigation.css' %}?v=20261023-shared-home">
 {% endblock %}
 
 {% block extrahead %}
@@ -43,6 +43,10 @@
       {% endif %}
     </div>
   </header>
+{% endblock %}
+
+{% block nav-breadcrumbs %}
+  {% include "admin/includes/navigation.html" %}
 {% endblock %}
 
 {% block footer %}

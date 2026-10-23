@@ -1,0 +1,19 @@
+{% load admin_urls %}
+<nav class="lsa-admin-breadcrumbs" aria-label="مسار التنقل" dir="rtl">
+  <a class="lsa-admin-breadcrumbs__home" href="{% url 'notifications:hub' %}">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
+    <span>الرئيسية</span>
+  </a>
+  {% if opts %}
+    <span class="lsa-admin-breadcrumbs__separator" aria-hidden="true">‹</span>
+    <a class="lsa-admin-breadcrumbs__ancestor" href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    {% if has_view_permission or has_change_permission %}
+      <span class="lsa-admin-breadcrumbs__separator" aria-hidden="true">‹</span>
+      <a class="lsa-admin-breadcrumbs__ancestor" href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    {% endif %}
+  {% endif %}
+  {% if title %}
+    <span class="lsa-admin-breadcrumbs__separator" aria-hidden="true">‹</span>
+    <span class="lsa-admin-breadcrumbs__current" aria-current="page">{{ title }}</span>
+  {% endif %}
+</nav>

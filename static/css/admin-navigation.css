@@ -1,4 +1,13 @@
 /* Use the complete approved Figma lockup, never independently typeset its words. */
+.lsa-admin-breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; padding: 12px 36px; border-bottom: 1px solid var(--lsa-line); background: var(--lsa-paper); color: var(--lsa-ink); font-size: 14px; line-height: 1.6; }
+.lsa-admin-breadcrumbs__home { display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; min-height: 44px; padding: 8px 14px; border: 1px solid var(--lsa-line); border-radius: 12px; color: var(--lsa-ink) !important; background: #fffdf8; font-weight: 700; text-decoration: none; }
+.lsa-admin-breadcrumbs__home:hover { border-color: var(--lsa-gold); background: #fff6e4; }
+.lsa-admin-breadcrumbs__home:focus-visible,
+.lsa-admin-breadcrumbs__ancestor:focus-visible { outline: 3px solid var(--lsa-gold); outline-offset: 3px; }
+.lsa-admin-breadcrumbs svg { flex-shrink: 0; }
+.lsa-admin-breadcrumbs__separator { color: var(--lsa-muted); font-size: 20px; }
+.lsa-admin-breadcrumbs__ancestor { display: inline-flex; align-items: center; min-width: 0; min-height: 44px; color: var(--lsa-ink) !important; overflow-wrap: anywhere; }
+.lsa-admin-breadcrumbs__current { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
 #header .lsa-admin-brand { min-width: 0; }
 #header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved {
     display: flex; width: clamp(200px, 40vw, 440px); max-width: 100%;
@@ -34,6 +43,8 @@
 .lsa-users-screen .lsa-btn { min-height: 48px; padding: 12px 20px; box-sizing: border-box; font-size: 16px; }
 .lsa-users-screen .lsa-owner-form > .lsa-btn { width: 100%; }
 @media (max-width: 767px) {
+    .lsa-admin-breadcrumbs { gap: 8px; padding: 10px 16px; font-size: 13px; }
+    .lsa-admin-breadcrumbs__home { padding-inline: 12px; }
     #header .lsa-admin-brand__logo.lsa-admin-brand__logo--approved { width: clamp(150px, 50vw, 260px); }
     .lsa-admin-home__grid, .lsa-booking-invoice__send { grid-template-columns: 1fr; }
     .lsa-admin-home__card { padding: 24px; }
