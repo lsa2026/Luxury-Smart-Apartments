@@ -24,6 +24,7 @@ from apps.payments.hyperpay.exceptions import HyperPayCheckoutError, HyperPayCon
 from apps.payments.models import MorningPaymentAttempt, PaymentAttempt
 from apps.payments.morning_payments import create_checkout, public_url, verify_payment
 from apps.payments.views import _hyperpay_return_token
+from apps.properties.models import Property
 from apps.reservations.models import BookingIntent, MorningStay, Reservation
 from apps.reservations.morning_stays import (
     ZONE,
@@ -399,6 +400,158 @@ def test_morning_link_is_redacted_from_operational_logs():
     )
     PaymentCapabilityFilter().filter(record)
     assert "secret-token" not in record.getMessage()
+
+
+def availability_query():
+    start, _ = window()
+    return dict(date=start.date().isoformat(), start_time="01:00", end_time="11:00", guests=2)
+
+
+def test_morning_availability_is_private_read_only_and_reuses_live_pages():
+    p, remote = property_and_remote()
+    second = Property.objects.create(
+        hostaway_listing_id=9002,
+        hostaway_listing_map_id=97002,
+        slug="second-morning-property",
+        name_ar="وحدة ثانية",
+        person_capacity=4,
+        is_visible=True,
+        hostaway_is_active=True,
+    )
+    client = Client()
+    url = reverse("notifications:morning_available_properties")
+    with patch("apps.reservations.morning_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value = remote
+        assert client.get(url, availability_query()).status_code == 302
+        client.force_login(owner())
+        assert client.post(url, availability_query()).status_code == 405
+        assert client.get(reverse("notifications:morning_create")).status_code == 200
+        factory.assert_not_called()
+        page = client.get(url, availability_query())
+    assert page.status_code == 200
+    result = page.json()
+    assert {row["id"] for row in result["properties"]} == {str(p.pk), str(second.pk)}
+    assert all(row["time_zone"] == "Asia/Riyadh" for row in result["properties"])
+    assert result["unverified_count"] == 0
+    assert "no-store" in page["Cache-Control"]
+    assert remote.get_listing_calendar.call_count == 2
+    assert remote.guest_stay_page.call_count == 1
+    assert not MorningStay.objects.exists()
+    assert not MorningPaymentAttempt.objects.exists()
+    assert not PaymentAttempt.objects.exists()
+    assert not Reservation.objects.exists()
+    assert not BookingIntent.objects.exists()
+    assert {call[0] for call in remote.method_calls} == {"get_listing_calendar", "guest_stay_page"}
+
+
+def test_morning_availability_excludes_existing_internal_allocation():
+    p, remote = property_and_remote()
+    actor = owner()
+    create(p, remote, actor=actor)
+    remote.reset_mock()
+    client = Client()
+    client.force_login(actor)
+    with patch("apps.reservations.morning_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value = remote
+        page = client.get(
+            reverse("notifications:morning_available_properties"), availability_query()
+        )
+    assert page.json()["properties"] == []
+    remote.get_listing_calendar.assert_not_called()
+    assert MorningStay.objects.count() == 1
+
+
+@pytest.mark.parametrize("kind", ["overlap", "maintenance", "capacity", "afternoon"])
+def test_morning_availability_uses_real_period_checks(kind):
+    p, remote = property_and_remote()
+    start, _ = window()
+    if kind in {"overlap", "afternoon"}:
+        remote.guest_stay_page.return_value = [
+            {
+                "id": 9,
+                "listingMapId": p.hostaway_listing_map_id,
+                "status": "new",
+                "arrivalDate": (
+                    start.date() if kind == "afternoon" else start.date() - timedelta(days=1)
+                ).isoformat(),
+                "departureDate": (start.date() + timedelta(days=1)).isoformat(),
+                "checkInTime": 15,
+                "checkOutTime": 12,
+            }
+        ]
+    if kind == "maintenance":
+        rows = remote.get_listing_calendar.return_value.days
+        remote.get_listing_calendar.return_value.days = (
+            replace(rows[0], status="maintenance"),
+            *rows[1:],
+        )
+    if kind == "capacity":
+        p.person_capacity = 1
+        p.save()
+    client = Client()
+    client.force_login(owner())
+    with patch("apps.reservations.morning_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value = remote
+        result = client.get(
+            reverse("notifications:morning_available_properties"), availability_query()
+        ).json()
+    assert bool(result["properties"]) == (kind == "afternoon")
+    assert not MorningStay.objects.exists()
+
+
+def test_morning_availability_does_not_claim_unverified_units_are_free():
+    from apps.integrations.hostaway.exceptions import HostawayTimeoutError
+
+    _, remote = property_and_remote()
+    remote.get_listing_calendar.side_effect = HostawayTimeoutError("synthetic timeout")
+    client = Client()
+    client.force_login(owner())
+    with patch("apps.reservations.morning_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value = remote
+        result = client.get(
+            reverse("notifications:morning_available_properties"), availability_query()
+        ).json()
+    assert result["properties"] == [] and result["unverified_count"] == 1
+    assert "synthetic timeout" not in str(result)
+
+
+def test_morning_availability_reports_property_local_time_and_rejects_past_search():
+    from zoneinfo import ZoneInfo
+
+    p, remote = property_and_remote()
+    p.country_code = "MA"
+    p.time_zone_name = "Africa/Casablanca"
+    p.save()
+    client = Client()
+    client.force_login(owner())
+    url = reverse("notifications:morning_available_properties")
+    with patch("apps.reservations.morning_views.HostawayClient") as factory:
+        factory.return_value.__enter__.return_value = remote
+        result = client.get(url, availability_query()).json()
+        remote.reset_mock()
+        past = client.get(
+            url,
+            availability_query()
+            | {"date": (timezone.now().date() - timedelta(days=1)).isoformat()},
+        ).json()
+    assert result["properties"][0]["time_zone"] == "Africa/Casablanca"
+    assert datetime.fromisoformat(result["properties"][0]["starts_at"]) == datetime.combine(
+        window()[0].date(), time(1), ZoneInfo("Africa/Casablanca")
+    )
+    assert past["properties"] == [] and past["detail"]
+    remote.get_listing_calendar.assert_not_called()
+
+
+@pytest.mark.parametrize("changes", [{"end_time": "12:00"}, {"date": "invalid"}, {"guests": 0}])
+def test_invalid_morning_search_does_not_call_hostaway(changes):
+    client = Client()
+    client.force_login(owner())
+    with patch("apps.reservations.morning_views.HostawayClient") as factory:
+        page = client.get(
+            reverse("notifications:morning_available_properties"), availability_query() | changes
+        )
+    assert page.status_code == 400
+    factory.assert_not_called()
 
 
 @pytest.mark.django_db(transaction=True)

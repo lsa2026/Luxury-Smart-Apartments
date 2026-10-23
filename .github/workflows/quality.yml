@@ -131,7 +131,7 @@ jobs:
         run: node --test tests/price-calendar.test.cjs
 
       - name: Test progressive admin booking tabs and form safety
-        run: node --test tests/admin-booking-detail.test.cjs
+        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
 
       - name: Test lazy airport driving estimates
         run: node --test tests/airport-directions.test.cjs

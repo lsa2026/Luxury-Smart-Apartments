@@ -52,6 +52,7 @@ MANAGER_VIEW_NAMES = frozenset(
         "booking_detail",
         "morning_list",
         "morning_create",
+        "morning_available_properties",
         "morning_detail",
         "booking_invoice",
         "manual_booking_list",
