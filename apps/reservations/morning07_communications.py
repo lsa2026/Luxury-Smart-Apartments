@@ -118,7 +118,6 @@ def queue_stay_event(stay_id):
         logging.getLogger(__name__).exception("Morning07 booking dispatch could not be queued")
 
 
-
 def event_token(event):
     # A capability for ONE outbox event, not a reusable provider credential.
     return signing.TimestampSigner(salt=SALT).sign(str(event.pk))
