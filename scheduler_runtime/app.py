@@ -47,6 +47,7 @@ schedule_settings = {
         "LOYALTY_BACKUP_ENABLED",
         "LOYALTY_MESSAGES_ENABLED",
         "LOYALTY_WHATSAPP_NOTICES_ENABLED",
+        "MORNING07_N8N_ENABLED",
     )
 }
 schedule_settings.update(
