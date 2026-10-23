@@ -18,15 +18,15 @@ function element() {
     focus() { this.focused = true; }};
 }
 function fixture(fetch) {
-  const check = element(), status = element(), results = element();
+  const check = element(), status = element(), results = element(), exclusions = element(), excludedList = element();
   const fields = Object.fromEntries(['date', 'start_time', 'end_time', 'guests', 'property', 'guest_email'].map(name => [name, element()]));
   Object.entries({date:'2026-10-25', start_time:'01:00', end_time:'11:00', guests:'2', guest_email:'private@example.test'}).forEach(([name,value]) => fields[name].value = value);
   const form = {dataset:{morningAvailability:'/private/available/'},
     elements:{namedItem:name=>fields[name]},
-    querySelector:selector=>({'[data-morning-check]':check, '[data-morning-status]':status, '[data-morning-results]':results}[selector])};
+    querySelector:selector=>({'[data-morning-check]':check, '[data-morning-status]':status, '[data-morning-results]':results, '[data-morning-exclusions]':exclusions, '[data-morning-excluded-list]':excludedList}[selector])};
   vm.runInNewContext(source, {document:{querySelector:()=>form, createElement:()=>element()}, fetch,
     URLSearchParams, Intl, Date, Event, Error, TypeError, SyntaxError});
-  return {check,status,results,fields};
+  return {check,status,results,fields,exclusions,excludedList};
 }
 function response(properties) {
   return {ok:true, json:async()=>({properties, checked_at:'2026-10-25T00:00:00Z',unverified_count:0})};
@@ -77,4 +77,16 @@ test('invalid fields never request availability and network failures show Arabic
   assert.match(f.status.textContent,/تعذر الاتصال/);
   assert.equal(f.check.disabled,false);
   assert.equal(f.results.children.length,0);
+});
+
+test('exclusion reasons are displayed as plain text and cleared after period changes',async()=>{
+  const f=fixture(async()=>({ok:true,json:async()=>({properties:[],checked_at:'2026-10-25T00:00:00Z',
+    excluded_properties:[{name:'<Apartment>',reason:'يوجد ضيف موعد خروجه اليوم'}]})}));
+  await f.check.listeners.click();
+  assert.equal(f.exclusions.hidden,false);
+  assert.equal(f.excludedList.children[0].textContent,'<Apartment>: يوجد ضيف موعد خروجه اليوم');
+  assert.equal(f.excludedList.children[0].innerHTML,undefined);
+  f.fields.start_time.listeners.input();
+  assert.equal(f.exclusions.hidden,true);
+  assert.equal(f.excludedList.children.length,0);
 });

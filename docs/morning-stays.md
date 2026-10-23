@@ -15,6 +15,15 @@ does not independently certify cleaning or unrecorded maintenance. Ambiguous
 multi-unit inventory is held for human review. An afternoon arrival is allowed
 when at least three hours remain after morning departure for turnover.
 
+Morning occupancy follows scheduled reservation dates: any active stay arriving
+before the morning date and departing that date blocks the morning, regardless
+of a performed checkout flag or an earlier checkout-hour field. A stay departing
+later also blocks it. Nightly `isAvailable`, minimum-stay and arrival restrictions
+do not decide morning occupancy. Explicit blocks/maintenance, incomplete reads,
+unknown reservation identities and actual multi-unit stock still prevent it.
+Zero/one inventory counters alone do not identify a multi-unit listing. The
+private picker exposes apartment names and exclusion reasons without guest data.
+
 Requests are idempotent by UUID. A property row lock serializes internal morning
 allocations, ordinary initial checkout claims, and ordinary Hostaway creation
 claims. Ordinary availability checks include morning allocations. A five-minute

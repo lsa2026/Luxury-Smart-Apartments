@@ -19,4 +19,7 @@
 .lsa-morning-availability__property b { color: var(--lsa-green); }
 .lsa-morning-availability__property[aria-pressed="true"] { border-color: var(--lsa-gold); box-shadow: 0 0 0 2px var(--lsa-gold); }
 .lsa-morning-availability__property:focus-visible { outline: 3px solid var(--lsa-gold); outline-offset: 3px; }
+.lsa-morning-availability details { margin-top: 16px; color: var(--lsa-ink); }
+.lsa-morning-availability summary { padding-block: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.lsa-morning-availability li { margin-block: 10px; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
 @media (max-width: 767px) { .lsa-morning-form .lsa-form-grid { grid-template-columns: minmax(0, 1fr); } .lsa-morning-form .form-row input, .lsa-morning-form .form-row select { font-size: 16px; } .lsa-morning-form .lsa-btn { width: 100%; } }
