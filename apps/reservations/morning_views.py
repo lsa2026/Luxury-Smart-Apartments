@@ -6,7 +6,6 @@ from datetime import datetime, time, timedelta
 from django import forms
 from django.conf import settings
 from django.contrib import messages
-from django.db import transaction
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -21,8 +20,8 @@ from apps.payments.morning_payments import public_url, verify_payment
 from apps.properties.models import Property
 
 from .models import MorningStay
+from .morning_changes import cancel_stay, change_paid_stay
 from .morning_stays import (
-    UNRESOLVED,
     ZONE,
     MorningStayError,
     active_stays,
@@ -156,6 +155,12 @@ class MorningStayForm(forms.Form):
         widget=forms.TextInput(attrs={"dir": "ltr", "placeholder": "+966…"}),
     )
     guest_email = forms.EmailField(label="البريد الإلكتروني")
+    guest_language = forms.ChoiceField(
+        label="لغة رسائل الضيف",
+        choices=[("ar", "العربية"), ("en", "English"), ("fr", "Français")],
+        required=False,
+        initial="ar",
+    )
     guests = forms.IntegerField(label="عدد الضيوف", min_value=1, max_value=20, initial=1)
     amount_sar = forms.DecimalField(
         label="الإجمالي المعتمد بالريال السعودي — شامل الرسوم",
@@ -166,6 +171,7 @@ class MorningStayForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
         self.fields["property"].queryset = Property.objects.filter(
             is_visible=True,
@@ -190,6 +196,9 @@ class MorningStayForm(forms.Form):
         except InvalidPhoneNumber as exc:
             raise forms.ValidationError("أدخل رقمًا دوليًا صحيحًا.") from exc
 
+    def clean_guest_language(self):
+        return self.cleaned_data.get("guest_language") or "ar"
+
     def clean_guest_name(self):
         name = " ".join(self.cleaned_data["guest_name"].split())
         if len(name.split()) < 2:
@@ -203,10 +212,73 @@ class MorningStayForm(forms.Form):
                 zone = property_zone(data["property"])
                 data["starts_at"] = datetime.combine(data["date"], data["start_time"], zone)
                 data["ends_at"] = datetime.combine(data["date"], data["end_time"], zone)
-                validate_window(data["starts_at"], data["ends_at"], zone=zone)
+                if not self.stay or (data["starts_at"], data["ends_at"]) != (
+                    self.stay.starts_at,
+                    self.stay.ends_at,
+                ):
+                    validate_window(
+                        data["starts_at"],
+                        data["ends_at"],
+                        zone=zone,
+                        allow_started=bool(self.stay and data["starts_at"] == self.stay.starts_at),
+                    )
             except MorningStayError as exc:
                 raise forms.ValidationError(str(exc)) from exc
         return data
+
+
+class MorningStayEditForm(MorningStayForm):
+    expected_updated_at = forms.CharField(widget=forms.HiddenInput)
+
+    def __init__(self, *args, stay, **kwargs):
+        super().__init__(*args, stay=stay, **kwargs)
+        del self.fields["request_id"]
+        del self.fields["amount_sar"]
+        local_start = stay.starts_at.astimezone(property_zone(stay.property))
+        local_end = stay.ends_at.astimezone(property_zone(stay.property))
+        self.initial.update(
+            property=stay.property_id,
+            date=local_start.date(),
+            start_time=local_start.time().replace(tzinfo=None),
+            end_time=local_end.time().replace(tzinfo=None),
+            guest_name=stay.guest_name,
+            guest_phone=stay.guest_phone,
+            guest_email=stay.guest_email,
+            guest_language=stay.guest_language,
+            guests=stay.guests,
+            expected_updated_at=stay.updated_at.isoformat(),
+        )
+
+
+@operations_access_required
+def morning_edit(request, stay_id):
+    stay = get_object_or_404(MorningStay.objects.select_related("property"), pk=stay_id)
+    if request.method not in {"GET", "POST"}:
+        return HttpResponseNotAllowed(["GET", "POST"])
+    form = MorningStayEditForm(request.POST or None, stay=stay)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        try:
+            change_paid_stay(stay.pk, data, expected_updated_at=data["expected_updated_at"])
+        except MorningStayError as exc:
+            form.add_error(None, str(exc))
+        except Exception:
+            form.add_error(None, "تعذر التحقق من التعديل الآن؛ راجع التفاصيل قبل إعادة المحاولة.")
+        else:
+            record_audit(
+                request=request,
+                action="morning_stay.modified",
+                object_type="MorningStay",
+                object_reference=str(stay.pk),
+                summary="Internal morning stay revised.",
+            )
+            messages.success(request, "حُفظ التعديل، وستُحدّث رسائل الحجز وتذكير الخروج.")
+            return redirect("notifications:morning_detail", stay_id=stay.pk)
+    return render(
+        request,
+        "admin/reservations/morning_create.html",
+        context(request, title="تعديل الحجز الصباحي", form=form, editing=True),
+    )
 
 
 def context(request, **fields):
@@ -252,6 +324,7 @@ def morning_create(request):
                         "amount_sar",
                     )
                 },
+                guest_language=data.get("guest_language") or "ar",
             )
         except MorningStayError as exc:
             form.add_error(None, str(exc))
@@ -281,28 +354,25 @@ def morning_detail(request, stay_id):
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "cancel":
-            with transaction.atomic():
-                Property.objects.select_for_update().get(pk=stay.property_id)
-                stay = MorningStay.objects.select_for_update().get(pk=stay.pk)
-                if (
-                    stay.paid_at
-                    or stay.status in {"paid", "processing", "review"}
-                    or stay.attempts.filter(status__in=UNRESOLVED).exists()
-                ):
-                    messages.error(
-                        request,
-                        "توجد دفعة أو محاولة غير محسومة؛ لا يمكن تحرير الإشغال قبل مراجعتها.",
+            try:
+                if stay.paid_at and request.POST.get("confirm_paid_cancellation") != "yes":
+                    raise MorningStayError(
+                        "أكد إلغاء الإقامة المدفوعة؛ الإلغاء لا ينفذ استردادًا ماليًا."
                     )
-                else:
-                    stay.status = "cancelled"
-                    stay.save(update_fields=["status", "updated_at"])
-                    record_audit(
-                        request=request,
-                        action="morning_stay.cancelled",
-                        object_type="MorningStay",
-                        object_reference=str(stay.pk),
-                        summary="Unpaid morning request cancelled.",
-                    )
+                cancel_stay(stay.pk)
+            except MorningStayError as exc:
+                messages.error(request, str(exc))
+            else:
+                record_audit(
+                    request=request,
+                    action="morning_stay.cancelled",
+                    object_type="MorningStay",
+                    object_reference=str(stay.pk),
+                    summary="Morning stay cancelled; no automatic refund.",
+                )
+                messages.success(
+                    request, "أُلغي الحجز وأوقفت رسائله المستقبلية؛ لم يُنفذ استرداد مالي."
+                )
         elif action == "verify":
             attempt = stay.attempts.first()
             if attempt and attempt.provider_checkout_id:

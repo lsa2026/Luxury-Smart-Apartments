@@ -48,6 +48,7 @@ jobs:
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
           tests/test_morning_stays.py
+          tests/test_morning_communications.py
           tests/test_offline_payment_receipts.py
           tests/test_automatic_cancellation_refunds.py
           tests/test_property_price_calendar.py

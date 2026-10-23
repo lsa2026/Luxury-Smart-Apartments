@@ -15,6 +15,11 @@ urlpatterns = [
         name="loyalty_welcome_preview",
     ),
     path(
+        "admin/operations/morning-stays/<uuid:stay_id>/edit/",
+        morning_views.morning_edit,
+        name="morning_edit",
+    ),
+    path(
         "admin/operations/loyalty-invitation-preview/",
         loyalty_invitation_preview,
         name="loyalty_invitation_preview",
