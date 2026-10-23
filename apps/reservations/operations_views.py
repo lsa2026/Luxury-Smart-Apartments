@@ -294,7 +294,7 @@ def manual_booking_list(request: HttpRequest) -> HttpResponse:
 
 @operations_access_required
 def booking_list(request: HttpRequest) -> HttpResponse:
-    """The single owner workspace for paid, awaiting-payment, and cancelled stays."""
+    """Only real stays confirmed in Hostaway belong in the operational booking list."""
 
     _require_owner(request)
     query = request.GET.get("q", "").strip()
@@ -317,15 +317,11 @@ def booking_list(request: HttpRequest) -> HttpResponse:
         verified_at__isnull=False,
     )
     bookings = (
-        Reservation.objects.filter(booking_intent__isnull=False)
-        .exclude(
-            normalized_status__in=(
-                Reservation.Status.CREATE_FAILED,
-                Reservation.Status.CREATE_UNKNOWN,
-                Reservation.Status.DECLINED,
-                Reservation.Status.EXPIRED,
-                Reservation.Status.CANCELLED,
-            )
+        Reservation.objects.filter(
+            booking_intent__isnull=False,
+            normalized_status__in=Reservation.ACTIVE_STATUSES,
+            hostaway_reservation_id__gt=0,
+            is_test=False,
         )
         .select_related("property", "booking_intent")
         .annotate(admin_has_paid=Exists(successful_original_payment))
@@ -358,7 +354,8 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             else "stay_ended"
             if cancellation_blocker(booking)
             else "completed"
-            if booking.admin_has_paid or payment_status in {"paid", "partially_paid", "refunded"}
+            if booking.admin_has_paid
+            or payment_status in {"paid", "paid_with_points", "partially_paid", "refunded"}
             else "awaiting_payment"
         )
         booking.admin_status_label = {
