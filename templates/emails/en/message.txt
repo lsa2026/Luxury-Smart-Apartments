@@ -2,6 +2,7 @@
 
 {{ heading }}
 {{ message }}
+{% if membership_number %}{{ membership_label }}: {{ membership_number }}{% endif %}
 {% if transaction_kind %}{{ transaction_kind }}{% endif %}
 {% if counterpart %}{% if gift_outgoing %}Points gifted to{% else %}Points received from{% endif %}: {{ counterpart.name }} — {{ counterpart.number }}
 Paired transaction: {{ counterpart.operation }}

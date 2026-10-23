@@ -12,7 +12,7 @@ class Command(BaseCommand):
         parser.add_argument("--language", choices=["ar", "en", "fr"], default="ar")
         parser.add_argument("--batch", required=True)
         parser.add_argument("--send", action="store_true")
-        parser.add_argument("--kind", choices=["booking-invitation"])
+        parser.add_argument("--kind", choices=["booking-invitation", "welcome"])
 
     def handle(self, *args, **options):
         if options["send"]:

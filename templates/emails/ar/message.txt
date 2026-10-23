@@ -2,6 +2,7 @@
 
 {{ heading }}
 {{ message }}
+{% if membership_number %}{{ membership_label }}: {{ membership_number }}{% endif %}
 {% if transaction_kind %}{{ transaction_kind }}{% endif %}
 {% if counterpart %}{% if gift_outgoing %}أُهديت النقاط إلى{% else %}هدية نقاط من{% endif %}: {{ counterpart.name }} — {{ counterpart.number }}
 العملية المقابلة: {{ counterpart.operation }}
