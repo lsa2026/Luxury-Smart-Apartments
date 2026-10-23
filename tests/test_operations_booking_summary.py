@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils import timezone, translation
 
 from apps.payments.models import OfflinePaymentReceipt, PaymentAttempt
-from apps.reservations.models import RefundObligation
+from apps.reservations.models import BookingIntent, RefundObligation, Reservation
 from apps.reservations.services.booking_list_summary import attach_booking_list_summaries
 from apps.reservations.services.hostaway_booking import prepare_local_reservation
 from tests.test_booking_models_services import make_property
@@ -217,7 +217,12 @@ def test_query_count_is_constant_and_summary_never_writes(booking_factory):
 
 @override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False)
 def test_owner_page_contains_localized_summary_in_table_and_mobile_cards(booking_factory):
-    booking = booking_factory(total_price=Decimal("1500"), nights=3)
+    booking = booking_factory(
+        total_price=Decimal("1500"),
+        nights=3,
+        normalized_status=Reservation.Status.CONFIRMED,
+        hostaway_reservation_id=99003,
+    )
     booking.property.name_ar = "شقة المعاينة الواسعة بحي الملقا"
     booking.property.save(update_fields=["name_ar"])
     payment(booking, amount=Decimal("1500"))
@@ -243,3 +248,101 @@ def test_owner_page_contains_localized_summary_in_table_and_mobile_cards(booking
 def test_booking_list_remains_private():
     response = Client().get(reverse("notifications:booking_list"))
     assert response.status_code == 302
+
+
+@override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False)
+@pytest.mark.parametrize("query", ["", "Expired Sample", "+12025550100", "expired-list-proof"])
+def test_expired_unpaid_local_request_never_appears_as_a_confirmed_stay(booking_factory, query):
+    booking = booking_factory(public_reference="expired-list-proof")
+    intent = booking.booking_intent
+    intent.guest_first_name = "Expired Sample"
+    intent.guest_phone = "+12025550100"
+    intent.status = BookingIntent.Status.EXPIRED
+    intent.expires_at = timezone.now() - timedelta(days=7)
+    intent.save()
+    payment(booking, status=PaymentAttempt.Status.PENDING, verified_at=None)
+    client = Client()
+    client.force_login(get_user_model().objects.create_superuser(username="expired-list-owner"))
+    before = (
+        Reservation.objects.count(),
+        BookingIntent.objects.count(),
+        PaymentAttempt.objects.count(),
+    )
+    page = client.get(reverse("notifications:booking_list"), {"q": query})
+    assert page.status_code == 200 and page.context["bookings"] == []
+    assert reverse("notifications:booking_detail", args=[booking.pk]) not in page.content.decode()
+    booking.refresh_from_db()
+    intent.refresh_from_db()
+    assert booking.normalized_status == Reservation.Status.AWAITING_PAYMENT
+    assert intent.status == BookingIntent.Status.EXPIRED
+    assert before == (
+        Reservation.objects.count(),
+        BookingIntent.objects.count(),
+        PaymentAttempt.objects.count(),
+    )
+    assert client.get(reverse("notifications:booking_detail", args=[booking.pk])).status_code == 200
+
+
+@override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False)
+@pytest.mark.parametrize(
+    "status", sorted(set(Reservation.Status.values) - Reservation.ACTIVE_STATUSES)
+)
+def test_hostaway_identifier_alone_never_makes_an_unconfirmed_record_a_real_stay(
+    booking_factory, status
+):
+    booking = booking_factory(normalized_status=status, hostaway_reservation_id=99004)
+    payment(booking)  # A receipt cannot substitute for Hostaway confirmation.
+    client = Client()
+    client.force_login(get_user_model().objects.create_superuser(username="unconfirmed-list-owner"))
+    assert client.get(reverse("notifications:booking_list")).context["bookings"] == []
+
+
+@override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False)
+@pytest.mark.parametrize("status", sorted(Reservation.ACTIVE_STATUSES))
+@pytest.mark.parametrize("paid", [False, True])
+def test_hostaway_confirmed_paid_and_unpaid_stays_remain_visible(booking_factory, status, paid):
+    booking = booking_factory(normalized_status=status, hostaway_reservation_id=99005)
+    # A real Hostaway booking remains valid after its original checkout form expires.
+    intent = booking.booking_intent
+    intent.status = BookingIntent.Status.EXPIRED
+    intent.expires_at = timezone.now() - timedelta(days=7)
+    intent.save()
+    if paid:
+        payment(booking)
+    client = Client()
+    client.force_login(get_user_model().objects.create_superuser(username="confirmed-list-owner"))
+    page = client.get(reverse("notifications:booking_list"))
+    assert [row.pk for row in page.context["bookings"]] == [booking.pk]
+    assert page.context["bookings"][0].admin_status_code == (
+        "completed" if paid else "awaiting_payment"
+    )
+
+
+@override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False)
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"normalized_status": "confirmed", "hostaway_reservation_id": 99006, "is_test": True},
+        {"normalized_status": "modified", "hostaway_reservation_id": None},
+        {"normalized_status": "modified", "hostaway_reservation_id": 0},
+    ],
+)
+def test_test_records_and_missing_hostaway_references_are_hidden(booking_factory, changes):
+    booking_factory(**changes)
+    client = Client()
+    client.force_login(get_user_model().objects.create_superuser(username="proof-list-owner"))
+    assert client.get(reverse("notifications:booking_list")).context["bookings"] == []
+
+
+@override_settings(HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED=False)
+def test_hostaway_confirmed_points_payment_is_not_labelled_awaiting_payment(booking_factory):
+    booking = booking_factory(
+        normalized_status="confirmed",
+        hostaway_reservation_id=99007,
+        payment_status="paid_with_points",
+    )
+    client = Client()
+    client.force_login(get_user_model().objects.create_superuser(username="points-list-owner"))
+    page = client.get(reverse("notifications:booking_list"))
+    assert [row.pk for row in page.context["bookings"]] == [booking.pk]
+    assert page.context["bookings"][0].admin_status_code == "completed"

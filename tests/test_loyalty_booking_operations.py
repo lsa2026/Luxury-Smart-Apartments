@@ -78,6 +78,9 @@ def stay(*, arrived=True, paid=True):
 )
 def test_phone_lookup_normalizes_saudi_forms_without_network(owner_client, phone):
     r, _ = stay()
+    r.is_test = False
+    r.hostaway_reservation_id = 99008
+    r.save(update_fields=["is_test", "hostaway_reservation_id"])
     with patch("httpx.Client.send", side_effect=AssertionError("No network on lookup")):
         response = owner_client.get(reverse("loyalty:admin"), {"phone": phone})
         assert [b.pk for b in response.context["booking_matches"]] == [r.pk]
