@@ -1,5 +1,14 @@
 /* Scoped to the reservation list; other operations screens remain unchanged. */
+.lsa-booking-breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; min-width: 0; padding: 12px 36px; border-bottom: 1px solid var(--lsa-line); background: var(--lsa-paper); color: var(--lsa-ink); font-size: 14px; line-height: 1.6; }
+.lsa-booking-breadcrumbs__home { display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box; min-height: 44px; padding: 8px 14px; border: 1px solid var(--lsa-line); border-radius: 12px; color: var(--lsa-ink) !important; background: #fffdf8; font-weight: 700; text-decoration: none; }
+.lsa-booking-breadcrumbs__home:hover { border-color: var(--lsa-gold); background: #fff6e4; }
+.lsa-booking-breadcrumbs__home:focus-visible { outline: 3px solid var(--lsa-gold); outline-offset: 3px; }
+.lsa-booking-breadcrumbs svg { flex-shrink: 0; }
+.lsa-booking-breadcrumbs__separator { color: var(--lsa-muted); }
+.lsa-booking-breadcrumbs__current { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
 .lsa-booking-list-screen { min-width: 0; }
+.lsa-booking-list-screen .lsa-page-head { flex-wrap: wrap; gap: 24px; }
+.lsa-booking-list-screen .lsa-page-head__actions { flex-wrap: wrap; }
 .lsa-booking-list__table { width: 100%; }
 .lsa-booking-list__table table { width: 100%; min-width: 0; table-layout: fixed; }
 .lsa-booking-list__table th,
@@ -37,6 +46,8 @@
   .lsa-booking-card__top strong { min-width: 0; overflow-wrap: anywhere; }
 }
 @media (max-width: 767px) {
+  .lsa-booking-breadcrumbs { gap: 8px; padding: 10px 16px; font-size: 13px; }
+  .lsa-booking-breadcrumbs__home { padding-inline: 12px; }
   .lsa-booking-list__cards { grid-template-columns: minmax(0, 1fr); }
   .lsa-booking-list__search .lsa-inline-form { flex-direction: column; align-items: stretch; }
   .lsa-booking-list__search button { width: 100%; }
