@@ -21,6 +21,11 @@ urlpatterns = [
     ),
     path("admin/operations/morning-stays/", morning_views.morning_list, name="morning_list"),
     path(
+        "admin/operations/morning-stays/available-properties/",
+        morning_views.morning_available_properties,
+        name="morning_available_properties",
+    ),
+    path(
         "admin/operations/morning-stays/new/", morning_views.morning_create, name="morning_create"
     ),
     path(

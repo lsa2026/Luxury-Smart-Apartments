@@ -7,12 +7,14 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
-from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.access import operations_access_required
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.integrations.hostaway.client import HostawayClient
+from apps.integrations.hostaway.exceptions import HostawayError
 from apps.notifications.services.audit import record_audit
 from apps.payments.hyperpay.exceptions import HyperPayError
 from apps.payments.morning_payments import public_url, verify_payment
@@ -23,10 +25,114 @@ from .morning_stays import (
     UNRESOLVED,
     ZONE,
     MorningStayError,
+    active_stays,
     create_stay,
     property_zone,
     validate_window,
+    verify_window,
 )
+
+
+class MorningAvailabilityForm(forms.Form):
+    date = forms.DateField()
+    start_time = forms.TimeField()
+    end_time = forms.TimeField()
+    guests = forms.IntegerField(min_value=1, max_value=20)
+
+    def clean(self):
+        data = super().clean()
+        start, end = data.get("start_time"), data.get("end_time")
+        if start is not None and end is not None and not time.min < start < end < time(12):
+            raise forms.ValidationError("الدخول بعد منتصف الليل والخروج قبل ١٢ ظهرًا.")
+        return data
+
+
+class MorningAvailabilityReader:
+    """Share date-window pages only within this read-only availability request."""
+
+    def __init__(self, client):
+        self.client = client
+        self.pages = {}
+
+    def get_listing_calendar(self, *args, **kwargs):
+        return self.client.get_listing_calendar(*args, **kwargs)
+
+    def guest_stay_page(self, departure_start, arrival_end, *, after_id=None):
+        key = departure_start, arrival_end, after_id
+        if key not in self.pages:
+            self.pages[key] = self.client.guest_stay_page(
+                departure_start, arrival_end, after_id=after_id
+            )
+        return self.pages[key]
+
+
+@operations_access_required
+def morning_available_properties(request):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    form = MorningAvailabilityForm(request.GET)
+    if not form.is_valid():
+        return JsonResponse(
+            {"detail": "حدّد تاريخًا ووقت دخول وخروج صحيحين وعدد الضيوف."}, status=400
+        )
+    data = form.cleaned_data
+    available, unverified = [], 0
+    valid_windows = 0
+    properties = Property.objects.filter(is_visible=True, hostaway_is_active=True).order_by(
+        "sort_order", "id"
+    )
+    try:
+        remote = HostawayClient(max_get_attempts=1, timeout=5)
+    except HostawayError:
+        return JsonResponse(
+            {"detail": "تعذر الاتصال بمصدر التوفر؛ أعد المحاولة لاحقًا."}, status=503
+        )
+    with remote as client:
+        reader = MorningAvailabilityReader(client)
+        for property_obj in properties:
+            try:
+                zone = property_zone(property_obj)
+                start = datetime.combine(data["date"], data["start_time"], zone)
+                end = datetime.combine(data["date"], data["end_time"], zone)
+                validate_window(start, end, zone=zone)
+            except MorningStayError:
+                continue
+            valid_windows += 1
+            try:
+                if active_stays(property_obj, start, end + timedelta(hours=3)).exists():
+                    continue
+                evidence = verify_window(
+                    property_obj, start, end, guests=data["guests"], client=reader
+                )
+            except MorningStayError:
+                continue
+            except HostawayError:
+                unverified += 1
+                continue
+            available.append(
+                {
+                    "id": str(property_obj.pk),
+                    "name": property_obj.name_ar or property_obj.name_en,
+                    "time_zone": zone.key,
+                    "starts_at": start.isoformat(),
+                    "ends_at": end.isoformat(),
+                    "checked_at": evidence["checked_at"],
+                }
+            )
+    response = JsonResponse(
+        {
+            "properties": available,
+            "unverified_count": unverified,
+            "checked_at": timezone.now().isoformat(),
+            "detail": (
+                "وقت الدخول المحدد مضى أو خارج الأيام الأربعة عشر المقبلة؛ عدّل الوقت ثم تحقق."
+                if properties and not valid_windows
+                else ""
+            ),
+        }
+    )
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 class MorningStayForm(forms.Form):

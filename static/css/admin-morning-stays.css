@@ -6,4 +6,17 @@
 .lsa-morning-form .form-row input[type="time"], .lsa-morning-form .form-row input[type="date"], .lsa-morning-form .form-row input[type="email"] { direction: ltr; text-align: right; }
 .lsa-morning-form .errorlist { margin: 0; color: #9a3636; }
 .lsa-morning-form .lsa-btn { margin-top: 12px; min-height: 48px; }
+.lsa-morning-availability { padding: 20px; margin-bottom: 24px; border: 1px solid var(--lsa-line); border-radius: 16px; background: #fffaf0; }
+.lsa-morning-availability h2 { margin: 0 0 10px; color: var(--lsa-ink); font-size: 20px; }
+.lsa-morning-availability__check { display: inline-flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; max-width: 100%; white-space: normal; }
+.lsa-morning-availability__check svg { flex-shrink: 0; }
+.lsa-morning-availability__status { margin: 16px 0 0; line-height: 1.8; overflow-wrap: anywhere; }
+.lsa-morning-availability__status:empty { display: none; }
+.lsa-morning-availability__results { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.lsa-morning-availability__property { display: grid; gap: 10px; min-width: 0; margin-top: 16px; padding: 18px; border: 1px solid var(--lsa-line); border-radius: 12px; background: #fffdf8; color: var(--lsa-ink); text-align: right; font: inherit; cursor: pointer; }
+.lsa-morning-availability__property strong { font-size: 16px; line-height: 1.7; }
+.lsa-morning-availability__property span { font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.lsa-morning-availability__property b { color: var(--lsa-green); }
+.lsa-morning-availability__property[aria-pressed="true"] { border-color: var(--lsa-gold); box-shadow: 0 0 0 2px var(--lsa-gold); }
+.lsa-morning-availability__property:focus-visible { outline: 3px solid var(--lsa-gold); outline-offset: 3px; }
 @media (max-width: 767px) { .lsa-morning-form .lsa-form-grid { grid-template-columns: minmax(0, 1fr); } .lsa-morning-form .form-row input, .lsa-morning-form .form-row select { font-size: 16px; } .lsa-morning-form .lsa-btn { width: 100%; } }

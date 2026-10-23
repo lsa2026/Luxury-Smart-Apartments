@@ -2,14 +2,25 @@
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
 {% block content_title %}{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>إنشاء حجز صباحي</h1><p>دخول بعد منتصف الليل وخروج قبل ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
   <section class="lsa-panel">
     <p>سجّل بيانات الضيف والمبلغ المعتمد شاملًا الرسوم. يُفحص التوفر قبل تجهيز رابط الدفع، ولا يُنشأ حجز في Hostaway.</p>
     <p>توقيت شقق الرياض: Asia/Riyadh. توقيت شقق مراكش: Africa/Casablanca. المبلغ المطلوب أدناه بالريال السعودي.</p>
-    <form method="post" class="lsa-manual-booking-form lsa-morning-form">
+    <form method="post" class="lsa-manual-booking-form lsa-morning-form" data-morning-availability="{% url 'notifications:morning_available_properties' %}">
       {% csrf_token %}{{ form.non_field_errors }}{{ form.request_id }}{{ form.request_id.errors }}
+      <section class="lsa-morning-availability" aria-labelledby="morning-availability-title">
+        <h2 id="morning-availability-title">الشقق المتاحة للحجز الصباحي</h2>
+        <p>تحقق من الشقق حسب التاريخ ووقت الدخول والخروج وعدد الضيوف أدناه، ثم اختر الشقة المناسبة. لا يلزم إدخال بيانات الضيف للفحص.</p>
+        <button type="button" class="lsa-btn lsa-btn--gold lsa-morning-availability__check" data-morning-check>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6M7 10l2 2 4-4"/></svg>
+          <span>التحقق من الشقق المتاحة الآن</span>
+        </button>
+        <p class="lsa-morning-availability__status" data-morning-status role="status" aria-live="polite"></p>
+        <div class="lsa-morning-availability__results" data-morning-results></div>
+      </section>
       <div class="lsa-form-grid">{% for field in form.visible_fields %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div>
       <p>رابط السداد صالح خمس دقائق كحد أقصى وحتى وقت الدخول، ويعاد فحص التوفر قبل الدفع. فتح الرابط وحده لا يحصّل مبلغًا.</p>
       <button type="submit" class="lsa-btn lsa-btn--gold">فحص التوفر وإنشاء رابط الدفع</button>
