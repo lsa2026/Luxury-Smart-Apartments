@@ -43,7 +43,7 @@ def test_all_previews_are_synthetic_single_language_and_have_no_database_writes(
             assert content.startswith(b"%PDF")
         else:
             assert content.startswith(b"\x89PNG")
-            if key != "invitation":
+            if key not in {"invitation", GuestEvent.Kind.JOIN}:
                 assert content == notices.phone_logo()
         if key.startswith("auth-"):
             assert caption.count("[LSA-AUTH]") == 1 and caption.count("000000") == 1
@@ -182,6 +182,7 @@ def test_preview_guard_and_once_only_audit_without_financial_changes(rig, monkey
     rig.am.number = "LSA-M000001"
     rig.am.save(update_fields=["number"])
     fake = Mock()
+    fake.send_image.return_value = {"id": "fictional-preview"}
     client = Mock()
     client.__enter__ = Mock(return_value=fake)
     client.__exit__ = Mock(return_value=False)

@@ -63,7 +63,7 @@ def test_messages_off_never_queue_or_send(settings):
     settings.LOYALTY_MESSAGES_ENABLED = False
     assert queue_movement(row.pk) is None
     assert dispatch_due()["status"] == "disabled"
-    assert not EmailDelivery.objects.exists()
+    assert not EmailDelivery.objects.exclude(message_type="loyalty_welcome").exists()
 
 
 def test_unpublished_or_unsafe_terms_never_send_promotions(settings):
@@ -118,7 +118,9 @@ def test_recovery_queues_committed_movement_without_posting_it_again():
     assert dispatch_due()["queued"] == 1
     assert dispatch_due()["queued"] == 0
     assert Ledger.objects.count() == 1
-    assert EmailDelivery.objects.get().recipient_reference == str(row.pk)
+    assert EmailDelivery.objects.get(message_type="loyalty_movement").recipient_reference == str(
+        row.pk
+    )
 
 
 def test_ready_notice_recovers_even_when_invitation_already_issued_in_ui(program):

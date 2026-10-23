@@ -45,6 +45,26 @@ def record(
     if occurred_at is not None:
         values["occurred_at"] = occurred_at
     event, created = GuestEvent.objects.get_or_create(reference=reference, defaults=values)
+    if created and kind == GuestEvent.Kind.JOIN:
+        from .welcome import queue
+
+        try:
+            with transaction.atomic():
+                queue(event)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning("loyalty_welcome_email_queue_failed")
+    if created and kind == GuestEvent.Kind.EMAIL:
+        from .welcome import resume_after_verification
+
+        try:
+            with transaction.atomic():
+                resume_after_verification(customer)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning("loyalty_welcome_email_resume_failed")
     if created and kind in {GuestEvent.Kind.JOIN, GuestEvent.Kind.CLOSE, GuestEvent.Kind.READY}:
         from .whatsapp_notices import queue_lifecycle
 

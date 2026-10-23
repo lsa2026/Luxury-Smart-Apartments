@@ -272,6 +272,22 @@ def resume_welcome(binding):
 
 def lifecycle_caption(event, language):
     language = supported_language(language) or "ar"
+    if event.kind == GuestEvent.Kind.JOIN:
+        from .welcome import COPY
+
+        title, text, number, action = COPY[language]
+        base = settings.SITE_BASE_URL.rstrip("/")
+        if urlparse(base).scheme != "https" or not urlparse(base).netloc:
+            raise ValidationError("Invalid account destination.")
+        return "\n\n".join(
+            [
+                f"✨ *{BRAND}*",
+                f"*{title}*",
+                text,
+                f"{number}: {event.member.number}",
+                f"{action}:\n{base}/my-bookings/rewards/",
+            ]
+        )
     joined = event.kind == GuestEvent.Kind.JOIN
     if event.kind not in {GuestEvent.Kind.JOIN, GuestEvent.Kind.CLOSE, GuestEvent.Kind.READY}:
         raise ValidationError("Unsupported lifecycle notice.")
@@ -421,7 +437,12 @@ def deliver_movement_notice(key):
             caption = (movement_caption if notice.ledger_id else lifecycle_caption)(
                 row, notice.language
             )
-            content = phone_logo()
+            if notice.event_id and row.kind == GuestEvent.Kind.JOIN:
+                from .welcome import image
+
+                content = image(notice.language)
+            else:
+                content = phone_logo()
         except Exception:
             notice.status, notice.error_code = "failed", "design_unavailable"
             notice.save(update_fields=["status", "error_code"])

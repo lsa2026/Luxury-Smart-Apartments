@@ -88,7 +88,12 @@ def catalogue(language="ar"):
     for kind in (GuestEvent.Kind.JOIN, GuestEvent.Kind.CLOSE, GuestEvent.Kind.READY):
         event = GuestEvent(kind=kind, occurred_at=timezone.now())
         event.member = Member(number="PREVIEW-MEMBER")
-        add(kind, lifecycle_caption(event, language))
+        if kind == GuestEvent.Kind.JOIN:
+            from .welcome import image
+
+            add(kind, lifecycle_caption(event, language), image(language))
+        else:
+            add(kind, lifecycle_caption(event, language))
     request = SimpleNamespace(
         pk=UUID(int=0),
         language=language,
@@ -164,6 +169,8 @@ def send_catalogue(*, batch, language="ar", kind=None):
         if len(caption.encode("utf-16-le")) // 2 > 1024:
             raise ValidationError("Preview caption too long.")
         packets = [(kind, caption, invitation_image(language))]
+    elif kind == "welcome":
+        packets = [packet for packet in catalogue(language) if packet[0] == GuestEvent.Kind.JOIN]
     elif kind is None:
         packets = catalogue(language)
     else:
@@ -216,7 +223,7 @@ def send_catalogue(*, batch, language="ar", kind=None):
                         caption=caption,
                         reference_id="owner-preview:" + reference,
                     )
-                    if key == "booking-invitation" and (
+                    if key in {"booking-invitation", GuestEvent.Kind.JOIN} and (
                         not isinstance(result, dict) or not result.get("id")
                     ):
                         raise ValueError("Unconfirmed provider outcome.")

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.loyalty.booking_invitation_previews import preview as loyalty_invitation_preview
+from apps.loyalty.welcome_previews import preview as loyalty_welcome_preview
 from apps.reservations import morning_views, operations_views
 
 from . import health, invoice_views, views
@@ -8,6 +9,11 @@ from . import health, invoice_views, views
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/loyalty-welcome-preview/",
+        loyalty_welcome_preview,
+        name="loyalty_welcome_preview",
+    ),
     path(
         "admin/operations/loyalty-invitation-preview/",
         loyalty_invitation_preview,

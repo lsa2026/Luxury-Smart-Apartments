@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}">{% endblock %}
+{% block content %}
+<section dir="rtl" lang="ar">
+  <h1>{{ title }}</h1>
+  <p>بطاقة ترحيب مشتقة من قالب فيقما المعتمد. النموذج إلى المالك فقط ببيانات افتراضية؛ لا ينشئ عضوية ولا يضيف نقاطًا.</p>
+  <nav aria-label="لغة النموذج"><a href="?language=ar">العربية</a> · <a href="?language=en">English</a> · <a href="?language=fr">Français</a></nav>
+  <article class="lsa-booking-invitation__preview">
+    <img class="lsa-booking-invitation__artwork" src="{{ preview_image }}" alt="بطاقة الترحيب في برنامج الولاء" width="1200" height="600">
+    <pre style="white-space:pre-wrap" lang="{{ language_code }}">{{ preview_text }}</pre>
+  </article>
+  {% if reason %}<p role="alert">{{ reason }}</p>{% else %}<p>رقم واتساب المالك المعتمد: <bdi>{{ masked_phone }}</bdi></p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit" class="button">إرسال نموذج الترحيب إلى واتسابي</button></form>{% endif %}
+</section>
+{% endblock %}

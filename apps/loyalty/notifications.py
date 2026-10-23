@@ -14,8 +14,10 @@ from apps.reservations.models import Reservation
 
 from .models import Ledger, Member
 from .services import enabled, issue_invite, launch_at
+from .welcome import COPY as WELCOME_COPY
 
 SUBJECTS = {
+    "loyalty_welcome": {language: values[0] for language, values in WELCOME_COPY.items()},
     "loyalty_join_invitation": {
         "ar": "دعوة إلى برنامج مكافآت ضيوفنا",
         "en": "An invitation to our guest rewards programme",
@@ -33,6 +35,7 @@ SUBJECTS = {
     },
 }
 MESSAGES = {
+    "loyalty_welcome": {language: values[1] for language, values in WELCOME_COPY.items()},
     "loyalty_join_invitation": {
         "ar": (
             "سعداء بإقامتك معنا. اطلع على برنامج مكافآتنا وشروطه من حسابك. "
@@ -222,6 +225,10 @@ def dispatch_due(limit=100):
 
 def resolve_recipient(delivery):
     """Recheck state at send time; never send stale invitations after cancellation."""
+    if delivery.recipient_source == "loyalty_welcome":
+        from .welcome import resolve
+
+        return resolve(delivery)
     if not messages_enabled():
         raise EmailProviderError("loyalty_messages_disabled", permanent=True)
     base = settings.SITE_BASE_URL.rstrip("/")

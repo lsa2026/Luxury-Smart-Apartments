@@ -1,4 +1,6 @@
 {% extends "emails/ar/base.html" %}{% block content %}
+{% if welcome_image_url %}<img src="{{ welcome_image_url }}" alt="{{ welcome_image_alt }}" width="552" style="display:block;width:100%;max-width:552px;height:auto;border:0;margin:0 0 24px">{% endif %}
+{% if membership_number %}<p>{{ membership_label }}: <strong dir="ltr">{{ membership_number }}</strong></p>{% endif %}
 <h1>{{ heading }}</h1><p>{% if first_name %}مرحبًا {{ first_name }}، {% endif %}{% if invitation %}{{ message|linebreaksbr }}{% else %}{{ message }}{% endif %}</p>
 {% if transaction_kind %}<h2>{{ transaction_kind }}</h2>{% endif %}
 {% if counterpart %}<p>{% if gift_outgoing %}أُهديت النقاط إلى{% else %}هدية نقاط من{% endif %}: <strong>{{ counterpart.name }}</strong> — <bdi>{{ counterpart.number }}</bdi></p><p>العملية المقابلة: <bdi>{{ counterpart.operation }}</bdi></p><p>رصيدك قبل العملية: {{ balance_before }}</p>{% endif %}
