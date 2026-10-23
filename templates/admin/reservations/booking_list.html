@@ -3,17 +3,6 @@
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}?v=20261023-navigation">{% endblock %}
 {% block content_title %}{% endblock %}
 
-{% block nav-breadcrumbs %}
-<nav class="lsa-booking-breadcrumbs" aria-label="مسار التنقل" dir="rtl">
-  <a class="lsa-booking-breadcrumbs__home" href="{% url 'notifications:hub' %}">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg>
-    <span>الرئيسية</span>
-  </a>
-  <svg class="lsa-booking-breadcrumbs__separator" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false"><path d="m14 6-6 6 6 6"/></svg>
-  <span class="lsa-booking-breadcrumbs__current" aria-current="page">إدارة الحجوزات</span>
-</nav>
-{% endblock %}
-
 {% block content %}
 {% language "ar" %}
 <main class="lsa-dashboard lsa-operations-screen lsa-booking-list-screen" dir="rtl">
