@@ -17,6 +17,7 @@ it has one note and no credentials, webhooks, schedules or executable nodes.
   dates, “tomorrow” checkout copy or default 12:00 checkout is inferred.
 - Name and number enter the existing Google address book using a copied contact
   matching/merge implementation. Contact leases, completion and retries belong to 07.
+  Its admission guard accepts 07's verified paid snapshot rather than legacy booking flags.
 - No Execute Workflow node or legacy RPC/table is used for mutable runtime state.
   Every RPC is `lsa07_*`; the five tables are `lsa07_settings`,
   `lsa07_apartments_info`, `lsa07_message_templates`, `lsa07_reservations`, `lsa07_jobs`.

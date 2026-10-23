@@ -332,6 +332,11 @@ edge("C00 Claim Morning07 Contact Work", "C01 Contact Work Pending?")
 gc = json.loads((ROOT / "scripts/automation07/contact-source.json").read_text())
 for n in gc["nodes"]:
     n = copy.deepcopy(n)
+    if n["name"] == "GC00 Prepare English Guest Contact":
+        n["parameters"]["jsCode"] = n["parameters"]["jsCode"].replace(
+            "if(!g.is_processable || !['new','modified'].includes(g.event_type))return [];",
+            "if(g.source!=='morning07'||g.payment_verified!==true||g.status!=='paid')return [];",
+        )
     n["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, "lsa07-v1:" + n["name"]))
     n["position"] = [n["position"][0] - 1500, n["position"][1] + 2200]
     n.pop("webhookId", None)

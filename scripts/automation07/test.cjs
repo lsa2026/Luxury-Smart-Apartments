@@ -12,3 +12,18 @@ test('the complete draft has only local node references and scenario07 RPCs',()=
 
 test('the actual admission Code node accepts the verified website payload and rejects missing phone',()=>{const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../../docs/automation07/workflow.json'))),n=w.nodes.find(x=>x.name==='M03 Validate Verified Morning Booking'),run=new Function('$json',n.parameters.jsCode);const d={...fixture().booking,source_event_id:'07000000-0000-4000-8000-000000000002',state_fingerprint:'a'.repeat(64),delivery_token:'synthetic-capability-'.repeat(4)};assert.equal(run({statusCode:200,body:d})[0].json.valid,true);for(const patch of [{phone:''},{payment_verified:false},{source_revision:0}])assert.equal(run({statusCode:200,body:{...d,...patch}})[0].json.valid,false);});
 test('ended paid stays prepare no delayed confirmation, guide or group notice',()=>{const f=fixture();f.now='2032-01-01T08:00:00Z';assert.deepEqual(render(f).jobs,[]);f.booking.status='cancelled';assert.equal(render(f).jobs.length,2);});
+
+test('the actual Contacts Code nodes accept Morning07 claims and verify a created contact',()=>{
+ const w=JSON.parse(fs.readFileSync(path.join(__dirname,'../../docs/automation07/workflow.json')));
+ const execute=(name,input,reference)=>new Function('$input','$','$runIndex',w.nodes.find(n=>n.name===name).parameters.jsCode)({first:()=>({json:input}),all:()=>[{json:input}]},()=>({first:()=>({json:reference})}),0);
+ const booking={...fixture().booking,has_contact:true,guest_email:'synthetic@example.invalid'};
+ const guest=execute('GC00 Prepare English Guest Contact',booking)[0]?.json;
+ assert.ok(guest,'Morning07 claim must not be silently discarded');assert.equal(guest.phone,'+16502530000');
+ const create=execute('GC02 Match Phone Email and Plan Merge',{},guest)[0].json;
+ assert.equal(create.request.method,'POST');assert.ok(create.request.url.includes(':createContact'));
+ const verify=execute('GC06 Verify Contact and Continue Merge',{statusCode:201,body:{resourceName:'people/synthetic'}},create)[0].json;
+ assert.equal(verify.request.role,'verify_target');
+ const complete=execute('GC06 Verify Contact and Continue Merge',{statusCode:200,body:{resourceName:'people/synthetic',...create.desired}},verify)[0].json;
+ assert.equal(complete.status,'created');assert.equal(complete.request,null);assert.equal(complete.contact_error,undefined);
+ for(const change of [{status:'cancelled'},{payment_verified:false},{source:'other'}])assert.deepEqual(execute('GC00 Prepare English Guest Contact',{...booking,...change}),[]);
+});
