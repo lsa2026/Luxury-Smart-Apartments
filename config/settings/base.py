@@ -792,6 +792,15 @@ SITEMAP_CACHE_SECONDS = 300
 
 CELERY_BEAT_SCHEDULE = build_beat_schedule(globals())
 
+# Server-verified morning stays use the existing payment recovery minute tick.
+MORNING_N8N_ENABLED = strict_bool("MORNING_N8N_ENABLED")
+MORNING_N8N_WEBHOOK_URL = env("MORNING_N8N_WEBHOOK_URL", default="").strip()
+if (
+    MORNING_N8N_ENABLED
+    and MORNING_N8N_WEBHOOK_URL != "https://lsa25.app.n8n.cloud/webhook/lsa-morning-stay-v1"
+):
+    raise ImproperlyConfigured("Morning communication requires its approved n8n webhook.")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

@@ -3,8 +3,9 @@
 import uuid
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Q
+from django.utils import timezone
 
 
 class MorningStay(models.Model):
@@ -25,6 +26,11 @@ class MorningStay(models.Model):
     guest_name = models.CharField(max_length=200)
     guest_phone = models.CharField(max_length=32)
     guest_email = models.EmailField()
+    guest_language = models.CharField(
+        max_length=2,
+        default="ar",
+        choices=[("ar", "العربية"), ("en", "English"), ("fr", "Français")],
+    )
     guests = models.PositiveSmallIntegerField(default=1)
     amount_sar = models.DecimalField(max_digits=14, decimal_places=2)
     environment = models.CharField(max_length=10, editable=False)
@@ -37,6 +43,8 @@ class MorningStay(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    communication_revision = models.PositiveBigIntegerField(default=0, editable=False)
+    communication_fingerprint = models.CharField(max_length=64, blank=True, editable=False)
 
     class Meta:
         ordering = ["-created_at"]
@@ -50,3 +58,52 @@ class MorningStay(models.Model):
 
     def __str__(self):
         return f"AM-{str(self.pk)[:8]} — {self.get_status_display()}"
+
+    def save(self, *args, **kwargs):
+        # The outbox is committed with the business change, including payment verification.
+        with transaction.atomic():
+            if not self._state.adding:
+                previous = (
+                    type(self)
+                    .objects.select_for_update()
+                    .only("communication_revision", "communication_fingerprint")
+                    .get(pk=self.pk)
+                )
+                self.communication_revision = previous.communication_revision
+                self.communication_fingerprint = previous.communication_fingerprint
+            super().save(*args, **kwargs)
+            if getattr(settings, "MORNING_N8N_ENABLED", False):
+                from .morning_communications import capture_event
+
+                capture_event(self.pk)
+                self.refresh_from_db(fields=["communication_revision", "communication_fingerprint"])
+
+    def latest_communication_event(self):
+        return self.communication_events.order_by("-revision").first()
+
+
+class MorningCommunicationEvent(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stay = models.ForeignKey(
+        MorningStay, on_delete=models.PROTECT, related_name="communication_events"
+    )
+    revision = models.PositiveBigIntegerField()
+    payload = models.JSONField(default=dict, editable=False)
+    state = models.CharField(max_length=12, default="pending", editable=False)
+    attempts = models.PositiveIntegerField(default=0, editable=False)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    lease_until = models.DateTimeField(null=True, editable=False)
+    accepted_at = models.DateTimeField(null=True, editable=False)
+    last_error = models.CharField(max_length=80, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["stay", "revision"], name="morning_event_revision_unique"
+            )
+        ]
+        indexes = [models.Index(fields=["state", "next_attempt_at"])]
+
+    def __str__(self):
+        return f"Morning communication {self.stay_id} revision {self.revision}: {self.state}"
