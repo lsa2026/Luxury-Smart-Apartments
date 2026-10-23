@@ -196,9 +196,6 @@ def recover_payment_requests_task():
         from .morning_payments import reconcile_mornings
 
         reconcile_mornings()
-        from apps.reservations.morning_communications import deliver_pending_events
-
-        deliver_pending_events()
         # Recover a durable bookkeeping request if broker dispatch failed after payment.
         from django.db.models import Q
 
