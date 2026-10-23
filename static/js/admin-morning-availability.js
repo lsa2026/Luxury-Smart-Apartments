@@ -6,12 +6,19 @@
   const check = form.querySelector("[data-morning-check]");
   const status = form.querySelector("[data-morning-status]");
   const results = form.querySelector("[data-morning-results]");
+  const exclusions = form.querySelector("[data-morning-exclusions]");
+  const excludedList = form.querySelector("[data-morning-excluded-list]");
+  const clearExclusions = () => {
+    if (exclusions) exclusions.hidden = true;
+    if (excludedList) excludedList.replaceChildren();
+  };
   const property = form.elements.namedItem("property");
   const fields = ["date", "start_time", "end_time", "guests"];
   let generation = 0;
   const invalidate = () => {
     generation += 1;
     results.replaceChildren();
+    clearExclusions();
     results.removeAttribute("aria-busy");
     status.textContent = "تغيّرت الفترة أو عدد الضيوف؛ اضغط التحقق لتحديث الشقق المتاحة.";
     check.disabled = false;
@@ -27,6 +34,7 @@
     const requestGeneration = ++generation;
     check.disabled = true;
     results.replaceChildren();
+    clearExclusions();
     status.textContent = "جارٍ التحقق من الشقق المتاحة…";
     results.setAttribute("aria-busy", "true");
     try {
@@ -48,6 +56,14 @@
         ? `تم التحقق الساعة ${checkedAt} بتوقيت الرياض. اختر إحدى الشقق التالية. يعاد فحص التوفر عند إنشاء الطلب وقبل الدفع.`
         : `لا توجد شقق ثبت توفرها للفترة المحددة. آخر فحص: ${checkedAt} بتوقيت الرياض.`);
       if (data.unverified_count) status.textContent += " تعذر التحقق من بعض الشقق؛ لم تُعرض ضمن المتاح.";
+      if (exclusions && excludedList && data.excluded_properties?.length) {
+        for (const item of data.excluded_properties) {
+          const row = document.createElement("li");
+          row.textContent = `${item.name}: ${item.reason}`;
+          excludedList.append(row);
+        }
+        exclusions.hidden = false;
+      }
       for (const item of data.properties) {
         const button = document.createElement("button");
         button.type = "button";

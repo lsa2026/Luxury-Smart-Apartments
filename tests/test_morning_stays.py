@@ -186,7 +186,14 @@ def test_every_overlapping_stay_blocks_even_without_a_noon_departure(kind):
     elif kind == "owner_stay":
         row["status"] = "ownerStay"
     remote.guest_stay_page.return_value = [row]
-    with pytest.raises(MorningStayError, match="إشغال"):
+    reason = (
+        "إشغال"
+        if kind == "early_arrival"
+        else "إقامة مستمرة"
+        if kind == "extended"
+        else "خروجه اليوم"
+    )
+    with pytest.raises(MorningStayError, match=reason):
         verify_window(p, start, end, client=remote)
 
 
@@ -233,6 +240,65 @@ def test_incomplete_or_multiunit_calendar_cannot_authorize_collection():
         *rows[1:],
     )
     with pytest.raises(MorningStayError, match="وحدات"):
+        verify_window(p, start, end, client=remote)
+
+
+def test_nightly_sellability_and_zero_unit_metadata_do_not_block_an_empty_morning():
+    p, remote = property_and_remote()
+    start, end = window()
+    remote.get_listing_calendar.return_value.days = tuple(
+        replace(
+            row,
+            is_available=False,
+            status="reserved",
+            count_available_units=0,
+            available_units_to_sell=0,
+            count_reserved_units=1,
+            count_pending_units=0,
+            count_blocked_units=0,
+            minimum_stay=7,
+            closed_on_arrival=True,
+        )
+        for row in remote.get_listing_calendar.return_value.days
+    )
+    evidence = verify_window(p, start, end, client=remote)
+    assert evidence["readiness_policy"] == "owner_scheduled_departure_and_no_overlapping_stay"
+    remote.guest_stay_page.assert_called_once()
+    assert not MorningStay.objects.exists()
+
+
+@pytest.mark.parametrize("departure_offset", [0, 2])
+def test_scheduled_departure_blocks_even_when_noon_checkout_has_not_been_recorded(departure_offset):
+    p, remote = property_and_remote()
+    start, end = window()
+    remote.guest_stay_page.return_value = [
+        {
+            "id": 17,
+            "listingMapId": p.hostaway_listing_map_id,
+            "status": "confirmed",
+            "arrivalDate": (start.date() - timedelta(days=3)).isoformat(),
+            "departureDate": (start.date() + timedelta(days=departure_offset)).isoformat(),
+            "checkOutTime": 0,
+        }
+    ]
+    with pytest.raises(MorningStayError, match="خروجه اليوم|إقامة مستمرة"):
+        verify_window(p, start, end, client=remote)
+
+
+def test_cancelled_departures_do_not_block_but_unknown_listing_identity_does():
+    p, remote = property_and_remote()
+    start, end = window()
+    row = {
+        "id": 18,
+        "listingMapId": p.hostaway_listing_map_id,
+        "status": "cancelled",
+        "arrivalDate": (start.date() - timedelta(days=3)).isoformat(),
+        "departureDate": start.date().isoformat(),
+    }
+    remote.guest_stay_page.return_value = [row]
+    assert verify_window(p, start, end, client=remote)
+    remote.guest_stay_page.return_value = [row | {"listingMapId": None}]
+    with pytest.raises(MorningStayError, match="هوية الشقة"):
         verify_window(p, start, end, client=remote)
 
 

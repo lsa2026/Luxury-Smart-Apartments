@@ -75,7 +75,7 @@ def morning_available_properties(request):
             {"detail": "حدّد تاريخًا ووقت دخول وخروج صحيحين وعدد الضيوف."}, status=400
         )
     data = form.cleaned_data
-    available, unverified = [], 0
+    available, excluded, unverified = [], [], 0
     valid_windows = 0
     properties = Property.objects.filter(is_visible=True, hostaway_is_active=True).order_by(
         "sort_order", "id"
@@ -99,13 +99,23 @@ def morning_available_properties(request):
             valid_windows += 1
             try:
                 if active_stays(property_obj, start, end + timedelta(hours=3)).exists():
+                    excluded.append(
+                        {"name": str(property_obj), "reason": "يوجد طلب صباحي آخر متداخل للشقة."}
+                    )
                     continue
                 evidence = verify_window(
                     property_obj, start, end, guests=data["guests"], client=reader
                 )
-            except MorningStayError:
+            except MorningStayError as exc:
+                excluded.append({"name": str(property_obj), "reason": str(exc)})
                 continue
             except HostawayError:
+                excluded.append(
+                    {
+                        "name": str(property_obj),
+                        "reason": "تعذر التحقق من مصدر الحجوزات؛ لم يُثبت التوفر.",
+                    }
+                )
                 unverified += 1
                 continue
             available.append(
@@ -121,6 +131,7 @@ def morning_available_properties(request):
     response = JsonResponse(
         {
             "properties": available,
+            "excluded_properties": excluded,
             "unverified_count": unverified,
             "checked_at": timezone.now().isoformat(),
             "detail": (

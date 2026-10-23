@@ -13,7 +13,6 @@ from apps.integrations.hostaway.reservation_validators import normalize_hostaway
 from apps.properties.models import Property
 
 from .models import MorningStay, Reservation
-from .services.availability import resolve_day_inventory
 
 ZONE = ZoneInfo("Asia/Riyadh")
 UNRESOLVED = ("created", "pending", "unknown", "review")
@@ -148,17 +147,32 @@ def verify_window(property_obj, starts_at, ends_at, *, guests=1, client=None, al
     days = {row.date: row for row in calendar.days}
     if previous_day not in days or day not in days:
         raise MorningStayError("تعذر التحقق من تقويم الليلة السابقة واليوم المطلوب.")
-    previous = resolve_day_inventory(days[previous_day])
-    current = resolve_day_inventory(days[day])
-    if previous.is_multi_unit or current.is_multi_unit:
-        raise MorningStayError("التقويم مجمع لعدة وحدات؛ يلزم تعيين الشقة الفعلية قبل الدفع.")
-    if previous.has_conflict or current.has_conflict:
-        raise MorningStayError("إشارات التوفر متعارضة؛ يلزم مراجعة الإدارة.")
     for row in (days[previous_day], days[day]):
+        # Zero/one unit counters are also returned for individual apartments.
+        # Only actual multi-unit stock requires a physical-unit assignment.
+        counts = (
+            row.count_available_units,
+            row.available_units_to_sell,
+            row.desired_units_to_sell,
+            row.count_reserved_units,
+            row.count_pending_units,
+            row.count_blocked_units,
+        )
+        stock = sum(
+            value or 0
+            for value in (
+                row.count_available_units,
+                row.count_reserved_units,
+                row.count_pending_units,
+                row.count_blocked_units,
+            )
+        )
+        if stock > 1 or any(value is not None and value > 1 for value in counts):
+            raise MorningStayError("التقويم مجمع لعدة وحدات؛ يلزم تعيين الشقة الفعلية قبل الدفع.")
         if row.count_blocked_units or row.status.casefold() in {"blocked", "closed", "maintenance"}:
             raise MorningStayError("يوجد حجب أو إغلاق يحتاج مراجعة الإدارة.")
 
-    cursor, seen, future_night_booked = None, set(), False
+    cursor, seen = None, set()
     for _ in range(10):
         rows = client.guest_stay_page(previous_day, day, after_id=cursor)
         for row in rows:
@@ -166,7 +180,10 @@ def verify_window(property_obj, starts_at, ends_at, *, guests=1, client=None, al
             if type(identifier) is not int or identifier <= 0 or identifier in seen:
                 raise MorningStayError("تغطية الحجوزات غير مكتملة.")
             seen.add(identifier)
-            if row.get("listingMapId") != property_obj.hostaway_listing_map_id:
+            listing_map_id = row.get("listingMapId")
+            if type(listing_map_id) is not int or listing_map_id <= 0:
+                raise MorningStayError("هوية الشقة في بيانات الحجوزات غير متحققة.")
+            if listing_map_id != property_obj.hostaway_listing_map_id:
                 continue
             status = normalize_hostaway_reservation_status(str(row.get("status", "")))
             if status in {"cancelled", "declined", "expired", "inquiry"}:
@@ -178,6 +195,17 @@ def verify_window(property_obj, starts_at, ends_at, *, guests=1, client=None, al
                 departure = datetime.fromisoformat(row["departureDate"]).date()
                 if departure <= arrival:
                     raise ValueError
+            except (ValueError, TypeError, KeyError) as exc:
+                raise MorningStayError("تواريخ إشغال الوحدة غير متحققة.") from exc
+            # The owner's morning rule uses scheduled departures, not a
+            # performed checkout or the nightly calendar's sellability flag.
+            if arrival < day and departure == day:
+                raise MorningStayError("يوجد ضيف موعد خروجه اليوم؛ الشقة مشغولة خلال الصباح.")
+            if arrival < day < departure:
+                raise MorningStayError("توجد إقامة مستمرة؛ موعد خروج الضيف بعد هذا اليوم.")
+            if departure < day:
+                continue
+            try:
                 in_hour = row.get("checkInTime")
                 out_hour = row.get("checkOutTime")
                 in_hour = in_hour if in_hour is not None else property_obj.display_check_in_hour
@@ -193,23 +221,17 @@ def verify_window(property_obj, starts_at, ends_at, *, guests=1, client=None, al
             # An afternoon arrival is fine when the three-hour turnover fits.
             if start < ends_at + timedelta(hours=3) and end > starts_at:
                 raise MorningStayError("يوجد إشغال أو وصول مبكر يتعارض مع الفترة أو تجهيز الوحدة.")
-            if arrival == day and start >= ends_at + timedelta(hours=3):
-                future_night_booked = True
         if len(rows) < 100:
             break
         cursor = rows[-1]["id"]
     else:
         raise MorningStayError("تعذر إكمال صفحات الحجوزات؛ لم يُثبت التوفر.")
-    if not previous.is_available:
-        raise MorningStayError("الليلة السابقة محجوبة أو غير متاحة؛ لا يمكن تأكيد الصباح.")
-    if not current.is_available and not future_night_booked:
-        raise MorningStayError("إغلاق اليوم غير مفسر بحجز يبدأ بعد فترة الصباح؛ يلزم مراجعة.")
     return {
         "checked_at": timezone.now().isoformat(),
         "source": "hostaway_read_only",
         "previous_night": previous_day.isoformat(),
         "reservation_rows_checked": len(seen),
-        "readiness_policy": "owner_immediate_turnover_no_overlapping_stay",
+        "readiness_policy": "owner_scheduled_departure_and_no_overlapping_stay",
     }
 
 
