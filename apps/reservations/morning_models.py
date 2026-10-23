@@ -3,7 +3,7 @@
 import uuid
 
 from django.conf import settings
-from django.db import models, transaction
+from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
@@ -59,30 +59,10 @@ class MorningStay(models.Model):
     def __str__(self):
         return f"AM-{str(self.pk)[:8]} — {self.get_status_display()}"
 
-    def save(self, *args, **kwargs):
-        # The outbox is committed with the business change, including payment verification.
-        with transaction.atomic():
-            if not self._state.adding:
-                previous = (
-                    type(self)
-                    .objects.select_for_update()
-                    .only("communication_revision", "communication_fingerprint")
-                    .get(pk=self.pk)
-                )
-                self.communication_revision = previous.communication_revision
-                self.communication_fingerprint = previous.communication_fingerprint
-            super().save(*args, **kwargs)
-            if getattr(settings, "MORNING_N8N_ENABLED", False):
-                from .morning_communications import capture_event
-
-                capture_event(self.pk)
-                self.refresh_from_db(fields=["communication_revision", "communication_fingerprint"])
-
-    def latest_communication_event(self):
-        return self.communication_events.order_by("-revision").first()
-
 
 class MorningCommunicationEvent(models.Model):
+    """Retained history only; the website has no event capture or delivery hooks."""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     stay = models.ForeignKey(
         MorningStay, on_delete=models.PROTECT, related_name="communication_events"
