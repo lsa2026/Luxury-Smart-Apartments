@@ -15,7 +15,7 @@
           {% if delivery.error_code %} — راجع سجل التسليم قبل إعادة المحاولة{% endif %}</p>
       {% endfor %}
     {% endif %}
-    {% if reservation.payment_status != 'paid' %}
+    {% if not detail_payment_settled %}
     {% if guest_payment_request.status == 'open' and latest_link_delivery %}
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">إعادة إرسال رابط السداد للضيف</button></form>
     {% if latest_link_delivery.status == 'unknown' or latest_link_delivery.status == 'sending' or latest_link_delivery.status == 'queued' %}

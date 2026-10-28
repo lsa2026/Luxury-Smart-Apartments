@@ -97,8 +97,20 @@ def payment_message(request, kind="link", *, owner_review=False):
         ),
     }[language]
     brand, greeting, intro, stay, total, cta, note, thanks, receipt, review = copy
+    if request.modification_request_id:
+        total = {
+            "ar": "المبلغ المطلوب بالريال السعودي"
+            if kind == "link"
+            else "الدفعة المستلمة بالريال السعودي",
+            "en": "Amount due in SAR" if kind == "link" else "Payment received in SAR",
+            "fr": "Montant à régler en SAR" if kind == "link" else "Paiement reçu en SAR",
+        }[language]
     with translation.override(language):
-        dates = f"{localized_date(reservation.check_in)} — {localized_date(reservation.check_out)}"
+        date_in, date_out = reservation.check_in, reservation.check_out
+        if request.modification_request_id and kind == "receipt":
+            date_in = request.modification_request.new_check_in
+            date_out = request.modification_request.new_check_out
+        dates = f"{localized_date(date_in)} — {localized_date(date_out)}"
         amount = localized_money_text(request.amount_sar, "SAR", language=language)
         if language == "ar":
             amount = localized_money_text(request.amount_sar, "", language=language) + " ريال سعودي"
@@ -108,6 +120,29 @@ def payment_message(request, kind="link", *, owner_review=False):
         intro if kind == "link" else f"✅ {receipt}",
         f"📅 *{stay}:* {dates}\n💳 *{total}:* {amount}",
     ]
+    if request.modification_request_id:
+        snapshot = request.settlement_snapshot
+        labels = {
+            "ar": ("إجمالي الحجز المعدّل", "المدفوع الموثق", "المتبقي المطلوب سداده"),
+            "en": ("Updated booking total", "Verified paid", "Remaining amount to pay"),
+            "fr": ("Total du séjour modifié", "Déjà payé et vérifié", "Solde à régler"),
+        }[language]
+        if kind == "receipt":
+            labels = (
+                *labels[:2],
+                {"ar": "الدفعة المستلمة الآن", "en": "Received now", "fr": "Reçu maintenant"}[
+                    language
+                ],
+            )
+        values = (snapshot["total"], snapshot["paid"], snapshot["due"])
+        with translation.override(language):
+            blocks.append(
+                "\n".join(
+                    f"*{label}:* "
+                    + localized_money_text(value, request.source_currency, language=language)
+                    for label, value in zip(labels, values, strict=True)
+                )
+            )
     if kind == "link":
         blocks.extend([f"🔗 {cta}", public_url(request), note])
     blocks.append(thanks)

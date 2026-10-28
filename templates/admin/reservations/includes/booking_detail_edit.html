@@ -22,6 +22,9 @@
         {% endif %}
       </div>
     {% endfor %}
+    {% if current_adjustment.is_expired and current_adjustment.status != 'completed' %}
+    <p class="help">انتهت صلاحية فحص التعديل. أعد فحص السعر والتوفر واعتماد السعر قبل تنفيذ التعديل أو تحديث رابط الدفع.</p>
+    {% endif %}
   </section>
   {% endif %}
   {% if current_adjustment and final_price_form and not final_price_confirmed %}
@@ -58,6 +61,16 @@
   </section>
   {% endif %}
   {% if increase_adjustment %}
+  {% if payment_links_enabled %}
+  <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
+    <h2>تحديث رابط دفع الضيف</h2>
+    <p>راجع الرابط السابق بعد تعديل الحجز، مع الإجمالي الجديد والمدفوع الموثق والمتبقي ورسالة الضيف. لا يُفعّل التحديث ولا يُرسل قبل اعتمادك في شاشة المراجعة.</p>
+    <form method="post" action="{% url 'notifications:updated_payment_link_preview' reservation.pk %}" class="lsa-owner-form">{% csrf_token %}
+      <input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}">
+      <button class="lsa-btn lsa-btn--gold" type="submit"><span aria-hidden="true">↻</span> تحديث رابط الدفع ومراجعته</button>
+    </form>
+  </section>
+  {% endif %}
   <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
     <h2>تأكيد التعديل وطلب رابط الدفع</h2>
     <p>السعر النهائي <b dir="ltr">{{ increase_adjustment.new_total|format_money:increase_adjustment.currency }}</b> · المدفوع الصافي <b dir="ltr">{{ settlement.paid|format_money:increase_adjustment.currency }}</b> · المتبقي للدفع <b dir="ltr">{{ settlement.due|format_money:increase_adjustment.currency }}</b>.</p>

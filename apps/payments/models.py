@@ -15,6 +15,7 @@ class ReservationPaymentRequest(models.Model):
     """A revocable payment-only capability for an already-created manual stay."""
 
     class Status(models.TextChoices):
+        DRAFT = "draft", _("Awaiting administrator approval")
         OPEN = "open", _("Awaiting payment")
         PAID = "paid", _("Paid")
         REVOKED = "revoked", _("Cancelled")
@@ -24,6 +25,21 @@ class ReservationPaymentRequest(models.Model):
     reservation = models.ForeignKey(
         "reservations.Reservation", on_delete=models.PROTECT, related_name="payment_requests"
     )
+    modification_request = models.ForeignKey(
+        "reservations.BookingModificationRequest",
+        on_delete=models.PROTECT,
+        related_name="payment_link_revisions",
+        null=True,
+        blank=True,
+    )
+    link_anchor = models.ForeignKey(
+        "self", on_delete=models.PROTECT, related_name="link_revisions", null=True, blank=True
+    )
+    superseded_by = models.ForeignKey(
+        "self", on_delete=models.PROTECT, related_name="superseded_requests", null=True, blank=True
+    )
+    settlement_snapshot = models.JSONField(default=dict, db_default={}, editable=False)
+    approved_at = models.DateTimeField(null=True, blank=True, editable=False)
     amount_sar = models.DecimalField(max_digits=14, decimal_places=2)
     source_amount = models.DecimalField(max_digits=14, decimal_places=4)
     source_currency = models.CharField(max_length=3)

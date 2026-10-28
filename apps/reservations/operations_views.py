@@ -24,7 +24,7 @@ from apps.notifications.services.ultramsg import (
     send_modification_payment_link_request,
 )
 from apps.payments.hyperpay.refunds import HyperPayRefundService
-from apps.payments.models import PaymentAttempt
+from apps.payments.models import PaymentAttempt, ReservationPaymentRequest
 from apps.properties.models import Property
 
 from .manual_bookings import (
@@ -324,7 +324,16 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             is_test=False,
         )
         .select_related("property", "booking_intent")
-        .annotate(admin_has_paid=Exists(successful_original_payment))
+        .annotate(
+            admin_has_paid=Exists(successful_original_payment),
+            admin_has_open_revision=Exists(
+                ReservationPaymentRequest.objects.filter(
+                    reservation_id=OuterRef("pk"),
+                    status="open",
+                    modification_request__isnull=False,
+                )
+            ),
+        )
         .order_by("-created_at")
     )
     if query:
@@ -353,6 +362,8 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             if booking.normalized_status == Reservation.Status.CANCELLED
             else "stay_ended"
             if cancellation_blocker(booking)
+            else "awaiting_payment"
+            if booking.admin_has_open_revision
             else "completed"
             if booking.admin_has_paid
             or payment_status in {"paid", "paid_with_points", "partially_paid", "refunded"}
@@ -423,10 +434,19 @@ def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
             }
             else "invoice"
         )
+    payment_request = context.get("guest_payment_request")
+    revised_balance_open = bool(
+        payment_request
+        and payment_request.modification_request_id
+        and payment_request.status == "open"
+    )
+    if revised_balance_open:
+        label = "مؤكد بانتظار سداد المتبقي"
     context.update(
         detail_default_panel=selected,
         detail_status_label=label,
-        detail_payment_settled=payment_status in {"paid", "paid_with_points"},
+        detail_payment_settled=payment_status in {"paid", "paid_with_points"}
+        and not revised_balance_open,
     )
     # Scope Arabic to rendering; do not change provider/notification language.
     with translation.override("ar"):
@@ -767,7 +787,9 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 else:
                     messages.error(request, "تعذر إرسال طلب رابط فرق التعديل إلى أسيل.")
 
-    guest_payment_request = reservation.payment_requests.first()
+    guest_payment_request = reservation.payment_requests.filter(
+        Q(modification_request__isnull=True) | Q(approved_at__isnull=False)
+    ).first()
     latest_link_delivery = (
         guest_payment_request.deliveries.filter(kind="link").order_by("-sequence").first()
         if guest_payment_request

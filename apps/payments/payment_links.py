@@ -118,6 +118,12 @@ def issue_request(reservation_id):
     require_enabled()
     with transaction.atomic():
         reservation = Reservation.objects.select_for_update().get(pk=reservation_id)
+        revised = reservation.payment_requests.filter(
+            status="open", modification_request__isnull=False
+        ).first()
+        if revised is not None:
+            validate_open(revised)
+            return revised
         intent = _eligible(reservation)
         current = reservation.payment_requests.filter(status="open").first()
         if current:
@@ -147,7 +153,9 @@ def issue_request(reservation_id):
 
 def link_token(request):
     # Deterministic across resends; validity and revocation are checked in the database.
-    return signing.Signer(salt=SALT).sign_object({"request": str(request.pk)})
+    return signing.Signer(salt=SALT).sign_object(
+        {"request": str(request.link_anchor_id or request.pk)}
+    )
 
 
 def public_url(request):
@@ -163,13 +171,27 @@ def resolve_token(token):
         payload = signing.Signer(salt=SALT).unsign_object(token)
         if not isinstance(payload, dict) or set(payload) != {"request"}:
             return None
-        return (
+        request = (
             ReservationPaymentRequest.objects.select_related(
                 "reservation__booking_intent", "reservation__property"
             )
             .filter(pk=payload["request"])
             .first()
         )
+        visited = set()
+        while request and request.superseded_by_id:
+            if request.pk in visited or len(visited) >= 20:
+                return None
+            visited.add(request.pk)
+            next_request = request.superseded_by
+            if (
+                next_request.reservation_id != request.reservation_id
+                or next_request.environment != request.environment
+                or next_request.approved_at is None
+            ):
+                return None
+            request = next_request
+        return request
     except (signing.BadSignature, ValidationError, ValueError, TypeError, KeyError):
         return None
 
@@ -180,6 +202,10 @@ def validate_open(request):
     reservation = Reservation.objects.select_related("booking_intent").get(
         pk=request.reservation_id
     )
+    if request.modification_request_id:
+        from .payment_link_revisions import validate_revision
+
+        return validate_revision(request, reservation)
     _eligible(reservation)
     if (
         request.fingerprint != fingerprint(reservation)
@@ -231,17 +257,25 @@ def create_request_checkout(request_id, *, billing_data, acceptance, client=None
     request = ReservationPaymentRequest.objects.get(pk=request_id)
     reservation = validate_open(request)
     # Read an existing reservation, never an availability query or a booking POST.
-    _verify_remote(reservation, hostaway)
+    if request.modification_request_id:
+        from .payment_link_revisions import verify_revision_remote
+
+        verify_revision_remote(request, reservation, hostaway)
+    else:
+        _verify_remote(reservation, hostaway)
     with transaction.atomic():
         reservation = Reservation.objects.select_for_update().get(pk=reservation.pk)
         request = ReservationPaymentRequest.objects.select_for_update().get(pk=request_id)
         validate_open(request)
         intent = BookingIntent.objects.select_for_update().get(pk=reservation.booking_intent_id)
-        previous = (
-            PaymentAttempt.objects.filter(booking_intent=intent, status__in=(*SETTLED, *UNRESOLVED))
-            .order_by("-created_at")
-            .first()
-        )
+        attempts = PaymentAttempt.objects.filter(booking_intent=intent)
+        if request.modification_request_id:
+            attempts = attempts.filter(
+                Q(status__in=UNRESOLVED) | Q(payment_request=request, status__in=SETTLED)
+            )
+        else:
+            attempts = attempts.filter(status__in=(*SETTLED, *UNRESOLVED))
+        previous = attempts.order_by("-created_at").first()
         if previous:
             if (
                 previous.payment_request_id == request.pk
@@ -263,23 +297,25 @@ def create_request_checkout(request_id, *, billing_data, acceptance, client=None
         ):
             setattr(intent, field, billing_data[field])
         now = timezone.now()
-        intent.terms_accepted_at = intent.privacy_accepted_at = now
-        intent.house_rules_accepted_at = now
-        intent.legal_acceptance = acceptance
-        intent.save(
-            update_fields=[
-                "billing_street1",
-                "billing_city",
-                "billing_state",
-                "billing_country",
-                "billing_postcode",
+        fields = [
+            "billing_street1",
+            "billing_city",
+            "billing_state",
+            "billing_country",
+            "billing_postcode",
+            "updated_at",
+        ]
+        if not request.modification_request_id:
+            intent.terms_accepted_at = intent.privacy_accepted_at = now
+            intent.house_rules_accepted_at = now
+            intent.legal_acceptance = acceptance
+            fields += [
                 "terms_accepted_at",
                 "privacy_accepted_at",
                 "house_rules_accepted_at",
                 "legal_acceptance",
-                "updated_at",
             ]
-        )
+        intent.save(update_fields=fields)
         request.accepted_at, request.legal_acceptance = now, acceptance
         request.save(update_fields=["accepted_at", "legal_acceptance"])
         merchant_id = merchant_transaction_id()
@@ -321,7 +357,25 @@ def complete_request_payment(attempt):
         request = ReservationPaymentRequest.objects.select_for_update().get(pk=request.pk)
         if request.status == "paid":
             return reservation
-        if (
+        revision_valid = False
+        if request.modification_request_id:
+            from .payment_link_revisions import validate_revision
+
+            try:
+                validate_revision(request, reservation, completing=True)
+                revision_valid = (
+                    attempt.amount == request.amount_sar
+                    and attempt.currency == "SAR"
+                    and attempt.booking_intent_id == reservation.booking_intent_id
+                    and attempt.status == "succeeded"
+                    and attempt.verified_at is not None
+                    and not request.attempts.filter(status__in=SETTLED)
+                    .exclude(pk=attempt.pk)
+                    .exists()
+                )
+            except (HyperPayError, ValueError, ValidationError):
+                pass
+        legacy_invalid = (
             reservation.normalized_status != Reservation.Status.CONFIRMED
             or request.fingerprint != fingerprint(reservation)
             or request.status not in {"open", "review"}
@@ -338,6 +392,9 @@ def complete_request_payment(attempt):
             )
             .exclude(pk=attempt.pk)
             .exists()
+        )
+        if (request.modification_request_id and not revision_valid) or (
+            not request.modification_request_id and legacy_invalid
         ):
             request.status, request.review_code = "review", "paid_booking_requires_review"
             request.save(update_fields=["status", "review_code"])
