@@ -48,6 +48,7 @@ jobs:
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
           tests/test_payment_link_revisions.py
+          tests/test_payment_team_notices.py
           tests/test_morning_stays.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py

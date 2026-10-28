@@ -793,6 +793,10 @@ SITEMAP_CACHE_SECONDS = 300
 MORNING07_N8N_ENABLED = strict_bool("MORNING07_N8N_ENABLED")
 MORNING07_N8N_WEBHOOK_URL = env("MORNING07_N8N_WEBHOOK_URL", default="").strip()
 MORNING07_WORK_GROUP_ID = "120363408128237629@g.us"
+# Owner-approved team payment notices use the existing Marrakech work group.
+PAYMENT_TEAM_NOTICES_ENABLED = strict_bool(
+    "PAYMENT_TEAM_NOTICES_ENABLED", HYPERPAY_ENVIRONMENT == "production"
+)
 if (
     MORNING07_N8N_ENABLED
     and MORNING07_N8N_WEBHOOK_URL != "https://lsa25.app.n8n.cloud/webhook/lsa07-morning-stay-v1"
