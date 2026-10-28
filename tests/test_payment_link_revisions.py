@@ -1,5 +1,6 @@
 """Amended balances: real DB/owner forms, fake payment and Hostaway providers."""
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from decimal import Decimal
@@ -297,6 +298,43 @@ def test_owner_approval_updates_and_queues_once_without_fallback_message():
     assert draft.deliveries.count() == 1
     assert draft.deliveries.get().status == "queued"
     assert draft.modification_request.hostaway_operations.count() == 1
+
+
+@pytest.mark.parametrize(
+    "origin", ["https://testserver", None, "null", "https://untrusted.example"]
+)
+def test_owner_review_secure_csrf_preserves_origin_and_rejects_untrusted_requests(origin):
+    stay = manual_stay()
+    draft = prepare_preview(stay.pk, change(stay).pk)
+    url = reverse("notifications:updated_payment_link_review", args=[stay.pk, draft.pk])
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(owner())
+    page = client.get(url, secure=True)
+    assert page.status_code == 200
+    assert page["Referrer-Policy"] == "same-origin"
+    assert "no-store" in page["Cache-Control"]
+    token = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', page.content.decode())[1]
+    headers = {"HTTP_ORIGIN": origin} if origin else {"HTTP_REFERER": "https://testserver" + url}
+    trusted = origin in {"https://testserver", None}
+    with (
+        patch("apps.payments.owner_payment_links.approve_preview", return_value=draft) as approve,
+        patch("apps.payments.owner_payment_links.queue_delivery") as delivery,
+    ):
+        delivery.return_value.status = "queued"
+        missing = client.post(url, {"confirm_updated_link": "on"}, secure=True, **headers)
+        assert missing.status_code == 403
+        approve.assert_not_called()
+        result = client.post(
+            url,
+            {"confirm_updated_link": "on", "csrfmiddlewaretoken": token},
+            secure=True,
+            **headers,
+        )
+        assert result.status_code == (302 if trusted else 403)
+        assert approve.call_count == int(trusted)
+        assert delivery.call_count == int(trusted)
+    assert not draft.deliveries.exists()
+    assert not PaymentAttempt.objects.exists()
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
