@@ -4,7 +4,7 @@ Run this file on PostgreSQL in CI as well as SQLite. The original 500 cannot be
 detected by SQLite, which silently omits SELECT FOR UPDATE.
 """
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 from uuid import uuid4
@@ -227,6 +227,57 @@ def test_extension_payment_revalidation_ignores_occupied_original_nights(owner_c
     )
     assert outcome.code == "ready"
     assert availability.calendar_calls == availability.price_calls == 1
+
+
+@pytest.mark.parametrize(("same_day_allowed", "hour"), [(False, 8), (True, 8), (False, 13)])
+def test_existing_arrival_policy_does_not_block_owner_extension(
+    owner_client, settings, same_day_allowed, hour
+):
+    settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED = True
+    # B12's observed local policy: same-day arrivals disabled, 12h lead,
+    # 15:00 check-in. The existing arrival is unchanged, even after 15:00.
+    with patch("django.utils.timezone.now", return_value=datetime(2026, 10, 28, hour, tzinfo=UTC)):
+        reservation = confirmed_reservation()
+        reservation.check_in = timezone.localdate()
+        reservation.check_out = reservation.check_in + timedelta(days=2)
+        reservation.save(update_fields=["check_in", "check_out"])
+        property_obj = reservation.property
+        property_obj.allow_same_day_booking = same_day_allowed
+        property_obj.same_day_booking_lead_time_hours = 12
+        property_obj.check_in_time_start = 15
+        property_obj.time_zone_name = "Asia/Riyadh"
+        property_obj.min_nights = 1
+        property_obj.max_nights = 365
+        property_obj.save()
+        response, availability = extension_from_owner_form(owner_client, reservation)
+        assert response.status_code == 302
+        proposal = BookingModificationRequest.objects.get(reservation=reservation)
+        assert proposal.new_check_in == reservation.check_in
+        assert proposal.new_check_out == reservation.check_out + timedelta(days=1)
+        assert proposal.request_type == BookingModificationRequest.RequestType.EXTEND_STAY
+        assert availability.calendar_calls == availability.price_calls == 1
+        assert not PaymentAttempt.objects.exists()
+        assert not proposal.hostaway_operations.exists()
+        assert not WhatsAppDelivery.objects.exists()
+
+
+def test_changed_owner_arrival_still_obeys_same_day_policy():
+    with patch("django.utils.timezone.now", return_value=datetime(2026, 10, 28, 8, tzinfo=UTC)):
+        reservation = confirmed_reservation()
+        reservation.property.allow_same_day_booking = False
+        reservation.property.save()
+        availability = ModificationAvailabilityStub(reservation)
+        result = ModificationService(availability_service=availability).create_change_quote(
+            reservation,
+            new_check_in=timezone.localdate(),
+            new_check_out=timezone.localdate() + timedelta(days=3),
+            new_guests=reservation.guests,
+            session_hash="owner:test",
+            owner_override=True,
+        )
+        assert result.code == "same_day_change_not_allowed"
+        assert result.request is None
+        assert availability.calendar_calls == availability.price_calls == 0
 
 
 def approve(client, reservation, modification, total):

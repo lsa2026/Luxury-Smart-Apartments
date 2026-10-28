@@ -95,6 +95,33 @@ def test_stays_longer_than_the_maximum_are_refused() -> None:
     assert refusal == host_policy.MAXIMUM_STAY_EXCEEDED
 
 
+@pytest.mark.parametrize(
+    ("bounds", "expected"),
+    [
+        ({"min_nights": 4}, host_policy.MINIMUM_STAY_NOT_MET),
+        ({"max_nights": 2}, host_policy.MAXIMUM_STAY_EXCEEDED),
+        ({"min_nights": 1, "max_nights": 365}, host_policy.ALLOWED),
+    ],
+)
+def test_unchanged_arrival_skips_arrival_cutoffs_but_preserves_stay_bounds(bounds, expected):
+    property_obj = policy_property(
+        allow_same_day_booking=False,
+        same_day_booking_lead_time_hours=12,
+        time_zone_name="Asia/Riyadh",
+        **bounds,
+    )
+    assert (
+        host_policy.policy_blocker(
+            property_obj,
+            check_in=date(2026, 10, 28),
+            check_out=date(2026, 10, 31),
+            arrival_changed=False,
+            now=datetime(2026, 10, 28, 11, tzinfo=RIYADH),
+        )
+        == expected
+    )
+
+
 def test_an_unreported_policy_cannot_block() -> None:
     property_obj = policy_property(min_nights=None, max_nights=None)
 

@@ -82,6 +82,7 @@ class ModificationService:
             return ModificationCreation(blocker)
         if (
             settings.BOOKING_LAUNCH_FLEXIBLE_CANCELLATION_ENABLED
+            and not owner_override
             and timezone.now() >= check_in_datetime(reservation.property, reservation.check_in)
             and not _loyalty_booking(reservation)
         ):
@@ -96,6 +97,7 @@ class ModificationService:
             reservation.property,
             check_in=reservation.check_in,
             check_out=new_check_out,
+            arrival_changed=False,
         )
         if refusal:
             return ModificationCreation(refusal)

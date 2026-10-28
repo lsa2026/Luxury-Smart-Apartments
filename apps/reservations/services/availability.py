@@ -89,6 +89,18 @@ MESSAGES = {
         "تعذر التحقق من السعر حالياً. يرجى المحاولة مرة أخرى بعد قليل.",
         "We couldn't verify the price right now. Please try again shortly.",
     ),
+    "same_day_change_not_allowed": (
+        "هذه الوحدة لا تقبل تغيير الوصول إلى اليوم نفسه.",
+        "This property does not accept a changed arrival today.",
+    ),
+    "arrival_lead_time_not_met": (
+        "تغيير الوصول أقرب من المهلة المسموحة قبل الدخول.",
+        "The changed arrival is within the property's required lead time.",
+    ),
+    "cancellation_after_check_in_not_allowed": (
+        "انتهت مهلة التعديل الذاتي بعد بدء الإقامة. راجع الإدارة.",
+        "Online self-service changes are closed after check-in. Contact the administrator.",
+    ),
 }
 
 
