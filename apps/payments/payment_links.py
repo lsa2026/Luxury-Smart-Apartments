@@ -154,7 +154,7 @@ def issue_request(reservation_id):
 def link_token(request):
     # Deterministic across resends; validity and revocation are checked in the database.
     return signing.Signer(salt=SALT).sign_object(
-        {"request": str(request.link_anchor_id or request.pk)}
+        {"request": str(getattr(request, "link_anchor_id", None) or request.pk)}
     )
 
 
