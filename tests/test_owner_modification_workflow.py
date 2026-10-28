@@ -6,6 +6,7 @@ detected by SQLite, which silently omits SELECT FOR UPDATE.
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from html.parser import HTMLParser
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -293,6 +294,43 @@ def approve(client, reservation, modification, total):
     modification.refresh_from_db()
     assert modification.new_total == Decimal(total)
     assert modification.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+
+
+@pytest.mark.parametrize("system_total", ["2142.0000", "2142.5000", "0.0000"])
+def test_owner_can_submit_the_price_rendered_by_the_booking_page(owner_client, system_total):
+    reservation = confirmed_reservation()
+    quote = price_quote(reservation, total=Decimal(system_total))
+    proposal = create_extension(
+        reservation, stub=ModificationAvailabilityStub(reservation, quote=quote)
+    ).request
+    url = reverse("notifications:booking_detail", args=[reservation.pk])
+    page = owner_client.get(url)
+
+    class PriceInput(HTMLParser):
+        value = None
+
+        def handle_starttag(self, tag, attrs):
+            fields = dict(attrs)
+            if tag == "input" and fields.get("name") == "final_total_price":
+                self.value = fields.get("value")
+
+    field = PriceInput()
+    field.feed(page.content.decode())
+    assert field.value == format(Decimal(system_total), ".2f")
+    response = owner_client.post(
+        url,
+        {
+            "action": "set_final_price",
+            "modification_id": proposal.pk,
+            "final_total_price": field.value,
+        },
+    )
+    assert response.status_code == 302
+    proposal.refresh_from_db()
+    assert proposal.quote_snapshot["owner_final_total"] == field.value
+    assert proposal.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+    assert not proposal.hostaway_operations.exists()
+    assert not PaymentAttempt.objects.exists()
 
 
 def test_postgres_reproduces_original_outer_join_error():

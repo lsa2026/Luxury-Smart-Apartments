@@ -224,6 +224,15 @@ class OwnerFinalPriceForm(forms.Form):
         widget=forms.NumberInput(attrs={"step": "0.01", "min": "0", "inputmode": "decimal"}),
     )
 
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        if not self.is_bound and self.initial.get("final_total_price") is not None:
+            # Stored Hostaway quotes have four places; the approval input has
+            # two. Never render a default that the same form will reject.
+            self.initial["final_total_price"] = Decimal(
+                str(self.initial["final_total_price"])
+            ).quantize(Decimal("0.01"))
+
 
 class CancellationExecutionForm(forms.Form):
     """Amount-only decision for the owner; the red action button is the confirmation."""
