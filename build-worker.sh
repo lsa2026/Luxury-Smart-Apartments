@@ -10,3 +10,4 @@ set -o pipefail
 
 pip install --upgrade pip
 pip install .
+python manage.py check_payment_team_notices

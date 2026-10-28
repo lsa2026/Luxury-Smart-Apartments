@@ -204,6 +204,10 @@ def verify_payment(attempt_id, *, client=None):
         elif attempt.status in {"failed", "cancelled"}:
             stay.status = "open" if stay.expires_at > timezone.now() else "expired"
         stay.save(update_fields=["status", "paid_at", "updated_at"])
+        if attempt.status == "succeeded":
+            from .team_notices import queue_notice
+
+            queue_notice(attempt, morning=True)
     return attempt
 
 

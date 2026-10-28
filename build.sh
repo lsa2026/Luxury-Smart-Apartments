@@ -17,6 +17,7 @@ fi
 # Check the approved event-only morning bridge before migration or release writes.
 # This prints configuration presence only; it never sends a guest message.
 python manage.py check_morning07_readiness
+python manage.py check_payment_team_notices
 
 # Compiled catalogs (.mo) are committed, so gettext is not needed at build time.
 python manage.py collectstatic --no-input

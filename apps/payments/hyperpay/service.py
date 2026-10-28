@@ -460,6 +460,10 @@ class HyperPayService:
                 HyperPayStatus.UNKNOWN: PaymentAttempt.Status.UNKNOWN,
             }[mapped]
             attempt.save()
+            if mapped is HyperPayStatus.SUCCESS:
+                from apps.payments.team_notices import queue_notice
+
+                queue_notice(attempt)
         logger.info(
             "Payment verified: provider=hyperpay internal_payment_id=%s booking_intent_id=%s "
             "merchant_transaction_id=%s checkout_id=%s provider_payment_id=%s "

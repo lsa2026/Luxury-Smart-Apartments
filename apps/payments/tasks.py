@@ -5,3 +5,4 @@ from .payment_link_tasks import (  # noqa: F401
     deliver_payment_request_task,
     recover_payment_requests_task,
 )
+from .team_notices import deliver_team_notice  # noqa: F401

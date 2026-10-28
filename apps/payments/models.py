@@ -98,6 +98,37 @@ class PaymentRequestDelivery(models.Model):
         return f"Payment delivery {self.pk}: {self.status}"
 
 
+class PaymentTeamNotice(models.Model):
+    """Future verified captures only; one durable work-group notice per capture."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    payment_attempt = models.OneToOneField(
+        "payments.PaymentAttempt", on_delete=models.PROTECT, null=True, blank=True
+    )
+    morning_attempt = models.OneToOneField(
+        "payments.MorningPaymentAttempt", on_delete=models.PROTECT, null=True, blank=True
+    )
+    status = models.CharField(max_length=12, default="queued")
+    provider_message_id = models.CharField(max_length=255, blank=True)
+    error_code = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(payment_attempt__isnull=False, morning_attempt__isnull=True)
+                    | Q(payment_attempt__isnull=True, morning_attempt__isnull=False)
+                ),
+                name="team_notice_exactly_one_capture",
+            )
+        ]
+
+    def __str__(self):
+        return f"Team payment notice {self.pk}: {self.status}"
+
+
 class PaymentAttempt(models.Model):
     class Status(models.TextChoices):
         CREATED = "created", _("Created")
