@@ -378,8 +378,15 @@ def verify_revision_remote(request, reservation, client=None):
                 raise HyperPayCheckoutError("unmatched_hostaway_collection")
             markers.add(marker)
             observed += value
-        if observed > paid or (
-            snapshot.payment_status.casefold() in {"paid", "fully_paid"} and observed != paid
+        payment_status = snapshot.payment_status.strip().casefold()
+        if (
+            payment_status
+            not in {"unpaid", "not_paid", "unknown", "", "paid", "fully_paid", "partially_paid"}
+            or observed > paid
+            or (
+                payment_status in {"paid", "fully_paid", "partially_paid"}
+                and (paid <= 0 or observed != paid)
+            )
         ):
             raise HyperPayCheckoutError("unmatched_hostaway_collection")
 

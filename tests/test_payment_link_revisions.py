@@ -405,6 +405,18 @@ def test_known_prior_hostaway_receipt_allows_only_remaining_balance():
     assert checkout(active, hostaway=hostaway).attempt.amount == Decimal("1642")
 
 
+@pytest.mark.parametrize("status", ["paid", "partially_paid", "pending"])
+def test_remote_paid_flag_without_matching_local_receipts_never_collects(status):
+    stay = manual_stay()
+    modification = change(stay)
+    active, _ = activate(prepare_preview(stay.pk, modification.pk))
+    hostaway = remote(active.reservation)
+    hostaway.get_reservation.return_value.payment_status = status
+    with pytest.raises(HyperPayCheckoutError, match="unmatched_hostaway_collection"):
+        checkout(active, hostaway=hostaway)
+    assert not PaymentAttempt.objects.exists()
+
+
 def test_pending_checkout_resumes_instead_of_creating_a_second_charge():
     stay = manual_stay()
     modification = change(stay)
