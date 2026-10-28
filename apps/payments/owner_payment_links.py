@@ -136,5 +136,7 @@ def updated_link_review(request, reservation_id, preview_id):
         },
     )
     response["Cache-Control"] = "private, no-store"
-    response["Referrer-Policy"] = "no-referrer"
+    # Safari can send Origin: null for POSTs from a no-referrer page.
+    # Retain same-site CSRF evidence without disclosing guest/link data off-site.
+    response["Referrer-Policy"] = "same-origin"
     return response
