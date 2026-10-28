@@ -53,7 +53,7 @@ from .operations_forms import (
     RefundSettlementForm,
 )
 from .services.automatic_modifications import execute_automatic_modification
-from .services.availability import AvailabilityRequest, AvailabilityService
+from .services.availability import MESSAGES, AvailabilityRequest, AvailabilityService
 from .services.booking_list_summary import attach_booking_list_summaries
 from .services.modifications import ModificationService
 from .services.owner_settlement import owner_change_blocker, settlement_for
@@ -615,7 +615,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                         "يمكنك تعديله بعد أن تصبح حالته «مؤكد» فقط.",
                     )
                 else:
-                    messages.error(request, "تعذر تسعير التعديل الآن. لم يتغير الحجز.")
+                    explanation = MESSAGES.get(outcome.code, ("تعذر تسعير التعديل الآن.", ""))[0]
+                    messages.error(request, f"{explanation} لم يتغير الحجز.")
         elif action == "start_cancellation":
             if cancellation_blocked:
                 messages.error(request, "لا يمكن إلغاء الحجز لأن الإقامة اكتملت وانتهت.")

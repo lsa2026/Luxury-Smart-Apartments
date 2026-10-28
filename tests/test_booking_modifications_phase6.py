@@ -231,7 +231,7 @@ def test_extension_date_and_limit_validation(added_nights: int, code: str) -> No
     ("changes", "expected"),
     [
         ({0: {"is_available": False}}, "inventory_conflict"),
-        ({0: {"minimum_stay": 3}}, "minimum_stay_not_met"),
+        ({0: {"minimum_stay": 5}}, "minimum_stay_not_met"),
         ({0: {"maximum_stay": 1}}, "maximum_stay_exceeded"),
         ({0: {"available_units_to_sell": 0}}, "inventory_conflict"),
     ],
@@ -993,7 +993,12 @@ def test_owner_override_executes_a_decrease_when_global_automation_is_disabled()
 
     outcome = execute_automatic_modification(
         modification,
-        service=HostawayModificationService(client=client),
+        service=HostawayModificationService(
+            client=client,
+            modification_service=ModificationService(
+                availability_service=ModificationAvailabilityStub(reservation)
+            ),
+        ),
         owner_override=True,
     )
 

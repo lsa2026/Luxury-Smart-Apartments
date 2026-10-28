@@ -505,10 +505,16 @@ def evaluate_calendar(
     *,
     check_in: date,
     check_out: date,
+    existing_check_in: date | None = None,
 ) -> str:
-    """Apply conservative stay rules to an already validated calendar."""
+    """Check the requested inventory; extensions retain their original arrival."""
     nights = (check_out - check_in).days
-    if nights < 1 or nights > 366:
+    stay_nights = (check_out - (existing_check_in or check_in)).days
+    if (
+        nights < 1
+        or stay_nights > 366
+        or (existing_check_in is not None and existing_check_in >= check_in)
+    ):
         return INVALID_DATES
 
     by_date = {day.date: day for day in days}
@@ -518,13 +524,13 @@ def evaluate_calendar(
 
     arrival_day = by_date[check_in]
     departure_day = by_date[check_out]
-    if arrival_day.closed_on_arrival is True:
+    if existing_check_in is None and arrival_day.closed_on_arrival is True:
         return CLOSED_ON_ARRIVAL
     if departure_day.closed_on_departure is True:
         return CLOSED_ON_DEPARTURE
-    if arrival_day.minimum_stay is not None and nights < arrival_day.minimum_stay:
+    if arrival_day.minimum_stay is not None and stay_nights < arrival_day.minimum_stay:
         return MINIMUM_STAY_NOT_MET
-    if arrival_day.maximum_stay is not None and nights > arrival_day.maximum_stay:
+    if arrival_day.maximum_stay is not None and stay_nights > arrival_day.maximum_stay:
         return MAXIMUM_STAY_EXCEEDED
 
     decisions = [resolve_day_inventory(by_date[day_date]) for day_date in stay_dates]

@@ -33,6 +33,7 @@ from ..models import (
     HostawayModificationOperation,
     Reservation,
 )
+from .modifications import ModificationService
 from .owner_settlement import owner_change_blocker
 from .reservation_payloads import _override_price_details
 from .stay_lifecycle import cancellation_blocker
@@ -48,11 +49,17 @@ class ModificationExecution:
 class HostawayModificationService:
     """Executes at most one future PUT, then reconciles through GET in the client."""
 
-    def __init__(self, *, client: HostawayClient | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        client: HostawayClient | None = None,
+        modification_service: ModificationService | None = None,
+    ) -> None:
         self.client = client or HostawayClient(
             timeout=settings.HOSTAWAY_RESERVATION_REQUEST_TIMEOUT_SECONDS
         )
         self._owns_client = client is None
+        self.modification_service = modification_service
 
     def close(self) -> None:
         if self._owns_client:
@@ -86,6 +93,22 @@ class HostawayModificationService:
         blocker = _execution_blocker(modification, reservation)
         if blocker:
             return ModificationExecution(blocker, modification)
+        if (
+            modification.request_type == BookingModificationRequest.RequestType.EXTEND_STAY
+            and modification.quote_snapshot.get("owner_final_total") is not None
+        ):
+            blocker = owner_change_blocker(modification)
+            if blocker:
+                return ModificationExecution(blocker, modification)
+            if self.modification_service is not None:
+                validation = self.modification_service.revalidate_extension_for_execution(
+                    modification
+                )
+            else:
+                with ModificationService() as service:
+                    validation = service.revalidate_extension_for_execution(modification)
+            if validation.code != "ready":
+                return ModificationExecution(validation.code, modification)
         operation, can_send = _prepare_operation(modification)
         if not can_send:
             code = (
