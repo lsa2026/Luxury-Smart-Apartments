@@ -615,6 +615,8 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                         "يمكنك تعديله بعد أن تصبح حالته «مؤكد» فقط.",
                     )
                 else:
+                    # Diagnose expected refusals without logging guest data or provider payloads.
+                    logger.info("Owner booking change pricing stopped: code=%s", outcome.code)
                     explanation = MESSAGES.get(outcome.code, ("تعذر تسعير التعديل الآن.", ""))[0]
                     messages.error(request, f"{explanation} لم يتغير الحجز.")
         elif action == "start_cancellation":

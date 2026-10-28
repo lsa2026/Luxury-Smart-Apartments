@@ -58,6 +58,7 @@ def policy_blocker(
     *,
     check_in: date,
     check_out: date,
+    arrival_changed: bool = True,
     now: datetime | None = None,
 ) -> str:
     """Return the reason code the host's listing policy refuses this stay for."""
@@ -68,6 +69,10 @@ def policy_blocker(
         return MINIMUM_STAY_NOT_MET
     if property_obj.max_nights and nights > property_obj.max_nights:
         return MAXIMUM_STAY_EXCEEDED
+    # A confirmed stay keeps its original arrival when only departure is
+    # extended. New-arrival cutoffs must not reject that existing arrival.
+    if not arrival_changed:
+        return ALLOWED
 
     moment = now or timezone.now()
     zone = listing_timezone(property_obj) or timezone.get_current_timezone()
