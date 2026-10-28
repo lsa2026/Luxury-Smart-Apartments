@@ -31,6 +31,7 @@ from tests.test_booking_modifications_phase6 import (
     WriteClientStub,
     confirmed_reservation,
     create_extension,
+    price_quote,
     updated_snapshot,
 )
 from tests.test_hyperpay_refunds_phase94 import REFUND_SETTINGS, RefundStub
@@ -72,6 +73,162 @@ def collect(reservation, amount):
     )
 
 
+def owner_execution_service(client, reservation):
+    return HostawayModificationService(
+        client=client,
+        modification_service=ModificationService(
+            availability_service=ModificationAvailabilityStub(reservation)
+        ),
+    )
+
+
+class ExistingStayAvailability(ModificationAvailabilityStub):
+    """Hostaway has occupied original nights, but a free added night."""
+
+    def fetch_calendar(self, **kwargs):
+        assert kwargs["start_date"] == self.reservation.check_out
+        assert kwargs["end_date"] == self.reservation.check_out + timedelta(days=1)
+        return super().fetch_calendar(**kwargs)
+
+    def check(self, *args, **kwargs):
+        raise AssertionError("An existing reservation must not check its own occupied nights")
+
+    def calculate_price(self, listing_id, **kwargs):
+        assert listing_id == self.reservation.property.hostaway_listing_id
+        assert kwargs["check_in"] == self.reservation.check_in
+        assert kwargs["check_out"] == self.reservation.check_out + timedelta(days=1)
+        assert kwargs["guests"] == self.reservation.guests
+        assert kwargs["bypass_currency_cache"] is True
+        return super().calculate_price(listing_id, **kwargs)
+
+
+def extension_from_owner_form(owner_client, reservation, *, day_changes=None):
+    availability = ExistingStayAvailability(
+        reservation,
+        quote=price_quote(reservation, check_out=reservation.check_out + timedelta(days=1)),
+        day_changes=day_changes,
+    )
+    with patch(
+        "apps.reservations.operations_views.ModificationService",
+        return_value=ModificationService(availability_service=availability),
+    ):
+        response = owner_client.post(
+            reverse("notifications:booking_detail", args=[reservation.pk]),
+            {
+                "action": "quote_change",
+                "new_check_in": reservation.check_in.isoformat(),
+                "new_check_out": (reservation.check_out + timedelta(days=1)).isoformat(),
+                "new_guests": reservation.guests,
+            },
+        )
+    return response, availability
+
+
+def test_unpaid_owner_date_form_prices_only_added_inventory_and_keeps_booking(owner_client):
+    reservation = confirmed_reservation()
+    original = (reservation.check_in, reservation.check_out, reservation.total_price)
+    # A one-night addition is valid for an existing two-night stay, even when
+    # a new arrival on that date would be closed or require two nights.
+    response, availability = extension_from_owner_form(
+        owner_client,
+        reservation,
+        day_changes={0: {"minimum_stay": 2, "closed_on_arrival": True}},
+    )
+    assert response.status_code == 302
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    assert proposal.request_type == BookingModificationRequest.RequestType.EXTEND_STAY
+    assert proposal.new_check_out == reservation.check_out + timedelta(days=1)
+    assert proposal.new_total == Decimal("650.25")
+    assert availability.calendar_calls == availability.price_calls == 1
+    assert not proposal.hostaway_operations.exists()
+    assert not PaymentAttempt.objects.exists()
+    assert not WhatsAppDelivery.objects.exists()
+    reservation.refresh_from_db()
+    assert (reservation.check_in, reservation.check_out, reservation.total_price) == original
+
+
+@pytest.mark.parametrize(
+    ("changes", "reason"),
+    [
+        ({0: {"is_available": False, "available_units_to_sell": 0}}, "لا تتوفر"),
+        ({1: {"closed_on_departure": True}}, "المغادرة غير مسموحة"),
+        ({0: {"maximum_stay": 2}}, "الحد الأقصى"),
+    ],
+)
+def test_owner_date_form_preserves_conflicts_and_explains_refusal(owner_client, changes, reason):
+    reservation = confirmed_reservation()
+    response, availability = extension_from_owner_form(
+        owner_client, reservation, day_changes=changes
+    )
+    assert response.status_code == 200
+    assert reason in response.content.decode()
+    assert not BookingModificationRequest.objects.exists()
+    assert availability.price_calls == 0
+
+
+@pytest.mark.parametrize("failure", ["unavailable", "price", "currency", "timeout"])
+def test_owner_extension_rechecks_before_any_hostaway_write(owner_client, failure):
+    from dataclasses import replace
+
+    from apps.integrations.hostaway.exceptions import HostawayTimeoutError
+
+    reservation = confirmed_reservation()
+    extension_from_owner_form(owner_client, reservation)
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    approve(owner_client, reservation, proposal, "700")
+    original_out = reservation.check_out
+    current_quote = price_quote(reservation, check_out=proposal.new_check_out)
+    if failure == "price":
+        current_quote = replace(current_quote, total_price=Decimal("701"))
+    elif failure == "currency":
+        current_quote = replace(current_quote, currency="USD")
+    availability = ExistingStayAvailability(
+        reservation,
+        quote=current_quote,
+        day_changes=(
+            {0: {"is_available": False, "available_units_to_sell": 0}}
+            if failure == "unavailable"
+            else None
+        ),
+    )
+    if failure == "timeout":
+        availability.fetch_calendar = lambda **kwargs: (_ for _ in ()).throw(HostawayTimeoutError())
+    external = WriteClientStub(snapshot=updated_snapshot(proposal))
+    outcome = HostawayModificationService(
+        client=external,
+        modification_service=ModificationService(availability_service=availability),
+    ).execute(proposal)
+    assert (
+        outcome.code
+        == {
+            "unavailable": "unavailable_dates",
+            "price": "price_changed",
+            "currency": "currency_changed",
+            "timeout": "hostaway_temporarily_unavailable",
+        }[failure]
+    )
+    assert external.calls == 0
+    assert not proposal.hostaway_operations.exists()
+    reservation.refresh_from_db()
+    assert reservation.check_out == original_out
+    assert not PaymentAttempt.objects.exists()
+    assert not WhatsAppDelivery.objects.exists()
+
+
+def test_extension_payment_revalidation_ignores_occupied_original_nights(owner_client):
+    reservation = confirmed_reservation()
+    extension_from_owner_form(owner_client, reservation)
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    availability = ExistingStayAvailability(
+        reservation, quote=price_quote(reservation, check_out=proposal.new_check_out)
+    )
+    outcome = ModificationService(availability_service=availability).revalidate_for_payment(
+        proposal
+    )
+    assert outcome.code == "ready"
+    assert availability.calendar_calls == availability.price_calls == 1
+
+
 def approve(client, reservation, modification, total):
     response = client.post(
         reverse("notifications:booking_detail", args=[reservation.pk]),
@@ -111,7 +268,7 @@ def test_unpaid_owner_price_then_hostaway_then_full_amount_to_aseel_once(owner_c
     with (
         patch(
             "apps.reservations.services.automatic_modifications.HostawayModificationService",
-            return_value=HostawayModificationService(client=external),
+            return_value=owner_execution_service(external, reservation),
         ),
         patch(
             "apps.notifications.services.ultramsg.UltraMsgClient.send_text",
@@ -192,7 +349,7 @@ def test_paid_decrease_updates_hostaway_before_actual_refund_service(owner_clien
     with (
         patch(
             "apps.reservations.services.automatic_modifications.HostawayModificationService",
-            return_value=HostawayModificationService(client=external),
+            return_value=owner_execution_service(external, reservation),
         ),
         patch("apps.payments.hyperpay.refunds.HyperPayClient", return_value=gateway),
     ):
@@ -222,7 +379,7 @@ def test_hostaway_failure_sends_no_payment_request(owner_client):
     with (
         patch(
             "apps.reservations.services.automatic_modifications.HostawayModificationService",
-            return_value=HostawayModificationService(client=external),
+            return_value=owner_execution_service(external, reservation),
         ),
         patch("apps.notifications.services.ultramsg.UltraMsgClient.send_text") as send,
     ):
@@ -247,7 +404,7 @@ def test_whatsapp_failure_does_not_undo_or_repeat_hostaway_write(owner_client):
     with (
         patch(
             "apps.reservations.services.automatic_modifications.HostawayModificationService",
-            return_value=HostawayModificationService(client=external),
+            return_value=owner_execution_service(external, reservation),
         ),
         patch(
             "apps.notifications.services.ultramsg.UltraMsgClient.send_text",
@@ -301,8 +458,8 @@ def test_owner_can_modify_again_after_completed_change(owner_client):
     outcome = execute_automatic_modification(
         modification,
         owner_override=True,
-        service=HostawayModificationService(
-            client=WriteClientStub(snapshot=updated_snapshot(modification))
+        service=owner_execution_service(
+            WriteClientStub(snapshot=updated_snapshot(modification)), reservation
         ),
     )
     assert outcome.code == "completed"
@@ -343,7 +500,7 @@ def test_payment_arriving_after_approval_requires_a_fresh_settlement(owner_clien
     collect(reservation, "100")
     external = WriteClientStub(snapshot=updated_snapshot(modification))
     result = execute_automatic_modification(
-        modification, owner_override=True, service=HostawayModificationService(client=external)
+        modification, owner_override=True, service=owner_execution_service(external, reservation)
     )
     assert result.code == "payment_changed_reprice_required"
     assert external.calls == 0

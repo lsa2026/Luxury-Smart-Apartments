@@ -110,6 +110,7 @@ class ModificationService:
                 calendar.document.days,
                 check_in=reservation.check_out,
                 check_out=new_check_out,
+                existing_check_in=reservation.check_in,
             )
             if reason_code != AVAILABLE:
                 return ModificationCreation(reason_code)
@@ -150,6 +151,20 @@ class ModificationService:
         blocker = _base_blocker(reservation, session_hash, owner_override=owner_override)
         if blocker:
             return ModificationCreation(blocker)
+        if (
+            new_check_in == reservation.check_in
+            and new_guests == reservation.guests
+            and new_check_out > reservation.check_out
+        ):
+            # The existing Hostaway stay already occupies its original nights.
+            # Never test them as inventory for a second, overlapping booking.
+            return self.create_extension_quote(
+                reservation,
+                new_check_out=new_check_out,
+                session_hash=session_hash,
+                reason=reason,
+                owner_override=owner_override,
+            )
         if new_check_out <= new_check_in:
             return ModificationCreation("invalid_dates")
         if new_guests <= 0:
@@ -401,6 +416,34 @@ class ModificationService:
             or reservation.property is None
         ):
             return ModificationRevalidation("modification_not_payable")
+        return self._revalidate_quote(modification)
+
+    def revalidate_extension_for_execution(
+        self, modification: BookingModificationRequest
+    ) -> ModificationRevalidation:
+        """Recheck an owner-priced extension before its Hostaway write."""
+        reservation = modification.reservation
+        if (
+            modification.request_type != BookingModificationRequest.RequestType.EXTEND_STAY
+            or modification.new_check_in != reservation.check_in
+            or modification.new_guests != reservation.guests
+            or modification.new_check_out is None
+            or modification.new_check_out <= reservation.check_out
+            or modification.old_check_in != reservation.check_in
+            or modification.old_check_out != reservation.check_out
+            or modification.old_guests != reservation.guests
+            or modification.old_total != reservation.total_price
+            or modification.currency != reservation.currency
+            or modification.new_total is None
+            or reservation.property is None
+        ):
+            return ModificationRevalidation("reservation_changed")
+        return self._revalidate_quote(modification)
+
+    def _revalidate_quote(
+        self, modification: BookingModificationRequest
+    ) -> ModificationRevalidation:
+        reservation = modification.reservation
         try:
             if modification.request_type == BookingModificationRequest.RequestType.EXTEND_STAY:
                 calendar = self.availability_service.fetch_calendar(
@@ -413,6 +456,7 @@ class ModificationService:
                     calendar.document.days,
                     check_in=reservation.check_out,
                     check_out=modification.new_check_out,
+                    existing_check_in=reservation.check_in,
                 )
                 if reason_code != AVAILABLE:
                     return ModificationRevalidation(reason_code)
