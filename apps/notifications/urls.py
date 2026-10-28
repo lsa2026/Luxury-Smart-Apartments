@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.loyalty.booking_invitation_previews import preview as loyalty_invitation_preview
 from apps.loyalty.welcome_previews import preview as loyalty_welcome_preview
+from apps.payments import owner_payment_links
 from apps.reservations import morning_views, operations_views
 
 from . import health, invoice_views, views
@@ -96,6 +97,16 @@ urlpatterns = [
         "admin/operations/bookings/<uuid:reservation_id>/",
         operations_views.booking_detail,
         name="booking_detail",
+    ),
+    path(
+        "admin/operations/bookings/<uuid:reservation_id>/payment-link-review/",
+        owner_payment_links.preview_updated_link,
+        name="updated_payment_link_preview",
+    ),
+    path(
+        "admin/operations/bookings/<uuid:reservation_id>/payment-link-review/<uuid:preview_id>/",
+        owner_payment_links.updated_link_review,
+        name="updated_payment_link_review",
     ),
     path(
         "admin/operations/manual-bookings/<uuid:draft_id>/",

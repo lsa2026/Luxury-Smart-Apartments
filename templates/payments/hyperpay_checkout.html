@@ -236,10 +236,10 @@ var wpwlOptions = {
             </dl>
             {% else %}
             <dl class="checkout__facts">
-                <div><dt>{% trans "Check-in" %}</dt><dd>{{ intent.check_in|localized_date }}</dd></div>
-                <div><dt>{% trans "Check-out" %}</dt><dd>{{ intent.check_out|localized_date }}</dd></div>
-                <div><dt>{% trans "Nights" %}</dt><dd>{{ intent.nights|localized_number }}</dd></div>
-                <div><dt>{% trans "Guests" %}</dt><dd>{{ intent.guests|localized_number }}</dd></div>
+                <div><dt>{% trans "Check-in" %}</dt><dd>{% if payment_request %}{{ payment_request.reservation.check_in|localized_date }}{% else %}{{ intent.check_in|localized_date }}{% endif %}</dd></div>
+                <div><dt>{% trans "Check-out" %}</dt><dd>{% if payment_request %}{{ payment_request.reservation.check_out|localized_date }}{% else %}{{ intent.check_out|localized_date }}{% endif %}</dd></div>
+                <div><dt>{% trans "Nights" %}</dt><dd>{% if payment_request %}{{ payment_request.reservation.nights|localized_number }}{% else %}{{ intent.nights|localized_number }}{% endif %}</dd></div>
+                <div><dt>{% trans "Guests" %}</dt><dd>{% if payment_request %}{{ payment_request.reservation.guests|localized_number }}{% else %}{{ intent.guests|localized_number }}{% endif %}</dd></div>
             </dl>
             {% endif %}
 
@@ -254,7 +254,7 @@ var wpwlOptions = {
             {% else %}
             <div class="checkout__total checkout__total--display">
                 <span>{% trans "Total" %}</span>
-                <strong>{% if morning_stay %}{{ morning_stay.amount_sar|format_money:'SAR' }}{% elif modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
+                <strong>{% if morning_stay %}{{ morning_stay.amount_sar|format_money:'SAR' }}{% elif payment_request %}{{ payment_request.amount_sar|format_money:'SAR' }}{% elif modification %}{% display_money modification.price_difference modification.currency modification.quote_snapshot.fx %}{% else %}{% display_money intent.total_price intent.currency intent.exchange_rate_snapshot %}{% endif %}</strong>
             </div>
             {% endif %}
             <p class="checkout__fx-note">{% trans "Payment is processed in Saudi riyals (SAR). The selected currency is shown for reference." %}</p>

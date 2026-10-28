@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation %}
+{% block content_title %}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}">{% endblock %}
+{% block content %}
+<div class="lsa-dashboard lsa-operations-screen lsa-booking-detail" dir="rtl">
+  <nav class="lsa-booking-detail__path" aria-label="مسار الحجز"><a href="{% url 'notifications:booking_detail' preview.reservation_id %}?section=edit">العودة إلى الحجز</a></nav>
+  <section class="lsa-panel">
+    <h1>مراجعة تحديث رابط الدفع</h1>
+    <p>الضيف: {{ projected.booking_intent.guest_first_name }} {{ projected.booking_intent.guest_last_name }} · واتساب: <bdi dir="ltr">{{ projected.booking_intent.guest_phone }}</bdi></p>
+    <p>{{ projected.property|localized_property_name }} · {{ projected.check_in|localized_date }} — {{ projected.check_out|localized_date }}</p>
+    <dl class="lsa-booking-detail__facts">
+      <div><dt>إجمالي الحجز الجديد</dt><dd>{{ balance_total|format_money:preview.source_currency }}</dd></div>
+      <div><dt>المدفوع الموثق</dt><dd>{{ balance_paid|format_money:preview.source_currency }}</dd></div>
+      <div><dt>المتبقي المطلوب تحصيله</dt><dd>{{ balance_due|format_money:preview.source_currency }}</dd></div>
+      <div><dt>مبلغ بوابة الدفع</dt><dd>{{ preview.amount_sar|format_money:'SAR' }}</dd></div>
+    </dl>
+    {% if preview.status == 'draft' %}
+    <p>هذه معاينة فقط. عند اعتمادك يؤكد الموقع تعديل الحجز في Hostaway، ثم يحدّث وجهة الرابط السابق ويرسل الرسالة أدناه إلى الضيف. لا يُحصّل مبلغ بمجرد الاعتماد أو الإرسال.</p>
+    {% elif preview.approved_at %}<p>اعتُمد هذا التحديث. راجع حالة الإرسال أدناه؛ إعادة فتح الصفحة لا تعيد الإرسال.</p>
+    {% else %}<p>هذه المعاينة لم تعد معتمدة للتنفيذ. ارجع إلى الحجز وأنشئ معاينة حديثة.</p>{% endif %}
+    <p style="overflow-wrap:anywhere;direction:ltr;text-align:start"><a href="{{ payment_url }}" rel="noreferrer noopener" target="_blank">{{ payment_url }}</a></p>
+  </section>
+  <section class="lsa-panel">
+    <h2>الرسالة التي ستُرسل إلى الضيف</h2>
+    <p>ستُرسل عبر الواتساب بتنسيق رسائل السداد وشعار الموقع، وبلغة الضيف المسجلة.</p>
+    <div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ message_preview }}</div>
+  </section>
+  {% if preview.status == 'draft' %}
+  <section class="lsa-panel lsa-owner-action">
+    <form method="post" class="lsa-owner-form">{% csrf_token %}
+      <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_updated_link" required><span>راجعت التواريخ والمبلغ والرسالة، وأعتمد تعديل الحجز وتحديث الرابط وإرساله للضيف.</span></label>
+      <button type="submit" class="lsa-btn lsa-btn--gold lsa-owner-form__submit" style="max-width:100%;white-space:normal">اعتماد التعديل وتحديث الرابط وإرساله للضيف</button>
+    </form>
+  </section>
+  {% endif %}
+  <p class="help">يبقى خيار أسيل متاحًا في شاشة الحجز. هذا التحديث يخص رابط الموقع، ولا يُلغي رابطًا منفصلًا أعدّته المحاسبة.</p>
+  {% for delivery in deliveries %}<section class="lsa-panel"><p>حالة الإرسال: {% if delivery.status == 'sent' %}قبل مزود الواتساب الرسالة{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% else %}تحتاج مراجعة{% endif %}</p></section>{% endfor %}
+</div>
+{% endblock %}

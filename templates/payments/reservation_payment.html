@@ -20,12 +20,20 @@
       <h2>{{ payment_request.reservation.property|localized_property_name }}</h2>
       <p>{{ payment_request.reservation.check_in|localized_date }} — {{ payment_request.reservation.check_out|localized_date }}</p>
       <dl class="quote-summary"><div><dt>{{ ui.total }}</dt><dd>{{ payment_request.amount_sar|format_money:'SAR' }}</dd></div></dl>
+      {% if payment_request.modification_request_id %}
+      <dl class="quote-summary">
+        <div><dt>{{ ui.booking_total }}</dt><dd>{{ payment_request.settlement_snapshot.total|format_money:payment_request.source_currency }}</dd></div>
+        <div><dt>{{ ui.verified_paid }}</dt><dd>{{ payment_request.settlement_snapshot.paid|format_money:payment_request.source_currency }}</dd></div>
+        <div><dt>{{ ui.remaining }}</dt><dd>{{ payment_request.source_amount|format_money:payment_request.source_currency }}</dd></div>
+      </dl>
+      {% endif %}
       {% if error %}<p class="notice notice--important" role="alert">{{ error }}</p>{% endif %}
       <details><summary>{{ ui.conditions }}</summary>
         <p>{{ conditions.cancellation_policy_text }}</p>
         <p>{{ payment_request.source_amount|format_money:payment_request.source_currency }}</p>
       </details>
       <form method="post" class="guest-form">
+        <input type="hidden" name="payment_request_version" value="{{ payment_request.pk }}">
         {% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
         <fieldset><legend>{{ ui.billing }}</legend>
           {% include "reservations/_billing_fields.html" with guest_form=form %}

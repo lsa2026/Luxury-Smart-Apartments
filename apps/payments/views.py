@@ -124,7 +124,11 @@ def _render_hyperpay_checkout(
             "modification": modification,
             "payment_request": payment_request,
             "morning_stay": morning_stay,
-            "loyalty_payment_summary": None if morning_stay else loyalty_payment_summary(attempt),
+            "loyalty_payment_summary": (
+                None
+                if morning_stay or (payment_request and payment_request.modification_request_id)
+                else loyalty_payment_summary(attempt)
+            ),
             "cover_image": _cover_image(property_obj),
             "checkout_id": attempt.provider_checkout_id,
             "widget_integrity": attempt.widget_integrity,

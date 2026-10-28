@@ -40,6 +40,12 @@ COPY = {
         "conditions": "شروط السعر والإلغاء",
         "total": "المبلغ المطلوب بالريال السعودي",
         "contact": "التواصل مع الإدارة",
+        "changed": (
+            "تحدّث مبلغ الحجز. راجع التواريخ والمبلغ المعروضين الآن، ثم أكّد المتابعة إلى الدفع."
+        ),
+        "booking_total": "إجمالي الحجز المعدّل",
+        "verified_paid": "المدفوع الموثق",
+        "remaining": "المتبقي المطلوب سداده",
     },
     "en": {
         "title": "Booking payment",
@@ -57,6 +63,12 @@ COPY = {
         "conditions": "Rate and cancellation conditions",
         "total": "Amount due in Saudi riyals",
         "contact": "Contact management",
+        "changed": (
+            "The booking amount changed. Review the dates and amount now shown before paying."
+        ),
+        "booking_total": "Updated booking total",
+        "verified_paid": "Verified paid",
+        "remaining": "Remaining amount to pay",
     },
     "fr": {
         "title": "Paiement de la réservation",
@@ -74,6 +86,10 @@ COPY = {
         "conditions": "Conditions tarifaires et d’annulation",
         "total": "Montant dû en riyals saoudiens",
         "contact": "Contacter la direction",
+        "changed": "Le montant a changé. Vérifiez les dates et le montant affichés avant de payer.",
+        "booking_total": "Total du séjour modifié",
+        "verified_paid": "Déjà payé et vérifié",
+        "remaining": "Solde à régler",
     },
 }
 
@@ -158,6 +174,12 @@ class ReservationPaymentView(View):
         return self._render(request)
 
     def post(self, request, token):
+        if self.payment_request.modification_request_id and request.POST.get(
+            "payment_request_version"
+        ) != str(self.payment_request.pk):
+            # An old tab on the stable URL must display the approved new
+            # balance before it can create a checkout at that amount.
+            return self._render(request, error=COPY[request.LANGUAGE_CODE]["changed"])
         if is_ip_rate_limited(request, scope="reservation-payment", requests=8, window=60):
             return render(
                 request,
@@ -179,11 +201,20 @@ class ReservationPaymentView(View):
             "accepted_at": timezone.now().isoformat(),
             "rate_conditions": {
                 **_rate_conditions_snapshot(self.payment_request.reservation.booking_intent.quote),
-                "total": str(self.payment_request.source_amount),
+                "total": self.payment_request.settlement_snapshot.get(
+                    "total", str(self.payment_request.source_amount)
+                ),
                 "currency": self.payment_request.source_currency,
                 "payment_amount_sar": str(self.payment_request.amount_sar),
             },
         }
+        if self.payment_request.modification_request_id:
+            accepted["rate_conditions"].update(
+                verified_paid=self.payment_request.settlement_snapshot["paid"],
+                payable_balance=str(self.payment_request.source_amount),
+                approved_payment_request=str(self.payment_request.pk),
+                approved_snapshot=self.payment_request.fingerprint,
+            )
         try:
             checkout = create_request_checkout(
                 self.payment_request.pk, billing_data=form.cleaned_data, acceptance=accepted
