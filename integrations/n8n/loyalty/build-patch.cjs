@@ -11,6 +11,7 @@ const N = {
   keys: 'L00 External Loyalty Booking Keys', snapshot: 'L01 Current Loyalty Booking',
   jobs: 'L02 Core Delivery Evidence', prepare: 'L03 Prepare Optional Loyalty Invitation',
   route: 'L06 Route Optional Loyalty Action', claim: 'L07 Claim Shared Loyalty Invitation',
+  status: 'L05 Read Shared Loyalty State',
   preflight: 'L08 Recheck Loyalty Membership', send: 'L09 Send Approved Loyalty Image',
   receipt: 'L10 Read Exact Loyalty Receipt', record: 'L11 Record Shared Loyalty Result',
   wait: 'L12 Wait for Loyalty Receipt', receive: 'L13 Interpret Optional Loyalty Result',
@@ -30,7 +31,7 @@ function build(options, samples) {
   if (![supabaseCredential, websiteCredential, providerCredential, telegramCredential].every(c => c?.id && c?.name)) throw Error('verified_credential_bindings_required');
   const websiteAuth = websiteCredential.type || 'httpTemplatedCustomAuth';
   if (!['httpTemplatedCustomAuth', 'httpHeaderAuth'].includes(websiteAuth)) throw Error('unsupported_website_auth_binding');
-  if (!['claim', 'preflight', 'record'].every(k => typeof api?.[k] === 'string' && api[k].startsWith('https://luxurysmartapartments.com/'))) throw Error('verified_website_contract_required');
+  if (!['claim', 'preflight', 'record', 'status'].every(k => typeof api?.[k] === 'string' && api[k].startsWith('https://luxurysmartapartments.com/'))) throw Error('verified_website_contract_required');
   if (!/^https:\/\/api\.ultramsg\.com\/instance\d+$/.test(providerBase || '')) throw Error('provider_base_required');
   if (enabled === true && !Number.isFinite(Date.parse(activation_at))) throw Error('activation_boundary_required');
   const config = {enabled: enabled === true, activation_at: activation_at || null};
@@ -64,12 +65,12 @@ const c=policy.candidate(snap.body[0].snapshot,j.body,config,new Date().toISOStr
 const packet=policy.render(samples,c.language,c.guest_name);out.push({json:controller.start(c,packet,new Date().toISOString()),pairedItem:{item:i}});
 }catch(e){out.push({json:{action:{kind:'attention'},reason:String(e.message).slice(0,300)},pairedItem:{item:i}});}}
 return out;`);
-  add(N.route, 'n8n-nodes-base.switch', 3.4, {mode: 'expression', numberOutputs: 8,
-    output: "={{ ['claim','preflight','send','receipt','record','wait','attention','done'].includes($json.action?.kind) ? ['claim','preflight','send','receipt','record','wait','attention','done'].indexOf($json.action.kind) : 6 }}"});
+  add(N.route, 'n8n-nodes-base.switch', 3.4, {mode: 'expression', numberOutputs: 9,
+    output: "={{ ['claim','preflight','send','receipt','record','status','wait','attention','done'].includes($json.action?.kind) ? ['claim','preflight','send','receipt','record','status','wait','attention','done'].indexOf($json.action.kind) : 7 }}"});
   const apiNode = (name, url) => io(name, {method: 'POST', url, authentication: 'genericCredentialType', genericAuthType: websiteAuth, sendBody: true,
     specifyBody: 'json', jsonBody: '={{ $json.action.request }}'}, {[websiteAuth]: {id: websiteCredential.id, name: websiteCredential.name}});
-  apiNode(N.claim, api.claim);apiNode(N.preflight, api.preflight);apiNode(N.record, api.record);
-  io(N.send, {method: 'POST', url: providerBase + '/messages/image', authentication: 'genericCredentialType', genericAuthType: 'httpTemplatedCustomAuth',
+  apiNode(N.claim, api.claim);apiNode(N.preflight, api.preflight);apiNode(N.record, api.record);apiNode(N.status, api.status);
+  io(N.send, {method: 'POST', url: `={{ Date.now() < Date.parse($json.send_expires_at) ? '${providerBase}/messages/image' : '' }}`, authentication: 'genericCredentialType', genericAuthType: 'httpTemplatedCustomAuth',
     sendBody: true, contentType: 'form-urlencoded', bodyParameters: {parameters: ['to', 'image', 'caption', 'referenceId'].map(k => ({name: k, value: '={{ $json.action.request.' + k + ' }}'}))}}, {httpTemplatedCustomAuth: providerCredential});
   io(N.receipt, {url: providerBase + '/messages', authentication: 'genericCredentialType', genericAuthType: 'httpTemplatedCustomAuth', sendQuery: true,
     queryParameters: {parameters: ['id', 'referenceId', 'status', 'limit', 'page', 'sort'].map(k => ({name: k, value: '={{ $json.action.request.' + k + ' }}'}))}}, {httpTemplatedCustomAuth: providerCredential});
@@ -81,8 +82,8 @@ return out;`);
   const edge = (source, target, sourceIndex = 0) => connections.push({type: 'addConnection', source, target, sourceIndex, targetIndex: 0, connectionType: 'main'});
   for (const hook of hooks) edge(hook, N.keys);
   edge(N.keys, N.snapshot);edge(N.snapshot, N.jobs);edge(N.jobs, N.prepare);edge(N.prepare, N.route);
-  [N.claim, N.preflight, N.send, N.receipt, N.record, N.wait, N.attention, N.done].forEach((name, i) => edge(N.route, name, i));
-  for (const name of [N.claim, N.preflight, N.send, N.receipt, N.record, N.wait]) edge(name, N.receive);
+  [N.claim, N.preflight, N.send, N.receipt, N.record, N.status, N.wait, N.attention, N.done].forEach((name, i) => edge(N.route, name, i));
+  for (const name of [N.claim, N.preflight, N.send, N.receipt, N.record, N.status, N.wait]) edge(name, N.receive);
   edge(N.receive, N.route);edge(N.attention, N.notify);
   const operations = nodes.flatMap(node => [{type: 'addNode', node},
     {type: 'setNodeSettings', nodeName: node.name, settings: {onError: 'continueRegularOutput'}}]).concat(connections);
