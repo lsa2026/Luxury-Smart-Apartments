@@ -86,8 +86,11 @@ function candidate(snapshot, jobs, config, now) {
   const type = j => payload(j).message_type;
   const sameProperty = j => String(payload(j).listing_map_id) === String(snapshot.listing_map_id);
   const sameDates = j => payload(j).arrival_date === snapshot.arrival_date && payload(j).departure_date === snapshot.departure_date;
-  const delivered = j => (j.guest_delivered === true && payload(j).delivery_channel !== 'email')
-    || payload(j).recovery_delivered === true || payload(j).recovery_delivered === 'true';
+  const delivered = j => {
+    const p = payload(j), recovered = p.recovery_delivered === true || p.recovery_delivered === 'true';
+    const recipient = normalizePhone(recovered ? p.recovery_phone || p.recipient_phone || p.phone : p.recipient_phone || p.phone);
+    return recipient === phone && (recovered || (j.guest_delivered === true && p.delivery_channel !== 'email'));
+  };
   const rows = (Array.isArray(jobs) ? jobs : []).filter(sameBooking).filter(sameProperty);
   if (!rows.some(j => ['status_new', 'status_modified'].includes(type(j)) && sameDates(j) && delivered(j))) return skip('confirmation_not_delivered');
   if (!rows.some(j => type(j) === 'house_rules' && delivered(j))) return skip('house_rules_not_delivered');
