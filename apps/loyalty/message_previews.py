@@ -169,6 +169,10 @@ def send_catalogue(*, batch, language="ar", kind=None):
         if len(caption.encode("utf-16-le")) // 2 > 1024:
             raise ValidationError("Preview caption too long.")
         packets = [(kind, caption, invitation_image(language))]
+    elif kind == "copy-review-v2":
+        from .copy_review_previews import packets as review_packets
+
+        packets = review_packets(language)
     elif kind == "welcome":
         packets = [packet for packet in catalogue(language) if packet[0] == GuestEvent.Kind.JOIN]
     elif kind is None:
@@ -223,9 +227,10 @@ def send_catalogue(*, batch, language="ar", kind=None):
                         caption=caption,
                         reference_id="owner-preview:" + reference,
                     )
-                    if key in {"booking-invitation", GuestEvent.Kind.JOIN} and (
-                        not isinstance(result, dict) or not result.get("id")
-                    ):
+                    if (
+                        key in {"booking-invitation", GuestEvent.Kind.JOIN}
+                        or kind == "copy-review-v2"
+                    ) and (not isinstance(result, dict) or not result.get("id")):
                         raise ValueError("Unconfirmed provider outcome.")
         except Exception:
             AuditLog.objects.create(
