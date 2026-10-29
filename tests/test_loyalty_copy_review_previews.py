@@ -1,6 +1,7 @@
 """Offline owner-only copy review; no guest message or membership changes."""
 
 import hashlib
+from io import BytesIO
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -8,6 +9,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
+from PIL import Image
 
 from apps.accounts.models import VerifiedPhone
 from apps.loyalty import copy_review_previews as previews
@@ -39,6 +41,48 @@ def test_review_packets_are_synthetic_and_do_not_rewrite_live_copy(settings):
 def test_unreviewed_languages_cannot_be_sent(language):
     with pytest.raises(ValidationError):
         previews.packets(language)
+
+
+def test_trilingual_invitation_uses_corrected_art_and_approved_copy(settings):
+    settings.SITE_BASE_URL = "https://example.invalid"
+    packets = previews.invitation_packets()
+    assert [key for key, _, _ in packets] == [
+        "review-invitation-v3-ar",
+        "review-invitation-v3-en",
+        "review-invitation-v3-fr",
+    ]
+    for (_, caption, content), lang in zip(packets, ("ar", "en", "fr"), strict=True):
+        assert len(caption.encode("utf-16-le")) // 2 <= 1024
+        assert caption.endswith("https://example.invalid/my-bookings/rewards/")
+        assert "Sama" in caption or "سما" in caption
+        assert content != message_previews.invitation_image(lang)
+        with Image.open(BytesIO(content)) as image:
+            assert image.size == (1200, 600)
+    assert packets[0][1] == previews.INVITATION + "https://example.invalid/my-bookings/rewards/"
+    with pytest.raises(ValidationError):
+        previews.invitation_packets("invalid")
+    assert not Member.objects.exists() and not Ledger.objects.exists()
+
+
+def test_trilingual_owner_post_is_bound_to_the_signed_mode(rig, monkeypatch):
+    client, owner, _, _ = rig
+    destination = reverse("notifications:loyalty_copy_review_preview")
+    review_url = destination + "?sample=" + previews.INVITATION_REVIEW
+    monkeypatch.setattr(
+        previews, "owner_preview_binding", lambda: (owner, SimpleNamespace(phone="+12025550100"))
+    )
+    send = Mock(return_value=[(key, "accepted") for key, _, _ in previews.invitation_packets()])
+    monkeypatch.setattr(previews, "send_catalogue", send)
+    page = client.get(review_url)
+    assert len(page.context["samples"]) == 3 and not send.called
+    proof = page.context["confirmation"]
+    client.post(destination, {"confirmation": proof})
+    assert not send.called
+    client.post(review_url, {"confirmation": proof, "phone": "+12025559999"})
+    assert send.call_args.kwargs["language"] == "all"
+    assert send.call_args.kwargs["kind"] == previews.INVITATION_REVIEW
+    assert "phone" not in send.call_args.kwargs
+    send.assert_called_once()
 
 
 def test_only_signed_owner_post_sends_two_to_the_pinned_destination(rig, monkeypatch):
@@ -108,3 +152,41 @@ def test_pair_is_once_only_even_after_unknown_outcome(rig, monkeypatch, uncertai
     binding.save(update_fields=["phone"])
     with pytest.raises(ValidationError):
         message_previews.send_catalogue(batch="wrong-owner-phone", kind="copy-review-v2")
+
+
+@pytest.mark.parametrize("uncertain_index", [None, 1])
+def test_three_invites_stay_owner_only_and_do_not_retry_uncertain(
+    rig, monkeypatch, uncertain_index
+):
+    _, _, provider, _ = rig
+    account = user("pinned-trilingual-owner")
+    member = join(account)
+    member.number = "LSA-M000001"
+    member.save(update_fields=["number"])
+    binding = VerifiedPhone.objects.create(user=account, phone="+12025550100")
+    monkeypatch.setattr(
+        message_previews,
+        "OWNER_PREVIEW_PHONE_SHA256",
+        hashlib.sha256(binding.phone.encode()).hexdigest(),
+    )
+    monkeypatch.setattr(message_previews, "UltraMsgClient", lambda: provider)
+    outcomes = [{"id": "ar"}, {"id": "en"}, {"id": "fr"}]
+    if uncertain_index is not None:
+        outcomes[uncertain_index] = {}
+    provider.send_image.side_effect = outcomes
+    before = (Member.objects.count(), Ledger.objects.count(), GuestEvent.objects.count())
+    results = message_previews.send_catalogue(
+        batch="trilingual-review", language="all", kind=previews.INVITATION_REVIEW
+    )
+    assert len(results) == (3 if uncertain_index is None else 2)
+    assert results[-1][1] == ("accepted" if uncertain_index is None else "uncertain")
+    assert all(
+        call.kwargs["recipient"] == binding.phone for call in provider.send_image.call_args_list
+    )
+    if uncertain_index is None:
+        repeated = message_previews.send_catalogue(
+            batch="trilingual-review", language="all", kind=previews.INVITATION_REVIEW
+        )
+        assert {state for _, state in repeated} == {"already_attempted"}
+        assert provider.send_image.call_count == 3
+    assert before == (Member.objects.count(), Ledger.objects.count(), GuestEvent.objects.count())

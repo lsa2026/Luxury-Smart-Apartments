@@ -3,7 +3,7 @@
 {% block content %}
 <section dir="rtl" lang="ar">
   <h1>{{ title }}</h1>
-  <p>معاينة للمالك فقط بأسماء تجريبية: خالد العتيبي ونورة الحربي. رقم العضوية تجريبي. لا تُنشأ عضويات أو نقاط، ولا تتغير رسائل الضيوف الفعلية أو سيناريوهات n8n.</p>
+  <p>{{ sample_note }} لا تُنشأ عضويات أو نقاط، ولا تتغير رسائل الضيوف الفعلية أو سيناريوهات n8n.</p>
   {% for sample in samples %}
   <article class="lsa-booking-invitation__preview">
     <img class="lsa-booking-invitation__artwork" src="{{ sample.image }}" alt="بطاقة معاينة الولاء" width="1200" height="600">
@@ -12,7 +12,7 @@
   {% endfor %}
   {% if reason %}<p role="alert">{{ reason }}</p>{% else %}
   <p>رقم واتساب المالك المعتمد: <bdi>{{ masked_phone }}</bdi></p>
-  <form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit" class="button">إرسال النموذجين إلى واتسابي</button></form>
+  <form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit" class="button">{{ send_label }}</button></form>
   {% endif %}
 </section>
 {% endblock %}

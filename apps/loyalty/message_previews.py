@@ -173,6 +173,10 @@ def send_catalogue(*, batch, language="ar", kind=None):
         from .copy_review_previews import packets as review_packets
 
         packets = review_packets(language)
+    elif kind == "invitation-trilingual-v3":
+        from .copy_review_previews import invitation_packets
+
+        packets = invitation_packets(language)
     elif kind == "welcome":
         packets = [packet for packet in catalogue(language) if packet[0] == GuestEvent.Kind.JOIN]
     elif kind is None:
@@ -229,7 +233,7 @@ def send_catalogue(*, batch, language="ar", kind=None):
                     )
                     if (
                         key in {"booking-invitation", GuestEvent.Kind.JOIN}
-                        or kind == "copy-review-v2"
+                        or kind in {"copy-review-v2", "invitation-trilingual-v3"}
                     ) and (not isinstance(result, dict) or not result.get("id")):
                         raise ValueError("Unconfirmed provider outcome.")
         except Exception:
