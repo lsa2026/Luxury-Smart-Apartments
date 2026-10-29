@@ -25,11 +25,13 @@ const N = {
  */
 function build(options, samples) {
   const {workflowId, hooks, tablePrefix, supabaseCredential, websiteCredential,
-    providerCredential, telegramCredential, alertChatId, api, providerBase, activation_at, enabled} = options;
+    providerCredential, telegramCredential, alertChatId, api, providerBase, activation_at, enabled, staged = false} = options;
   if (!workflowId || !Array.isArray(hooks) || !hooks.length) throw Error('workflow_hooks_required');
   if (!['lsa_', 'lsa06_'].includes(tablePrefix)) throw Error('unsupported_existing_journey');
-  if (![supabaseCredential, websiteCredential, providerCredential, telegramCredential].every(c => c?.id && c?.name)) throw Error('verified_credential_bindings_required');
-  const websiteAuth = websiteCredential.type || 'httpTemplatedCustomAuth';
+  if (staged && (enabled === true || activation_at)) throw Error('staged_integration_must_remain_closed');
+  const requiredCredentials = staged ? [supabaseCredential, providerCredential, telegramCredential] : [supabaseCredential, websiteCredential, providerCredential, telegramCredential];
+  if (!requiredCredentials.every(c => c?.id && c?.name)) throw Error('verified_credential_bindings_required');
+  const websiteAuth = websiteCredential?.type || 'httpTemplatedCustomAuth';
   if (!['httpTemplatedCustomAuth', 'httpHeaderAuth'].includes(websiteAuth)) throw Error('unsupported_website_auth_binding');
   if (!['claim', 'preflight', 'record', 'status'].every(k => typeof api?.[k] === 'string' && api[k].startsWith('https://luxurysmartapartments.com/'))) throw Error('verified_website_contract_required');
   if (!/^https:\/\/api\.ultramsg\.com\/instance\d+$/.test(providerBase || '')) throw Error('provider_base_required');
@@ -59,7 +61,7 @@ return [...keys].filter(k=>/^\\d{1,30}$/.test(k)).map(k=>({json:{reservation_key
     sendQuery: true, queryParameters: {parameters: [{name: 'select', value: 'reservation_key,payload,state,guest_delivered,next_at'},
       {name: 'reservation_key', value: `={{ "eq."+$('${N.keys}').item.json.reservation_key }}`}]}}, dbCredentials);
   code(N.prepare, runtime + `const config=${JSON.stringify(config)},samples=${JSON.stringify(samples)};const out=[];
-for(const [i,item] of $input.all().entries()){const j=item.json;try{const snap=$('${N.snapshot}').all(0,0)[i].json;
+for(const [i,item] of $input.all().entries()){const j=item.json;try{const snap=$('${N.snapshot}').all(0,$runIndex)[i].json;
 if(snap.error||snap.statusCode!==200||j.error||j.statusCode!==200||!Array.isArray(snap.body)||snap.body.length!==1||!Array.isArray(j.body))throw Error('authoritative_loyalty_context_unavailable');
 const c=policy.candidate(snap.body[0].snapshot,j.body,config,new Date().toISOString());if(!c.eligible)continue;
 const packet=policy.render(samples,c.language,c.guest_name);out.push({json:controller.start(c,packet,new Date().toISOString()),pairedItem:{item:i}});
@@ -67,8 +69,8 @@ const packet=policy.render(samples,c.language,c.guest_name);out.push({json:contr
 return out;`);
   add(N.route, 'n8n-nodes-base.switch', 3.4, {mode: 'expression', numberOutputs: 9,
     output: "={{ ['claim','preflight','send','receipt','record','status','wait','attention','done'].includes($json.action?.kind) ? ['claim','preflight','send','receipt','record','status','wait','attention','done'].indexOf($json.action.kind) : 7 }}"});
-  const apiNode = (name, url) => io(name, {method: 'POST', url, authentication: 'genericCredentialType', genericAuthType: websiteAuth, sendBody: true,
-    specifyBody: 'json', jsonBody: '={{ $json.action.request }}'}, {[websiteAuth]: {id: websiteCredential.id, name: websiteCredential.name}});
+  const apiNode = (name, url) => io(name, {method: 'POST', url, ...(staged ? {authentication: 'none'} : {authentication: 'genericCredentialType', genericAuthType: websiteAuth}), sendBody: true,
+    specifyBody: 'json', jsonBody: '={{ $json.action.request }}'}, staged ? undefined : {[websiteAuth]: {id: websiteCredential.id, name: websiteCredential.name}});
   apiNode(N.claim, api.claim);apiNode(N.preflight, api.preflight);apiNode(N.record, api.record);apiNode(N.status, api.status);
   io(N.send, {method: 'POST', url: `={{ Date.now() < Date.parse($json.send_expires_at) ? '${providerBase}/messages/image' : '' }}`, authentication: 'genericCredentialType', genericAuthType: 'httpTemplatedCustomAuth',
     sendBody: true, contentType: 'form-urlencoded', bodyParameters: {parameters: ['to', 'image', 'caption', 'referenceId'].map(k => ({name: k, value: '={{ $json.action.request.' + k + ' }}'}))}}, {httpTemplatedCustomAuth: providerCredential});
@@ -85,8 +87,12 @@ return out;`);
   [N.claim, N.preflight, N.send, N.receipt, N.record, N.status, N.wait, N.attention, N.done].forEach((name, i) => edge(N.route, name, i));
   for (const name of [N.claim, N.preflight, N.send, N.receipt, N.record, N.status, N.wait]) edge(name, N.receive);
   edge(N.receive, N.route);edge(N.attention, N.notify);
+  // The live closed staging graph has no executable external dependencies. Do not
+  // auto-bind a similarly named generic credential while the dedicated one is absent.
+  if (staged) for (const node of nodes) if (node.name !== N.keys) node.disabled = true;
   const operations = nodes.flatMap(node => [{type: 'addNode', node},
     {type: 'setNodeSettings', nodeName: node.name, settings: {onError: 'continueRegularOutput'}}]).concat(connections);
-  return {operations, nodes, connections, enabled: config.enabled, workflowId};
+  return {operations, nodes, connections, enabled: config.enabled, staged, workflowId};
 }
 module.exports = {build, names: N};
+
