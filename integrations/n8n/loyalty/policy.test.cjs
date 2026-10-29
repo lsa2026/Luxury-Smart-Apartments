@@ -14,8 +14,8 @@ const job = type => ({reservation_key: booking.reservation_key, state: 'complete
   payload: {...booking, message_type: type, delivery_channel: 'whatsapp'}});
 const jobs = [job('status_new'), job('house_rules')];
 const candidate = () => p.candidate(booking, jobs, config, now);
-const claimBody = () => ({ok: true, decision: 'eligible', member: false, invitation_id: 'synthetic-id',
-  ticket: 'synthetic-ticket', reference_id: 'synthetic-reference', phone: '999000000097'});
+const claimBody = () => ({code: 'ok', decision: 'eligible', send_allowed: false, invitation_id: 'synthetic-id',
+  ticket: 'synthetic-ticket', provider_reference: 'synthetic-reference', recipient_phone: '999000000097'});
 
 for (const language of ['ar', 'en', 'fr']) test('approved ' + language + ' image and qualified caption', () => {
   const sample = samples.find(x => x.language === language);
@@ -68,22 +68,22 @@ test('due entry instructions finish before invitation', () => {
   assert.equal(p.candidate(booking, [...jobs, {...job('checkin_guide'), state: 'attention', guest_delivered: false}], config, now).reason, 'entry_instructions_pending');
 });
 test('existing membership and duplicate are explicit skip decisions', () => {
-  for (const decision of ['member', 'duplicate']) assert.equal(p.claimDecision(candidate(), {ok: true, decision}).action, 'skip');
+  for (const decision of ['member', 'duplicate']) assert.equal(p.claimDecision(candidate(), {code: 'ok', decision}).action, 'skip');
 });
 test('unknown membership or mismatched target cannot be treated as non-member', () => {
   assert.equal(p.claimDecision(candidate(), {statusCode: 503}).action, 'attention');
-  assert.equal(p.claimDecision(candidate(), {...claimBody(), member: undefined}).action, 'attention');
-  assert.equal(p.claimDecision(candidate(), {...claimBody(), phone: '999000000098'}).action, 'attention');
+  assert.equal(p.claimDecision(candidate(), {...claimBody(), send_allowed: undefined}).action, 'attention');
+  assert.equal(p.claimDecision(candidate(), {...claimBody(), recipient_phone: '999000000098'}).action, 'attention');
 });
 test('member joining between claim and preflight prevents sending', () => {
   const claim = p.claimDecision(candidate(), claimBody());
-  assert.equal(p.preflight(claim, {ok: true, allowed: false, member: true}, now).action, 'skip');
+  assert.equal(p.preflight(claim, {code: 'ok', send_allowed: false, decision: 'member'}, now).action, 'skip');
 });
 test('expired or wrong preflight ticket cannot be sent', () => {
   const claim = p.claimDecision(candidate(), claimBody());
-  const result = {...claimBody(), allowed: true, expires_at: '2026-10-29T11:00:00Z'};
+  const result = {...claimBody(), send_allowed: true, send_expires_at: '2026-10-29T11:00:00Z'};
   assert.equal(p.preflight(claim, result, now).action, 'send');
-  assert.equal(p.preflight(claim, {...result, expires_at: '2026-10-29T09:00:00Z'}, now).action, 'attention');
+  assert.equal(p.preflight(claim, {...result, send_expires_at: '2026-10-29T09:00:00Z'}, now).action, 'attention');
 });
 test('provider accepted is not delivered; timeout never repeats POST', () => {
   assert.deepEqual(p.sendEvidence({statusCode: 200, body: {sent: true, id: 77}}), {state: 'accepted', provider_id: '77', delivered: false, retry_post: false});
@@ -107,7 +107,7 @@ test('shared claim contract handles webhook repeat and corrected phone without a
   // Test double ONLY. The live site must implement this durable uniqueness atomically.
   const reservationClaims = new Map(), phoneClaims = new Map();
   const claim = c => {
-    if (reservationClaims.has(c.reservation_key) || phoneClaims.has(c.phone)) return {ok: true, decision: 'duplicate'};
+    if (reservationClaims.has(c.reservation_key) || phoneClaims.has(c.phone)) return {code: 'ok', decision: 'duplicate'};
     reservationClaims.set(c.reservation_key, 'unknown'); phoneClaims.set(c.phone, 'unknown'); return claimBody();
   };
   const c = candidate();
