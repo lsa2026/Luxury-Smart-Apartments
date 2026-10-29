@@ -32,7 +32,7 @@ function render(samples, language, guestName) {
   const sample = samples.find(s => s.language === language);
   if (!sample) throw new Error('approved_asset_missing');
   const name = cleanName(guestName);
-  if (!name || name.length > 160) throw new Error('guest_name_missing_or_too_long');
+  if (!name || name.length > 150) throw new Error('guest_name_missing_or_too_long');
   const [oldCopy, newCopy, limitation] = QUALIFIED_COPY[language];
   if (!sample.caption.includes(DEMO_NAMES[language]) || !sample.caption.includes(oldCopy)) {
     throw new Error('approved_template_changed');
@@ -147,3 +147,4 @@ function receiptEvidence(response, expected) {
 }
 
 module.exports = {JOIN_URL, TEMPLATE_VERSION, cleanName, normalizePhone, render, candidate, claimDecision, preflight, sendEvidence, receiptEvidence};
+
