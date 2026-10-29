@@ -2,6 +2,8 @@ from django.urls import path
 
 from apps.loyalty.booking_invitation_previews import preview as loyalty_invitation_preview
 from apps.loyalty.copy_review_previews import preview as loyalty_copy_review_preview
+from apps.loyalty.invitation_api import readiness as invitation_integration_readiness
+from apps.loyalty.invitation_auth import setup as invitation_credential_setup
 from apps.loyalty.welcome_previews import preview as loyalty_welcome_preview
 from apps.payments import owner_payment_links
 from apps.reservations import morning_views, operations_views
@@ -11,6 +13,16 @@ from . import health, invoice_views, views
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/loyalty-invitation-credential/",
+        invitation_credential_setup,
+        name="loyalty_invitation_credential",
+    ),
+    path(
+        "admin/operations/loyalty-invitation-integration/",
+        invitation_integration_readiness,
+        name="loyalty_invitation_integration",
+    ),
     path(
         "admin/operations/loyalty-copy-review/",
         loyalty_copy_review_preview,

@@ -1,0 +1,442 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LSA shared loyalty invitation coordination",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://luxurysmartapartments.com"
+    }
+  ],
+  "security": [
+    {
+      "LoyaltyInvitationBearer": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "LoyaltyInvitationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Dedicated invitation-only 256-bit token. Never reuse Sama or a generic Header Auth credential by name."
+      }
+    },
+    "schemas": {
+      "Claim": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reservation_key",
+          "phone",
+          "email",
+          "language",
+          "guest_name",
+          "source_platform",
+          "event_id"
+        ],
+        "properties": {
+          "reservation_key": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Hostaway numeric ID, hostaway:<ID>, or an existing website reservation UUID; canonicalized by server."
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "International E.164 preferred; Saudi national input is normalized. Empty/invalid gives phone_missing; do not guess membership."
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "ar",
+              "en",
+              "fr"
+            ]
+          },
+          "guest_name": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "source_platform": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "event_id": {
+            "type": "string",
+            "maxLength": 150
+          }
+        }
+      },
+      "Preflight": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "invitation_id",
+          "ticket",
+          "phone"
+        ],
+        "properties": {
+          "invitation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticket": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 80
+          }
+        }
+      },
+      "Record": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "invitation_id",
+          "provider_reference",
+          "status",
+          "provider_id"
+        ],
+        "properties": {
+          "invitation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider_reference": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "unknown",
+              "delivered",
+              "read",
+              "failed"
+            ]
+          },
+          "provider_id": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      },
+      "Status": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "invitation_id"
+            ],
+            "properties": {
+              "invitation_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reservation_key"
+            ],
+            "properties": {
+              "reservation_key": {
+                "type": "string",
+                "maxLength": 80
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/integrations/loyalty/invitations/claim/": {
+      "post": {
+        "operationId": "loyaltyInvitationClaim",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Claim"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coordination result; only a successful fresh preflight can authorize ONE provider POST.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "ok",
+                  "decision": "eligible",
+                  "send_allowed": false,
+                  "retry_provider_post": false,
+                  "invitation_id": "00000000-0000-4000-8000-000000000001",
+                  "provider_reference": "lsa-loyalty-invite:00000000000040008000000000000001",
+                  "status": "claimed",
+                  "provider_id": "",
+                  "outcomes": [],
+                  "language": "ar",
+                  "ticket": "<short-lived-signed-ticket>",
+                  "expires_at": "<ISO8601>",
+                  "recipient_phone": "<normalized-input-phone>"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON/schema"
+          },
+          "401": {
+            "description": "Missing/expired/revoked invitation-only credential"
+          },
+          "403": {
+            "description": "HTTPS required"
+          },
+          "404": {
+            "description": "Unknown invitation"
+          },
+          "409": {
+            "description": "Expired or conflicting claim/ticket/reference"
+          },
+          "429": {
+            "description": "Rate limit; stop and reconcile"
+          },
+          "503": {
+            "description": "Fail closed; never infer not-a-member"
+          }
+        }
+      }
+    },
+    "/integrations/loyalty/invitations/preflight/": {
+      "post": {
+        "operationId": "loyaltyInvitationPreflight",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preflight"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coordination result; only a successful fresh preflight can authorize ONE provider POST.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "ok",
+                  "decision": "eligible",
+                  "send_allowed": true,
+                  "retry_provider_post": false,
+                  "invitation_id": "00000000-0000-4000-8000-000000000001",
+                  "provider_reference": "lsa-loyalty-invite:00000000000040008000000000000001",
+                  "status": "unknown",
+                  "provider_id": "",
+                  "outcomes": [],
+                  "language": "ar",
+                  "recipient_phone": "<normalized-input-phone>",
+                  "send_within_seconds": 60,
+                  "send_expires_at": "<ISO8601>"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON/schema"
+          },
+          "401": {
+            "description": "Missing/expired/revoked invitation-only credential"
+          },
+          "403": {
+            "description": "HTTPS required"
+          },
+          "404": {
+            "description": "Unknown invitation"
+          },
+          "409": {
+            "description": "Expired or conflicting claim/ticket/reference"
+          },
+          "429": {
+            "description": "Rate limit; stop and reconcile"
+          },
+          "503": {
+            "description": "Fail closed; never infer not-a-member"
+          }
+        }
+      }
+    },
+    "/integrations/loyalty/invitations/record/": {
+      "post": {
+        "operationId": "loyaltyInvitationRecord",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Record"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coordination result; only a successful fresh preflight can authorize ONE provider POST.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "ok",
+                  "decision": "duplicate",
+                  "send_allowed": false,
+                  "retry_provider_post": false,
+                  "invitation_id": "00000000-0000-4000-8000-000000000001",
+                  "status": "accepted",
+                  "provider_id": "<provider-message-id>"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON/schema"
+          },
+          "401": {
+            "description": "Missing/expired/revoked invitation-only credential"
+          },
+          "403": {
+            "description": "HTTPS required"
+          },
+          "404": {
+            "description": "Unknown invitation"
+          },
+          "409": {
+            "description": "Expired or conflicting claim/ticket/reference"
+          },
+          "429": {
+            "description": "Rate limit; stop and reconcile"
+          },
+          "503": {
+            "description": "Fail closed; never infer not-a-member"
+          }
+        }
+      }
+    },
+    "/integrations/loyalty/invitations/status/": {
+      "post": {
+        "operationId": "loyaltyInvitationStatus",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Status"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coordination result; only a successful fresh preflight can authorize ONE provider POST.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "ok",
+                  "decision": "duplicate",
+                  "send_allowed": false,
+                  "retry_provider_post": false,
+                  "invitation_id": "00000000-0000-4000-8000-000000000001",
+                  "status": "unknown"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON/schema"
+          },
+          "401": {
+            "description": "Missing/expired/revoked invitation-only credential"
+          },
+          "403": {
+            "description": "HTTPS required"
+          },
+          "404": {
+            "description": "Unknown invitation"
+          },
+          "409": {
+            "description": "Expired or conflicting claim/ticket/reference"
+          },
+          "429": {
+            "description": "Rate limit; stop and reconcile"
+          },
+          "503": {
+            "description": "Fail closed; never infer not-a-member"
+          }
+        }
+      }
+    },
+    "/integrations/loyalty/invitations/health/": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Authenticated readiness; no message or membership writes."
+          },
+          "401": {
+            "description": "No valid dedicated credential."
+          }
+        }
+      }
+    }
+  },
+  "x-n8n-credential": {
+    "type": "httpHeaderAuth",
+    "recommended_name": "LSA Loyalty Invitations v1",
+    "header_name": "Authorization",
+    "header_value": "Bearer <secret-from-owner-only-download>",
+    "n8n_credential_id": null,
+    "provisioning_url": "https://luxurysmartapartments.com/admin/operations/loyalty-invitation-credential/",
+    "readiness_url": "https://luxurysmartapartments.com/admin/operations/loyalty-invitation-integration/",
+    "ttl_days": 90,
+    "provisioned_by_this_change": false
+  },
+  "x-workflow-contract": {
+    "decisions": [
+      "member",
+      "duplicate",
+      "phone_missing",
+      "eligible",
+      "blocked"
+    ],
+    "claim_ticket_ttl_seconds": 300,
+    "provider_send_deadline_seconds": 60,
+    "provider_post_retry": false,
+    "activation_cutoff": "Set a future UTC activation timestamp in n8n at activation; no history loading/backfill. This API does not invent a historical cutoff.",
+    "send_owner": "n8n only; API routes do not call any message provider. Existing manual website sends remain user actions and share the registry.",
+    "welcome_owner": "Website after successful enrollment only.",
+    "claim_replay": "Same event and unchanged target before unused claim expiry returns the same invitation ID/reference and ticket. No provider permission yet.",
+    "preflight": "Immediately before provider POST; check returned send_allowed===true AND decision===eligible AND exact recipient_phone/reference. Consume once. Finish provider POST inside 60 seconds, otherwise DO NOT SEND.",
+    "unknown_preflight_response": "Do not call provider. Read status. The consumed permit is conservatively unknown and cannot be reissued.",
+    "provider_timeout": "Do not repeat POST. Record unknown if possible, reconcile only using exact provider reference/message ID, then record evidence.",
+    "recording": "accepted requires provider_id; delivered/read require provider evidence and same provider_id. Delayed lesser evidence does not overwrite stronger read/delivered evidence. Evidence is reported by the authenticated caller, not independently fetched by the website.",
+    "record_retries": "Idempotent record/status requests may be repeated; provider POST may not.",
+    "corrected_phone": "After permit consumption/accepted/unknown/delivered/read/failed, same reservation remains duplicate even with another event ID, language, channel or phone. No automatic second send.",
+    "shared_deduplication": "Reservation, normalized phone digest, normalized email suppression digest and known account; includes old queued/sending/accepted/uncertain manual WhatsApp/email receipts without rewriting them. Existing manual repeat/cross-channel behavior is now blocked by the shared registry.",
+    "membership_check": "Performed at claim and atomically at preflight under the same PostgreSQL advisory lock as enrollment. Email only suppresses invitations; never authenticates a guest.",
+    "distributed_boundary": "Enrollment can occur after preflight while n8n posts externally; this is not a distributed transaction or exactly-once delivery guarantee. Call preflight immediately before POST; never reuse a permit.",
+    "scope": "No membership, points, welcome messages, historical campaign, external booking rewards, schedules or n8n modifications."
+  }
+}

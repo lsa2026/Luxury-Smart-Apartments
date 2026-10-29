@@ -55,6 +55,52 @@ class Member(models.Model):
         return self.number
 
 
+class InvitationAPICredential(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    key_sha256 = models.CharField(max_length=64, unique=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return "InvitationAPICredential " + str(self.pk)
+
+
+class JoinInvitation(models.Model):
+    """Non-financial shared coordination, separate from membership and ledgers."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reservation_key = models.CharField(max_length=80, unique=True)
+    event_key = models.CharField(max_length=64, unique=True)
+    phone = models.CharField(max_length=32, blank=True)
+    email = models.EmailField(blank=True)
+    phone_digest = models.CharField(max_length=64, blank=True, db_index=True)
+    email_digest = models.CharField(max_length=64, blank=True, db_index=True)
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT
+    )
+    language = models.CharField(max_length=2)
+    source = models.CharField(max_length=80)
+    origin = models.CharField(max_length=16)
+    channel = models.CharField(max_length=16)
+    state = models.CharField(max_length=16, default="claimed")
+    generation = models.PositiveIntegerField(default=1)
+    expires_at = models.DateTimeField()
+    dispatched_at = models.DateTimeField(null=True, blank=True)
+    provider_id = models.CharField(max_length=100, blank=True)
+    outcomes = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "JoinInvitation " + str(self.pk)
+
+    @property
+    def provider_reference(self):
+        return "lsa-loyalty-invite:" + self.pk.hex
+
+
 class AppendOnlyQuerySet(models.QuerySet):
     def update(self, **kwargs):
         raise ValidationError("السجل التاريخي لا يعدل؛ أضف حركة تصحيح.")
