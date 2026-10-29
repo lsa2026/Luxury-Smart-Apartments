@@ -28,6 +28,8 @@ function build(options, samples) {
   if (!workflowId || !Array.isArray(hooks) || !hooks.length) throw Error('workflow_hooks_required');
   if (!['lsa_', 'lsa06_'].includes(tablePrefix)) throw Error('unsupported_existing_journey');
   if (![supabaseCredential, websiteCredential, providerCredential, telegramCredential].every(c => c?.id && c?.name)) throw Error('verified_credential_bindings_required');
+  const websiteAuth = websiteCredential.type || 'httpTemplatedCustomAuth';
+  if (!['httpTemplatedCustomAuth', 'httpHeaderAuth'].includes(websiteAuth)) throw Error('unsupported_website_auth_binding');
   if (!['claim', 'preflight', 'record'].every(k => typeof api?.[k] === 'string' && api[k].startsWith('https://luxurysmartapartments.com/'))) throw Error('verified_website_contract_required');
   if (!/^https:\/\/api\.ultramsg\.com\/instance\d+$/.test(providerBase || '')) throw Error('provider_base_required');
   if (enabled === true && !Number.isFinite(Date.parse(activation_at))) throw Error('activation_boundary_required');
@@ -64,8 +66,8 @@ const packet=policy.render(samples,c.language,c.guest_name);out.push({json:contr
 return out;`);
   add(N.route, 'n8n-nodes-base.switch', 3.4, {mode: 'expression', numberOutputs: 8,
     output: "={{ ['claim','preflight','send','receipt','record','wait','attention','done'].includes($json.action?.kind) ? ['claim','preflight','send','receipt','record','wait','attention','done'].indexOf($json.action.kind) : 6 }}"});
-  const apiNode = (name, url) => io(name, {method: 'POST', url, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendBody: true,
-    specifyBody: 'json', jsonBody: '={{ $json.action.request }}'}, {httpHeaderAuth: websiteCredential});
+  const apiNode = (name, url) => io(name, {method: 'POST', url, authentication: 'genericCredentialType', genericAuthType: websiteAuth, sendBody: true,
+    specifyBody: 'json', jsonBody: '={{ $json.action.request }}'}, {[websiteAuth]: {id: websiteCredential.id, name: websiteCredential.name}});
   apiNode(N.claim, api.claim);apiNode(N.preflight, api.preflight);apiNode(N.record, api.record);
   io(N.send, {method: 'POST', url: providerBase + '/messages/image', authentication: 'genericCredentialType', genericAuthType: 'httpTemplatedCustomAuth',
     sendBody: true, contentType: 'form-urlencoded', bodyParameters: {parameters: ['to', 'image', 'caption', 'referenceId'].map(k => ({name: k, value: '={{ $json.action.request.' + k + ' }}'}))}}, {httpTemplatedCustomAuth: providerCredential});
