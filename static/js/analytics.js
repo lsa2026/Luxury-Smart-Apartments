@@ -66,7 +66,7 @@
     const paymentEnums = {
         payment_type: new Set(["card", "apple_pay", "unknown"]),
         payment_brand: new Set(["mada", "visa", "mastercard", "apple_pay", "unknown"]),
-        checkout_kind: new Set(["booking", "modification"]),
+        checkout_kind: new Set(["booking", "modification", "payment_link"]),
         payment_status: new Set(["succeeded", "pending", "failed", "cancelled", "expired",
             "review", "unknown", "verification_unavailable"]),
         error_category: new Set(["checkout_expired", "gateway_communication",
@@ -374,6 +374,8 @@
             currency,
             payment_type: purchase.dataset.analyticsPaymentType,
             payment_brand: purchase.dataset.analyticsPaymentBrand,
+            ...(purchase.dataset.analyticsCheckoutKind
+                ? {checkout_kind: purchase.dataset.analyticsCheckoutKind} : {}),
             ...(purchasedItem ? {items: [{...purchasedItem, price: value, currency}]} : {}),
             ...propertyContext(purchase),
         }, () => {

@@ -48,6 +48,7 @@ jobs:
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
           tests/test_payment_link_revisions.py
+          tests/test_payment_link_purchase_receipts.py
           tests/test_morning_stays.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
@@ -176,7 +177,7 @@ jobs:
         run: node --test tests/clarity-public.test.cjs
 
       - name: Test consented GA4 UPD and purchase isolation
-        run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/meta-measurement.test.cjs
+        run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/purchase-delivery.test.cjs tests/meta-measurement.test.cjs
 
       - name: Run Ruff lint
         run: ruff check .

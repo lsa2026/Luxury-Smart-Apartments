@@ -8,13 +8,13 @@ const storageKey = 'lsa:purchase:v2:test-booking';
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 function run({consent = true, storage = new Map(), results = [204], noPurchase = false,
-    storageFails = false, value = '1090.0'} = {}) {
+    storageFails = false, value = '1090.0', kind, containerId = 'GTM-TEST123'} = {}) {
     const handlers = {}, timers = new Map(), scripts = [];
     let nextTimer = 1, acknowledgements = 0;
     const purchase = {dataset: {analyticsValue:value, analyticsTransactionId:'test-booking',
         analyticsCurrency:'SAR', analyticsPropertyId:'test-apartment',
         analyticsPropertyName:'Test Apartment', analyticsPageLanguage:'en',
-        analyticsReceiptToken:'signed-test', analyticsReceiptUrl:'/ack/'}};
+        analyticsReceiptToken:'signed-test', analyticsReceiptUrl:'/ack/', analyticsCheckoutKind:kind}};
     const context = {console, URLSearchParams, AbortController, HTMLDialogElement:class {},
         fetch: (url, options) => {
             const response = results[Math.min(acknowledgements++,results.length-1)];
@@ -25,7 +25,7 @@ function run({consent = true, storage = new Map(), results = [204], noPurchase =
         },
         document: {
             cookie:`lsa_cookie_consent=${encodeURIComponent(JSON.stringify({version:1,analytics:consent,marketing:consent}))}`,
-            body:{dataset:{googleIntegrationsEnabled:'true',gtmEnabled:'true',gtmContainerId:'GTM-TEST123',
+            body:{dataset:{googleIntegrationsEnabled:'true',gtmEnabled:'true',gtmContainerId:containerId,
                 cookieConsentEnabled:'true',consentModeEnabled:'true'}},
             head:{append:s=>scripts.push(s)},
             createElement:()=>{const s={dataset:{},remove:()=>scripts.splice(scripts.indexOf(s),1)};return s;},
@@ -49,10 +49,31 @@ function run({consent = true, storage = new Map(), results = [204], noPurchase =
     return {context,handlers,storage,scripts,timers,
         get acknowledgements(){return acknowledgements;},
         get purchases(){return context.window.dataLayer.filter(e=>e.event==='purchase');},
-        process:(id='GTM-TEST123')=>context.window.dataLayer.find(e=>e.event==='purchase')?.eventCallback(id),
+        process:(id=containerId)=>context.window.dataLayer.find(e=>e.event==='purchase')?.eventCallback(id),
         tick:delay=>{for(const [id,t] of [...timers])if(t.delay===delay){timers.delete(id);t.fn();}},
     };
 }
+
+test('payment-link purchase reuses existing container and denied-consent ACK/dedup behavior',async()=>{
+    const storage=new Map();
+    const r=run({consent:false,storage,value:'500.00',kind:'payment_link',containerId:'GTM-M9VLL75K'});
+    assert.equal(r.purchases.length,1);
+    assert.equal(r.purchases[0].event,'purchase');
+    assert.equal(r.purchases[0].checkout_kind,'payment_link');
+    assert.equal(r.purchases[0].ecommerce.value,500);
+    assert.equal(r.purchases[0].ecommerce.currency,'SAR');
+    assert.equal(r.scripts.length,1);
+    assert.match(r.scripts[0].src,/GTM-M9VLL75K/);
+    assert.equal(r.acknowledgements,0);
+    r.process('GTM-WRONG');assert.equal(r.acknowledgements,0);
+    for(const entry of r.context.window.dataLayer.filter(e=>e[0]==='consent'))
+        for(const name of ['analytics_storage','ad_storage','ad_user_data','ad_personalization'])
+            assert.equal(entry[2][name],'denied');
+    r.process();r.process();await flush();
+    assert.equal(r.acknowledgements,1);
+    assert.equal(run({consent:false,storage,kind:'payment_link'}).purchases.length,0);
+    assert.doesNotMatch(JSON.stringify(r.purchases), /signed-test|receipt_token|payment_id/);
+});
 
 test('matching GTM callback is required; enqueue and wrong container never acknowledge',async()=>{
     const r=run();assert.equal(r.acknowledgements,0);assert.equal(r.storage.size,0);
