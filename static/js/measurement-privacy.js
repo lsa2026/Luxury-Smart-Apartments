@@ -36,6 +36,12 @@
     }
 
     function fields() {
+        if (document.body?.dataset.analyticsPaymentLinkReceipt === "true") {
+            return {
+                page_location: new URL("/payments/receipt/", window.location.href).href,
+                page_referrer: "",
+            };
+        }
         return {
             page_location: safeUrl(window.location.href),
             page_referrer: safeUrl(document.referrer),

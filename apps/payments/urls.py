@@ -2,6 +2,7 @@ from django.urls import path
 
 from .morning_views import MorningPaymentResultView, MorningPaymentView
 from .payment_link_views import ReservationPaymentAddressView, ReservationPaymentView
+from .purchase_receipts import payment_link_receipt
 from .views import (
     CurrencyPreferenceView,
     HyperPayBookingCheckoutView,
@@ -14,6 +15,7 @@ from .views import (
 app_name = "payments"
 
 urlpatterns = [
+    path("receipt/", payment_link_receipt, name="payment_link_receipt"),
     path("morning-pay/<str:token>/", MorningPaymentView.as_view(), name="morning_payment"),
     path(
         "hyperpay/morning-result/<uuid:payment_id>/",

@@ -264,6 +264,14 @@ class ReservationPaymentAddressView(CheckoutAddressView):
 
 
 def render_request_result(request, attempt, outcome):
+    from .hyperpay.result_codes import HyperPayStatus
+    from .purchase_receipts import redirect_verified_purchase
+
+    request._disable_google_integrations = True
+    if outcome is not None and outcome.status == HyperPayStatus.SUCCESS:
+        receipt_redirect = redirect_verified_purchase(request, attempt)
+        if receipt_redirect is not None:
+            return receipt_redirect
     payment_request = ReservationPaymentRequest.objects.get(pk=attempt.payment_request_id)
     language = payment_request.language if payment_request.language in COPY else "ar"
     request.LANGUAGE_CODE = language

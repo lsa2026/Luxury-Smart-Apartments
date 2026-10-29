@@ -4,9 +4,10 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const code = fs.readFileSync('static/js/measurement-privacy.js', 'utf8');
 
-function run(href, referrer = '') {
+function run(href, referrer = '', receipt = false) {
     const window = {location: {href}};
-    vm.runInNewContext(code, {window, document: {referrer}, URL});
+    vm.runInNewContext(code, {window, document: {referrer,
+        body: {dataset: {analyticsPaymentLinkReceipt: receipt ? 'true' : 'false'}}}, URL});
     return window;
 }
 
@@ -21,6 +22,15 @@ test('private return URL and previous checkout are redacted without changing nav
     assert.equal(window.dataLayer.length, 1);
     assert.equal(window.dataLayer[0][0], 'set');
     assert.equal(window.dataLayer.some(v => v.event === 'purchase'), false);
+});
+
+test('clean payment receipt never measures query, hash or any incoming referrer', () => {
+    const window = run('https://example.com/payments/receipt/?gclid=private&payment_id=secret#token',
+        'https://example.com/payments/pay/bearer/?return_token=secret', true);
+    const fields = window.LSAMeasurementPrivacy.fields();
+    assert.equal(fields.page_location, 'https://example.com/payments/receipt/');
+    assert.equal(fields.page_referrer, '');
+    assert.doesNotMatch(JSON.stringify(window.dataLayer), /private|secret|bearer|token|gclid/);
 });
 
 test('public campaign attribution remains; unknown queries, credentials and fragments do not', () => {

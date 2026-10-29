@@ -1,0 +1,64 @@
+{% load static i18n l10n presentation %}
+<!doctype html>
+<html lang="{{ language }}" dir="{% if language == 'ar' %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>{{ ui.title }} | Luxury Smart Apartments</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}?v=49">
+  {% if purchase_event %}
+  <script src="{% static 'js/measurement-privacy.js' %}?v=2" defer></script>
+  <script src="{% static 'js/consent.js' %}?v=17" defer></script>
+  <script src="{% static 'js/analytics.js' %}?v=21" defer></script>
+  {% endif %}
+</head>
+<body
+  data-analytics-payment-link-receipt="true"
+  data-google-integrations-enabled="{{ google_config.google_integrations_enabled|yesno:'true,false' }}"
+  data-meta-measurement-page-allowed="false"
+  data-gtm-enabled="{{ google_config.gtm_enabled|yesno:'true,false' }}"
+  data-gtm-container-id="{{ google_config.gtm_container_id }}"
+  data-ga4-enabled="{{ google_config.ga4_enabled|yesno:'true,false' }}"
+  data-ga4-measurement-id="{{ google_config.ga4_measurement_id }}"
+  data-google-ads-enabled="{{ google_config.google_ads_enabled|yesno:'true,false' }}"
+  data-consent-mode-enabled="{{ google_config.consent_mode_enabled|yesno:'true,false' }}"
+  data-consent-default-analytics="{{ google_config.consent_defaults.analytics_storage }}"
+  data-consent-default-ad="{{ google_config.consent_defaults.ad_storage }}"
+  data-consent-default-ad-user-data="{{ google_config.consent_defaults.ad_user_data }}"
+  data-consent-default-ad-personalization="{{ google_config.consent_defaults.ad_personalization }}"
+  data-cookie-consent-enabled="{{ cookie_consent_enabled|yesno:'true,false' }}"
+  data-cookie-consent-version="{{ cookie_consent_version }}"
+  data-cookie-consent-max-age="{{ cookie_consent_max_age }}"
+  data-cookie-consent-secure="{{ cookie_consent_secure|yesno:'true,false' }}"
+>
+<main class="section container narrow payment-result">
+  <h1>{{ ui.title }}</h1>
+  <article class="review-panel">
+    <p class="notice" role="status">{{ ui.paid }}</p>
+    <p>{{ amount|format_money:currency }}</p>
+  </article>
+  {% if purchase_event %}
+  {% with purchased_item=purchase_event.items.0 %}
+  <div hidden
+    data-analytics-purchase-event
+    data-analytics-transaction-id="{{ purchase_event.transaction_id }}"
+    data-analytics-value="{{ purchase_event.value|unlocalize }}"
+    data-analytics-currency="{{ purchase_event.currency }}"
+    data-analytics-property-id="{{ purchased_item.item_id }}"
+    data-analytics-property-name="{{ purchased_item.item_name }}"
+    data-analytics-property-city="{{ purchased_item.item_category2 }}"
+    data-analytics-property-type="{{ purchased_item.item_category3 }}"
+    data-analytics-page-language="{{ purchase_event.page_language }}"
+    data-analytics-payment-type="{{ purchase_event.payment_type }}"
+    data-analytics-payment-brand="{{ purchase_event.payment_brand }}"
+    data-analytics-checkout-kind="{{ purchase_event.checkout_kind }}"
+    data-analytics-receipt-token="{{ purchase_receipt_token }}"
+    data-analytics-receipt-csrf="{{ purchase_receipt_csrf_token }}"
+    data-analytics-receipt-url="{% url 'marketing:purchase_acknowledge' %}"
+  ></div>
+  {% endwith %}
+  {% endif %}
+</main>
+</body>
+</html>
