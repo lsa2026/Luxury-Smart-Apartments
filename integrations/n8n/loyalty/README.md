@@ -36,8 +36,16 @@ Language comes from existing guest language selection. Unknown language is skipp
 
 Run from the repository root:
 
-    node --test integrations/n8n/loyalty/policy.test.cjs
+    node --test integrations/n8n/loyalty/*.test.cjs
 
-18 offline tests pass: three language/image/caption fixtures, fresh external booking after core delivery, disabled/historical gate, website and ambiguous source exclusion, missing/invalid/local/international phone, old email acceptance, pending core work and correction, entry instructions still pending, existing member, duplicate, unavailable membership, changed target, joining during preflight, expired ticket, provider error/timeout, exact delivery evidence, caption size and shared-claim contract simulation.
+33 offline tests pass: three language/image/caption fixtures, fresh external booking after core delivery, disabled/historical gate, website and ambiguous source exclusion, missing/invalid/local/international phone, old email acceptance, pending core work and correction, entry instructions still pending, existing member, duplicate, unavailable membership, changed target, joining during preflight, expired ticket, provider error/timeout, exact delivery evidence, caption size and shared-claim contract simulation.
 
 The shared-claim Map in the test is explicitly a test double, not durable production deduplication. Atomic uniqueness, real membership lookups, credential binding, n8n node execution and deployment need evidence from the actual website API before activation. No real guest is a test recipient.
+
+## Additive workflow patch builder
+
+`build-patch.cjs` generates 15 additional nodes inside each existing workflow, without deleting, renaming or changing existing nodes or schedules. It requires explicit final website URLs and credential references. Its default entry gate is closed; an enabled build requires an explicit activation timestamp. The website key is a dedicated credential (prefer `httpTemplatedCustomAuth` with a Bearer-header template), never an embedded value. Existing UltraMsg and Supabase credentials are referenced by ID rather than copied.
+
+The generated node parameters passed the native n8n schema validator (15/15). A sanitized inactive structural projection passed the skill helper with no errors. Generated Code was executed locally with synthetic HTTP envelopes, including filtered multi-reservation input pairing and the closed entry gate. This is not evidence of execution in the actual n8n runtime, and no live workflow has been patched or published for this feature yet.
+
+Project 0107 acknowledged the dependency and is implementing claim/preflight/record/status under `/integrations/loyalty/invitations/`. The exact final JSON and dedicated credential setup must still be verified before applying any generated patch. The mock URLs under `__contract_fixture__` exist only in offline fixtures and must never be used for deployment.
