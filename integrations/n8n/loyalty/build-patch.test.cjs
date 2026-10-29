@@ -42,15 +42,42 @@ test('compiled n8n preparation keeps candidate pairing after skipping an older b
   const snapshots = [{...base, reservation_key: '99000006', booking_created_at: '2000-01-01T00:00:00Z'}, base];
   const inputs = snapshots.map(b => ({json: {statusCode: 200, body: ['status_new', 'house_rules'].map(type => ({reservation_key: b.reservation_key,
     state: 'complete', guest_delivered: true, payload: {...b, message_type: type, delivery_channel: 'whatsapp'}}))}}));
-  const execute = new Function('$input', '$', script);
-  const result = execute({all: () => inputs}, name => ({all: () => snapshots.map(snapshot => ({json: {statusCode: 200, body: [{snapshot}]}}))}));
+  const execute = new Function('$input', '$', '$runIndex', script);
+  const read = name => ({all: () => snapshots.map(snapshot => ({json: {statusCode: 200, body: [{snapshot}]}}))});
+  const result = execute({all: () => inputs}, read, 0);
   assert.equal(result.length, 1); assert.equal(result[0].pairedItem.item, 1);
   assert.equal(result[0].json.candidate.reservation_key, base.reservation_key);
   assert.equal(result[0].json.packet.language, 'fr');
   assert.equal(result[0].json.action.kind, 'claim');
+});
+
+test('credential-free staging disables every dependency and cannot be enabled', () => {
+  const patch=build({...options, staged:true, websiteCredential:undefined},samples);
+  assert.equal(patch.enabled,false);
+  assert.equal(patch.nodes.filter(n=>!n.disabled).length,1);
+  assert.equal(patch.nodes.find(n=>!n.disabled).name,names.keys);
+  for(const name of [names.claim,names.preflight,names.record,names.status]){
+    const node=patch.nodes.find(n=>n.name===name);
+    assert.equal(node.disabled,true);assert.equal(node.parameters.authentication,'none');
+    assert.equal(node.credentials,undefined);
+  }
+  assert.throws(()=>build({...options,staged:true,enabled:true},samples),/staged_integration_must_remain_closed/);
+  assert.throws(()=>build({...options,staged:true,activation_at:'2099-01-01T00:00:00Z'},samples),/staged_integration_must_remain_closed/);
+});
+
+test('each later hook reads its own snapshot run instead of an earlier booking', () => {
+  const clock=Date.now();
+  const patch=build({...options,enabled:true,activation_at:new Date(clock-120000).toISOString()},samples);
+  const script=patch.nodes.find(n=>n.name===names.prepare).parameters.jsCode;
+  const snapshot={reservation_key:'99000008',booking_created_at:new Date(clock-60000).toISOString(),canonical_status:'confirmed',booking_platform:'Booking.com',channel_id:2018,phone:'999000000097',guest_name:'Synthetic Guest',guest_language:'en',listing_map_id:315814,timezone:'Asia/Riyadh',arrival_date:'2099-01-01',departure_date:'2099-01-02'};
+  const jobs=['status_new','house_rules'].map(message_type=>({reservation_key:snapshot.reservation_key,state:'complete',guest_delivered:true,payload:{...snapshot,message_type,delivery_channel:'whatsapp'}}));
+  let reads=0;
+  const result=new Function('$input','$','$runIndex',script)({all:()=>[{json:{statusCode:200,body:jobs}}]},()=>({all:(port,run)=>{reads++;assert.equal(run,1);return [{json:{statusCode:200,body:[{snapshot}]}}]}}),1);
+  assert.equal(reads,1);assert.equal(result[0].json.candidate.reservation_key,'99000008');
 });
 test('closed compiled n8n entry never reads or invokes downstream services', () => {
   const patch = build(options, samples), script = patch.nodes.find(n => n.name === names.keys).parameters.jsCode;
   const result = new Function('$input', '$', script)({all: () => {throw Error('should not read input');}}, () => {throw Error('should not read nodes');});
   assert.deepEqual(result, []);
 });
+
