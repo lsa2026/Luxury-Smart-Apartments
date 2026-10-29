@@ -276,7 +276,7 @@ def record(row, state, provider_id=""):
         raise ValidationError("provider_id_required")
     if row.provider_id and provider_id and row.provider_id != provider_id:
         raise ValidationError("provider_id_conflict")
-    if row.state == "claimed" and state not in {"queue_failed", "blocked"}:
+    if row.dispatched_at is None and state not in {"queue_failed", "blocked"}:
         raise ValidationError("preflight_required")
     ranks = {"unknown": 0, "failed": 0, "accepted": 1, "delivered": 2, "read": 3}
     history = {"status": state, "at": timezone.now().isoformat()}

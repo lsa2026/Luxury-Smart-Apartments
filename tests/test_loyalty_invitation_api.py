@@ -368,3 +368,13 @@ def test_expired_same_event_can_refresh_only_unconsumed_claim(rig):
     assert first["invitation_id"] == second["invitation_id"]
     assert preflight(first).status_code == 409
     assert preflight(second).json()["send_allowed"] is True
+
+
+def test_member_denial_cannot_be_recorded_as_provider_acceptance(rig):
+    first = claim()
+    account = user("joined-before-send")
+    join(account)
+    VerifiedPhone.objects.create(user=account, phone="+12025550123")
+    assert preflight(first).json()["decision"] == "member"
+    assert report(first, "accepted").status_code == 409
+    assert JoinInvitation.objects.get().state == "blocked"
