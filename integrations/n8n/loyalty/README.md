@@ -1,51 +1,50 @@
-# External booking loyalty invitations — n8n integration
+# n8n external booking loyalty invitations
 
 Tracking: LSA-LOYALTY-N8N-20261029-0107-03
 
-Status: pure policy and offline tests prepared. Not activated. Website membership/atomic invitation-claim API and its credential binding are a required dependency requested from project 0107. No guessed endpoint, unauthenticated member lookup or production send is permitted.
+## Current status
 
-## Existing workflows and event ordering
+Prepared and tested; NOT applied or activated in live n8n. Website PR 139 provides the coordination API. A dedicated verified credential in n8n is still required. No real guest tests, historical campaign, new workflow or parallel schedule.
 
-- Scenario 01: Pp0J8YZogO8AQfDc. Hook after the booking delivery batch finishes, using its existing reservation report scope. Only consider external bookings whose currently due essential WhatsApp messages have delivery evidence.
-- Scenario 03: sNwA2n4FfnAMqFDW. Hook after 120 Correction Result - End, independently of contact bookkeeping. Read the current authoritative booking and delivery records after correction; never use the form payload as the booking source.
-- Scenario 06: 0deZzThN5mrTS39o. Hook after the booking batch, and after 120 Correction Result - End for corrected Gathern numbers. Guest email sending remains disabled.
-- No new workflow, no parallel schedule, no replay/backfill. Scenario 07 is website-only and excluded.
+## Existing workflow hooks
 
-The activation timestamp must be written once when the live website API and authentication are verified. Only bookings created on or after this timestamp qualify. A later phone correction of such a booking can unlock its invitation after all currently due essential messages finish. Historical reservations cannot be swept into a campaign by an update or correction.
+| Workflow | ID | Hook |
+|---|---|---|
+| 01 reservation journey | Pp0J8YZogO8AQfDc | after the existing booking delivery batch/report; read authoritative snapshot and receipts |
+| 03 phone recovery | sNwA2n4FfnAMqFDW | after 120 Correction Result - End; only after successful core recovery |
+| 06 Gathern | 0deZzThN5mrTS39o | after its existing booking batch and after successful 120 correction |
 
-Confirmation, house rules, currently due entry instructions and correction of pending essential messages finish before invitation processing. Future entry/checkout reminders retain their existing schedule. Optional invitation failure must never block or downgrade core work.
+Essential messages already due must have delivery evidence to the current correct phone. Gathern email acceptance is never such evidence. Future entry/checkout reminders retain their current schedule. A missing number or failed core message holds the optional invitation until a qualifying correction event. Optional invitation failure cannot block essential messages already completed.
 
-## Website contract requested from 0107
+The builder adds 16 nodes inside an existing workflow and preserves existing nodes, paths, schedules, credentials and connections. It defaults to a closed entry gate. Its active configuration requires an explicit future UTC activation timestamp; only bookings created on or after that timestamp qualify. No historical sweep or backfill is performed. Website/direct sources and scenario 07 are excluded.
 
-This is a proposed adapter contract, not a claim that any endpoint exists. Confirm final paths, authentication and response schema with the website implementation before wiring HTTP nodes.
+## Website v1 contract
 
-1. Atomic claim accepts reservation_key, phone, guest_email, language, guest_name, source_platform, booking_created_at, event_id and template_version. It authoritatively checks verified phone membership and a shared ledger covering website/manual/email/WhatsApp invitation paths. It returns member, duplicate, blocked, phone_missing or eligible. Eligible explicitly includes member=false, invitation_id, phone, stable reference_id and a short-lived ticket. A read error is attention, never non-member.
-2. Preflight rechecks membership and target binding immediately before provider POST, and commits the invitation into a state that concurrent duplicate events cannot send. It returns allowed/member, invitation_id, phone, reference_id and expires_at. New membership, cancellation, changed target, expired ticket or unverified response must deny sending.
-3. Record stores accepted, unknown, failed, delivered and read distinctly. A timeout after POST is unknown and must never cause another blind POST. Exact provider id/reference/recipient evidence may reconcile it. Automatic changes of phone or channel cannot create another invitation for an already accepted/ambiguous reservation. Shared recipient/account uniqueness spans different reservations and both invitation senders.
-4. Record/status endpoints and durable alerts must recover recording failures without sending the invitation twice. Authentication is supplied via a credential binding, never in Code, URLs or repository content. No member data listing endpoint is required.
+Pinned in website-contract-v1.json from project 0107 PR 139. Actual routes live under /integrations/loyalty/invitations/: claim/, preflight/, record/, status/, plus authenticated GET health/.
 
-The website owns membership and welcomes after enrollment. n8n invitation processing performs no enrollment, points, referral attribution or welcome write.
+- Claim sends exactly reservation_key, phone, email, language, guest_name, source_platform and event_id. A successful response requires code=ok. decision=eligible is authoritative eligibility, not permission to send; send_allowed must still be false. Match recipient_phone and preserve provider_reference.
+- Preflight sends exactly invitation_id, ticket, phone. Only code=ok, decision=eligible, send_allowed=true with matching recipient_phone, invitation_id, provider_reference and a future send_expires_at authorizes a single provider POST. The generated HTTP URL also refuses to issue a POST after that deadline.
+- Record sends exactly invitation_id, provider_reference, status, provider_id. Status distinguishes accepted/unknown/failed/delivered/read. Provider acceptance is not delivery. Exact provider id/reference/recipient evidence is required to advance delivery. No numeric ACK inference.
+- Status sends invitation_id. A preflight timeout, ambiguous record acknowledgment or previous accepted/unknown invitation uses status rather than another provider POST. Unresolved states are held for attention.
 
-## Approved content
+The website owns atomic membership checks and the shared cross-channel/reservation/recipient ledger, including manual website invitations. The n8n test ledger is explicitly a test double, not proof of production durable idempotency. The website API never sends the n8n invitation. Enrollment, points, referral attribution and post-enrollment welcomes remain website responsibilities.
 
-Pinned asset source: apps/loyalty/invitation_assets/enrollment-owner-review-v3.json at c01024ca156065ab31ae690fe59077eed9c9dbce. Images are unchanged and their SHA-256 is verified in tests. Captions replace only the fictional guest name and qualify the current-stay wording for external bookings; 3% and 5% apply only under eligible website booking terms, with no retrospective reward for external stays. The Sama paragraph and the approved join URL are preserved.
+## Authentication
 
-Language comes from existing guest language selection. Unknown language is skipped for attention, not guessed from an unrelated contact. Overlong captions are held rather than silently truncated. Names cannot insert markup or invisible control characters. Content version: external-enrollment-v1-20261029.
+Dedicated credential name proposed by 0107: LSA Loyalty Invitations v1. API uses Authorization: Bearer with a dedicated invitation-only key. Do not reuse an unrelated Header Auth or Sama credential. New credential can use httpTemplatedCustomAuth with a Bearer header template; the builder also accepts an explicitly verified existing httpHeaderAuth binding. Never put the secret in Code, URLs, exported workflow JSON, repository content or chat. Bind existing Supabase and UltraMsg credentials by ID; do not copy their secret values.
 
-## Checks performed
+Owner-only setup and readiness paths are documented by 0107 in the pinned OpenAPI fixture; their deployment and authenticated health must be verified before activation. No credential was provisioned by this n8n change.
 
-Run from the repository root:
+## Content
+
+Images remain the exact approved ar/en/fr PNGs from apps/loyalty/invitation_assets/enrollment-owner-review-v3.json at c01024ca156065ab31ae690fe59077eed9c9dbce. Tests verify SHA-256. Captions replace fictional names with the actual guest name, qualify the current-stay phrase for eligible website bookings, and explicitly state that the external booking earns no retrospective stay rewards. 3%/5%, Sama and the approved rewards join URL remain. Unsupported language and overlong captions are held rather than guessed or silently truncated.
+
+## Verification
+
+Run from repository root:
 
     node --test integrations/n8n/loyalty/*.test.cjs
 
-33 offline tests pass: three language/image/caption fixtures, fresh external booking after core delivery, disabled/historical gate, website and ambiguous source exclusion, missing/invalid/local/international phone, old email acceptance, pending core work and correction, entry instructions still pending, existing member, duplicate, unavailable membership, changed target, joining during preflight, expired ticket, provider error/timeout, exact delivery evidence, caption size and shared-claim contract simulation.
+38 offline tests pass. They cover languages/artwork, member suppression, missing/local/international numbers, repeated events, corrected numbers, old email acceptance, correct-recipient essential delivery, historical/ended/website bookings, timezone mapping, provider errors/timeouts, exact receipt checks, strict actual website request schemas, one-use preflight, status reconciliation and generated Code pairing/gates.
 
-The shared-claim Map in the test is explicitly a test double, not durable production deduplication. Atomic uniqueness, real membership lookups, credential binding, n8n node execution and deployment need evidence from the actual website API before activation. No real guest is a test recipient.
-
-## Additive workflow patch builder
-
-`build-patch.cjs` generates 15 additional nodes inside each existing workflow, without deleting, renaming or changing existing nodes or schedules. It requires explicit final website URLs and credential references. Its default entry gate is closed; an enabled build requires an explicit activation timestamp. The website key is a dedicated credential (prefer `httpTemplatedCustomAuth` with a Bearer-header template), never an embedded value. Existing UltraMsg and Supabase credentials are referenced by ID rather than copied.
-
-The generated node parameters passed the native n8n schema validator (15/15). A sanitized inactive structural projection passed the skill helper with no errors. Generated Code was executed locally with synthetic HTTP envelopes, including filtered multi-reservation input pairing and the closed entry gate. This is not evidence of execution in the actual n8n runtime, and no live workflow has been patched or published for this feature yet.
-
-Project 0107 acknowledged the dependency and is implementing claim/preflight/record/status under `/integrations/loyalty/invitations/`. The exact final JSON and dedicated credential setup must still be verified before applying any generated patch. The mock URLs under `__contract_fixture__` exist only in offline fixtures and must never be used for deployment.
+All 16 generated node parameter sets passed the native n8n schema validator. The sanitized inactive structural projection passed the skill helper with no errors. Generated Code ran locally against synthetic envelopes. Actual n8n runtime execution, real membership API access, shared production deduplication and deployment remain unverified until the dedicated credential is configured and the final patch is applied. No live guest is an acceptance-test recipient.
