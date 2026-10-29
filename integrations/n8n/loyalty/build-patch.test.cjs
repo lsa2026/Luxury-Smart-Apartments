@@ -9,7 +9,7 @@ const options = {workflowId: 'synthetic-workflow', hooks: ['Existing Core Finish
   telegramCredential: credential, alertChatId: 'synthetic-chat', enabled: false,
   api: {claim: 'https://luxurysmartapartments.com/__contract_fixture__/claim',
     preflight: 'https://luxurysmartapartments.com/__contract_fixture__/preflight',
-    record: 'https://luxurysmartapartments.com/__contract_fixture__/record'},
+    record: 'https://luxurysmartapartments.com/__contract_fixture__/record', status: 'https://luxurysmartapartments.com/__contract_fixture__/status'},
   providerBase: 'https://api.ultramsg.com/instance999999'};
 test('additive patch has no schedule or new workflow, and begins with a closed gate', () => {
   const patch = build(options, samples);
@@ -29,7 +29,7 @@ test('every action is wired and every target is defined or an existing hook', ()
   const patch = build(options, samples), known = new Set(patch.nodes.map(n => n.name));
   assert.equal(known.size, patch.nodes.length);
   for (const edge of patch.connections) assert.ok(known.has(edge.target));
-  assert.equal(patch.connections.filter(e => e.source === names.route).length, 8);
+  assert.equal(patch.connections.filter(e => e.source === names.route).length, 9);
   assert.equal(patch.nodes.find(n => n.name === names.receive).parameters.mode, 'runOnceForEachItem');
 });
 test('compiled n8n preparation keeps candidate pairing after skipping an older booking', () => {
