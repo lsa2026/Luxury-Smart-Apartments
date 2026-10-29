@@ -55,6 +55,9 @@ test('email acceptance never counts as core WhatsApp delivery', () => {
   const emails = jobs.map(j => ({...j, guest_delivered: false, email_accepted: true, payload: {...j.payload, delivery_channel: 'email'}}));
   assert.equal(p.candidate(booking, emails, config, now).reason, 'confirmation_not_delivered');
 });
+test('delivery to an obsolete number does not unlock an invitation to a corrected number', () => {
+  assert.equal(p.candidate({...booking, phone: '999000000098'}, jobs, config, now).reason, 'confirmation_not_delivered');
+});
 test('core failure blocks invitation only; corrections unlock after actual delivery', () => {
   const pending = [jobs[0], {...jobs[1], guest_delivered: false}];
   assert.equal(p.candidate(booking, pending, config, now).reason, 'house_rules_not_delivered');
