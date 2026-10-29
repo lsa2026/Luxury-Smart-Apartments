@@ -105,18 +105,18 @@ function candidate(snapshot, jobs, config, now) {
 function claimDecision(candidate, response) {
   if (candidate?.eligible !== true) return {action: 'skip', reason: candidate?.reason || 'not_eligible'};
   const body = response?.body ?? response;
-  if (response?.error || (response?.statusCode && response.statusCode !== 200) || !body || body.ok !== true) return {action: 'attention', reason: 'membership_lookup_unavailable'};
+  if (response?.error || (response?.statusCode && response.statusCode !== 200) || !body || body.code !== 'ok') return {action: 'attention', reason: 'membership_lookup_unavailable'};
   if (['member', 'duplicate', 'blocked', 'phone_missing'].includes(body.decision)) return {action: 'skip', reason: body.decision};
-  if (body.decision !== 'eligible' || body.member !== false || !body.invitation_id || !body.ticket || !body.reference_id || body.phone !== candidate.phone) return {action: 'attention', reason: 'membership_claim_unverified'};
+  if (body.decision !== 'eligible' || body.send_allowed !== false || !body.invitation_id || !body.ticket || !body.provider_reference || body.recipient_phone !== candidate.phone) return {action: 'attention', reason: 'membership_claim_unverified'};
   return {action: 'preflight', invitation_id: body.invitation_id, ticket: body.ticket,
-    reference_id: body.reference_id, candidate};
+    reference_id: body.provider_reference, candidate};
 }
 
 function preflight(claim, response, now) {
   const body = response?.body ?? response;
-  if (response?.error || (response?.statusCode && response.statusCode !== 200) || !body || body.ok !== true) return {action: 'attention', reason: 'preflight_unavailable'};
-  if (body.allowed !== true || body.member !== false) return {action: 'skip', reason: body.member === true ? 'member' : 'preflight_denied'};
-  if (body.invitation_id !== claim.invitation_id || body.reference_id !== claim.reference_id || body.phone !== claim.candidate.phone || Date.parse(body.expires_at) <= Date.parse(now) || !Number.isFinite(Date.parse(body.expires_at))) return {action: 'attention', reason: 'preflight_identity_mismatch'};
+  if (response?.error || (response?.statusCode && response.statusCode !== 200) || !body || body.code !== 'ok') return {action: 'attention', reason: 'preflight_unavailable'};
+  if (body.send_allowed !== true || body.decision !== 'eligible') return {action: 'skip', reason: body.decision === 'member' ? 'member' : 'preflight_denied'};
+  if (body.invitation_id !== claim.invitation_id || body.provider_reference !== claim.reference_id || body.recipient_phone !== claim.candidate.phone || Date.parse(body.send_expires_at) <= Date.parse(now) || !Number.isFinite(Date.parse(body.send_expires_at))) return {action: 'attention', reason: 'preflight_identity_mismatch'};
   return {...claim, action: 'send'};
 }
 
