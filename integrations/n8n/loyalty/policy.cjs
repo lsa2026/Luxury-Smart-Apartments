@@ -55,6 +55,8 @@ function candidate(snapshot, jobs, config, now) {
   if (config?.enabled !== true || !Number.isFinite(since)) return skip('integration_not_enabled');
   const created = Date.parse(snapshot?.booking_created_at || '');
   if (!Number.isFinite(created) || created < since) return skip('historical_booking');
+  const clock = Date.parse(now || '');
+  if (!Number.isFinite(clock) || clock < created) return skip('event_time_invalid');
   if (!['confirmed', 'new', 'modified', 'accepted', 'reserved'].includes(String(snapshot.canonical_status || snapshot.status || '').toLowerCase())) return skip('booking_not_active');
   const platform = String(snapshot.booking_platform || '').trim();
   const source = String(snapshot.source || '').toLowerCase();
@@ -66,6 +68,19 @@ function candidate(snapshot, jobs, config, now) {
   if (!['ar', 'en', 'fr'].includes(language)) return skip('guest_language_missing');
   const name = cleanName(snapshot.guest_name);
   if (!name) return skip('guest_name_missing');
+  const propertyMessage = (Array.isArray(jobs) ? jobs : []).find(j => String(j.reservation_key) === String(snapshot.reservation_key)
+    && String(j.payload?.listing_map_id) === String(snapshot.listing_map_id));
+  const zone = snapshot.timezone || snapshot.property_timezone || propertyMessage?.payload?.timezone
+    || propertyMessage?.payload?.apartment?.timezone;
+  if (!['Asia/Riyadh', 'Africa/Casablanca'].includes(zone)) return skip('property_timezone_unknown');
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone: zone,
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'})
+    .formatToParts(new Date(clock)).map(p => [p.type, p.value]));
+  const localDay = parts.year + '-' + parts.month + '-' + parts.day;
+  const localTime = parts.hour + ':' + parts.minute;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(snapshot.departure_date || '')) return skip('stay_dates_missing');
+  if (snapshot.departure_date < localDay || (snapshot.departure_date === localDay
+    && localTime >= (snapshot.check_out_time || '12:00'))) return skip('stay_ended');
   const sameBooking = j => String(j.reservation_key) === String(snapshot.reservation_key);
   const payload = j => j.payload || {};
   const type = j => payload(j).message_type;
@@ -77,8 +92,6 @@ function candidate(snapshot, jobs, config, now) {
   if (!rows.some(j => ['status_new', 'status_modified'].includes(type(j)) && sameDates(j) && delivered(j))) return skip('confirmation_not_delivered');
   if (!rows.some(j => type(j) === 'house_rules' && delivered(j))) return skip('house_rules_not_delivered');
   if (rows.some(j => type(j) === 'checkin_guide' && sameDates(j) && !delivered(j) && j.state !== 'cancelled')) return skip('entry_instructions_pending');
-  const clock = Date.parse(now || '');
-  if (!Number.isFinite(clock) || clock < created) return skip('event_time_invalid');
   return {eligible: true, reservation_key: String(snapshot.reservation_key), phone,
     guest_name: name, language, guest_email: String(snapshot.guest_email || ''),
     source_platform: platform, booking_created_at: new Date(created).toISOString(),
@@ -119,15 +132,15 @@ function receiptEvidence(response, expected) {
   const body = response?.body ?? response;
   if (response?.error || Number(response?.statusCode || 200) >= 400) return {state: 'unknown', delivered: false, retry_post: false};
   const records = Array.isArray(body) ? body : Array.isArray(body?.messages) ? body.messages : [];
-  const rows = records.filter(r => String(r.id) === String(expected.provider_id)
+  const rows = records.filter(r => (!expected.provider_id || String(r.id) === String(expected.provider_id))
     && normalizePhone(String(r.to || '').replace(/@c\.us$/, '')) === expected.phone
     && String(r.referenceId || '') === expected.reference_id);
   if (rows.length !== 1) return {state: 'unknown', delivered: false, retry_post: false};
   const row = rows[0], ack = String(row.ack || '').toLowerCase(), status = String(row.status || '').toLowerCase();
   if (['invalid', 'unsent', 'expired'].includes(status)) return {state: 'failed', delivered: false, retry_post: false};
-  if (['read', 'played'].includes(ack)) return {state: 'read', delivered: true, retry_post: false};
-  if (ack === 'device') return {state: 'delivered', delivered: true, retry_post: false};
-  return {state: 'accepted', delivered: false, retry_post: false};
+  if (['read', 'played'].includes(ack)) return {state: 'read', provider_id: String(row.id), delivered: true, retry_post: false};
+  if (ack === 'device') return {state: 'delivered', provider_id: String(row.id), delivered: true, retry_post: false};
+  return {state: 'accepted', provider_id: String(row.id), delivered: false, retry_post: false};
 }
 
 module.exports = {JOIN_URL, TEMPLATE_VERSION, cleanName, normalizePhone, render, candidate, claimDecision, preflight, sendEvidence, receiptEvidence};
