@@ -4,7 +4,7 @@ Tracking: LSA-LOYALTY-N8N-20261029-0107-03
 
 ## Current status
 
-Prepared and tested; NOT applied or activated in live n8n. Website PR 139 provides the coordination API. A dedicated verified credential in n8n is still required. No real guest tests, historical campaign, new workflow or parallel schedule.
+Prepared and applied as CLOSED staging to existing n8n 01/03/06 workflows; invitation sending is NOT activated. Website PR 139 is merged and its contract at eb526e7c366c73239513a7a8c3a8dead1cf4f925 is byte-identical to website-contract-v1.json. A dedicated verified credential in n8n is still required. No real guest tests, historical campaign, new workflow or parallel schedule.
 
 ## Existing workflow hooks
 
@@ -45,6 +45,14 @@ Run from repository root:
 
     node --test integrations/n8n/loyalty/*.test.cjs
 
-38 offline tests pass. They cover languages/artwork, member suppression, missing/local/international numbers, repeated events, corrected numbers, old email acceptance, correct-recipient essential delivery, historical/ended/website bookings, timezone mapping, provider errors/timeouts, exact receipt checks, strict actual website request schemas, one-use preflight, status reconciliation and generated Code pairing/gates.
+40 offline tests pass. They cover languages/artwork, member suppression, missing/local/international numbers, repeated events, corrected numbers, old email acceptance, correct-recipient essential delivery, historical/ended/website bookings, timezone mapping, provider errors/timeouts, exact receipt checks, strict actual website request schemas, one-use preflight, status reconciliation and generated Code pairing/gates.
 
-All 16 generated node parameter sets passed the native n8n schema validator. The sanitized inactive structural projection passed the skill helper with no errors. Generated Code ran locally against synthetic envelopes. Actual n8n runtime execution, real membership API access, shared production deduplication and deployment remain unverified until the dedicated credential is configured and the final patch is applied. No live guest is an acceptance-test recipient.
+All 16 generated node parameter sets passed the native n8n schema validator. The sanitized inactive structural projection passed the skill helper with no errors. Generated Code ran locally against synthetic envelopes. Exact closed-gate code also passed isolated native n8n runtime tests 36478 (01), 36479 (03) and 36480 (06), with every external service pinned and no downstream execution. Temporary manual test nodes were removed. Real membership API access, the active end-to-end invitation graph, shared production deduplication and sending remain unverified until the dedicated credential is configured and authenticated health passes. No live guest is an acceptance-test recipient.
+
+## Closed staging and activation handoff — 2026-10-29
+
+Staging uses `staged:true`, `enabled:false`, `activation_at:null`. L00 is an enabled Code gate that returns zero items before reading inputs or services; the other 15 optional nodes are disabled. The four website API nodes deliberately have no credential binding and `authentication:none` only while disabled, preventing accidental auto-assignment of an unrelated Header Auth credential. This is not a credential alternative or an active anonymous API integration. Do not enable those nodes in that state.
+
+Reviewed against live workflow baselines: 01 active 83f6dfba-07d0-49fb-90d3-6792f83abb65, 03 active 4f91e561-15ff-4214-a628-aedfe3f6e84a, 06 active 52af5373-7322-43b9-be13-5d7675c5d908. The original nodes, settings and edges are unchanged. In particular the 20:55–21:05 reminder scan loop, its 30-second waits, and disabled Gathern guest email nodes remain intact. No reminder hook, new trigger, parallel scheduler, manual catch-up or historical sweep was added.
+
+After the owner provisions **LSA Loyalty Invitations v1**: read its metadata ID/type only; verify authenticated GET health with that binding and require ready/programme_ready. Then generate the fully bound configuration (not staged), choose and document a future UTC activation_at, update existing L00/L03 config and the four API authentication/credential bindings, explicitly enable the 15 existing optional nodes, and run pinned isolated acceptance before publishing. Do not reapply addNode operations to already staged IDs and do not issue any guest/provider test POST. Invitation sending is not authorized before these prerequisites succeed. The remaining known external blocker is the missing dedicated credential; its validity cannot be asserted until authenticated health succeeds.
