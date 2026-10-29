@@ -90,6 +90,7 @@ jobs:
           tests/test_loyalty_statement_details.py
           tests/test_loyalty_whatsapp_notices.py
           tests/test_loyalty_message_review.py
+          tests/test_loyalty_copy_review_previews.py
           tests/test_loyalty_unified_welcome.py
   quality:
     runs-on: ubuntu-latest
