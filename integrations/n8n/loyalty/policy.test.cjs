@@ -9,7 +9,7 @@ const now = '2026-10-29T10:30:00Z';
 const booking = {reservation_key: '99000007', booking_created_at: '2026-10-29T10:01:00Z',
   canonical_status: 'confirmed', booking_platform: 'Booking.com', channel_id: 2018,
   phone: '+999000000097', guest_name: 'Synthetic Guest', guest_language: 'en',
-  listing_map_id: 315814, arrival_date: '2026-11-01', departure_date: '2026-11-02'};
+  listing_map_id: 315814, timezone: 'Asia/Riyadh', arrival_date: '2026-11-01', departure_date: '2026-11-02'};
 const job = type => ({reservation_key: booking.reservation_key, state: 'complete', guest_delivered: true,
   payload: {...booking, message_type: type, delivery_channel: 'whatsapp'}});
 const jobs = [job('status_new'), job('house_rules')];
@@ -36,6 +36,15 @@ test('no activation or historical campaign', () => {
 });
 test('website and ambiguous source never enter external campaign', () => {
   for (const change of [{booking_platform: 'Direct Website'}, {channel_id: 2000}, {source: 'LuxurySmartApartments'}, {booking_platform: 'iCal'}]) assert.equal(p.candidate({...booking, ...change}, jobs, config, now).eligible, false);
+});
+test('late correction cannot invite an ended stay', () => {
+  assert.equal(p.candidate({...booking, departure_date: '2026-10-29', check_out_time: '12:00'}, jobs, config, now).reason, 'stay_ended');
+});
+test('property timezone comes from its own delivery context, never a global Saudi default', () => {
+  const b = {...booking, timezone: undefined};
+  const mapped = jobs.map(j => ({...j, payload: {...j.payload, timezone: undefined, apartment: {timezone: 'Africa/Casablanca'}}}));
+  assert.equal(p.candidate(b, mapped, config, now).eligible, true);
+  assert.equal(p.candidate(b, jobs.map(j => ({...j, payload: {...j.payload, timezone: undefined}})), config, now).reason, 'property_timezone_unknown');
 });
 test('missing or malformed phone does not call membership/send', () => {
   for (const phone of ['', 'not-a-number', '0542']) assert.equal(p.candidate({...booking, phone}, jobs, config, now).reason, 'phone_missing');
