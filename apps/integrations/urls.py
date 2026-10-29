@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.loyalty import invitation_api
 from apps.reservations import morning07_communications, morning07_gateway
 
 from .views import hostaway_unified_webhook
@@ -7,6 +8,15 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path("loyalty/invitations/health/", invitation_api.health, name="loyalty_invitation_health"),
+    path("loyalty/invitations/claim/", invitation_api.claim, name="loyalty_invitation_claim"),
+    path(
+        "loyalty/invitations/preflight/",
+        invitation_api.preflight,
+        name="loyalty_invitation_preflight",
+    ),
+    path("loyalty/invitations/record/", invitation_api.record, name="loyalty_invitation_record"),
+    path("loyalty/invitations/status/", invitation_api.status, name="loyalty_invitation_status"),
     path(
         "morning07/events/<uuid:event_id>/",
         morning07_communications.read_event,

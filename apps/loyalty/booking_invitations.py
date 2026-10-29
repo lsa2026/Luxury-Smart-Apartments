@@ -28,8 +28,10 @@ from apps.notifications.services.email import (
 from apps.notifications.services.ultramsg import UltraMsgClient
 from apps.reservations.models import Reservation
 
+from . import invitation_registry as registry
 from .invitation_design import invitation_image
 from .launch import booking_allowed
+from .models import JoinInvitation
 from .phone_gifts import delivery_ready, phone_hash, recipient_language
 from .services import digest, posting_transaction
 
@@ -214,6 +216,21 @@ def queue_booking_invitation(request, booking_id):
         target = _target(booking, channel)
         if proof.get("target") != _target_digest(target, channel):
             raise ValidationError("تغيرت بيانات المستلم؛ افتح الحجز وراجع الدعوة مجددًا.")
+        decision, shared = registry.claim(
+            key=registry.booking_key(booking),
+            phone=target["phone"],
+            email=target["email"],
+            customer_id=target["customer"],
+            language=target["language"],
+            event_id=request_id,
+            source="website-manual",
+            origin="website",
+            channel=channel,
+        )
+        if decision != "eligible":
+            raise ValidationError(
+                "الضيف عضو أو توجد دعوة سابقة/محجوزة؛ راجع السجل المشترك قبل الإرسال."
+            )
         recipient_digest = (
             phone_hash(target["phone"])
             if channel == "whatsapp"
@@ -221,6 +238,7 @@ def queue_booking_invitation(request, booking_id):
         )
         recipient_key = "phone_digest" if channel == "whatsapp" else "recipient_digest"
         row = {
+            "shared_invitation_id": str(shared.pk),
             "status": "queued",
             "requested_at": timezone.now().isoformat(),
             "operator": request.user.pk,
@@ -259,14 +277,19 @@ def _request_row(booking, channel, request_id=None):
     return booking.loyalty_state.get(_state(channel), {})
 
 
-def _finish(booking_id, status, *, expected="sending", channel="whatsapp", request_id=None):
+def _finish(
+    booking_id, status, *, expected="sending", channel="whatsapp", request_id=None, provider_id=""
+):
     # Bookkeeping must work even if the programme is switched off during delivery.
-    with transaction.atomic():
+    with registry.invitation_lock():
         booking = Reservation.objects.select_for_update().get(pk=booking_id)
         row = _request_row(booking, channel, request_id)
         if row.get("status") != expected:
             return
         row.update(status=status, updated_at=timezone.now().isoformat())
+        if row.get("shared_invitation_id"):
+            shared = JoinInvitation.objects.select_for_update().get(pk=row["shared_invitation_id"])
+            registry.record(shared, "unknown" if status == "uncertain" else status, provider_id)
         booking.save(update_fields=["loyalty_state", "updated_at"])
 
 
@@ -365,7 +388,7 @@ def invitation_email_request(target):
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=45)
 def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
     _state(channel)
-    with transaction.atomic():
+    with registry.invitation_lock():
         booking = (
             Reservation.objects.select_for_update(of=("self",))
             .select_related("booking_intent__customer", "property")
@@ -384,11 +407,37 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
                 row["requested_at"]
             ) > timedelta(minutes=15):
                 raise ValidationError("Invitation changed or expired.")
+            exclude = (str(booking.pk), channel, request_id or "")
+            if row.get("shared_invitation_id"):
+                shared = JoinInvitation.objects.select_for_update().get(
+                    pk=row["shared_invitation_id"]
+                )
+            else:
+                decision, shared = registry.claim(
+                    key=registry.booking_key(booking),
+                    phone=target["phone"],
+                    email=target["email"],
+                    customer_id=target["customer"],
+                    language=target["language"],
+                    event_id=request_id or str(booking.pk),
+                    source="website-manual",
+                    origin="website",
+                    channel=channel,
+                    exclude_legacy=exclude,
+                )
+                if decision != "eligible":
+                    raise ValidationError("Existing invitation or membership.")
+                row["shared_invitation_id"] = str(shared.pk)
             if channel == "whatsapp":
                 content = invitation_image(target["language"])
                 caption = invitation_caption(target["language"], target["url"])
             else:
                 email_request = invitation_email_request(target)
+            if (
+                registry.consume(shared, phone=target["phone"], exclude_legacy=exclude)
+                != "eligible"
+            ):
+                raise ValidationError("Existing invitation or membership.")
         except (ValidationError, OSError, KeyError, ValueError):
             row["status"] = "blocked"
             booking.save(update_fields=["loyalty_state", "updated_at"])
@@ -402,7 +451,7 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
                     recipient=target["phone"],
                     content=content,
                     caption=caption,
-                    reference_id=f"lsa-booking-invite:{request_id or booking_id}",
+                    reference_id=shared.provider_reference,
                 )
             if not isinstance(result, dict) or not result.get("id"):
                 raise ValueError("Unconfirmed provider outcome.")
@@ -411,4 +460,10 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
     except Exception:
         _finish(booking_id, "uncertain", channel=channel, request_id=request_id)
         return
-    _finish(booking_id, "accepted", channel=channel, request_id=request_id)
+    _finish(
+        booking_id,
+        "accepted",
+        channel=channel,
+        request_id=request_id,
+        provider_id=str(result["id"])[:100] if channel == "whatsapp" else "",
+    )
