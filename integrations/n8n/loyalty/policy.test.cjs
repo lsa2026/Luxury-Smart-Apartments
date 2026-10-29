@@ -100,7 +100,9 @@ test('delivery evidence requires exact id, recipient and reference; no numeric A
   assert.equal(p.receiptEvidence({statusCode: 502, body: {messages: [row]}}, expected).delivered, false);
 });
 test('long name or unsupported language does not silently truncate or choose artwork', () => {
-  assert.throws(() => p.render(samples, 'fr', 'X'.repeat(160)), /caption_too_long/);
+  assert.throws(() => p.render(samples, 'fr', 'X'.repeat(151)), /guest_name_missing_or_too_long/);
+  const overlong=samples.map(s=>s.language==='fr'?{...s,caption:s.caption+' X'.repeat(600)}:s);
+  assert.throws(() => p.render(overlong, 'fr', 'Synthetic Guest'), /caption_too_long/);
   assert.throws(() => p.render(samples, 'de', 'Synthetic Guest'), /guest_language_missing/);
 });
 test('shared claim contract handles webhook repeat and corrected phone without another invitation', () => {
@@ -116,3 +118,4 @@ test('shared claim contract handles webhook repeat and corrected phone without a
   assert.equal(p.claimDecision({...c, phone: '999000000098'}, claim({...c, phone: '999000000098'})).action, 'skip');
   assert.equal(p.claimDecision({...c, reservation_key: '99000008'}, claim({...c, reservation_key: '99000008'})).action, 'skip');
 });
+
