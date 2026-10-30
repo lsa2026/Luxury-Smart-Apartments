@@ -378,3 +378,42 @@ def test_member_denial_cannot_be_recorded_as_provider_acceptance(rig):
     assert preflight(first).json()["decision"] == "member"
     assert report(first, "accepted").status_code == 409
     assert JoinInvitation.objects.get().state == "blocked"
+
+
+def test_owner_can_copy_credential_without_a_download(rig, monkeypatch):
+    from apps.loyalty import invitation_auth
+
+    client, _, _, _ = rig
+    url = reverse("notifications:loyalty_invitation_credential")
+    monkeypatch.setattr(invitation_auth.secrets, "token_hex", lambda size: "cd" * 32)
+    page = client.get(url)
+    assert b'name="delivery" value="copy"' in page.content
+    before = InvitationAPICredential.objects.count()
+    proof = page.context["confirmation"]
+    result = client.post(url, {"confirmation": proof, "delivery": "copy"})
+    assert result.status_code == 200
+    assert result["Content-Type"].startswith("text/html")
+    assert "Content-Disposition" not in result
+    assert "no-store" in result["Cache-Control"]
+    assert result["Referrer-Policy"] == "no-referrer"
+    assert b'type="password"' in result.content and b"readonly" in result.content
+    assert result.context["authorization_value"] == "Bearer " + "cd" * 32
+    assert InvitationAPICredential.objects.count() == before + 1
+    assert InvitationAPICredential.objects.filter(
+        key_sha256=hashlib.sha256(("cd" * 32).encode()).hexdigest()
+    ).exists()
+    assert client.post(url, {"confirmation": proof, "delivery": "copy"}).status_code == 409
+    assert "cd" * 32 not in client.get(url).content.decode()
+
+
+def test_copy_delivery_does_not_relax_owner_csrf_or_signature_checks(rig):
+    client, owner, _, _ = rig
+    url = reverse("notifications:loyalty_invitation_credential")
+    before = InvitationAPICredential.objects.count()
+    strict = Client(enforce_csrf_checks=True)
+    strict.force_login(owner)
+    proof = client.get(url).context["confirmation"]
+    assert strict.post(url, {"confirmation": proof, "delivery": "copy"}).status_code == 403
+    assert client.post(url, {"confirmation": "invalid", "delivery": "copy"}).status_code == 400
+    assert Client().post(url, {"confirmation": proof, "delivery": "copy"}).status_code != 200
+    assert InvitationAPICredential.objects.count() == before

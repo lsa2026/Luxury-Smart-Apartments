@@ -106,17 +106,29 @@ def setup(request):
             return response("setup_already_consumed", 409)
         except (signing.BadSignature, KeyError, ValidationError):
             return response("invalid_setup_confirmation", 400)
-        result = JsonResponse(
-            {
-                "name": "LSA Loyalty Invitations v1",
-                "type": "httpHeaderAuth",
-                "data": {"name": "Authorization", "value": "Bearer " + token},
-                "scope": "loyalty-invitations-v1",
-                "expires_at": expiry.isoformat(),
-                "website_credential_id": proof["id"],
-            }
-        )
-        result["Content-Disposition"] = 'attachment; filename="lsa-loyalty-credential.json"'
+        if request.POST.get("delivery") == "copy":
+            result = render(
+                request,
+                "admin/loyalty/invitation_credential_copy.html",
+                {
+                    **admin.site.each_context(request),
+                    "title": "نسخ اعتماد دعوات الولاء إلى n8n",
+                    "authorization_value": "Bearer " + token,
+                    "expires_at": expiry,
+                },
+            )
+        else:
+            result = JsonResponse(
+                {
+                    "name": "LSA Loyalty Invitations v1",
+                    "type": "httpHeaderAuth",
+                    "data": {"name": "Authorization", "value": "Bearer " + token},
+                    "scope": "loyalty-invitations-v1",
+                    "expires_at": expiry.isoformat(),
+                    "website_credential_id": proof["id"],
+                }
+            )
+            result["Content-Disposition"] = 'attachment; filename="lsa-loyalty-credential.json"'
         result["Cache-Control"] = "no-store"
         result["Referrer-Policy"] = "no-referrer"
         return result

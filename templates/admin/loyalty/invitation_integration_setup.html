@@ -5,7 +5,8 @@
 <p>اعتماد مخصص لواجهات حجز دعوات الولاء وفحصها وتسجيل حالتها فقط، بصلاحية ٩٠ يومًا. لا يمنح إنشاء عضوية أو نقاط أو إرسال رسائل من الموقع.</p>
 <p>لن تظهر القيمة السرية إلا في ملف التنزيل مرة واحدة. احفظها داخل اعتماد Header Auth في n8n باسم LSA Loyalty Invitations v1. لا ترفع الملف إلى مستودع ولا تنسخه إلى محادثة.</p>
 <p>هذا الإجراء لا يعدّل n8n، ولا يفعّل مسارًا أو يرسل دعوة، ولا يلغي اعتمادًا سابقًا.</p>
-<form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit" class="button">إنشاء اعتماد مخصص وتنزيله مرة واحدة</button></form>
+<p>التأكيد صالح لمدة ١٠ دقائق. إذا انتهت المدة، افتح هذه الصفحة مجددًا قبل الإنشاء. اختر طريقة واحدة؛ يظهر المفتاح مرة واحدة فقط.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ confirmation }}"><button type="submit" name="delivery" value="copy" class="button">إنشاء اعتماد ونسخه مباشرة إلى n8n</button> <button type="submit" name="delivery" value="download" class="button">تنزيل ملف الاعتماد بدلًا من النسخ</button></form>
 {% for row in credentials %}<p>الاعتماد {{ row.id }} — انتهاء {{ row.expires_at }}</p><form method="post">{% csrf_token %}<input type="hidden" name="confirmation" value="{{ row.confirmation }}"><button type="submit" class="button">إلغاء هذا الاعتماد</button></form>{% endfor %}
 </section>
 {% endblock %}
