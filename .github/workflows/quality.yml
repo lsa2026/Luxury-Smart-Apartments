@@ -158,7 +158,7 @@ jobs:
         run: node --test tests/booking-history.test.cjs
 
       - name: Test guest invitation clipboard interactions
-        run: node --test tests/loyalty-invite.test.cjs
+        run: node --test tests/loyalty-invite.test.cjs tests/js/loyalty-credential-copy.test.cjs
 
       - name: Test private member tree expansion and safe branch loading
         run: node --test tests/loyalty-tree.test.cjs tests/loyalty-person-tree.test.cjs
