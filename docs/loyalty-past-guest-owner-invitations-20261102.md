@@ -1,0 +1,13 @@
+# Owner invitations for previous eligible stays — 2 November 2026
+
+Owner-approved scope: the new personalized invitation is sent manually from a reservation's administration page, only for a previous completed eligible stay. It displays the verified booking value in SAR, the eligible accommodation base when fees differ, and the exact 3% reward (rounded down to a hundredth). One point has SAR 1 redemption value. The approved enrollment PNGs remain unchanged in Arabic, English and French. The separate n8n invitation and existing terms/consent records are unchanged.
+
+A read-only preview creates neither an offer nor membership/points. Missing payment verification, incomplete payment, uncertain fee/FX allocation, a cancelled/current/future stay, or an already-awarded booking blocks this invitation. The normal verified-site-records financial reader is reused; external-channel snapshots and paid flags alone do not establish eligible payment. Dates mean a completed contract, not fabricated physical arrival evidence.
+
+Only an explicit owner send request seals a booking-specific offer: reservation ID, normalized phone digest, original account if any, operator, request ID, channel, financial fingerprint and quoted reward. Changed recipient/name/payment/price between preview, queue and delivery blocks sending. Legacy queued requests do not silently acquire a reward promise. No bulk send, recurring job or historical mailing is added.
+
+The guest must independently enroll and own the same verified phone. An accepted or uncertain delivery result (not proof of delivery/read) retains the owner-issued offer. Enrollment, later phone verification and post-delivery bookkeeping each re-evaluate only matching explicit offers. A guest-only booking may credit the verified beneficiary without attaching that old reservation to their account or overriding booking recovery rules.
+
+The existing PostgreSQL loyalty lock and append-only ledger handle credit, repeat events and concurrent hooks. Only the selected guest's 3% is earned; no retrospective inviter/ancestor rewards are granted. No unoffered historical stay gains a new exception. First credit requires the financial snapshot to match the offer. Later downward corrections use current trusted facts; an increase never exceeds the original offered base. The original beneficiary remains fixed after an approved phone change. Existing booking payment and refund evidence requirements continue to apply.
+
+The owner-only sample page uses explicit synthetic SAR 1,000 / 30-point values, labelled as an example. Actual guest messages can only use the selected booking's verified numbers. No live guests are used for testing.

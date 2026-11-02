@@ -194,21 +194,17 @@ def test_same_phone_or_email_and_event_conflict_are_suppressed(rig):
 def test_shared_manual_booking_claim_blocks_n8n_across_channels(rig):
     client, _, _, _ = rig
     booking = manual.past_booking()
-    booking.source_type = "external_channel"
-    booking.save()
     client.post(manual.url(booking), manual.payload(client, booking, "email"))
-    result = claim(reservation_key=str(booking.hostaway_reservation_id))
-    assert result["decision"] == "duplicate"
+    # External booking on n8n shares the recipient with the direct past-stay offer.
+    assert claim()["decision"] == "duplicate"
     manual.deliver_latest(booking, "email")
-    assert claim()["decision"] == "duplicate"  # Same phone on another booking.
+    assert claim()["decision"] == "duplicate"
 
 
 def test_n8n_claim_blocks_manual_email_and_whatsapp(rig):
     client, _, provider, dispatched = rig
     booking = manual.past_booking()
-    booking.source_type = "external_channel"
-    booking.save()
-    claim(reservation_key=str(booking.hostaway_reservation_id))
+    claim()
     for channel in ("email", "whatsapp"):
         request = Client().post("/").wsgi_request
         request.user = client.get(manual.url(booking)).wsgi_request.user

@@ -326,6 +326,9 @@ def enroll(
         # Joining during a current stay re-evaluates its authoritative facts.
         for booking in Reservation.objects.filter(booking_intent__customer=user):
             reconcile(booking.pk)
+        from .past_guest_offers import apply_for_user
+
+        apply_for_user(user)
         return member
 
 
@@ -510,12 +513,15 @@ def reconcile(reservation_id):
         if facts.get("accrual_eligibility"):
             booking.loyalty_state["scheduled_accrual"] = facts["accrual_eligibility"]
         owner = Member.objects.select_related("customer", "referral").get(
-            customer=booking.booking_intent.customer,
+            customer_id=facts.get("owner_past_stay_offer_v1", {}).get("beneficiary")
+            or booking.booking_intent.customer_id,
         )
         key = digest(facts)
         previous = booking.loyalty_state.get("settlement", {})
         fixed_chain = booking.loyalty_state.get("referral_chain")
-        if fixed_chain is None:
+        if facts.get("owner_past_stay_offer_v1"):
+            chain = []  # Past-stay owner offer: 3% to the guest only.
+        elif fixed_chain is None:
             chain = ancestors(owner)
         else:
             members = Member.objects.in_bulk(fixed_chain)
@@ -593,7 +599,9 @@ def reconcile(reservation_id):
                     credit=target - current,
                     event_type="adjust" if original else "earn",
                     original=original,
-                    reason="استحقاق اختباري مصرح به دون إقامة فعلية"
+                    reason="مكافأة الإقامة السابقة بدعوة المالك بعد الانضمام وتوثيق الجوال"
+                    if facts.get("owner_past_stay_offer_v1")
+                    else "استحقاق اختباري مصرح به دون إقامة فعلية"
                     if facts.get("stay_exception")
                     else (
                         "استحقاق الإقامة بعد السداد وحلول موعد الاستحقاق التلقائي"
