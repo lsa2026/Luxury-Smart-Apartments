@@ -16,6 +16,7 @@ from apps.loyalty.booking_invitations import invitation_caption, invitation_emai
 from apps.loyalty.events import record
 from apps.loyalty.invitation_links import invitation_url
 from apps.loyalty.models import GuestEvent, Ledger, Member, MovementNotice, Referral
+from apps.loyalty.past_guest_invitation_copy import DEMO_REWARD
 from apps.loyalty.phone_gifts import invitation_message
 from apps.notifications.models import EmailDelivery
 from apps.notifications.services.email import send_queued_email
@@ -66,10 +67,17 @@ def test_seven_entrances_share_consent_and_exactly_one_welcome_per_channel(entra
         terms = reverse("core:rewards_terms", kwargs={"version": "2026-10-18-v5"})
         assert f'href="{target}"' in client.get(terms).content.decode()
     elif entrance == "booking-whatsapp":
-        assert settings_url(target) in invitation_caption("ar", settings_url(target))
+        assert settings_url(target) in invitation_caption(
+            "ar", settings_url(target), reward=DEMO_REWARD
+        )
     elif entrance == "booking-email":
         request = invitation_email_request(
-            {"language": "ar", "url": settings_url(target), "email": guest.email}
+            {
+                "language": "ar",
+                "url": settings_url(target),
+                "email": guest.email,
+                "reward": DEMO_REWARD,
+            }
         )
         assert request.context["action_url"] == settings_url(target)
     page = client.get(target)

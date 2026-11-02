@@ -107,6 +107,9 @@ def phone_verified(sender, instance, created, raw=False, **kwargs):
         occurred_at=instance.verified_at,
         after={"phone": instance.phone},
     )
+    from .past_guest_offers import apply_for_user
+
+    transaction.on_commit(lambda: apply_for_user(instance.user), robust=True)
     from .whatsapp_notices import resume_welcome
 
     try:

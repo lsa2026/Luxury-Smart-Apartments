@@ -29,9 +29,11 @@ from apps.notifications.services.ultramsg import UltraMsgClient
 from apps.reservations.models import Reservation
 
 from . import invitation_registry as registry
-from .enrollment_invitation import invitation_caption, invitation_image
 from .launch import booking_allowed
 from .models import JoinInvitation
+from .past_guest_invitation_copy import invitation_caption, invitation_image
+from .past_guest_offers import KEY as PAST_OFFER_KEY
+from .past_guest_offers import apply_for_booking, issue, quote
 from .phone_gifts import delivery_ready, phone_hash, recipient_language
 from .services import digest, posting_transaction
 
@@ -61,7 +63,12 @@ def _state(channel):
 
 def _target_digest(target, channel):
     recipient = "phone" if channel == "whatsapp" else "email"
-    return digest({key: target[key] for key in (recipient, "language", "url")})
+    return digest(
+        {
+            key: target[key]
+            for key in (recipient, "phone", "language", "url", "guest_name", "reward")
+        }
+    )
 
 
 def _request_keys(channel):
@@ -84,6 +91,7 @@ def _target(booking, channel="whatsapp"):
     intent = booking.booking_intent
     if not intent:
         raise ValidationError("لا تتوفر بيانات ضيف مرتبطة بهذا الحجز.")
+    reward = quote(booking)
     _state(channel)
     email = intent.guest_email.strip()
     if channel == "whatsapp" and not delivery_ready():
@@ -105,9 +113,7 @@ def _target(booking, channel="whatsapp"):
     try:
         phone = normalize_phone_number(intent.guest_phone)
     except ValueError as exc:
-        if channel == "whatsapp":
-            raise ValidationError("يلزم رقم جوال دولي صحيح محفوظ في الحجز.") from exc
-        phone = ""
+        raise ValidationError("يلزم رقم جوال دولي صحيح محفوظ في الحجز لاستلام المكافأة.") from exc
     language = recipient_language(phone) or supported_language(intent.language)
     if not language:
         raise ValidationError("حدد لغة الضيف في الحجز قبل إرسال الدعوة.")
@@ -122,14 +128,17 @@ def _target(booking, channel="whatsapp"):
         or parsed.fragment
     ):
         raise ValidationError("رابط برنامج الولاء الآمن غير متاح.")
-    return {
+    target = {
         "phone": phone,
+        "reward": reward,
         "guest_name": f"{intent.guest_first_name} {intent.guest_last_name}".strip(),
         "language": language,
         "url": base + reverse("accounts:rewards"),
         "customer": intent.customer_id,
         "email": email if channel == "email" else intent.guest_email,
     }
+    invitation_caption(target["language"], target["url"], target["guest_name"], target["reward"])
+    return target
 
 
 def _channel_context(user, booking, channel):
@@ -161,7 +170,7 @@ def _channel_context(user, booking, channel):
     else:
         preview = {
             "preview_text": invitation_caption(
-                target["language"], target["url"], target["guest_name"]
+                target["language"], target["url"], target["guest_name"], target["reward"]
             ),
             "preview_image": "data:image/png;base64,"
             + b64encode(invitation_image(target["language"])).decode("ascii"),
@@ -240,7 +249,9 @@ def queue_booking_invitation(request, booking_id):
             else recipient_hmac(target["email"])
         )
         recipient_key = "phone_digest" if channel == "whatsapp" else "recipient_digest"
+        issue(booking, target, request_id, channel, request.user)
         row = {
+            "past_guest_offer": PAST_OFFER_KEY,
             "shared_invitation_id": str(shared.pk),
             "status": "queued",
             "requested_at": timezone.now().isoformat(),
@@ -258,12 +269,13 @@ def queue_booking_invitation(request, booking_id):
             action="loyalty.booking_invitation_requested",
             object_type="Reservation",
             object_reference=str(booking.pk),
-            summary="طلب دعوة انضمام اختيارية من الحجز دون عضوية أو نقاط أو ربط داعٍ",
+            summary="طلب دعوة خاصة بإقامة سابقة مؤهلة مع عرض مكافأة ٣٪ بعد الانضمام وتوثيق الجوال",
             metadata={
                 "language": target["language"],
                 "channel": channel,
                 "request_id": request_id or "",
                 "authorization": "owner_manual",
+                "past_stay_reward": target["reward"],
             },
         )
         transaction.on_commit(
@@ -294,6 +306,8 @@ def _finish(
             shared = JoinInvitation.objects.select_for_update().get(pk=row["shared_invitation_id"])
             registry.record(shared, "unknown" if status == "uncertain" else status, provider_id)
         booking.save(update_fields=["loyalty_state", "updated_at"])
+        if row.get("past_guest_offer") == PAST_OFFER_KEY and status in {"accepted", "uncertain"}:
+            transaction.on_commit(lambda: apply_for_booking(booking.pk), robust=True)
 
 
 def _dispatch(booking_id, channel="whatsapp", request_id=None):
@@ -310,9 +324,9 @@ def _dispatch(booking_id, channel="whatsapp", request_id=None):
         )
 
 
-def invitation_copy(language, guest_name=""):
+def invitation_copy(language, guest_name="", reward=None):
     url = settings.SITE_BASE_URL.rstrip("/") + reverse("accounts:rewards")
-    return invitation_caption(language, url, guest_name).removesuffix("\n\n" + url)
+    return invitation_caption(language, url, guest_name, reward).removesuffix("\n\n" + url)
 
 
 def invitation_email_request(target):
@@ -329,7 +343,9 @@ def invitation_email_request(target):
         language=target["language"],
         context={
             "heading": heading,
-            "message": invitation_copy(target["language"], target.get("guest_name", "")),
+            "message": invitation_copy(
+                target["language"], target.get("guest_name", ""), target["reward"]
+            ),
             "action_url": target["url"],
             "invitation": True,
             "action_label": {
@@ -354,6 +370,8 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
         if row.get("status") != "queued":
             return
         try:
+            if row.get("past_guest_offer") != PAST_OFFER_KEY:
+                raise ValidationError("Legacy invitation needs a fresh owner review.")
             operator = get_user_model().objects.filter(pk=row.get("operator")).first()
             if not is_operations_owner(operator):
                 raise ValidationError("Invitation operator no longer authorized.")
@@ -387,7 +405,7 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
             if channel == "whatsapp":
                 content = invitation_image(target["language"])
                 caption = invitation_caption(
-                    target["language"], target["url"], target["guest_name"]
+                    target["language"], target["url"], target["guest_name"], target["reward"]
                 )
             else:
                 email_request = invitation_email_request(target)

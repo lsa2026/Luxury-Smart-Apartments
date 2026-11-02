@@ -20,7 +20,7 @@ from apps.loyalty.models import Ledger, Member, Referral
 from apps.notifications.models import AuditLog
 from apps.reservations.models import Reservation
 from tests.test_account_booking_claim import make_reservation
-from tests.test_loyalty_stage8 import join, user
+from tests.test_loyalty_stage8 import join, payment, user
 
 pytestmark = pytest.mark.django_db
 dispatch_request = invitations._dispatch
@@ -69,10 +69,18 @@ def past_booking(reference="SYNTHETIC-INVITE"):
     booking.check_in = timezone.now().date() - timedelta(days=4)
     booking.check_out = timezone.now().date() - timedelta(days=1)
     booking.save()
+    booking.property.time_zone_name = "Asia/Riyadh"
+    booking.property.save()
     booking.booking_intent.guest_phone = "+12025550123"
     booking.booking_intent.marketing_consent = True
     booking.booking_intent.language = "ar"
     booking.booking_intent.save()
+    quote = booking.booking_intent.quote
+    quote.components = [
+        {"type": "baseRate", "total": str(booking.total_price), "included_in_total": True}
+    ]
+    quote.save()
+    payment(booking, booking.total_price)
     return booking
 
 
@@ -122,7 +130,7 @@ def test_get_has_icon_confirmation_and_no_side_effects(rig):
     assert 'data-booking-tab="loyalty"' in html
     assert 'data-booking-tab="overview"' not in html
     assert 'name="confirm_loyalty_invitation"' not in html
-    assert html.count("معاينة نص الرسالة قبل الإرسال") == 2
+    assert html.count("معاينة نص الرسالة قبل الإرسال") == 2, response.context["loyalty_invitation"]
     assert 'name="csrfmiddlewaretoken"' in html
     assert 'value="send_loyalty_invitation"' in html
     assert response.context["loyalty_invitation"]["phone"] == "+12025550123"
@@ -204,7 +212,7 @@ def test_legacy_email_acceptance_suppresses_new_requests_and_preserves_history(r
     assert not booking.booking_intent.marketing_consent
 
 
-def test_legacy_email_task_can_still_finish_after_a_new_manual_request(rig, mailoutbox):
+def test_legacy_email_task_needs_fresh_owner_review_for_reward_offer(rig, mailoutbox):
     client, owner, _, _ = rig
     booking = past_booking()
     booking.loyalty_state[invitations.EMAIL_STATE] = {
@@ -218,8 +226,8 @@ def test_legacy_email_task_can_still_finish_after_a_new_manual_request(rig, mail
     invitations.deliver_booking_invitation(str(booking.pk), "email")
     invitations.deliver_booking_invitation(str(booking.pk), "email")
     booking.refresh_from_db()
-    assert len(mailoutbox) == 1
-    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "accepted"
+    assert len(mailoutbox) == 0
+    assert booking.loyalty_state[invitations.EMAIL_STATE]["status"] == "blocked"
     assert not booking.loyalty_state.get(invitations.EMAIL_REQUESTS)
 
 
@@ -239,7 +247,7 @@ def test_email_invitation_renders_and_sends_once_without_membership(
     message = mailoutbox[0]
     assert message.to == [booking.booking_intent.guest_email]
     assert "https://example.invalid/my-bookings/rewards/" in message.body
-    assert "أثر رجعي" in message.body and message.alternatives
+    assert "15.00" in message.body and message.alternatives
     assert "دعوة" in message.subject
     booking.refresh_from_db()
     assert email_row(booking)["status"] == "accepted"
@@ -359,7 +367,7 @@ def test_confirmed_post_queues_after_commit_sends_once_and_changes_no_membership
     assert packet["recipient"] == booking.booking_intent.guest_phone
     assert packet["content"].startswith(b"\x89PNG")
     assert "https://example.invalid/my-bookings/rewards/" in packet["caption"]
-    assert "invite=" not in packet["caption"] and "أثر رجعي" in packet["caption"]
+    assert "invite=" not in packet["caption"] and "15.00" in packet["caption"]
     assert booking.public_reference not in packet["caption"]
     assert booking.booking_intent.guest_email not in packet["caption"]
     booking.refresh_from_db()
@@ -406,9 +414,7 @@ def test_recheck_after_page_open_before_queue(rig, settings, change):
         settings.LOYALTY_ENABLED = False
     assert client.post(url(booking), data).status_code == 302
     booking.refresh_from_db()
-    assert bool(booking.loyalty_state.get(invitations.EMAIL_REQUESTS)) == (
-        change not in {"disabled", "address", "member"}
-    )
+    assert bool(booking.loyalty_state.get(invitations.EMAIL_REQUESTS)) == (change == "consent")
     assert not provider.send_image.called
 
 
@@ -497,13 +503,14 @@ def test_manual_send_is_an_owner_decision(rig, mailoutbox, channel, state):
     else:
         booking.normalized_status = Reservation.Status.CANCELLED
         booking.save()
-    client.post(url(booking), payload(client, booking, channel))
-    if state != "member":
-        deliver_latest(booking, channel)
-    assert provider.send_image.call_count == (
-        1 if channel == "whatsapp" and state != "member" else 0
-    )
-    assert len(mailoutbox) == (1 if channel == "email" and state != "member" else 0)
+    if state == "member":
+        client.post(url(booking), payload(client, booking, channel))
+    else:
+        page = client.get(url(booking))
+        assert not any(
+            row.get("confirmation") for row in page.context["loyalty_invitation"]["channels"]
+        )
+    assert not provider.send_image.called and not mailoutbox
 
 
 def test_prior_or_uncertain_whatsapp_request_never_blocks_a_fresh_manual_send(rig):

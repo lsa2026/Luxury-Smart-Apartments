@@ -227,6 +227,7 @@ def test_booking_invitation_sample_sends_one_figma_card_only_to_pinned_owner(
 ):
     from apps.loyalty.booking_invitations import invitation_caption
     from apps.loyalty.enrollment_invitation import invitation_image
+    from apps.loyalty.past_guest_invitation_copy import DEMO_REWARD
 
     monkeypatch.setattr(
         message_previews, "OWNER_PREVIEW_PHONE_SHA256", hashlib.sha256(b"+16465557246").hexdigest()
@@ -251,7 +252,9 @@ def test_booking_invitation_sample_sends_one_figma_card_only_to_pinned_owner(
     assert packet["recipient"] == "+16465557246"
     assert packet["content"] == invitation_image(language)
     assert packet["caption"].endswith(
-        invitation_caption(language, "https://example.invalid/my-bookings/rewards/")
+        invitation_caption(
+            language, "https://example.invalid/my-bookings/rewards/", reward=DEMO_REWARD
+        )
     )
     assert len(packet["caption"].encode("utf-16-le")) // 2 <= 1024
     provider.send_image.assert_called_once()

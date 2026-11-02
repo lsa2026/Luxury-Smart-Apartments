@@ -153,7 +153,8 @@ def send_catalogue(*, batch, language="ar", kind=None):
     owner, binding = owner_preview_binding()
     if kind == "booking-invitation":
         from .booking_invitations import invitation_caption as booking_caption
-        from .enrollment_invitation import invitation_image as enrollment_image
+        from .past_guest_invitation_copy import DEMO_REWARD
+        from .past_guest_invitation_copy import invitation_image as enrollment_image
 
         note = {
             "ar": "نموذج دعوة للمعاينة — إلى المالك فقط",
@@ -164,7 +165,9 @@ def send_catalogue(*, batch, language="ar", kind=None):
             note
             + "\n\n"
             + booking_caption(
-                language, settings.SITE_BASE_URL.rstrip("/") + "/my-bookings/rewards/"
+                language,
+                settings.SITE_BASE_URL.rstrip("/") + "/my-bookings/rewards/",
+                reward=DEMO_REWARD,
             )
         )
         if len(caption.encode("utf-16-le")) // 2 > 1024:

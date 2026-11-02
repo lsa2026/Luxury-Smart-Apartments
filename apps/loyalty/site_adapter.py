@@ -50,39 +50,59 @@ def _lodging(components, total):
     return lodging
 
 
-def booking_facts(booking):
+def booking_facts(booking, *, past_preview=False):
     from .launch import booking_allowed, historical_award_allowed, stay_exception_allowed
     from .services import launch_at
 
     intent = booking.booking_intent
     if not booking_allowed(booking):
         return None, "outside_pilot_scope"
-    historical_acceptance = historical_award_allowed(booking)
+    from .past_guest_offers import KEY, authorized, fingerprint
+
+    offer = None if past_preview else authorized(booking)
+    past = past_preview or offer is not None
+    historical_acceptance = historical_award_allowed(booking) or past
     test_stay_exception = stay_exception_allowed(booking)
     if (
         booking.source_type != Reservation.SourceType.DIRECT_WEBSITE
         or not intent
-        or not intent.customer_id
+        or (not intent.customer_id and not past_preview and not offer)
         or (booking.created_at < launch_at() and not historical_acceptance)
     ):
         return None, "outside_program_scope"
-    member = getattr(intent.customer, "member", None)
-    if not member or member.status != "active":
+    from .models import Member
+
+    member = (
+        Member.objects.filter(customer_id=offer["beneficiary"]).first()
+        if offer
+        else getattr(intent.customer, "member", None)
+        if intent.customer_id
+        else None
+    )
+    if not past_preview and (not member or member.status != "active"):
         return None, "membership_required"
     arrival = booking.loyalty_state.get("arrival")
     try:
         from .accrual import effective_arrival, scheduled_eligibility
 
         scheduled = scheduled_eligibility(booking) if not arrival else None
-        if not arrival and not scheduled and not test_stay_exception:
+        if not arrival and not scheduled and not test_stay_exception and not past:
             return None, "arrival_required"
         start, end = stay_times(booking)
+        if (
+            past
+            and (
+                booking.normalized_status not in Reservation.ACTIVE_STATUSES or end > timezone.now()
+            )
+            and not (offer and booking.loyalty_state.get("settlement"))
+        ):
+            return None, "past_completed_stay_required"
         arrival_at = datetime.fromisoformat(arrival["at"]) if arrival else None
         if (
             (arrival_at is not None and timezone.is_naive(arrival_at))
             or (arrival_at is not None and arrival_at > timezone.now())
-            or member.consent_at > timezone.now()
-            or (member.consent_at > end and not historical_acceptance)
+            or (member and member.consent_at > timezone.now())
+            or (member and member.consent_at > end and not historical_acceptance)
         ):
             return None, "stay_or_consent_not_eligible"
         payments = list(
@@ -218,10 +238,12 @@ def booking_facts(booking):
                 "at": None,
                 "reference": scheduled["reference"]
                 if scheduled
-                else "explicit-owner-test-stay-exception",
+                else (
+                    "owner-past-stay-invitation" if past else "explicit-owner-test-stay-exception"
+                ),
             },
-            "consent": member.consent_at.isoformat(),
-            "terms_version": member.terms_version,
+            "consent": member.consent_at.isoformat() if member and not past_preview else None,
+            "terms_version": member.terms_version if member and not past_preview else None,
             "cancelled": cancelled,
             "payments": [
                 {
@@ -238,7 +260,19 @@ def booking_facts(booking):
             "fx": intent.exchange_rate_snapshot,
             "rules": "verified-site-records-v1",
         }
-        if historical_acceptance:
+        if offer:
+            previous = booking.loyalty_state.get("settlement", {}).get("facts", {})
+            if not previous.get(KEY) and fingerprint(facts) != offer["quote"]["fingerprint"]:
+                return None, "past_offer_financial_facts_changed"
+            facts["base"] = str(min(Decimal(facts["base"]), Decimal(offer["quote"]["base"])))
+            facts[KEY] = {
+                "operator": offer["operator"],
+                "beneficiary": offer["beneficiary"],
+                "request_id": offer["request_id"],
+                "issued_at": offer["issued_at"],
+                "quote": offer["quote"],
+            }
+        if historical_acceptance and not past:
             facts["acceptance_scope"] = "explicit-historical-live-acceptance"
         if scheduled:
             facts["accrual_eligibility"] = scheduled

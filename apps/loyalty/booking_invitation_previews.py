@@ -13,8 +13,8 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.access import operations_access_required, require_operations_owner
 
 from .booking_invitations import invitation_caption
-from .enrollment_invitation import invitation_image
 from .message_previews import owner_preview_binding, send_catalogue
+from .past_guest_invitation_copy import DEMO_REWARD, invitation_image
 from .phone_gifts import delivery_ready
 
 SALT = "owner-booking-invitation-preview-v1"
@@ -69,7 +69,9 @@ def preview(request):
             "title": "نموذج دعوة برنامج الولاء",
             "language_code": language,
             "preview_text": invitation_caption(
-                language, settings.SITE_BASE_URL.rstrip("/") + "/my-bookings/rewards/"
+                language,
+                settings.SITE_BASE_URL.rstrip("/") + "/my-bookings/rewards/",
+                reward=DEMO_REWARD,
             ),
             "preview_image": "data:image/png;base64,"
             + b64encode(invitation_image(language)).decode("ascii"),
