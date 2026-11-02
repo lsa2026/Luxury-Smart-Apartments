@@ -8,7 +8,7 @@ function start(candidate, packet, now) {
   if (!candidate?.eligible) return {action: {kind: 'done'}, reason: candidate?.reason};
   if (candidate.language !== packet.language) throw Error('artwork_language_mismatch');
   return {candidate, packet, stage: 'claim', started_at: now, posts: 0,
-    action: {kind: 'claim', request: {reservation_key: candidate.reservation_key, phone: candidate.phone,
+    action: {kind: 'claim', request: {reservation_key: candidate.reservation_key, phone: policy.internationalPhone(candidate.phone),
       email: candidate.guest_email || '', language: candidate.language, guest_name: candidate.guest_name,
       source_platform: candidate.source_platform, event_id: candidate.event_id}}};
 }
@@ -30,7 +30,7 @@ function receive(state, response, now) {
     if (decision.action === 'skip') return {...s, stage: 'done', reason: decision.reason, action: {kind: 'done'}};
     if (decision.action !== 'preflight') return attention(s, decision.reason);
     s.claim = decision;
-    return next(s, 'preflight', {invitation_id: decision.invitation_id, ticket: decision.ticket, phone: s.candidate.phone});
+    return next(s, 'preflight', {invitation_id: decision.invitation_id, ticket: decision.ticket, phone: policy.internationalPhone(s.candidate.phone)});
   }
   if (kind === 'preflight') {
     const decision = policy.preflight(s.claim, response, now);
