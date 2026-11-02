@@ -27,6 +27,12 @@ function normalizePhone(value) {
   return /^[1-9]\d{7,14}$/.test(phone) ? phone : null;
 }
 
+function internationalPhone(value) {
+  const phone = normalizePhone(value);
+  if (!phone) throw new Error('candidate_phone_invalid');
+  return '+' + phone;
+}
+
 function render(samples, language, guestName) {
   if (!['ar', 'en', 'fr'].includes(language)) throw new Error('guest_language_missing');
   const sample = samples.find(s => s.language === language);
@@ -107,7 +113,7 @@ function claimDecision(candidate, response) {
   const body = response?.body ?? response;
   if (response?.error || (response?.statusCode && response.statusCode !== 200) || !body || body.code !== 'ok') return {action: 'attention', reason: 'membership_lookup_unavailable'};
   if (['member', 'duplicate', 'blocked', 'phone_missing'].includes(body.decision)) return {action: 'skip', reason: body.decision};
-  if (body.decision !== 'eligible' || body.send_allowed !== false || !body.invitation_id || !body.ticket || !body.provider_reference || body.recipient_phone !== candidate.phone) return {action: 'attention', reason: 'membership_claim_unverified'};
+  if (body.decision !== 'eligible' || body.send_allowed !== false || !body.invitation_id || !body.ticket || !body.provider_reference || normalizePhone(body.recipient_phone) !== candidate.phone) return {action: 'attention', reason: 'membership_claim_unverified'};
   return {action: 'preflight', invitation_id: body.invitation_id, ticket: body.ticket,
     reference_id: body.provider_reference, candidate};
 }
@@ -116,7 +122,7 @@ function preflight(claim, response, now) {
   const body = response?.body ?? response;
   if (response?.error || (response?.statusCode && response.statusCode !== 200) || !body || body.code !== 'ok') return {action: 'attention', reason: 'preflight_unavailable'};
   if (body.send_allowed !== true || body.decision !== 'eligible') return {action: 'skip', reason: body.decision === 'member' ? 'member' : 'preflight_denied'};
-  if (body.invitation_id !== claim.invitation_id || body.provider_reference !== claim.reference_id || body.recipient_phone !== claim.candidate.phone || Date.parse(body.send_expires_at) <= Date.parse(now) || !Number.isFinite(Date.parse(body.send_expires_at))) return {action: 'attention', reason: 'preflight_identity_mismatch'};
+  if (body.invitation_id !== claim.invitation_id || body.provider_reference !== claim.reference_id || normalizePhone(body.recipient_phone) !== claim.candidate.phone || Date.parse(body.send_expires_at) <= Date.parse(now) || !Number.isFinite(Date.parse(body.send_expires_at))) return {action: 'attention', reason: 'preflight_identity_mismatch'};
   return {...claim, action: 'send'};
 }
 
@@ -146,5 +152,5 @@ function receiptEvidence(response, expected) {
   return {state: 'accepted', provider_id: String(row.id), delivered: false, retry_post: false};
 }
 
-module.exports = {JOIN_URL, TEMPLATE_VERSION, cleanName, normalizePhone, render, candidate, claimDecision, preflight, sendEvidence, receiptEvidence};
+module.exports = {JOIN_URL, TEMPLATE_VERSION, cleanName, normalizePhone, internationalPhone, render, candidate, claimDecision, preflight, sendEvidence, receiptEvidence};
 
