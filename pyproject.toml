@@ -39,7 +39,7 @@ include = ["apps*", "config*", "scheduler_runtime*"]
 [tool.setuptools.package-data]
 "apps.core" = ["guest_terms/*.txt"]
 "apps.notifications" = ["invoice_assets/*"]
-"apps.loyalty" = ["invitation_assets/*.png"]
+"apps.loyalty" = ["invitation_assets/*.png", "invitation_assets/*.json"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"

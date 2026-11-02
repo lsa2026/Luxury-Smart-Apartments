@@ -611,7 +611,11 @@ def test_single_language_invitation_with_approved_logo(rig, language):
     client.post(url(booking), payload(client, booking))
     deliver_latest(booking)
     caption = provider.send_image.call_args.kwargs["caption"]
-    expected = {"ar": "موافقتك", "en": "free and optional", "fr": "gratuite et facultative"}
+    expected = {
+        "ar": "مساعدتك الشخصية الذكية",
+        "en": "intelligent personal assistant",
+        "fr": "assistante personnelle intelligente",
+    }
     assert expected[language] in caption
     assert all(expected[other] not in caption for other in expected if other != language)
     assert len(caption.encode("utf-16-le")) // 2 <= 1024
