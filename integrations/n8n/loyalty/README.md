@@ -4,7 +4,7 @@ Tracking: LSA-LOYALTY-N8N-20261029-0107-03
 
 ## Current status
 
-Prepared and applied as CLOSED staging to existing n8n 01/03/06 workflows; invitation sending is NOT activated. Website PR 139 is merged and its contract at eb526e7c366c73239513a7a8c3a8dead1cf4f925 is byte-identical to website-contract-v1.json. A dedicated verified credential in n8n is still required. No real guest tests, historical campaign, new workflow or parallel schedule.
+Activated in the existing n8n 01/03/06 workflows after dedicated credential provisioning and authenticated readiness execution 36591. Only bookings created on or after 2026-10-30T23:00:00Z qualify. The website contract remains pinned at eb526e7c366c73239513a7a8c3a8dead1cf4f925. No historical campaign, new workflow or parallel schedule was added. Earlier closed-staging details below are retained as deployment history.
 
 ## Existing workflow hooks
 
@@ -56,3 +56,9 @@ Staging uses `staged:true`, `enabled:false`, `activation_at:null`. L00 is an ena
 Reviewed against live workflow baselines: 01 active 83f6dfba-07d0-49fb-90d3-6792f83abb65, 03 active 4f91e561-15ff-4214-a628-aedfe3f6e84a, 06 active 52af5373-7322-43b9-be13-5d7675c5d908. The original nodes, settings and edges are unchanged. In particular the 20:55–21:05 reminder scan loop, its 30-second waits, and disabled Gathern guest email nodes remain intact. No reminder hook, new trigger, parallel scheduler, manual catch-up or historical sweep was added.
 
 After the owner provisions **LSA Loyalty Invitations v1**: read its metadata ID/type only; verify authenticated GET health with that binding and require ready/programme_ready. Then generate the fully bound configuration (not staged), choose and document a future UTC activation_at, update existing L00/L03 config and the four API authentication/credential bindings, explicitly enable the 15 existing optional nodes, and run pinned isolated acceptance before publishing. Do not reapply addNode operations to already staged IDs and do not issue any guest/provider test POST. Invitation sending is not authorized before these prerequisites succeed. The remaining known external blocker is the missing dedicated credential; its validity cannot be asserted until authenticated health succeeds.
+
+## International phone boundary correction — 2026-11-02
+
+The website normalizes national input using SA. Claim and preflight therefore receive E.164 phone values with a leading `+`; website `recipient_phone` responses are normalized back to the candidate's canonical digits for exact identity comparisons. UltraMsg recipients, durable event IDs and deduplication semantics remain unchanged. A digits-only Polish number exposed the issue in production: core recovery succeeded but the invitation API returned `phone_missing`, with zero provider posts.
+
+All 46 offline tests pass, including international/Saudi input, wrong-recipient rejection, duplicate suppression and failure reconciliation. Native isolated execution 36814 passed 19 assertions for the same phone code and existing city-time reminder planner/window. Morocco changed to permanent UTC on 2026-09-20 per IANA 2026c; the existing override is intentional. A database using older tzdata can incorrectly display a 21:00Z Marrakech reminder as 22:00. Do not subtract an hour based on that stale display. Keep delivery at 21:00 in the property's city; existing preparation is 20:55, final scan 21:05 and rechecks 120 seconds.
