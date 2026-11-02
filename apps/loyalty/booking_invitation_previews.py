@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 from apps.accounts.access import operations_access_required, require_operations_owner
 
 from .booking_invitations import invitation_caption
-from .invitation_design import invitation_image
+from .enrollment_invitation import invitation_image
 from .message_previews import owner_preview_binding, send_catalogue
 from .phone_gifts import delivery_ready
 

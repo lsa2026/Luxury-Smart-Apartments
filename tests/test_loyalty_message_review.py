@@ -226,7 +226,7 @@ def test_booking_invitation_sample_sends_one_figma_card_only_to_pinned_owner(
     rig, monkeypatch, language
 ):
     from apps.loyalty.booking_invitations import invitation_caption
-    from apps.loyalty.invitation_design import invitation_image
+    from apps.loyalty.enrollment_invitation import invitation_image
 
     monkeypatch.setattr(
         message_previews, "OWNER_PREVIEW_PHONE_SHA256", hashlib.sha256(b"+16465557246").hexdigest()

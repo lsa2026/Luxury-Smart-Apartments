@@ -1,4 +1,4 @@
-"""Owner-requested invitations; each manual click is an independent request."""
+"""Owner-requested enrollment invitations with shared cross-channel deduplication."""
 
 from base64 import b64encode
 from datetime import datetime, timedelta
@@ -29,7 +29,7 @@ from apps.notifications.services.ultramsg import UltraMsgClient
 from apps.reservations.models import Reservation
 
 from . import invitation_registry as registry
-from .invitation_design import invitation_image
+from .enrollment_invitation import invitation_caption, invitation_image
 from .launch import booking_allowed
 from .models import JoinInvitation
 from .phone_gifts import delivery_ready, phone_hash, recipient_language
@@ -124,6 +124,7 @@ def _target(booking, channel="whatsapp"):
         raise ValidationError("رابط برنامج الولاء الآمن غير متاح.")
     return {
         "phone": phone,
+        "guest_name": f"{intent.guest_first_name} {intent.guest_last_name}".strip(),
         "language": language,
         "url": base + reverse("accounts:rewards"),
         "customer": intent.customer_id,
@@ -159,7 +160,9 @@ def _channel_context(user, booking, channel):
         preview = {"preview_subject": message.subject, "preview_text": message.body}
     else:
         preview = {
-            "preview_text": invitation_caption(target["language"], target["url"]),
+            "preview_text": invitation_caption(
+                target["language"], target["url"], target["guest_name"]
+            ),
             "preview_image": "data:image/png;base64,"
             + b64encode(invitation_image(target["language"])).decode("ascii"),
         }
@@ -307,56 +310,9 @@ def _dispatch(booking_id, channel="whatsapp", request_id=None):
         )
 
 
-def invitation_copy(language):
-    return {
-        "ar": (
-            "أهلًا بك 🌿\n\n"
-            "إقامتك معنا بداية لتجارب أجمل. يسعدنا دعوتك إلى برنامج الولاء لدى Luxury Living، "
-            "لتستمتع بمكافآت إقاماتك القادمة وتتبادل هدايا النقاط مع أحبائك.\n\n"
-            "الانضمام بخطوات بسيطة:\n"
-            "١. أنشئ حسابك أو سجّل الدخول.\n"
-            "٢. اقرأ الشروط، ثم انضم بموافقتك ووثّق جوالك.\n\n"
-            "الانضمام مجاني واختياري. تُحتسب المكافآت وفق شروط البرنامج، "
-            "ولا تُضاف نقاط بأثر رجعي. هذه دعوة فقط؛ لا تُفعّل عضوية ولا تُحوّل نقاط تلقائيًا.\n\n"
-            "نسعد بعودتك إلى Luxury Living 💚"
-        ),
-        "en": (
-            "Welcome 🌿\n\n"
-            "Let your next stay bring more to enjoy. Join the Luxury Living rewards programme "
-            "to earn rewards on future stays and share gifts of points with loved ones.\n\n"
-            "Getting started is simple:\n"
-            "1. Create an account or sign in.\n"
-            "2. Read the terms, choose to join and verify your mobile.\n\n"
-            "Membership is free and optional. Rewards follow the programme terms; "
-            "previous stays do not earn retrospective points. This invitation does not "
-            "activate membership or transfer points automatically.\n\n"
-            "We look forward to welcoming you back to Luxury Living 💚"
-        ),
-        "fr": (
-            "Bienvenue 🌿\n\n"
-            "Prolongez le plaisir de vos séjours avec le programme de fidélité Luxury Living : "
-            "des récompenses pour vos prochains séjours et des points à offrir à vos proches.\n\n"
-            "Pour nous rejoindre :\n"
-            "1. Créez un compte ou connectez-vous.\n"
-            "2. Lisez les conditions, choisissez d’adhérer et vérifiez votre mobile.\n\n"
-            "L’adhésion est gratuite et facultative. Les récompenses suivent les conditions "
-            "du programme, sans points rétroactifs. Cette invitation n’active aucune adhésion "
-            "et ne transfère pas de points automatiquement.\n\n"
-            "Au plaisir de vous retrouver chez Luxury Living 💚"
-        ),
-    }[language]
-
-
-def invitation_caption(language, url):
-    title, action = {
-        "ar": ("دعوة خاصة إلى مكافآت ضيوفنا", "ابدأ رحلتك مع المكافآت"),
-        "en": ("A personal invitation to guest rewards", "Start your rewards journey"),
-        "fr": ("Une invitation à nos avantages", "Découvrez vos récompenses"),
-    }[language]
-    caption = f"🎁 *{title}*\n\n{invitation_copy(language)}\n\n*{action}:*\n{url}"
-    if len(caption.encode("utf-16-le")) // 2 > 1024:
-        raise ValidationError("Invitation caption exceeds the provider limit.")
-    return caption
+def invitation_copy(language, guest_name=""):
+    url = settings.SITE_BASE_URL.rstrip("/") + reverse("accounts:rewards")
+    return invitation_caption(language, url, guest_name).removesuffix("\n\n" + url)
 
 
 def invitation_email_request(target):
@@ -373,7 +329,7 @@ def invitation_email_request(target):
         language=target["language"],
         context={
             "heading": heading,
-            "message": invitation_copy(target["language"]),
+            "message": invitation_copy(target["language"], target.get("guest_name", "")),
             "action_url": target["url"],
             "invitation": True,
             "action_label": {
@@ -430,7 +386,9 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
                 row["shared_invitation_id"] = str(shared.pk)
             if channel == "whatsapp":
                 content = invitation_image(target["language"])
-                caption = invitation_caption(target["language"], target["url"])
+                caption = invitation_caption(
+                    target["language"], target["url"], target["guest_name"]
+                )
             else:
                 email_request = invitation_email_request(target)
             if (
