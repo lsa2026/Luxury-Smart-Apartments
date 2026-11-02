@@ -153,6 +153,7 @@ def send_catalogue(*, batch, language="ar", kind=None):
     owner, binding = owner_preview_binding()
     if kind == "booking-invitation":
         from .booking_invitations import invitation_caption as booking_caption
+        from .enrollment_invitation import invitation_image as enrollment_image
 
         note = {
             "ar": "نموذج دعوة للمعاينة — إلى المالك فقط",
@@ -168,7 +169,7 @@ def send_catalogue(*, batch, language="ar", kind=None):
         )
         if len(caption.encode("utf-16-le")) // 2 > 1024:
             raise ValidationError("Preview caption too long.")
-        packets = [(kind, caption, invitation_image(language))]
+        packets = [(kind, caption, enrollment_image(language))]
     elif kind == "copy-review-v2":
         from .copy_review_previews import packets as review_packets
 
