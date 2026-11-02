@@ -75,6 +75,16 @@ def quote_blocked(booking):
     return False
 
 
+def test_offer_uses_persisted_financial_snapshot_despite_stale_model_values(rig):
+    booking = manual.past_booking()
+    expected = quote(booking)
+    booking.total_price = Decimal("9999.00")
+    booking.booking_intent.total_price = Decimal("9999.00")
+    assert quote(booking) == expected
+    booking.refresh_from_db()
+    assert quote(booking) == expected
+
+
 @pytest.mark.parametrize(
     "reason", ["no_offer", "queued", "queue_failed", "wrong_phone", "tampered"]
 )
@@ -180,7 +190,9 @@ def test_amounts_exclude_fees_and_round_down_without_fake_values(rig, language):
     q.save()
     reward = quote(booking)
     assert (
-        reward["total"] == "500.00" and reward["base"] == "449.99" and reward["reward"] == "13.49"
+        Decimal(reward["total"]) == Decimal("500.00")
+        and reward["base"] == "449.99"
+        and reward["reward"] == "13.49"
     )
     caption = invitation_caption(
         language, "https://example.invalid/my-bookings/rewards/", "Test Guest", reward
@@ -270,7 +282,8 @@ def test_postgres_concurrent_redemption_cannot_double_credit(rig):
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         list(pool.map(run, range(2)))
-    assert Ledger.objects.filter(reservation=booking).count() == 1
+    booking.refresh_from_db()
+    assert Ledger.objects.filter(reservation=booking).count() == 1, booking.loyalty_state
     assert balance(member) == Decimal("15.00")
 
 

@@ -26,6 +26,10 @@ def fingerprint(facts):
 def quote(booking):
     from .site_adapter import booking_facts
 
+    # Quote authoritative persisted decimals/relations, never stale in-memory values.
+    booking = Reservation.objects.select_related(
+        "booking_intent__customer", "booking_intent__quote", "property"
+    ).get(pk=booking.pk)
     if Ledger.objects.filter(reservation=booking).exists():
         raise ValidationError("سُجلت نقاط لهذا الحجز سابقًا؛ لا تُرسل دعوة بمكافأة جديدة.")
     facts, blocker = booking_facts(booking, past_preview=True)
