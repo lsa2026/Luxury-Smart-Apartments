@@ -274,6 +274,30 @@ class ContactMessage(models.Model):
         return f"{self.subject} — {self.created_at:%Y-%m-%d}"
 
 
+class ContactReply(models.Model):
+    """One explicitly requested owner reply; delivery evidence stays separate."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contact = models.ForeignKey(ContactMessage, on_delete=models.CASCADE, related_name="replies")
+    recipient_email = models.EmailField()
+    body = models.TextField(validators=[MaxLengthValidator(5000)])
+    language = models.CharField(
+        max_length=10,
+        choices=(("ar", "العربية"), ("en", "English"), ("fr", "Français")),
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    delivery = models.OneToOneField(
+        "notifications.EmailDelivery", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"Contact reply {self.pk}"
+
+
 class LegacyRedirect(models.Model):
     class RedirectType(models.IntegerChoices):
         PERMANENT = 301, "301 Permanent"

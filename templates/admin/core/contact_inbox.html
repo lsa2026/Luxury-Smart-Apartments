@@ -1,0 +1,22 @@
+{% extends "admin/core/contact_base.html" %}
+{% load tz %}
+{% block content %}
+<main class="lsa-contact" dir="rtl">
+  <header class="lsa-contact__header"><div><p class="lsa-contact__eyebrow">تواصل معنا</p><h1>رسائل التواصل</h1><p>رسائل زوار الموقع ومتابعة الردود، في مكان واحد.</p></div><span class="lsa-contact__badge">{{ new_count }} رسالة جديدة</span></header>
+  <form method="get" class="lsa-contact__filters" role="search">
+    <label>ابحث في الرسائل<input type="search" name="q" value="{{ query }}" placeholder="الاسم أو البريد أو الموضوع أو نص الرسالة" maxlength="120"></label>
+    <label>حالة الرسالة<select name="status"><option value="">كل الحالات</option>{% for value,label in status_choices %}<option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <button type="submit" class="lsa-contact__button">بحث</button><a href="{% url 'admin:core_contactmessage_changelist' %}" class="lsa-contact__link">عرض الكل</a>
+  </form>
+  <p class="lsa-contact__muted">{{ page_obj.paginator.count }} رسالة تطابق العرض الحالي</p>
+  <section class="lsa-contact__list" aria-label="الرسائل">
+    {% for row in rows %}<a class="lsa-contact__row" href="{{ row.url }}">
+      <div class="lsa-contact__row-head"><strong dir="auto">{{ row.item.subject }}</strong><span class="lsa-contact__status lsa-contact__status--{{ row.item.status }}">{{ row.status_label }}</span></div>
+      <p class="lsa-contact__sender"><span dir="auto">{{ row.item.name }}</span><bdi>{{ row.item.email }}</bdi></p>
+      <p class="lsa-contact__snippet" dir="auto">{{ row.item.message|truncatechars:180 }}</p>
+      <div class="lsa-contact__row-foot"><time>{% timezone "Asia/Riyadh" %}{{ row.item.created_at|date:"Y/m/d H:i" }}{% endtimezone %} · الرياض</time><span>فتح الرسالة ←</span></div>
+    </a>{% empty %}<div class="lsa-contact__empty"><h2>لا توجد رسائل في هذا العرض</h2><p>جرّب بحثًا آخر أو اختر «كل الحالات».</p></div>{% endfor %}
+  </section>
+  {% if page_obj.has_other_pages %}<nav class="lsa-contact__pagination" aria-label="صفحات الرسائل">{% if previous_page_url %}<a class="lsa-contact__button lsa-contact__button--secondary" href="{{ previous_page_url }}">الصفحة السابقة</a>{% endif %}<span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>{% if next_page_url %}<a class="lsa-contact__button lsa-contact__button--secondary" href="{{ next_page_url }}">الصفحة التالية</a>{% endif %}</nav>{% endif %}
+</main>
+{% endblock %}

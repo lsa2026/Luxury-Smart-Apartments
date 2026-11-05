@@ -1,0 +1,40 @@
+{% extends "admin/core/contact_base.html" %}
+{% load tz %}
+{% block content %}
+<main class="lsa-contact" dir="rtl">
+  <header class="lsa-contact__header"><div><p class="lsa-contact__eyebrow">صندوق التواصل</p><h1>عرض الرسالة</h1><p>{% timezone "Asia/Riyadh" %}{{ contact.created_at|date:"Y/m/d H:i" }}{% endtimezone %} · بتوقيت الرياض</p></div><span class="lsa-contact__status lsa-contact__status--{{ contact.status }}">{{ contact_status_label }}</span></header>
+  <nav class="lsa-contact__message-nav" aria-label="التنقل بين الرسائل">
+    <div><a class="lsa-contact__button" href="#reply-form">الرد بالبريد</a><a class="lsa-contact__button lsa-contact__button--secondary" href="{{ inbox_url }}">كل الرسائل</a></div>
+    <div>{% if previous_message_url %}<a class="lsa-contact__button lsa-contact__button--secondary" rel="prev" href="{{ previous_message_url }}">السابق · الأحدث</a>{% else %}<span class="lsa-contact__disabled">السابق · الأحدث</span>{% endif %}{% if next_message_url %}<a class="lsa-contact__button lsa-contact__button--secondary" rel="next" href="{{ next_message_url }}">التالي · الأقدم</a>{% else %}<span class="lsa-contact__disabled">التالي · الأقدم</span>{% endif %}</div>
+  </nav>
+  <div class="lsa-contact__layout">
+    <section class="lsa-contact__conversation" aria-label="الرسالة والردود">
+      <article class="lsa-contact__paper">
+        <p class="lsa-contact__eyebrow">الرسالة الواردة</p><h2 dir="auto">{{ contact.subject }}</h2>
+        <dl class="lsa-contact__metadata"><div><dt>المرسل</dt><dd dir="auto">{{ contact.name }}</dd></div><div><dt>البريد الإلكتروني</dt><dd><bdi>{{ contact.email }}</bdi></dd></div>{% if contact.phone %}<div><dt>رقم الجوال</dt><dd><bdi>{{ contact.phone }}</bdi></dd></div>{% endif %}<div><dt>اللغة</dt><dd>{{ contact.get_language_display }}</dd></div></dl>
+        <div class="lsa-contact__body" dir="auto">{{ contact.message }}</div>
+      </article>
+      <section class="lsa-contact__paper" id="reply-history" aria-label="سجل الردود">
+        <h2>سجل الردود</h2><a class="lsa-contact__link" href="{{ request.get_full_path }}#reply-history">تحديث حالة الإرسال</a>
+        {% for row in replies %}<article class="lsa-contact__reply"><div class="lsa-contact__row-head"><strong>رد الإدارة بالبريد</strong><span class="lsa-contact__status">{{ row.status_label }}</span></div><p class="lsa-contact__muted">{% timezone "Asia/Riyadh" %}{{ row.item.created_at|date:"Y/m/d H:i" }}{% endtimezone %} · إلى <bdi>{{ row.item.recipient_email }}</bdi></p><div class="lsa-contact__body" dir="auto">{{ row.item.body }}</div></article>{% empty %}<p class="lsa-contact__muted">لم تُرسل ردود من الموقع على هذه الرسالة بعد.</p>{% endfor %}
+      </section>
+      <section class="lsa-contact__paper" id="reply-form" aria-label="الرد بالبريد الإلكتروني">
+        <h2>الرد على الرسالة</h2><p>إلى: <bdi>{{ contact.email }}</bdi></p><p class="lsa-contact__muted">المرسل: <bdi>{{ business_sender }}</bdi></p>
+        <form method="post" class="lsa-contact__reply-form">{% csrf_token %}{{ reply_form.request_token }}
+          {{ reply_form.non_field_errors }}{{ reply_form.request_token.errors }}
+          <label for="{{ reply_form.body.id_for_label }}">نص الرد</label>{{ reply_form.body.errors }}{{ reply_form.body }}
+          <label for="{{ reply_form.language.id_for_label }}">لغة البريد</label>{{ reply_form.language.errors }}{{ reply_form.language }}
+          <div class="lsa-contact__actions"><button type="submit" name="action" value="send" class="lsa-contact__button"{% if not email_enabled %} disabled{% endif %}>إرسال الرد بالبريد</button><button type="submit" name="action" value="preview" class="lsa-contact__button lsa-contact__button--secondary">معاينة النص</button></div>
+          {% if not email_enabled %}<p class="lsa-contact__error">إرسال البريد غير مفعّل حاليًا؛ لن يُرسل أي رد.</p>{% endif %}
+          <p class="lsa-contact__muted">سيصل الرد بالبريد الإلكتروني بتصميمنا المعتمد. ردود المرسل على البريد تصل إلى بريد الأعمال <bdi>{{ business_reply_to }}</bdi>؛ لا تُستورد تلقائيًا إلى هذا الصندوق.</p>
+        </form>
+        {% if preview_body %}<section class="lsa-contact__preview" aria-label="معاينة نص الرد"><h3>معاينة النص · لم يُرسل بعد</h3><div class="lsa-contact__body" dir="auto">{{ preview_body }}</div></section>{% endif %}
+      </section>
+    </section>
+    <aside class="lsa-contact__sidebar">
+      <section class="lsa-contact__paper"><h2>متابعة الرسالة</h2><form method="post" class="lsa-contact__status-form">{% csrf_token %}<input type="hidden" name="action" value="status"><label for="contact-status">حالة الرسالة</label><select id="contact-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}"{% if contact.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit" class="lsa-contact__button lsa-contact__button--secondary">حفظ الحالة</button></form></section>
+      <section class="lsa-contact__paper"><h2>تنبيه بريد الأعمال</h2><p>{{ alert_status }}</p>{% if business_alert_recipient %}<p class="lsa-contact__muted">الوجهة الحالية: <bdi>{{ business_alert_recipient }}</bdi></p>{% endif %}<p class="lsa-contact__muted">يحتوي التنبيه على إشعار ورابط للرسالة، وليس نسخة من نصها الكامل. النص الكامل محفوظ في هذا الصندوق.</p></section>
+    </aside>
+  </div>
+</main>
+{% endblock %}

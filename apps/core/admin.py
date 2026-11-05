@@ -422,6 +422,16 @@ class ContactMessageAdmin(admin.ModelAdmin):
     )
     fields = readonly_fields + ("status",)
 
+    def changelist_view(self, request, extra_context=None):
+        from .contact_inbox import inbox
+
+        return inbox(request, self)
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        from .contact_inbox import detail
+
+        return detail(request, self, object_id)
+
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False
 
