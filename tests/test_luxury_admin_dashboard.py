@@ -56,7 +56,7 @@ def test_site_settings_remain_available_directly_to_the_owner(client, django_use
 
 
 @pytest.mark.django_db
-def test_booking_workspace_hides_unneeded_customer_contact_tools(client, django_user_model):
+def test_admin_home_exposes_saved_contacts_to_the_owner(client, django_user_model):
     user = django_user_model.objects.create_superuser(
         username="duty-manager",
         email="duty-manager@example.com",
@@ -77,7 +77,9 @@ def test_booking_workspace_hides_unneeded_customer_contact_tools(client, django_
     assert response.status_code == 200
     assert "إدارة الحجوزات" in body
     assert "رسائل عملاء تنتظر الرد" not in body
-    assert reverse("admin:core_contactmessage_changelist") not in body
+    assert reverse("admin:core_contactmessage_changelist") in body
+    assert "رسائل التواصل" in body
+    assert response.context["new_contact_count"] == 1
 
 
 @pytest.mark.django_db
