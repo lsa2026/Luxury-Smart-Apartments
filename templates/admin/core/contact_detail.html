@@ -1,0 +1,25 @@
+{% extends "admin/core/contact_base.html" %}
+{% load tz %}
+{% block content %}
+<main class="lsa-contact" dir="rtl">
+  <header class="lsa-contact__header"><div><p class="lsa-contact__eyebrow">صندوق التواصل</p><h1>عرض الرسالة</h1><p>{% timezone "Asia/Riyadh" %}{{ contact.created_at|date:"Y/m/d H:i" }}{% endtimezone %} · بتوقيت الرياض</p></div><span class="lsa-contact__status lsa-contact__status--{{ contact.status }}">{{ contact_status_label }}</span></header>
+  <nav class="lsa-contact__message-nav" aria-label="التنقل بين الرسائل">
+    <a class="lsa-contact__button lsa-contact__button--secondary" href="{{ inbox_url }}">كل الرسائل</a>
+    <div>{% if previous_message_url %}<a class="lsa-contact__button lsa-contact__button--secondary" rel="prev" href="{{ previous_message_url }}">السابق · الأحدث</a>{% else %}<span class="lsa-contact__disabled">السابق · الأحدث</span>{% endif %}{% if next_message_url %}<a class="lsa-contact__button lsa-contact__button--secondary" rel="next" href="{{ next_message_url }}">التالي · الأقدم</a>{% else %}<span class="lsa-contact__disabled">التالي · الأقدم</span>{% endif %}</div>
+  </nav>
+  <div class="lsa-contact__layout">
+    <section class="lsa-contact__conversation" aria-label="نص الرسالة">
+      <article class="lsa-contact__paper">
+        <p class="lsa-contact__eyebrow">الرسالة الواردة</p><h2 dir="auto">{{ contact.subject }}</h2>
+        <dl class="lsa-contact__metadata"><div><dt>المرسل</dt><dd dir="auto">{{ contact.name }}</dd></div><div><dt>البريد الإلكتروني</dt><dd><bdi>{{ contact.email }}</bdi></dd></div>{% if contact.phone %}<div><dt>رقم الجوال</dt><dd><bdi>{{ contact.phone }}</bdi></dd></div>{% endif %}<div><dt>اللغة</dt><dd>{{ contact.get_language_display }}</dd></div></dl>
+        <div class="lsa-contact__body" dir="auto">{{ contact.message }}</div>
+      </article>
+    </section>
+    <aside class="lsa-contact__sidebar">
+      <section class="lsa-contact__paper"><h2>متابعة الرسالة</h2><form method="post" class="lsa-contact__status-form">{% csrf_token %}<input type="hidden" name="action" value="status"><label for="contact-status">حالة الرسالة</label><select id="contact-status" name="status">{% for value,label in status_choices %}<option value="{{ value }}"{% if contact.status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit" class="lsa-contact__button lsa-contact__button--secondary">حفظ الحالة</button></form></section>
+      <section class="lsa-contact__paper"><h2>تنبيه بريد الأعمال</h2><p>{{ alert_status }}</p>{% if business_alert_recipient %}<p class="lsa-contact__muted">الوجهة الحالية: <bdi>{{ business_alert_recipient }}</bdi></p>{% endif %}<p class="lsa-contact__muted">يحتوي التنبيه على إشعار ورابط للرسالة، وليس نسخة من نصها الكامل. النص الكامل محفوظ في هذا الصندوق.</p></section>
+      <section class="lsa-contact__paper"><h2>الرد على المرسل</h2><p class="lsa-contact__muted">يمكنك الرد من بريد الأعمال باستخدام عنوان البريد الظاهر ضمن بيانات المرسل. الإرسال المباشر من الموقع غير متاح حاليًا.</p></section>
+    </aside>
+  </div>
+</main>
+{% endblock %}

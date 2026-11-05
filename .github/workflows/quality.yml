@@ -40,6 +40,8 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_contact_workspace_readonly.py
+          tests/test_contact_inbox_navigation.py
           tests/test_sama_booking_api.py
           tests/test_manual_booking_operations_phase61.py
           tests/test_booking_modifications_phase6.py
@@ -133,6 +135,26 @@ jobs:
 
       - name: Run tests
         run: pytest
+
+      - name: Render synthetic contact inbox layouts
+        env:
+          LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
+        run: pytest tests/test_contact_layout.py -q
+
+      - name: Check contact inbox layouts on phone and tablet
+        env:
+          LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lsa-contact-browser" --no-save playwright@1.62.1
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-contact-layout.cjs
+
+      - name: Save synthetic contact layout screenshots
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: synthetic-contact-layouts
+          path: ${{ runner.temp }}/lsa-contact-layout/*.png
+          retention-days: 3
 
       - name: Test the lazy price calendar interactions
         run: node --test tests/price-calendar.test.cjs

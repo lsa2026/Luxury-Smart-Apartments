@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-contact-inbox.css' %}?v=20261105-1">{% endblock %}
+{% block bodyclass %}{{ block.super }} lsa-contact-workspace{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}
+<nav class="lsa-admin-breadcrumbs" aria-label="مسار التنقل" dir="rtl">
+  <a class="lsa-admin-breadcrumbs__home" href="{% url 'notifications:hub' %}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3Z"/></svg>الرئيسية</a>
+  <span aria-hidden="true">‹</span>
+  {% if contact %}<a href="{{ inbox_url }}">رسائل التواصل</a><span aria-hidden="true">‹</span><span aria-current="page">عرض الرسالة</span>{% else %}<span aria-current="page">رسائل التواصل</span>{% endif %}
+</nav>
+{% endblock %}
