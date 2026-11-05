@@ -179,7 +179,7 @@ def handle_contact_created(message_id: int, *, email: str, language: str) -> Non
                 message_type="contact_admin_alert",
                 recipient=settings.OPERATIONS_EMAIL,
                 recipient_source="operations",
-                recipient_reference="operations",
+                recipient_reference=str(message_id),
                 language="ar",
                 idempotency_key=f"contact-admin-alert:{message_id}",
             )

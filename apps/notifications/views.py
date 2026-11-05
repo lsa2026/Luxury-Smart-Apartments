@@ -17,6 +17,7 @@ from apps.accounts.access import (
     operations_access_required,
     require_operations_owner,
 )
+from apps.core.models import ContactMessage
 from apps.integrations.models import HostawayWebhookEvent, IntegrationSyncRun
 from apps.notifications.exports import report_rows, write_csv
 from apps.notifications.health import readiness_status
@@ -133,6 +134,12 @@ def operations_hub(request: HttpRequest) -> HttpResponse:
         {
             "title": "مركز الإدارة",
             "can_manage_users": owner,
+            "can_view_contacts": owner,
+            "new_contact_count": (
+                ContactMessage.objects.filter(status=ContactMessage.Status.NEW).count()
+                if owner
+                else 0
+            ),
             "can_manage_loyalty": owner
             and settings.LOYALTY_ENABLED
             and settings.LOYALTY_UI_ENABLED,

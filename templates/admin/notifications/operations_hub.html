@@ -15,6 +15,12 @@
       <p>إدارة الفواتير وإرسالها، بما فيها حجوزات Airbnb وبوكينج من خارج الموقع.</p>
       <strong>فتح فواتير الضيوف ←</strong>
     </a>
+    {% if can_view_contacts %}<a class="lsa-admin-home__card" href="{% url 'admin:core_contactmessage_changelist' %}">
+      <span aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg></span><h2>رسائل التواصل</h2>
+      <p>استعرض رسائل «تواصل معنا» وتفاصيل المرسل، وتابع حالة كل رسالة.</p>
+      <p><strong>الرسائل الجديدة: {{ new_contact_count }}</strong></p>
+      <strong>فتح صندوق التواصل ←</strong>
+    </a>{% endif %}
     {% if can_manage_loyalty %}<a class="lsa-admin-home__card" href="{% url 'loyalty:admin' %}">
       <span aria-hidden="true"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/></svg></span><h2>إدارة برنامج الولاء</h2>
       <p>راجع الأعضاء وسجل النقاط والتحويلات، واطّلع على شجرة الدعوات وتفاصيل العمليات.</p>
