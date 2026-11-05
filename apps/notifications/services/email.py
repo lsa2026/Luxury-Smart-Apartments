@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.mail import BadHeaderError, EmailMultiAlternatives
 from django.db import DatabaseError, transaction
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.utils.html import strip_tags
@@ -936,6 +937,20 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
     if delivery.recipient_source == "operations":
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)
+        if delivery.message_type == "contact_admin_alert":
+            # Older queued notices used "operations"; they can still open the inbox.
+            reference = delivery.recipient_reference
+            path = reverse("admin:core_contactmessage_changelist")
+            if reference.isdecimal() and int(reference) > 0:
+                path = reverse("admin:core_contactmessage_change", args=[int(reference)])
+            return settings.OPERATIONS_EMAIL, {
+                "action_url": f"{settings.SITE_BASE_URL.rstrip('/')}{path}",
+                "action_label": {
+                    "ar": "عرض رسالة التواصل",
+                    "en": "View contact message",
+                    "fr": "Voir le message de contact",
+                }.get(delivery.language, "عرض رسالة التواصل"),
+            }
         if delivery.message_type in {
             "integration_attention",
             "hostaway_refund_accounting_attention",
