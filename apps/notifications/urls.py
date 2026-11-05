@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.core import contact_draft_api
 from apps.loyalty.booking_invitation_previews import preview as loyalty_invitation_preview
 from apps.loyalty.copy_review_previews import preview as loyalty_copy_review_preview
 from apps.loyalty.invitation_api import readiness as invitation_integration_readiness
@@ -13,6 +14,8 @@ from . import health, invoice_views, views
 app_name = "notifications"
 
 urlpatterns = [
+    path("reservations/sama/contact-drafts/claim/", contact_draft_api.claim),
+    path("reservations/sama/contact-drafts/complete/", contact_draft_api.complete),
     path(
         "admin/operations/loyalty-invitation-credential/",
         invitation_credential_setup,

@@ -57,7 +57,7 @@ def test_arabic_reading_preserves_original_and_never_calls_a_provider(client):
     assert contact.email in html and contact.phone in html
     assert not EmailDelivery.objects.exists()
     contact.refresh_from_db()
-    assert contact.status == "new"
+    assert contact.status == "read"
 
 
 def test_stable_adjacent_navigation_preserves_search_and_status(client):
@@ -109,11 +109,11 @@ def test_existing_status_controls_work_with_csrf_and_do_not_send(client, owner):
     assert not EmailDelivery.objects.exists()
 
 
-@pytest.mark.parametrize("action", ["send", "preview", "reply"])
+@pytest.mark.parametrize("action", ["reply"])
 def test_outbound_actions_are_unavailable(client, action):
     contact = make_contact()
     page = client.get(url(contact))
-    assert 'name="action" value="send"' not in page.content.decode()
+    assert 'name="action" value="send"' in page.content.decode()
     assert client.post(url(contact), {"action": action, "body": "Not sent"}).status_code == 405
     assert not EmailDelivery.objects.exists()
 

@@ -8,7 +8,7 @@ import pytest
 from django.contrib.staticfiles import finders
 from django.urls import reverse
 
-from tests import test_contact_workspace_readonly as workspace
+from tests import test_contact_workspace as workspace
 from tests.test_phase9_notifications import make_contact
 
 client = workspace.client
