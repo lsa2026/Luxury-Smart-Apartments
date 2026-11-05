@@ -1,0 +1,65 @@
+.lsa-contact-workspace #content { padding: 24px clamp(16px, 4vw, 56px) 48px; }
+.lsa-contact { max-width: 1320px; margin: 0 auto; color: #193e36; min-width: 0; }
+.lsa-contact *, .lsa-contact *::before, .lsa-contact *::after { box-sizing: border-box; }
+.lsa-contact h1 { margin: 0 0 8px; font-size: clamp(26px, 3vw, 36px); }
+.lsa-contact h2 { margin: 0 0 18px; font-size: 22px; line-height: 1.6; overflow-wrap: anywhere; }
+.lsa-contact p { line-height: 1.8; }
+.lsa-contact__header { display: flex; gap: 20px; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.lsa-contact__header p { margin: 0; }
+.lsa-contact .lsa-contact__eyebrow { color: #947132; font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+.lsa-contact__badge, .lsa-contact__status { display: inline-block; flex: 0 0 auto; border-radius: 999px; padding: 6px 14px; font-size: 13px; background: #eaf0ec; line-height: 1.6; }
+.lsa-contact__status--new { background: #fff0ce; color: #72521a; }
+.lsa-contact__status--closed { background: #eaf0ec; }
+.lsa-contact__status--spam { background: #f3e6e5; color: #823c35; }
+.lsa-contact__filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; background: #fffdf8; border: 1px solid #e0d8c9; border-radius: 18px; padding: 20px; }
+.lsa-contact label { font-weight: 600; line-height: 1.7; }
+.lsa-contact__filters label:first-child { flex: 1 1 300px; }
+.lsa-contact__filters label { display: grid; gap: 6px; flex: 0 1 180px; }
+.lsa-contact input, .lsa-contact select, .lsa-contact textarea { border: 1px solid #cfc6b5; border-radius: 10px; background: #fff; color: #193e36; padding: 12px; font: inherit; font-size: 16px; width: 100%; min-width: 0; min-height: 46px; }
+.lsa-contact textarea { line-height: 1.9; resize: vertical; min-height: 190px; }
+.lsa-contact .lsa-contact__button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 46px; padding: 10px 18px; border: 1px solid #193e36; border-radius: 10px; background: #193e36; color: #fff !important; text-decoration: none; font: inherit; cursor: pointer; line-height: 1.6; white-space: normal; text-align: center; }
+.lsa-contact .lsa-contact__button--secondary { background: #fffdf8; border-color: #d1c3a8; color: #193e36 !important; }
+.lsa-contact__button:focus-visible, .lsa-contact a:focus-visible { outline: 3px solid #bd964d; outline-offset: 3px; }
+.lsa-contact__button:disabled { opacity: .5; cursor: default; }
+.lsa-contact__link { padding: 10px; }
+.lsa-contact .lsa-contact__muted { font-size: 13px; color: #66746d; line-height: 1.9; overflow-wrap: anywhere; }
+.lsa-contact__list { display: grid; gap: 14px; }
+.lsa-contact .lsa-contact__row { display: block; padding: 22px; border: 1px solid #e0d8c9; border-radius: 16px; background: #fffdf8; color: #193e36; text-decoration: none; }
+.lsa-contact__row:hover { border-color: #bd964d; }
+.lsa-contact__row-head, .lsa-contact__row-foot { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+.lsa-contact__row-head strong { font-size: 18px; line-height: 1.7; overflow-wrap: anywhere; }
+.lsa-contact__sender { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0; font-size: 14px; overflow-wrap: anywhere; }
+.lsa-contact__snippet { margin: 0 0 14px; color: #5d6a63; overflow-wrap: anywhere; }
+.lsa-contact__row-foot { font-size: 12px; color: #66746d; }
+.lsa-contact__row-foot span { color: #947132; font-weight: 700; }
+.lsa-contact__message-nav, .lsa-contact__message-nav > div, .lsa-contact__actions, .lsa-contact__pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lsa-contact__message-nav { margin-bottom: 22px; }
+.lsa-contact__disabled { color: #87918a; font-size: 13px; padding: 10px 8px; }
+.lsa-contact__layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+.lsa-contact__conversation, .lsa-contact__sidebar { display: grid; gap: 22px; min-width: 0; }
+.lsa-contact__paper, .lsa-contact__empty { background: #fffdf8; border: 1px solid #e0d8c9; border-radius: 20px; padding: clamp(20px, 3vw, 32px); min-width: 0; }
+.lsa-contact__metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 0 0 24px; padding-bottom: 24px; border-bottom: 1px solid #e7e0d5; }
+.lsa-contact__metadata dt { font-size: 12px; color: #66746d; margin-bottom: 5px; }
+.lsa-contact__metadata dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; line-height: 1.8; }
+.lsa-contact__body { font-size: 17px; line-height: 2; white-space: pre-wrap; overflow-wrap: anywhere; unicode-bidi: plaintext; text-align: start; }
+.lsa-contact__reply { padding: 18px 0; border-top: 1px solid #e7e0d5; }
+.lsa-contact__reply-form, .lsa-contact__status-form { display: grid; gap: 10px; }
+.lsa-contact__reply-form select { max-width: 240px; }
+.lsa-contact__actions { justify-content: start; margin-top: 10px; }
+.lsa-contact__preview { margin-top: 24px; padding: 20px; border-radius: 12px; background: #f5f1e7; border: 1px solid #d1c3a8; }
+.lsa-contact .errorlist, .lsa-contact__error { color: #9a312c; font-size: 14px; }
+.lsa-contact__pagination { justify-content: center; margin-top: 24px; }
+@media (max-width: 1023px) { .lsa-contact__layout { grid-template-columns: minmax(0, 1fr); } .lsa-contact__sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .lsa-contact-workspace #content { padding: 18px 12px 36px; }
+  .lsa-contact__header { align-items: start; flex-direction: column; gap: 12px; }
+  .lsa-contact__filters label, .lsa-contact__filters label:first-child { flex: 1 1 100%; }
+  .lsa-contact__metadata, .lsa-contact__sidebar { grid-template-columns: minmax(0, 1fr); }
+  .lsa-contact__message-nav > div { width: 100%; }
+  .lsa-contact__message-nav > div > * { flex: 1; text-align: center; }
+  .lsa-contact__row-head { flex-wrap: wrap; }
+  .lsa-contact__row { padding: 18px; }
+  .lsa-contact__actions { display: grid; grid-template-columns: 1fr; }
+  .lsa-contact__reply-form select { max-width: none; }
+  .lsa-contact__body { font-size: 16px; }
+}
