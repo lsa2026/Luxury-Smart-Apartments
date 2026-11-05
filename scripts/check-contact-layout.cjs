@@ -28,7 +28,7 @@ const { pathToFileURL } = require("node:url");
         if (name === "detail") {
           if (await page.locator('[rel="next"]').count() !== 1) throw new Error("Next message missing");
           if (await page.locator('[rel="prev"]').count() !== 1) throw new Error("Previous message missing");
-          if (await page.locator('[name="action"][value="send"]').count()) throw new Error("Reading workspace must not expose an email send action");
+          await page.locator("#id_body").fill("مسودة تجريبية للمراجعة فقط");
         }
         await page.screenshot({ path: path.join(output, `${name}-${width}.png`), fullPage: true });
         console.log(`${name} ${width}px: no overflow, accessible buttons, synthetic content only`);

@@ -8,6 +8,7 @@ from typing import Any, Protocol
 from urllib.parse import quote, urljoin
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.mail import BadHeaderError, EmailMultiAlternatives
 from django.db import DatabaseError, transaction
 from django.template.loader import render_to_string
@@ -196,6 +197,11 @@ def _email_brand_context(language: str) -> dict[str, Any]:
 
 
 SUBJECTS: dict[str, dict[str, str]] = {
+    "contact_reply": {
+        "ar": "رد على رسالتك",
+        "en": "A reply to your message",
+        "fr": "Réponse à votre message",
+    },
     "contact_confirmation": {
         "ar": "استلمنا رسالتك",
         "en": "We received your message",
@@ -339,6 +345,7 @@ SUBJECTS: dict[str, dict[str, str]] = {
 }
 
 TEMPLATE_GROUPS = {
+    "contact_reply": "contact",
     "contact_confirmation": "contact",
     "contact_admin_alert": "contact",
     "booking_intent_created": "booking",
@@ -370,6 +377,13 @@ TEMPLATE_GROUPS = {
 }
 
 MESSAGES: dict[str, dict[str, str]] = {
+    "contact_reply": {
+        "ar": "شكرًا لتواصلك معنا. إليك رد فريق Luxury Smart Apartments على رسالتك:",
+        "en": "Thank you for contacting us. Here is the Luxury Smart Apartments team's reply:",
+        "fr": (
+            "Merci de nous avoir contactés. Voici la réponse de l’équipe Luxury Smart Apartments :"
+        ),
+    },
     "contact_confirmation": {
         "ar": "شكرًا لتواصلك معنا. استلم فريقنا رسالتك وسيراجعها.",
         "en": "Thank you for contacting us. Our team has received your message.",
@@ -733,6 +747,27 @@ def _account_links(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
 
 
 def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
+    if delivery.recipient_source == "contact_reply":
+        from apps.accounts.access import is_operations_owner
+        from apps.core.models import ContactReply
+
+        try:
+            reply = (
+                ContactReply.objects.select_related("contact", "created_by")
+                .filter(pk=delivery.recipient_reference)
+                .first()
+            )
+        except (ValidationError, ValueError) as exc:
+            raise EmailProviderError("contact_reply_not_available", permanent=True) from exc
+        if (
+            reply is None
+            or delivery.message_type != "contact_reply"
+            or reply.delivery_id != delivery.pk
+            or not is_operations_owner(reply.created_by)
+            or recipient_hmac(reply.recipient_email) != recipient_hmac(reply.contact.email)
+        ):
+            raise EmailProviderError("contact_reply_not_available", permanent=True)
+        return reply.recipient_email, {"reply_body": reply.body}
     if delivery.recipient_source.startswith("loyalty_"):
         from apps.loyalty.notifications import resolve_recipient
 

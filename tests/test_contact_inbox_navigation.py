@@ -51,7 +51,7 @@ def test_owner_can_find_existing_contacts_and_read_full_message(owner_client):
         assert value in detail.content.decode()
     # GET navigation neither marks messages handled nor sends a notification.
     contact.refresh_from_db()
-    assert contact.status == ContactMessage.Status.NEW
+    assert contact.status == ContactMessage.Status.READ
     assert not EmailDelivery.objects.exists() and not Notification.objects.exists()
     owner_client.post(
         reverse("admin:core_contactmessage_change", args=[contact.pk]),

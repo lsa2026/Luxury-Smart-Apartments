@@ -244,6 +244,7 @@ class SiteInterfaceImage(models.Model):
 class ContactMessage(models.Model):
     class Status(models.TextChoices):
         NEW = "new", _("New")
+        READ = "read", "مقروء"
         IN_PROGRESS = "in_progress", _("Being followed up")
         CLOSED = "closed", _("Closed")
         SPAM = "spam", _("Spam")
@@ -272,6 +273,30 @@ class ContactMessage(models.Model):
 
     def __str__(self) -> str:
         return f"{self.subject} — {self.created_at:%Y-%m-%d}"
+
+
+class ContactReply(models.Model):
+    """One explicitly requested owner reply; delivery evidence stays separate."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contact = models.ForeignKey(ContactMessage, on_delete=models.CASCADE, related_name="replies")
+    recipient_email = models.EmailField()
+    body = models.TextField(validators=[MaxLengthValidator(5000)])
+    language = models.CharField(
+        max_length=10,
+        choices=(("ar", "العربية"), ("en", "English"), ("fr", "Français")),
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    delivery = models.OneToOneField(
+        "notifications.EmailDelivery", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"Contact reply {self.pk}"
 
 
 class LegacyRedirect(models.Model):
@@ -410,3 +435,25 @@ class MarketingEventReceipt(models.Model):
     def mark_emitted(self) -> None:
         self.status = self.Status.EMITTED
         self.emitted_at = timezone.now()
+
+
+class ContactAIDraft(models.Model):
+    """Owner-requested draft only; SMA has no email send capability here."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contact = models.ForeignKey(ContactMessage, on_delete=models.CASCADE, related_name="ai_drafts")
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    language = models.CharField(max_length=10)
+    instructions = models.CharField(max_length=1000, blank=True)
+    source_hash = models.CharField(max_length=64)
+    status = models.CharField(max_length=20, default="pending")
+    lease = models.UUIDField(null=True, blank=True)
+    body = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Contact draft {self.pk}"
