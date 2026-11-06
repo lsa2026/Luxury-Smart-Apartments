@@ -88,16 +88,30 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
             ):
                 return previous
             raise HyperPayCheckoutError("previous_morning_collection_unresolved")
-        if stay.billing_address:
-            from apps.reservations.morning_billing import saved_billing
+        from apps.reservations.morning_billing import MorningBillingForm
+        from django.core.validators import validate_email
 
-            billing_data = saved_billing(stay)
-            if billing_data is None:
-                raise HyperPayCheckoutError("billing_address_invalid")
+        if stay.billing_address:
+            # The owner-prepared billing address is authoritative; a stale or invalid
+            # saved record must never be replaced silently with guest browser values.
+            billing_data = stay.billing_address
+        billing_form = MorningBillingForm(billing_data)
+        if not billing_form.is_valid():
+            raise HyperPayCheckoutError("billing_address_invalid")
+        billing_data = dict(billing_form.cleaned_data)
+
         first, _, last = stay.guest_name.partition(" ")
-        # Do not fabricate names or billing fields required by 3DS.
-        if not last.strip():
+        first, last = first.strip(), last.strip()
+        if not first or not last:
             raise HyperPayCheckoutError("guest_full_name_required")
+        if len(first) > 50 or len(last) > 50:
+            raise HyperPayCheckoutError("guest_name_exceeds_hyperpay_limit")
+        if len(stay.guest_email) > 128:
+            raise HyperPayCheckoutError("guest_email_exceeds_hyperpay_limit")
+        try:
+            validate_email(stay.guest_email)
+        except ValidationError as exc:
+            raise HyperPayCheckoutError("guest_email_invalid") from exc
         payer = SimpleNamespace(
             guest_first_name=first,
             guest_last_name=last,
