@@ -15,14 +15,14 @@ from apps.reservations.address_places import (
     make_address_ticket,
     places_enabled,
 )
-from apps.reservations.morning_billing import saved_billing
+from apps.reservations.morning_billing import MorningGuestBillingForm, saved_billing
 from apps.reservations.morning_stays import MorningStayError
 from apps.reservations.security import is_ip_rate_limited, session_key_hash
 
 from .hyperpay.exceptions import HyperPayError
 from .models import MorningPaymentAttempt
 from .morning_payments import create_checkout, require_payable, resolve_token, verify_payment
-from .payment_link_views import PaymentLinkBillingForm, private_response
+from .payment_link_views import private_response
 from .views import _render_hyperpay_checkout, _valid_hyperpay_return_token
 
 
@@ -48,10 +48,15 @@ class MorningPaymentView(View):
         except HyperPayError:
             payable = False
         address = saved_billing(self.stay)
+        invalid_saved_address = bool(self.stay.billing_address) and address is None
+        if invalid_saved_address:
+            payable = False
+            error = "عنوان الفوترة المحفوظ غير مطابق لشروط HyperPay. اطلب من الإدارة تصحيحه قبل الدفع."
         context = {
             "stay": self.stay,
             "payable": payable,
-            "form": form or PaymentLinkBillingForm(default_country_code="SA"),
+            "form": form or MorningGuestBillingForm(default_country_code="SA"),
+            "morning_billing_rules": True,
             "saved_billing": address,
             "guest_documents": guest_documents("ar"),
             "current_language_code": "ar",
@@ -87,7 +92,7 @@ class MorningPaymentView(View):
         address = saved_billing(self.stay)
         if address:
             data.update(address)
-        form = PaymentLinkBillingForm(data)
+        form = MorningGuestBillingForm(data)
         if not form.is_valid():
             return self.page(request, form=form)
         acceptance = {
