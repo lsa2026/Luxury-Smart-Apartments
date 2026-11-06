@@ -153,3 +153,47 @@ are retained. The payment page and checkout revalidate the started window, and a
 verified payment while it remains unfinished confirms admission and triggers the
 existing instructions event. A payment received after checkout remains recorded
 for review. No historical send, payment or guest action is performed by deployment.
+
+### Explicit send and paid enrollment — current owner flow, 6 November 2026
+
+Creating/saving a MorningStay no longer sends a message implicitly. The create
+form's explicit WhatsApp send button checks availability, saves the guest details
+and sends one branded payment-request image/caption from the website. The existing
+stay detail has one primary WhatsApp button above the long booking information;
+payment-status refresh and cancellation are separate secondary actions. Each
+explicit send executes against the provider in the web request and reports actual
+acceptance, failure or uncertainty, instead of reporting only a queued request.
+The shared worker is not required for this pre-payment action. Repeated form
+submissions retain the durable per-intent send record.
+
+The owner PDF showed requests queued at 06:14 Riyadh. Worker logs independently
+showed both tasks returning `expired` without a provider send; the status update
+was invisible in the already rendered page. A read-only Render SQL query was
+unavailable because the production database rejects external connections. Its
+IP allowlist and permissions were left unchanged. No guest-message replay was
+performed during diagnosis.
+
+Visual source: Figma 6VEwxZ6njfm9FTQG2sE6rt node 283:54. Preserve the exact approved
+160x160 monogram asset, ivory #faf8f2, green #0e4138, gold #c7a05a, Amiri/Cairo
+hierarchy and generous centered spacing. The six static AR/EN/FR morning request
+and paid-confirmation cards contain no guest data. Their caption includes the
+actual guest, apartment, original timestamps, amount and payment URL. Paid
+confirmation uses its separate card; no loyalty image is sent before payment.
+
+Scenario 01 Pp0J8YZogO8AQfDc was read as the message/contact/invitation reference.
+Scenario 07 retains its paid-only admission and existing Google Contacts merge
+engine and group `contactGroups/7e2e865c083e05ce`; there is no new Google connection.
+After core delivery progress, one non-blocking HTTP node calls the website's
+signed Morning07 loyalty endpoint. That endpoint independently checks verified
+payment, current revision, unfinished stay, exact confirmation/house-rule/access provider
+receipts, programme readiness, membership and the existing cross-channel invitation
+registry. It sends the exact approved loyalty artwork/copy, qualified for future
+eligible website stays. It never enrolls the guest or grants points. Unknown
+provider outcomes remain durable and are not automatically reposted.
+
+No new schedule, credentials, Supabase tables, historical campaign or changes to
+01–06 were introduced. Native n8n schema validation and the inactive-export helper
+passed; Django integration tests use synthetic paid states and mocked providers.
+The new optional HTTP endpoint is deployed before publishing the prepared 07
+workflow version. Roll back both the website commit and the previous 07 active
+version if required; preserve all invitation/payment/delivery history.

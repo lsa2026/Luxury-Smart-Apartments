@@ -4,31 +4,35 @@
 .morning-payment-send { margin-block: 1.5rem; padding-block: 1rem; border-block: 1px solid #ddd3c3; }
 .morning-payment-send summary { min-height: 44px; cursor: pointer; padding-block: .75rem; }
 .morning-payment-preview { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; padding: 1rem; }
+.morning-payment-art { display: block; width: 100%; max-width: 600px; height: auto; margin: 1rem auto; }
+.morning-payment-send .morning-send-button { display: flex; justify-content: center; width: 100%; border: 2px solid #c7a05a; background: #0e4138; color: white; font-size: 1.1rem; font-weight: 700; padding: 1rem; box-shadow: 0 5px 16px #0e413820; }
 .morning-payment-send .lsa-btn { min-height: 48px; max-width: 100%; white-space: normal; margin-block: .75rem; }
 </style>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><h1>تفاصيل الحجز الصباحي</h1><p>{{ stay }}</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:morning_list' %}">الحجوزات الصباحية</a></section>
+    <section class="lsa-panel morning-payment-send" aria-labelledby="morning-send-title">
+      <h3 id="morning-send-title">إرسال رسالة واتساب إلى الضيف</h3>
+      <p role="status"><strong>حالة رسالة واتساب:</strong> {{ payment_delivery_status }}</p>
+      {% if payment_delivery %}<p>آخر طلب إرسال: {{ payment_delivery.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</p>{% endif %}
+      {% if send_error %}<p>{{ send_error }}</p>{% else %}
+        <p>رسالة واحدة تتضمن تفاصيل الطلب والمبلغ ورابط الدفع. بعد توثيق الدفع تُرسل رسالة التأكيد وتعليمات المنزل والدخول، ثم دعوة الولاء لغير المشتركين. وتُحفظ بيانات التواصل في قائمتنا المعتمدة.</p>
+        <form method="post" class="morning-send-form">{% csrf_token %}<input type="hidden" name="send_token" value="{{ send_token }}"><button class="lsa-btn morning-send-button" type="submit" name="action" value="send_payment_link">{% if payment_delivery %}إعادة إرسال رسالة واتساب ورابط الدفع{% else %}إرسال الحجز ورابط الدفع عبر واتساب{% endif %}</button></form>
+        <p>يُفحص التوفر وحالة الدفع قبل الإرسال. هذه العملية ترسل رسالة فعلية عبر واتساب.</p>
+        <details><summary>معاينة الرسالة التي ستصل إلى الضيف</summary><img src="{{ payment_image }}" alt="هوية Luxury Living المعتمدة" class="morning-payment-art"><div class="morning-payment-preview" dir="auto">{{ payment_message }}</div><p>عند الإرسال يُحدّث الموعد النهائي في الرسالة بعد إعادة فحص التوفر. المهلة خمس دقائق أو حتى وقت الخروج، أيهما أقرب. يمكن إعادة إرسال الطلب غير المدفوع ما دامت الإقامة لم تنتهِ والتوفر متحققًا.</p></details>
+
+      {% endif %}
+    </section>
   <section class="lsa-panel">
     <h2>{{ stay.property|localized_property_name }}</h2>
     <dl class="quote-summary"><div><dt>الضيف</dt><dd>{{ stay.guest_name }}</dd></div><div><dt>الجوال</dt><dd dir="ltr">{{ stay.guest_phone }}</dd></div><div><dt>البريد الإلكتروني</dt><dd>{{ stay.guest_email }}</dd></div><div><dt>الدخول</dt><dd dir="ltr">{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>الخروج</dt><dd dir="ltr">{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>المنطقة الزمنية</dt><dd>{{ stay.time_zone }}</dd></div><div><dt>الإجمالي المعتمد</dt><dd>{{ stay.amount_sar|format_money:'SAR' }}</dd></div><div><dt>الحالة</dt><dd>{% if expired %}انتهت مهلة الدفع{% else %}{{ stay.get_status_display }}{% endif %}</dd></div></dl>
     <p>حجز صباحي داخلي؛ لم يُنشأ حجز في Hostaway. يُسمح بحجز لاحق عندما تكفي فترة تجهيز الشقة قبله.</p>
-    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>آخر موعد لبدء الدفع: {{ stay.expires_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}. تظهر نتيجة إرسال رسالة واتساب في قسم رابط الدفع أدناه.</p>{% endif %}
-    <section class="morning-payment-send" aria-labelledby="morning-send-title">
-      <h3 id="morning-send-title">إرسال تفاصيل الحجز ورابط الدفع عبر واتساب</h3>
-      <p>{{ payment_delivery_status }}</p>
-      {% if payment_delivery %}<p>آخر طلب إرسال: {{ payment_delivery.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</p>{% endif %}
-      {% if send_error %}<p>{{ send_error }}</p>{% else %}
-        <p>رسالة واحدة تتضمن تفاصيل الطلب والمبلغ ورابط الدفع. بعد نجاح الدفع تُرسل تعليمات الدخول والمنزل تلقائيًا.</p>
-        <details><summary>معاينة نص الرسالة</summary><div class="morning-payment-preview" dir="auto">{{ payment_message }}</div><p>عند الإرسال يُحدّث الموعد النهائي في الرسالة بعد إعادة فحص التوفر. المهلة خمس دقائق أو حتى وقت الخروج، أيهما أقرب. يمكن إعادة إرسال الطلب غير المدفوع ما دامت الإقامة لم تنتهِ والتوفر متحققًا.</p></details>
-        <form method="post">{% csrf_token %}<input type="hidden" name="send_token" value="{{ send_token }}"><button class="lsa-btn" type="submit" name="action" value="send_payment_link">{% if payment_delivery %}إعادة فحص التوفر وإرسال رابط الدفع{% else %}فحص التوفر وإرسال الحجز ورابط الدفع{% endif %}</button></form>
-      {% endif %}
-    </section>
+    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>آخر موعد لبدء الدفع: {{ stay.expires_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}. تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.</p>{% endif %}
     {% if stay.paid_at %}<p>تم توثيق استلام الدفعة: {{ stay.paid_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}.</p>{% endif %}
     {% if stay.status == 'paid' %}<a class="lsa-btn" href="{% url 'notifications:morning_edit' stay.pk %}">تعديل الحجز</a>{% endif %}
-    <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">التحقق من حالة الدفع</button>{% if stay.status != 'cancelled' %}{% if stay.paid_at %}<label><input type="checkbox" name="confirm_paid_cancellation" value="yes"> أؤكد إلغاء الإقامة وإيقاف رسائلها المستقبلية. الاسترداد المالي يُراجع بصورة مستقلة.</label>{% endif %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الحجز</button>{% endif %}</form>
-    <p>حالة إرسال آخر تحديث: {% with event=stay.latest_communication_event %}{% if event %}{% if event.state == 'accepted' %}استلمت منصة التواصل التحديث{% elif event.state == 'superseded' %}يوجد تحديث أحدث{% else %}بانتظار الإرسال أو إعادة المحاولة{% endif %}{% else %}لم يُنشأ حدث تواصل مؤكد{% endif %}{% endwith %}</p>
+    <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">تحديث حالة السداد</button>{% if stay.status != 'cancelled' %}{% if stay.paid_at %}<label><input type="checkbox" name="confirm_paid_cancellation" value="yes"> أؤكد إلغاء الإقامة وإيقاف رسائلها المستقبلية. الاسترداد المالي يُراجع بصورة مستقلة.</label>{% endif %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الحجز</button>{% endif %}</form>
+    <p>تسلسل الرسائل بعد الدفع: {% with event=stay.latest_communication_event %}{% if event %}{% if event.state == 'accepted' %}استلمت منصة التواصل التحديث{% elif event.state == 'superseded' %}يوجد تحديث أحدث{% else %}بانتظار الإرسال أو إعادة المحاولة{% endif %}{% else %}لم يُنشأ حدث تواصل مؤكد{% endif %}{% endwith %}</p>
   </section>
   <section class="lsa-panel"><h2>محاولات الدفع</h2><ul>{% for attempt in attempts %}<li>{{ attempt.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }} — {{ attempt.status }}{% if attempt.failure_code %} — تحتاج مراجعة{% endif %}</li>{% empty %}<li>لم تبدأ محاولة دفع.</li>{% endfor %}</ul></section>
 </main>

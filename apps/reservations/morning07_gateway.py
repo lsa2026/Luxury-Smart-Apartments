@@ -118,9 +118,19 @@ def send_message(request):
             )
     try:
         with UltraMsgClient() as provider:
-            result = provider.send_text(
-                recipient=expected_recipient, body=body, reference_id=reference
-            )
+            if kind == "status_new":
+                from .morning_payment_messages import notice_image
+
+                result = provider.send_image(
+                    recipient=expected_recipient,
+                    content=notice_image(stay.guest_language, confirmed=True),
+                    caption=body,
+                    reference_id=reference,
+                )
+            else:
+                result = provider.send_text(
+                    recipient=expected_recipient, body=body, reference_id=reference
+                )
         result = {"sent": "true", "id": str(result.get("id") or ""), "referenceId": reference}
         state = "accepted"
     except UltraMsgConfigurationError:
@@ -157,13 +167,20 @@ def receipt(request):
     if attempt.state == "rejected":
         return JsonResponse({"messages": [], "error": attempt.response.get("error")})
     try:
+        return JsonResponse({"messages": exact_receipt_messages(attempt)})
+    except ValueError:
+        return JsonResponse({"messages": [], "error": "receipt_lookup_uncertain"}, status=502)
+
+
+def exact_receipt_messages(attempt):
+    try:
         with UltraMsgClient() as provider:
             response = provider.http.get(
                 f"/{settings.ULTRAMSG_INSTANCE_ID}/messages",
                 params={
                     "token": settings.ULTRAMSG_TOKEN,
                     "id": attempt.provider_id,
-                    "referenceId": "" if attempt.provider_id else reference,
+                    "referenceId": "" if attempt.provider_id else attempt.reference_id,
                     "status": "all",
                     "limit": 100,
                     "page": 1,
@@ -173,12 +190,14 @@ def receipt(request):
             response.raise_for_status()
             rows = provider_rows(response.json())
     except (httpx.HTTPError, ValueError, UltraMsgConfigurationError):
-        return JsonResponse({"messages": [], "error": "receipt_lookup_uncertain"}, status=502)
+        raise ValueError("receipt_lookup_uncertain") from None
     exact = []
     for row in rows:
         row_id = str(row.get("id") or row.get("message_id") or "")
         row_reference = str(row.get("referenceId") or row.get("reference_id") or "")
-        if (attempt.provider_id and row_id == attempt.provider_id) or row_reference == reference:
+        if (
+            attempt.provider_id and row_id == attempt.provider_id
+        ) or row_reference == attempt.reference_id:
             exact.append(
                 {
                     "id": row_id,
@@ -187,4 +206,4 @@ def receipt(request):
                     "status": row.get("status"),
                 }
             )
-    return JsonResponse({"messages": exact})
+    return exact

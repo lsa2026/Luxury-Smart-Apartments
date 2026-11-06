@@ -968,6 +968,43 @@
         1900,
         1000
       ]
+    },
+    {
+      "id": "1a705e24-9452-4e82-9213-c4bb293caf31",
+      "name": "L07 Paid Morning Loyalty Invitation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1400,
+        680
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://luxurysmartapartments.com/integrations/morning07/loyalty/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LSA-Morning07-Token",
+              "value": "={{ $('D00 Claim Next Morning07 Delivery').first().json.delivery_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { core_delivered: $json.delivered === true } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1215,7 +1252,7 @@
       "main": [
         [
           {
-            "node": "D00 Claim Next Morning07 Delivery",
+            "node": "L07 Paid Morning Loyalty Invitation",
             "type": "main",
             "index": 0
           }
@@ -1403,6 +1440,17 @@
           }
         ]
       ]
+    },
+    "L07 Paid Morning Loyalty Invitation": {
+      "main": [
+        [
+          {
+            "node": "D00 Claim Next Morning07 Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "nodeGroups": [
@@ -1449,7 +1497,8 @@
         "GC07 Google Contact Failed?",
         "GC08 Telegram Contact Save Failure",
         "C90 Record Morning07 Contact Outcome",
-        "D99 Morning Booking Work Complete"
+        "D99 Morning Booking Work Complete",
+        "L07 Paid Morning Loyalty Invitation"
       ],
       "description": "Per-booking processing and exact checkout wait, with no polling trigger."
     }

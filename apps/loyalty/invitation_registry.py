@@ -211,7 +211,7 @@ def ticket(row):
     )
 
 
-def consume(row, *, phone, proof=None, exclude_legacy=None):
+def consume(row, *, phone, proof=None, exclude_legacy=None, morning_stay=None):
     """One send permit only. Lost preflight responses MUST NOT trigger a provider POST."""
     if proof is not None:
         try:
@@ -222,7 +222,20 @@ def consume(row, *, phone, proof=None, exclude_legacy=None):
             raise ValidationError("ticket_mismatch")
     if row.phone != phone:
         raise ValidationError("phone_changed")
-    _, booking = canonical_booking(row.reservation_key)
+    if morning_stay is not None:
+        from apps.reservations.morning07_communications import verified_payment
+
+        if (
+            morning_stay.environment != "production"
+            or row.reservation_key != "morning07:" + str(morning_stay.pk)
+            or morning_stay.status != "paid"
+            or morning_stay.ends_at <= timezone.now()
+            or not verified_payment(morning_stay)
+        ):
+            raise ValidationError("morning_payment_not_verified")
+        booking = None
+    else:
+        _, booking = canonical_booking(row.reservation_key)
     current_customer = (
         booking.booking_intent.customer_id if booking and booking.booking_intent_id else None
     )

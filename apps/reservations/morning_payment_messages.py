@@ -96,35 +96,64 @@ def render_message(stay, *, preview=False):
     name = getattr(stay.property, f"name_{lang}", "") or stay.property.name_en
     ref = "AM-" + str(stay.pk)[:8]
     url = public_url(stay)
-    when = f"{start:%Y-%m-%d %H:%M} → {end:%Y-%m-%d %H:%M} ({stay.time_zone})"
-    if lang == "en":
-        return (
-            f"☀️ *Morning booking request confirmation*\n*Luxury Smart Apartments 🌿*\n\n"
-            f"Hello {stay.guest_name},\nYour morning stay has been registered.\n"
-            f"🏡 {name}\n📋 {ref}\n🕒 {when}\n💳 Total: SAR {stay.amount_sar:.2f}\n\n"
-            f"🔗 Secure payment link:\n{url}\n\n"
-            f"Pay before {expiry:%Y-%m-%d %H:%M} ({stay.time_zone}).\n"
-            "Final confirmation follows successful payment. Check-in instructions and house rules "
-            "will then be sent directly to you.\n🛎️ +966501205651"
-        )
-    if lang == "fr":
-        return (
-            f"☀️ *Confirmation de demande de séjour matinal*\n*Luxury Smart Apartments 🌿*\n\n"
-            f"Bonjour {stay.guest_name},\nVotre demande a été enregistrée.\n"
-            f"🏡 {name}\n📋 {ref}\n🕒 {when}\n💳 Total : {stay.amount_sar:.2f} SAR\n\n"
-            f"🔗 Paiement sécurisé :\n{url}\n\n"
-            f"Payez avant le {expiry:%Y-%m-%d %H:%M} ({stay.time_zone}).\n"
-            "La confirmation définitive suit le paiement réussi. Les instructions d’arrivée et "
-            "le règlement intérieur vous seront alors envoyés directement.\n🛎️ +966501205651"
-        )
+    labels = {
+        "ar": (
+            "تفاصيل الحجز الصباحي",
+            "الضيف",
+            "الإجمالي",
+            "رابط الدفع الآمن",
+            "صالح حتى",
+            "التأكيد وتعليمات الدخول بعد نجاح الدفع.",
+        ),
+        "en": (
+            "Morning stay details",
+            "Guest",
+            "Total",
+            "Secure payment",
+            "Valid until",
+            "Confirmation and access instructions follow successful payment.",
+        ),
+        "fr": (
+            "Détails du séjour matinal",
+            "Client",
+            "Total",
+            "Paiement sécurisé",
+            "Valable jusqu’à",
+            "Confirmation et accès après paiement réussi.",
+        ),
+    }.get(
+        lang,
+        (
+            "تفاصيل الحجز الصباحي",
+            "الضيف",
+            "الإجمالي",
+            "رابط الدفع الآمن",
+            "صالح حتى",
+            "التأكيد وتعليمات الدخول بعد نجاح الدفع.",
+        ),
+    )
+    title, guest, total, link, until, note = labels
+    arrival, departure = {
+        "ar": ("الدخول", "الخروج"),
+        "en": ("Check-in", "Check-out"),
+        "fr": ("Arrivée", "Départ"),
+    }.get(lang, ("الدخول", "الخروج"))
     return (
-        f"☀️ *تأكيد طلب الحجز الصباحي*\n*Luxury Smart Apartments 🌿*\n\n"
-        f"مرحبًا {stay.guest_name}،\nتم تسجيل حجزك الصباحي بالتفاصيل التالية:\n"
-        f"🏡 {name}\n📋 المرجع: {ref}\n🕒 الدخول والخروج: {when}\n"
-        f"💳 الإجمالي: {stay.amount_sar:.2f} ريال سعودي\n\n🔗 رابط السداد الآمن:\n{url}\n\n"
-        f"يرجى إتمام الدفع قبل {expiry:%Y-%m-%d %H:%M} ({stay.time_zone}).\n"
-        "يكتمل تأكيد الحجز بعد نجاح الدفع، وستصلك تعليمات الدخول والمنزل مباشرة.\n"
-        "🛎️ فريق الدعم: +966501205651"
+        f"*{title}*\n\n{guest}: {stay.guest_name}\n🏡 {name}\n"
+        f"{ref}\n📅 {start:%Y-%m-%d}\n🕒 {arrival}: {start:%H:%M}\n"
+        f"🕒 {departure}: {end:%H:%M}\n{stay.time_zone}\n"
+        f"💳 {total}: SAR {stay.amount_sar:.2f}\n\n*{link}*\n{url}\n\n"
+        f"⏳ {until}: {expiry:%Y-%m-%d %H:%M}\n{note}"
+    )
+
+
+def notice_image(language, *, confirmed=False):
+    from importlib.resources import files
+
+    language = language if language in {"ar", "en", "fr"} else "ar"
+    kind = "confirmed" if confirmed else "payment"
+    return (
+        files("apps.reservations").joinpath("morning_assets", f"{kind}-{language}.png").read_bytes()
     )
 
 
@@ -156,19 +185,19 @@ def dispatch(delivery_id):
         )
 
 
-def queue_initial(stay):
+def queue_initial(stay, *, dispatch_async=True):
     if not configured():
         return None
     identifier = uuid.uuid5(stay.pk, "initial-payment-link")
     delivery, created = MorningPaymentLinkDelivery.objects.get_or_create(
         pk=identifier, defaults={"stay": stay, "fingerprint": fingerprint(stay)}
     )
-    if created:
+    if created and dispatch_async:
         transaction.on_commit(lambda: dispatch(delivery.pk))
     return delivery
 
 
-def resend(stay_id, request_id, *, client=None):
+def resend(stay_id, request_id, *, client=None, dispatch_async=True):
     current = MorningStay.objects.select_related("property").get(pk=stay_id)
     existing = MorningPaymentLinkDelivery.objects.filter(pk=request_id).first()
     if existing:
@@ -216,7 +245,8 @@ def resend(stay_id, request_id, *, client=None):
         delivery = MorningPaymentLinkDelivery.objects.create(
             pk=request_id, stay=stay, fingerprint=fingerprint(stay)
         )
-        transaction.on_commit(lambda: dispatch(delivery.pk))
+        if dispatch_async:
+            transaction.on_commit(lambda: dispatch(delivery.pk))
         return delivery
 
 
@@ -269,8 +299,11 @@ def send_link(delivery_id):
         recipient = normalize_phone_number(stay.guest_phone)
     try:
         with UltraMsgClient() as provider:
-            result = provider.send_text(
-                recipient=recipient, body=body, reference_id="morning-pay-" + str(delivery.pk)
+            result = provider.send_image(
+                recipient=recipient,
+                content=notice_image(stay.guest_language),
+                caption=body,
+                reference_id="morning-pay-" + str(delivery.pk),
             )
         state, error, provider_id = "accepted", "", str(result.get("id") or "")
     except UltraMsgConfigurationError:

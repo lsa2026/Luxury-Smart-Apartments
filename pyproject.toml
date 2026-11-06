@@ -37,6 +37,7 @@ dev = [
 include = ["apps*", "config*", "scheduler_runtime*"]
 
 [tool.setuptools.package-data]
+"apps.reservations" = ["morning_assets/*.png", "morning_assets/*.svg", "morning_assets/*.json"]
 "apps.core" = ["guest_terms/*.txt"]
 "apps.notifications" = ["invoice_assets/*"]
 "apps.loyalty" = ["invitation_assets/*.png", "invitation_assets/*.json"]

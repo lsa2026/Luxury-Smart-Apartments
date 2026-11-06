@@ -1,7 +1,7 @@
 from django.urls import path
 
 from apps.loyalty import invitation_api
-from apps.reservations import morning07_communications, morning07_gateway
+from apps.reservations import morning07_communications, morning07_gateway, morning_loyalty
 
 from .views import hostaway_unified_webhook
 
@@ -22,6 +22,7 @@ urlpatterns = [
         morning07_communications.read_event,
         name="morning07_event",
     ),
+    path("morning07/loyalty/", morning_loyalty.invite, name="morning07_loyalty"),
     path("morning07/send/", morning07_gateway.send_message, name="morning07_send"),
     path("morning07/receipt/", morning07_gateway.receipt, name="morning07_receipt"),
     path(
