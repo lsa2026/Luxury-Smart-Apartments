@@ -7,6 +7,7 @@ addresses. Do not truncate, fabricate, or silently rewrite billing fields.
 import re
 
 from django import forms
+from django.core.validators import MaxLengthValidator, MinLengthValidator
 
 from apps.payments.payment_link_views import PaymentLinkBillingForm
 
@@ -28,6 +29,13 @@ class MorningGuestBillingForm(PaymentLinkBillingForm):
             field = self.fields[name]
             field.min_length = minimum
             field.max_length = maximum
+            # Parent CharField creates length validators when initialized.
+            field.validators = [
+                validator
+                for validator in field.validators
+                if not isinstance(validator, (MinLengthValidator, MaxLengthValidator))
+            ]
+            field.validators.extend([MinLengthValidator(minimum), MaxLengthValidator(maximum)])
             field.help_text = rule
             field.error_messages.update({
                 "required": "هذا الحقل مطلوب لإتمام الدفع. " + rule,
@@ -42,6 +50,12 @@ class MorningGuestBillingForm(PaymentLinkBillingForm):
                 "data-morning-billing": name,
                 "title": rule,
             })
+        for name, hint in {
+            "billing_street1": "اسم الشارع ورقم المبنى",
+            "billing_city": "مثل الرياض",
+            "billing_state": "مثل منطقة الرياض",
+        }.items():
+            self.fields[name].widget.attrs["placeholder"] = hint
         self.fields["billing_postcode"].widget.attrs["placeholder"] = "12345"
         self.fields["billing_country"].help_text = (
             "اختر دولة عنوان الفوترة الفعلي، وليس بالضرورة دولة الشقة."
