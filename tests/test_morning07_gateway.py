@@ -38,6 +38,7 @@ def gateway_mock(monkeypatch):
     factory = MagicMock()
     provider = factory.return_value.__enter__.return_value
     provider.send_text.return_value = {"sent": "true", "id": "synthetic-provider"}
+    provider.send_image = provider.send_text
     monkeypatch.setattr("apps.reservations.morning07_gateway.UltraMsgClient", factory)
     return provider
 

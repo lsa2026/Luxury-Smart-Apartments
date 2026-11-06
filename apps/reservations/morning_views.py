@@ -285,6 +285,12 @@ def morning_edit(request, stay_id):
                 summary="Internal morning stay revised.",
             )
             messages.success(request, "حُفظ التعديل، وستُحدّث رسائل الحجز وتذكير الخروج.")
+            if request.POST.get("action") == "create_and_send":
+                delivery = payment_messages.queue_initial(stay, dispatch_async=False)
+                if delivery:
+                    report_payment_send(request, payment_messages.send_link(delivery.pk))
+                else:
+                    messages.error(request, "حُفظ الطلب، لكن إرسال واتساب غير مفعّل؛ لم تُرسل رسالة.")
             return redirect("notifications:morning_detail", stay_id=stay.pk)
     return render(
         request,
@@ -350,14 +356,37 @@ def morning_create(request):
                 action="morning_stay.created",
                 object_type="MorningStay",
                 object_reference=str(stay.pk),
-                summary="Morning stay created; payment notice queued when configured.",
+                summary="Morning stay saved for an explicit operations send.",
             )
+            if request.POST.get("action") == "create_and_send":
+                delivery = payment_messages.queue_initial(stay, dispatch_async=False)
+                if delivery:
+                    report_payment_send(request, payment_messages.send_link(delivery.pk))
+                else:
+                    messages.error(request, "حُفظ الطلب، لكن إرسال واتساب غير مفعّل؛ لم تُرسل رسالة.")
             return redirect("notifications:morning_detail", stay_id=stay.pk)
     return render(
         request,
         "admin/reservations/morning_create.html",
         context(request, title="إنشاء حجز صباحي", form=form),
     )
+
+
+def report_payment_send(request, state):
+    if state in {"accepted", "delivered", "read"}:
+        messages.success(
+            request, "قبلت خدمة واتساب رسالة الحجز ورابط الدفع. يمكنك مراجعة حالة الإرسال أدناه."
+        )
+    elif state in {"sending", "uncertain"}:
+        messages.warning(
+            request, "نتيجة إرسال واتساب غير محسومة؛ تحقق من وصول الرسالة قبل إعادة إرسالها."
+        )
+    else:
+        messages.error(
+            request,
+            "لم تُرسل رسالة واتساب. تعذر التحقق من التوفر أو بيانات الطلب أو الاتصال؛ "
+            "راجع حالة الإرسال ثم حاول مجددًا.",
+        )
 
 
 @operations_access_required
@@ -390,7 +419,7 @@ def morning_detail(request, stay_id):
                 request_id = payment_messages.read_form_token(
                     request.POST.get("send_token", ""), stay, request.user
                 )
-                delivery = payment_messages.resend(stay.pk, request_id)
+                delivery = payment_messages.resend(stay.pk, request_id, dispatch_async=False)
             except MorningStayError as exc:
                 messages.error(request, str(exc))
             except Exception:
@@ -404,10 +433,7 @@ def morning_detail(request, stay_id):
                     summary="Operations requested the unpaid morning payment notice.",
                     metadata={"delivery_id": str(delivery.pk)},
                 )
-                messages.success(
-                    request,
-                    "سُجل طلب إرسال تفاصيل الحجز ورابط الدفع عبر واتساب. راجع حالة الإرسال أدناه.",
-                )
+                report_payment_send(request, payment_messages.send_link(delivery.pk))
         elif action == "verify":
             attempt = stay.attempts.first()
             if attempt and attempt.provider_checkout_id:
@@ -443,6 +469,7 @@ def morning_detail(request, stay_id):
             if not send_error
             else "",
             payment_delivery=last_delivery,
+            payment_image="/static/images/morning/payment-" + stay.guest_language + ".png",
             payment_delivery_status=payment_messages.LABELS.get(last_delivery.state, "")
             if last_delivery
             else "لم يُطلب إرسال الرابط عبر واتساب بعد",

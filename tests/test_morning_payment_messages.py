@@ -42,20 +42,21 @@ def stay_without_notice(settings):
     return stay
 
 
-def test_new_stay_queues_one_combined_message_only_after_commit(
+def test_new_stay_needs_explicit_send_intent_only_after_commit(
     django_capture_on_commit_callbacks,
 ):
     with patch.object(links, "dispatch") as dispatch:
         with django_capture_on_commit_callbacks(execute=True):
             stay = create()
-            assert MorningPaymentLinkDelivery.objects.filter(stay=stay).count() == 1
+            assert not MorningPaymentLinkDelivery.objects.filter(stay=stay).exists()
+            links.queue_initial(stay)
             dispatch.assert_not_called()
         dispatch.assert_called_once()
         links.queue_initial(stay)
         assert MorningPaymentLinkDelivery.objects.count() == 1
     text = links.render_message(stay)
     assert text.count(links.public_url(stay)) == 1
-    assert "تأكيد طلب الحجز" in text and "بعد نجاح الدفع" in text
+    assert "تفاصيل الحجز الصباحي" in text and "بعد نجاح الدفع" in text
     assert "500.00" in text and "Asia/Riyadh" in text
     assert "تعليمات الدخول" in text and "gate_code" not in text
     assert not stay.communication_events.exists()
@@ -173,7 +174,7 @@ def test_accepted_send_is_once_per_intent_and_does_not_confirm_admission(setting
     stay = stay_without_notice(settings)
     delivery = links.queue_initial(stay)
     provider = Mock()
-    provider.send_text.return_value = {"sent": "true", "id": "synthetic-message"}
+    provider.send_image.return_value = {"sent": "true", "id": "synthetic-message"}
     with (
         patch.object(links, "verify_window", return_value={}),
         patch.object(links, "UltraMsgClient") as gateway,
@@ -181,10 +182,10 @@ def test_accepted_send_is_once_per_intent_and_does_not_confirm_admission(setting
         gateway.return_value.__enter__.return_value = provider
         assert links.send_link(delivery.pk) == "accepted"
         assert links.send_link(delivery.pk) == "accepted"
-    provider.send_text.assert_called_once()
-    args = provider.send_text.call_args.kwargs
+    provider.send_image.assert_called_once()
+    args = provider.send_image.call_args.kwargs
     assert args["recipient"] == stay.guest_phone
-    assert args["body"].count(links.public_url(stay)) == 1
+    assert args["caption"].count(links.public_url(stay)) == 1
     assert args["reference_id"] == "morning-pay-" + str(delivery.pk)
     stay.refresh_from_db()
     assert stay.status == "open" and not stay.paid_at
@@ -199,10 +200,10 @@ def test_timeout_is_uncertain_and_task_replay_never_posts_twice(settings):
         patch.object(links, "UltraMsgClient") as gateway,
     ):
         provider = gateway.return_value.__enter__.return_value
-        provider.send_text.side_effect = UltraMsgConnectionError()
+        provider.send_image.side_effect = UltraMsgConnectionError()
         assert links.send_link(delivery.pk) == "uncertain"
         assert links.send_link(delivery.pk) == "uncertain"
-        assert provider.send_text.call_count == 1
+        assert provider.send_image.call_count == 1
 
 
 @pytest.mark.parametrize("change", ["expired", "paid", "phone", "unavailable"])
@@ -231,7 +232,7 @@ def test_ui_csrf_signed_intent_duplicate_click_and_later_resend(settings):
     url = reverse("notifications:morning_detail", args=[stay.pk])
     page = client.get(url)
     token = page.context["send_token"]
-    assert "فحص التوفر وإرسال الحجز ورابط الدفع" in page.content.decode()
+    assert "إرسال الحجز ورابط الدفع عبر واتساب" in page.content.decode()
     strict = Client(enforce_csrf_checks=True)
     strict.force_login(user)
     assert strict.post(url, {"action": "send_payment_link", "send_token": token}).status_code == 403
@@ -271,7 +272,7 @@ def test_postgres_parallel_tasks_send_one_message(settings):
         delivery = links.queue_initial(stay)
     barrier = Barrier(2)
     provider = Mock()
-    provider.send_text.return_value = {"sent": "true", "id": "synthetic-one"}
+    provider.send_image.return_value = {"sent": "true", "id": "synthetic-one"}
 
     def check(*args, **kwargs):
         barrier.wait(timeout=10)
@@ -292,7 +293,7 @@ def test_postgres_parallel_tasks_send_one_message(settings):
         with ThreadPoolExecutor(max_workers=2) as pool:
             states = list(pool.map(run, range(2)))
     assert all(state in {"sending", "accepted"} for state in states)
-    assert provider.send_text.call_count == 1
+    assert provider.send_image.call_count == 1
 
 
 def test_fingerprint_survives_database_timezone_and_decimal_normalization(settings):
@@ -336,7 +337,7 @@ def test_started_unfinished_request_renews_sends_and_completes_payment(
         assert links.public_url(stay) == original_url
         require_payable(stay)
         provider = Mock()
-        provider.send_text.return_value = {"sent": "true", "id": "synthetic-renewed"}
+        provider.send_image.return_value = {"sent": "true", "id": "synthetic-renewed"}
         with (
             patch.object(links, "verify_window", return_value={}) as check,
             patch.object(links, "UltraMsgClient") as client,
@@ -420,3 +421,79 @@ def test_started_renewal_runs_actual_availability_rules_without_weakening_new_cr
                     )
                 },
             )
+
+
+def test_send_button_performs_provider_post_now_and_reports_acceptance_without_queue(settings):
+    stay = stay_without_notice(settings)
+    client = Client()
+    client.force_login(stay.created_by)
+    url = reverse("notifications:morning_detail", args=[stay.pk])
+    page = client.get(url)
+    values = {"action": "send_payment_link", "send_token": page.context["send_token"]}
+    with (
+        patch.object(links, "verify_window", return_value={}),
+        patch.object(links, "UltraMsgClient") as remote,
+        patch.object(links, "dispatch") as dispatch,
+    ):
+        provider = remote.return_value.__enter__.return_value
+        provider.send_image.return_value = {"sent": "true", "id": "synthetic-live-button"}
+        assert client.post(url, values).status_code == 302
+        assert client.post(url, values).status_code == 302
+        assert provider.send_image.call_count == 1
+        dispatch.assert_not_called()
+    delivery = stay.payment_link_deliveries.get()
+    assert delivery.state == "accepted" and delivery.provider_id == "synthetic-live-button"
+    assert "قبلت خدمة واتساب" in client.get(url).content.decode()
+    assert not stay.communication_events.exists()
+
+
+def test_create_send_button_is_one_explicit_branded_provider_send(settings):
+    from tests.test_manual_booking_operations_phase61 import owner
+    from tests.test_morning_stays import property_and_remote, window
+
+    property_obj, source = property_and_remote()
+    actor = owner()
+    client = Client()
+    client.force_login(actor)
+    start, _ = window()
+    url = reverse("notifications:morning_create")
+    request_id = client.get(url).context["form"].initial["request_id"]
+    data = dict(
+        request_id=request_id,
+        property=property_obj.pk,
+        date=start.date(),
+        start_time="01:00",
+        end_time="11:00",
+        guest_name="Synthetic Guest",
+        guest_phone="+16502530000",
+        guest_email="morning@example.invalid",
+        guests=1,
+        amount_sar="500",
+        action="create_and_send",
+    )
+    with (
+        patch("apps.reservations.morning_stays.HostawayClient") as remote,
+        patch.object(links, "UltraMsgClient") as client_mock,
+        patch.object(links, "dispatch") as dispatch,
+    ):
+        remote.return_value.__enter__.return_value = source
+        provider = client_mock.return_value.__enter__.return_value
+        provider.send_image.return_value = {"sent": "true", "id": "synthetic-create-send"}
+        assert client.post(url, data).status_code == 302
+        assert client.post(url, data).status_code == 302
+        assert provider.send_image.call_count == 1
+        dispatch.assert_not_called()
+    stay = MorningStay.objects.get()
+    assert stay.payment_link_deliveries.get().state == "accepted"
+    assert not stay.communication_events.exists()
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_branded_caption_fits_provider_at_maximum_names(settings, language):
+    stay = stay_without_notice(settings)
+    stay.guest_name = "ا" * 200
+    stay.guest_language = language
+    setattr(stay.property, "name_" + language, "A" * 255)
+    settings.SITE_BASE_URL = "https://luxurysmartapartments.com"
+    assert len(links.render_message(stay).encode("utf-16-le")) // 2 <= 1024
+    assert links.notice_image(language).startswith(b"\x89PNG")

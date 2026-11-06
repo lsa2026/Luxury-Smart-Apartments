@@ -1,0 +1,31 @@
+{
+  "figma_file": "6VEwxZ6njfm9FTQG2sE6rt",
+  "figma_node": "283:54",
+  "logo_geometry": [
+    160,
+    160
+  ],
+  "colors": [
+    "#faf8f2",
+    "#0e4138",
+    "#c7a05a"
+  ],
+  "fonts": [
+    "Amiri Bold",
+    "Cairo",
+    "Inter"
+  ],
+  "assets": {
+    "confirmed-en.png": "1ca516a5803529aeec7ee1ffc3389a6d82799248ac5cbda0f8a76b6f4f52b40c",
+    "confirmed-ar.png": "ec950e842fab42b6226ffe1c55930c81ecc88ce8b68d231f965dde9e0f88aae8",
+    "payment-ar.png": "1ae56fe8054dce814cfb2f9dce4603ddea11e91796eaf4b15406198b3cd01ac8",
+    "confirmed-fr.png": "b3dd2cf1bb630b79563dd2f55b577bbb666057a0828b5bd512f4e50dec3955ec",
+    "payment-fr.png": "70f7e271df0cadcb3873c42bc06048e4b64471b4c58ca5387831b4a26f6dfca9",
+    "payment-en.png": "da583735f80b0959417206f89ccf975341cdbe5399dfc43fb14357d3ae88920f",
+    "approved-logo.svg": "88b87617e5044b11dd468f6964015be24463ec0e20478bce5b9e5f766acec255"
+  },
+  "fonts_sources": [
+    "https://github.com/google/fonts/tree/main/ofl/amiri",
+    "https://github.com/google/fonts/tree/main/ofl/cairo"
+  ]
+}
