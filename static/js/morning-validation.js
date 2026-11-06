@@ -46,7 +46,7 @@ export function initMorningValidation(form) {
         field.setCustomValidity('');
         let error = morningError(field.name, field.value, country(), regions);
         const partialBilling = fields.some(candidate => candidate.name.startsWith('billing_') && candidate.name !== 'billing_country' && candidate.value.trim());
-        if (!error && partialBilling && field.name.startsWith('billing_') && !field.value.trim()) error = 'أكمل هذا الجزء من عنوان الفوترة، أو اترك العنوان كله لاستكماله من الضيف.';
+        if (!error && partialBilling && field.name.startsWith('billing_') && !field.value.trim()) error = field.required ? 'أكمل هذا الجزء من عنوان الفوترة للمتابعة.' : 'أكمل هذا الجزء من عنوان الفوترة، أو اترك العنوان كله لاستكماله من الضيف.';
         if (!error && !field.validity.valid) {
             const label = field.closest('.morning-field')?.querySelector('label')?.textContent.replace('*', '').trim() || 'الحقل';
             if (field.validity.valueMissing) error = `أدخل ${label} للمتابعة.`;

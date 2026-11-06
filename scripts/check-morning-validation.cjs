@@ -25,6 +25,13 @@ const path = require('node:path');
                 const rule = page.locator('#id_billing_postcode_rule');
                 if (!(await rule.isVisible()) || !(await rule.innerText()).includes('5 أرقام')) throw new Error('Persistent rule missing');
                 if (await rule.evaluate(el=>Number(getComputedStyle(el).fontWeight)) < 600) throw new Error('Rule not bold');
+                // The form's real submit listener must prevent the invalid POST.
+                await postcode.evaluate(el => el.form.addEventListener('submit', event => {
+                    el.form.dataset.invalidPrevented = String(event.defaultPrevented);
+                    event.preventDefault(); // Also prevent every valid synthetic POST.
+                }));
+                await postcode.evaluate(el => el.form.requestSubmit());
+                if (await postcode.evaluate(el => el.form.dataset.invalidPrevented) !== 'true') throw new Error('Invalid submit was not prevented');
                 await page.screenshot({path:path.join(output,`${name}-validation-error-${width}.png`), fullPage:true});
                 await postcode.fill('13221');
                 if ((await error.innerText()).trim()) throw new Error('Corrected postcode error did not clear');
