@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
 {% block content_title %}{% endblock %}
 {% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% if not editing %}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endif %}{% endblock %}
 {% block content %}

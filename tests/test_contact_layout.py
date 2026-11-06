@@ -22,7 +22,7 @@ def _standalone(html):
         if not url.startswith("/static/"):
             return ""
         filename = finders.find(url.removeprefix("/static/"))
-        if not filename:
+        if not filename or not filename.endswith(".css"):
             return ""
         source = Path(filename)
 

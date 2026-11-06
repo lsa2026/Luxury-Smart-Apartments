@@ -5,13 +5,19 @@ from types import SimpleNamespace
 from django.conf import settings
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone, translation
 from django.views import View
 
 from apps.core.guest_documents import guest_documents
+from apps.reservations.address_places import (
+    CheckoutAddressView,
+    make_address_ticket,
+    places_enabled,
+)
 from apps.reservations.morning_billing import saved_billing
 from apps.reservations.morning_stays import MorningStayError
-from apps.reservations.security import is_ip_rate_limited
+from apps.reservations.security import is_ip_rate_limited, session_key_hash
 
 from .hyperpay.exceptions import HyperPayError
 from .models import MorningPaymentAttempt
@@ -26,6 +32,7 @@ class MorningPaymentView(View):
     def dispatch(self, request, token):
         if not settings.HYPERPAY_ENABLED:
             raise Http404
+        self.token = token
         self.stay = resolve_token(token)
         if self.stay is None:
             raise Http404
@@ -40,18 +47,28 @@ class MorningPaymentView(View):
             payable = True
         except HyperPayError:
             payable = False
-        return render(
-            request,
-            "payments/morning_payment.html",
-            {
-                "stay": self.stay,
-                "payable": payable,
-                "form": form or PaymentLinkBillingForm(default_country_code="SA"),
-                "saved_billing": saved_billing(self.stay),
-                "guest_documents": guest_documents("ar"),
-                "error": error,
-            },
-        )
+        address = saved_billing(self.stay)
+        context = {
+            "stay": self.stay,
+            "payable": payable,
+            "form": form or PaymentLinkBillingForm(default_country_code="SA"),
+            "saved_billing": address,
+            "guest_documents": guest_documents("ar"),
+            "current_language_code": "ar",
+            "error": error,
+            "address_places_enabled": payable and not address and places_enabled(),
+        }
+        if context["address_places_enabled"]:
+            context.update(
+                address_places_ticket=make_address_ticket(
+                    morning_address_scope(request, self.stay)
+                ),
+                address_suggestions_url=reverse(
+                    "payments:morning_address_suggestions", args=[self.token]
+                ),
+                address_details_url=reverse("payments:morning_address_details", args=[self.token]),
+            )
+        return render(request, "payments/morning_payment.html", context)
 
     def get(self, request, token):
         return self.page(request)
@@ -138,3 +155,30 @@ class MorningPaymentResultView(View):
         return private_response(
             render(request, "payments/morning_result.html", {"message": message})
         )
+
+
+def morning_address_scope(request, stay):
+    # No guest identity or bearer token is sent to the provider.
+    return SimpleNamespace(
+        pk=f"morning-payment:{stay.pk}", session_key_hash=session_key_hash(request)
+    )
+
+
+class MorningPaymentAddressView(CheckoutAddressView):
+    def dispatch(self, request, reference):
+        if not settings.HYPERPAY_ENABLED:
+            raise Http404
+        self.stay = resolve_token(reference)
+        if self.stay is None or saved_billing(self.stay):
+            raise Http404
+        try:
+            require_payable(self.stay)
+        except HyperPayError as exc:
+            raise Http404 from exc
+        request._disable_google_integrations = True
+        request.LANGUAGE_CODE = "ar"
+        with translation.override("ar"):
+            return private_response(super().dispatch(request, reference), form_page=True)
+
+    def get_address_scope(self, request, reference):
+        return morning_address_scope(request, self.stay)

@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load presentation tz static %}
-{% block extrastyle %}{{ block.super }}<style>
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><style>
 .morning-payment-send { margin-block: 1.5rem; padding-block: 1rem; border-block: 1px solid #ddd3c3; }
 .morning-payment-send summary { min-height: 44px; cursor: pointer; padding-block: .75rem; }
 .morning-payment-preview { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; padding: 1rem; }
@@ -35,7 +35,7 @@
     <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">تحديث حالة السداد</button>{% if stay.status != 'cancelled' %}{% if stay.paid_at %}<label><input type="checkbox" name="confirm_paid_cancellation" value="yes"> أؤكد إلغاء الإقامة وإيقاف رسائلها المستقبلية. الاسترداد المالي يُراجع بصورة مستقلة.</label>{% endif %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الحجز</button>{% endif %}</form>
     <p>تسلسل الرسائل بعد الدفع: {% with event=stay.latest_communication_event %}{% if event %}{% if event.state == 'accepted' %}استلمت منصة التواصل التحديث{% elif event.state == 'superseded' %}يوجد تحديث أحدث{% else %}بانتظار الإرسال أو إعادة المحاولة{% endif %}{% else %}لم يُنشأ حدث تواصل مؤكد{% endif %}{% endwith %}</p>
   </section>
-  <section class="lsa-panel"><h2>عنوان الفوترة من الإدارة</h2><p>أدخل عنوان بطاقة الضيف الحقيقي؛ سيظهر له للمراجعة، وتبقى الموافقة على الشروط مسؤوليته.</p><form method="post" class="lsa-manual-booking-form">{% csrf_token %}{% if address_places_enabled %}{% include "reservations/_address_places.html" %}{% endif %}{{ billing_form.as_p }}<button class="lsa-btn" name="action" value="save_billing">حفظ عنوان الفوترة</button></form></section>
+  <section class="lsa-panel"><h2>عنوان الفوترة من الإدارة</h2><p>أدخل عنوان بطاقة الضيف الحقيقي؛ سيظهر له للمراجعة، وتبقى الموافقة على الشروط مسؤوليته.</p><form method="post" class="lsa-manual-booking-form">{% csrf_token %}{% include 'reservations/_billing_fields.html' with guest_form=billing_form %}<button class="lsa-btn" name="action" value="save_billing">حفظ عنوان الفوترة</button></form></section>
   <section class="lsa-panel"><h2>محاولات الدفع</h2><ul>{% for attempt in attempts %}<li>{{ attempt.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }} — {{ attempt.status }}{% if attempt.failure_code %} — تحتاج مراجعة{% endif %}</li>{% empty %}<li>لم تبدأ محاولة دفع.</li>{% endfor %}</ul></section>
 </main>
 {% endblock %}
