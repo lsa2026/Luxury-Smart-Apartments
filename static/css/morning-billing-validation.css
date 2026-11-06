@@ -1,0 +1,30 @@
+.morning-billing-rule {
+  display: block;
+  margin: 0.35rem 0 0;
+  color: #214d44;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.morning-billing-live-error {
+  margin: 0.35rem 0 0;
+  color: #a52f2f;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+[data-morning-billing][aria-invalid="true"] {
+  border: 2px solid #a52f2f;
+  outline-offset: 2px;
+}
+.morning-billing-rule-summary {
+  font-size: 0.95rem;
+  margin-block: 0.7rem;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .morning-billing-rule, .morning-billing-live-error {
+    font-size: 0.875rem;
+  }
+}
