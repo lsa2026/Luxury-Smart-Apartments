@@ -19,6 +19,7 @@ from apps.payments.hyperpay.exceptions import HyperPayError
 from apps.payments.morning_payments import public_url, verify_payment
 from apps.properties.models import Property
 
+from . import morning_payment_messages as payment_messages
 from .models import MorningStay
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_stays import (
@@ -349,7 +350,7 @@ def morning_create(request):
                 action="morning_stay.created",
                 object_type="MorningStay",
                 object_reference=str(stay.pk),
-                summary="Internal morning stay created; no Hostaway write or guest delivery.",
+                summary="Morning stay created; payment notice queued when configured.",
             )
             return redirect("notifications:morning_detail", stay_id=stay.pk)
     return render(
@@ -384,6 +385,29 @@ def morning_detail(request, stay_id):
                 messages.success(
                     request, "أُلغي الحجز وأوقفت رسائله المستقبلية؛ لم يُنفذ استرداد مالي."
                 )
+        elif action == "send_payment_link":
+            try:
+                request_id = payment_messages.read_form_token(
+                    request.POST.get("send_token", ""), stay, request.user
+                )
+                delivery = payment_messages.resend(stay.pk, request_id)
+            except MorningStayError as exc:
+                messages.error(request, str(exc))
+            except Exception:
+                messages.error(request, "تعذر التحقق من التوفر الآن؛ لم يُرسل رابط جديد.")
+            else:
+                record_audit(
+                    request=request,
+                    action="morning_stay.payment_link_requested",
+                    object_type="MorningStay",
+                    object_reference=str(stay.pk),
+                    summary="Operations requested the unpaid morning payment notice.",
+                    metadata={"delivery_id": str(delivery.pk)},
+                )
+                messages.success(
+                    request,
+                    "سُجل طلب إرسال تفاصيل الحجز ورابط الدفع عبر واتساب. راجع حالة الإرسال أدناه.",
+                )
         elif action == "verify":
             attempt = stay.attempts.first()
             if attempt and attempt.provider_checkout_id:
@@ -395,6 +419,12 @@ def morning_detail(request, stay_id):
         return redirect("notifications:morning_detail", stay_id=stay.pk)
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET", "POST"])
+    send_error = ""
+    try:
+        payment_messages.require_unpaid(stay)
+    except MorningStayError as exc:
+        send_error = str(exc)
+    last_delivery = stay.payment_link_deliveries.first()
     return render(
         request,
         "admin/reservations/morning_detail.html",
@@ -407,5 +437,14 @@ def morning_detail(request, stay_id):
             else "",
             attempts=stay.attempts.all(),
             expired=stay.status == "open" and stay.expires_at <= timezone.now(),
+            send_error=send_error,
+            send_token=payment_messages.form_token(stay, request.user),
+            payment_message=payment_messages.render_message(stay, preview=True)
+            if not send_error
+            else "",
+            payment_delivery=last_delivery,
+            payment_delivery_status=payment_messages.LABELS.get(last_delivery.state, "")
+            if last_delivery
+            else "لم يُطلب إرسال الرابط عبر واتساب بعد",
         ),
     )

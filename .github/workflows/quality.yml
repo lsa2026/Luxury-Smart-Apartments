@@ -52,6 +52,7 @@ jobs:
           tests/test_reservation_payment_links.py
           tests/test_payment_link_revisions.py
           tests/test_payment_link_purchase_receipts.py
+          tests/test_morning_payment_messages.py
           tests/test_morning_stays.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
@@ -140,7 +141,7 @@ jobs:
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
-        run: pytest tests/test_contact_layout.py -q
+        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py -q
 
       - name: Check contact inbox layouts on phone and tablet
         env:
