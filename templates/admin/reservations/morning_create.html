@@ -1,8 +1,8 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/morning-billing-validation.css' %}">{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% if not editing %}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endif %}{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/morning-billing-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% if not editing %}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>{{ title }}</h1><p>دخول بعد منتصف الليل وخروج حتى ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
@@ -26,7 +26,7 @@
       </section>
       {% endif %}
       {% if not editing and address_places_enabled %}{% include "reservations/_address_places.html" %}{% endif %}
-      <div class="lsa-form-grid">{% for field in form.visible_fields %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div>
+      <div class="lsa-form-grid">{% for field in form.visible_fields %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="morning-billing-rule"{% if field.name|slice:":8" == "billing_" %} id="{{ field.auto_id }}_rule"{% endif %}>{{ field.help_text }}</p>{% endif %}{{ field.errors }}</div>{% endfor %}</div>
       {% if editing %}<p>سيُرسل تحديث الحجز وتُحدّث التذكيرات بحسب بيانات الحجز الجديدة.</p>{% else %}<p>رابط السداد ثابت دون مهلة انتهاء زمنية، ويعاد فحص التوفر قبل الدفع. أدخل عنوان الفوترة المرتبط ببطاقة الضيف ليكتفي بمراجعته والموافقة على الشروط. فتح الرابط وحده لا يحصّل مبلغًا.</p>{% endif %}
       <button type="submit" class="lsa-btn lsa-btn--gold"{% if not editing %} name="action" value="create_and_send"{% endif %}>{% if editing %}حفظ تعديل الحجز{% else %}إرسال تفاصيل الحجز ورابط الدفع إلى الضيف عبر واتساب{% endif %}</button>
     </form>
