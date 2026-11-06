@@ -1,0 +1,23 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const source = fs.readFileSync('static/js/morning-validation.js', 'utf8');
+const api = import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+test('morning postcode, guest and region boundaries give actionable errors', async () => {
+    const {morningError} = await api;
+    const regions = {'01': ['الرياض', 'Riyadh']};
+    for (const invalid of ['AbulazizAlsulami', 'Road', '1234', '١٣٢٢١']) assert.match(morningError('billing_postcode', invalid, 'SA'), /5/);
+    assert.equal(morningError('billing_postcode', '13221', 'SA'), '');
+    assert.equal(morningError('billing_postcode', 'SW1A 1AA', 'GB'), '');
+    assert.match(morningError('billing_postcode', '<script>', 'GB'), /وسوم/);
+    assert.match(morningError('billing_city', 'R'.repeat(46), 'SA'), /45/);
+    assert.match(morningError('billing_street1', 'x'.repeat(51), 'SA'), /50/);
+    assert.match(morningError('guest_name', 'A'.repeat(51) + ' Guest', 'SA'), /50/);
+    assert.equal(morningError('guest_name', 'ضيف تجريبي', 'SA'), '');
+    assert.match(morningError('guest_email', 'not-an-email', 'SA'), /البريد|بريد/);
+    assert.match(morningError('guest_phone', '0501234567', 'SA'), /دولي/);
+    assert.equal(morningError('billing_state', 'Riyadh Province', 'SA', regions), '');
+    assert.equal(morningError('billing_state', 'SA-01', 'SA', regions), '');
+    assert.match(morningError('billing_state', 'Unknown Province', 'SA', regions), /01/);
+    assert.equal(morningError('billing_state', 'US-NY', 'US', regions), '');
+});

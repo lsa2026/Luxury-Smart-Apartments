@@ -1,3 +1,4 @@
+{% if guest_form.morning_hints %}{% include "reservations/_morning_billing_fields.html" %}{% else %}
 {% load i18n %}
 <div class="guest-journey__billing-note">
     <span aria-hidden="true">✓</span>
@@ -31,3 +32,5 @@
         {% for error in guest_form.billing_postcode.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
     </div>
 </div>
+
+{% endif %}

@@ -11,7 +11,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.accounts.access import operations_access_required
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
 from apps.notifications.services.audit import record_audit
@@ -32,6 +31,7 @@ from .morning_stays import (
     validate_window,
     verify_window,
 )
+from .morning_validation import MorningGuestForm, clean_name, clean_phone, decorate_field
 
 
 class MorningAvailabilityForm(forms.Form):
@@ -161,13 +161,9 @@ class MorningStayForm(forms.Form):
         initial=time(12),
         widget=forms.TimeInput(attrs={"type": "time"}),
     )
-    guest_name = forms.CharField(label="اسم الضيف الكامل", max_length=200)
-    guest_phone = forms.CharField(
-        label="رقم الجوال الدولي",
-        max_length=32,
-        widget=forms.TextInput(attrs={"dir": "ltr", "placeholder": "+966…"}),
-    )
-    guest_email = forms.EmailField(label="البريد الإلكتروني")
+    guest_name = MorningGuestForm.base_fields["guest_name"]
+    guest_phone = MorningGuestForm.base_fields["guest_phone"]
+    guest_email = MorningGuestForm.base_fields["guest_email"]
     guest_language = forms.ChoiceField(
         label="لغة رسائل الضيف",
         choices=[("ar", "العربية"), ("en", "English"), ("fr", "Français")],
@@ -186,6 +182,19 @@ class MorningStayForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
+        for name, field in MorningGuestForm().fields.items():
+            self.fields[name] = field
+            decorate_field(field, name)
+        for name, hint in {
+            "property": "اختر الشقة بعد فحص توفرها للفترة المطلوبة.",
+            "date": "تاريخ الدخول والخروج نفسه؛ بتوقيت الشقة.",
+            "start_time": "بعد منتصف الليل وقبل 12 ظهرًا؛ بتوقيت الشقة.",
+            "end_time": "بعد وقت الدخول وحتى 12 ظهرًا في اليوم نفسه.",
+            "guests": "من 1 إلى 20 ضيفًا، وبما لا يتجاوز سعة الشقة.",
+            "amount_sar": "شامل الرسوم بالريال؛ من 1 إلى 9,999,999، وبخانتين عشريتين.",
+            "guest_language": "اختر لغة رسائل الضيف: العربية أو الإنجليزية أو الفرنسية.",
+        }.items():
+            self.fields[name].help_text = hint
         if not self.stay:
             self.initial.setdefault("billing_country", "SA")
             for name, field in MorningBillingForm(default_country_code="SA").fields.items():
@@ -209,19 +218,13 @@ class MorningStayForm(forms.Form):
             )
 
     def clean_guest_phone(self):
-        try:
-            return normalize_phone_number(self.cleaned_data["guest_phone"])
-        except InvalidPhoneNumber as exc:
-            raise forms.ValidationError("أدخل رقمًا دوليًا صحيحًا.") from exc
+        return clean_phone(self.cleaned_data["guest_phone"])
 
     def clean_guest_language(self):
         return self.cleaned_data.get("guest_language") or "ar"
 
     def clean_guest_name(self):
-        name = " ".join(self.cleaned_data["guest_name"].split())
-        if len(name.split()) < 2:
-            raise forms.ValidationError("أدخل الاسم الأول واسم العائلة كما يلزمان للدفع.")
-        return name
+        return clean_name(self.cleaned_data["guest_name"])
 
     def clean(self):
         data = super().clean()

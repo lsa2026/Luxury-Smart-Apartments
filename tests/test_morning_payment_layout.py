@@ -31,6 +31,8 @@ def test_render_morning_payment_layout(tmp_path, settings):
     output.mkdir(parents=True, exist_ok=True)
     script = Path("static/js/checkout-address.js").resolve().as_uri()
     module = f'<script type="module" src="{script}"></script>'
+    validation = Path("static/js/morning-validation.js").resolve().as_uri()
+    module += f'<script type="module" src="{validation}"></script>'
     (output / "morning.html").write_text(html + module)
     create_response = client.get(reverse("notifications:morning_create"))
     guest_response = Client().get(urlsplit(public_url(stay)).path)
