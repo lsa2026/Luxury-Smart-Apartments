@@ -19,7 +19,7 @@ from apps.reservations.morning_billing import MorningGuestBillingForm, saved_bil
 from apps.reservations.morning_stays import MorningStayError
 from apps.reservations.security import is_ip_rate_limited, session_key_hash
 
-from .hyperpay.exceptions import HyperPayError
+from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .models import MorningPaymentAttempt
 from .morning_payments import create_checkout, require_payable, resolve_token, verify_payment
 from .payment_link_views import private_response
@@ -94,7 +94,11 @@ class MorningPaymentView(View):
             data.update(address)
         form = MorningGuestBillingForm(data)
         if not form.is_valid():
-            return self.page(request, form=form)
+            return self.page(
+                request,
+                form=form,
+                error="يرجى تصحيح الحقول الموضحة أدناه وفق شروط HyperPay قبل المتابعة إلى الدفع.",
+            )
         acceptance = {
             "source": "morning_payment_link",
             "documents": guest_documents("ar"),
@@ -115,6 +119,22 @@ class MorningPaymentView(View):
             )
         except MorningStayError as exc:
             return self.page(request, form=form, error=str(exc))
+        except HyperPayCheckoutError as exc:
+            known_messages = {
+                "billing_address_invalid": "عنوان الفوترة غير صحيح. راجع شروط كل حقل أو تواصل مع الإدارة لتصحيح العنوان المحفوظ.",
+                "guest_full_name_required": "اسم الضيف غير مكتمل؛ اطلب من الإدارة إدخال الاسم الأول واسم العائلة.",
+                "guest_name_exceeds_hyperpay_limit": "اسم الضيف يتجاوز حد HyperPay: 50 حرفًا لكل من الاسم الأول واسم العائلة.",
+                "guest_email_invalid": "البريد الإلكتروني المسجل غير صحيح؛ اطلب من الإدارة تصحيحه.",
+                "guest_email_exceeds_hyperpay_limit": "البريد الإلكتروني المسجل يتجاوز 128 حرفًا؛ اطلب من الإدارة تصحيحه.",
+            }
+            return self.page(
+                request,
+                form=form,
+                error=known_messages.get(
+                    str(exc),
+                    "تعذر بدء الدفع أو توجد محاولة غير محسومة. لا تدفع مجددًا قبل التحقق مع الإدارة.",
+                ),
+            )
         except (HyperPayError, ValueError):
             return self.page(
                 request,
