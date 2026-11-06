@@ -16,7 +16,7 @@ from apps.notifications.services.ultramsg import UltraMsgConnectionError
 from apps.payments.models import MorningPaymentAttempt
 from apps.reservations import morning_payment_messages as links
 from apps.reservations.models import MorningPaymentLinkDelivery, MorningStay
-from apps.reservations.morning_stays import MorningStayError
+from apps.reservations.morning_stays import MorningStayError, create_stay
 from tests.test_hyperpay import HYPERPAY_SETTINGS
 from tests.test_morning_stays import create
 
@@ -401,4 +401,22 @@ def test_started_renewal_runs_actual_availability_rules_without_weakening_new_cr
         assert remote.get_listing_calendar.call_count == 2
         # Existing renewal is allowed; creating a new request in the past still is not.
         with pytest.raises(MorningStayError, match="لم يبدأ"):
-            create(property_obj, remote, actor=stay.created_by)
+            create_stay(
+                actor=stay.created_by,
+                property_obj=property_obj,
+                request_id=uuid.uuid4(),
+                client=remote,
+                **{
+                    key: getattr(stay, key)
+                    for key in (
+                        "starts_at",
+                        "ends_at",
+                        "guest_name",
+                        "guest_phone",
+                        "guest_email",
+                        "guest_language",
+                        "guests",
+                        "amount_sar",
+                    )
+                },
+            )
