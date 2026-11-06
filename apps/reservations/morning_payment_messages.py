@@ -133,9 +133,15 @@ def render_message(stay, *, preview=False):
         ),
     )
     title, guest, total, link, until, note = labels
+    arrival, departure = {
+        "ar": ("الدخول", "الخروج"),
+        "en": ("Check-in", "Check-out"),
+        "fr": ("Arrivée", "Départ"),
+    }.get(lang, ("الدخول", "الخروج"))
     return (
         f"*{title}*\n\n{guest}: {stay.guest_name}\n🏡 {name}\n"
-        f"{ref}\n📅 {start:%Y-%m-%d}\n🕒 {start:%H:%M} → {end:%H:%M} | {stay.time_zone}\n"
+        f"{ref}\n📅 {start:%Y-%m-%d}\n🕒 {arrival}: {start:%H:%M}\n"
+        f"🕒 {departure}: {end:%H:%M}\n{stay.time_zone}\n"
         f"💳 {total}: SAR {stay.amount_sar:.2f}\n\n*{link}*\n{url}\n\n"
         f"⏳ {until}: {expiry:%Y-%m-%d %H:%M}\n{note}"
     )
