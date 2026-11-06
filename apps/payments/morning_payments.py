@@ -51,8 +51,10 @@ def require_payable(stay):
         stay.status == "open" and stay.expires_at <= timezone.now()
     ):
         raise HyperPayCheckoutError("morning_payment_closed")
-    if stay.starts_at <= timezone.now():
-        raise HyperPayCheckoutError("morning_arrival_started")
+    # A manager may renew an existing, still-unfinished stay after arrival.
+    # Unrenewed links remain closed by expires_at; no timestamp is rewritten.
+    if stay.ends_at <= timezone.now():
+        raise HyperPayCheckoutError("morning_stay_ended")
 
 
 def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=None):
@@ -69,6 +71,7 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
         stay.ends_at,
         guests=stay.guests,
         client=hostaway,
+        allow_started=True,
     )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=stay.property_id)
@@ -192,11 +195,11 @@ def verify_payment(attempt_id, *, client=None):
             attempt.status, attempt.failure_code = "review", "payment_reference_conflict"
             attempt.save()
         if attempt.status == "succeeded":
-            # A late payment stays recorded, but does not silently promise admission.
+            # Payment after checkout stays recorded for review, without promising admission.
             stay.paid_at = attempt.verified_at
             stay.status = (
                 "paid"
-                if stay.status == "processing" and stay.starts_at > timezone.now()
+                if stay.status == "processing" and stay.ends_at > timezone.now()
                 else "review"
             )
         elif attempt.status in {"review", "unknown"}:

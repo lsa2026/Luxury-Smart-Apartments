@@ -72,7 +72,11 @@ def require_unpaid(stay):
         )
     from .morning_stays import property_zone
 
-    validate_window(stay.starts_at, stay.ends_at, zone=property_zone(stay.property))
+    if stay.ends_at <= timezone.now():
+        raise MorningStayError("انتهت فترة الإقامة الصباحية؛ لا يمكن تجديد رابط الدفع.")
+    validate_window(
+        stay.starts_at, stay.ends_at, zone=property_zone(stay.property), allow_started=True
+    )
     try:
         normalize_phone_number(stay.guest_phone)
     except InvalidPhoneNumber as exc:
@@ -87,9 +91,7 @@ def render_message(stay, *, preview=False):
         timezone.localtime(value, zone) for value in (stay.starts_at, stay.ends_at, stay.expires_at)
     )
     if preview:
-        expiry = timezone.localtime(
-            min(timezone.now() + timedelta(minutes=5), stay.starts_at), zone
-        )
+        expiry = timezone.localtime(min(timezone.now() + timedelta(minutes=5), stay.ends_at), zone)
     lang = stay.guest_language
     name = getattr(stay.property, f"name_{lang}", "") or stay.property.name_en
     ref = "AM-" + str(stay.pk)[:8]
@@ -175,7 +177,12 @@ def resend(stay_id, request_id, *, client=None):
         return existing
     require_unpaid(current)
     evidence = verify_window(
-        current.property, current.starts_at, current.ends_at, guests=current.guests, client=client
+        current.property,
+        current.starts_at,
+        current.ends_at,
+        guests=current.guests,
+        client=client,
+        allow_started=True,
     )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=current.property_id)
@@ -194,7 +201,7 @@ def resend(stay_id, request_id, *, client=None):
         ):
             raise MorningStayError("توجد إقامة صباحية أخرى متداخلة؛ لم يُجدد الرابط.")
         stay.status = "open"
-        stay.expires_at = min(timezone.now() + timedelta(minutes=5), stay.starts_at)
+        stay.expires_at = min(timezone.now() + timedelta(minutes=5), stay.ends_at)
         stay.availability_checked_at = timezone.now()
         stay.availability_evidence = evidence
         stay.save(
@@ -224,7 +231,9 @@ def send_link(delivery_id):
         require_unpaid(stay)
         if stay.expires_at <= timezone.now() or fingerprint(stay) != delivery.fingerprint:
             raise MorningStayError("stale")
-        verify_window(stay.property, stay.starts_at, stay.ends_at, guests=stay.guests)
+        verify_window(
+            stay.property, stay.starts_at, stay.ends_at, guests=stay.guests, allow_started=True
+        )
     except Exception:
         MorningPaymentLinkDelivery.objects.filter(pk=delivery_id, state="queued").update(
             state="expired", last_error="eligibility_not_verified"
