@@ -15,14 +15,15 @@ from apps.reservations.address_places import (
     make_address_ticket,
     places_enabled,
 )
-from apps.reservations.morning_billing import saved_billing
+from apps.reservations.morning_billing import MorningPaymentForm, saved_billing
 from apps.reservations.morning_stays import MorningStayError
+from apps.reservations.morning_validation import MorningGuestForm, MorningInputError
 from apps.reservations.security import is_ip_rate_limited, session_key_hash
 
 from .hyperpay.exceptions import HyperPayError
 from .models import MorningPaymentAttempt
 from .morning_payments import create_checkout, require_payable, resolve_token, verify_payment
-from .payment_link_views import PaymentLinkBillingForm, private_response
+from .payment_link_views import private_response
 from .views import _render_hyperpay_checkout, _valid_hyperpay_return_token
 
 
@@ -48,11 +49,18 @@ class MorningPaymentView(View):
         except HyperPayError:
             payable = False
         address = saved_billing(self.stay)
+        guest = MorningGuestForm(
+            {name: getattr(self.stay, name) for name in MorningGuestForm.base_fields}
+        )
+        guest.is_valid()
         context = {
             "stay": self.stay,
             "payable": payable,
-            "form": form or PaymentLinkBillingForm(default_country_code="SA"),
+            "form": form
+            or MorningPaymentForm(initial=self.stay.billing_address, default_country_code="SA"),
             "saved_billing": address,
+            "invalid_saved_billing": bool(self.stay.billing_address and not address),
+            "guest_errors": guest.errors,
             "guest_documents": guest_documents("ar"),
             "current_language_code": "ar",
             "error": error,
@@ -87,7 +95,7 @@ class MorningPaymentView(View):
         address = saved_billing(self.stay)
         if address:
             data.update(address)
-        form = PaymentLinkBillingForm(data)
+        form = MorningPaymentForm(data)
         if not form.is_valid():
             return self.page(request, form=form)
         acceptance = {
@@ -108,6 +116,10 @@ class MorningPaymentView(View):
                 },
                 acceptance=acceptance,
             )
+        except MorningInputError as exc:
+            for name, errors in exc.message_dict.items():
+                form.add_error(name if name in form.fields else None, errors)
+            return self.page(request, form=form)
         except MorningStayError as exc:
             return self.page(request, form=form, error=str(exc))
         except (HyperPayError, ValueError):

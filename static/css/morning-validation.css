@@ -1,0 +1,12 @@
+.morning-field-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.morning-field { min-width: 0; margin-block: .75rem; text-align: start; }
+.morning-field > label { display: block; font-weight: 700; margin-block-end: .5rem; }
+.morning-field__control { border: 1px solid #b5aa95; border-radius: 14px; background: #fff; overflow: hidden; }
+.morning-field .morning-field__control input, .morning-field .morning-field__control select { box-sizing: border-box; width: 100%; max-width: 100%; min-height: 48px; margin: 0; padding: .8rem 1rem; border: 0; border-radius: 0; background: transparent; color: #153f35; font-size: 1rem; }
+.morning-field__control:focus-within { outline: 2px solid #986f2f; outline-offset: 2px; }
+.morning-field .morning-field__rule { padding: .65rem 1rem; margin: 0; border-top: 1px solid #e7dfd0; background: #f7f3e9; color: #25483d; font-size: .9rem; font-weight: 700; line-height: 1.8; overflow-wrap: anywhere; }
+.morning-field__error { color: #a12626; font-weight: 700; line-height: 1.7; overflow-wrap: anywhere; }
+.morning-field__error p { margin-block: .4rem; }
+.morning-field--error .morning-field__control { border: 2px solid #b12c2c; }
+.morning-validation-summary { border-inline-start: 4px solid #b12c2c; padding: .8rem 1rem; margin-block: 1rem; background: #fff3ef; color: #892626; font-weight: 700; }
+@media(max-width: 600px) { .morning-field-grid { grid-template-columns: minmax(0,1fr); } .morning-field .morning-field__rule { font-size: .95rem; } }

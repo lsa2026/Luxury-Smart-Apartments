@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load presentation tz static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><style>
+{% block extrastyle %}<link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><style>
 .morning-payment-send { margin-block: 1.5rem; padding-block: 1rem; border-block: 1px solid #ddd3c3; }
 .morning-payment-send summary { min-height: 44px; cursor: pointer; padding-block: .75rem; }
 .morning-payment-preview { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; padding: 1rem; }
@@ -9,7 +9,7 @@
 .morning-payment-send .lsa-btn { min-height: 48px; max-width: 100%; white-space: normal; margin-block: .75rem; }
 </style>{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block extrahead %}<script type="module" src="{% static 'js/morning-validation.js' %}"></script>{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><h1>تفاصيل الحجز الصباحي</h1><p>{{ stay }}</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:morning_list' %}">الحجوزات الصباحية</a></section>

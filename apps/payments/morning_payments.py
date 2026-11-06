@@ -3,6 +3,7 @@
 from datetime import timedelta
 from types import SimpleNamespace
 
+import phonenumbers
 from django.conf import settings
 from django.core import signing
 from django.core.exceptions import ValidationError
@@ -19,6 +20,7 @@ from apps.reservations.morning_stays import (
     local_inflight_conflict,
     verify_window,
 )
+from apps.reservations.morning_validation import MorningGuestForm, MorningInputError, region_code
 
 from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .hyperpay.result_codes import HyperPayStatus, map_result_code
@@ -52,6 +54,22 @@ def require_payable(stay):
         raise HyperPayCheckoutError("morning_payment_closed")
 
 
+def _checked_inputs(stay, billing_data):
+    from apps.reservations.morning_billing import MorningBillingForm, saved_billing
+
+    address = MorningBillingForm(saved_billing(stay) or billing_data)
+    guest = MorningGuestForm({name: getattr(stay, name) for name in MorningGuestForm.base_fields})
+    errors = {}
+    for form in (address, guest):
+        if not form.is_valid():
+            errors.update(dict(form.errors))
+    if not stay.amount_sar.is_finite() or not 1 <= stay.amount_sar <= 9999999:
+        errors["amount_sar"] = ["المبلغ المحفوظ غير صالح؛ تواصل مع الإدارة لتصحيحه قبل الدفع."]
+    if errors:
+        raise MorningInputError(errors)
+    return dict(address.cleaned_data), dict(guest.cleaned_data)
+
+
 def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=None):
     stay = MorningStay.objects.select_related("property").get(pk=stay_id)
     require_payable(stay)
@@ -60,6 +78,7 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
         "house_rules": True,
     }:
         raise HyperPayCheckoutError("guest_acceptance_required")
+    _checked_inputs(stay, billing_data)
     evidence = verify_window(
         stay.property,
         stay.starts_at,
@@ -73,6 +92,7 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
         Property.objects.select_for_update().get(pk=stay.property_id)
         stay = MorningStay.objects.select_for_update().get(pk=stay_id)
         require_payable(stay)
+        address, guest = _checked_inputs(stay, billing_data)
         if local_inflight_conflict(stay.property, stay.starts_at, stay.ends_at):
             raise MorningStayError("بدأ طلب حجز آخر متداخل؛ يلزم مراجعة الإدارة.")
         if active_stays(
@@ -85,28 +105,32 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
                 previous.status == "pending"
                 and previous.provider_checkout_id
                 and previous.widget_integrity
+                and stay.billing_address == address
             ):
                 return previous
             raise HyperPayCheckoutError("previous_morning_collection_unresolved")
-        if stay.billing_address:
-            from apps.reservations.morning_billing import saved_billing
-
-            billing_data = saved_billing(stay)
-            if billing_data is None:
-                raise HyperPayCheckoutError("billing_address_invalid")
-        first, _, last = stay.guest_name.partition(" ")
+        first, _, last = guest["guest_name"].partition(" ")
         # Do not fabricate names or billing fields required by 3DS.
         if not last.strip():
             raise HyperPayCheckoutError("guest_full_name_required")
         payer = SimpleNamespace(
             guest_first_name=first,
             guest_last_name=last,
-            guest_email=stay.guest_email,
+            guest_email=guest["guest_email"],
             payment_amount_sar=stay.amount_sar,
-            **billing_data,
+            **(
+                address
+                | {
+                    "billing_state": region_code(
+                        address["billing_state"], address["billing_country"]
+                    )
+                }
+            ),
         )
         merchant_id = merchant_transaction_id()
         payload = build_checkout_payload(payer, merchant_id, amount=stay.amount_sar)
+        phone = phonenumbers.parse(guest["guest_phone"], None)
+        payload["customer.phone"] = f"+{phone.country_code}-{phone.national_number}"
         attempt = MorningPaymentAttempt.objects.create(
             stay=stay,
             merchant_transaction_id=merchant_id,
@@ -116,12 +140,16 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
         stay.legal_acceptance = acceptance
         stay.availability_evidence = evidence
         stay.availability_checked_at = timezone.now()
+        # A legacy invalid address can be corrected on the guest's form. Valid
+        # saved addresses still win over POST data; nothing changes before consent.
+        stay.billing_address = address
         stay.save(
             update_fields=[
                 "status",
                 "legal_acceptance",
                 "availability_evidence",
                 "availability_checked_at",
+                "billing_address",
                 "updated_at",
             ]
         )

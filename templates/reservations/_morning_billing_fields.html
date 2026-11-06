@@ -1,0 +1,9 @@
+<p class="morning-billing-note">استخدم عنوان الفوترة الحقيقي المرتبط بوسيلة الدفع. البحث عن العنوان يساعد على تعبئة الحقول؛ راجعها قبل المتابعة.</p>
+{% if address_places_enabled %}{% include 'reservations/_address_places.html' %}{% endif %}
+<div class="morning-field-grid" data-morning-billing>
+  {% include 'reservations/_morning_field.html' with field=guest_form.billing_street1 %}
+  {% include 'reservations/_morning_field.html' with field=guest_form.billing_country %}
+  {% include 'reservations/_morning_field.html' with field=guest_form.billing_city %}
+  {% include 'reservations/_morning_field.html' with field=guest_form.billing_state %}
+  {% include 'reservations/_morning_field.html' with field=guest_form.billing_postcode %}
+</div>

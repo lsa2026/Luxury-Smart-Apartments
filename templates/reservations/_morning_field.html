@@ -1,0 +1,8 @@
+<div class="morning-field{% if field.errors %} morning-field--error{% endif %}" data-morning-field>
+  <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+  <div class="morning-field__control">
+    {{ field }}
+    {% if field.help_text %}<p class="morning-field__rule" id="{{ field.id_for_label }}_rule">{{ field.help_text }}</p>{% endif %}
+  </div>
+  <div class="morning-field__error" id="{{ field.id_for_label }}_error" aria-live="polite">{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}</div>
+</div>

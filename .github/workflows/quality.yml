@@ -56,6 +56,7 @@ jobs:
           tests/test_morning_stays.py
           tests/test_morning_owner_payment_policy.py
           tests/test_morning_shared_address.py
+          tests/test_morning_billing_validation.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
           tests/test_morning_loyalty.py
@@ -153,6 +154,7 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/lsa-contact-browser" --no-save playwright@1.62.1
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-contact-layout.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-morning-validation.cjs
 
       - name: Save synthetic contact layout screenshots
         uses: actions/upload-artifact@v7.0.2
@@ -166,6 +168,9 @@ jobs:
 
       - name: Test progressive admin booking tabs and form safety
         run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
+
+      - name: Test morning input contract
+        run: node --test tests/morning-validation.test.cjs
 
       - name: Test noon morning communication contract
         run: node --test tests/morning-noon-contract.test.cjs
