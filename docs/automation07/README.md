@@ -141,3 +141,15 @@ replacement of the two literal sentences; the 01–06 templates are unchanged.
 Release rollback: redeploy the previous website/worker commit, leave the additive
 0027 delivery table intact for audit, and do not replay queued or uncertain sends.
 No scheduled job was added. Tests use synthetic guests and mocked providers only.
+
+### Unfinished existing stays — owner clarification, 6 November 2026
+
+Explicit manager resends can now renew an unpaid existing stay after its original
+arrival time, provided the actual checkout has not passed. Live availability,
+other allocations, payment-state and recipient checks still apply. The five-minute
+renewal is capped at checkout. Unrenewed expired links remain closed; new booking
+creation still requires a future arrival. Arrival, checkout and the approved price
+are retained. The payment page and checkout revalidate the started window, and a
+verified payment while it remains unfinished confirms admission and triggers the
+existing instructions event. A payment received after checkout remains recorded
+for review. No historical send, payment or guest action is performed by deployment.

@@ -21,7 +21,7 @@
       {% if payment_delivery %}<p>آخر طلب إرسال: {{ payment_delivery.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</p>{% endif %}
       {% if send_error %}<p>{{ send_error }}</p>{% else %}
         <p>رسالة واحدة تتضمن تفاصيل الطلب والمبلغ ورابط الدفع. بعد نجاح الدفع تُرسل تعليمات الدخول والمنزل تلقائيًا.</p>
-        <details><summary>معاينة نص الرسالة</summary><div class="morning-payment-preview" dir="auto">{{ payment_message }}</div><p>عند الإرسال يُحدّث الموعد النهائي في الرسالة بعد إعادة فحص التوفر. المهلة خمس دقائق أو حتى وقت الدخول، أيهما أقرب.</p></details>
+        <details><summary>معاينة نص الرسالة</summary><div class="morning-payment-preview" dir="auto">{{ payment_message }}</div><p>عند الإرسال يُحدّث الموعد النهائي في الرسالة بعد إعادة فحص التوفر. المهلة خمس دقائق أو حتى وقت الخروج، أيهما أقرب. يمكن إعادة إرسال الطلب غير المدفوع ما دامت الإقامة لم تنتهِ والتوفر متحققًا.</p></details>
         <form method="post">{% csrf_token %}<input type="hidden" name="send_token" value="{{ send_token }}"><button class="lsa-btn" type="submit" name="action" value="send_payment_link">{% if payment_delivery %}إعادة فحص التوفر وإرسال رابط الدفع{% else %}فحص التوفر وإرسال الحجز ورابط الدفع{% endif %}</button></form>
       {% endif %}
     </section>
