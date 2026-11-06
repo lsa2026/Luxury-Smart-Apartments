@@ -161,13 +161,24 @@ class MorningStayForm(forms.Form):
         initial=time(12),
         widget=forms.TimeInput(attrs={"type": "time"}),
     )
-    guest_name = forms.CharField(label="اسم الضيف الكامل", max_length=200)
+    guest_name = forms.CharField(
+        label="اسم الضيف الكامل",
+        max_length=101,
+        help_text="الاسم الأول واسم العائلة، كل جزء من 1 إلى 50 حرفًا، كما سيظهران في الدفع.",
+        widget=forms.TextInput(attrs={"placeholder": "الاسم الأول ثم اسم العائلة", "maxlength": "101"}),
+    )
     guest_phone = forms.CharField(
         label="رقم الجوال الدولي",
         max_length=32,
-        widget=forms.TextInput(attrs={"dir": "ltr", "placeholder": "+966…"}),
+        help_text="رقم دولي صحيح مع مفتاح الدولة، مثل +966501234567.",
+        widget=forms.TextInput(attrs={"dir": "ltr", "placeholder": "+966501234567"}),
     )
-    guest_email = forms.EmailField(label="البريد الإلكتروني")
+    guest_email = forms.EmailField(
+        label="البريد الإلكتروني",
+        max_length=128,
+        help_text="بريد إلكتروني صحيح لا يتجاوز 128 حرفًا.",
+        widget=forms.EmailInput(attrs={"placeholder": "guest@example.com", "maxlength": "128"}),
+    )
     guest_language = forms.ChoiceField(
         label="لغة رسائل الضيف",
         choices=[("ar", "العربية"), ("en", "English"), ("fr", "Français")],
@@ -219,8 +230,13 @@ class MorningStayForm(forms.Form):
 
     def clean_guest_name(self):
         name = " ".join(self.cleaned_data["guest_name"].split())
-        if len(name.split()) < 2:
+        first, _, surname = name.partition(" ")
+        if not first or not surname.strip():
             raise forms.ValidationError("أدخل الاسم الأول واسم العائلة كما يلزمان للدفع.")
+        if len(first) > 50 or len(surname.strip()) > 50:
+            raise forms.ValidationError(
+                "لا يتجاوز الاسم الأول 50 حرفًا، ولا يتجاوز اسم العائلة 50 حرفًا حسب HyperPay."
+            )
         return name
 
     def clean(self):
