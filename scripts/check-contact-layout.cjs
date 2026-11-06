@@ -13,9 +13,26 @@ const { pathToFileURL } = require("node:url");
     for (const width of [390, 820, 1366]) {
       const page = await browser.newPage({ viewport: { width, height: 900 }, colorScheme: "light" });
       await page.route(/^https?:/, route => route.abort());
-      for (const name of ["detail", "list", "morning"]) {
+      await page.addInitScript(() => {
+        // Every address response is synthetic; no network request is made.
+        window.fetch = async (_url, options) => {
+          const body = JSON.parse(options.body);
+          return { ok: true, status: 200, json: async () => body.input
+            ? { suggestions: [{ place_id: "synthetic-place", label: "10 Test Road, Riyadh" }] }
+            : { fields: { billing_street1: "10 Test Road", billing_city: "Riyadh", billing_state: "Riyadh", billing_country: "SA", billing_postcode: "12345" }, next_ticket: "synthetic-only" } };
+        };
+      });
+      for (const name of ["detail", "list", "morning", "morning-create", "morning-guest"]) {
         await page.goto(pathToFileURL(path.join(output, `${name}.html`)).href);
-        await page.locator(name === "morning" ? "main.lsa-operations-screen" : "main.lsa-contact").waitFor();
+        await page.locator(name.startsWith("morning") ? "[data-checkout-address]" : "main.lsa-contact").waitFor();
+        if (name.startsWith("morning")) {
+          const search = page.locator("[data-address-search]");
+          await search.fill("Test road");
+          await page.locator("[data-address-options] button").click();
+          await page.waitForFunction(() => document.querySelector('[name="billing_city"]').value === "Riyadh");
+          const street = await page.locator('[name="billing_street1"]').inputValue();
+          if (street !== "10 Test Road") throw new Error("Shared address mapping failed");
+        }
         const layout = await page.evaluate(() => ({
           width: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,

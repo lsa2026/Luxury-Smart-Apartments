@@ -55,6 +55,7 @@ jobs:
           tests/test_morning_payment_messages.py
           tests/test_morning_stays.py
           tests/test_morning_owner_payment_policy.py
+          tests/test_morning_shared_address.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
           tests/test_morning_loyalty.py

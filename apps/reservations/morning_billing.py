@@ -32,8 +32,9 @@ def address_context(request):
     from .address_places import make_address_ticket, places_enabled
 
     if not places_enabled():
-        return {}
+        return {"current_language_code": "ar"}
     return {
+        "current_language_code": "ar",
         "address_places_enabled": True,
         "address_places_ticket": make_address_ticket(address_scope(request)),
         "address_suggestions_url": reverse("notifications:morning_address", args=["suggestions"]),

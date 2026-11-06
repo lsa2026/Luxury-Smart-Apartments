@@ -102,3 +102,18 @@ entry still works if the service is disabled or limited. This requires no paymen
 - [Session tokens](https://developers.google.com/maps/documentation/places/web-service/place-session-tokens)
 - [Attribution and end-user-address exception](https://developers.google.com/maps/documentation/places/web-service/policies)
 - [HyperPay billing formats (AN16 postcode; AN50 state)](https://wordpresshyperpay.docs.oppwa.com/reference/parameters)
+
+
+## Shared morning checkout and operations (6 November 2026)
+
+Morning payment links use this same component, CSS, JavaScript, Places service,
+address mapping and request limits. A separate thin capability adapter binds
+tickets to the morning stay and browser session, checks payment eligibility,
+and rejects paid/cancelled/review collections or an address already prepared by
+operations. Search never creates a booking, charge or acceptance.
+
+Operations create/detail/address-validation pages load the same component and
+assets. Operations search requires the existing operations role, session and
+CSRF checks. Guest terms remain independently accepted by the guest. Synthetic
+responsive checks exercise search selection and field mapping for the admin
+create/detail and guest payment pages, with mocked fetch and all HTTP blocked.
