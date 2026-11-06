@@ -32,6 +32,19 @@ const { pathToFileURL } = require("node:url");
           await page.waitForFunction(() => document.querySelector('[name="billing_city"]').value === "Riyadh");
           const street = await page.locator('[name="billing_street1"]').inputValue();
           if (street !== "10 Test Road") throw new Error("Shared address mapping failed");
+          if (name === "morning-guest") {
+            const state = page.locator('[name="billing_state"]');
+            await state.fill("الرياض");
+            if (await state.getAttribute("aria-invalid") !== "true") throw new Error("Morning immediate validation missing");
+            if (!(await page.locator("#id_billing_state_error").innerText()).includes("Riyadh")) throw new Error("Morning correction hint missing");
+            const before = page.url();
+            await page.locator('[name="terms_accepted"]').check();
+            await page.locator('[name="house_rules_accepted"]').check();
+            await page.locator('form[data-morning-validation] button[type="submit"]').click();
+            if (page.url() !== before) throw new Error("Invalid morning form submitted");
+            await state.fill("Riyadh");
+            if (await state.getAttribute("aria-invalid") !== "false") throw new Error("Corrected morning field remains blocked");
+          }
         }
         const layout = await page.evaluate(() => ({
           width: window.innerWidth,

@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
-{% block content %}<main class="lsa-dashboard lsa-operations-screen" dir="rtl"><section class="lsa-panel"><h1>{{ title }}</h1><form method="post" class="lsa-manual-booking-form">{% csrf_token %}{{ form.non_field_errors }}{% include 'reservations/_billing_fields.html' with guest_form=form %}<button class="lsa-btn" name="action" value="save_billing">حفظ عنوان الفوترة</button></form></section></main>{% endblock %}
+{% block extrahead %}<script src="{% static 'js/morning-validation.js' %}" defer></script><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block content %}<main class="lsa-dashboard lsa-operations-screen" dir="rtl"><section class="lsa-panel"><h1>{{ title }}</h1><form method="post" class="lsa-manual-booking-form" data-morning-validation>{% csrf_token %}{{ form.non_field_errors }}{% include 'payments/_morning_billing_fields.html' with guest_form=form %}<button class="lsa-btn" name="action" value="save_billing">حفظ عنوان الفوترة</button></form></section></main>{% endblock %}

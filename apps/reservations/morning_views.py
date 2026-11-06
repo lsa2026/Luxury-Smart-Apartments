@@ -17,6 +17,7 @@ from apps.integrations.hostaway.exceptions import HostawayError
 from apps.notifications.services.audit import record_audit
 from apps.payments.hyperpay.exceptions import HyperPayError
 from apps.payments.morning_payments import public_url, verify_payment
+from apps.payments.morning_validation import MorningBillingFields, validate_value
 from apps.properties.models import Property
 
 from . import morning_payment_messages as payment_messages
@@ -186,6 +187,14 @@ class MorningStayForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
+        self.fields["guest_email"] = MorningBillingFields(customer=True).fields["guest_email"]
+        self.fields["guest_name"].help_text = (
+            "أدخل الاسم الأول واسم العائلة الحقيقيين. "
+            "يمكن للضيف مراجعة بيانات الدافع وتصحيحها قبل الدفع."
+        )
+        self.fields[
+            "guest_phone"
+        ].help_text = "رقم دولي صحيح يبدأ بعلامة + ورمز البلد؛ للتواصل مع الضيف."
         if not self.stay:
             self.initial.setdefault("billing_country", "SA")
             for name, field in MorningBillingForm(default_country_code="SA").fields.items():
@@ -222,6 +231,9 @@ class MorningStayForm(forms.Form):
         if len(name.split()) < 2:
             raise forms.ValidationError("أدخل الاسم الأول واسم العائلة كما يلزمان للدفع.")
         return name
+
+    def clean_guest_email(self):
+        return validate_value("guest_email", self.cleaned_data["guest_email"])
 
     def clean(self):
         data = super().clean()

@@ -1,30 +1,35 @@
 {% extends "base.html" %}
 {% load presentation static tz %}
-{% block title %}سداد الحجز الصباحي{% endblock %}
+{% block title %}{% if current_language_code == 'en' %}Morning stay payment{% else %}سداد الحجز الصباحي{% endif %}{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/morning-validation.css' %}"><script src="{% static 'js/morning-validation.js' %}" defer></script><link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content %}
-<section class="section container narrow reservation-payment" dir="rtl">
-  <h1>سداد الحجز الصباحي</h1>
-  {% if stay.paid_at %}<p class="notice">تم استلام الدفعة. لا تدفع مرة أخرى.{% if stay.status == 'review' %} يرجى تأكيد موعد الدخول مع الإدارة.{% endif %}</p>
-  {% elif not payable %}<p class="notice">الرابط غير متاح للدفع حاليًا. تواصل مع الإدارة قبل الدفع.</p>
+<section class="section container narrow reservation-payment" dir="{% if current_language_code == 'en' %}ltr{% else %}rtl{% endif %}">
+  <h1>{% if current_language_code == 'en' %}Morning stay payment{% else %}سداد الحجز الصباحي{% endif %}</h1>
+  {% if stay.paid_at %}<p class="notice">{% if current_language_code == 'en' %}Payment received. Do not pay again.{% else %}تم استلام الدفعة. لا تدفع مرة أخرى.{% endif %}{% if stay.status == 'review' %}{% if current_language_code == 'en' %} Please confirm admission with management.{% else %} يرجى تأكيد موعد الدخول مع الإدارة.{% endif %}{% endif %}</p>
+  {% elif not payable %}<p class="notice">{% if current_language_code == 'en' %}This payment link is unavailable. Contact management before paying.{% else %}الرابط غير متاح للدفع حاليًا. تواصل مع الإدارة قبل الدفع.{% endif %}</p>
+  {% if address_errors %}<div role="alert">{% if current_language_code == 'en' %}The saved billing address needs correction by management:{% else %}عنوان الفوترة المحفوظ يحتاج تصحيحًا من الإدارة:{% endif %}{% for field in address_errors %}{% if field.errors %}<p>{{ field.label }}: {{ field.errors }}</p>{% endif %}{% endfor %}</div>{% endif %}
   {% else %}
   <article class="review-panel"><h2>{{ stay.property|localized_property_name }}</h2>
-    <p>إقامة صباحية في {{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d' }}: من {{ stay.starts_at|timezone:stay.time_zone|date:'H:i' }} إلى {{ stay.ends_at|timezone:stay.time_zone|date:'H:i' }}، بتوقيت الشقة {{ stay.time_zone }}.</p>
-    <p><strong>الإجمالي شامل الرسوم: {{ stay.amount_sar|format_money:'SAR' }}</strong></p>
+    <p>{% if current_language_code == 'en' %}Morning stay on {% else %}إقامة صباحية في {% endif %}{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d' }}: {% if current_language_code == 'en' %}from {% else %}من {% endif %}{{ stay.starts_at|timezone:stay.time_zone|date:'H:i' }} {% if current_language_code == 'en' %}to{% else %}إلى{% endif %} {{ stay.ends_at|timezone:stay.time_zone|date:'H:i' }} {% if current_language_code == 'en' %}apartment time zone{% else %}بتوقيت الشقة{% endif %} {{ stay.time_zone }}.</p>
+    <p><strong>{% if current_language_code == 'en' %}Total including fees:{% else %}الإجمالي شامل الرسوم:{% endif %} {{ stay.amount_sar|format_money:'SAR' }}</strong></p>
     {% if error %}<p class="notice notice--important" role="alert">{{ error }}</p>{% endif %}
-    <form method="post" class="guest-form">{% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
-      <p>الضيف: {{ stay.guest_name }} · <bdi>{{ stay.guest_email }}</bdi> · <bdi>{{ stay.guest_phone }}</bdi></p>
-      {% if saved_billing %}<section class="review-panel"><h2>مراجعة عنوان الفوترة</h2><p>{{ saved_billing.billing_street1 }} · {{ saved_billing.billing_city }} · {{ saved_billing.billing_state }} · {{ saved_billing.billing_postcode }} · {{ saved_billing.billing_country }}</p><p>لتصحيح العنوان، تواصل مع الإدارة قبل الدفع.</p></section>
-      {% else %}<fieldset><legend>عنوان الفوترة</legend>{% include 'reservations/_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
+    <form method="post" class="guest-form" data-morning-validation>{% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
+      <p><strong>{% if current_language_code == 'en' %}Review payer details. Corrections apply to this payment. Card details are entered only in HyperPay's secure form on the next page.{% else %}راجع بيانات الدافع. التصحيح يخص هذه الدفعة. تُدخل بيانات البطاقة فقط في نموذج HyperPay الآمن في الصفحة التالية.{% endif %}</strong></p>
+      {% include 'payments/_morning_field.html' with field=form.guest_first_name %}
+      {% include 'payments/_morning_field.html' with field=form.guest_last_name %}
+      {% include 'payments/_morning_field.html' with field=form.guest_email %}
+      <p>{% if current_language_code == 'en' %}Booking guest:{% else %}الضيف:{% endif %} {{ stay.guest_name }} · <bdi>{{ stay.guest_email }}</bdi> · <bdi>{{ stay.guest_phone }}</bdi></p>
+      {% if saved_billing %}<section class="review-panel"><h2>{% if current_language_code == 'en' %}Review billing address{% else %}مراجعة عنوان الفوترة{% endif %}</h2><p>{{ saved_billing.billing_street1 }} · {{ saved_billing.billing_city }} · {{ saved_billing.billing_state }} · {{ saved_billing.billing_postcode }} · {{ saved_billing.billing_country }}</p><p>{% if current_language_code == 'en' %}Contact management to correct this address before paying.{% else %}لتصحيح العنوان، تواصل مع الإدارة قبل الدفع.{% endif %}</p></section>
+      {% else %}<fieldset><legend>{% if current_language_code == 'en' %}Billing address{% else %}عنوان الفوترة{% endif %}</legend>{% include 'payments/_morning_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
       <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
-      <div class="form-field"><label>{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label>{{ form.terms_accepted.errors }}</div>
-      <details><summary>{{ guest_documents.house_rules.title }} — يرجى مراجعة بند التدخين</summary><p>{{ guest_documents.house_rules.body|linebreaksbr }}</p></details>
-      <div class="form-field"><label>{{ form.house_rules_accepted }} {{ guest_documents.house_rules.acceptance }}</label>{{ form.house_rules_accepted.errors }}</div>
-      {{ form.documents_digest.errors }}<button class="button button--gold" type="submit">الموافقة والمتابعة إلى الدفع الآمن</button>
+      <div class="form-field"><label>{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label><p class="morning-field-help"><strong>{{ form.terms_accepted.help_text }}</strong></p><div id="id_terms_accepted_error" class="form-error" aria-live="polite">{{ form.terms_accepted.errors }}</div></div>
+      <details><summary>{{ guest_documents.house_rules.title }}{% if current_language_code == 'en' %} — please review the smoking rules{% else %} — يرجى مراجعة بند التدخين{% endif %}</summary><p>{{ guest_documents.house_rules.body|linebreaksbr }}</p></details>
+      <div class="form-field"><label>{{ form.house_rules_accepted }} {{ guest_documents.house_rules.acceptance }}</label><p class="morning-field-help"><strong>{{ form.house_rules_accepted.help_text }}</strong></p><div id="id_house_rules_accepted_error" class="form-error" aria-live="polite">{{ form.house_rules_accepted.errors }}</div></div>
+      {{ form.documents_digest.errors }}<button class="button button--gold" type="submit">{% if current_language_code == 'en' %}Accept and continue to secure payment{% else %}الموافقة والمتابعة إلى الدفع الآمن{% endif %}</button>
     </form>
   </article>{% endif %}
-  <p><a href="{% url 'core:contact' %}">التواصل مع الإدارة</a></p>
+  <p><a href="{% url 'core:contact' %}">{% if current_language_code == 'en' %}Contact management{% else %}التواصل مع الإدارة{% endif %}</a></p>
 </section>
 {% endblock %}

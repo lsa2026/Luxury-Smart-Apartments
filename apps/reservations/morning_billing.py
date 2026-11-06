@@ -1,14 +1,10 @@
 """Reuse checkout address validation; management never accepts guest terms."""
 
-from apps.payments.payment_link_views import PaymentLinkBillingForm
+from apps.payments.morning_validation import MorningBillingFields
 
 
-class MorningBillingForm(PaymentLinkBillingForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name in list(self.fields):
-            if not name.startswith("billing_"):
-                self.fields.pop(name)
+class MorningBillingForm(MorningBillingFields):
+    pass
 
 
 def saved_billing(stay):

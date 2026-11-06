@@ -1,0 +1,5 @@
+.morning-field-help { font-weight: 700; line-height: 1.65; margin-block: .5rem; color: #173c34; overflow-wrap: anywhere; }
+[data-morning-field] { min-width: 0; }
+[data-morning-field] input, [data-morning-field] select { max-width: 100%; box-sizing: border-box; }
+[data-morning-field] [aria-invalid="true"] { border: 2px solid #a12121; }
+[data-morning-error] { color: #a12121; font-weight: 700; }

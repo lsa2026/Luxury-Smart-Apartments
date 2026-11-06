@@ -24,6 +24,7 @@ from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .hyperpay.result_codes import HyperPayStatus, map_result_code
 from .hyperpay.service import HyperPayService, build_checkout_payload, merchant_transaction_id
 from .models import MorningPaymentAttempt, PaymentAttempt
+from .morning_validation import customer_values, validate_value
 
 SALT = "payments.morning-stay.v1"
 UNRESOLVED = ("created", "pending", "unknown", "review")
@@ -52,9 +53,40 @@ def require_payable(stay):
         raise HyperPayCheckoutError("morning_payment_closed")
 
 
-def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=None):
+def create_checkout(
+    stay_id, *, billing_data, acceptance, customer_data=None, client=None, hostaway=None
+):
     stay = MorningStay.objects.select_related("property").get(pk=stay_id)
     require_payable(stay)
+
+    # Validate even direct service callers before availability IO or a payment claim.
+    def validated(stay):
+        values = dict(customer_data if customer_data is not None else customer_values(stay))
+        values.update(
+            {
+                k: v
+                for k, v in (stay.billing_address or billing_data or {}).items()
+                if k.startswith("billing_")
+            }
+        )
+        try:
+            return {
+                name: validate_value(name, values.get(name))
+                for name in (
+                    "guest_first_name",
+                    "guest_last_name",
+                    "guest_email",
+                    "billing_street1",
+                    "billing_city",
+                    "billing_state",
+                    "billing_postcode",
+                    "billing_country",
+                )
+            }
+        except ValidationError as exc:
+            raise HyperPayCheckoutError("morning_customer_data_invalid") from exc
+
+    validated(stay)
     if acceptance.get("documents_digest") != documents_digest() or acceptance.get("consents") != {
         "terms": True,
         "house_rules": True,
@@ -88,25 +120,15 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
             ):
                 return previous
             raise HyperPayCheckoutError("previous_morning_collection_unresolved")
-        if stay.billing_address:
-            from apps.reservations.morning_billing import saved_billing
-
-            billing_data = saved_billing(stay)
-            if billing_data is None:
-                raise HyperPayCheckoutError("billing_address_invalid")
-        first, _, last = stay.guest_name.partition(" ")
-        # Do not fabricate names or billing fields required by 3DS.
-        if not last.strip():
-            raise HyperPayCheckoutError("guest_full_name_required")
+        values = validated(stay)
         payer = SimpleNamespace(
-            guest_first_name=first,
-            guest_last_name=last,
-            guest_email=stay.guest_email,
             payment_amount_sar=stay.amount_sar,
-            **billing_data,
+            **values,
         )
         merchant_id = merchant_transaction_id()
         payload = build_checkout_payload(payer, merchant_id, amount=stay.amount_sar)
+        # Morning fields already match the wire contract; preserve the entered region.
+        payload["billing.state"] = values["billing_state"]
         attempt = MorningPaymentAttempt.objects.create(
             stay=stay,
             merchant_transaction_id=merchant_id,
