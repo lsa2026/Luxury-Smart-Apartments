@@ -35,7 +35,10 @@ def caption(stay):
 
 def core_delivered(stay, revision):
     phone = "".join(c for c in stay.guest_phone if c.isdigit())
-    for suffix in (f"r{revision}:status", "rules:" + phone):
+    stamp = int(stay.starts_at.timestamp() * 1000)
+    guide = f"guide:{stay.property.hostaway_listing_map_id}:{stamp}:{phone}"
+    attempts = []
+    for suffix in (f"r{revision}:status", "rules:" + phone, guide):
         reference = (
             "lsa07-"
             + hashlib.md5(f"lsa07:{stay.pk}:{suffix}".encode(), usedforsecurity=False).hexdigest()
@@ -45,7 +48,9 @@ def core_delivered(stay, revision):
         ).first()
         if not attempt:
             return False
-        # Inspect this provider ID/reference only; acceptance alone is insufficient.
+        attempts.append(attempt)
+    for attempt in attempts:
+        # Access instructions, as well as status and rules, must already be delivered.
         rows = exact_receipt_messages(attempt)
         if not any(
             str(row.get("ack", "")).lower()

@@ -98,7 +98,9 @@ def test_core_delivery_checks_exact_owned_provider_receipts(request):
 
     stay = paid_stay()
     phone = stay.guest_phone.replace("+", "")
-    for suffix in ("r1:status", "rules:" + phone):
+    stamp = int(stay.starts_at.timestamp() * 1000)
+    guide = f"guide:{stay.property.hostaway_listing_map_id}:{stamp}:{phone}"
+    for suffix in ("r1:status", "rules:" + phone, guide):
         ref = (
             "lsa07-"
             + hashlib.md5(f"lsa07:{stay.pk}:{suffix}".encode(), usedforsecurity=False).hexdigest()

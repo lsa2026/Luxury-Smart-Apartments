@@ -185,7 +185,7 @@ Scenario 07 retains its paid-only admission and existing Google Contacts merge
 engine and group `contactGroups/7e2e865c083e05ce`; there is no new Google connection.
 After core delivery progress, one non-blocking HTTP node calls the website's
 signed Morning07 loyalty endpoint. That endpoint independently checks verified
-payment, current revision, unfinished stay, exact confirmation/house-rule provider
+payment, current revision, unfinished stay, exact confirmation/house-rule/access provider
 receipts, programme readiness, membership and the existing cross-channel invitation
 registry. It sends the exact approved loyalty artwork/copy, qualified for future
 eligible website stays. It never enrolls the guest or grants points. Unknown
