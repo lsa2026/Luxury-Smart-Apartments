@@ -72,10 +72,12 @@ def require_unpaid(stay):
         )
     from .morning_stays import property_zone
 
-    if stay.ends_at <= timezone.now():
-        raise MorningStayError("انتهت فترة الإقامة الصباحية؛ لا يمكن تجديد رابط الدفع.")
     validate_window(
-        stay.starts_at, stay.ends_at, zone=property_zone(stay.property), allow_started=True
+        stay.starts_at,
+        stay.ends_at,
+        zone=property_zone(stay.property),
+        allow_started=True,
+        allow_elapsed=True,
     )
     try:
         normalize_phone_number(stay.guest_phone)
@@ -87,11 +89,7 @@ def render_message(stay, *, preview=False):
     from zoneinfo import ZoneInfo
 
     zone = ZoneInfo(stay.time_zone)
-    start, end, expiry = (
-        timezone.localtime(value, zone) for value in (stay.starts_at, stay.ends_at, stay.expires_at)
-    )
-    if preview:
-        expiry = timezone.localtime(min(timezone.now() + timedelta(minutes=5), stay.ends_at), zone)
+    start, end = (timezone.localtime(value, zone) for value in (stay.starts_at, stay.ends_at))
     lang = stay.guest_language
     name = getattr(stay.property, f"name_{lang}", "") or stay.property.name_en
     ref = "AM-" + str(stay.pk)[:8]
@@ -132,7 +130,7 @@ def render_message(stay, *, preview=False):
             "التأكيد وتعليمات الدخول بعد نجاح الدفع.",
         ),
     )
-    title, guest, total, link, until, note = labels
+    title, guest, total, link, _until, note = labels
     arrival, departure = {
         "ar": ("الدخول", "الخروج"),
         "en": ("Check-in", "Check-out"),
@@ -143,7 +141,7 @@ def render_message(stay, *, preview=False):
         f"{ref}\n📅 {start:%Y-%m-%d}\n🕒 {arrival}: {start:%H:%M}\n"
         f"🕒 {departure}: {end:%H:%M}\n{stay.time_zone}\n"
         f"💳 {total}: SAR {stay.amount_sar:.2f}\n\n*{link}*\n{url}\n\n"
-        f"⏳ {until}: {expiry:%Y-%m-%d %H:%M}\n{note}"
+        f"{note}"
     )
 
 
@@ -212,6 +210,7 @@ def resend(stay_id, request_id, *, client=None, dispatch_async=True):
         guests=current.guests,
         client=client,
         allow_started=True,
+        allow_elapsed=True,
     )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=current.property_id)
@@ -259,10 +258,15 @@ def send_link(delivery_id):
     stay = delivery.stay
     try:
         require_unpaid(stay)
-        if stay.expires_at <= timezone.now() or fingerprint(stay) != delivery.fingerprint:
+        if fingerprint(stay) != delivery.fingerprint:
             raise MorningStayError("stale")
         verify_window(
-            stay.property, stay.starts_at, stay.ends_at, guests=stay.guests, allow_started=True
+            stay.property,
+            stay.starts_at,
+            stay.ends_at,
+            guests=stay.guests,
+            allow_started=True,
+            allow_elapsed=True,
         )
     except Exception:
         MorningPaymentLinkDelivery.objects.filter(pk=delivery_id, state="queued").update(
@@ -278,8 +282,7 @@ def send_link(delivery_id):
         try:
             require_unpaid(stay)
             if (
-                stay.expires_at <= timezone.now()
-                or fingerprint(stay) != delivery.fingerprint
+                fingerprint(stay) != delivery.fingerprint
                 or local_inflight_conflict(stay.property, stay.starts_at, stay.ends_at)
                 or active_stays(
                     stay.property,

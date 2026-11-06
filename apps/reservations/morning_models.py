@@ -35,7 +35,8 @@ class MorningStay(models.Model):
     amount_sar = models.DecimalField(max_digits=14, decimal_places=2)
     environment = models.CharField(max_length=10, editable=False)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.OPEN)
-    expires_at = models.DateTimeField()
+    expires_at = models.DateTimeField()  # allocation hold only, not payment-link expiry
+    billing_address = models.JSONField(default=dict, blank=True, editable=False)
     availability_checked_at = models.DateTimeField()
     availability_evidence = models.JSONField(default=dict, editable=False)
     legal_acceptance = models.JSONField(default=dict, blank=True, editable=False)

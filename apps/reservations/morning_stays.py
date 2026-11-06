@@ -31,15 +31,15 @@ def property_zone(property_obj):
     return ZoneInfo(name)
 
 
-def validate_window(starts_at, ends_at, *, zone=ZONE, allow_started=False):
+def validate_window(starts_at, ends_at, *, zone=ZONE, allow_started=False, allow_elapsed=False):
     if timezone.is_naive(starts_at) or timezone.is_naive(ends_at):
         raise MorningStayError("يلزم تحديد التاريخ والوقت والمنطقة الزمنية للشقة.")
     start, end = starts_at.astimezone(zone), ends_at.astimezone(zone)
-    if start.date() != end.date() or not time.min < start.time() < end.time() < time(12):
-        raise MorningStayError("الدخول بعد منتصف الليل والخروج قبل ١٢ ظهرًا في اليوم نفسه.")
+    if start.date() != end.date() or not time.min < start.time() < end.time() <= time(12):
+        raise MorningStayError("الدخول بعد منتصف الليل والخروج حتى ١٢ ظهرًا في اليوم نفسه.")
     if (
         (starts_at < timezone.now() and not allow_started)
-        or ends_at <= timezone.now()
+        or (ends_at <= timezone.now() and not allow_elapsed)
         or starts_at > timezone.now() + timedelta(days=14)
     ):
         raise MorningStayError("اختر وقت دخول لم يبدأ بعد، خلال الأيام الأربعة عشر المقبلة.")
@@ -112,10 +112,21 @@ def local_inflight_conflict(property_obj, start, end):
     return False
 
 
-def verify_window(property_obj, starts_at, ends_at, *, guests=1, client=None, allow_started=False):
+def verify_window(
+    property_obj,
+    starts_at,
+    ends_at,
+    *,
+    guests=1,
+    client=None,
+    allow_started=False,
+    allow_elapsed=False,
+):
     """No cache, quote, payment, reservation write, or phone-based exclusion."""
     zone = property_zone(property_obj)
-    validate_window(starts_at, ends_at, zone=zone, allow_started=allow_started)
+    validate_window(
+        starts_at, ends_at, zone=zone, allow_started=allow_started, allow_elapsed=allow_elapsed
+    )
     if (
         not property_obj.is_visible
         or not property_obj.hostaway_is_active
@@ -133,6 +144,7 @@ def verify_window(property_obj, starts_at, ends_at, *, guests=1, client=None, al
                 guests=guests,
                 client=remote,
                 allow_started=allow_started,
+                allow_elapsed=allow_elapsed,
             )
     if local_inflight_conflict(property_obj, starts_at, ends_at):
         raise MorningStayError("توجد محاولة حجز أو دفع أخرى متداخلة غير محسومة.")
@@ -248,6 +260,7 @@ def create_stay(
     guests,
     amount_sar,
     guest_language="ar",
+    billing_address=None,
     client=None,
 ):
     existing = MorningStay.objects.filter(request_id=request_id).first()
@@ -259,6 +272,7 @@ def create_stay(
         guest_phone=guest_phone,
         guest_email=guest_email,
         guest_language=guest_language,
+        billing_address=billing_address or {},
         guests=guests,
         amount_sar=amount_sar,
         time_zone=property_zone(property_obj).key,

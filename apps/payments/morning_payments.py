@@ -47,14 +47,9 @@ def resolve_token(token):
 def require_payable(stay):
     if not settings.HYPERPAY_ENABLED or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise HyperPayCheckoutError("morning_payment_unavailable")
-    if stay.status not in {"open", "processing"} or (
-        stay.status == "open" and stay.expires_at <= timezone.now()
-    ):
+    # The signed link has no clock expiry. The short allocation hold is separate.
+    if stay.status not in {"open", "expired", "processing"} or stay.paid_at:
         raise HyperPayCheckoutError("morning_payment_closed")
-    # A manager may renew an existing, still-unfinished stay after arrival.
-    # Unrenewed links remain closed by expires_at; no timestamp is rewritten.
-    if stay.ends_at <= timezone.now():
-        raise HyperPayCheckoutError("morning_stay_ended")
 
 
 def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=None):
@@ -72,6 +67,7 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
         guests=stay.guests,
         client=hostaway,
         allow_started=True,
+        allow_elapsed=True,
     )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=stay.property_id)
@@ -92,6 +88,12 @@ def create_checkout(stay_id, *, billing_data, acceptance, client=None, hostaway=
             ):
                 return previous
             raise HyperPayCheckoutError("previous_morning_collection_unresolved")
+        if stay.billing_address:
+            from apps.reservations.morning_billing import saved_billing
+
+            billing_data = saved_billing(stay)
+            if billing_data is None:
+                raise HyperPayCheckoutError("billing_address_invalid")
         first, _, last = stay.guest_name.partition(" ")
         # Do not fabricate names or billing fields required by 3DS.
         if not last.strip():
@@ -205,7 +207,7 @@ def verify_payment(attempt_id, *, client=None):
         elif attempt.status in {"review", "unknown"}:
             stay.status = "review"
         elif attempt.status in {"failed", "cancelled"}:
-            stay.status = "open" if stay.expires_at > timezone.now() else "expired"
+            stay.status = "open"
         stay.save(update_fields=["status", "paid_at", "updated_at"])
     return attempt
 

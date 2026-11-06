@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load presentation tz %}
+{% load presentation tz static %}
 {% block extrastyle %}{{ block.super }}<style>
 .morning-payment-send { margin-block: 1.5rem; padding-block: 1rem; border-block: 1px solid #ddd3c3; }
 .morning-payment-send summary { min-height: 44px; cursor: pointer; padding-block: .75rem; }
@@ -9,6 +9,7 @@
 .morning-payment-send .lsa-btn { min-height: 48px; max-width: 100%; white-space: normal; margin-block: .75rem; }
 </style>{% endblock %}
 {% block content_title %}{% endblock %}
+{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><h1>تفاصيل الحجز الصباحي</h1><p>{{ stay }}</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:morning_list' %}">الحجوزات الصباحية</a></section>
@@ -28,12 +29,13 @@
     <h2>{{ stay.property|localized_property_name }}</h2>
     <dl class="quote-summary"><div><dt>الضيف</dt><dd>{{ stay.guest_name }}</dd></div><div><dt>الجوال</dt><dd dir="ltr">{{ stay.guest_phone }}</dd></div><div><dt>البريد الإلكتروني</dt><dd>{{ stay.guest_email }}</dd></div><div><dt>الدخول</dt><dd dir="ltr">{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>الخروج</dt><dd dir="ltr">{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>المنطقة الزمنية</dt><dd>{{ stay.time_zone }}</dd></div><div><dt>الإجمالي المعتمد</dt><dd>{{ stay.amount_sar|format_money:'SAR' }}</dd></div><div><dt>الحالة</dt><dd>{% if expired %}انتهت مهلة الدفع{% else %}{{ stay.get_status_display }}{% endif %}</dd></div></dl>
     <p>حجز صباحي داخلي؛ لم يُنشأ حجز في Hostaway. يُسمح بحجز لاحق عندما تكفي فترة تجهيز الشقة قبله.</p>
-    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>آخر موعد لبدء الدفع: {{ stay.expires_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}. تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.</p>{% endif %}
+    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>رابط الدفع ثابت دون مهلة انتهاء زمنية. تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.</p>{% endif %}
     {% if stay.paid_at %}<p>تم توثيق استلام الدفعة: {{ stay.paid_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}.</p>{% endif %}
-    {% if stay.status == 'paid' %}<a class="lsa-btn" href="{% url 'notifications:morning_edit' stay.pk %}">تعديل الحجز</a>{% endif %}
+    {% if stay.status == 'paid' or stay.status == 'open' or stay.status == 'expired' %}<a class="lsa-btn" href="{% url 'notifications:morning_edit' stay.pk %}">تعديل الحجز</a>{% endif %}
     <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">تحديث حالة السداد</button>{% if stay.status != 'cancelled' %}{% if stay.paid_at %}<label><input type="checkbox" name="confirm_paid_cancellation" value="yes"> أؤكد إلغاء الإقامة وإيقاف رسائلها المستقبلية. الاسترداد المالي يُراجع بصورة مستقلة.</label>{% endif %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الحجز</button>{% endif %}</form>
     <p>تسلسل الرسائل بعد الدفع: {% with event=stay.latest_communication_event %}{% if event %}{% if event.state == 'accepted' %}استلمت منصة التواصل التحديث{% elif event.state == 'superseded' %}يوجد تحديث أحدث{% else %}بانتظار الإرسال أو إعادة المحاولة{% endif %}{% else %}لم يُنشأ حدث تواصل مؤكد{% endif %}{% endwith %}</p>
   </section>
+  <section class="lsa-panel"><h2>عنوان الفوترة من الإدارة</h2><p>أدخل عنوان بطاقة الضيف الحقيقي؛ سيظهر له للمراجعة، وتبقى الموافقة على الشروط مسؤوليته.</p><form method="post" class="lsa-manual-booking-form">{% csrf_token %}{% if address_places_enabled %}{% include "reservations/_address_places.html" %}{% endif %}{{ billing_form.as_p }}<button class="lsa-btn" name="action" value="save_billing">حفظ عنوان الفوترة</button></form></section>
   <section class="lsa-panel"><h2>محاولات الدفع</h2><ul>{% for attempt in attempts %}<li>{{ attempt.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }} — {{ attempt.status }}{% if attempt.failure_code %} — تحتاج مراجعة{% endif %}</li>{% empty %}<li>لم تبدأ محاولة دفع.</li>{% endfor %}</ul></section>
 </main>
 {% endblock %}

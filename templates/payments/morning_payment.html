@@ -8,14 +8,16 @@
 <section class="section container narrow reservation-payment" dir="rtl">
   <h1>سداد الحجز الصباحي</h1>
   {% if stay.paid_at %}<p class="notice">تم استلام الدفعة. لا تدفع مرة أخرى.{% if stay.status == 'review' %} يرجى تأكيد موعد الدخول مع الإدارة.{% endif %}</p>
-  {% elif not payable %}<p class="notice">الرابط غير متاح أو انتهت مهلته. تواصل مع الإدارة قبل الدفع.</p>
+  {% elif not payable %}<p class="notice">الرابط غير متاح للدفع حاليًا. تواصل مع الإدارة قبل الدفع.</p>
   {% else %}
   <article class="review-panel"><h2>{{ stay.property|localized_property_name }}</h2>
     <p>إقامة صباحية في {{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d' }}: من {{ stay.starts_at|timezone:stay.time_zone|date:'H:i' }} إلى {{ stay.ends_at|timezone:stay.time_zone|date:'H:i' }}، بتوقيت الشقة {{ stay.time_zone }}.</p>
     <p><strong>الإجمالي شامل الرسوم: {{ stay.amount_sar|format_money:'SAR' }}</strong></p>
     {% if error %}<p class="notice notice--important" role="alert">{{ error }}</p>{% endif %}
     <form method="post" class="guest-form">{% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
-      <fieldset><legend>عنوان الفوترة</legend>{% include 'reservations/_billing_fields.html' with guest_form=form %}</fieldset>
+      <p>الضيف: {{ stay.guest_name }} · <bdi>{{ stay.guest_email }}</bdi> · <bdi>{{ stay.guest_phone }}</bdi></p>
+      {% if saved_billing %}<section class="review-panel"><h2>مراجعة عنوان الفوترة</h2><p>{{ saved_billing.billing_street1 }} · {{ saved_billing.billing_city }} · {{ saved_billing.billing_state }} · {{ saved_billing.billing_postcode }} · {{ saved_billing.billing_country }}</p><p>لتصحيح العنوان، تواصل مع الإدارة قبل الدفع.</p></section>
+      {% else %}<fieldset><legend>عنوان الفوترة</legend>{% include 'reservations/_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
       <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
       <div class="form-field"><label>{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label>{{ form.terms_accepted.errors }}</div>
       <details><summary>{{ guest_documents.house_rules.title }} — يرجى مراجعة بند التدخين</summary><p>{{ guest_documents.house_rules.body|linebreaksbr }}</p></details>

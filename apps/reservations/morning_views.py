@@ -22,6 +22,7 @@ from apps.properties.models import Property
 from . import morning_payment_messages as payment_messages
 from .models import MorningStay
 from .morning07_changes import cancel_stay, change_paid_stay
+from .morning_billing import MorningBillingForm, address_context, address_view
 from .morning_stays import (
     ZONE,
     MorningStayError,
@@ -42,8 +43,8 @@ class MorningAvailabilityForm(forms.Form):
     def clean(self):
         data = super().clean()
         start, end = data.get("start_time"), data.get("end_time")
-        if start is not None and end is not None and not time.min < start < end < time(12):
-            raise forms.ValidationError("الدخول بعد منتصف الليل والخروج قبل ١٢ ظهرًا.")
+        if start is not None and end is not None and not time.min < start < end <= time(12):
+            raise forms.ValidationError("الدخول بعد منتصف الليل والخروج حتى ١٢ ظهرًا.")
         return data
 
 
@@ -156,8 +157,8 @@ class MorningStayForm(forms.Form):
         label="ساعة الدخول — بتوقيت الشقة", widget=forms.TimeInput(attrs={"type": "time"})
     )
     end_time = forms.TimeField(
-        label="ساعة الخروج — قبل ١٢ ظهرًا",
-        initial=time(11),
+        label="ساعة الخروج — ١٢ ظهرًا كحد أقصى",
+        initial=time(12),
         widget=forms.TimeInput(attrs={"type": "time"}),
     )
     guest_name = forms.CharField(label="اسم الضيف الكامل", max_length=200)
@@ -185,6 +186,10 @@ class MorningStayForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
+        if not self.stay:
+            for name, field in MorningBillingForm(default_country_code="SA").fields.items():
+                field.required = False
+                self.fields[name] = field
         self.fields["property"].queryset = Property.objects.filter(
             is_visible=True,
             hostaway_is_active=True,
@@ -193,7 +198,7 @@ class MorningStayForm(forms.Form):
             now = timezone.now().astimezone(ZONE) + timedelta(minutes=10)
             start = (
                 now
-                if now.hour < 11
+                if now.hour < 12
                 else datetime.combine(now.date() + timedelta(days=1), time(1), ZONE)
             )
             self.initial.update(
@@ -219,6 +224,15 @@ class MorningStayForm(forms.Form):
 
     def clean(self):
         data = super().clean()
+        if not self.stay and any(
+            data.get(k) for k in self.fields if k.startswith("billing_") and k != "billing_country"
+        ):
+            billing = MorningBillingForm(data)
+            if billing.is_valid():
+                data["billing_address"] = dict(billing.cleaned_data)
+            else:
+                for name, errors in billing.errors.items():
+                    self.add_error(name, errors)
         if all(data.get(k) is not None for k in ("property", "date", "start_time", "end_time")):
             try:
                 zone = property_zone(data["property"])
@@ -302,7 +316,7 @@ def morning_edit(request, stay_id):
 def context(request, **fields):
     from django.contrib import admin
 
-    return {**admin.site.each_context(request), **fields}
+    return {**admin.site.each_context(request), **address_context(request), **fields}
 
 
 @operations_access_required
@@ -343,6 +357,7 @@ def morning_create(request):
                     )
                 },
                 guest_language=data.get("guest_language") or "ar",
+                billing_address=data.get("billing_address"),
             )
         except MorningStayError as exc:
             form.add_error(None, str(exc))
@@ -394,7 +409,35 @@ def morning_detail(request, stay_id):
     stay = get_object_or_404(MorningStay.objects.select_related("property"), pk=stay_id)
     if request.method == "POST":
         action = request.POST.get("action")
-        if action == "cancel":
+        if action == "save_billing":
+            billing = MorningBillingForm(request.POST)
+            if billing.is_valid():
+                from django.db import transaction
+
+                with transaction.atomic():
+                    current = MorningStay.objects.select_for_update().get(pk=stay.pk)
+                    if (
+                        current.status in {"open", "expired"}
+                        and not current.attempts.filter(
+                            status__in=["created", "pending", "unknown", "review", "succeeded"]
+                        ).exists()
+                    ):
+                        current.billing_address = dict(billing.cleaned_data)
+                        current.save(update_fields=["billing_address", "updated_at"])
+                        messages.success(
+                            request, "حُفظ عنوان الفوترة؛ يراجعه الضيف ويوافق بنفسه على الشروط."
+                        )
+                    else:
+                        messages.error(
+                            request, "لا يمكن تغيير العنوان أثناء دفع غير محسوم أو بعد السداد."
+                        )
+            else:
+                return render(
+                    request,
+                    "admin/reservations/morning_billing.html",
+                    context(request, title="عنوان فوترة الحجز الصباحي", form=billing, stay=stay),
+                )
+        elif action == "cancel":
             try:
                 if stay.paid_at and request.POST.get("confirm_paid_cancellation") != "yes":
                     raise MorningStayError(
@@ -459,10 +502,13 @@ def morning_detail(request, stay_id):
             title="تفاصيل الحجز الصباحي",
             stay=stay,
             payment_url=public_url(stay)
-            if settings.HYPERPAY_ENABLED and stay.status in {"open", "processing"}
+            if settings.HYPERPAY_ENABLED and stay.status in {"open", "expired", "processing"}
             else "",
             attempts=stay.attempts.all(),
-            expired=stay.status == "open" and stay.expires_at <= timezone.now(),
+            expired=False,
+            billing_form=MorningBillingForm(
+                initial=stay.billing_address, default_country_code="SA"
+            ),
             send_error=send_error,
             send_token=payment_messages.form_token(stay, request.user),
             payment_message=payment_messages.render_message(stay, preview=True)
@@ -475,3 +521,12 @@ def morning_detail(request, stay_id):
             else "لم يُطلب إرسال الرابط عبر واتساب بعد",
         ),
     )
+
+
+@operations_access_required
+def morning_address(request, kind):
+    if kind not in {"suggestions", "details"}:
+        from django.http import Http404
+
+        raise Http404
+    return address_view(request, kind)

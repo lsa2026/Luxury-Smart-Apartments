@@ -117,7 +117,7 @@ def approved(attempt, **changes):
     }
 
 
-@pytest.mark.parametrize("start_hour,end_hour", [(0, 11), (1, 12), (11, 10), (13, 14)])
+@pytest.mark.parametrize("start_hour,end_hour", [(0, 11), (1, 13), (11, 10), (13, 14)])
 def test_invalid_or_noon_windows_are_rejected(start_hour, end_hour):
     start, end = window()
     with pytest.raises(MorningStayError):
@@ -608,7 +608,7 @@ def test_morning_availability_reports_property_local_time_and_rejects_past_searc
     remote.get_listing_calendar.assert_not_called()
 
 
-@pytest.mark.parametrize("changes", [{"end_time": "12:00"}, {"date": "invalid"}, {"guests": 0}])
+@pytest.mark.parametrize("changes", [{"end_time": "12:01"}, {"date": "invalid"}, {"guests": 0}])
 def test_invalid_morning_search_does_not_call_hostaway(changes):
     client = Client()
     client.force_login(owner())

@@ -9,6 +9,7 @@ from django.utils import timezone, translation
 from django.views import View
 
 from apps.core.guest_documents import guest_documents
+from apps.reservations.morning_billing import saved_billing
 from apps.reservations.morning_stays import MorningStayError
 from apps.reservations.security import is_ip_rate_limited
 
@@ -46,6 +47,7 @@ class MorningPaymentView(View):
                 "stay": self.stay,
                 "payable": payable,
                 "form": form or PaymentLinkBillingForm(default_country_code="SA"),
+                "saved_billing": saved_billing(self.stay),
                 "guest_documents": guest_documents("ar"),
                 "error": error,
             },
@@ -64,7 +66,11 @@ class MorningPaymentView(View):
                     status=429,
                 )
             )
-        form = PaymentLinkBillingForm(request.POST)
+        data = request.POST.copy()
+        address = saved_billing(self.stay)
+        if address:
+            data.update(address)
+        form = PaymentLinkBillingForm(data)
         if not form.is_valid():
             return self.page(request, form=form)
         acceptance = {

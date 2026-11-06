@@ -42,8 +42,10 @@ def change_paid_stay(stay_id, values, *, expected_updated_at, client=None):
         stay = MorningStay.objects.select_for_update().get(pk=stay_id)
         if stay.updated_at.isoformat() != expected_updated_at:
             raise MorningStayError("تغير الحجز أثناء المراجعة؛ افتح التفاصيل مجددًا.")
-        if stay.status != "paid" or stay.ends_at <= timezone.now():
-            raise MorningStayError("التعديل متاح للحجز المدفوع والمؤكد قبل انتهاء الإقامة.")
+        if stay.status not in {"paid", "open", "expired"} or stay.ends_at <= timezone.now():
+            raise MorningStayError("التعديل متاح قبل انتهاء الإقامة وبعد حسم أي محاولة دفع.")
+        if stay.attempts.filter(status__in=UNRESOLVED).exists():
+            raise MorningStayError("توجد محاولة دفع غير محسومة؛ تحقق منها قبل التعديل.")
         if (
             window_changed
             and active_stays(

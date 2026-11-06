@@ -1,0 +1,1 @@
+{% extends "admin/base_site.html" %}{% block content %}<main dir="rtl"><h1>{{ title }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button name="action" value="save_billing">حفظ عنوان الفوترة</button></form></main>{% endblock %}
