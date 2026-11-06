@@ -36,6 +36,6 @@
     <p>تسلسل الرسائل بعد الدفع: {% with event=stay.latest_communication_event %}{% if event %}{% if event.state == 'accepted' %}استلمت منصة التواصل التحديث{% elif event.state == 'superseded' %}يوجد تحديث أحدث{% else %}بانتظار الإرسال أو إعادة المحاولة{% endif %}{% else %}لم يُنشأ حدث تواصل مؤكد{% endif %}{% endwith %}</p>
   </section>
   <section class="lsa-panel"><h2>عنوان الفوترة من الإدارة</h2><p>أدخل عنوان بطاقة الضيف الحقيقي؛ سيظهر له للمراجعة، وتبقى الموافقة على الشروط مسؤوليته.</p><form method="post" class="lsa-manual-booking-form">{% csrf_token %}{% include 'reservations/_billing_fields.html' with guest_form=billing_form %}<button class="lsa-btn" name="action" value="save_billing">حفظ عنوان الفوترة</button></form></section>
-  <section class="lsa-panel"><h2>محاولات الدفع</h2><ul>{% for attempt in attempts %}<li>{{ attempt.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }} — {{ attempt.status }}{% if attempt.failure_code %} — تحتاج مراجعة{% endif %}</li>{% empty %}<li>لم تبدأ محاولة دفع.</li>{% endfor %}</ul></section>
+  <section class="lsa-panel"><h2>محاولات الدفع</h2><ul>{% for attempt in attempts %}<li>{{ attempt.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }} — {{ attempt.status }}{% if attempt.provider_result_code %} — رمز نتيجة HyperPay: <bdi>{{ attempt.provider_result_code }}</bdi>{% endif %}{% if attempt.failure_code %} — سبب المراجعة: {{ attempt.failure_code }}{% endif %}</li>{% empty %}<li>لم تبدأ محاولة دفع.</li>{% endfor %}</ul></section>
 </main>
 {% endblock %}
