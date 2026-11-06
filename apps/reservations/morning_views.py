@@ -187,6 +187,7 @@ class MorningStayForm(forms.Form):
         self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
         if not self.stay:
+            self.initial.setdefault("billing_country", "SA")
             for name, field in MorningBillingForm(default_country_code="SA").fields.items():
                 field.required = False
                 self.fields[name] = field

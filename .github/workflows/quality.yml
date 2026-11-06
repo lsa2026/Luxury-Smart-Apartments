@@ -166,6 +166,8 @@ jobs:
       - name: Test progressive admin booking tabs and form safety
         run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
 
+      - name: Test noon morning communication contract
+        run: node --test tests/morning-noon-contract.test.cjs
       - name: Test independent morning communication and delivery evidence
         run: node --test scripts/automation07/test.cjs
 
