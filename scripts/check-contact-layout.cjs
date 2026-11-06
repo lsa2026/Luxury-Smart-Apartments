@@ -13,13 +13,13 @@ const { pathToFileURL } = require("node:url");
     for (const width of [390, 820, 1366]) {
       const page = await browser.newPage({ viewport: { width, height: 900 }, colorScheme: "light" });
       await page.route(/^https?:/, route => route.abort());
-      for (const name of ["detail", "list"]) {
+      for (const name of ["detail", "list", "morning"]) {
         await page.goto(pathToFileURL(path.join(output, `${name}.html`)).href);
-        await page.locator("main.lsa-contact").waitFor();
+        await page.locator(name === "morning" ? "main.lsa-operations-screen" : "main.lsa-contact").waitFor();
         const layout = await page.evaluate(() => ({
           width: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
-          smallTargets: [...document.querySelectorAll(".lsa-contact__button")]
+          smallTargets: [...document.querySelectorAll(".lsa-contact__button, .morning-payment-send .lsa-btn")]
             .filter(el => el.getBoundingClientRect().height < 44).length,
         }));
         if (layout.scrollWidth > layout.width + 1 || layout.smallTargets) {
@@ -29,6 +29,11 @@ const { pathToFileURL } = require("node:url");
           if (await page.locator('[rel="next"]').count() !== 1) throw new Error("Next message missing");
           if (await page.locator('[rel="prev"]').count() !== 1) throw new Error("Previous message missing");
           await page.locator("#id_body").fill("مسودة تجريبية للمراجعة فقط");
+        }
+        if (name === "morning") {
+          await page.locator(".morning-payment-send summary").click();
+          const width = await page.evaluate(() => document.documentElement.scrollWidth);
+          if (width > page.viewportSize().width + 1) throw new Error("Morning preview overflows");
         }
         await page.screenshot({ path: path.join(output, `${name}-${width}.png`), fullPage: true });
         console.log(`${name} ${width}px: no overflow, accessible buttons, synthetic content only`);

@@ -106,3 +106,38 @@ The final canvas has two stage groups with the website trigger outside them.
   from a live workflow execution. No live guest/contact/group writes were performed.
 
 Native n8n tests with every external node pinned succeeded: invalid input execution 35886, valid booking 35887, duplicate event 35888. These tests prove native routing and Code-node execution with simulated services, not real guest delivery. Focused Django tests: 55 passed total, with 2 PostgreSQL-only concurrency tests deferred to CI. Node tests: 12 passed. Website release remains blocked before GitHub upload and Render configuration confirmation.
+
+## Owner-approved payment notice — 6 November 2026
+
+Website MorningStay creation now queues **one combined request confirmation and
+payment-link WhatsApp message** using its existing UltraMsg account. It explicitly
+states that final confirmation follows verified payment. It never carries access
+instructions, codes or admission proof before payment. The owner can preview the
+text and explicitly resend an eligible unpaid request from its detail page.
+
+Resending rechecks the future exact property-local window, live Hostaway evidence,
+local inflight reservations, other morning allocations and every unresolved or
+successful payment attempt. Under the property/stay locks it renews the existing
+link for five minutes, capped at arrival; it creates no Hostaway booking, price
+change, financial attempt or new payment URL. The worker rechecks eligibility and
+claims the durable send intent before a provider POST. Replaying a task or form
+nonce does not resend; a fresh deliberate click can. Ambiguous provider outcomes
+are displayed for review rather than automatically reposted. Historical records
+are not scanned or sent during deployment.
+
+The published workflow `A9QK1p1P3e7fnpNU` was inspected through the connected n8n
+source. Its paid-only renderer creates house_rules and checkin_guide with due_at
+set to the current event time. Existing ordering and receipt verification remain.
+No workflow, schedule, shared 01–06 configuration or financial verification was
+changed. Supabase `lsa07_settings.enabled` was independently read as true.
+The copied AR/EN/FR templates in `lsa07_message_templates` were read directly.
+The Arabic guide contained an obsolete promise of automatic code delivery via an
+absent portal link. Only that exact phrase in 07's Arabic checkin_guide was
+replaced with contacting support after identity verification, consistent with
+07's existing English/French renderer. No real access code or apartment data
+was read or copied. Rollback of this template-only correction is the inverse
+replacement of the two literal sentences; the 01–06 templates are unchanged.
+
+Release rollback: redeploy the previous website/worker commit, leave the additive
+0027 delivery table intact for audit, and do not replay queued or uncertain sends.
+No scheduled job was added. Tests use synthetic guests and mocked providers only.

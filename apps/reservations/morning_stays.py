@@ -290,4 +290,7 @@ def create_stay(
         )
         stay.full_clean()
         stay.save()
+        from .morning_payment_messages import queue_initial
+
+        queue_initial(stay)
         return stay

@@ -14,3 +14,10 @@ def deliver_morning07_events(self, stay_id):
     if MorningCommunicationEvent.objects.filter(stay_id=stay_id, state="pending").exists():
         raise self.retry(countdown=min(300, 30 * (self.request.retries + 1)))
     return result
+
+
+@shared_task(ignore_result=True)
+def deliver_morning_payment_link(delivery_id):
+    from .morning_payment_messages import send_link
+
+    return send_link(delivery_id)

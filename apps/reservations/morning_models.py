@@ -122,3 +122,24 @@ class Morning07DeliveryAttempt(models.Model):
 
     def __str__(self):
         return f"Morning07 {self.reference_id}: {self.state}"
+
+
+class MorningPaymentLinkDelivery(models.Model):
+    """One deliberate pre-payment send; no admission or financial mutation."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stay = models.ForeignKey(
+        MorningStay, on_delete=models.PROTECT, related_name="payment_link_deliveries"
+    )
+    fingerprint = models.CharField(max_length=64, editable=False)
+    state = models.CharField(max_length=12, default="queued", editable=False)
+    provider_id = models.CharField(max_length=255, blank=True, editable=False)
+    last_error = models.CharField(max_length=80, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        return f"Morning payment notice {self.pk}: {self.state}"
