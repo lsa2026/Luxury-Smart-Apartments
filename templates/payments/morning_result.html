@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}نتيجة سداد الحجز الصباحي{% endblock %}
+{% block title %}{% if LANGUAGE_CODE == 'en' %}Morning stay payment result{% else %}نتيجة سداد الحجز الصباحي{% endif %}{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
-{% block content %}<section class="section container narrow" dir="rtl"><h1>نتيجة سداد الحجز الصباحي</h1><p role="status">{{ message }}</p><p><a href="{% url 'core:contact' %}">التواصل مع الإدارة</a></p></section>{% endblock %}
+{% block content %}<section class="section container narrow" dir="{% if LANGUAGE_CODE == 'en' %}ltr{% else %}rtl{% endif %}"><h1>{% if LANGUAGE_CODE == 'en' %}Morning stay payment result{% else %}نتيجة سداد الحجز الصباحي{% endif %}</h1><p role="status">{{ message }}</p><p><a href="{% url 'core:contact' %}">{% if LANGUAGE_CODE == 'en' %}Contact management{% else %}التواصل مع الإدارة{% endif %}</a></p></section>{% endblock %}
