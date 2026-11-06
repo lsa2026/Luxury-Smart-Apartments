@@ -142,8 +142,9 @@ def test_ended_stay_and_unavailable_remote_do_not_renew(settings):
         starts_at=timezone.now() - timedelta(hours=2),
         ends_at=timezone.now() - timedelta(seconds=1),
     )
-    with pytest.raises(MorningStayError):
-        links.resend(stay.pk, uuid.uuid4())
+    with patch.object(links, "verify_window", side_effect=MorningStayError("occupied")):
+        with pytest.raises(MorningStayError):
+            links.resend(stay.pk, uuid.uuid4())
     assert not MorningPaymentLinkDelivery.objects.exists()
 
 
@@ -307,7 +308,6 @@ def test_started_unfinished_request_renews_sends_and_completes_payment(
     settings,
     django_capture_on_commit_callbacks,
 ):
-    from apps.payments.hyperpay.exceptions import HyperPayCheckoutError
     from apps.payments.morning_payments import create_checkout, require_payable, verify_payment
     from tests.test_hyperpay import HyperPayStub
     from tests.test_morning_stays import approved, consent
@@ -322,9 +322,8 @@ def test_started_unfinished_request_renews_sends_and_completes_payment(
     clock = stay.starts_at + timedelta(hours=2)
     gateway = HyperPayStub()
     with patch("django.utils.timezone.now", return_value=clock):
-        # The previously sent link is expired until the manager revalidates it.
-        with pytest.raises(HyperPayCheckoutError, match="morning_payment_closed"):
-            require_payable(stay)
+        # Link eligibility is independent of the temporary allocation hold.
+        require_payable(stay)
         with patch.object(
             links, "verify_window", return_value={"checked_at": clock.isoformat()}
         ) as check:
@@ -364,7 +363,6 @@ def test_started_unfinished_request_renews_sends_and_completes_payment(
 
 
 def test_renewal_is_capped_at_checkout_and_does_not_reopen_ended_stay(settings):
-    from apps.payments.hyperpay.exceptions import HyperPayCheckoutError
     from apps.payments.morning_payments import require_payable
 
     stay = stay_without_notice(settings)
@@ -378,13 +376,12 @@ def test_renewal_is_capped_at_checkout_and_does_not_reopen_ended_stay(settings):
         stay.refresh_from_db()
         assert stay.expires_at == stay.ends_at
         require_payable(stay)
-    # Even a corrupted later TTL cannot allow checkout after the actual end.
+    # The payment link also remains available for late settlement.
     stay.expires_at = stay.ends_at + timedelta(minutes=10)
     with patch("django.utils.timezone.now", return_value=stay.ends_at):
-        with pytest.raises(MorningStayError, match="انتهت فترة"):
+        require_payable(stay)
+        with patch.object(links, "verify_window", return_value={}), patch.object(links, "dispatch"):
             links.resend(stay.pk, uuid.uuid4())
-        with pytest.raises(HyperPayCheckoutError, match="morning_stay_ended"):
-            require_payable(stay)
 
 
 def test_started_renewal_runs_actual_availability_rules_without_weakening_new_creation(settings):

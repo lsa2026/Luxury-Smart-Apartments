@@ -54,6 +54,7 @@ jobs:
           tests/test_payment_link_purchase_receipts.py
           tests/test_morning_payment_messages.py
           tests/test_morning_stays.py
+          tests/test_morning_owner_payment_policy.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
           tests/test_morning_loyalty.py
@@ -165,6 +166,8 @@ jobs:
       - name: Test progressive admin booking tabs and form safety
         run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
 
+      - name: Test noon morning communication contract
+        run: node --test tests/morning-noon-contract.test.cjs
       - name: Test independent morning communication and delivery evidence
         run: node --test scripts/automation07/test.cjs
 

@@ -197,3 +197,20 @@ passed; Django integration tests use synthetic paid states and mocked providers.
 The new optional HTTP endpoint is deployed before publishing the prepared 07
 workflow version. Roll back both the website commit and the previous 07 active
 version if required; preserve all invitation/payment/delivery history.
+
+
+## Owner policy — 6 November 2026
+
+Morning stays now allow departure exactly at 12:00 in the apartment time zone.
+The M03 admission guard and `lsa07_ingest` use the same inclusive bound.
+`noon-checkout.sql` replaces only that function bound; no settings, RLS, jobs,
+credentials or other pathway change. The published workflow retains all 37 nodes.
+
+The website's stable signed payment URL no longer expires with its five-minute
+allocation hold. Every checkout still rechecks remote/local occupancy and locks
+the property before creating a financial attempt. A late payment after departure
+is recorded for financial review without admitting the guest or sending access.
+Operations may prepare the genuine card billing address through the existing
+Places search/manual fields; the guest still personally accepts the documents.
+Existing unpaid stays can be edited to noon with fresh availability checks.
+No existing stay, guest message or financial history was replayed by this release.

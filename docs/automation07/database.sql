@@ -51,7 +51,7 @@ BEGIN
   OR NOT ((s->>'starts_at')::timestamptz<(s->>'ends_at')::timestamptz)
   OR (s->>'ends_at')::timestamptz-(s->>'starts_at')::timestamptz>=interval '12 hours'
   OR NOT (time '00:00'<(s->>'check_in_time')::time AND (s->>'check_in_time')::time<(s->>'check_out_time')::time
-   AND (s->>'check_out_time')::time<time '12:00'),true) THEN RAISE EXCEPTION 'Invalid verified Morning07 event';END IF;
+   AND (s->>'check_out_time')::time<=time '12:00'),true) THEN RAISE EXCEPTION 'Invalid verified Morning07 event';END IF;
  k:=(s->>'morning_stay_id')::uuid;v:=(s->>'source_revision')::bigint;f:=s->>'state_fingerprint';
  IF v<1 OR (s->>'listing_map_id')::bigint<1 OR length(s->>'delivery_token')<40 THEN RAISE EXCEPTION 'Invalid Morning07 identity';END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('lsa07:'||k::text,0));

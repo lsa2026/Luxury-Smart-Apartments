@@ -14,6 +14,11 @@ from . import health, invoice_views, views
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/morning-address/<str:kind>/",
+        morning_views.morning_address,
+        name="morning_address",
+    ),
     path("reservations/sama/contact-drafts/claim/", contact_draft_api.claim),
     path("reservations/sama/contact-drafts/complete/", contact_draft_api.complete),
     path(
