@@ -6,6 +6,7 @@ from datetime import datetime, time, timedelta
 from django import forms
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -24,6 +25,7 @@ from . import morning_payment_messages as payment_messages
 from .models import MorningStay
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_billing import MorningBillingForm, address_context, address_view
+from .morning_receipts import MorningReceiptForm, record_receipt
 from .morning_stays import (
     ZONE,
     MorningStayError,
@@ -420,7 +422,22 @@ def report_payment_send(request, state):
 @operations_access_required
 def morning_detail(request, stay_id):
     stay = get_object_or_404(MorningStay.objects.select_related("property"), pk=stay_id)
-    if request.method == "POST":
+    receipt_form = MorningReceiptForm(
+        initial={"amount": stay.amount_sar, "received_at": timezone.localtime(timezone.now())}
+    )
+    if request.method == "POST" and request.POST.get("action") == "record_offline":
+        receipt_form = MorningReceiptForm(request.POST)
+        if receipt_form.is_valid():
+            try:
+                record_receipt(request=request, stay_id=stay.pk, **receipt_form.cleaned_data)
+            except ValidationError as exc:
+                receipt_form.add_error(None, exc)
+            else:
+                messages.success(
+                    request, "تم توثيق السداد اليدوي وتحديث الحالة إلى مدفوع، دون تحصيل جديد."
+                )
+                return redirect("notifications:morning_detail", stay_id=stay.pk)
+    elif request.method == "POST":
         action = request.POST.get("action")
         if action == "save_billing":
             billing = MorningBillingForm(request.POST)
@@ -499,7 +516,7 @@ def morning_detail(request, stay_id):
                 except HyperPayError:
                     messages.error(request, "تعذر حسم الدفع الآن؛ لا تطلب دفعًا آخر قبل التحقق.")
         return redirect("notifications:morning_detail", stay_id=stay.pk)
-    if request.method != "GET":
+    if request.method not in {"GET", "POST"}:
         return HttpResponseNotAllowed(["GET", "POST"])
     send_error = ""
     try:
@@ -522,6 +539,8 @@ def morning_detail(request, stay_id):
             billing_form=MorningBillingForm(
                 initial=stay.billing_address, default_country_code="SA"
             ),
+            receipt_form=receipt_form,
+            offline_receipt=getattr(stay, "offline_receipt", None),
             send_error=send_error,
             send_token=payment_messages.form_token(stay, request.user),
             payment_message=payment_messages.render_message(stay, preview=True)

@@ -83,6 +83,29 @@ class MorningStay(models.Model):
         return self.communication_events.order_by("-revision").first()
 
 
+class MorningOfflineReceipt(models.Model):
+    stay = models.OneToOneField(
+        MorningStay, on_delete=models.PROTECT, related_name="offline_receipt"
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    method = models.CharField(
+        max_length=20, choices=[("bank_transfer", "حوالة بنكية"), ("cash", "نقدًا")]
+    )
+    reference = models.CharField(max_length=100, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+    received_at = models.DateTimeField()
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="morning_receipt_positive")
+        ]
+
+    def __str__(self):
+        return f"Morning receipt {self.pk}: {self.method}"
+
+
 class MorningCommunicationEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     stay = models.ForeignKey(
