@@ -218,7 +218,12 @@ def verify_payment(attempt_id, *, client=None):
             attempt.provider_payment_id = None
             attempt.status, attempt.failure_code = "review", "payment_reference_conflict"
             attempt.save()
-        if attempt.status == "succeeded":
+        if hasattr(stay, "offline_receipt"):
+            # Historical failed attempts can still receive a late provider response.
+            # Preserve manual money; flag a second capture for review, never reopen.
+            if attempt.status == "succeeded":
+                stay.status = "review"
+        elif attempt.status == "succeeded":
             # Payment after checkout stays recorded for review, without promising admission.
             stay.paid_at = attempt.verified_at
             stay.status = (

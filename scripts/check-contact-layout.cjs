@@ -24,6 +24,10 @@ const { pathToFileURL } = require("node:url");
       });
       for (const name of ["detail", "list", "morning", "morning-create", "morning-guest"]) {
         await page.goto(pathToFileURL(path.join(output, `${name}.html`)).href);
+        if (name === "morning") {
+          if (await page.locator("#morning-billing").getAttribute("open") !== null) throw new Error("Billing should start collapsed");
+          await page.locator("#morning-billing > summary").click();
+        }
         await page.locator(name.startsWith("morning") ? "[data-checkout-address]" : "main.lsa-contact").waitFor();
         if (name.startsWith("morning")) {
           const search = page.locator("[data-address-search]");
