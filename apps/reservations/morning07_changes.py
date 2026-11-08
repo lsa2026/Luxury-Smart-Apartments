@@ -8,11 +8,14 @@ from django.utils import timezone
 from apps.properties.models import Property
 
 from .models import MorningStay
+from .morning_hostaway import booking_state, cancel_linked_stay
 from .morning_stays import UNRESOLVED, MorningStayError, active_stays, property_zone, verify_window
 
 
 def change_paid_stay(stay_id, values, *, expected_updated_at, client=None):
     current = MorningStay.objects.get(pk=stay_id)
+    if booking_state(current):
+        raise MorningStayError("الحجز مرتبط بهوستاوي؛ راجع الربط قبل تعديل بيانات الإقامة.")
     new_property = values["property"]
     window_changed = any(
         [
@@ -40,6 +43,8 @@ def change_paid_stay(stay_id, values, *, expected_updated_at, client=None):
             .order_by("pk")
         )
         stay = MorningStay.objects.select_for_update().get(pk=stay_id)
+        if booking_state(stay):
+            raise MorningStayError("بدأ ربط الحجز بهوستاوي؛ لم نحفظ تعديلًا متعارضًا.")
         if stay.updated_at.isoformat() != expected_updated_at:
             raise MorningStayError("تغير الحجز أثناء المراجعة؛ افتح التفاصيل مجددًا.")
         if stay.status not in {"paid", "open", "expired"} or stay.ends_at <= timezone.now():
@@ -78,9 +83,13 @@ def change_paid_stay(stay_id, values, *, expected_updated_at, client=None):
 
 def cancel_stay(stay_id):
     current = MorningStay.objects.get(pk=stay_id)
+    if booking_state(current):
+        return cancel_linked_stay(stay_id)
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=current.property_id)
         stay = MorningStay.objects.select_for_update().get(pk=stay_id)
+        if booking_state(stay):
+            raise MorningStayError("بدأ ربط هوستاوي؛ أعد قراءة حالة الحجز قبل الإلغاء.")
         if stay.status == "cancelled":
             return stay
         if (

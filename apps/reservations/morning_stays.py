@@ -262,6 +262,7 @@ def create_stay(
     guest_language="ar",
     billing_address=None,
     client=None,
+    allow_started=False,
 ):
     existing = MorningStay.objects.filter(request_id=request_id).first()
     values = dict(
@@ -282,7 +283,9 @@ def create_stay(
         if any(getattr(existing, k) != v for k, v in values.items()):
             raise MorningStayError("تكرر معرف الطلب ببيانات مختلفة؛ أعد فتح النموذج.")
         return existing
-    evidence = verify_window(property_obj, starts_at, ends_at, guests=guests, client=client)
+    evidence = verify_window(
+        property_obj, starts_at, ends_at, guests=guests, client=client, allow_started=allow_started
+    )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=property_obj.pk)
         existing = MorningStay.objects.filter(request_id=request_id).first()
@@ -298,7 +301,10 @@ def create_stay(
             **values,
             request_id=request_id,
             created_by=actor,
-            expires_at=min(timezone.now() + timedelta(minutes=5), starts_at),
+            expires_at=min(
+                timezone.now() + timedelta(minutes=5),
+                ends_at if allow_started and starts_at <= timezone.now() else starts_at,
+            ),
             availability_checked_at=timezone.now(),
             availability_evidence=evidence,
         )

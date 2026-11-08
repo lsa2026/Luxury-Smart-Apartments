@@ -40,10 +40,18 @@
   <section class="lsa-panel">
     <h2>{{ stay.property|localized_property_name }}</h2>
     <dl class="quote-summary"><div><dt>الضيف</dt><dd>{{ stay.guest_name }}</dd></div><div><dt>الجوال</dt><dd dir="ltr">{{ stay.guest_phone }}</dd></div><div><dt>البريد الإلكتروني</dt><dd>{{ stay.guest_email }}</dd></div><div><dt>الدخول</dt><dd dir="ltr">{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>الخروج</dt><dd dir="ltr">{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>المنطقة الزمنية</dt><dd>{{ stay.time_zone }}</dd></div><div><dt>الإجمالي المعتمد</dt><dd>{{ stay.amount_sar|format_money:'SAR' }}</dd></div><div><dt>الحالة</dt><dd>{% if expired %}انتهت مهلة الدفع{% else %}{{ stay.get_status_display }}{% endif %}</dd></div></dl>
-    <p>حجز صباحي داخلي؛ لم يُنشأ حجز في Hostaway. يُسمح بحجز لاحق عندما تكفي فترة تجهيز الشقة قبله.</p>
+    <section class="morning-hostaway" aria-labelledby="morning-hostaway-title">
+      <h3 id="morning-hostaway-title">تسجيل الحجز في هوستاوي</h3>
+      {% if hostaway_booking.reservation_id %}<p>رقم حجز هوستاوي: <a href="https://dashboard.hostaway.com/reservations/{{ hostaway_booking.reservation_id }}" target="_blank" rel="noopener">{{ hostaway_booking.reservation_id }}</a></p><p>الليلة المسجلة: {{ hostaway_booking.arrival_date }} إلى {{ hostaway_booking.departure_date }}. يظل وقت الدخول الفعلي محفوظًا أعلاه وفي ملاحظة هوستاوي.</p>{% endif %}
+      {% if hostaway_booking.state == 'confirmed' %}<p role="status">مسجل في هوستاوي. السداد موثق في موقعنا؛ لم ينفذ التسجيل تحصيلًا آخر. رسائل الضيف تبقى ضمن مسار الحجز الصباحي.</p>
+      {% elif hostaway_booking.state == 'cancelled' %}<p role="status">أُلغي السجل المرتبط في هوستاوي.</p>
+      {% elif hostaway_booking %}<p role="alert">نتيجة الربط تحتاج مراجعة. لا تعِد إنشاء الحجز؛ راجع هوستاوي باستخدام الرقم إن ظهر.</p>
+      {% elif stay.status == 'paid' and stay.paid_at %}<p>بعد فحص التوفر، نسجل ليلة اليوم السابق بخروج يوم الإقامة، وبالمبلغ المعتمد بالريال. لا ينفذ هذا الإجراء دفعًا أو رسالة للضيف.</p><form method="post" data-submit-once>{% csrf_token %}<button type="submit" class="lsa-btn" name="action" value="record_hostaway">فحص التوفر وتسجيل الحجز في هوستاوي</button></form>
+      {% else %}<p>لم يُسجل في هوستاوي بعد. يتاح التسجيل من هذه الصفحة بعد توثيق استلام كامل المبلغ.</p>{% endif %}
+    </section>
     {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>رابط الدفع ثابت دون مهلة انتهاء زمنية. تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.</p>{% endif %}
     {% if stay.paid_at %}<p>تم توثيق استلام الدفعة: {{ stay.paid_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}.</p>{% endif %}
-    {% if stay.status == 'paid' or stay.status == 'open' or stay.status == 'expired' %}<a class="lsa-btn" href="{% url 'notifications:morning_edit' stay.pk %}">تعديل الحجز</a>{% endif %}
+    {% if not hostaway_booking %}{% if stay.status == 'paid' or stay.status == 'open' or stay.status == 'expired' %}<a class="lsa-btn" href="{% url 'notifications:morning_edit' stay.pk %}">تعديل الحجز</a>{% endif %}{% endif %}
     <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">تحديث حالة السداد</button>{% if stay.status != 'cancelled' %}{% if stay.paid_at %}<label><input type="checkbox" name="confirm_paid_cancellation" value="yes"> أؤكد إلغاء الإقامة وإيقاف رسائلها المستقبلية. الاسترداد المالي يُراجع بصورة مستقلة.</label>{% endif %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الحجز</button>{% endif %}</form>
     <p>تسلسل الرسائل بعد الدفع: {% with event=stay.latest_communication_event %}{% if event %}{% if event.state == 'accepted' %}استلمت منصة التواصل التحديث{% elif event.state == 'superseded' %}يوجد تحديث أحدث{% else %}بانتظار الإرسال أو إعادة المحاولة{% endif %}{% else %}لم يُنشأ حدث تواصل مؤكد{% endif %}{% endwith %}</p>
   </section>
