@@ -282,7 +282,9 @@ def create_stay(
         if any(getattr(existing, k) != v for k, v in values.items()):
             raise MorningStayError("تكرر معرف الطلب ببيانات مختلفة؛ أعد فتح النموذج.")
         return existing
-    evidence = verify_window(property_obj, starts_at, ends_at, guests=guests, client=client)
+    evidence = verify_window(
+        property_obj, starts_at, ends_at, guests=guests, client=client, allow_started=True
+    )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=property_obj.pk)
         existing = MorningStay.objects.filter(request_id=request_id).first()

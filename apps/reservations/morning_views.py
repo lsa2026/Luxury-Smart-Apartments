@@ -23,6 +23,7 @@ from apps.properties.models import Property
 
 from . import morning_payment_messages as payment_messages
 from .models import MorningStay
+from .morning_hostaway import booking_state, record_in_hostaway
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_billing import MorningBillingForm, address_context, address_view
 from .morning_receipts import MorningReceiptForm, record_receipt
@@ -98,7 +99,7 @@ def morning_available_properties(request):
                 zone = property_zone(property_obj)
                 start = datetime.combine(data["date"], data["start_time"], zone)
                 end = datetime.combine(data["date"], data["end_time"], zone)
-                validate_window(start, end, zone=zone)
+                validate_window(start, end, zone=zone, allow_started=True)
             except MorningStayError:
                 continue
             valid_windows += 1
@@ -109,7 +110,8 @@ def morning_available_properties(request):
                     )
                     continue
                 evidence = verify_window(
-                    property_obj, start, end, guests=data["guests"], client=reader
+                    property_obj, start, end, guests=data["guests"], client=reader,
+                    allow_started=True,
                 )
             except MorningStayError as exc:
                 excluded.append({"name": str(property_obj), "reason": str(exc)})
@@ -261,7 +263,7 @@ class MorningStayForm(forms.Form):
                         data["starts_at"],
                         data["ends_at"],
                         zone=zone,
-                        allow_started=bool(self.stay and data["starts_at"] == self.stay.starts_at),
+                        allow_started=True,
                     )
             except MorningStayError as exc:
                 raise forms.ValidationError(str(exc)) from exc
@@ -439,7 +441,22 @@ def morning_detail(request, stay_id):
                 return redirect("notifications:morning_detail", stay_id=stay.pk)
     elif request.method == "POST":
         action = request.POST.get("action")
-        if action == "save_billing":
+        if action == "record_hostaway":
+            try:
+                identifier = record_in_hostaway(request=request, stay_id=stay.pk)
+            except MorningStayError as exc:
+                messages.error(request, str(exc))
+            else:
+                record_audit(
+                    request=request,
+                    action="morning_stay.hostaway_recorded",
+                    object_type="MorningStay",
+                    object_reference=str(stay.pk),
+                    summary="Paid morning stay recorded as the previous calendar night.",
+                    metadata={"hostaway_reservation_id": identifier},
+                )
+                messages.success(request, "سُجل الحجز الصباحي في هوستاوي دون تحصيل جديد.")
+        elif action == "save_billing":
             billing = MorningBillingForm(request.POST)
             if billing.is_valid():
                 from django.db import transaction
@@ -540,6 +557,7 @@ def morning_detail(request, stay_id):
                 initial=stay.billing_address, default_country_code="SA"
             ),
             receipt_form=receipt_form,
+            hostaway_booking=booking_state(stay),
             offline_receipt=getattr(stay, "offline_receipt", None),
             send_error=send_error,
             send_token=payment_messages.form_token(stay, request.user),

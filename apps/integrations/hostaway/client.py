@@ -589,6 +589,20 @@ class HostawayClient:
         )
         return self.get_reservation(reservation_id)
 
+    def cancel_morning_reservation(self, reservation_id: int) -> HostawayReservationSnapshot:
+        """Reverse only an explicitly recorded MorningStay; no automatic cancellation."""
+        if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
+            raise HostawayConfigurationError("hostaway_live_booking_disabled")
+        _validate_reservation_id(reservation_id)
+        current = self.get_reservation(reservation_id)
+        if current.source != "LSA_MorningStay" or current.channel_id != 2000:
+            raise HostawayConfigurationError("not_a_morning_reservation")
+        self._put_json(
+            f"/reservations/{reservation_id}/statuses/cancelled",
+            json_body={"cancelledBy": "host"},
+        )
+        return self.get_reservation(reservation_id)
+
     def _get_json(
         self,
         path: str,

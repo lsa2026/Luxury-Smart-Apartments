@@ -54,6 +54,7 @@ jobs:
           tests/test_payment_link_purchase_receipts.py
           tests/test_morning_payment_messages.py
           tests/test_morning_stays.py
+          tests/test_morning_hostaway.py
           tests/test_morning_hyperpay_validation.py
           tests/test_morning_offline_receipts.py
           tests/test_morning_owner_payment_policy.py
@@ -217,7 +218,7 @@ jobs:
         run: ruff check .
 
       - name: Verify Ruff formatting
-        run: ruff format --check .
+        run: ruff format --diff .
 
       - name: Run Django system checks
         run: python manage.py check
