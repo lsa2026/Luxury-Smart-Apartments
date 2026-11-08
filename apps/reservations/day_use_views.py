@@ -84,6 +84,8 @@ class DayUseAvailabilityReader:
 
 @operations_access_required
 def day_use_available_properties(request):
+    if not settings.DAY_USE08_ENABLED:
+        return JsonResponse({"detail": "المسار النهاري لم يُفعّل بعد."}, status=503)
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
     form = DayUseAvailabilityForm(request.GET)
@@ -362,7 +364,12 @@ def day_use_create(request):
         return render(
             request,
             "admin/reservations/day_use_create.html",
-            context(request, title="حجز نهاري جديد", enabled=False),
+            context(
+                request,
+                title="حجز نهاري جديد",
+                enabled=False,
+                form=DayUseStayForm(require_address=True),
+            ),
         )
     form = DayUseStayForm(request.POST or None, require_address=True)
     if request.method == "POST" and form.is_valid():

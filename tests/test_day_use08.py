@@ -311,6 +311,10 @@ def test_admin_access_and_page_templates_have_no_side_effect(rig, client, settin
 
     assert client.get(reverse("notifications:day_use_create")).status_code in {302, 403}
     client.force_login(rig.actor)
+    preview = client.get(reverse("notifications:day_use_create"))
+    assert preview.status_code == 200 and "النموذج للمعاينة" in preview.content.decode()
+    assert client.post(reverse("notifications:day_use_create"), {}).status_code == 200
+    assert not DayUseStay.objects.exists()
     settings.DAY_USE08_ENABLED = True
     r = client.get(reverse("notifications:day_use_create"))
     assert r.status_code == 200 and "فحص الشقق" in r.content.decode()
