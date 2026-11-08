@@ -17,8 +17,12 @@ def queue_owner_backup_replacement(sender=None, **kwargs):
     """Dispatch only an explicit owner request; empty by default, never a schedule."""
     request_id = os.environ.get("LSA_LOYALTY_REPLACEMENT_REQUEST", "")
     if request_id and sender is not None:
+        # An old deployment must never consume an unknown replacement task.
+        queue_name = f"loyalty-owner-backup-{request_id}"
+        sender.add_task_queue(queue_name)
         sender.app.send_task(
             "apps.loyalty.tasks.owner_replace_backup_task",
             kwargs={"request_id": request_id},
             task_id=f"{request_id}-backup",
+            queue=queue_name,
         )

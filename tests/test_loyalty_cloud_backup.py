@@ -388,10 +388,12 @@ def test_worker_startup_only_queues_explicit_owner_request(monkeypatch):
     request = "owner-20261108-replace-partial"
     monkeypatch.setenv("LSA_LOYALTY_REPLACEMENT_REQUEST", request)
     queue_owner_backup_replacement(sender=sender)
+    sender.add_task_queue.assert_called_once_with(f"loyalty-owner-backup-{request}")
     sender.app.send_task.assert_called_once_with(
         "apps.loyalty.tasks.owner_replace_backup_task",
         kwargs={"request_id": request},
         task_id=f"{request}-backup",
+        queue=f"loyalty-owner-backup-{request}",
     )
 
 
