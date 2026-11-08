@@ -1,4 +1,24 @@
+{% load tz %}
 {% if loyalty_invitation %}
+{% if loyalty_invitation.history %}
+<section aria-label="سجل دعوات هذا الحجز" class="lsa-invitation-history">
+  <h3>سجل دعوات هذا الحجز</h3>
+  <p role="status"><strong>توجد دعوات سابقة لهذا الحجز؛ راجع تاريخها ونتيجتها قبل إعادة الإرسال.</strong></p>
+  <p class="help">جميع الأوقات بتوقيت الرياض. قبول مزود الإرسال لا يعني تأكيد الوصول أو القراءة.</p>
+  {% timezone "Asia/Riyadh" %}
+  <div class="lsa-invitation-history__table">
+    <table>
+      <thead><tr><th scope="col">القناة</th><th scope="col">وقت طلب الإرسال</th><th scope="col">وقت تسجيل النتيجة</th><th scope="col">النتيجة</th></tr></thead>
+      <tbody>
+        {% for receipt in loyalty_invitation.history %}
+        <tr><td>{{ receipt.channel_label }}{% if receipt.manual_resend %} — إعادة إرسال{% endif %}</td><td><bdi dir="ltr">{{ receipt.requested_at|date:"Y-m-d H:i:s"|default:"غير موثق" }}</bdi></td><td><bdi dir="ltr">{{ receipt.updated_at|date:"Y-m-d H:i:s"|default:"غير موثق" }}</bdi></td><td>{{ receipt.status_label }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endtimezone %}
+</section>
+{% endif %}
 <p><a href="{% url 'notifications:loyalty_invitation_preview' %}">معاينة الدعوة وإرسال نموذج إلى واتسابي</a></p>
 <div class="lsa-stay-controls__grid">
   {% for invitation in loyalty_invitation.channels %}
@@ -6,7 +26,7 @@
     <h3>الدعوة عبر {{ invitation.label }}</h3>
     {% if invitation.confirmation %}
       <p>إرسال رابط الانضمام إلى <bdi dir="ltr">{{ invitation.recipient }}</bdi> باللغة {{ invitation.language }}.</p>
-      <p>هذه الدعوة خاصة بالإقامة السابقة المؤهلة فقط، مع منع تكرار الدعوة والمكافأة.</p>
+      <p>هذه الدعوة خاصة بالإقامة السابقة المؤهلة فقط. إعادة الإرسال بقرار المدير لا تكرر مكافأة الحجز.</p>
       {% if invitation.last_status %}<p role="status">حالة آخر طلب: {{ invitation.last_status }}</p>{% endif %}
       <p class="help">الدعوة مجانية واختيارية. تُعرض المكافأة من مدفوعات الحجز الموثقة، وتُضاف بعد الانضمام وتوثيق الجوال نفسه. لا تنشئ المعاينة أو الإرسال عضوية أو نقاطًا.</p>
       <details class="lsa-booking-invitation__preview">
@@ -21,7 +41,8 @@
         <input type="hidden" name="action" value="send_loyalty_invitation">
         <input type="hidden" name="channel" value="{{ invitation.channel }}">
         <input type="hidden" name="confirmation" value="{{ invitation.confirmation }}">
-        <button type="submit" class="lsa-btn lsa-btn--gold">{% include "admin/reservations/includes/booking_invitation_icon.html" %} إرسال الدعوة عبر {{ invitation.label }}</button>
+        {% if invitation.manual_resend %}<p><label><input type="checkbox" name="confirm_resend" required> راجعت سجل الدعوات وأريد إعادة إرسال الدعوة عبر {{ invitation.label }}.</label></p>{% endif %}
+        <button type="submit" class="lsa-btn lsa-btn--gold">{% include "admin/reservations/includes/booking_invitation_icon.html" %} {% if invitation.manual_resend %}إعادة إرسال{% else %}إرسال{% endif %} الدعوة عبر {{ invitation.label }}</button>
       </form>
     {% else %}
       <button type="button" class="lsa-btn lsa-btn--gold" disabled aria-describedby="invitation-{{ invitation.channel }}-reason">{% include "admin/reservations/includes/booking_invitation_icon.html" %} إرسال الدعوة عبر {{ invitation.label }}</button>
