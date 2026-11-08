@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.core.phone_numbers import InvalidPhoneNumber
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
 from apps.notifications.services.audit import record_audit
@@ -29,6 +29,7 @@ from .models import MorningStay
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_billing import MorningBillingForm, address_context, address_view
 from .morning_hostaway import booking_state, record_in_hostaway
+from .morning_phone import normalize_morning_phone
 from .morning_receipts import MorningReceiptForm, record_receipt
 from .morning_stays import (
     ZONE,
@@ -181,7 +182,7 @@ class MorningStayForm(forms.Form):
     end_time = forms.TimeField(
         label="ساعة الخروج — ١٢ ظهرًا كحد أقصى",
         initial=time(12),
-        widget=forms.TimeInput(attrs={"type": "time"}),
+        widget=forms.TimeInput(attrs={"type": "time", "max": "12:00"}),
     )
     guest_name = forms.CharField(label="اسم الضيف الكامل", max_length=200)
     guest_phone = forms.CharField(
@@ -256,7 +257,7 @@ class MorningStayForm(forms.Form):
     def clean_guest_phone(self):
         try:
             country = self.data.get("guest_phone_country") or "SA"
-            return normalize_phone_number(self.cleaned_data["guest_phone"], default_region=country)
+            return normalize_morning_phone(self.cleaned_data["guest_phone"], country)
         except InvalidPhoneNumber as exc:
             raise forms.ValidationError("تحقق من رقم الجوال والدولة المختارة.") from exc
 
@@ -617,6 +618,22 @@ def morning_detail(request, stay_id):
 
 @operations_access_required
 def morning_address(request, kind):
+    if kind == "phone":
+        from .security import is_ip_rate_limited
+
+        if request.method != "POST":
+            return HttpResponseNotAllowed(["POST"])
+        if is_ip_rate_limited(request, scope="morning-phone", requests=60, window=300):
+            return JsonResponse({"detail": "temporarily_unavailable"}, status=429)
+        try:
+            raw = request.POST.get("phone", "")
+            if len(raw) > 32:
+                raise InvalidPhoneNumber
+            phone = normalize_morning_phone(raw, request.POST.get("country") or "SA")
+        except InvalidPhoneNumber:
+            return JsonResponse({"detail": "invalid_phone"}, status=400)
+        region = phonenumbers.region_code_for_number(phonenumbers.parse(phone, None))
+        return JsonResponse({"phone": phone, "country": region})
     if kind not in {"suggestions", "details"}:
         from django.http import Http404
 

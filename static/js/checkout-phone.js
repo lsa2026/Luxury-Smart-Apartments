@@ -90,6 +90,13 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
     };
     phone.addEventListener("input", clearError);
     phone.addEventListener("blur", validate);
+    if (widget.hasAttribute("data-morning-phone")) {
+        let typingTimer;
+        phone.addEventListener("input", () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(validate, 350);
+        });
+    }
     country.addEventListener("change", () => {
         clearError();
         remember();
