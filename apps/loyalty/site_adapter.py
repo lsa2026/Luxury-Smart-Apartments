@@ -32,7 +32,7 @@ def stay_times(booking):
     )
 
 
-def _lodging(components, total):
+def _lodging(components, total, *, allow_accommodation=False):
     if not isinstance(components, list) or not components:
         raise ValueError("price_breakdown_missing")
     sums, lodging, found = Decimal(0), Decimal(0), False
@@ -47,7 +47,9 @@ def _lodging(components, total):
         # discount lines are not silently assigned to lodging versus fees.
         if value < 0:
             raise ValueError("discount_allocation_required")
-        if part.get("type") == "baseRate":
+        if part.get("type") == "baseRate" or (
+            allow_accommodation and part.get("type") == "accommodation"
+        ):
             lodging += value
             found = True
     if sums != total or not found or not 0 <= lodging <= total:
@@ -269,7 +271,11 @@ def booking_facts(booking, *, past_preview=False):
             )
             if legacy_trial_price:
                 pricing_components = [{**components[0], "type": "baseRate"}]
-            lodging = _lodging(pricing_components, booking.total_price)
+            # Historical site quotes (including completed extensions) also use
+            # accommodation for lodging. Read that explicit type for all owner
+            # past-stay offers, with the same total/fee/payment checks. Preserve
+            # source components and existing offer fingerprints unchanged.
+            lodging = _lodging(pricing_components, booking.total_price, allow_accommodation=past)
             gross = booking.total_price
             if booking.currency != "SAR":
                 from .valuation import to_sar
