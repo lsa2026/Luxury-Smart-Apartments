@@ -4,6 +4,8 @@ on:
     paths:
       - ".github/workflows/recovery-toolkit.yml"
   workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
 permissions:
   contents: read
 jobs:
@@ -14,7 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: 244f12f05781316d3405aa6c56e001f17f01b92b
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -48,7 +52,7 @@ jobs:
                   if re.match(r'^(libc|libm|libpthread|libdl|librt|libresolv|ld-linux)\.so',lib.name):continue
                   if lib.is_file(): shutil.copy2(lib,dest/lib.name)
           PY
-          git archive --format=tar.gz -o out/source-244f12f05781316d3405aa6c56e001f17f01b92b.tar.gz HEAD
+          git archive --format=tar.gz -o out/source-$(git rev-parse HEAD).tar.gz HEAD
           tar -czf out/recovery-toolkit-pg17-python313.tar.gz kit
           (cd out && sha256sum *.tar.gz > SHA256SUMS)
       - uses: actions/upload-artifact@v7
@@ -64,7 +68,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: 244f12f05781316d3405aa6c56e001f17f01b92b
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -107,6 +113,8 @@ jobs:
           PY
           mkdir -p media-artifact
           tar -czf media-artifact/website-public-images.tar.gz media-export
+          git archive --format=tar.gz -o media-artifact/source-$(git rev-parse HEAD).tar.gz HEAD
+          git rev-parse HEAD > media-artifact/source-head.txt
           (cd media-artifact && sha256sum *.tar.gz > SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:
