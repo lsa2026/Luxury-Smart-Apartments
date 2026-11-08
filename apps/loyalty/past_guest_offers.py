@@ -40,6 +40,8 @@ def quote(booking):
             "verified_payment_incomplete": "السداد الموثق لا يغطي قيمة الإقامة.",
             "verified_payment_required": "لا توجد دفعة موثقة لهذا الحجز.",
             "price_breakdown_missing": "تفاصيل قيمة الإقامة والرسوم غير مكتملة.",
+            "price_breakdown_mismatch": "تفاصيل عرض السعر لا تطابق السعر النهائي الموثق للحجز.",
+            "manual_price_breakdown_required": "يلزم توثيق توزيع السعر النهائي للإقامة والرسوم.",
         }.get(blocker, "راجع توثيق السداد وتفاصيل السعر ومواعيد الإقامة.")
         raise ValidationError("هذه الدعوة للإقامات السابقة المؤهلة والمسددّة فقط. " + detail)
     reward = amount(cents(facts["base"]) * 3 // 100)

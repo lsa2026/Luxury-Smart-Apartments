@@ -11,7 +11,12 @@ from django.utils import timezone
 
 from apps.payments.currency import CurrencyError
 from apps.payments.models import PaymentAttempt
-from apps.reservations.models import BookingModificationRequest, RefundObligation, Reservation
+from apps.reservations.models import (
+    BookingModificationRequest,
+    ManualBookingDraft,
+    RefundObligation,
+    Reservation,
+)
 
 logger = logging.getLogger(__name__)
 CENT = Decimal("0.01")
@@ -48,6 +53,59 @@ def _lodging(components, total):
     if sums != total or not found or not 0 <= lodging <= total:
         raise ValueError("price_breakdown_mismatch")
     return lodging
+
+
+def _paid_owner_final_price(booking, payments):
+    """Read a completed manual stay's approved, fully HyperPay-funded lodging price.
+
+    The original quote is immutable audit evidence, not the final invoice. Only
+    a single explicit accommodation line has unambiguous fee allocation here.
+    """
+    intent = booking.booking_intent
+    quote = intent.quote
+    draft = getattr(quote, "manual_booking_draft", None)
+    if (
+        not draft
+        or not draft.created_by_id
+        or draft.status != ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
+        or draft.price_source != ManualBookingDraft.PriceSource.MANUAL_OVERRIDE
+        or booking.currency != "SAR"
+        or draft.currency != "SAR"
+        or intent.currency != "SAR"
+        or quote.currency != "SAR"
+        or draft.property_id != booking.property_id
+        or draft.check_in != booking.check_in
+        or draft.check_out != booking.check_out
+        or draft.final_total_price != booking.total_price
+        or intent.total_price != booking.total_price
+        or draft.payment_amount_sar != booking.total_price
+        or intent.payment_amount_sar != booking.total_price
+        or not payments
+        or any(
+            p.provider != "hyperpay" or p.provider_result_code == "000.100.112" for p in payments
+        )
+        or sum((p.amount for p in payments), Decimal(0)) != booking.total_price
+    ):
+        return None
+    components = quote.components
+    if not isinstance(components, list) or len(components) != 1:
+        return None
+    part = components[0]
+    if (
+        not isinstance(part, dict)
+        or part.get("type") not in {"accommodation", "baseRate"}
+        or part.get("included_in_total") is not True
+        or Decimal(str(part.get("total", "NaN"))) != quote.total_price
+        or quote.total_price <= 0
+    ):
+        return None
+    return {
+        "adapter": "owner-final-price-hyperpay-v1",
+        "draft": str(draft.pk),
+        "quote": str(quote.pk),
+        "original_total": str(quote.total_price),
+        "paid_final_total": str(booking.total_price),
+    }
 
 
 def booking_facts(booking, *, past_preview=False):
@@ -178,6 +236,13 @@ def booking_facts(booking, *, past_preview=False):
             components = [
                 {"type": "baseRate", "total": str(booking.total_price), "included_in_total": True}
             ]
+        paid_owner_price = (
+            _paid_owner_final_price(booking, payments) if past and not modification else None
+        )
+        if paid_owner_price:
+            components = [
+                {"type": "baseRate", "total": str(booking.total_price), "included_in_total": True}
+            ]
         legacy_trial_price = False
         if cancelled:
             # Cancellation is not proof that no nights were consumed.
@@ -260,6 +325,8 @@ def booking_facts(booking, *, past_preview=False):
             "fx": intent.exchange_rate_snapshot,
             "rules": "verified-site-records-v1",
         }
+        if paid_owner_price:
+            facts["owner_final_price"] = paid_owner_price
         if offer:
             previous = booking.loyalty_state.get("settlement", {}).get("facts", {})
             if not previous.get(KEY) and fingerprint(facts) != offer["quote"]["fingerprint"]:
