@@ -39,7 +39,8 @@ test('unpaid delivery progress queues the fourth guest message through the prote
   assert.equal(branch[0][0].node,'L07 Paid Morning Loyalty Invitation');
   assert.equal(branch[1][0].node,'P06 Guest Delivery Confirmed?');
   const guard=workflow.nodes.find(n=>n.name==='P06 Guest Delivery Confirmed?');
-  assert.equal(guard.parameters.conditions.conditions[0].leftValue,'={{ $json.delivered === true }}');
+  assert.match(guard.parameters.conditions.conditions[0].leftValue,/delivered === true/);
+  assert.match(guard.parameters.conditions.conditions[0].leftValue,/message_type === 'checkin_guide'/);
   const path=workflow.connections[guard.name].main;
   assert.equal(path[0][0].node,'P07 Queue Payment Link After Three Messages');
   assert.equal(path[1][0].node,'D00 Claim Next Morning07 Delivery');

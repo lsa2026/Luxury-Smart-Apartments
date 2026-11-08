@@ -1054,7 +1054,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.delivered === true }}",
+              "leftValue": "={{ $json.delivered === true && $('D00 Claim Next Morning07 Delivery').first().json.message_type === 'checkin_guide' }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -1102,7 +1102,10 @@
           "timeout": 30000
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     }
   ],
   "connections": {
