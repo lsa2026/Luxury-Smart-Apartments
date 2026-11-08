@@ -445,13 +445,15 @@ class HyperPayService:
             if mismatch:
                 mapped = HyperPayStatus.REVIEW
                 attempt.failure_code = mismatch
-            if mapped is HyperPayStatus.SUCCESS:
+            provider_payment_id = _safe_optional_text(document.get("id"), 255)
+            if provider_payment_id:
                 from apps.payments.collection_identity import payment_id_conflict
 
-                if payment_id_conflict(document.get("id"), attempt):
+                if payment_id_conflict(provider_payment_id, attempt):
                     mapped = HyperPayStatus.REVIEW
                     attempt.failure_code = "payment_id_already_recorded"
-            attempt.provider_payment_id = _safe_optional_text(document.get("id"), 255)
+                    provider_payment_id = None
+            attempt.provider_payment_id = provider_payment_id
             attempt.provider_result_code = _safe_text(code, 100)
             attempt.provider_result_description = _safe_text(description, 255)
             attempt.payment_brand = _safe_text(document.get("paymentBrand"), 30)

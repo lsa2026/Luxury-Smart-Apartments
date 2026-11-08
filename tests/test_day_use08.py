@@ -304,11 +304,22 @@ def test_checkout_not_released_merely_by_known_signed_link(rig, settings):
 
 
 def test_admin_access_and_page_templates_have_no_side_effect(rig, client, settings):
+    import os
+    from pathlib import Path
+
+    from tests.test_contact_layout import _standalone
+
     assert client.get(reverse("notifications:day_use_create")).status_code in {302, 403}
     client.force_login(rig.actor)
     settings.DAY_USE08_ENABLED = True
     r = client.get(reverse("notifications:day_use_create"))
     assert r.status_code == 200 and "فحص الشقق" in r.content.decode()
+    if destination := os.environ.get("LSA_DAY_USE_VISUAL_DIR"):
+        output = Path(destination)
+        output.mkdir(parents=True, exist_ok=True)
+        (output / "day-use-create.html").write_text(
+            _standalone(r.content.decode()), encoding="utf-8"
+        )
     s = stay(rig)
     assert client.get(reverse("notifications:day_use_detail", args=[s.pk])).status_code == 200
     assert not s.attempts.exists()

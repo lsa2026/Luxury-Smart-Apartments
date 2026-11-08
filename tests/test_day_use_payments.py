@@ -1,10 +1,12 @@
 """Independent checkout and verified settlement; disposable provider responses only."""
 # ruff: noqa: F811
 
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.payments import day_use_payments as payments
 from apps.payments.hyperpay.exceptions import HyperPayCheckoutError
@@ -180,3 +182,85 @@ def test_phone_provider_uncertainty_prevents_replay(rig, settings, monkeypatch):
             s.pk, "+16502530001", expected_updated_at=s.updated_at.isoformat(), client=rig.remote
         )
     assert rig.remote.update_day_use_phone.call_count == 1
+
+
+def morning_attempt_for(rig, s):
+    from apps.payments.models import MorningPaymentAttempt
+    from apps.reservations.models import MorningStay
+
+    other = MorningStay.objects.create(
+        request_id=uuid4(),
+        property=rig.p,
+        starts_at=rig.start.replace(hour=1),
+        ends_at=rig.start.replace(hour=11),
+        guest_name="Synthetic Other Guest",
+        guest_phone="+16502530001",
+        guest_email="other@example.test",
+        guests=1,
+        amount_sar=s.amount_sar,
+        environment="production",
+        status="processing",
+        expires_at=rig.start,
+        availability_checked_at=timezone.now(),
+        created_by=rig.actor,
+    )
+    return MorningPaymentAttempt.objects.create(
+        stay=other,
+        merchant_transaction_id="other-ledger",
+        amount=s.amount_sar,
+        status="pending",
+        provider_checkout_id="synthetic-other-checkout",
+    )
+
+
+def test_one_provider_payment_id_cannot_settle_morning_and_day_use(ready):
+    rig, s, gateway = ready
+    attempt = start(ready)
+    other = morning_attempt_for(rig, s)
+    other.provider_payment_id = "already-used-money"
+    other.status = "succeeded"
+    other.verified_at = timezone.now()
+    other.save()
+    gateway.payment_document = approved(attempt, id="already-used-money")
+    result = payments.verify_payment(attempt.pk, client=gateway)
+    assert result.status == "review" and result.failure_code == "payment_id_already_recorded"
+    s.refresh_from_db()
+    assert not s.paid_at and not s.payment_events.exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_cross_ledger_provider_proofs_have_one_winner(ready):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    from django.db import close_old_connections, connection
+
+    from apps.payments.morning_payments import verify_payment as verify_morning
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Cross-ledger provider ID serialization requires PostgreSQL")
+    rig, s, _ = ready
+    day_attempt = start(ready)
+    other = morning_attempt_for(rig, s)
+    barrier = Barrier(2)
+
+    def worker(pair):
+        attempt, verify = pair
+        close_old_connections()
+        provider = Mock()
+
+        def result(checkout_id):
+            barrier.wait(timeout=10)
+            return approved(attempt, id="same-cross-ledger-capture")
+
+        provider.get_checkout_payment.side_effect = result
+        try:
+            return verify(attempt.pk, client=provider).status
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(
+            pool.map(worker, [(day_attempt, payments.verify_payment), (other, verify_morning)])
+        )
+    assert sorted(results) == ["review", "succeeded"]
