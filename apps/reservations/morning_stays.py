@@ -301,7 +301,10 @@ def create_stay(
             **values,
             request_id=request_id,
             created_by=actor,
-            expires_at=min(timezone.now() + timedelta(minutes=5), starts_at),
+            expires_at=min(
+                timezone.now() + timedelta(minutes=5),
+                ends_at if allow_started and starts_at <= timezone.now() else starts_at,
+            ),
             availability_checked_at=timezone.now(),
             availability_evidence=evidence,
         )

@@ -111,6 +111,23 @@ def test_0500_immediate_admin_stay_can_be_recorded_as_yesterday_without_public_r
             allow_started=True,
         )
     assert stay.starts_at.astimezone(ZONE).date() == day
+    assert stay.expires_at == now + timedelta(minutes=5)
+    with patch("django.utils.timezone.now", return_value=now):
+        with pytest.raises(MorningStayError, match="متداخل"):
+            create_stay(
+                actor=stay.created_by,
+                request_id=uuid4(),
+                property_obj=p,
+                starts_at=stay.starts_at,
+                ends_at=stay.ends_at,
+                guest_name=stay.guest_name,
+                guest_phone=stay.guest_phone,
+                guest_email=stay.guest_email,
+                guests=1,
+                amount_sar=Decimal("500"),
+                client=remote,
+                allow_started=True,
+            )
     MorningStay.objects.filter(pk=stay.pk).update(status="paid", paid_at=now)
     snapshot = HostawayReservationSnapshot(
         reservation_id=99882,
