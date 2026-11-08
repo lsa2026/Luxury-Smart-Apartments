@@ -71,8 +71,10 @@ def test_record_uses_previous_night_explicit_price_and_no_second_charge_or_guest
     identifier = record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
     assert identifier == 99881
     wire = remote.create_reservation_with_price_details.call_args.args[0].to_payload()
-    assert wire["arrivalDate"] == (stay.starts_at.date() - timedelta(days=1)).isoformat()
-    assert wire["departureDate"] == stay.starts_at.date().isoformat()
+    assert wire["arrivalDate"] == (
+        stay.starts_at.astimezone(ZONE).date() - timedelta(days=1)
+    ).isoformat()
+    assert wire["departureDate"] == stay.starts_at.astimezone(ZONE).date().isoformat()
     assert wire["totalPrice"] == 500
     assert wire["financeField"][0]["total"] == 500
     assert wire["financeField"][0]["isOverriddenByUser"] == 1
@@ -105,6 +107,7 @@ def test_0500_immediate_admin_stay_can_be_recorded_as_yesterday_without_public_r
             guests=1,
             amount_sar=Decimal("500"),
             client=remote,
+            allow_started=True,
         )
     assert stay.starts_at.astimezone(ZONE).date() == day
     MorningStay.objects.filter(pk=stay.pk).update(status="paid", paid_at=now)

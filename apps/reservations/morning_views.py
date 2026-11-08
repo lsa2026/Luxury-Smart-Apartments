@@ -23,9 +23,9 @@ from apps.properties.models import Property
 
 from . import morning_payment_messages as payment_messages
 from .models import MorningStay
-from .morning_hostaway import booking_state, record_in_hostaway
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_billing import MorningBillingForm, address_context, address_view
+from .morning_hostaway import booking_state, record_in_hostaway
 from .morning_receipts import MorningReceiptForm, record_receipt
 from .morning_stays import (
     ZONE,
@@ -375,6 +375,7 @@ def morning_create(request):
                 },
                 guest_language=data.get("guest_language") or "ar",
                 billing_address=data.get("billing_address"),
+                allow_started=True,
             )
         except MorningStayError as exc:
             form.add_error(None, str(exc))

@@ -51,6 +51,8 @@ def _request(stay):
     previous = day - timedelta(days=1)
     amount = float(stay.amount_sar)
     first, _, last = stay.guest_name.partition(" ")
+    actual_start = stay.starts_at.astimezone(property_zone(stay.property)).isoformat()
+    actual_end = stay.ends_at.astimezone(property_zone(stay.property)).isoformat()
     return MorningRequest(
         {
             "channelId": settings.HOSTAWAY_DIRECT_CHANNEL_ID,
@@ -86,8 +88,8 @@ def _request(stay):
             # No card, charge, receipt, email or phone is sent by this recording action.
             "hostNote": (
                 f"MorningStay {stay.pk}; paid externally in the website. "
-                f"ACTUAL arrival {stay.starts_at.astimezone(property_zone(stay.property)).isoformat()}; "
-                f"ACTUAL departure {stay.ends_at.astimezone(property_zone(stay.property)).isoformat()}. "
+                f"ACTUAL arrival {actual_start}; "
+                f"ACTUAL departure {actual_end}. "
                 "Calendar night is the previous date. Do not collect again."
             ),
         }
