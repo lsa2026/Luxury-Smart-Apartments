@@ -91,13 +91,16 @@ def record_receipt(
         MorningStay.objects.filter(pk=stay.pk).update(
             status="paid", paid_at=received_at, updated_at=timezone.now()
         )
+        from .morning_loyalty import queue_paid_invitation
+
+        stay.refresh_from_db()
+        queue_paid_invitation(stay)
         record_audit(
             request=request,
             action="morning_stay.offline_received",
             object_type="MorningOfflineReceipt",
             object_reference=str(receipt.pk),
-            summary="توثيق سداد صباحي مستلم فعليًا بحوالة بنكية أو نقدًا؛ "
-            "دون تحصيل جديد أو إرسال رسالة.",
+            summary="توثيق سداد صباحي مستلم فعليًا بحوالة بنكية أو نقدًا؛ دون تحصيل جديد.",
             metadata={"source": method, "status": "paid"},
         )
         return receipt

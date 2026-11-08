@@ -212,3 +212,39 @@ def test_checkout_preserves_link_and_does_not_charge_twice_or_reconfirm_booking(
     assert start_payment(stay, remote, gateway).pk == attempt.pk
     assert gateway.checkout_calls == 1
     assert stay.communication_events.count() == 1
+
+
+def test_manual_receipt_uses_payment_proof_without_repeating_the_booking_event():
+    from apps.reservations.morning07_communications import verified_payment
+    from apps.reservations.morning_receipts import record_receipt
+    from apps.reservations.tasks import invite_paid_morning
+
+    stay, remote, _ = unpaid()
+    record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
+    record_receipt(
+        request=request_for(stay),
+        stay_id=stay.pk,
+        amount=stay.amount_sar,
+        method="bank_transfer",
+        received_at=timezone.now(),
+        confirmed=True,
+    )
+    stay.refresh_from_db()
+    assert verified_payment(stay) is True
+    assert stay.communication_events.count() == 1
+    with patch("apps.reservations.morning_loyalty.invite_paid_booking") as invite:
+        from django.http import JsonResponse
+
+        invite.return_value = JsonResponse({"code": "duplicate"})
+        assert invite_paid_morning.run(str(stay.pk)) == {"code": "duplicate"}
+        invite.assert_called_once()
+
+
+def test_unpaid_booking_never_runs_paid_invitation_completion():
+    from apps.reservations.tasks import invite_paid_morning
+
+    stay, remote, _ = unpaid()
+    record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
+    with patch("apps.reservations.morning_loyalty.invite_paid_booking") as invite:
+        assert invite_paid_morning.run(str(stay.pk)) == {"code": "not_eligible"}
+        invite.assert_not_called()

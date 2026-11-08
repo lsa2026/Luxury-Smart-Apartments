@@ -18,7 +18,7 @@
     {% if offline_receipt %}<p><strong>مدفوع بواسطة {{ offline_receipt.get_method_display }}</strong> — {{ offline_receipt.amount|format_money:'SAR' }}</p><p>الاستلام: {{ offline_receipt.received_at|timezone:'Asia/Riyadh'|date:'Y-m-d H:i' }} بتوقيت الرياض · سجّله: {{ offline_receipt.recorded_by }}</p>{% if offline_receipt.reference %}<p>المرجع: {{ offline_receipt.reference }}</p>{% endif %}{% if offline_receipt.note %}<p>{{ offline_receipt.note }}</p>{% endif %}
     {% elif not stay.paid_at and stay.status != 'cancelled' %}
     <details class="morning-receipt"{% if receipt_form.is_bound %} open{% endif %}><summary class="lsa-btn lsa-btn--gold">✓ تسجيل استلام حوالة بنكية أو نقدًا — تحديد الحجز كمدفوع</summary>
-      <p>استخدم هذا الخيار بعد التحقق من استلام كامل المبلغ. يُحدّث حالة الحجز إلى مدفوع ويحفظ سندًا باسم المستخدم. لا ينفذ تحصيلًا جديدًا أو يرسل رسالة تلقائية.</p>
+      <p>استخدم هذا الخيار بعد التحقق من استلام كامل المبلغ. يُحدّث حالة الحجز إلى مدفوع ويحفظ سندًا باسم المستخدم. لا ينفذ تحصيلًا جديدًا.{% if hostaway_first %} تُستكمل إجراءات ما بعد السداد بعد تحقق وصول رسائل الحجز.{% else %} لا يرسل رسالة تلقائية.{% endif %}</p>
       <form method="post" class="lsa-manual-booking-form" data-submit-once data-morning-validation>{% csrf_token %}{{ receipt_form.non_field_errors }}
         {% for field in receipt_form %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
         <button class="lsa-btn" type="submit" name="action" value="record_offline">حفظ السداد وتحديد الحجز كمدفوع</button>

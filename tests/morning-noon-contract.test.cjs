@@ -8,7 +8,7 @@ const body = {source:'morning07',payment_verified:true,status:'paid',morning_sta
 // JSON export uses escaped regex for imported workflow serialization. Normalize only the known regex escape.
 const run = new Function('$json', code.replace('/^\\\\+?', '/^\\+?').replace('\\\\d{7,14}', '\\d{7,14}'));
 test('verified morning checkout includes noon in both local time zones', () => {
- for (const timezone of ['Asia/Riyadh','Africa/Casablanca']) assert.equal(run({statusCode:200,body:{...body,timezone}})[0].json.valid,true);
+ for (const timezone of ['Asia/Riyadh','Africa/Casablanca']) assert.equal(run({statusCode:200,body:{...body,timezone, starts_at:timezone==='Africa/Casablanca'?'2032-01-01T01:00:00Z':body.starts_at, ends_at:timezone==='Africa/Casablanca'?'2032-01-01T12:00:00Z':body.ends_at}})[0].json.valid,true);
 });
 test('after-noon, unverified, and overnight events remain rejected', () => {
  for (const change of [{check_out_time:'12:01'}, {payment_verified:false}, {check_in_time:'00:00'}, {departure_date:'2032-01-02'}]) assert.equal(run({statusCode:200,body:{...body,...change}})[0].json.valid,false);

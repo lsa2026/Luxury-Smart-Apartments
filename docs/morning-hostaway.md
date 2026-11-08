@@ -17,6 +17,11 @@ existing Morning07 journey owns confirmation, rules, instructions, contacts and
 the reminder at the actual morning checkout time. Pathway01 continues to exclude
 this source. Payment alone does not repeat booking messages.
 
+After collection, a bounded task completes only the optional paid invitation via
+the same Morning07 invitation helper, exact core delivery receipts and shared
+registry. It does not re-emit the booking event. Bank/cash proof must be the
+manager's explicit amount-matched receipt; no gateway success is invented.
+
 Confirmed and uncertain Hostaway claims retain local occupancy after the short
 unpaid lease. Checkout/payment-link availability excludes only the exact linked
 Hostaway ID after checking its source, listing, dates and active status. Other

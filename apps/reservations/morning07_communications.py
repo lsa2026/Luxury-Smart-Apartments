@@ -22,6 +22,12 @@ SALT = "reservations.morning07-communication-event.v1"
 
 
 def verified_payment(stay):
+    # Version 2 also accepts the manager's explicit, amount-matched collection
+    # receipt. This is administrative proof, never a claim of a gateway charge.
+    if verified_booking(stay) and stay.paid_at:
+        receipt = getattr(stay, "offline_receipt", None)
+        if receipt and receipt.amount == stay.amount_sar and receipt.recorded_by_id:
+            return True
     return (
         bool(stay.paid_at)
         and stay.attempts.filter(
@@ -113,6 +119,10 @@ def capture_event(stay_id):
         json.dumps(fingerprint_values, sort_keys=True).encode()
     ).hexdigest()
     if fingerprint == stay.communication_fingerprint:
+        if verified_booking(stay) and verified_payment(stay):
+            from .morning_loyalty import queue_paid_invitation
+
+            queue_paid_invitation(stay)
         return
     revision = stay.communication_revision + 1
     kind = "cancelled" if stay.status == "cancelled" else "new" if revision == 1 else "modified"

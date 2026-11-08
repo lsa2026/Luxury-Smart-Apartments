@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-11-08T01:49:04.597Z",
+  "exitCode": 0,
+  "tests": 48,
+  "passed": 48,
+  "failed": 0,
+  "isolation": "Node pure code + PGlite in-memory PostgreSQL; synthetic tables and data; no provider clients or production credentials",
+  "n8nRuntimeExecuted": false,
+  "productionDatabaseWritten": false,
+  "productionWorkflowChanged": false
+}
