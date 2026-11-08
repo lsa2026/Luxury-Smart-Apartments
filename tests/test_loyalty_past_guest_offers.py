@@ -18,7 +18,7 @@ from apps.loyalty.past_guest_invitation_copy import invitation_caption
 from apps.loyalty.past_guest_offers import KEY, SALT, apply_for_user, quote
 from apps.loyalty.phone_gifts import phone_hash
 from apps.loyalty.services import balance, reconcile
-from apps.payments.models import PaymentAttempt
+from apps.payments.models import OfflinePaymentReceipt, PaymentAttempt
 from apps.reservations.models import ManualBookingDraft, Reservation
 from tests import test_loyalty_booking_invitations as manual
 from tests.test_loyalty_stage8 import completed_change, join, user
@@ -249,6 +249,92 @@ def final_price_booking(rig, component_type="accommodation"):
         created_by=rig[1],
     )
     return booking, draft
+
+
+def receipted_final_price_booking(rig):
+    booking, draft = final_price_booking(rig)
+    payment = PaymentAttempt.objects.get(booking_intent=booking.booking_intent)
+    receipt = OfflinePaymentReceipt.objects.create(
+        reservation=booking,
+        payment_attempt=payment,
+        amount=payment.amount,
+        currency="SAR",
+        method="bank_transfer",
+        reference=f"internal-receipt:{booking.pk}",
+        received_at=payment.verified_at,
+        recorded_by=rig[1],
+        snapshot_digest="synthetic-receipt-digest",
+    )
+    payment.provider = "manual"
+    payment.provider_payment_id = f"manual:{receipt.pk}"
+    payment.provider_reference = receipt.reference
+    payment.save()
+    return booking, draft, receipt, payment
+
+
+@pytest.mark.parametrize("channel", ["whatsapp", "email"])
+def test_owner_final_price_uses_existing_offline_receipt_without_rewriting_money(rig, channel):
+    booking, draft, receipt, payment = receipted_final_price_booking(rig)
+    before = list(PaymentAttempt.objects.values())
+    assert quote(booking)["reward"] == "18.00"
+    client = rig[0]
+    client.post(manual.url(booking), manual.payload(client, booking, channel))
+    manual.deliver_latest(booking, channel)
+    guest = user("receipted-owner-final")
+    VerifiedPhone.objects.create(user=guest, phone=PHONE)
+    member = join(guest)
+    assert balance(member) == Decimal("18.00")
+    apply_for_user(guest)
+    row = Ledger.objects.get(reservation=booking)
+    evidence = row.evidence["owner_final_price"]
+    assert evidence["adapter"] == "owner-final-price-offline-receipt-v1"
+    assert evidence["offline_receipts"] == [str(receipt.pk)]
+    assert evidence["draft"] == str(draft.pk)
+    draft.quote.refresh_from_db()
+    assert draft.quote.total_price == Decimal("700.00")
+    assert list(PaymentAttempt.objects.values()) == before
+    receipt.refresh_from_db()
+    assert receipt.payment_attempt_id == payment.pk and receipt.amount == Decimal("600.00")
+
+
+@pytest.mark.parametrize(
+    "reason", ["booking", "owner", "amount", "currency", "time", "payment_id", "reference"]
+)
+def test_final_price_offline_receipt_must_match_the_booking_owner_and_payment(rig, reason):
+    booking, _, receipt, payment = receipted_final_price_booking(rig)
+    if reason == "booking":
+        receipt.reservation = manual.past_booking("SYNTHETIC-OTHER-RECEIPT")
+    elif reason == "owner":
+        receipt.recorded_by = user("other-receipt-owner")
+    elif reason == "amount":
+        receipt.amount = Decimal("599.00")
+    elif reason == "currency":
+        receipt.currency = "MAD"
+    elif reason == "time":
+        receipt.received_at -= timedelta(minutes=1)
+    elif reason == "payment_id":
+        payment.provider_payment_id = "manual:unlinked"
+    elif reason == "reference":
+        payment.provider_reference = "unmatched-reference"
+    payment.save()
+    receipt.save()
+    assert quote_blocked(booking)
+    assert not rig[2].send_image.called and not Ledger.objects.exists()
+
+
+def test_existing_manual_lodging_attestation_keeps_its_financial_fingerprint(rig):
+    from apps.loyalty.site_adapter import booking_facts
+
+    booking, _, _, _ = receipted_final_price_booking(rig)
+    booking.refresh_from_db()
+    booking.loyalty_state["manual_lodging_price"] = {"total": str(booking.total_price)}
+    booking.save()
+    facts, error = booking_facts(booking, past_preview=True)
+    assert not error and "owner_final_price" not in facts
+    assert facts["components"] == [
+        {"type": "baseRate", "total": str(booking.total_price), "included_in_total": True}
+    ]
+    assert quote(booking)["reward"] == "18.00"
 
 
 @pytest.mark.parametrize("component_type", ["accommodation", "baseRate"])
