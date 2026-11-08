@@ -1,6 +1,7 @@
 """Cached, privacy-safe context shared by public templates."""
 
 import json
+from copy import copy
 from datetime import datetime
 from urllib.parse import quote, unquote
 
@@ -18,6 +19,7 @@ from apps.properties.cities import supported_city_labels
 from .branding import BRAND_NAME
 from .middleware import PUBLIC_LOCALIZED_VIEW_NAMES
 from .models import SiteSetting
+from .public_contacts import RESERVATIONS_EMAIL, public_contact_email
 
 GOOGLE_EXCLUDED_PREFIXES = (
     "/admin/",
@@ -91,6 +93,10 @@ def site_context(request: HttpRequest) -> dict[str, object]:
             cache.set("site:settings", site_setting or False, timeout=300)
         if site_setting is False:
             site_setting = None
+    if site_setting is not None:
+        # A cached pre-release row must not republish the owner's private address.
+        site_setting = copy(site_setting)
+        site_setting.contact_email = public_contact_email(site_setting.contact_email)
     canonical_path = request.path
     canonical_suffix = ""
     page_value = request.GET.get("page", "")
@@ -141,17 +147,25 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     if same_as:
         organization_data["sameAs"] = same_as
     if site_setting is not None and (site_setting.contact_email or site_setting.contact_phone):
-        organization_data["contactPoint"] = {
-            "@type": "ContactPoint",
-            "contactType": "customer support",
-            **({"email": site_setting.contact_email} if site_setting.contact_email else {}),
-            **({"telephone": site_setting.contact_phone} if site_setting.contact_phone else {}),
-        }
+        organization_data["contactPoint"] = [
+            {
+                "@type": "ContactPoint",
+                "contactType": "customer support",
+                **({"email": site_setting.contact_email} if site_setting.contact_email else {}),
+                **({"telephone": site_setting.contact_phone} if site_setting.contact_phone else {}),
+            },
+            {
+                "@type": "ContactPoint",
+                "contactType": "reservations",
+                "email": RESERVATIONS_EMAIL,
+            },
+        ]
     pending_event = (
         request.session.pop("analytics_event", None) if hasattr(request, "session") else None
     )
     return {
         "site_setting": site_setting,
+        "reservations_email": RESERVATIONS_EMAIL,
         "social_links": social_links,
         "footer_cities": footer_cities,
         "current_year": datetime.now(tz=timezone.get_current_timezone()).year,

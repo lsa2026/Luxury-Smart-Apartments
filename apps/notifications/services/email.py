@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.utils.html import strip_tags
 
+from apps.core.public_contacts import public_contact_email
 from apps.core.templatetags.presentation import localized_money_text
 from apps.notifications.email_design import COPY as DESIGN_COPY
 from apps.notifications.models import EmailDelivery
@@ -84,6 +85,16 @@ def build_guest_email(request: EmailMessageRequest) -> EmailMultiAlternatives:
     """Render only; callers retain their own send/queue/idempotency semantics."""
     language = request.language if request.language in DESIGN_COPY else "ar"
     context = {**request.context, **_email_brand_context(language)}
+    reservation_message = request.template_name in {
+        "booking",
+        "reservation",
+        "modification",
+        "invoice",
+    }
+    context["support_email"] = public_contact_email(
+        context["support_email"], reservations=reservation_message
+    )
+    reply_to = public_contact_email(settings.EMAIL_REPLY_TO, reservations=reservation_message)
     if request.template_name == "invoice":
         template_root = "emails/shared/invoice"
         text_template = f"{template_root}.txt"
@@ -95,7 +106,7 @@ def build_guest_email(request: EmailMessageRequest) -> EmailMultiAlternatives:
         body=render_to_string(text_template, context),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[request.recipient],
-        reply_to=[settings.EMAIL_REPLY_TO] if settings.EMAIL_REPLY_TO else None,
+        reply_to=[reply_to] if reply_to else None,
     )
     message.attach_alternative(render_to_string(f"{template_root}.html", context), "text/html")
     return message
@@ -181,7 +192,7 @@ def _email_brand_context(language: str) -> dict[str, Any]:
         "site_url": site_url,
         "logo_url": logo_url,
         "contact_phone": contact_phone,
-        "support_email": support_email,
+        "support_email": public_contact_email(support_email),
         "whatsapp_display": whatsapp_display,
         "whatsapp_url": whatsapp_url,
         "contact_url": f"{site_base_url}/contact/",

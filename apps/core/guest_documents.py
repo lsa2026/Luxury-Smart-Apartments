@@ -15,7 +15,7 @@ from pathlib import Path
 
 from django.utils.translation import get_language
 
-VERSION = "2026-10-05.2"
+VERSION = "2026-11-09.1"
 
 TERMS_TITLES = {
     "ar": "شروط الحجز والإقامة وإشعار الخصوصية",
@@ -32,7 +32,7 @@ PRIVACY_TITLES = {
 UI = {
     "ar": {
         "version": "الإصدار",
-        "issued": "تاريخ الإصدار: ٥ أكتوبر ٢٠٢٦",
+        "issued": "تاريخ الإصدار: ٩ نوفمبر ٢٠٢٦",
         "scope": "تطبق هذه النسخة على الحجوزات الجديدة التي توافق عليها بعد نشرها، لا بأثر رجعي.",
         "terms_acceptance": "قرأت ووافقت على شروط الحجز والإقامة وشروط السعر والإلغاء المعروضة لهذا الحجز، واطلعت على إشعار الخصوصية.",
         "read": "قراءة الوثيقة كاملة",
@@ -42,7 +42,7 @@ UI = {
     },
     "en": {
         "version": "Version",
-        "issued": "Issued: 5 October 2026",
+        "issued": "Issued: 9 November 2026",
         "scope": "This version applies to new bookings accepted after publication, not retrospectively.",
         "terms_acceptance": "I have read and accept the booking and stay conditions and the rate and cancellation conditions shown for this booking, and have read the privacy notice.",
         "read": "Read the full document",
@@ -52,7 +52,7 @@ UI = {
     },
     "fr": {
         "version": "Version",
-        "issued": "Émis le 5 octobre 2026",
+        "issued": "Émis le 9 novembre 2026",
         "scope": "Cette version s’applique aux nouvelles réservations acceptées après sa publication, sans effet rétroactif.",
         "terms_acceptance": "J’ai lu et j’accepte les conditions de réservation et de séjour ainsi que les conditions tarifaires et d’annulation présentées pour cette réservation, et j’ai pris connaissance de l’information sur les données personnelles.",
         "read": "Lire le document intégral",
