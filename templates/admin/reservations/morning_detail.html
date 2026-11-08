@@ -18,7 +18,7 @@
     {% if offline_receipt %}<p><strong>مدفوع بواسطة {{ offline_receipt.get_method_display }}</strong> — {{ offline_receipt.amount|format_money:'SAR' }}</p><p>الاستلام: {{ offline_receipt.received_at|timezone:'Asia/Riyadh'|date:'Y-m-d H:i' }} بتوقيت الرياض · سجّله: {{ offline_receipt.recorded_by }}</p>{% if offline_receipt.reference %}<p>المرجع: {{ offline_receipt.reference }}</p>{% endif %}{% if offline_receipt.note %}<p>{{ offline_receipt.note }}</p>{% endif %}
     {% elif not stay.paid_at and stay.status != 'cancelled' %}
     <details class="morning-receipt"{% if receipt_form.is_bound %} open{% endif %}><summary class="lsa-btn lsa-btn--gold">✓ تسجيل استلام حوالة بنكية أو نقدًا — تحديد الحجز كمدفوع</summary>
-      <p>استخدم هذا الخيار بعد التحقق من استلام كامل المبلغ. يُحدّث حالة الحجز إلى مدفوع ويحفظ سندًا باسم المستخدم. لا ينفذ تحصيلًا جديدًا أو يرسل رسالة تلقائية.</p>
+      <p>استخدم هذا الخيار بعد التحقق من استلام كامل المبلغ. يُحدّث حالة الحجز إلى مدفوع ويحفظ سندًا باسم المستخدم. لا ينفذ تحصيلًا جديدًا.{% if hostaway_first %} تُستكمل إجراءات ما بعد السداد بعد تحقق وصول رسائل الحجز.{% else %} لا يرسل رسالة تلقائية.{% endif %}</p>
       <form method="post" class="lsa-manual-booking-form" data-submit-once data-morning-validation>{% csrf_token %}{{ receipt_form.non_field_errors }}
         {% for field in receipt_form %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
         <button class="lsa-btn" type="submit" name="action" value="record_offline">حفظ السداد وتحديد الحجز كمدفوع</button>
@@ -30,7 +30,7 @@
       <p role="status"><strong>حالة رسالة واتساب:</strong> {{ payment_delivery_status }}</p>
       {% if payment_delivery %}<p>آخر طلب إرسال: {{ payment_delivery.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</p>{% endif %}
       {% if send_error %}<p>{{ send_error }}</p>{% else %}
-        <p>رسالة واحدة تتضمن تفاصيل الطلب والمبلغ ورابط الدفع. بعد توثيق الدفع تُرسل رسالة التأكيد وتعليمات المنزل والدخول، ثم دعوة الولاء لغير المشتركين. وتُحفظ بيانات التواصل في قائمتنا المعتمدة.</p>
+        <p>رسالة واحدة تتضمن تفاصيل الطلب والمبلغ ورابط الدفع. تدير منصة n8n رسالة التأكيد وتعليمات الإقامة بعد تأكيد الحجز في Hostaway، وفق نوع الحجز وحالة الدفع. وتُحفظ بيانات التواصل في قائمتنا المعتمدة.</p>
         <form method="post" class="morning-send-form">{% csrf_token %}<input type="hidden" name="send_token" value="{{ send_token }}"><button class="lsa-btn morning-send-button" type="submit" name="action" value="send_payment_link">{% if payment_delivery %}إعادة إرسال رسالة واتساب ورابط الدفع{% else %}إرسال الحجز ورابط الدفع عبر واتساب{% endif %}</button></form>
         <p>يُفحص التوفر وحالة الدفع قبل الإرسال. هذه العملية ترسل رسالة فعلية عبر واتساب.</p>
         <details><summary>معاينة الرسالة التي ستصل إلى الضيف</summary><img src="{{ payment_image }}" alt="هوية Luxury Living المعتمدة" class="morning-payment-art"><div class="morning-payment-preview" dir="auto">{{ payment_message }}</div><p>عند الإرسال يُحدّث الموعد النهائي في الرسالة بعد إعادة فحص التوفر. المهلة خمس دقائق أو حتى وقت الخروج، أيهما أقرب. يمكن إعادة إرسال الطلب غير المدفوع ما دامت الإقامة لم تنتهِ والتوفر متحققًا.</p></details>
@@ -43,10 +43,10 @@
     <section class="morning-hostaway" aria-labelledby="morning-hostaway-title">
       <h3 id="morning-hostaway-title">تسجيل الحجز في هوستاوي</h3>
       {% if hostaway_booking.reservation_id %}<p>رقم حجز هوستاوي: <a href="https://dashboard.hostaway.com/reservations/{{ hostaway_booking.reservation_id }}" target="_blank" rel="noopener">{{ hostaway_booking.reservation_id }}</a></p><p>الليلة المسجلة: {{ hostaway_booking.arrival_date }} إلى {{ hostaway_booking.departure_date }}. يظل وقت الدخول الفعلي محفوظًا أعلاه وفي ملاحظة هوستاوي.</p>{% endif %}
-      {% if hostaway_booking.state == 'confirmed' %}<p role="status">مسجل في هوستاوي. السداد موثق في موقعنا؛ لم ينفذ التسجيل تحصيلًا آخر. رسائل الضيف تبقى ضمن مسار الحجز الصباحي.</p>
+      {% if hostaway_booking.state == 'confirmed' %}<p role="status">مسجل في Hostaway. تظهر حالة السداد المستقلة أعلى الصفحة؛ التسجيل لا ينفذ تحصيلًا. رسائل الضيف ضمن رحلة الحجز الصباحي.</p>
       {% elif hostaway_booking.state == 'cancelled' %}<p role="status">أُلغي السجل المرتبط في هوستاوي.</p>
       {% elif hostaway_booking %}<p role="alert">نتيجة الربط تحتاج مراجعة. لا تعِد إنشاء الحجز؛ راجع هوستاوي باستخدام الرقم إن ظهر.</p>
-      {% elif stay.status == 'paid' and stay.paid_at %}<p>بعد فحص التوفر، نسجل ليلة اليوم السابق بخروج يوم الإقامة، وبالمبلغ المعتمد بالريال. لا ينفذ هذا الإجراء دفعًا أو رسالة للضيف.</p><form method="post" data-submit-once>{% csrf_token %}<button type="submit" class="lsa-btn" name="action" value="record_hostaway">فحص التوفر وتسجيل الحجز في هوستاوي</button></form>
+      {% elif hostaway_first or stay.status == 'paid' and stay.paid_at %}<p>بعد فحص التوفر، نسجل ليلة اليوم السابق بخروج يوم الإقامة، وبالمبلغ المعتمد بالريال. لا ينفذ هذا الإجراء دفعًا أو رسالة للضيف.</p><form method="post" data-submit-once>{% csrf_token %}<button type="submit" class="lsa-btn" name="action" value="record_hostaway">فحص التوفر وتسجيل الحجز في هوستاوي</button></form>
       {% else %}<p>لم يُسجل في هوستاوي بعد. يتاح التسجيل من هذه الصفحة بعد توثيق استلام كامل المبلغ.</p>{% endif %}
     </section>
     {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>رابط الدفع ثابت دون مهلة انتهاء زمنية. تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.</p>{% endif %}

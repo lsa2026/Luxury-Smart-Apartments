@@ -80,7 +80,7 @@ def test_record_uses_previous_night_explicit_price_and_no_second_charge_or_guest
     assert wire["financeField"][0]["total"] == 500
     assert wire["financeField"][0]["isOverriddenByUser"] == 1
     assert wire["currency"] == "SAR"
-    assert "guestEmail" not in wire and "phone" not in wire
+    assert wire["guestEmail"] == stay.guest_email and wire["phone"] == stay.guest_phone
     assert "ACTUAL arrival" in wire["hostNote"] and str(stay.pk) in wire["hostNote"]
     assert not stay.communication_events.exists()
     assert stay.attempts.count() == original_attempts

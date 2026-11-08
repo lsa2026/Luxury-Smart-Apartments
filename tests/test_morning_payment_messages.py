@@ -19,6 +19,7 @@ from apps.reservations.models import MorningPaymentLinkDelivery, MorningStay
 from apps.reservations.morning_stays import MorningStayError, create_stay
 from tests.test_hyperpay import HYPERPAY_SETTINGS
 from tests.test_morning_stays import create
+from tests.test_reservation_payment_links import billing
 
 pytestmark = pytest.mark.django_db
 
@@ -444,7 +445,7 @@ def test_send_button_performs_provider_post_now_and_reports_acceptance_without_q
     assert not stay.communication_events.exists()
 
 
-def test_create_send_button_is_one_explicit_branded_provider_send(settings):
+def test_create_confirmation_does_not_send_payment_message_before_hostaway(settings):
     from tests.test_manual_booking_operations_phase61 import owner
     from tests.test_morning_stays import property_and_remote, window
 
@@ -466,7 +467,9 @@ def test_create_send_button_is_one_explicit_branded_provider_send(settings):
         guest_email="morning@example.invalid",
         guests=1,
         amount_sar="500",
-        action="create_and_send",
+        action="confirm_hostaway",
+        confirm_hostaway="on",
+        **billing(),
     )
     with (
         patch("apps.reservations.morning_stays.HostawayClient") as remote,
@@ -478,10 +481,10 @@ def test_create_send_button_is_one_explicit_branded_provider_send(settings):
         provider.send_image.return_value = {"sent": "true", "id": "synthetic-create-send"}
         assert client.post(url, data).status_code == 302
         assert client.post(url, data).status_code == 302
-        assert provider.send_image.call_count == 1
+        provider.send_image.assert_not_called()
         dispatch.assert_not_called()
     stay = MorningStay.objects.get()
-    assert stay.payment_link_deliveries.get().state == "accepted"
+    assert not stay.payment_link_deliveries.exists()
     assert not stay.communication_events.exists()
 
 

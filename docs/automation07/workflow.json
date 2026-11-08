@@ -1,42 +1,37 @@
 {
   "name": "Apartment Pathway 07 — Independent Morning Stay Journey",
-  "active": false,
   "nodes": [
     {
-      "id": "95b52040-5efb-5aff-8183-dcbf7ddbe6f5",
-      "name": "M00 Morning07 Website Event",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.2,
       "parameters": {
         "httpMethod": "POST",
         "path": "lsa07-morning-stay-v1",
         "responseMode": "responseNode",
         "options": {}
       },
+      "id": "5990fa4a-1446-4405-af65-94ae5f078f2c",
+      "name": "M00 Morning07 Website Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
       "position": [
-        -1100,
-        0
+        -1104,
+        -208
       ]
     },
     {
-      "id": "120a8fdb-2d9d-58c2-9012-103fe2c15ca7",
-      "name": "M01 Validate Event Reference",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "const b=$json.body||{};const valid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(b.event_id||'')&&typeof b.event_token==='string'&&b.event_token.length>=40&&b.event_token.length<=300;return [{json:valid?{valid:true,event_id:b.event_id,event_token:b.event_token}:{valid:false,error:'invalid_event_reference'}}];"
       },
+      "id": "57fd5182-663c-460c-94b9-98dbdba54c44",
+      "name": "M01 Validate Event Reference",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -850,
-        0
+        -816,
+        112
       ]
     },
     {
-      "id": "015427b7-c3cd-5481-80ad-a528c5913210",
-      "name": "M01A Valid Reference?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
       "parameters": {
         "conditions": {
           "options": {
@@ -59,16 +54,16 @@
         },
         "options": {}
       },
+      "id": "a42db749-ca00-4b14-9d7c-53ecf7402eca",
+      "name": "M01A Valid Reference?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
       "position": [
-        -600,
-        0
+        -592,
+        112
       ]
     },
     {
-      "id": "4c7a8a87-7418-5b23-b875-a30a2c159bc3",
-      "name": "M01R Reject Invalid Reference",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ {accepted:false,error:\"invalid_event_reference\"} }}",
@@ -76,16 +71,16 @@
           "responseCode": 400
         }
       },
+      "id": "0c4d5902-1925-43ec-ba0d-1708292a8de9",
+      "name": "M01R Reject Invalid Reference",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
       "position": [
-        -350,
-        240
+        -368,
+        208
       ]
     },
     {
-      "id": "189ea1d8-5a8d-57dd-9596-d9c0ada18a13",
-      "name": "M02 Read Authoritative Website Event",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "url": "={{ 'https://luxurysmartapartments.com/integrations/morning07/events/' + $json.event_id + '/' }}",
         "sendHeaders": true,
@@ -113,31 +108,31 @@
           "timeout": 20000
         }
       },
+      "id": "674d1356-c7b9-4180-a279-f583b19a1305",
+      "name": "M02 Read Authoritative Website Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        -350,
-        0
+        -368,
+        16
       ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "35a26f6a-3341-509f-86f2-e45ffcc38fb7",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Pure functions. No network, filesystem, credentials, or production clients.\nfunction admitted(d) {\n  if (!d || d.source !== 'morning07') return false;\n  const v = d.contract_version === undefined ? 1 : d.contract_version;\n  if (v === 1) return d.payment_verified === true && ['paid','cancelled'].includes(d.status);\n  if (v !== 2 || d.booking_verified !== true ||\n      !Number.isSafeInteger(d.hostaway_reservation_id) || d.hostaway_reservation_id <= 0 ||\n      !['confirmed','cancelled'].includes(d.status)) return false;\n  return (d.payment_status === 'unpaid' && d.payment_verified === false) ||\n         (d.payment_status === 'paid' && d.payment_verified === true);\n}\n\nfunction paidEvidence(d) {\n  return admitted(d) && d.status !== 'cancelled' && d.payment_verified === true &&\n    ((d.contract_version === undefined || d.contract_version === 1) || d.payment_status === 'paid');\n}\n\nfunction validPayload(d) {\n  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;\n  const date = /^\\d{4}-\\d{2}-\\d{2}$/;\n  const clock = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;\n  const instant = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/;\n  if (!admitted(d) || !uuid.test(d.morning_stay_id || '') || !uuid.test(d.source_event_id || '') ||\n      !Number.isSafeInteger(d.source_revision) || d.source_revision < 1 ||\n      !Number.isSafeInteger(d.listing_map_id) || d.listing_map_id < 1 ||\n      !/^\\+?[1-9]\\d{7,14}$/.test(d.phone || '') ||\n      !/^[0-9a-f]{64}$/.test(d.state_fingerprint || '') ||\n      typeof d.delivery_token !== 'string' || d.delivery_token.length < 40 || d.delivery_token.length > 300 ||\n      !date.test(d.arrival_date || '') || d.arrival_date !== d.departure_date ||\n      !['Asia/Riyadh','Africa/Casablanca'].includes(d.timezone) ||\n      !clock.test(d.check_in_time || '') || !clock.test(d.check_out_time || '') ||\n      !(d.check_in_time > '00:00' && d.check_in_time < d.check_out_time && d.check_out_time <= '12:00') ||\n      !instant.test(d.starts_at || '') || !instant.test(d.ends_at || '')) return false;\n  const start = Date.parse(d.starts_at), end = Date.parse(d.ends_at);\n  if (!Number.isFinite(start) || !Number.isFinite(end) || !(start < end) || end-start >= 43200000) return false;\n  try {\n    const at = value => {\n      const parts = new Intl.DateTimeFormat('en-GB', {timeZone:d.timezone,year:'numeric',month:'2-digit',\n        day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));\n      const p = Object.fromEntries(parts.map(x=>[x.type,x.value]));\n      return {date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};\n    };\n    const a=at(start), b=at(end);\n    return a.date===d.arrival_date && b.date===d.departure_date &&\n      a.time===d.check_in_time && b.time===d.check_out_time;\n  } catch { return false; }\n}\n\nfunction operationalState(d) {\n  // Financial fields, tokens, fingerprints, and source revision are deliberately excluded.\n  // A defensive payment-only revision must not resend booking confirmations.\n  return JSON.stringify({\n    status:d.status==='paid'?'confirmed':d.status,\n    listing_map_id:d.listing_map_id, listing_name:d.listing_name,\n    starts_at:d.starts_at, ends_at:d.ends_at, timezone:d.timezone,\n    arrival_date:d.arrival_date, departure_date:d.departure_date,\n    check_in_time:d.check_in_time, check_out_time:d.check_out_time,\n    phone:String(d.phone||'').replace(/\\D/g,''), guest_name:d.guest_name,\n    guest_email:d.guest_email, guest_language:d.guest_language,\n    guests:d.guests, total_price:d.total_price, currency:d.currency\n  });\n}\n\n\nconst d=$json.body||{};const valid=$json.statusCode===200&&validPayload(d);return [{json:valid?{...d,valid:true,reservation_key:'morning07:'+d.morning_stay_id}:{valid:false,error:'website_admission_not_verified'}}];"
+      },
+      "id": "f1629cd9-92e4-4f8f-96d3-27ac643d6d51",
       "name": "M03 Validate Verified Morning Booking",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const d=$json.body||{};const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;const valid=$json.statusCode===200&&d.source==='morning07'&&d.payment_verified===true&&['paid','cancelled'].includes(d.status)&&uuid.test(d.morning_stay_id||'')&&uuid.test(d.source_event_id||'')&&Number.isSafeInteger(d.source_revision)&&d.source_revision>0&&Number.isSafeInteger(d.listing_map_id)&&d.listing_map_id>0&&/^\\+?[1-9]\\d{7,14}$/.test(d.phone||'')&&/^[0-9a-f]{64}$/.test(d.state_fingerprint||'')&&typeof d.delivery_token==='string'&&d.delivery_token.length>=40&&d.arrival_date===d.departure_date&&['Asia/Riyadh','Africa/Casablanca'].includes(d.timezone)&&d.check_in_time>'00:00'&&d.check_in_time<d.check_out_time&&d.check_out_time<='12:00'&&Date.parse(d.starts_at)<Date.parse(d.ends_at);return [{json:valid?{...d,valid:true,reservation_key:'morning07:'+d.morning_stay_id}:{valid:false,error:'website_admission_not_verified'}}];"
-      },
       "position": [
-        -100,
-        0
+        -144,
+        16
       ]
     },
     {
-      "id": "77937bee-55e0-56bd-9d94-300ddca940bf",
-      "name": "M04 Admission Verified?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
       "parameters": {
         "conditions": {
           "options": {
@@ -160,16 +155,16 @@
         },
         "options": {}
       },
+      "id": "82cda07c-2eb2-42c0-a052-31e1130706bf",
+      "name": "M04 Admission Verified?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
       "position": [
-        150,
-        0
+        80,
+        16
       ]
     },
     {
-      "id": "55d99b85-947c-5775-bacd-fdea83167428",
-      "name": "M04R Reject Unverified Admission",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ {accepted:false,error:\"website_admission_not_verified\"} }}",
@@ -177,16 +172,16 @@
           "responseCode": 422
         }
       },
+      "id": "2953b9c7-5913-43e4-81af-3bd643facff3",
+      "name": "M04R Reject Unverified Admission",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
       "position": [
-        400,
-        240
+        304,
+        112
       ]
     },
     {
-      "id": "207f3e0b-30ba-5fb1-b7fc-0378ce37f40f",
-      "name": "M05 Persist Morning07 Revision",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_ingest",
@@ -204,30 +199,30 @@
           "timeout": 30000
         }
       },
+      "id": "ba37edc1-93da-4a9c-ac15-f9eea3c2fe5a",
+      "name": "M05 Persist Morning07 Revision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        400,
-        0
+        304,
+        -80
       ]
     },
     {
-      "id": "0f66a774-eee2-5602-8c8a-b6085b7eaf01",
-      "name": "M06 Build Durable Acknowledgement",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "if($json.accepted!==true)throw Error('Morning07 persistence not confirmed');return [{json:{accepted:true,event_id:$('M01 Validate Event Reference').first().json.event_id}}];"
       },
+      "id": "98def55e-49bb-4485-aab0-afff70f89a90",
+      "name": "M06 Build Durable Acknowledgement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        650,
-        0
+        528,
+        -80
       ]
     },
     {
-      "id": "e786de52-d291-5ca7-8f7b-7fe59c825568",
-      "name": "M07 Acknowledge Persisted Event",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
@@ -235,16 +230,16 @@
           "responseCode": 202
         }
       },
+      "id": "34bbcc47-e1dc-4ef6-bc32-bfe27e423fb8",
+      "name": "M07 Acknowledge Persisted Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
       "position": [
-        900,
-        0
+        752,
+        -80
       ]
     },
     {
-      "id": "4a9cf333-5ad2-5470-8d9d-3ae39957e499",
-      "name": "B00 Claim Pending Morning Booking",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_event_claim_booking",
@@ -262,16 +257,16 @@
           "timeout": 30000
         }
       },
+      "id": "8d0a4aa7-d8c3-4eae-8297-0686e6e0bb92",
+      "name": "B00 Claim Pending Morning Booking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        -850,
-        650
+        -288,
+        448
       ]
     },
     {
-      "id": "11af958e-24d7-59f2-aba7-2087609fa6c2",
-      "name": "B01 Booking Preparation Pending?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
       "parameters": {
         "conditions": {
           "options": {
@@ -294,30 +289,30 @@
         },
         "options": {}
       },
+      "id": "0f60cb83-d05b-4468-b8b8-921b97a0b375",
+      "name": "B01 Booking Preparation Pending?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
       "position": [
-        -600,
-        650
+        -64,
+        208
       ]
     },
     {
-      "id": "67856e2a-f3ec-5523-aad3-bba8ffd653d9",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Pure functions. No network, filesystem, credentials, or production clients.\nfunction admitted(d) {\n  if (!d || d.source !== 'morning07') return false;\n  const v = d.contract_version === undefined ? 1 : d.contract_version;\n  if (v === 1) return d.payment_verified === true && ['paid','cancelled'].includes(d.status);\n  if (v !== 2 || d.booking_verified !== true ||\n      !Number.isSafeInteger(d.hostaway_reservation_id) || d.hostaway_reservation_id <= 0 ||\n      !['confirmed','cancelled'].includes(d.status)) return false;\n  return (d.payment_status === 'unpaid' && d.payment_verified === false) ||\n         (d.payment_status === 'paid' && d.payment_verified === true);\n}\n\nfunction paidEvidence(d) {\n  return admitted(d) && d.status !== 'cancelled' && d.payment_verified === true &&\n    ((d.contract_version === undefined || d.contract_version === 1) || d.payment_status === 'paid');\n}\n\nfunction validPayload(d) {\n  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;\n  const date = /^\\d{4}-\\d{2}-\\d{2}$/;\n  const clock = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;\n  const instant = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/;\n  if (!admitted(d) || !uuid.test(d.morning_stay_id || '') || !uuid.test(d.source_event_id || '') ||\n      !Number.isSafeInteger(d.source_revision) || d.source_revision < 1 ||\n      !Number.isSafeInteger(d.listing_map_id) || d.listing_map_id < 1 ||\n      !/^\\+?[1-9]\\d{7,14}$/.test(d.phone || '') ||\n      !/^[0-9a-f]{64}$/.test(d.state_fingerprint || '') ||\n      typeof d.delivery_token !== 'string' || d.delivery_token.length < 40 || d.delivery_token.length > 300 ||\n      !date.test(d.arrival_date || '') || d.arrival_date !== d.departure_date ||\n      !['Asia/Riyadh','Africa/Casablanca'].includes(d.timezone) ||\n      !clock.test(d.check_in_time || '') || !clock.test(d.check_out_time || '') ||\n      !(d.check_in_time > '00:00' && d.check_in_time < d.check_out_time && d.check_out_time <= '12:00') ||\n      !instant.test(d.starts_at || '') || !instant.test(d.ends_at || '')) return false;\n  const start = Date.parse(d.starts_at), end = Date.parse(d.ends_at);\n  if (!Number.isFinite(start) || !Number.isFinite(end) || !(start < end) || end-start >= 43200000) return false;\n  try {\n    const at = value => {\n      const parts = new Intl.DateTimeFormat('en-GB', {timeZone:d.timezone,year:'numeric',month:'2-digit',\n        day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));\n      const p = Object.fromEntries(parts.map(x=>[x.type,x.value]));\n      return {date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};\n    };\n    const a=at(start), b=at(end);\n    return a.date===d.arrival_date && b.date===d.departure_date &&\n      a.time===d.check_in_time && b.time===d.check_out_time;\n  } catch { return false; }\n}\n\nfunction operationalState(d) {\n  // Financial fields, tokens, fingerprints, and source revision are deliberately excluded.\n  // A defensive payment-only revision must not resend booking confirmations.\n  return JSON.stringify({\n    status:d.status==='paid'?'confirmed':d.status,\n    listing_map_id:d.listing_map_id, listing_name:d.listing_name,\n    starts_at:d.starts_at, ends_at:d.ends_at, timezone:d.timezone,\n    arrival_date:d.arrival_date, departure_date:d.departure_date,\n    check_in_time:d.check_in_time, check_out_time:d.check_out_time,\n    phone:String(d.phone||'').replace(/\\D/g,''), guest_name:d.guest_name,\n    guest_email:d.guest_email, guest_language:d.guest_language,\n    guests:d.guests, total_price:d.total_price, currency:d.currency\n  });\n}\n\n\nfunction render(input) {\n  const g=input.booking,p=input.previous||{},a=input.apartment||{},now=new Date(input.now),end=new Date(g.ends_at);\n  if(!admitted(g)\n    ||!/^\\+?[1-9]\\d{7,14}$/.test(g.phone||'')||!Number.isFinite(end.getTime())||!Number.isFinite(now.getTime()))throw Error('Invalid verified Morning07 booking');\n  const lang=['ar','en','fr'].includes(g.guest_language)?g.guest_language:'ar';\n  const phone=String(g.phone).replace(/\\D/g,'');\n  const kind=g.status==='cancelled'?'cancelled':Object.keys(p).length?'modified':'new';\n  const labels={ar:{new:'تأكيد الحجز الصباحي',modified:'تعديل الحجز الصباحي',cancelled:'إلغاء الحجز الصباحي',checkout:'تذكير بموعد الخروج',ref:'المرجع',end:'موعد الخروج'},en:{new:'Morning stay confirmed',modified:'Morning stay updated',cancelled:'Morning stay cancelled',checkout:'Morning stay check-out reminder',ref:'Reference',end:'Check-out'},fr:{new:'Séjour matinal confirmé',modified:'Séjour matinal modifié',cancelled:'Séjour matinal annulé',checkout:'Rappel du départ',ref:'Référence',end:'Départ'}}[lang];\n  const header=[g.guest_name,g.listing_name,g.arrival_date,g.check_in_time+' → '+g.check_out_time,g.timezone].join('\\n');\n  const short='AM-'+g.morning_stay_id.slice(0,8);\n  const paymentText={ar:paidEvidence(g)?'حالة السداد: مسدد':'حالة السداد: غير مسدد',en:paidEvidence(g)?'Payment: paid':'Payment: unpaid',fr:paidEvidence(g)?'Paiement : réglé':'Paiement : non réglé'}[lang];\n  const status=[labels[kind],header,labels.ref+': '+short,labels.end+': '+g.check_out_time,paymentText].join('\\n\\n');\n  const operationalChange=!Object.keys(p).length||operationalState(g)!==operationalState(p);\n  const jobs=[];\n  if(g.status!=='cancelled'&&end<=now)return {stay_id:g.morning_stay_id,revision:g.source_revision,jobs};\n  const key=(suffix)=>'lsa07:'+g.morning_stay_id+':'+suffix;\n  function add(type,body,suffix,sequence,recipient='guest',due=now.toISOString(),until=null){\n    if(!body||body.length>4096)throw Error('Morning07 message exceeds the provider text limit');\n    jobs.push({kind:type,body,job_key:key(suffix),sequence,recipient_kind:recipient,due_at:due,eligible_until:until});\n  }\n  if(operationalChange)add('status_'+kind,status,'r'+g.source_revision+':status',1,'guest',now.toISOString(),kind==='cancelled'?null:g.ends_at);\n  const operational=['☀️ '+labels[kind],g.listing_name,'الضيف: '+g.guest_name,'الجوال: +'+phone,\n    'الفترة: '+g.arrival_date+' | '+g.check_in_time+' → '+g.check_out_time+' | '+g.timezone,\n    'المرجع: '+short,paymentText,'إدارة الحجز: '+g.management_url].join('\\n');\n  if(operationalChange)add('group_notice',operational,'r'+g.source_revision+':group',0,'group',now.toISOString(),kind==='cancelled'?null:g.ends_at);\n  const cancelled=g.status==='cancelled',future=end>now;\n  const phoneChanged=String(p.phone||'').replace(/\\D/g,'')!==phone;\n  const newBooking=!Object.keys(p).length;\n  function fill(name){\n    const t=input.templates.find(x=>x.template_name===name);\n    if(!t)throw Error('Morning07 template missing: '+name);\n    const replacements={...a,...g,address_fr:a.address_fr||a.address_en};\n    let text=String(t['content_'+lang]||t.content_en||'').replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/g,(_m,k)=>{\n      if(!(k in replacements))throw Error('Unknown Morning07 template field '+k);\n      return String(replacements[k]??'');\n    });\n    const promises=[\n      ['سيتم إرسال كود الشقة الخاص بك مباشرة بعد التحقق من هويتك عبر البوابة.','للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.'],\n      ['Your unique apartment code will be sent immediately after ID verification via the portal.','Contact support after ID verification for your apartment access code: +966501205651.'],\n      ['Votre code personnel vous sera envoyé immédiatement après la vérification de votre pièce d’identité via le portail.','Après vérification de votre identité, contactez notre équipe pour le code : +966501205651.']\n    ];\n    for(const[from,to]of promises)text=text.split(from).join(to);\n    text=text.replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/(?:p|div)>/gi,'\\n').replace(/<b>(.*?)<\\/b>/gis,'*$1*').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');\n    return header+'\\n\\n'+text;\n  }\n  if(!cancelled&&future&&(newBooking||phoneChanged))add('house_rules',fill('house_rules'),'rules:'+phone,2,'guest',now.toISOString(),g.ends_at);\n  if(!cancelled&&future&&(newBooking||phoneChanged||p.listing_map_id!==g.listing_map_id||p.starts_at!==g.starts_at))\n    add('checkin_guide',fill('checkin_guide'),'guide:'+g.listing_map_id+':'+Date.parse(g.starts_at)+':'+phone,3,'guest',now.toISOString(),g.ends_at);\n  const due=new Date(end.getTime()-3600000);\n  if(!cancelled&&due>now)add('reminder_checkout',labels.checkout+'\\n\\n'+header+'\\n\\n'+labels.end+': '+g.check_out_time,\n    'checkout:'+g.listing_map_id+':'+end.getTime()+':'+phone,4,'guest',due.toISOString(),g.ends_at);\n  return {stay_id:g.morning_stay_id,revision:g.source_revision,jobs};\n}\n\nreturn [{json:render($json)}];"
+      },
+      "id": "b5e5d87e-70ac-4e9a-a739-0fd05e60e2ae",
       "name": "B02 Render Morning Messages and Exit Reminder",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "function render(input) {\n  const g=input.booking,p=input.previous||{},a=input.apartment||{},now=new Date(input.now),end=new Date(g.ends_at);\n  if(g.source!=='morning07'||g.payment_verified!==true||!['paid','cancelled'].includes(g.status)\n    ||!/^\\+?[1-9]\\d{7,14}$/.test(g.phone||'')||!Number.isFinite(end.getTime())||!Number.isFinite(now.getTime()))throw Error('Invalid verified Morning07 booking');\n  const lang=['ar','en','fr'].includes(g.guest_language)?g.guest_language:'ar';\n  const phone=String(g.phone).replace(/\\D/g,'');\n  const kind=g.status==='cancelled'?'cancelled':Object.keys(p).length?'modified':'new';\n  const labels={ar:{new:'تأكيد الحجز الصباحي',modified:'تعديل الحجز الصباحي',cancelled:'إلغاء الحجز الصباحي',checkout:'تذكير بموعد الخروج',ref:'المرجع',end:'موعد الخروج'},en:{new:'Morning stay confirmed',modified:'Morning stay updated',cancelled:'Morning stay cancelled',checkout:'Morning stay check-out reminder',ref:'Reference',end:'Check-out'},fr:{new:'Séjour matinal confirmé',modified:'Séjour matinal modifié',cancelled:'Séjour matinal annulé',checkout:'Rappel du départ',ref:'Référence',end:'Départ'}}[lang];\n  const header=[g.guest_name,g.listing_name,g.arrival_date,g.check_in_time+' → '+g.check_out_time,g.timezone].join('\\n');\n  const short='AM-'+g.morning_stay_id.slice(0,8);\n  const status=[labels[kind],header,labels.ref+': '+short,labels.end+': '+g.check_out_time].join('\\n\\n');\n  const jobs=[];\n  if(g.status==='paid'&&end<=now)return {stay_id:g.morning_stay_id,revision:g.source_revision,jobs};\n  const key=(suffix)=>'lsa07:'+g.morning_stay_id+':'+suffix;\n  function add(type,body,suffix,sequence,recipient='guest',due=now.toISOString(),until=null){\n    if(!body||body.length>4096)throw Error('Morning07 message exceeds the provider text limit');\n    jobs.push({kind:type,body,job_key:key(suffix),sequence,recipient_kind:recipient,due_at:due,eligible_until:until});\n  }\n  add('status_'+kind,status,'r'+g.source_revision+':status',1,'guest',now.toISOString(),kind==='cancelled'?null:g.ends_at);\n  const operational=['☀️ '+labels[kind],g.listing_name,'الضيف: '+g.guest_name,'الجوال: +'+phone,\n    'الفترة: '+g.arrival_date+' | '+g.check_in_time+' → '+g.check_out_time+' | '+g.timezone,\n    'المرجع: '+short,'إدارة الحجز: '+g.management_url].join('\\n');\n  add('group_notice',operational,'r'+g.source_revision+':group',0,'group',now.toISOString(),kind==='cancelled'?null:g.ends_at);\n  const cancelled=g.status==='cancelled',future=end>now;\n  const phoneChanged=String(p.phone||'').replace(/\\D/g,'')!==phone;\n  const newBooking=!Object.keys(p).length;\n  function fill(name){\n    const t=input.templates.find(x=>x.template_name===name);\n    if(!t)throw Error('Morning07 template missing: '+name);\n    const replacements={...a,...g,address_fr:a.address_fr||a.address_en};\n    let text=String(t['content_'+lang]||t.content_en||'').replace(/\\{\\{\\s*(\\w+)\\s*\\}\\}/g,(_m,k)=>{\n      if(!(k in replacements))throw Error('Unknown Morning07 template field '+k);\n      return String(replacements[k]??'');\n    });\n    const promises=[\n      ['سيتم إرسال كود الشقة الخاص بك مباشرة بعد التحقق من هويتك عبر البوابة.','للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.'],\n      ['Your unique apartment code will be sent immediately after ID verification via the portal.','Contact support after ID verification for your apartment access code: +966501205651.'],\n      ['Votre code personnel vous sera envoyé immédiatement après la vérification de votre pièce d’identité via le portail.','Après vérification de votre identité, contactez notre équipe pour le code : +966501205651.']\n    ];\n    for(const[from,to]of promises)text=text.split(from).join(to);\n    text=text.replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/(?:p|div)>/gi,'\\n').replace(/<b>(.*?)<\\/b>/gis,'*$1*').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');\n    return header+'\\n\\n'+text;\n  }\n  if(!cancelled&&future&&(newBooking||phoneChanged))add('house_rules',fill('house_rules'),'rules:'+phone,2,'guest',now.toISOString(),g.ends_at);\n  if(!cancelled&&future&&(newBooking||phoneChanged||p.listing_map_id!==g.listing_map_id||p.starts_at!==g.starts_at))\n    add('checkin_guide',fill('checkin_guide'),'guide:'+g.listing_map_id+':'+Date.parse(g.starts_at)+':'+phone,3,'guest',now.toISOString(),g.ends_at);\n  const due=new Date(end.getTime()-3600000);\n  if(!cancelled&&due>now)add('reminder_checkout',labels.checkout+'\\n\\n'+header+'\\n\\n'+labels.end+': '+g.check_out_time,\n    'checkout:'+g.listing_map_id+':'+end.getTime()+':'+phone,4,'guest',due.toISOString(),g.ends_at);\n  return {stay_id:g.morning_stay_id,revision:g.source_revision,jobs};\n}\n\nreturn [{json:render($json)}];"
-      },
       "position": [
-        -350,
-        650
+        160,
+        144
       ]
     },
     {
-      "id": "c2854205-017b-54d4-af16-7b2afa021703",
-      "name": "B03 Persist Independent Morning Jobs",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_prepare",
@@ -335,16 +330,16 @@
           "timeout": 30000
         }
       },
+      "id": "6d4f94b5-920c-401e-81b2-e68a430ee514",
+      "name": "B03 Persist Independent Morning Jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        -100,
-        650
+        384,
+        144
       ]
     },
     {
-      "id": "878b8347-94df-5f7e-aba3-2f02dc90addf",
-      "name": "D00 Claim Next Morning07 Delivery",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_event_next",
@@ -362,16 +357,16 @@
           "timeout": 30000
         }
       },
+      "id": "94e86363-5fc9-4ffd-933c-c71d048b7a97",
+      "name": "D00 Claim Next Morning07 Delivery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        200,
-        650
+        2624,
+        304
       ]
     },
     {
-      "id": "2c80698b-48f0-55be-8586-8a2a65fd27d6",
-      "name": "D01 Route Morning Delivery Action",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
       "parameters": {
         "rules": {
           "values": [
@@ -450,16 +445,16 @@
           "fallbackOutput": "extra"
         }
       },
+      "id": "f12d726b-e21f-4991-8fd6-48876d2615c0",
+      "name": "D01 Route Morning Delivery Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
       "position": [
-        450,
-        650
+        2848,
+        176
       ]
     },
     {
-      "id": "3b80c15e-197e-5734-ae83-1a4c550ae53c",
-      "name": "D10 Send via Morning07 Website Gateway",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://luxurysmartapartments.com/integrations/morning07/send/",
@@ -486,18 +481,17 @@
           "timeout": 30000
         }
       },
-      "position": [
-        750,
-        450
-      ],
-      "onError": "continueRegularOutput",
-      "retryOnFail": false
-    },
-    {
-      "id": "2b65b53c-1543-532d-94d6-24aeca2cc014",
-      "name": "D20 Read Exact Morning07 Provider Receipt",
+      "id": "387051ef-8933-40b4-921d-d377167055ac",
+      "name": "D10 Send via Morning07 Website Gateway",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
+      "position": [
+        3072,
+        528
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
         "url": "https://luxurysmartapartments.com/integrations/morning07/receipt/",
         "sendHeaders": true,
@@ -529,31 +523,31 @@
           "timeout": 30000
         }
       },
+      "id": "aa0c8875-4c9e-4068-95b9-18958cce06fb",
+      "name": "D20 Read Exact Morning07 Provider Receipt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        750,
-        700
+        3072,
+        -80
       ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "c586f208-9f6c-503e-9484-b0aaca7b8141",
-      "name": "D30 Interpret Exact Delivery Evidence",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "function evidence(job,response) {\n  const data=response.body??response;\n  let providerId='',delivered=false;\n  if(job.action==='send'){\n    if(data&&['true','1','yes'].includes(String(data.sent).toLowerCase()))providerId=String(data.id||'');\n  }else{\n    const rows=Array.isArray(data.messages)?data.messages:[];\n    for(const row of rows){\n      if((job.provider_message_id&&String(row.id)===String(job.provider_message_id))||row.referenceId===job.reference_id){\n        providerId=String(row.id||'');\n        const ack=String(row.ack??'').toLowerCase(),status=String(row.status??'').toLowerCase();\n        delivered=(/^\\d+$/.test(ack)&&Number(ack)>=2)||['device','delivered','read','played'].includes(ack)||['delivered','read','played'].includes(status);\n        if(delivered)break;\n      }\n    }\n  }\n  return {provider_id:providerId,delivered,error:response.error?'provider_result_uncertain':data?.error||null};\n}\n\nconst job=$('D00 Claim Next Morning07 Delivery').item.json;return [{json:{job_key:job.job_key,result:evidence(job,$json)}}];"
       },
+      "id": "187d8d0d-49c8-43e8-9908-3fa09c618759",
+      "name": "D30 Interpret Exact Delivery Evidence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        1050,
-        600
+        3296,
+        128
       ]
     },
     {
-      "id": "bced9d80-b429-5cab-b815-eef1438d6870",
-      "name": "D40 Record Morning07 Delivery Progress",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_result",
@@ -571,30 +565,30 @@
           "timeout": 30000
         }
       },
+      "id": "b17af13d-61e5-424f-9625-352322b38bd6",
+      "name": "D40 Record Morning07 Delivery Progress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        1300,
-        600
+        3520,
+        208
       ]
     },
     {
-      "id": "d6ed0733-2893-5af9-9f79-d14b61ca6e59",
-      "name": "D50 Wait for Receipt Window",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
       "parameters": {
         "resume": "specificTime",
         "dateTime": "={{ $json.wake_at }}"
       },
+      "id": "424d7237-490f-40ae-846e-f151f24a40c2",
+      "name": "D50 Wait for Receipt Window",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
       "position": [
-        750,
-        950
+        3072,
+        112
       ]
     },
     {
-      "id": "2c3a00f6-4bc6-51cc-a7f8-790b2ea8eceb",
-      "name": "C00 Claim Morning07 Contact Work",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_event_contact_claim",
@@ -612,16 +606,16 @@
           "timeout": 30000
         }
       },
+      "id": "eb93f76f-5c90-4404-951a-638d0ac8dbd7",
+      "name": "C00 Claim Morning07 Contact Work",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        -850,
-        1400
+        608,
+        208
       ]
     },
     {
-      "id": "ca926539-adb7-55e7-bd25-7db4edbfb6da",
-      "name": "C01 Contact Work Pending?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
       "parameters": {
         "conditions": {
           "options": {
@@ -644,35 +638,31 @@
         },
         "options": {}
       },
+      "id": "33084a49-97fb-4cdb-9c06-318e35201339",
+      "name": "C01 Contact Work Pending?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
       "position": [
-        -600,
-        1400
+        832,
+        208
       ]
     },
     {
-      "id": "869e8802-14e2-5980-a257-3465f0020002",
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Pure functions. No network, filesystem, credentials, or production clients.\nfunction admitted(d) {\n  if (!d || d.source !== 'morning07') return false;\n  const v = d.contract_version === undefined ? 1 : d.contract_version;\n  if (v === 1) return d.payment_verified === true && ['paid','cancelled'].includes(d.status);\n  if (v !== 2 || d.booking_verified !== true ||\n      !Number.isSafeInteger(d.hostaway_reservation_id) || d.hostaway_reservation_id <= 0 ||\n      !['confirmed','cancelled'].includes(d.status)) return false;\n  return (d.payment_status === 'unpaid' && d.payment_verified === false) ||\n         (d.payment_status === 'paid' && d.payment_verified === true);\n}\n\nfunction paidEvidence(d) {\n  return admitted(d) && d.status !== 'cancelled' && d.payment_verified === true &&\n    ((d.contract_version === undefined || d.contract_version === 1) || d.payment_status === 'paid');\n}\n\nfunction validPayload(d) {\n  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;\n  const date = /^\\d{4}-\\d{2}-\\d{2}$/;\n  const clock = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/;\n  const instant = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/;\n  if (!admitted(d) || !uuid.test(d.morning_stay_id || '') || !uuid.test(d.source_event_id || '') ||\n      !Number.isSafeInteger(d.source_revision) || d.source_revision < 1 ||\n      !Number.isSafeInteger(d.listing_map_id) || d.listing_map_id < 1 ||\n      !/^\\+?[1-9]\\d{7,14}$/.test(d.phone || '') ||\n      !/^[0-9a-f]{64}$/.test(d.state_fingerprint || '') ||\n      typeof d.delivery_token !== 'string' || d.delivery_token.length < 40 || d.delivery_token.length > 300 ||\n      !date.test(d.arrival_date || '') || d.arrival_date !== d.departure_date ||\n      !['Asia/Riyadh','Africa/Casablanca'].includes(d.timezone) ||\n      !clock.test(d.check_in_time || '') || !clock.test(d.check_out_time || '') ||\n      !(d.check_in_time > '00:00' && d.check_in_time < d.check_out_time && d.check_out_time <= '12:00') ||\n      !instant.test(d.starts_at || '') || !instant.test(d.ends_at || '')) return false;\n  const start = Date.parse(d.starts_at), end = Date.parse(d.ends_at);\n  if (!Number.isFinite(start) || !Number.isFinite(end) || !(start < end) || end-start >= 43200000) return false;\n  try {\n    const at = value => {\n      const parts = new Intl.DateTimeFormat('en-GB', {timeZone:d.timezone,year:'numeric',month:'2-digit',\n        day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));\n      const p = Object.fromEntries(parts.map(x=>[x.type,x.value]));\n      return {date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};\n    };\n    const a=at(start), b=at(end);\n    return a.date===d.arrival_date && b.date===d.departure_date &&\n      a.time===d.check_in_time && b.time===d.check_out_time;\n  } catch { return false; }\n}\n\nfunction operationalState(d) {\n  // Financial fields, tokens, fingerprints, and source revision are deliberately excluded.\n  // A defensive payment-only revision must not resend booking confirmations.\n  return JSON.stringify({\n    status:d.status==='paid'?'confirmed':d.status,\n    listing_map_id:d.listing_map_id, listing_name:d.listing_name,\n    starts_at:d.starts_at, ends_at:d.ends_at, timezone:d.timezone,\n    arrival_date:d.arrival_date, departure_date:d.departure_date,\n    check_in_time:d.check_in_time, check_out_time:d.check_out_time,\n    phone:String(d.phone||'').replace(/\\D/g,''), guest_name:d.guest_name,\n    guest_email:d.guest_email, guest_language:d.guest_language,\n    guests:d.guests, total_price:d.total_price, currency:d.currency\n  });\n}\n\n\nconst dictionary={\n 'ماطر':'Mater','ماجد':'Majed','فاطمه':'Fatimah','فوزيه':'Fawziah','فوزية':'Fawziah','ياسر':'Yasser','عبدالله':'Abdullah','نايف':'Naif','سلطان':'Sultan','مها':'Maha','ريما':'Reema','ناصر':'Nasser','فهد':'Fahad','صلاح':'Salah','حشمت':'Hashmat','نواف':'Nawaf','ابراهيم':'Ibrahim','حسن':'Hassan','محمد':'Mohammed','عوض':'Awad','حمد':'Hamad','عبدالكريم':'Abdulkarim','عبدالعزيز':'Abdulaziz','عبدالاله':'Abdulilah','عبدالمحسن':'Abdulmohsen','عبدالملك':'Abdulmalik','عبدالرحمن':'Abdulrahman','يوسف':'Yousef','خشيعه':'Khushayah','مرادي':'Moradi','مبارك':'Mubarak','يحيى':'Yahya','خديجة':'Khadijah','نور':'Noor','ماريا':'Maria','منصور':'Mansour','نوره':'Nourah','شاهين':'Shaheen','عليا':'Alia','مرتضى':'Murtada','لمحمد':'Limohammed','عبد':'Abd','الرحمن':'Alrahman','الله':'Allah','أبو':'Abu','ابو':'Abu','خشيم':'Khushaym','سليمان':'Sulaiman','سيف':'Saif','سعيد':'Saeed','ادريس':'Idris','اوس':'Aws','علي':'Ali','رولا':'Rola','سفر':'Safar','بسام':'Bassam','صالح':'Saleh','بندر':'Bandar','عاصم':'Asim','رغد':'Raghad','نشيرا':'Nashira','متعب':'Mutaib','خليفه':'Khalifah','سوسن':'Sawsan','حيدر':'Haider','سديم':'Sadeem','خوله':'Khawlah','لطيفه':'Latifah','حمود':'Hamoud','فيصل':'Faisal','خالد':'Khaled','مسلم':'Muslim','وليد':'Waleed','روان':'Rawan','ساره':'Sarah','عائشه':'Aishah','أحمد':'Ahmad','احمد':'Ahmad','شايع':'Shaya','حامد':'Hamed','بدر':'Badr','لولوه':'Lulwah','ابرار':'Abrar','موسى':'Mousa','مراد':'Murad','ام':'Umm','ايمان':'Iman','جاب':'Jab','صبغة':'Sibghah','رويدا':'Rowaida','سهم':'Sahm','مشاري':'Mishari','سلمان':'Salman','مسعود':'Masoud','حسام':'Hussam','وجيه':'Wajih','محى':'Muhyi','الدين':'Aldin','سالم':'Salem','مرام':'Maram','حسين':'Hussein','جسار':'Jassar','ريان':'Rayan','لوسو':'Loso','سويت':'Suite','مناور':'Munawer','مناحي':'Manahi','منيره':'Munirah','بن':'Bin','شيماء':'Shaima','ال':'Al',\n 'القحطاني':'Alqahtani','العنزي':'Alanazi','الثبيتي':'Althubaiti','الكامدي':'Alkamdi','المريخي':'Almuraikhi','الغامدي':'Alghamdi','الشهراني':'Alshahrani','العتيق':'Alateeq','المنصوري':'Almansouri','الأنصاري':'Alansari','الخطيب':'Alkhatib','البسيس':'Albusaiss','المعجل':'Almuajjal','الشثري':'Alshathri','العرجاني':'Alarjani','القطري':'Alqatari','الجربوع':'Aljarbou','الردادي':'Alraddadi','البغيل':'Albughail','الكريمي':'Alkarimi','الشحي':'Alshihi','البقمي':'Albuqami','هادي':'Hadi','الشهري':'Alshahri','المطوع':'Almutawa','البدواوي':'Albadwawi','الحوسني':'Alhosni','المناعي':'Almannai','السابق':'Alsabiq','الحمد':'Alhamad','الوابل':'Alwabel','الدخيل':'Aldakhil','العجمي':'Alajmi','خرمي':'Kharmi','سعود':'Saud','الشمري':'Alshammari','المطيري':'Almutairi','العمري':'Alomari','السكيتي':'Alsukaiti','الصقر':'Alsaqr','الصقير':'Alsuqair','السيد':'Alsayed','العتيبي':'Alotaibi','التميمي':'Altamimi','المتروك':'Almatrouk','السبيعي':'Alsubaie','الحربي':'Alharbi','العازب':'Alazib','الخليل':'Alkhalil','الدوسري':'Aldosari','المويزري':'Almuwaizri','الراضي':'Alradi','المري':'Almarri','العبدالقادر':'Alabdulqader','الماجد':'Almajed','الغنام':'Alghannam','الرشيدي':'Alrashidi','الطباخ':'Altabbakh','التوم':'Altoum','البدراني':'Albadrani','خرصان':'Kharsan','الوايلي':'Alwaeli','الدريهم':'Alduraihem','المحمد':'Almohammed','العبيد':'Alobaid','العازمي':'Alazmi','بريك':'Braik','الملحم':'Almulhem','المنصور':'Almansour','الرجيعي':'Alrujaie','المسرحي':'Almasrahi'\n};\nconst chars={'ا':'a','أ':'a','إ':'i','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh','د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ي':'y','ى':'a','ة':'ah','ء':'','ؤ':'w','ئ':'y','ک':'k','ی':'y','پ':'p','چ':'ch','ژ':'zh','گ':'g'};\nconst norm=v=>String(v??'').replace(/[\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]/g,'').replace(/\\s+/g,' ').trim();\nconst latin=v=>norm(v).replace(/[\\u064b-\\u065f\\u0670\\u0640]/g,'').split(' ').map(word=>dictionary[word]||word.normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').split('').map(c=>chars[c]??c).join('')).join(' ').replace(/(^|[\\s-])([a-z])/g,(_,a,b)=>a+b.toUpperCase());\nfunction contactEngine() {\n  const group = 'contactGroups/7e2e865c083e05ce';\n  const fields = 'names,phoneNumbers,emailAddresses,biographies,memberships,metadata,addresses,birthdays,events,genders,imClients,interests,locales,nicknames,occupations,organizations,relations,sipAddresses,urls,userDefined';\n  const text = v => String(v ?? '').trim();\n  const digits = v => text(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\\D/g, '').replace(/^00/, '');\n  const phone = v => { let p = digits(v); if (/^05\\d{8}$/.test(p)) p = '966' + p.slice(1); return /^[1-9]\\d{6,14}$/.test(p) ? '+' + p : ''; };\n  const email = v => text(v).toLowerCase();\n  const clean = v => {\n    if (Array.isArray(v)) return v.map(clean);\n    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter(([k]) => !['metadata','formattedType','formattedValue','canonicalForm','displayName','displayNameLastFirst','contactGroupId'].includes(k)).map(([k,x]) => [k,clean(x)]));\n    return v;\n  };\n  const unique = (values, key = v => JSON.stringify(v)) => { const map=new Map(); for(const value of values)if(!map.has(key(value)))map.set(key(value),value); return [...map.values()]; };\n  const contactValues = (p, key) => (p[key] || []).filter(v => !v.metadata?.source?.type || v.metadata.source.type === 'CONTACT');\n  const source = p => (p.metadata?.sources || []).find(s => s.type === 'CONTACT');\n  const getRequest = (resource, role) => ({method:'GET',url:'https://people.googleapis.com/v1/' + resource + '?personFields=' + fields,role});\n  const fail = (state, error) => ({...state,request:null,status:'failed',contact_error:text(error).slice(0,1000)});\n  const expected = body => ({phones:(body.phoneNumbers || []).map(x => phone(x.value)),emails:(body.emailAddresses || []).map(x => email(x.value)),note:body.biographies?.[0]?.value || '',name:body.names?.[0] || {},groups:(body.memberships || []).map(x=>x.contactGroupMembership.contactGroupResourceName)});\n  const verified = (p,e) => e.phones.every(v => (p.phoneNumbers || []).some(x => phone(x.value) === v)) && e.emails.every(v => (p.emailAddresses || []).some(x => email(x.value) === v)) && (!e.note || (p.biographies || []).some(x => x.value === e.note)) && (!e.name.givenName || (p.names || []).some(x => x.givenName === e.name.givenName && (x.familyName || '') === (e.name.familyName || ''))) && e.groups.every(v => (p.memberships || []).some(x => x.contactGroupMembership?.contactGroupResourceName === v));\n  const remaining = state => {\n    if (!state.duplicates.length) return {...state,request:null,status:state.merged ? 'merged' : state.created ? 'created' : state.updated ? 'updated' : 'unchanged'};\n    return {...state,request:getRequest(state.duplicates[0].resourceName,'check_duplicate')};\n  };\n  function build(state, target) {\n    const people = [target,...state.duplicates];\n    const originalName = contactValues(target,'names')[0] || {};\n    const name = {...clean(originalName),givenName:originalName.givenName || state.guest.first,familyName:originalName.familyName || state.guest.last};\n    if(!name.familyName)delete name.familyName;\n    if (/[^\\x00-\\x7f]/.test(name.givenName + name.familyName)) { name.givenName = state.guest.first; name.familyName = state.guest.last; }\n    const existingPhones = people.flatMap(p => contactValues(p,'phoneNumbers')).map(clean);\n    const existingEmails = people.flatMap(p => contactValues(p,'emailAddresses')).map(clean);\n    const phones = unique([...existingPhones,...(state.guest.phone ? [{value:state.guest.phone,type:'mobile'}] : [])],x => phone(x.value) || text(x.value));\n    const emails = unique([...existingEmails,...(state.guest.email ? [{value:state.guest.email,type:'home'}] : [])],x => email(x.value));\n    const memberships = unique([...people.flatMap(p => contactValues(p,'memberships')).map(clean).filter(m => m.contactGroupMembership && (m.contactGroupMembership.contactGroupResourceName === 'contactGroups/myContacts' || !/contactGroups\\/(all|chatBuddies|blocked|friends|family|coworkers)$/.test(m.contactGroupMembership.contactGroupResourceName))),{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}],x => x.contactGroupMembership.contactGroupResourceName);\n    const notes = unique(people.flatMap(p => contactValues(p,'biographies').map(b => text(b.value))).filter(Boolean));\n    const names = unique([...people.flatMap(p => contactValues(p,'names').map(n => [n.givenName,n.familyName].filter(Boolean).join(' '))),[state.guest.first,state.guest.last].filter(Boolean).join(' ')].filter(Boolean));\n    const addedPhone = state.guest.phone && !contactValues(target,'phoneNumbers').some(x => phone(x.value) === state.guest.phone);\n    const addedEmail = state.guest.email && !contactValues(target,'emailAddresses').some(x => email(x.value) === state.guest.email);\n    const nameChanged = names.length > 1 && (addedPhone || addedEmail);\n    if (state.duplicates.length || nameChanged || addedPhone || addedEmail) {\n      const entry = 'LSA contact merge/enrichment — ' + state.date + '\\nNames: ' + names.join(' | ') + '\\nPhones: ' + phones.map(x=>x.value).join(' | ') + '\\nEmails: ' + emails.map(x=>x.value).join(' | ');\n      if (!notes.some(n => n.includes(entry))) notes.push(entry);\n    }\n    const body = {names:[name],phoneNumbers:phones,emailAddresses:emails,memberships};\n    if (notes.length) body.biographies = [{value:notes.join('\\n\\n'),contentType:'TEXT_PLAIN'}];\n    const extra = ['addresses','events','imClients','interests','locales','nicknames','occupations','organizations','relations','sipAddresses','urls','userDefined'];\n    for (const f of extra) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = all; }\n    for (const f of ['birthdays','genders']) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = [all[0]]; if (all.length > 1) { const values = all.slice(1).map(v=>JSON.stringify(v)).join(' | '); const note = 'Other merged ' + f + ': ' + values; body.biographies = [{value:[body.biographies?.[0]?.value,note].filter(Boolean).join('\\n\\n'),contentType:'TEXT_PLAIN'}]; } }\n    const mask = Object.keys(body);\n    const unchanged = mask.every(k => JSON.stringify(clean(contactValues(target,k))) === JSON.stringify(body[k]));\n    state = {...state,target:target.resourceName,expected:expected(body),desired:body};\n    if (unchanged) return remaining({...state,request:null});\n    const src = source(target);\n    if (!src?.etag) return fail(state,'Google contact did not provide a current CONTACT etag; no update or duplicate removal was attempted.');\n    body.metadata = {sources:[{type:'CONTACT',id:src.id,etag:src.etag}]};\n    return {...state,request:{method:'PATCH',url:'https://people.googleapis.com/v1/' + target.resourceName + ':updateContact?updatePersonFields=' + mask.join(',') + '&personFields=' + fields,body,role:'update'}};\n  }\n  function plan(guest, input) {\n    let state = {guest,date:new Date().toISOString().slice(0,10),status:'pending',request:null,duplicates:[],steps:0,refreshes:0};\n    if (guest.contact_error) return fail(state,guest.contact_error);\n    const errors = input.filter(p => p.error);\n    if (errors.length) return fail(state,'Cannot read Google Contacts: ' + text(errors[0].error?.message || errors[0].error));\n    const contacts = input.filter(p => p.resourceName && source(p));\n    if (input.some(p => Object.keys(p).length && !p.resourceName && !p.error)) return fail(state,'Unexpected Google Contacts response; no create or merge was attempted.');\n    const ps = new Set(guest.phone ? [guest.phone] : []), es = new Set(guest.email ? [guest.email] : []);\n    const matches = [];\n    let changed = true;\n    while (changed) { changed = false; for (const p of contacts) { if (matches.includes(p)) continue; if ((p.phoneNumbers || []).some(x => ps.has(phone(x.value))) || (p.emailAddresses || []).some(x => es.has(email(x.value)))) { matches.push(p); for (const x of p.phoneNumbers || []) { const v=phone(x.value); if(v)ps.add(v); } for (const x of p.emailAddresses || []) { const v=email(x.value);if(v)es.add(v); } changed=true; } } }\n    if (!matches.length) {\n      const body = {names:[{givenName:guest.first,familyName:guest.last}],...(guest.phone?{phoneNumbers:[{value:guest.phone,type:'mobile'}]}:{}),...(guest.email?{emailAddresses:[{value:guest.email,type:'home'}]}:{}),memberships:[{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}]};\n      return {...state,expected:expected(body),desired:body,request:{method:'POST',url:'https://people.googleapis.com/v1/people:createContact?personFields=' + fields,body,role:'create'}};\n    }\n    matches.sort((a,b) => ((b.names?.[0]?.givenName ? 1 : 0) - (a.names?.[0]?.givenName ? 1 : 0)) || a.resourceName.localeCompare(b.resourceName));\n    const target = matches.shift();\n    state = {...state,target:target.resourceName,duplicates:matches.map(p=>({...p,originalEtag:source(p)?.etag})),merged:matches.length>0};\n    return {...state,request:getRequest(target.resourceName,'refresh_target')};\n  }\n  function advance(state,response) {\n    const req=state.request;\n    state={...state,steps:state.steps+1};\n    if(state.steps>100)return fail(state,'Contact operation exceeded its step limit; booking processing can continue.');\n    const status=Number(response.statusCode || 0), body=response.body ?? {};\n    if(response.error || status<200 || status>=300 || body.error) {\n      if(req.role==='update' && (status===409 || status===412 || body.error?.details?.some(d=>d.reason==='failedPrecondition') || /etag|failedPrecondition/i.test(body.error?.message||'')) && state.refreshes<2) return {...state,refreshes:state.refreshes+1,request:getRequest(state.target,'refresh_target')};\n      return fail(state,'Google Contacts ' + req.role + ' failed: ' + text(response.error?.message || response.error || body.error?.message || ('HTTP ' + status)));\n    }\n    if(req.role==='refresh_target') return build(state,body);\n    if(req.role==='create' || req.role==='update') {\n      if(!/^people\\/[A-Za-z0-9_-]+$/.test(body.resourceName || ''))return fail(state,'Google did not confirm a contact resource; do not retry the create blindly.');\n      return {...state,target:body.resourceName,created:req.role==='create',updated:req.role==='update',request:getRequest(body.resourceName,'verify_target')};\n    }\n    if(req.role==='verify_target') { if(!verified(body,state.expected))return fail(state,'Google contact verification did not confirm all names, phones, emails, notes and label; duplicate contacts were left untouched.'); return remaining(state); }\n    if(req.role==='check_duplicate') {\n      const dupe=state.duplicates[0];\n      if(body.resourceName!==dupe.resourceName || source(body)?.etag!==dupe.originalEtag)return fail(state,'A duplicate contact changed during merging; its original record was preserved for a later retry.');\n      return {...state,request:{method:'DELETE',url:'https://people.googleapis.com/v1/' + dupe.resourceName + ':deleteContact',role:'delete_duplicate'}};\n    }\n    if(req.role==='delete_duplicate')return remaining({...state,duplicates:state.duplicates.slice(1)});\n    return fail(state,'Unknown contact operation; no further change attempted.');\n  }\n  return {phone,email,plan,advance,verified};\n}\n\nconst H=contactEngine();\ntry {\n const g=$input.first().json;\n if(!admitted(g)||!['paid','confirmed'].includes(g.status))return [];\n const phone=H.phone(g.phone),rawEmail=H.email(g.guest_email),email=/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(rawEmail)?rawEmail:'';\n if(!phone&&!email)return [];\n let first=norm(g.guest_first_name),last=norm(g.guest_last_name);\n if(!first&&!last){const words=norm(g.guest_name).split(' ');first=words.shift()||'';last=words.join(' ');}\n if(first===last)last='';\n if(first==='عبد' && /^(الله|الرحمن|العزيز|الكريم)(?:\\s|$)/.test(last)){const words=last.split(' ');first+=words.shift();last=words.join(' ');}\n first=latin(first);last=latin(last);\n const error= !first ? 'Guest contact has no usable first name.' : /[^\\x00-\\x7f]/.test(first+last) ? 'Guest name requires Latin transliteration review; booking processing is unaffected.' : '';\n return [{json:{first,last,phone,email,reservation_key:g.reservation_key,contact_error:error}}];\n}catch(e){return [{json:{contact_error:'Contact preparation failed: '+e.message}}];}"
+      },
+      "id": "f08dbffc-84d7-4be0-bebc-34e99c33e2f8",
       "name": "GC00 Prepare English Guest Contact",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -350,
-        1450
+        1056,
+        480
       ],
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const dictionary={\n 'ماطر':'Mater','ماجد':'Majed','فاطمه':'Fatimah','فوزيه':'Fawziah','فوزية':'Fawziah','ياسر':'Yasser','عبدالله':'Abdullah','نايف':'Naif','سلطان':'Sultan','مها':'Maha','ريما':'Reema','ناصر':'Nasser','فهد':'Fahad','صلاح':'Salah','حشمت':'Hashmat','نواف':'Nawaf','ابراهيم':'Ibrahim','حسن':'Hassan','محمد':'Mohammed','عوض':'Awad','حمد':'Hamad','عبدالكريم':'Abdulkarim','عبدالعزيز':'Abdulaziz','عبدالاله':'Abdulilah','عبدالمحسن':'Abdulmohsen','عبدالملك':'Abdulmalik','عبدالرحمن':'Abdulrahman','يوسف':'Yousef','خشيعه':'Khushayah','مرادي':'Moradi','مبارك':'Mubarak','يحيى':'Yahya','خديجة':'Khadijah','نور':'Noor','ماريا':'Maria','منصور':'Mansour','نوره':'Nourah','شاهين':'Shaheen','عليا':'Alia','مرتضى':'Murtada','لمحمد':'Limohammed','عبد':'Abd','الرحمن':'Alrahman','الله':'Allah','أبو':'Abu','ابو':'Abu','خشيم':'Khushaym','سليمان':'Sulaiman','سيف':'Saif','سعيد':'Saeed','ادريس':'Idris','اوس':'Aws','علي':'Ali','رولا':'Rola','سفر':'Safar','بسام':'Bassam','صالح':'Saleh','بندر':'Bandar','عاصم':'Asim','رغد':'Raghad','نشيرا':'Nashira','متعب':'Mutaib','خليفه':'Khalifah','سوسن':'Sawsan','حيدر':'Haider','سديم':'Sadeem','خوله':'Khawlah','لطيفه':'Latifah','حمود':'Hamoud','فيصل':'Faisal','خالد':'Khaled','مسلم':'Muslim','وليد':'Waleed','روان':'Rawan','ساره':'Sarah','عائشه':'Aishah','أحمد':'Ahmad','احمد':'Ahmad','شايع':'Shaya','حامد':'Hamed','بدر':'Badr','لولوه':'Lulwah','ابرار':'Abrar','موسى':'Mousa','مراد':'Murad','ام':'Umm','ايمان':'Iman','جاب':'Jab','صبغة':'Sibghah','رويدا':'Rowaida','سهم':'Sahm','مشاري':'Mishari','سلمان':'Salman','مسعود':'Masoud','حسام':'Hussam','وجيه':'Wajih','محى':'Muhyi','الدين':'Aldin','سالم':'Salem','مرام':'Maram','حسين':'Hussein','جسار':'Jassar','ريان':'Rayan','لوسو':'Loso','سويت':'Suite','مناور':'Munawer','مناحي':'Manahi','منيره':'Munirah','بن':'Bin','شيماء':'Shaima','ال':'Al',\n 'القحطاني':'Alqahtani','العنزي':'Alanazi','الثبيتي':'Althubaiti','الكامدي':'Alkamdi','المريخي':'Almuraikhi','الغامدي':'Alghamdi','الشهراني':'Alshahrani','العتيق':'Alateeq','المنصوري':'Almansouri','الأنصاري':'Alansari','الخطيب':'Alkhatib','البسيس':'Albusaiss','المعجل':'Almuajjal','الشثري':'Alshathri','العرجاني':'Alarjani','القطري':'Alqatari','الجربوع':'Aljarbou','الردادي':'Alraddadi','البغيل':'Albughail','الكريمي':'Alkarimi','الشحي':'Alshihi','البقمي':'Albuqami','هادي':'Hadi','الشهري':'Alshahri','المطوع':'Almutawa','البدواوي':'Albadwawi','الحوسني':'Alhosni','المناعي':'Almannai','السابق':'Alsabiq','الحمد':'Alhamad','الوابل':'Alwabel','الدخيل':'Aldakhil','العجمي':'Alajmi','خرمي':'Kharmi','سعود':'Saud','الشمري':'Alshammari','المطيري':'Almutairi','العمري':'Alomari','السكيتي':'Alsukaiti','الصقر':'Alsaqr','الصقير':'Alsuqair','السيد':'Alsayed','العتيبي':'Alotaibi','التميمي':'Altamimi','المتروك':'Almatrouk','السبيعي':'Alsubaie','الحربي':'Alharbi','العازب':'Alazib','الخليل':'Alkhalil','الدوسري':'Aldosari','المويزري':'Almuwaizri','الراضي':'Alradi','المري':'Almarri','العبدالقادر':'Alabdulqader','الماجد':'Almajed','الغنام':'Alghannam','الرشيدي':'Alrashidi','الطباخ':'Altabbakh','التوم':'Altoum','البدراني':'Albadrani','خرصان':'Kharsan','الوايلي':'Alwaeli','الدريهم':'Alduraihem','المحمد':'Almohammed','العبيد':'Alobaid','العازمي':'Alazmi','بريك':'Braik','الملحم':'Almulhem','المنصور':'Almansour','الرجيعي':'Alrujaie','المسرحي':'Almasrahi'\n};\nconst chars={'ا':'a','أ':'a','إ':'i','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh','د':'d','ذ':'dh','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w','ي':'y','ى':'a','ة':'ah','ء':'','ؤ':'w','ئ':'y','ک':'k','ی':'y','پ':'p','چ':'ch','ژ':'zh','گ':'g'};\nconst norm=v=>String(v??'').replace(/[\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]/g,'').replace(/\\s+/g,' ').trim();\nconst latin=v=>norm(v).replace(/[\\u064b-\\u065f\\u0670\\u0640]/g,'').split(' ').map(word=>dictionary[word]||word.normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').split('').map(c=>chars[c]??c).join('')).join(' ').replace(/(^|[\\s-])([a-z])/g,(_,a,b)=>a+b.toUpperCase());\nfunction contactEngine() {\n  const group = 'contactGroups/7e2e865c083e05ce';\n  const fields = 'names,phoneNumbers,emailAddresses,biographies,memberships,metadata,addresses,birthdays,events,genders,imClients,interests,locales,nicknames,occupations,organizations,relations,sipAddresses,urls,userDefined';\n  const text = v => String(v ?? '').trim();\n  const digits = v => text(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\\D/g, '').replace(/^00/, '');\n  const phone = v => { let p = digits(v); if (/^05\\d{8}$/.test(p)) p = '966' + p.slice(1); return /^[1-9]\\d{6,14}$/.test(p) ? '+' + p : ''; };\n  const email = v => text(v).toLowerCase();\n  const clean = v => {\n    if (Array.isArray(v)) return v.map(clean);\n    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter(([k]) => !['metadata','formattedType','formattedValue','canonicalForm','displayName','displayNameLastFirst','contactGroupId'].includes(k)).map(([k,x]) => [k,clean(x)]));\n    return v;\n  };\n  const unique = (values, key = v => JSON.stringify(v)) => { const map=new Map(); for(const value of values)if(!map.has(key(value)))map.set(key(value),value); return [...map.values()]; };\n  const contactValues = (p, key) => (p[key] || []).filter(v => !v.metadata?.source?.type || v.metadata.source.type === 'CONTACT');\n  const source = p => (p.metadata?.sources || []).find(s => s.type === 'CONTACT');\n  const getRequest = (resource, role) => ({method:'GET',url:'https://people.googleapis.com/v1/' + resource + '?personFields=' + fields,role});\n  const fail = (state, error) => ({...state,request:null,status:'failed',contact_error:text(error).slice(0,1000)});\n  const expected = body => ({phones:(body.phoneNumbers || []).map(x => phone(x.value)),emails:(body.emailAddresses || []).map(x => email(x.value)),note:body.biographies?.[0]?.value || '',name:body.names?.[0] || {},groups:(body.memberships || []).map(x=>x.contactGroupMembership.contactGroupResourceName)});\n  const verified = (p,e) => e.phones.every(v => (p.phoneNumbers || []).some(x => phone(x.value) === v)) && e.emails.every(v => (p.emailAddresses || []).some(x => email(x.value) === v)) && (!e.note || (p.biographies || []).some(x => x.value === e.note)) && (!e.name.givenName || (p.names || []).some(x => x.givenName === e.name.givenName && (x.familyName || '') === (e.name.familyName || ''))) && e.groups.every(v => (p.memberships || []).some(x => x.contactGroupMembership?.contactGroupResourceName === v));\n  const remaining = state => {\n    if (!state.duplicates.length) return {...state,request:null,status:state.merged ? 'merged' : state.created ? 'created' : state.updated ? 'updated' : 'unchanged'};\n    return {...state,request:getRequest(state.duplicates[0].resourceName,'check_duplicate')};\n  };\n  function build(state, target) {\n    const people = [target,...state.duplicates];\n    const originalName = contactValues(target,'names')[0] || {};\n    const name = {...clean(originalName),givenName:originalName.givenName || state.guest.first,familyName:originalName.familyName || state.guest.last};\n    if(!name.familyName)delete name.familyName;\n    if (/[^\\x00-\\x7f]/.test(name.givenName + name.familyName)) { name.givenName = state.guest.first; name.familyName = state.guest.last; }\n    const existingPhones = people.flatMap(p => contactValues(p,'phoneNumbers')).map(clean);\n    const existingEmails = people.flatMap(p => contactValues(p,'emailAddresses')).map(clean);\n    const phones = unique([...existingPhones,...(state.guest.phone ? [{value:state.guest.phone,type:'mobile'}] : [])],x => phone(x.value) || text(x.value));\n    const emails = unique([...existingEmails,...(state.guest.email ? [{value:state.guest.email,type:'home'}] : [])],x => email(x.value));\n    const memberships = unique([...people.flatMap(p => contactValues(p,'memberships')).map(clean).filter(m => m.contactGroupMembership && (m.contactGroupMembership.contactGroupResourceName === 'contactGroups/myContacts' || !/contactGroups\\/(all|chatBuddies|blocked|friends|family|coworkers)$/.test(m.contactGroupMembership.contactGroupResourceName))),{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}],x => x.contactGroupMembership.contactGroupResourceName);\n    const notes = unique(people.flatMap(p => contactValues(p,'biographies').map(b => text(b.value))).filter(Boolean));\n    const names = unique([...people.flatMap(p => contactValues(p,'names').map(n => [n.givenName,n.familyName].filter(Boolean).join(' '))),[state.guest.first,state.guest.last].filter(Boolean).join(' ')].filter(Boolean));\n    const addedPhone = state.guest.phone && !contactValues(target,'phoneNumbers').some(x => phone(x.value) === state.guest.phone);\n    const addedEmail = state.guest.email && !contactValues(target,'emailAddresses').some(x => email(x.value) === state.guest.email);\n    const nameChanged = names.length > 1 && (addedPhone || addedEmail);\n    if (state.duplicates.length || nameChanged || addedPhone || addedEmail) {\n      const entry = 'LSA contact merge/enrichment — ' + state.date + '\\nNames: ' + names.join(' | ') + '\\nPhones: ' + phones.map(x=>x.value).join(' | ') + '\\nEmails: ' + emails.map(x=>x.value).join(' | ');\n      if (!notes.some(n => n.includes(entry))) notes.push(entry);\n    }\n    const body = {names:[name],phoneNumbers:phones,emailAddresses:emails,memberships};\n    if (notes.length) body.biographies = [{value:notes.join('\\n\\n'),contentType:'TEXT_PLAIN'}];\n    const extra = ['addresses','events','imClients','interests','locales','nicknames','occupations','organizations','relations','sipAddresses','urls','userDefined'];\n    for (const f of extra) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = all; }\n    for (const f of ['birthdays','genders']) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = [all[0]]; if (all.length > 1) { const values = all.slice(1).map(v=>JSON.stringify(v)).join(' | '); const note = 'Other merged ' + f + ': ' + values; body.biographies = [{value:[body.biographies?.[0]?.value,note].filter(Boolean).join('\\n\\n'),contentType:'TEXT_PLAIN'}]; } }\n    const mask = Object.keys(body);\n    const unchanged = mask.every(k => JSON.stringify(clean(contactValues(target,k))) === JSON.stringify(body[k]));\n    state = {...state,target:target.resourceName,expected:expected(body),desired:body};\n    if (unchanged) return remaining({...state,request:null});\n    const src = source(target);\n    if (!src?.etag) return fail(state,'Google contact did not provide a current CONTACT etag; no update or duplicate removal was attempted.');\n    body.metadata = {sources:[{type:'CONTACT',id:src.id,etag:src.etag}]};\n    return {...state,request:{method:'PATCH',url:'https://people.googleapis.com/v1/' + target.resourceName + ':updateContact?updatePersonFields=' + mask.join(',') + '&personFields=' + fields,body,role:'update'}};\n  }\n  function plan(guest, input) {\n    let state = {guest,date:new Date().toISOString().slice(0,10),status:'pending',request:null,duplicates:[],steps:0,refreshes:0};\n    if (guest.contact_error) return fail(state,guest.contact_error);\n    const errors = input.filter(p => p.error);\n    if (errors.length) return fail(state,'Cannot read Google Contacts: ' + text(errors[0].error?.message || errors[0].error));\n    const contacts = input.filter(p => p.resourceName && source(p));\n    if (input.some(p => Object.keys(p).length && !p.resourceName && !p.error)) return fail(state,'Unexpected Google Contacts response; no create or merge was attempted.');\n    const ps = new Set(guest.phone ? [guest.phone] : []), es = new Set(guest.email ? [guest.email] : []);\n    const matches = [];\n    let changed = true;\n    while (changed) { changed = false; for (const p of contacts) { if (matches.includes(p)) continue; if ((p.phoneNumbers || []).some(x => ps.has(phone(x.value))) || (p.emailAddresses || []).some(x => es.has(email(x.value)))) { matches.push(p); for (const x of p.phoneNumbers || []) { const v=phone(x.value); if(v)ps.add(v); } for (const x of p.emailAddresses || []) { const v=email(x.value);if(v)es.add(v); } changed=true; } } }\n    if (!matches.length) {\n      const body = {names:[{givenName:guest.first,familyName:guest.last}],...(guest.phone?{phoneNumbers:[{value:guest.phone,type:'mobile'}]}:{}),...(guest.email?{emailAddresses:[{value:guest.email,type:'home'}]}:{}),memberships:[{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}]};\n      return {...state,expected:expected(body),desired:body,request:{method:'POST',url:'https://people.googleapis.com/v1/people:createContact?personFields=' + fields,body,role:'create'}};\n    }\n    matches.sort((a,b) => ((b.names?.[0]?.givenName ? 1 : 0) - (a.names?.[0]?.givenName ? 1 : 0)) || a.resourceName.localeCompare(b.resourceName));\n    const target = matches.shift();\n    state = {...state,target:target.resourceName,duplicates:matches.map(p=>({...p,originalEtag:source(p)?.etag})),merged:matches.length>0};\n    return {...state,request:getRequest(target.resourceName,'refresh_target')};\n  }\n  function advance(state,response) {\n    const req=state.request;\n    state={...state,steps:state.steps+1};\n    if(state.steps>100)return fail(state,'Contact operation exceeded its step limit; booking processing can continue.');\n    const status=Number(response.statusCode || 0), body=response.body ?? {};\n    if(response.error || status<200 || status>=300 || body.error) {\n      if(req.role==='update' && (status===409 || status===412 || body.error?.details?.some(d=>d.reason==='failedPrecondition') || /etag|failedPrecondition/i.test(body.error?.message||'')) && state.refreshes<2) return {...state,refreshes:state.refreshes+1,request:getRequest(state.target,'refresh_target')};\n      return fail(state,'Google Contacts ' + req.role + ' failed: ' + text(response.error?.message || response.error || body.error?.message || ('HTTP ' + status)));\n    }\n    if(req.role==='refresh_target') return build(state,body);\n    if(req.role==='create' || req.role==='update') {\n      if(!/^people\\/[A-Za-z0-9_-]+$/.test(body.resourceName || ''))return fail(state,'Google did not confirm a contact resource; do not retry the create blindly.');\n      return {...state,target:body.resourceName,created:req.role==='create',updated:req.role==='update',request:getRequest(body.resourceName,'verify_target')};\n    }\n    if(req.role==='verify_target') { if(!verified(body,state.expected))return fail(state,'Google contact verification did not confirm all names, phones, emails, notes and label; duplicate contacts were left untouched.'); return remaining(state); }\n    if(req.role==='check_duplicate') {\n      const dupe=state.duplicates[0];\n      if(body.resourceName!==dupe.resourceName || source(body)?.etag!==dupe.originalEtag)return fail(state,'A duplicate contact changed during merging; its original record was preserved for a later retry.');\n      return {...state,request:{method:'DELETE',url:'https://people.googleapis.com/v1/' + dupe.resourceName + ':deleteContact',role:'delete_duplicate'}};\n    }\n    if(req.role==='delete_duplicate')return remaining({...state,duplicates:state.duplicates.slice(1)});\n    return fail(state,'Unknown contact operation; no further change attempted.');\n  }\n  return {phone,email,plan,advance,verified};\n}\n\nconst H=contactEngine();\ntry {\n const g=$input.first().json;\n if(g.source!=='morning07'||g.payment_verified!==true||g.status!=='paid')return [];\n const phone=H.phone(g.phone),rawEmail=H.email(g.guest_email),email=/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(rawEmail)?rawEmail:'';\n if(!phone&&!email)return [];\n let first=norm(g.guest_first_name),last=norm(g.guest_last_name);\n if(!first&&!last){const words=norm(g.guest_name).split(' ');first=words.shift()||'';last=words.join(' ');}\n if(first===last)last='';\n if(first==='عبد' && /^(الله|الرحمن|العزيز|الكريم)(?:\\s|$)/.test(last)){const words=last.split(' ');first+=words.shift();last=words.join(' ');}\n first=latin(first);last=latin(last);\n const error= !first ? 'Guest contact has no usable first name.' : /[^\\x00-\\x7f]/.test(first+last) ? 'Guest name requires Latin transliteration review; booking processing is unaffected.' : '';\n return [{json:{first,last,phone,email,reservation_key:g.reservation_key,contact_error:error}}];\n}catch(e){return [{json:{contact_error:'Contact preparation failed: '+e.message}}];}"
-      },
       "onError": "continueRegularOutput"
     },
     {
-      "id": "fcabacab-817f-5892-81eb-605d0c13dc73",
-      "name": "GC01 Read Google Contacts",
-      "type": "n8n-nodes-base.googleContacts",
-      "typeVersion": 1,
-      "position": [
-        -100,
-        1450
-      ],
       "parameters": {
         "resource": "contact",
         "operation": "getAll",
@@ -705,37 +695,37 @@
           "sortOrder": "LAST_MODIFIED_DESCENDING"
         }
       },
-      "onError": "continueRegularOutput",
+      "id": "fc2b5fd2-1e48-405d-92a2-b1184b04ef18",
+      "name": "GC01 Read Google Contacts",
+      "type": "n8n-nodes-base.googleContacts",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        480
+      ],
+      "executeOnce": true,
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 1000,
       "alwaysOutputData": true,
-      "executeOnce": true
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "dd781ce0-37ff-5160-9439-4288f78b5348",
-      "name": "GC02 Match Phone Email and Plan Merge",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        150,
-        1450
-      ],
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "function contactEngine() {\n  const group = 'contactGroups/7e2e865c083e05ce';\n  const fields = 'names,phoneNumbers,emailAddresses,biographies,memberships,metadata,addresses,birthdays,events,genders,imClients,interests,locales,nicknames,occupations,organizations,relations,sipAddresses,urls,userDefined';\n  const text = v => String(v ?? '').trim();\n  const digits = v => text(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\\D/g, '').replace(/^00/, '');\n  const phone = v => { let p = digits(v); if (/^05\\d{8}$/.test(p)) p = '966' + p.slice(1); return /^[1-9]\\d{6,14}$/.test(p) ? '+' + p : ''; };\n  const email = v => text(v).toLowerCase();\n  const clean = v => {\n    if (Array.isArray(v)) return v.map(clean);\n    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter(([k]) => !['metadata','formattedType','formattedValue','canonicalForm','displayName','displayNameLastFirst','contactGroupId'].includes(k)).map(([k,x]) => [k,clean(x)]));\n    return v;\n  };\n  const unique = (values, key = v => JSON.stringify(v)) => { const map=new Map(); for(const value of values)if(!map.has(key(value)))map.set(key(value),value); return [...map.values()]; };\n  const contactValues = (p, key) => (p[key] || []).filter(v => !v.metadata?.source?.type || v.metadata.source.type === 'CONTACT');\n  const source = p => (p.metadata?.sources || []).find(s => s.type === 'CONTACT');\n  const getRequest = (resource, role) => ({method:'GET',url:'https://people.googleapis.com/v1/' + resource + '?personFields=' + fields,role});\n  const fail = (state, error) => ({...state,request:null,status:'failed',contact_error:text(error).slice(0,1000)});\n  const expected = body => ({phones:(body.phoneNumbers || []).map(x => phone(x.value)),emails:(body.emailAddresses || []).map(x => email(x.value)),note:body.biographies?.[0]?.value || '',name:body.names?.[0] || {},groups:(body.memberships || []).map(x=>x.contactGroupMembership.contactGroupResourceName)});\n  const verified = (p,e) => e.phones.every(v => (p.phoneNumbers || []).some(x => phone(x.value) === v)) && e.emails.every(v => (p.emailAddresses || []).some(x => email(x.value) === v)) && (!e.note || (p.biographies || []).some(x => x.value === e.note)) && (!e.name.givenName || (p.names || []).some(x => x.givenName === e.name.givenName && (x.familyName || '') === (e.name.familyName || ''))) && e.groups.every(v => (p.memberships || []).some(x => x.contactGroupMembership?.contactGroupResourceName === v));\n  const remaining = state => {\n    if (!state.duplicates.length) return {...state,request:null,status:state.merged ? 'merged' : state.created ? 'created' : state.updated ? 'updated' : 'unchanged'};\n    return {...state,request:getRequest(state.duplicates[0].resourceName,'check_duplicate')};\n  };\n  function build(state, target) {\n    const people = [target,...state.duplicates];\n    const originalName = contactValues(target,'names')[0] || {};\n    const name = {...clean(originalName),givenName:originalName.givenName || state.guest.first,familyName:originalName.familyName || state.guest.last};\n    if(!name.familyName)delete name.familyName;\n    if (/[^\\x00-\\x7f]/.test(name.givenName + name.familyName)) { name.givenName = state.guest.first; name.familyName = state.guest.last; }\n    const existingPhones = people.flatMap(p => contactValues(p,'phoneNumbers')).map(clean);\n    const existingEmails = people.flatMap(p => contactValues(p,'emailAddresses')).map(clean);\n    const phones = unique([...existingPhones,...(state.guest.phone ? [{value:state.guest.phone,type:'mobile'}] : [])],x => phone(x.value) || text(x.value));\n    const emails = unique([...existingEmails,...(state.guest.email ? [{value:state.guest.email,type:'home'}] : [])],x => email(x.value));\n    const memberships = unique([...people.flatMap(p => contactValues(p,'memberships')).map(clean).filter(m => m.contactGroupMembership && (m.contactGroupMembership.contactGroupResourceName === 'contactGroups/myContacts' || !/contactGroups\\/(all|chatBuddies|blocked|friends|family|coworkers)$/.test(m.contactGroupMembership.contactGroupResourceName))),{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}],x => x.contactGroupMembership.contactGroupResourceName);\n    const notes = unique(people.flatMap(p => contactValues(p,'biographies').map(b => text(b.value))).filter(Boolean));\n    const names = unique([...people.flatMap(p => contactValues(p,'names').map(n => [n.givenName,n.familyName].filter(Boolean).join(' '))),[state.guest.first,state.guest.last].filter(Boolean).join(' ')].filter(Boolean));\n    const addedPhone = state.guest.phone && !contactValues(target,'phoneNumbers').some(x => phone(x.value) === state.guest.phone);\n    const addedEmail = state.guest.email && !contactValues(target,'emailAddresses').some(x => email(x.value) === state.guest.email);\n    const nameChanged = names.length > 1 && (addedPhone || addedEmail);\n    if (state.duplicates.length || nameChanged || addedPhone || addedEmail) {\n      const entry = 'LSA contact merge/enrichment — ' + state.date + '\\nNames: ' + names.join(' | ') + '\\nPhones: ' + phones.map(x=>x.value).join(' | ') + '\\nEmails: ' + emails.map(x=>x.value).join(' | ');\n      if (!notes.some(n => n.includes(entry))) notes.push(entry);\n    }\n    const body = {names:[name],phoneNumbers:phones,emailAddresses:emails,memberships};\n    if (notes.length) body.biographies = [{value:notes.join('\\n\\n'),contentType:'TEXT_PLAIN'}];\n    const extra = ['addresses','events','imClients','interests','locales','nicknames','occupations','organizations','relations','sipAddresses','urls','userDefined'];\n    for (const f of extra) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = all; }\n    for (const f of ['birthdays','genders']) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = [all[0]]; if (all.length > 1) { const values = all.slice(1).map(v=>JSON.stringify(v)).join(' | '); const note = 'Other merged ' + f + ': ' + values; body.biographies = [{value:[body.biographies?.[0]?.value,note].filter(Boolean).join('\\n\\n'),contentType:'TEXT_PLAIN'}]; } }\n    const mask = Object.keys(body);\n    const unchanged = mask.every(k => JSON.stringify(clean(contactValues(target,k))) === JSON.stringify(body[k]));\n    state = {...state,target:target.resourceName,expected:expected(body),desired:body};\n    if (unchanged) return remaining({...state,request:null});\n    const src = source(target);\n    if (!src?.etag) return fail(state,'Google contact did not provide a current CONTACT etag; no update or duplicate removal was attempted.');\n    body.metadata = {sources:[{type:'CONTACT',id:src.id,etag:src.etag}]};\n    return {...state,request:{method:'PATCH',url:'https://people.googleapis.com/v1/' + target.resourceName + ':updateContact?updatePersonFields=' + mask.join(',') + '&personFields=' + fields,body,role:'update'}};\n  }\n  function plan(guest, input) {\n    let state = {guest,date:new Date().toISOString().slice(0,10),status:'pending',request:null,duplicates:[],steps:0,refreshes:0};\n    if (guest.contact_error) return fail(state,guest.contact_error);\n    const errors = input.filter(p => p.error);\n    if (errors.length) return fail(state,'Cannot read Google Contacts: ' + text(errors[0].error?.message || errors[0].error));\n    const contacts = input.filter(p => p.resourceName && source(p));\n    if (input.some(p => Object.keys(p).length && !p.resourceName && !p.error)) return fail(state,'Unexpected Google Contacts response; no create or merge was attempted.');\n    const ps = new Set(guest.phone ? [guest.phone] : []), es = new Set(guest.email ? [guest.email] : []);\n    const matches = [];\n    let changed = true;\n    while (changed) { changed = false; for (const p of contacts) { if (matches.includes(p)) continue; if ((p.phoneNumbers || []).some(x => ps.has(phone(x.value))) || (p.emailAddresses || []).some(x => es.has(email(x.value)))) { matches.push(p); for (const x of p.phoneNumbers || []) { const v=phone(x.value); if(v)ps.add(v); } for (const x of p.emailAddresses || []) { const v=email(x.value);if(v)es.add(v); } changed=true; } } }\n    if (!matches.length) {\n      const body = {names:[{givenName:guest.first,familyName:guest.last}],...(guest.phone?{phoneNumbers:[{value:guest.phone,type:'mobile'}]}:{}),...(guest.email?{emailAddresses:[{value:guest.email,type:'home'}]}:{}),memberships:[{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}]};\n      return {...state,expected:expected(body),desired:body,request:{method:'POST',url:'https://people.googleapis.com/v1/people:createContact?personFields=' + fields,body,role:'create'}};\n    }\n    matches.sort((a,b) => ((b.names?.[0]?.givenName ? 1 : 0) - (a.names?.[0]?.givenName ? 1 : 0)) || a.resourceName.localeCompare(b.resourceName));\n    const target = matches.shift();\n    state = {...state,target:target.resourceName,duplicates:matches.map(p=>({...p,originalEtag:source(p)?.etag})),merged:matches.length>0};\n    return {...state,request:getRequest(target.resourceName,'refresh_target')};\n  }\n  function advance(state,response) {\n    const req=state.request;\n    state={...state,steps:state.steps+1};\n    if(state.steps>100)return fail(state,'Contact operation exceeded its step limit; booking processing can continue.');\n    const status=Number(response.statusCode || 0), body=response.body ?? {};\n    if(response.error || status<200 || status>=300 || body.error) {\n      if(req.role==='update' && (status===409 || status===412 || body.error?.details?.some(d=>d.reason==='failedPrecondition') || /etag|failedPrecondition/i.test(body.error?.message||'')) && state.refreshes<2) return {...state,refreshes:state.refreshes+1,request:getRequest(state.target,'refresh_target')};\n      return fail(state,'Google Contacts ' + req.role + ' failed: ' + text(response.error?.message || response.error || body.error?.message || ('HTTP ' + status)));\n    }\n    if(req.role==='refresh_target') return build(state,body);\n    if(req.role==='create' || req.role==='update') {\n      if(!/^people\\/[A-Za-z0-9_-]+$/.test(body.resourceName || ''))return fail(state,'Google did not confirm a contact resource; do not retry the create blindly.');\n      return {...state,target:body.resourceName,created:req.role==='create',updated:req.role==='update',request:getRequest(body.resourceName,'verify_target')};\n    }\n    if(req.role==='verify_target') { if(!verified(body,state.expected))return fail(state,'Google contact verification did not confirm all names, phones, emails, notes and label; duplicate contacts were left untouched.'); return remaining(state); }\n    if(req.role==='check_duplicate') {\n      const dupe=state.duplicates[0];\n      if(body.resourceName!==dupe.resourceName || source(body)?.etag!==dupe.originalEtag)return fail(state,'A duplicate contact changed during merging; its original record was preserved for a later retry.');\n      return {...state,request:{method:'DELETE',url:'https://people.googleapis.com/v1/' + dupe.resourceName + ':deleteContact',role:'delete_duplicate'}};\n    }\n    if(req.role==='delete_duplicate')return remaining({...state,duplicates:state.duplicates.slice(1)});\n    return fail(state,'Unknown contact operation; no further change attempted.');\n  }\n  return {phone,email,plan,advance,verified};\n}\n\ntry { return [{json:contactEngine().plan($('GC00 Prepare English Guest Contact').first().json,$input.all().map(i=>i.json))}]; } catch(e) { return [{json:{status:'failed',request:null,contact_error:'Contact matching failed: '+e.message}}]; }"
       },
+      "id": "1203479a-bac8-40c1-a3d4-8c46945af17d",
+      "name": "GC02 Match Phone Email and Plan Merge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        480
+      ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "bb15030d-9c80-54ed-aa0b-597459804f5b",
-      "name": "GC03 Contact Action Pending?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        400,
-        1450
-      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -760,17 +750,17 @@
         },
         "options": {}
       },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "10e13baf-d95a-56aa-b431-21c5020f2ad6",
-      "name": "GC04 Contact Write Request?",
+      "id": "a3b88464-0833-475d-b0ba-ac6e0ba159b9",
+      "name": "GC03 Contact Action Pending?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        650,
-        1450
+        1728,
+        480
       ],
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
         "conditions": {
           "options": {
@@ -795,17 +785,17 @@
         },
         "options": {}
       },
+      "id": "33a8a97c-3569-478b-a9a7-2823e8e385e5",
+      "name": "GC04 Contact Write Request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1952,
+        112
+      ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "f2e566c0-8975-523c-815d-14b90a5eb8fc",
-      "name": "GC05 Save Combined Google Contact",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        900,
-        1350
-      ],
       "parameters": {
         "method": "={{ $json.request.method }}",
         "url": "={{ $json.request.url }}",
@@ -826,17 +816,17 @@
           }
         }
       },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "18741a72-e35b-51ec-9dbe-81f3d483c371",
-      "name": "GC05R Verify or Remove Merged Duplicate",
+      "id": "5fe687b8-6eaa-40f7-955e-157295356a4c",
+      "name": "GC05 Save Combined Google Contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        900,
-        1550
+        2176,
+        16
       ],
+      "onError": "continueRegularOutput"
+    },
+    {
       "parameters": {
         "method": "={{ $json.request.method }}",
         "url": "={{ $json.request.url }}",
@@ -854,32 +844,32 @@
           }
         }
       },
+      "id": "37274c97-a532-486b-bb47-412b4464ed2a",
+      "name": "GC05R Verify or Remove Merged Duplicate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2176,
+        208
+      ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "3e407778-3b77-5f54-b9b2-e9a851cb1fda",
-      "name": "GC06 Verify Contact and Continue Merge",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1150,
-        1450
-      ],
       "parameters": {
         "mode": "runOnceForAllItems",
         "jsCode": "function contactEngine() {\n  const group = 'contactGroups/7e2e865c083e05ce';\n  const fields = 'names,phoneNumbers,emailAddresses,biographies,memberships,metadata,addresses,birthdays,events,genders,imClients,interests,locales,nicknames,occupations,organizations,relations,sipAddresses,urls,userDefined';\n  const text = v => String(v ?? '').trim();\n  const digits = v => text(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\\D/g, '').replace(/^00/, '');\n  const phone = v => { let p = digits(v); if (/^05\\d{8}$/.test(p)) p = '966' + p.slice(1); return /^[1-9]\\d{6,14}$/.test(p) ? '+' + p : ''; };\n  const email = v => text(v).toLowerCase();\n  const clean = v => {\n    if (Array.isArray(v)) return v.map(clean);\n    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter(([k]) => !['metadata','formattedType','formattedValue','canonicalForm','displayName','displayNameLastFirst','contactGroupId'].includes(k)).map(([k,x]) => [k,clean(x)]));\n    return v;\n  };\n  const unique = (values, key = v => JSON.stringify(v)) => { const map=new Map(); for(const value of values)if(!map.has(key(value)))map.set(key(value),value); return [...map.values()]; };\n  const contactValues = (p, key) => (p[key] || []).filter(v => !v.metadata?.source?.type || v.metadata.source.type === 'CONTACT');\n  const source = p => (p.metadata?.sources || []).find(s => s.type === 'CONTACT');\n  const getRequest = (resource, role) => ({method:'GET',url:'https://people.googleapis.com/v1/' + resource + '?personFields=' + fields,role});\n  const fail = (state, error) => ({...state,request:null,status:'failed',contact_error:text(error).slice(0,1000)});\n  const expected = body => ({phones:(body.phoneNumbers || []).map(x => phone(x.value)),emails:(body.emailAddresses || []).map(x => email(x.value)),note:body.biographies?.[0]?.value || '',name:body.names?.[0] || {},groups:(body.memberships || []).map(x=>x.contactGroupMembership.contactGroupResourceName)});\n  const verified = (p,e) => e.phones.every(v => (p.phoneNumbers || []).some(x => phone(x.value) === v)) && e.emails.every(v => (p.emailAddresses || []).some(x => email(x.value) === v)) && (!e.note || (p.biographies || []).some(x => x.value === e.note)) && (!e.name.givenName || (p.names || []).some(x => x.givenName === e.name.givenName && (x.familyName || '') === (e.name.familyName || ''))) && e.groups.every(v => (p.memberships || []).some(x => x.contactGroupMembership?.contactGroupResourceName === v));\n  const remaining = state => {\n    if (!state.duplicates.length) return {...state,request:null,status:state.merged ? 'merged' : state.created ? 'created' : state.updated ? 'updated' : 'unchanged'};\n    return {...state,request:getRequest(state.duplicates[0].resourceName,'check_duplicate')};\n  };\n  function build(state, target) {\n    const people = [target,...state.duplicates];\n    const originalName = contactValues(target,'names')[0] || {};\n    const name = {...clean(originalName),givenName:originalName.givenName || state.guest.first,familyName:originalName.familyName || state.guest.last};\n    if(!name.familyName)delete name.familyName;\n    if (/[^\\x00-\\x7f]/.test(name.givenName + name.familyName)) { name.givenName = state.guest.first; name.familyName = state.guest.last; }\n    const existingPhones = people.flatMap(p => contactValues(p,'phoneNumbers')).map(clean);\n    const existingEmails = people.flatMap(p => contactValues(p,'emailAddresses')).map(clean);\n    const phones = unique([...existingPhones,...(state.guest.phone ? [{value:state.guest.phone,type:'mobile'}] : [])],x => phone(x.value) || text(x.value));\n    const emails = unique([...existingEmails,...(state.guest.email ? [{value:state.guest.email,type:'home'}] : [])],x => email(x.value));\n    const memberships = unique([...people.flatMap(p => contactValues(p,'memberships')).map(clean).filter(m => m.contactGroupMembership && (m.contactGroupMembership.contactGroupResourceName === 'contactGroups/myContacts' || !/contactGroups\\/(all|chatBuddies|blocked|friends|family|coworkers)$/.test(m.contactGroupMembership.contactGroupResourceName))),{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}],x => x.contactGroupMembership.contactGroupResourceName);\n    const notes = unique(people.flatMap(p => contactValues(p,'biographies').map(b => text(b.value))).filter(Boolean));\n    const names = unique([...people.flatMap(p => contactValues(p,'names').map(n => [n.givenName,n.familyName].filter(Boolean).join(' '))),[state.guest.first,state.guest.last].filter(Boolean).join(' ')].filter(Boolean));\n    const addedPhone = state.guest.phone && !contactValues(target,'phoneNumbers').some(x => phone(x.value) === state.guest.phone);\n    const addedEmail = state.guest.email && !contactValues(target,'emailAddresses').some(x => email(x.value) === state.guest.email);\n    const nameChanged = names.length > 1 && (addedPhone || addedEmail);\n    if (state.duplicates.length || nameChanged || addedPhone || addedEmail) {\n      const entry = 'LSA contact merge/enrichment — ' + state.date + '\\nNames: ' + names.join(' | ') + '\\nPhones: ' + phones.map(x=>x.value).join(' | ') + '\\nEmails: ' + emails.map(x=>x.value).join(' | ');\n      if (!notes.some(n => n.includes(entry))) notes.push(entry);\n    }\n    const body = {names:[name],phoneNumbers:phones,emailAddresses:emails,memberships};\n    if (notes.length) body.biographies = [{value:notes.join('\\n\\n'),contentType:'TEXT_PLAIN'}];\n    const extra = ['addresses','events','imClients','interests','locales','nicknames','occupations','organizations','relations','sipAddresses','urls','userDefined'];\n    for (const f of extra) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = all; }\n    for (const f of ['birthdays','genders']) { const all = unique(people.flatMap(p => contactValues(p,f)).map(clean)); if (all.length) body[f] = [all[0]]; if (all.length > 1) { const values = all.slice(1).map(v=>JSON.stringify(v)).join(' | '); const note = 'Other merged ' + f + ': ' + values; body.biographies = [{value:[body.biographies?.[0]?.value,note].filter(Boolean).join('\\n\\n'),contentType:'TEXT_PLAIN'}]; } }\n    const mask = Object.keys(body);\n    const unchanged = mask.every(k => JSON.stringify(clean(contactValues(target,k))) === JSON.stringify(body[k]));\n    state = {...state,target:target.resourceName,expected:expected(body),desired:body};\n    if (unchanged) return remaining({...state,request:null});\n    const src = source(target);\n    if (!src?.etag) return fail(state,'Google contact did not provide a current CONTACT etag; no update or duplicate removal was attempted.');\n    body.metadata = {sources:[{type:'CONTACT',id:src.id,etag:src.etag}]};\n    return {...state,request:{method:'PATCH',url:'https://people.googleapis.com/v1/' + target.resourceName + ':updateContact?updatePersonFields=' + mask.join(',') + '&personFields=' + fields,body,role:'update'}};\n  }\n  function plan(guest, input) {\n    let state = {guest,date:new Date().toISOString().slice(0,10),status:'pending',request:null,duplicates:[],steps:0,refreshes:0};\n    if (guest.contact_error) return fail(state,guest.contact_error);\n    const errors = input.filter(p => p.error);\n    if (errors.length) return fail(state,'Cannot read Google Contacts: ' + text(errors[0].error?.message || errors[0].error));\n    const contacts = input.filter(p => p.resourceName && source(p));\n    if (input.some(p => Object.keys(p).length && !p.resourceName && !p.error)) return fail(state,'Unexpected Google Contacts response; no create or merge was attempted.');\n    const ps = new Set(guest.phone ? [guest.phone] : []), es = new Set(guest.email ? [guest.email] : []);\n    const matches = [];\n    let changed = true;\n    while (changed) { changed = false; for (const p of contacts) { if (matches.includes(p)) continue; if ((p.phoneNumbers || []).some(x => ps.has(phone(x.value))) || (p.emailAddresses || []).some(x => es.has(email(x.value)))) { matches.push(p); for (const x of p.phoneNumbers || []) { const v=phone(x.value); if(v)ps.add(v); } for (const x of p.emailAddresses || []) { const v=email(x.value);if(v)es.add(v); } changed=true; } } }\n    if (!matches.length) {\n      const body = {names:[{givenName:guest.first,familyName:guest.last}],...(guest.phone?{phoneNumbers:[{value:guest.phone,type:'mobile'}]}:{}),...(guest.email?{emailAddresses:[{value:guest.email,type:'home'}]}:{}),memberships:[{contactGroupMembership:{contactGroupResourceName:group}},{contactGroupMembership:{contactGroupResourceName:'contactGroups/myContacts'}}]};\n      return {...state,expected:expected(body),desired:body,request:{method:'POST',url:'https://people.googleapis.com/v1/people:createContact?personFields=' + fields,body,role:'create'}};\n    }\n    matches.sort((a,b) => ((b.names?.[0]?.givenName ? 1 : 0) - (a.names?.[0]?.givenName ? 1 : 0)) || a.resourceName.localeCompare(b.resourceName));\n    const target = matches.shift();\n    state = {...state,target:target.resourceName,duplicates:matches.map(p=>({...p,originalEtag:source(p)?.etag})),merged:matches.length>0};\n    return {...state,request:getRequest(target.resourceName,'refresh_target')};\n  }\n  function advance(state,response) {\n    const req=state.request;\n    state={...state,steps:state.steps+1};\n    if(state.steps>100)return fail(state,'Contact operation exceeded its step limit; booking processing can continue.');\n    const status=Number(response.statusCode || 0), body=response.body ?? {};\n    if(response.error || status<200 || status>=300 || body.error) {\n      if(req.role==='update' && (status===409 || status===412 || body.error?.details?.some(d=>d.reason==='failedPrecondition') || /etag|failedPrecondition/i.test(body.error?.message||'')) && state.refreshes<2) return {...state,refreshes:state.refreshes+1,request:getRequest(state.target,'refresh_target')};\n      return fail(state,'Google Contacts ' + req.role + ' failed: ' + text(response.error?.message || response.error || body.error?.message || ('HTTP ' + status)));\n    }\n    if(req.role==='refresh_target') return build(state,body);\n    if(req.role==='create' || req.role==='update') {\n      if(!/^people\\/[A-Za-z0-9_-]+$/.test(body.resourceName || ''))return fail(state,'Google did not confirm a contact resource; do not retry the create blindly.');\n      return {...state,target:body.resourceName,created:req.role==='create',updated:req.role==='update',request:getRequest(body.resourceName,'verify_target')};\n    }\n    if(req.role==='verify_target') { if(!verified(body,state.expected))return fail(state,'Google contact verification did not confirm all names, phones, emails, notes and label; duplicate contacts were left untouched.'); return remaining(state); }\n    if(req.role==='check_duplicate') {\n      const dupe=state.duplicates[0];\n      if(body.resourceName!==dupe.resourceName || source(body)?.etag!==dupe.originalEtag)return fail(state,'A duplicate contact changed during merging; its original record was preserved for a later retry.');\n      return {...state,request:{method:'DELETE',url:'https://people.googleapis.com/v1/' + dupe.resourceName + ':deleteContact',role:'delete_duplicate'}};\n    }\n    if(req.role==='delete_duplicate')return remaining({...state,duplicates:state.duplicates.slice(1)});\n    return fail(state,'Unknown contact operation; no further change attempted.');\n  }\n  return {phone,email,plan,advance,verified};\n}\n\ntry { const state=$('GC03 Contact Action Pending?').first(0,$runIndex).json; return [{json:contactEngine().advance(state,$input.first().json)}]; } catch(e) { return [{json:{status:'failed',request:null,contact_error:'Contact merge processing failed: '+e.message}}]; }"
       },
+      "id": "8e9a561a-637b-4fc9-932f-ab1dcdc17b1b",
+      "name": "GC06 Verify Contact and Continue Merge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        256
+      ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "d3a95c62-7c81-5923-96de-8d0d0be25044",
-      "name": "GC07 Google Contact Failed?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        650,
-        1800
-      ],
       "parameters": {
         "conditions": {
           "options": {
@@ -904,17 +894,17 @@
         },
         "options": {}
       },
+      "id": "9b6c53bb-3876-4058-80d9-b1eb01b9f6aa",
+      "name": "GC07 Google Contact Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1952,
+        480
+      ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "2b1cc649-ae77-5bd9-8037-5c19eea8f243",
-      "name": "GC08 Telegram Contact Save Failure",
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        900,
-        1800
-      ],
       "parameters": {
         "resource": "message",
         "operation": "sendMessage",
@@ -926,13 +916,17 @@
           "parse_mode": "HTML"
         }
       },
+      "id": "60c77abb-221d-4429-baef-114c24f37ee4",
+      "name": "GC08 Telegram Contact Save Failure",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2176,
+        400
+      ],
       "onError": "continueRegularOutput"
     },
     {
-      "id": "56c98797-1535-5c2f-9c28-cb6316854fce",
-      "name": "C90 Record Morning07 Contact Outcome",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
       "parameters": {
         "method": "POST",
         "url": "https://rsqgwepnowpnpealrzbn.supabase.co/rest/v1/rpc/lsa07_contact_result",
@@ -950,23 +944,26 @@
           "timeout": 30000
         }
       },
+      "id": "8aed95ed-2bf9-4d37-97f4-c34d3de64026",
+      "name": "C90 Record Morning07 Contact Outcome",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
       "position": [
-        1150,
-        1800
+        2400,
+        576
       ]
     },
     {
-      "id": "77807ebf-7f69-54c8-9270-6fa019b77c8c",
+      "parameters": {
+        "jsCode": "if($json.action!=='done')throw new Error('Unknown Morning07 delivery action');const b=$('M03 Validate Verified Morning Booking').first().json;return [{json:{complete:true,morning_stay_id:b.morning_stay_id,revision:b.source_revision}}];"
+      },
+      "id": "ea21e5b5-2175-4683-9ad7-07cf98319ac8",
       "name": "D99 Morning Booking Work Complete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "if($json.action!=='done')throw new Error('Unknown Morning07 delivery action');const b=$('M03 Validate Verified Morning Booking').first().json;return [{json:{complete:true,morning_stay_id:b.morning_stay_id,revision:b.source_revision}}];"
-      },
       "position": [
-        1900,
-        1000
+        3072,
+        336
       ]
     },
     {
@@ -1005,6 +1002,38 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.delivered === true && $('M03 Validate Verified Morning Booking').first().json.payment_verified === true && ['paid','confirmed'].includes($('M03 Validate Verified Morning Booking').first().json.status) && (($('M03 Validate Verified Morning Booking').first().json.contract_version ?? 1) === 1 || ($('M03 Validate Verified Morning Booking').first().json.contract_version === 2 && $('M03 Validate Verified Morning Booking').first().json.booking_verified === true && $('M03 Validate Verified Morning Booking').first().json.payment_status === 'paid')) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4831c1b4-86f1-4438-a62a-c6900eb71702",
+      "name": "L06 Verified Paid Morning Booking?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1180,
+        680
+      ]
     }
   ],
   "connections": {
@@ -1161,17 +1190,6 @@
         ]
       ]
     },
-    "B03 Persist Independent Morning Jobs": {
-      "main": [
-        [
-          {
-            "node": "C00 Claim Morning07 Contact Work",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "D00 Claim Next Morning07 Delivery": {
       "main": [
         [
@@ -1242,28 +1260,6 @@
         [
           {
             "node": "D40 Record Morning07 Delivery Progress",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "D40 Record Morning07 Delivery Progress": {
-      "main": [
-        [
-          {
-            "node": "L07 Paid Morning Loyalty Invitation",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "D50 Wait for Receipt Window": {
-      "main": [
-        [
-          {
-            "node": "B00 Claim Pending Morning Booking",
             "type": "main",
             "index": 0
           }
@@ -1430,11 +1426,44 @@
         ]
       ]
     },
+    "B03 Persist Independent Morning Jobs": {
+      "main": [
+        [
+          {
+            "node": "C00 Claim Morning07 Contact Work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "D50 Wait for Receipt Window": {
+      "main": [
+        [
+          {
+            "node": "B00 Claim Pending Morning Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "C90 Record Morning07 Contact Outcome": {
       "main": [
         [
           {
             "node": "D00 Claim Next Morning07 Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "D40 Record Morning07 Delivery Progress": {
+      "main": [
+        [
+          {
+            "node": "L06 Verified Paid Morning Booking?",
             "type": "main",
             "index": 0
           }
@@ -1451,10 +1480,40 @@
           }
         ]
       ]
+    },
+    "L06 Verified Paid Morning Booking?": {
+      "main": [
+        [
+          {
+            "node": "L07 Paid Morning Loyalty Invitation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "D00 Claim Next Morning07 Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "timezone": "Asia/Riyadh",
+    "saveManualExecutions": false,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "executionTimeout": 2400,
+    "errorWorkflow": "czdTLBO9NxXq7mOg",
+    "binaryMode": "separate"
   },
   "nodeGroups": [
     {
+      "id": "fb1c9f46-8659-4e0a-9a6e-2b50687cbf54",
       "name": "Verify and accept website booking",
       "nodeNames": [
         "M01 Validate Event Reference",
@@ -1468,9 +1527,10 @@
         "M06 Build Durable Acknowledgement",
         "M07 Acknowledge Persisted Event"
       ],
-      "description": "Verify and persist the signed website booking event."
+      "description": "Website event only: verify signed booking/payment, persist the independent revision, then acknowledge."
     },
     {
+      "id": "c28aeb12-cb69-45aa-ada6-f165995b4216",
       "name": "Process this morning booking",
       "nodeNames": [
         "B00 Claim Pending Morning Booking",
@@ -1500,12 +1560,8 @@
         "D99 Morning Booking Work Complete",
         "L07 Paid Morning Loyalty Invitation"
       ],
-      "description": "Per-booking processing and exact checkout wait, with no polling trigger."
+      "description": "Paid morning journey: Contacts, confirmation, rules/access, verified optional loyalty and exact checkout reminder. Event only."
     }
   ],
-  "settings": {
-    "executionOrder": "v1",
-    "timezone": "Asia/Riyadh",
-    "executionTimeout": 2400
-  }
+  "active": false
 }

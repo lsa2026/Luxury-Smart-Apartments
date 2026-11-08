@@ -1,5 +1,41 @@
 # Admin-only MorningStay recording in Hostaway
 
+## Current creation flow — manager confirmation before payment
+
+The private create page requires the complete guest address, shared phone parser,
+name, email and explicit manager confirmation. It rechecks availability, saves the
+local allocation and creates Hostaway immediately. New allocations carry
+`creation_mode=hostaway_first_v2`; older independent stays keep their original policy.
+Guest phone, email, locale and supported address fields are included in the
+Hostaway request. No card details or collection are sent. Manager identity and
+the provider creation claim are durable before the non-retried POST.
+
+Only a matching successful Hostaway response admits the booking into Morning07.
+Its backward-compatible version 2 event carries `booking_verified=true`, a positive
+Hostaway ID and `status=confirmed`, separately from truthful payment state. The
+existing Morning07 journey owns confirmation, rules, instructions, contacts and
+the reminder at the actual morning checkout time. Pathway01 continues to exclude
+this source. Payment alone does not repeat booking messages.
+
+After collection, a bounded task completes only the optional paid invitation via
+the same Morning07 invitation helper, exact core delivery receipts and shared
+registry. It does not re-emit the booking event. Bank/cash proof must be the
+manager's explicit amount-matched receipt; no gateway success is invented.
+
+Confirmed and uncertain Hostaway claims retain local occupancy after the short
+unpaid lease. Checkout/payment-link availability excludes only the exact linked
+Hostaway ID after checking its source, listing, dates and active status. Other
+reservations still block, and a missing/cancelled linked record blocks payment.
+Availability refreshes preserve the linkage and creation mode.
+
+Deploy the compatible Morning07 SQL/workflow first, then the website after CI.
+There is no historical backfill or new schedule. Verification uses synthetic
+provider fakes; do not create real bookings or send guest messages as a smoke test.
+On rollback preserve provider IDs, financial records and uncertain claims; do not
+retry uncertain creation or delete an external reservation automatically.
+
+The following records describe the earlier paid-only recording release.
+
 ## Verified provider capability
 
 On 2026-11-08 at 02:50 Asia/Riyadh, a direct API reservation was created
