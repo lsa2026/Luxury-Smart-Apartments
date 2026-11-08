@@ -22,6 +22,20 @@ the same Morning07 invitation helper, exact core delivery receipts and shared
 registry. It does not re-emit the booking event. Bank/cash proof must be the
 manager's explicit amount-matched receipt; no gateway success is invented.
 
+After guest delivery progress, Morning07 requests the protected payment-link
+callback with its current booking capability. A durable per-stay intent waits
+for exact delivered/read receipts for status, house rules and access guide.
+Only then does the existing sender revalidate the linked booking and send one
+branded payment link. Provider acceptance alone is insufficient. Duplicate
+callbacks, prior manual sends, uncertain outcomes, paid/cancelled/review states
+and stale revisions cannot cause another automatic send. Receipt checks retry
+at 30-second intervals for at most five minutes, scoped to this booking; no new
+schedule or historical replay. The administration screen exposes waiting status.
+
+For this additive callback, deploy the website/worker endpoint first, verify
+both are live, then publish Morning07's two-node callback branch. No SQL or
+Django migration, environment change, or real guest send is needed for release.
+
 Confirmed and uncertain Hostaway claims retain local occupancy after the short
 unpaid lease. Checkout/payment-link availability excludes only the exact linked
 Hostaway ID after checking its source, listing, dates and active status. Other

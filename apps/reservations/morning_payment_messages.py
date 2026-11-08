@@ -32,6 +32,7 @@ from .morning_stays import (
 
 SALT = "morning-payment-whatsapp.v1"
 LABELS = {
+    "waiting_core": "بانتظار تسليم رسائل الحجز الثلاث قبل إرسال رابط الدفع تلقائيًا",
     "queued": "بانتظار الإرسال",
     "sending": "جارٍ الإرسال — لا تعِد الإرسال قبل حسم النتيجة",
     "accepted": "قبلت خدمة واتساب الرسالة؛ لا يثبت ذلك قراءة الضيف",
@@ -235,6 +236,13 @@ def resend(stay_id, request_id, *, client=None, dispatch_async=True):
         if fingerprint(stay) != fingerprint(current):
             raise MorningStayError("تغير الطلب أثناء فحص التوفر؛ افتح التفاصيل مجددًا.")
         require_unpaid(stay)
+        pending = stay.payment_link_deliveries.filter(
+            state__in=["queued", "sending", "uncertain"]
+        ).first()
+        from .morning_hostaway import hostaway_first
+
+        if pending and hostaway_first(stay):
+            return pending
         if (
             local_inflight_conflict(stay.property, stay.starts_at, stay.ends_at)
             or active_stays(
