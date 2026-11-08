@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.accounts.access import require_operations_access
 from apps.integrations.hostaway.client import HostawayClient
+from apps.integrations.hostaway.exceptions import HostawayError
 from apps.properties.models import Property
 
 from .models import MorningStay
@@ -202,8 +203,11 @@ def cancel_linked_stay(stay_id, *, client=None):
     if operation.get("state") != "confirmed":
         raise MorningStayError("نتيجة الربط غير محسومة؛ راجع هوستاوي قبل الإلغاء.")
     if client is None:
-        with HostawayClient(max_get_attempts=1, timeout=10) as remote:
-            return cancel_linked_stay(stay_id, client=remote)
+        try:
+            with HostawayClient(max_get_attempts=1, timeout=10) as remote:
+                return cancel_linked_stay(stay_id, client=remote)
+        except HostawayError as exc:
+            raise MorningStayError("تعذر الاتصال بهوستاوي؛ لم نلغ الإقامة محليًا.") from exc
     with transaction.atomic():
         current = _locked(stay_id)
         operation = booking_state(current)

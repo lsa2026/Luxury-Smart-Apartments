@@ -451,6 +451,10 @@ def morning_detail(request, stay_id):
                 identifier = record_in_hostaway(request=request, stay_id=stay.pk)
             except MorningStayError as exc:
                 messages.error(request, str(exc))
+            except HostawayError:
+                messages.error(
+                    request, "تعذر الاتصال بهوستاوي؛ راجع حالة الربط قبل إعادة المحاولة."
+                )
             else:
                 record_audit(
                     request=request,
