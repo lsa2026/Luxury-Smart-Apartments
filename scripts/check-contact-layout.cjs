@@ -16,20 +16,31 @@ const { pathToFileURL } = require("node:url");
       await page.addInitScript(() => {
         // Every address response is synthetic; no network request is made.
         window.fetch = async (_url, options) => {
-          const body = JSON.parse(options.body);
+          const body = typeof options.body === "string" ? JSON.parse(options.body) : Object.fromEntries(options.body);
+          if (body.phone) return {ok:true, status:200, json:async () => ({phone:"+442079460958", country:"GB"})};
           return { ok: true, status: 200, json: async () => body.input
             ? { suggestions: [{ place_id: "synthetic-place", label: "10 Test Road, Riyadh" }] }
             : { fields: { billing_street1: "10 Test Road", billing_city: "Riyadh", billing_state: "Riyadh", billing_country: "SA", billing_postcode: "12345" }, next_ticket: "synthetic-only" } };
         };
       });
-      for (const name of ["detail", "list", "morning", "morning-create", "morning-guest"]) {
+      for (const name of ["detail", "list", "morning", "morning-create", "morning-guest", "morning-list"]) {
         await page.goto(pathToFileURL(path.join(output, `${name}.html`)).href);
         if (name === "morning") {
           if (await page.locator("#morning-billing").getAttribute("open") !== null) throw new Error("Billing should start collapsed");
           await page.locator("#morning-billing > summary").click();
         }
-        await page.locator(name.startsWith("morning") ? "[data-checkout-address]" : "main.lsa-contact").waitFor();
-        if (name.startsWith("morning")) {
+        await page.locator(name === "morning-list" ? ".morning-stays-table" : name.startsWith("morning") ? "[data-checkout-address]" : "main.lsa-contact").waitFor();
+        if (name === "morning-list" && width === 390) {
+          const nameLink = page.locator(".morning-stays-table td:first-child a");
+          const bounds = await nameLink.boundingBox();
+          if (bounds.width < 120 || bounds.height < 44) throw new Error("Morning guest name is cramped");
+        }
+        if (name === "morning-create") {
+          await page.locator('[name="guest_phone"]').fill("+44 20 7946 0958");
+          await page.locator('[name="guest_name"]').click();
+          await page.waitForFunction(() => document.querySelector('[name="guest_phone_country"]').value === "GB");
+        }
+        if (name.startsWith("morning") && name !== "morning-list") {
           const search = page.locator("[data-address-search]");
           await search.fill("Test road");
           await page.locator("[data-address-options] button").click();

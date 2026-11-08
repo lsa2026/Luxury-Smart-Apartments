@@ -2,14 +2,16 @@
 
 import uuid
 from datetime import datetime, time, timedelta
+from functools import wraps
 
+import phonenumbers
 from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
@@ -22,6 +24,7 @@ from apps.payments.morning_validation import MorningBillingFields, validate_valu
 from apps.properties.models import Property
 
 from . import morning_payment_messages as payment_messages
+from .booking_forms import GuestDetailsForm
 from .models import MorningStay
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_billing import MorningBillingForm, address_context, address_view
@@ -36,6 +39,16 @@ from .morning_stays import (
     validate_window,
     verify_window,
 )
+
+
+def morning_arabic_ui(view):
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        request.LANGUAGE_CODE = "ar"
+        with translation.override("ar"):
+            return view(request, *args, **kwargs)
+
+    return wrapped
 
 
 class MorningAvailabilityForm(forms.Form):
@@ -176,6 +189,7 @@ class MorningStayForm(forms.Form):
         max_length=32,
         widget=forms.TextInput(attrs={"dir": "ltr", "placeholder": "+966…"}),
     )
+    guest_phone_country = forms.ChoiceField(required=False)
     guest_email = forms.EmailField(label="البريد الإلكتروني")
     guest_language = forms.ChoiceField(
         label="لغة رسائل الضيف",
@@ -195,17 +209,22 @@ class MorningStayForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
-        self.fields["guest_email"] = MorningBillingFields(customer=True).fields["guest_email"]
+        with translation.override("ar"):
+            shared_phone = GuestDetailsForm()
+            self.fields["guest_email"] = MorningBillingFields(customer=True).fields["guest_email"]
+            self.fields["guest_phone"] = shared_phone.fields["guest_phone"]
+            self.fields["guest_phone_country"] = shared_phone.fields["guest_phone_country"]
+        self.fields["guest_phone_country"].label = "دولة رقم الجوال"
+        self.fields["guest_phone"].label = "رقم الجوال"
         self.fields["guest_name"].help_text = (
             "أدخل الاسم الأول واسم العائلة الحقيقيين. "
             "يمكن للضيف مراجعة بيانات الدافع وتصحيحها قبل الدفع."
         )
-        self.fields[
-            "guest_phone"
-        ].help_text = "رقم دولي صحيح يبدأ بعلامة + ورمز البلد؛ للتواصل مع الضيف."
         if not self.stay:
             self.initial.setdefault("billing_country", "SA")
-            for name, field in MorningBillingForm(default_country_code="SA").fields.items():
+            with translation.override("ar"):
+                billing_fields = MorningBillingForm(default_country_code="SA").fields
+            for name, field in billing_fields.items():
                 field.required = False
                 self.fields[name] = field
         self.fields["property"].queryset = Property.objects.filter(
@@ -213,6 +232,15 @@ class MorningStayForm(forms.Form):
             hostaway_is_active=True,
         ).order_by("sort_order", "id")
         if not self.is_bound:
+            self.initial.setdefault("guest_phone_country", "SA")
+            if self.stay and self.stay.guest_phone:
+                try:
+                    parsed = phonenumbers.parse(self.stay.guest_phone, None)
+                    region = phonenumbers.region_code_for_number(parsed)
+                    if region in phonenumbers.SUPPORTED_REGIONS:
+                        self.initial["guest_phone_country"] = region
+                except phonenumbers.NumberParseException:
+                    pass
             now = timezone.now().astimezone(ZONE) + timedelta(minutes=10)
             start = (
                 now
@@ -227,9 +255,10 @@ class MorningStayForm(forms.Form):
 
     def clean_guest_phone(self):
         try:
-            return normalize_phone_number(self.cleaned_data["guest_phone"])
+            country = self.data.get("guest_phone_country") or "SA"
+            return normalize_phone_number(self.cleaned_data["guest_phone"], default_region=country)
         except InvalidPhoneNumber as exc:
-            raise forms.ValidationError("أدخل رقمًا دوليًا صحيحًا.") from exc
+            raise forms.ValidationError("تحقق من رقم الجوال والدولة المختارة.") from exc
 
     def clean_guest_language(self):
         return self.cleaned_data.get("guest_language") or "ar"
@@ -298,6 +327,7 @@ class MorningStayEditForm(MorningStayForm):
 
 
 @operations_access_required
+@morning_arabic_ui
 def morning_edit(request, stay_id):
     stay = get_object_or_404(MorningStay.objects.select_related("property"), pk=stay_id)
     if request.method not in {"GET", "POST"}:
@@ -341,6 +371,7 @@ def context(request, **fields):
 
 
 @operations_access_required
+@morning_arabic_ui
 def morning_list(request):
     return render(
         request,
@@ -354,6 +385,7 @@ def morning_list(request):
 
 
 @operations_access_required
+@morning_arabic_ui
 def morning_create(request):
     if request.method not in {"GET", "POST"}:
         return HttpResponseNotAllowed(["GET", "POST"])
@@ -427,6 +459,7 @@ def report_payment_send(request, state):
 
 
 @operations_access_required
+@morning_arabic_ui
 def morning_detail(request, stay_id):
     stay = get_object_or_404(MorningStay.objects.select_related("property"), pk=stay_id)
     receipt_form = MorningReceiptForm(

@@ -21,6 +21,8 @@ def test_render_morning_payment_layout(tmp_path, settings):
     settings.GOOGLE_PLACES_API_KEY = "synthetic-no-network"
     settings.GOOGLE_PLACES_REQUIRE_SHARED_CACHE = False
     stay = create()
+    stay.guest_name = "ضيف تجريبي باسم عربي طويل للعرض"
+    stay.save(update_fields=["guest_name", "updated_at"])
     client = Client()
     client.force_login(stay.created_by)
     response = client.get(reverse("notifications:morning_detail", args=[stay.pk]))
@@ -32,8 +34,14 @@ def test_render_morning_payment_layout(tmp_path, settings):
     script = Path("static/js/checkout-address.js").resolve().as_uri()
     validator = Path("static/js/morning-validation.js").resolve().as_uri()
     module = f'<script type="module" src="{script}"></script><script src="{validator}"></script>'
+    phone = Path("static/js/checkout-phone.js").resolve().as_uri()
+    module += f'<script src="{phone}"></script>'
     (output / "morning.html").write_text(html + module, encoding="utf-8")
     create_response = client.get(reverse("notifications:morning_create"))
+    list_response = client.get(reverse("notifications:morning_list"))
+    (output / "morning-list.html").write_text(
+        _standalone(list_response.content.decode()), encoding="utf-8"
+    )
     guest_response = Client().get(urlsplit(public_url(stay)).path)
     for name, page in [("morning-create", create_response), ("morning-guest", guest_response)]:
         assert page.status_code == 200
