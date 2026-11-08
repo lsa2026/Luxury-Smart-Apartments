@@ -33,7 +33,7 @@ def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]
     if settings.get("LOYALTY_BACKUP_ENABLED", False):
         schedule["loyalty-daily-backup"] = {
             "task": "apps.loyalty.tasks.daily_backup_task",
-            "schedule": crontab(hour=1, minute=0),
+            "schedule": crontab(hour=8, minute=0),
         }
     if settings["HOSTAWAY_AUTO_SYNC_ENABLED"]:
         schedule["hostaway-properties"] = {
