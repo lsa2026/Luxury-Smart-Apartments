@@ -110,7 +110,11 @@ def morning_available_properties(request):
                     )
                     continue
                 evidence = verify_window(
-                    property_obj, start, end, guests=data["guests"], client=reader,
+                    property_obj,
+                    start,
+                    end,
+                    guests=data["guests"],
+                    client=reader,
                     allow_started=True,
                 )
             except MorningStayError as exc:

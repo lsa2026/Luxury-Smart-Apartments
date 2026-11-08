@@ -71,9 +71,10 @@ def test_record_uses_previous_night_explicit_price_and_no_second_charge_or_guest
     identifier = record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
     assert identifier == 99881
     wire = remote.create_reservation_with_price_details.call_args.args[0].to_payload()
-    assert wire["arrivalDate"] == (
-        stay.starts_at.astimezone(ZONE).date() - timedelta(days=1)
-    ).isoformat()
+    assert (
+        wire["arrivalDate"]
+        == (stay.starts_at.astimezone(ZONE).date() - timedelta(days=1)).isoformat()
+    )
     assert wire["departureDate"] == stay.starts_at.astimezone(ZONE).date().isoformat()
     assert wire["totalPrice"] == 500
     assert wire["financeField"][0]["total"] == 500
@@ -127,18 +128,16 @@ def test_0500_immediate_admin_stay_can_be_recorded_as_yesterday_without_public_r
     )
     remote.create_reservation_with_price_details.return_value = SimpleNamespace(snapshot=snapshot)
     with patch("django.utils.timezone.now", return_value=now):
-        assert record_in_hostaway(
-            request=request_for(stay), stay_id=stay.pk, client=remote
-        ) == 99882
+        assert (
+            record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote) == 99882
+        )
     wire = remote.create_reservation_with_price_details.call_args.args[0].to_payload()
     assert wire["arrivalDate"] == (day - timedelta(days=1)).isoformat()
     assert wire["departureDate"] == day.isoformat()
     from apps.reservations.services.availability import AvailabilityRequest, AvailabilityService
 
     result = AvailabilityService._validate_request(
-        AvailabilityRequest(
-            property=p, check_in=day - timedelta(days=1), check_out=day, guests=1
-        )
+        AvailabilityRequest(property=p, check_in=day - timedelta(days=1), check_out=day, guests=1)
     )
     assert result.code == "past_check_in"
 
@@ -157,13 +156,15 @@ def test_unpaid_or_unauthorized_recording_never_calls_hostaway():
 
 def test_occupied_previous_night_cannot_be_recorded():
     stay, remote, snapshot = paid()
-    remote.guest_stay_page.return_value = [{
-        "id": 999,
-        "listingMapId": snapshot.listing_map_id,
-        "status": "new",
-        "arrivalDate": snapshot.check_in.isoformat(),
-        "departureDate": snapshot.check_out.isoformat(),
-    }]
+    remote.guest_stay_page.return_value = [
+        {
+            "id": 999,
+            "listingMapId": snapshot.listing_map_id,
+            "status": "new",
+            "arrivalDate": snapshot.check_in.isoformat(),
+            "departureDate": snapshot.check_out.isoformat(),
+        }
+    ]
     with pytest.raises(MorningStayError, match="خروجه اليوم"):
         record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
     remote.create_reservation_with_price_details.assert_not_called()
@@ -232,6 +233,7 @@ def test_admin_record_action_is_post_only_and_guest_cannot_call_it():
         assert browser.post(url, {"action": "record_hostaway"}).status_code == 302
         assert send.call_count == 1
 
+
 def test_explicit_cancel_boundary_rejects_other_sources_and_does_not_enable_automatic_cancels():
     from apps.integrations.hostaway.client import HostawayClient
     from apps.integrations.hostaway.exceptions import HostawayConfigurationError
@@ -265,9 +267,7 @@ def test_parallel_recording_has_one_provider_post():
     def run():
         close_old_connections()
         try:
-            return record_in_hostaway(
-                request=request_for(stay), stay_id=stay.pk, client=remote
-            )
+            return record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
         except MorningStayError:
             return "already_inflight"
         finally:
@@ -278,6 +278,7 @@ def test_parallel_recording_has_one_provider_post():
             outcomes = list(pool.map(lambda _: run(), range(2)))
     assert 99881 in outcomes
     assert remote.create_reservation_with_price_details.call_count == 1
+
 
 def test_different_payment_environment_is_not_recorded(settings):
     stay, remote, _ = paid()

@@ -134,7 +134,11 @@ def record_in_hostaway(*, request, stay_id, client=None):
         if operation or stay.status != "paid" or not stay.paid_at:
             raise MorningStayError("تغيرت حالة الحجز؛ افتح التفاصيل مجددًا.")
         if expected != (
-            stay.starts_at, stay.ends_at, stay.property_id, stay.guests, stay.amount_sar
+            stay.starts_at,
+            stay.ends_at,
+            stay.property_id,
+            stay.guests,
+            stay.amount_sar,
         ):
             raise MorningStayError("تغيرت تفاصيل الإقامة؛ أعد التحقق قبل التسجيل.")
         if active_stays(
