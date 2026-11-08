@@ -589,6 +589,45 @@ class HostawayClient:
         )
         return self.get_reservation(reservation_id)
 
+    def update_day_use_phone(
+        self, reservation_id, *, phone, listing_map_id, arrival, departure, amount, source
+    ):
+        """Exact day-use identity, a phone-only PUT and authoritative readback."""
+        from apps.core.phone_numbers import normalize_phone_number
+
+        if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED or source != "LSA_DayUse":
+            raise HostawayConfigurationError("day_use_phone_update_disabled")
+        _validate_reservation_id(reservation_id)
+        current = self.get_reservation(reservation_id)
+        if (
+            current.source != source
+            or current.channel_id != 2000
+            or current.listing_map_id != listing_map_id
+            or current.check_in != arrival
+            or current.check_out != departure
+            or current.total_price != amount
+            or current.currency != "SAR"
+            or current.status.casefold() not in {"new", "confirmed", "modified"}
+        ):
+            raise HostawayConfigurationError("day_use_phone_identity_mismatch")
+        expected = normalize_phone_number(phone)
+        self._put_json(f"/reservations/{reservation_id}", json_body={"phone": expected})
+        document = self._get_json(f"/reservations/{reservation_id}", params=[])
+        after = validate_reservation_response(document)
+        if (
+            after.reservation_id != current.reservation_id
+            or after.source != source
+            or after.listing_map_id != listing_map_id
+            or after.check_in != arrival
+            or after.check_out != departure
+            or after.total_price != amount
+            or after.currency != "SAR"
+            or after.status.casefold() not in {"new", "confirmed", "modified"}
+            or normalize_phone_number(document["result"].get("phone", "")) != expected
+        ):
+            raise HostawayConfigurationError("day_use_phone_readback_mismatch")
+        return after
+
     def cancel_morning_reservation(self, reservation_id: int) -> HostawayReservationSnapshot:
         """Reverse only an explicitly recorded MorningStay; no automatic cancellation."""
         if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
@@ -597,6 +636,20 @@ class HostawayClient:
         current = self.get_reservation(reservation_id)
         if current.source != "LSA_MorningStay" or current.channel_id != 2000:
             raise HostawayConfigurationError("not_a_morning_reservation")
+        self._put_json(
+            f"/reservations/{reservation_id}/statuses/cancelled",
+            json_body={"cancelledBy": "host"},
+        )
+        return self.get_reservation(reservation_id)
+
+    def cancel_day_use_reservation(self, reservation_id: int) -> HostawayReservationSnapshot:
+        """Reverse only an explicitly recorded DayUse; no automatic cancellation."""
+        if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
+            raise HostawayConfigurationError("hostaway_live_booking_disabled")
+        _validate_reservation_id(reservation_id)
+        current = self.get_reservation(reservation_id)
+        if current.source != "LSA_DayUse" or current.channel_id != 2000:
+            raise HostawayConfigurationError("not_a_day_use_reservation")
         self._put_json(
             f"/reservations/{reservation_id}/statuses/cancelled",
             json_body={"cancelledBy": "host"},

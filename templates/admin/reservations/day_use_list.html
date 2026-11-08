@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% load presentation tz static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations"><div><h1>الحجوزات النهارية</h1><p>إقامة بالساعات مع حجب الليلتين ورسائل المسار الثامن ثم السداد.</p></div><div class="lsa-page-head__actions"><a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:day_use_create' %}">＋ إنشاء حجز نهاري</a><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></div></section>
+  <section class="lsa-panel"><div class="lsa-table-scroll"><table class="morning-stays-table"><thead><tr><th>الضيف</th><th>الشقة</th><th>الدخول</th><th>الخروج</th><th>الإجمالي</th><th>الحالة</th></tr></thead><tbody>{% for stay in stays %}<tr><td data-label="الضيف"><a href="{% url 'notifications:day_use_detail' stay.pk %}">{{ stay.guest_name }}</a></td><td data-label="الشقة">{{ stay.property|localized_property_name }}</td><td data-label="الدخول"><bdi>{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</bdi></td><td data-label="الخروج"><bdi>{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</bdi></td><td data-label="الإجمالي">{{ stay.amount_sar|format_money:'SAR' }}</td><td data-label="الحالة">{{ stay.get_status_display }}</td></tr>{% empty %}<tr><td colspan="6">لا توجد حجوزات نهارية بعد.</td></tr>{% endfor %}</tbody></table></div></section>
+</main>
+{% endblock %}

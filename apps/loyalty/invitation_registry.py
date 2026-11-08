@@ -211,7 +211,34 @@ def ticket(row):
     )
 
 
-def consume(row, *, phone, proof=None, exclude_legacy=None, morning_stay=None):
+def day_use_booking_key(stay):
+    """One inventory identity across day-use, ordinary and external invitations."""
+    from apps.reservations.day_use_hostaway import booking_state, hostaway_first
+    from apps.reservations.models import DayUseStay
+
+    if not isinstance(stay, DayUseStay):
+        raise ValidationError("day_use_source_required")
+    operation = booking_state(stay)
+    identifier = str(operation.get("reservation_id", ""))
+    if (
+        not hostaway_first(stay)
+        or operation.get("state") != "confirmed"
+        or not re.fullmatch(r"[1-9][0-9]{0,17}", identifier)
+    ):
+        raise ValidationError("day_use_booking_not_verified")
+    return "hostaway:" + identifier
+
+
+def consume(
+    row,
+    *,
+    phone,
+    proof=None,
+    exclude_legacy=None,
+    morning_stay=None,
+    day_use_stay=None,
+    day_use_payment_event_id=None,
+):
     """One send permit only. Lost preflight responses MUST NOT trigger a provider POST."""
     if proof is not None:
         try:
@@ -222,7 +249,42 @@ def consume(row, *, phone, proof=None, exclude_legacy=None, morning_stay=None):
             raise ValidationError("ticket_mismatch")
     if row.phone != phone:
         raise ValidationError("phone_changed")
-    if morning_stay is not None:
+    if day_use_stay is not None:
+        from apps.reservations import day_use_loyalty
+        from apps.reservations.day_use08_payments import invitation_allowed, verified_facts
+        from apps.reservations.models import DayUseStay
+
+        if morning_stay is not None or not isinstance(day_use_stay, DayUseStay):
+            raise ValidationError("day_use_source_required")
+        # Never trust mutable fields on a supplied model instance as payment proof.
+        stay = (
+            DayUseStay.objects.select_for_update()
+            .select_related("property")
+            .filter(pk=day_use_stay.pk)
+            .first()
+        )
+        if stay is None:
+            raise ValidationError("day_use_source_required")
+        if (
+            row.source != "day_use08"
+            or row.origin != "website"
+            or row.reservation_key != day_use_booking_key(stay)
+            or row.phone != normalize_phone(stay.guest_phone)
+            or row.email.casefold() != stay.guest_email.casefold()
+            or row.language != stay.guest_language
+            or not verified_facts(stay)
+            or not day_use_payment_event_id
+            or not invitation_allowed(day_use_payment_event_id, stay)
+            or not day_use_loyalty.core_delivered(
+                stay, stay.communication_revision, reconcile_uncertain=True
+            )
+            or stay.ends_at <= timezone.now()
+        ):
+            raise ValidationError("day_use_invitation_not_verified")
+        booking = None
+    elif row.source == "day_use08" or day_use_payment_event_id is not None:
+        raise ValidationError("day_use_source_required")
+    elif morning_stay is not None:
         from apps.reservations.morning07_communications import verified_payment
 
         if (

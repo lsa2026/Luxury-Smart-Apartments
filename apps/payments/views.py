@@ -100,10 +100,17 @@ def _render_hyperpay_checkout(
     modification: BookingModificationRequest | None = None,
     payment_request=None,
     morning_stay=None,
+    day_use_stay=None,
 ) -> HttpResponse:
     """Render public widget identifiers for an already-created checkout."""
 
-    result_name = "payments:morning_result" if morning_stay else "payments:hyperpay_result"
+    result_name = (
+        "payments:day_use_result"
+        if day_use_stay
+        else "payments:morning_result"
+        if morning_stay
+        else "payments:hyperpay_result"
+    )
     result_url = request.build_absolute_uri(reverse(result_name, args=[attempt.pk]))
     result_url = f"{result_url}?{urlencode({'return_token': _hyperpay_return_token(attempt)})}"
     property_obj = modification.reservation.property if modification else intent.property
@@ -124,9 +131,12 @@ def _render_hyperpay_checkout(
             "modification": modification,
             "payment_request": payment_request,
             "morning_stay": morning_stay,
+            "day_use_stay": day_use_stay,
             "loyalty_payment_summary": (
                 None
-                if morning_stay or (payment_request and payment_request.modification_request_id)
+                if day_use_stay
+                or morning_stay
+                or (payment_request and payment_request.modification_request_id)
                 else loyalty_payment_summary(attempt)
             ),
             "cover_image": _cover_image(property_obj),

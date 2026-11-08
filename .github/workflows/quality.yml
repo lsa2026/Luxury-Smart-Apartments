@@ -44,6 +44,10 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_day_use08.py
+          tests/test_day_use_payments.py
+          tests/test_day_use_delivery.py
+          tests/test_day_use_loyalty.py
           tests/test_contact_workspace.py
           tests/test_contact_draft_api.py
           tests/test_contact_inbox_navigation.py

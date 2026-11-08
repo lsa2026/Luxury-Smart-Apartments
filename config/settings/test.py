@@ -37,4 +37,6 @@ os.environ["GOOGLE_MAPS_BROWSER_API_KEY"] = ""
 os.environ["NOTIFICATIONS_ENABLED"] = "true"
 os.environ["EMAIL_LOCAL_SMTP_ENABLED"] = "false"
 
+os.environ["DAY_USE08_ENABLED"] = "false"
+
 from .development import *  # noqa: E402,F403

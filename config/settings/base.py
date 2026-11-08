@@ -809,6 +809,21 @@ if (
 ):
     raise ImproperlyConfigured("Scenario 07 requires its dedicated n8n webhook URL.")
 
+# Independent admin-only daytime journey; deploy disabled until both sides are ready.
+DAY_USE08_ENABLED = strict_bool("DAY_USE08_ENABLED")
+DAY_USE08_WEBHOOK_URL = env("DAY_USE08_WEBHOOK_URL", default="").strip()
+DAY_USE08_PAYMENT_WEBHOOK_URL = env("DAY_USE08_PAYMENT_WEBHOOK_URL", default="").strip()
+DAY_USE08_OWNERSHIP_WEBHOOK_URL = env("DAY_USE08_OWNERSHIP_WEBHOOK_URL", default="").strip()
+DAY_USE08_WORK_GROUP_ID = MORNING07_WORK_GROUP_ID
+if DAY_USE08_ENABLED:
+    for actual, suffix in (
+        (DAY_USE08_WEBHOOK_URL, "booking"),
+        (DAY_USE08_PAYMENT_WEBHOOK_URL, "payment"),
+        (DAY_USE08_OWNERSHIP_WEBHOOK_URL, "ownership"),
+    ):
+        if actual != f"https://lsa25.app.n8n.cloud/webhook/lsa08-day-use-{suffix}-v1":
+            raise ImproperlyConfigured("Scenario 08 requires its dedicated webhook URLs.")
+
 CELERY_BEAT_SCHEDULE = build_beat_schedule(globals())
 
 LOGGING = {

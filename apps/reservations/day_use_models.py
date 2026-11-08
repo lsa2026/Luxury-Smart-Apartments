@@ -1,0 +1,251 @@
+"""Independent daytime stays, inventory ownership, communications and money proofs."""
+
+import uuid
+
+from django.conf import settings
+from django.db import models, transaction
+from django.db.models import F, Q
+from django.utils import timezone
+
+
+class DayUseStay(models.Model):
+    class Status(models.TextChoices):
+        OPEN = "open", "بانتظار الدفع"
+        PROCESSING = "processing", "جارٍ التحقق من الدفع"
+        PAID = "paid", "مدفوع"
+        EXPIRED = "expired", "انتهت مهلة الدفع"
+        CANCELLED = "cancelled", "ملغى"
+        REVIEW = "review", "يحتاج مراجعة"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    request_id = models.UUIDField(unique=True, editable=False)
+    property = models.ForeignKey("properties.Property", on_delete=models.PROTECT)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    inventory_arrival_date = models.DateField()
+    inventory_departure_date = models.DateField()
+    pricing_snapshot = models.JSONField(default=dict, editable=False)
+    time_zone = models.CharField(max_length=40, default="Asia/Riyadh", editable=False)
+    guest_name = models.CharField(max_length=200)
+    guest_phone = models.CharField(max_length=32)
+    guest_email = models.EmailField()
+    guest_language = models.CharField(
+        max_length=2,
+        default="ar",
+        choices=[("ar", "العربية"), ("en", "English"), ("fr", "Français")],
+    )
+    guests = models.PositiveSmallIntegerField(default=1)
+    amount_sar = models.DecimalField(max_digits=14, decimal_places=2)
+    environment = models.CharField(max_length=10, editable=False)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.OPEN)
+    expires_at = models.DateTimeField()  # allocation hold only, not payment-link expiry
+    billing_address = models.JSONField(default=dict, blank=True, editable=False)
+    availability_checked_at = models.DateTimeField()
+    availability_evidence = models.JSONField(default=dict, editable=False)
+    legal_acceptance = models.JSONField(default=dict, blank=True, editable=False)
+    paid_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    communication_revision = models.PositiveBigIntegerField(default=0, editable=False)
+    communication_fingerprint = models.CharField(max_length=64, blank=True, editable=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["property", "starts_at", "ends_at", "status"])]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(ends_at__gt=F("starts_at")), name="day_use_positive_window"
+            ),
+            models.CheckConstraint(condition=Q(amount_sar__gt=0), name="day_use_positive_amount"),
+        ]
+
+    def __str__(self):
+        return f"DU-{str(self.pk)[:8]} — {self.get_status_display()}"
+
+    def save(self, *args, **kwargs):
+        # The outbox is committed with the business change, including payment verification.
+        with transaction.atomic():
+            previous = None
+            if not self._state.adding:
+                previous = (
+                    type(self)
+                    .objects.select_for_update()
+                    .only(
+                        "communication_revision", "communication_fingerprint", "status", "paid_at"
+                    )
+                    .get(pk=self.pk)
+                )
+                self.communication_revision = previous.communication_revision
+                self.communication_fingerprint = previous.communication_fingerprint
+            super().save(*args, **kwargs)
+            if getattr(settings, "DAY_USE08_ENABLED", False):
+                from .day_use08_communications import capture_event
+
+                capture_event(self.pk)
+                self.refresh_from_db(fields=["communication_revision", "communication_fingerprint"])
+            if getattr(settings, "DAY_USE08_ENABLED", False) and (
+                previous is None
+                or previous.status != self.status
+                or previous.paid_at != self.paid_at
+            ):
+                from .day_use08_payments import capture_payment
+
+                capture_payment(self.pk)
+
+    def latest_communication_event(self):
+        return self.communication_events.order_by("-revision").first()
+
+
+class DayUseOfflineReceipt(models.Model):
+    stay = models.OneToOneField(
+        DayUseStay, on_delete=models.PROTECT, related_name="offline_receipt"
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    method = models.CharField(
+        max_length=20, choices=[("bank_transfer", "حوالة بنكية"), ("cash", "نقدًا")]
+    )
+    reference = models.CharField(max_length=100, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+    received_at = models.DateTimeField()
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=Q(amount__gt=0), name="day_use_receipt_positive")
+        ]
+
+    def __str__(self):
+        return f"DayUse receipt {self.pk}: {self.method}"
+
+
+class DayUseCommunicationEvent(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stay = models.ForeignKey(
+        DayUseStay, on_delete=models.PROTECT, related_name="communication_events"
+    )
+    revision = models.PositiveBigIntegerField()
+    payload = models.JSONField(default=dict, editable=False)
+    state = models.CharField(max_length=12, default="pending", editable=False)
+    attempts = models.PositiveIntegerField(default=0, editable=False)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    lease_until = models.DateTimeField(null=True, editable=False)
+    accepted_at = models.DateTimeField(null=True, editable=False)
+    last_error = models.CharField(max_length=80, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["stay", "revision"], name="day_use_event_revision_unique"
+            )
+        ]
+        indexes = [models.Index(fields=["state", "next_attempt_at"])]
+
+    def __str__(self):
+        return f"DayUse communication {self.stay_id} revision {self.revision}: {self.state}"
+
+
+class DayUse08DeliveryAttempt(models.Model):
+    reference_id = models.CharField(max_length=80, primary_key=True)
+    stay = models.ForeignKey(DayUseStay, on_delete=models.PROTECT)
+    revision = models.PositiveBigIntegerField()
+    payload_hash = models.CharField(max_length=64, editable=False)
+    state = models.CharField(max_length=16, default="posting", editable=False)
+    provider_id = models.CharField(max_length=80, blank=True, editable=False)
+    response = models.JSONField(default=dict, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"DayUse08 {self.reference_id}: {self.state}"
+
+
+class DayUsePaymentLinkDelivery(models.Model):
+    """One deliberate pre-payment send; no admission or financial mutation."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stay = models.ForeignKey(
+        DayUseStay, on_delete=models.PROTECT, related_name="payment_link_deliveries"
+    )
+    fingerprint = models.CharField(max_length=64, editable=False)
+    state = models.CharField(max_length=12, default="queued", editable=False)
+    provider_id = models.CharField(max_length=255, blank=True, editable=False)
+    last_error = models.CharField(max_length=80, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+    def __str__(self):
+        return f"DayUse payment notice {self.pk}: {self.state}"
+
+
+class DayUse08PaymentEvent(models.Model):
+    """Independent financial outbox and durable ownership of paid follow-ups."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stay = models.ForeignKey(DayUseStay, on_delete=models.PROTECT, related_name="payment_events")
+    payment_revision = models.PositiveBigIntegerField()
+    proof_key = models.CharField(max_length=64, unique=True)
+    proof_kind = models.CharField(max_length=24)
+    payload = models.JSONField(default=dict, editable=False)
+    state = models.CharField(max_length=12, default="pending")
+    attempts = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    lease_until = models.DateTimeField(null=True)
+    accepted_at = models.DateTimeField(null=True)
+    last_error = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["stay", "payment_revision"], name="day_use_payment_revision_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"DayUse payment event {self.pk}: {self.state}"
+
+
+class DayUse08PaymentDelivery(models.Model):
+    reference_id = models.CharField(max_length=80, primary_key=True)
+    event = models.ForeignKey(
+        DayUse08PaymentEvent, on_delete=models.PROTECT, related_name="deliveries"
+    )
+    message_type = models.CharField(max_length=24)
+    state = models.CharField(max_length=16, default="posting")
+    provider_id = models.CharField(max_length=100, blank=True)
+    provider_reference = models.CharField(max_length=80)
+    response = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "message_type"], name="day_use_payment_message_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"DayUse payment delivery {self.reference_id}: {self.state}"
+
+
+class DayUseHostawayOwnership(models.Model):
+    """Durable intent exists and is acknowledged before any Hostaway POST."""
+
+    stay = models.OneToOneField(DayUseStay, on_delete=models.PROTECT, related_name="ownership")
+    revision = models.PositiveBigIntegerField(default=1)
+    acknowledged_revision = models.PositiveBigIntegerField(default=0)
+    state = models.CharField(max_length=12, default="pending")
+    provider_reservation_id = models.PositiveBigIntegerField(null=True, unique=True)
+    last_error = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Day-use ownership {self.stay_id}: {self.state}"

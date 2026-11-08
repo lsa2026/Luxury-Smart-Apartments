@@ -86,12 +86,21 @@ def overnight_conflicts(property_obj, check_in, check_out):
     end = datetime.combine(check_out, time.min, zone) + timedelta(
         hours=12 if out_hour is None else out_hour
     )
-    return active_stays(property_obj, start, end).exists()
+    from .day_use_stays import overnight_conflicts as day_use_conflicts
+
+    return active_stays(property_obj, start, end).exists() or day_use_conflicts(
+        property_obj, check_in, check_out
+    )
 
 
 def local_inflight_conflict(property_obj, start, end):
     """Include site checkouts and uncertain provider writes, not just remote bookings."""
     from apps.payments.models import PaymentAttempt
+
+    from .day_use_stays import active_stays as day_use_active
+
+    if day_use_active(property_obj, start, end).exists():
+        return True
 
     zone = property_zone(property_obj)
     day = start.astimezone(zone).date()
