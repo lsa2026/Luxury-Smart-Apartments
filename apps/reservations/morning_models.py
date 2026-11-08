@@ -63,11 +63,14 @@ class MorningStay(models.Model):
     def save(self, *args, **kwargs):
         # The outbox is committed with the business change, including payment verification.
         with transaction.atomic():
+            previous = None
             if not self._state.adding:
                 previous = (
                     type(self)
                     .objects.select_for_update()
-                    .only("communication_revision", "communication_fingerprint")
+                    .only(
+                        "communication_revision", "communication_fingerprint", "status", "paid_at"
+                    )
                     .get(pk=self.pk)
                 )
                 self.communication_revision = previous.communication_revision
@@ -78,6 +81,14 @@ class MorningStay(models.Model):
 
                 capture_event(self.pk)
                 self.refresh_from_db(fields=["communication_revision", "communication_fingerprint"])
+            if getattr(settings, "MORNING07_PAYMENT_HANDOFF_ENABLED", False) and (
+                previous is None
+                or previous.status != self.status
+                or previous.paid_at != self.paid_at
+            ):
+                from .morning07_payments import capture_payment
+
+                capture_payment(self.pk)
 
     def latest_communication_event(self):
         return self.communication_events.order_by("-revision").first()
@@ -167,3 +178,55 @@ class MorningPaymentLinkDelivery(models.Model):
 
     def __str__(self):
         return f"Morning payment notice {self.pk}: {self.state}"
+
+
+class Morning07PaymentEvent(models.Model):
+    """Independent financial outbox and durable ownership of paid follow-ups."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    stay = models.ForeignKey(MorningStay, on_delete=models.PROTECT, related_name="payment_events")
+    payment_revision = models.PositiveBigIntegerField()
+    proof_key = models.CharField(max_length=64, unique=True)
+    proof_kind = models.CharField(max_length=24)
+    payload = models.JSONField(default=dict, editable=False)
+    state = models.CharField(max_length=12, default="pending")
+    attempts = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    lease_until = models.DateTimeField(null=True)
+    accepted_at = models.DateTimeField(null=True)
+    last_error = models.CharField(max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["stay", "payment_revision"], name="morning_payment_revision_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"Morning payment event {self.pk}: {self.state}"
+
+
+class Morning07PaymentDelivery(models.Model):
+    reference_id = models.CharField(max_length=80, primary_key=True)
+    event = models.ForeignKey(
+        Morning07PaymentEvent, on_delete=models.PROTECT, related_name="deliveries"
+    )
+    message_type = models.CharField(max_length=24)
+    state = models.CharField(max_length=16, default="posting")
+    provider_id = models.CharField(max_length=100, blank=True)
+    provider_reference = models.CharField(max_length=80)
+    response = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "message_type"], name="morning_payment_message_unique"
+            )
+        ]
+
+    def __str__(self):
+        return f"Morning payment delivery {self.reference_id}: {self.state}"

@@ -1,6 +1,21 @@
 from celery import shared_task
 
 
+@shared_task(bind=True, ignore_result=True, max_retries=10)
+def deliver_morning07_payment(self, event_id):
+    from django.conf import settings
+
+    from .models import Morning07PaymentEvent
+    from .morning07_payments import deliver_event, enabled
+
+    if not enabled() or not settings.MORNING07_PAYMENT_WEBHOOK_URL:
+        return {"accepted": False}
+    result = deliver_event(event_id)
+    if Morning07PaymentEvent.objects.filter(pk=event_id, state="pending").exists():
+        raise self.retry(countdown=30)
+    return result
+
+
 @shared_task(bind=True, ignore_result=True, max_retries=5)
 def deliver_morning07_events(self, stay_id):
     from django.conf import settings

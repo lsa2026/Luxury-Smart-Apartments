@@ -33,7 +33,7 @@ def caption(stay):
     )
 
 
-def core_delivered(stay, revision):
+def core_delivered(stay, revision, *, reconcile_uncertain=False):
     phone = "".join(c for c in stay.guest_phone if c.isdigit())
     stamp = int(stay.starts_at.timestamp() * 1000)
     guide = f"guide:{stay.property.hostaway_listing_map_id}:{stamp}:{phone}"
@@ -44,7 +44,9 @@ def core_delivered(stay, revision):
             + hashlib.md5(f"lsa07:{stay.pk}:{suffix}".encode(), usedforsecurity=False).hexdigest()
         )
         attempt = Morning07DeliveryAttempt.objects.filter(
-            pk=reference, stay=stay, state="accepted"
+            pk=reference,
+            stay=stay,
+            state__in=["accepted", "posting", "uncertain"] if reconcile_uncertain else ["accepted"],
         ).first()
         if not attempt:
             return False
@@ -82,8 +84,20 @@ def invite(request):
     return invite_paid_booking(stay, revision, core_claimed=body["core_delivered"])
 
 
-def invite_paid_booking(stay, revision, *, core_claimed=True):
+def invite_paid_booking(
+    stay, revision, *, core_claimed=True, payment_event_id=None, payment_delivery_id=None
+):
     from .morning07_communications import verified_payment
+    from .morning07_payments import invitation_allowed, owns_invitation
+
+    if owns_invitation(stay) and payment_event_id is None:
+        return JsonResponse({"code": "managed_by_morning07"})
+    if payment_event_id is not None:
+        try:
+            if not invitation_allowed(payment_event_id, stay):
+                return JsonResponse({"code": "payment_notice_pending"})
+        except ValueError:
+            return JsonResponse({"code": "receipt_lookup_uncertain"})
 
     if stay.status != "paid" or stay.ends_at <= timezone.now() or not verified_payment(stay):
         return JsonResponse({"code": "not_eligible"})
@@ -100,7 +114,7 @@ def invite_paid_booking(stay, revision, *, core_claimed=True):
         if prior:
             return JsonResponse({"code": "duplicate", "status": prior.state})
     try:
-        if not core_delivered(stay, revision):
+        if not payment_event_id and not core_delivered(stay, revision):
             return JsonResponse({"code": "core_pending"})
         content, text = invitation_image(stay.guest_language), caption(stay)
         with registry.invitation_lock():
@@ -122,6 +136,16 @@ def invite_paid_booking(stay, revision, *, core_claimed=True):
                 return JsonResponse({"code": decision})
             if registry.consume(row, phone=phone, morning_stay=stay) != "eligible":
                 return JsonResponse({"code": "duplicate"})
+            if payment_event_id and payment_delivery_id:
+                from .models import Morning07PaymentDelivery
+
+                # Commit the real image reference with the registry send permit.
+                # A crash before the HTTP response must still be reconcilable.
+                Morning07PaymentDelivery.objects.filter(
+                    pk=payment_delivery_id,
+                    event_id=payment_event_id,
+                    message_type="loyalty_invitation",
+                ).update(provider_reference=row.provider_reference)
         try:
             with UltraMsgClient() as provider:
                 result = provider.send_image(
@@ -148,7 +172,11 @@ def queue_paid_invitation(stay):
     from django.db import transaction
 
     from .morning07_communications import verified_booking, verified_payment
+    from .morning07_payments import owns_invitation
     from .tasks import invite_paid_morning
+
+    if owns_invitation(stay):
+        return
 
     if (
         settings.MORNING07_N8N_ENABLED
