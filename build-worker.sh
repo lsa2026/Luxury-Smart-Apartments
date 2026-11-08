@@ -10,3 +10,7 @@ set -o pipefail
 
 pip install --upgrade pip
 pip install .
+
+# New worker code must not query additive tables before the web build migrates.
+# A failed wait leaves the old worker running; retry after the web is ready.
+python manage.py check_day_use08_readiness --wait-for-schema

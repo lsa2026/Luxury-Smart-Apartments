@@ -48,6 +48,7 @@ jobs:
           tests/test_day_use_payments.py
           tests/test_day_use_delivery.py
           tests/test_day_use_loyalty.py
+          tests/test_day_use_readiness.py
           tests/test_contact_workspace.py
           tests/test_contact_draft_api.py
           tests/test_contact_inbox_navigation.py
