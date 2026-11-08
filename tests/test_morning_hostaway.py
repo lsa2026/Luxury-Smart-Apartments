@@ -139,7 +139,7 @@ def test_0500_immediate_admin_stay_can_be_recorded_as_yesterday_without_public_r
     result = AvailabilityService._validate_request(
         AvailabilityRequest(property=p, check_in=day - timedelta(days=1), check_out=day, guests=1)
     )
-    assert result.code == "past_check_in"
+    assert result.reason_code == "past_check_in"
 
 
 def test_unpaid_or_unauthorized_recording_never_calls_hostaway():
