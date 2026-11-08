@@ -19,7 +19,7 @@ from apps.loyalty.past_guest_offers import KEY, SALT, apply_for_user, quote
 from apps.loyalty.phone_gifts import phone_hash
 from apps.loyalty.services import balance, reconcile
 from apps.payments.models import PaymentAttempt
-from apps.reservations.models import Reservation
+from apps.reservations.models import ManualBookingDraft, Reservation
 from tests import test_loyalty_booking_invitations as manual
 from tests.test_loyalty_stage8 import join, user
 
@@ -83,6 +83,125 @@ def test_offer_uses_persisted_financial_snapshot_despite_stale_model_values(rig)
     assert quote(booking) == expected
     booking.refresh_from_db()
     assert quote(booking) == expected
+
+
+def final_price_booking(rig, component_type="accommodation"):
+    booking = manual.past_booking()
+    booking.total_price = Decimal("600.00")
+    booking.save()
+    intent = booking.booking_intent
+    intent.total_price = intent.payment_amount_sar = Decimal("600.00")
+    intent.save()
+    original = intent.quote
+    original.total_price = Decimal("700.00")
+    original.components = [{"type": component_type, "total": "700", "included_in_total": True}]
+    original.save()
+    PaymentAttempt.objects.filter(booking_intent=intent).update(amount=Decimal("600.00"))
+    draft = ManualBookingDraft.objects.create(
+        quote=original,
+        property=booking.property,
+        check_in=booking.check_in,
+        check_out=booking.check_out,
+        nights=booking.nights,
+        guests=booking.guests,
+        currency="SAR",
+        system_total_price=Decimal("700.00"),
+        final_total_price=Decimal("600.00"),
+        payment_amount_sar=Decimal("600.00"),
+        price_source=ManualBookingDraft.PriceSource.MANUAL_OVERRIDE,
+        status=ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
+        availability_checked_at=timezone.now(),
+        expires_at=timezone.now() + timedelta(minutes=10),
+        created_by=rig[1],
+    )
+    return booking, draft
+
+
+@pytest.mark.parametrize("component_type", ["accommodation", "baseRate"])
+@pytest.mark.parametrize("channel", ["whatsapp", "email"])
+def test_owner_final_hyperpay_price_drives_preview_and_once_only_award(
+    rig, component_type, channel
+):
+    booking, draft = final_price_booking(rig, component_type)
+    payment_before = list(PaymentAttempt.objects.values())
+    offer = quote(booking)
+    assert Decimal(offer["total"]) == Decimal("600.00")
+    assert Decimal(offer["base"]) == Decimal("600.00")
+    assert offer["reward"] == "18.00"
+    client = rig[0]
+    context = next(
+        row
+        for row in client.get(manual.url(booking)).context["loyalty_invitation"]["channels"]
+        if row["channel"] == channel
+    )
+    assert context["confirmation"] and "600.00" in context["preview_text"]
+    assert "18.00" in context["preview_text"] and "700.00" not in context["preview_text"]
+    assert not Ledger.objects.exists() and not Member.objects.exists()
+    client.post(manual.url(booking), manual.payload(client, booking, channel))
+    manual.deliver_latest(booking, channel)
+    guest = user("owner-final-price")
+    VerifiedPhone.objects.create(user=guest, phone=PHONE)
+    member = join(guest)
+    booking.refresh_from_db()
+    assert balance(member) == Decimal("18.00"), booking.loyalty_state
+    apply_for_user(guest)
+    assert Ledger.objects.filter(reservation=booking).count() == 1
+    assert Ledger.objects.get(reservation=booking).evidence["owner_final_price"]["draft"] == str(
+        draft.pk
+    )
+    draft.quote.refresh_from_db()
+    assert draft.quote.total_price == Decimal("700.00")
+    assert draft.quote.components[0]["total"] == "700"
+    assert list(PaymentAttempt.objects.values()) == payment_before
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "fees",
+        "partial",
+        "overpaid",
+        "manual_receipt",
+        "unverified",
+        "draft_total",
+        "draft_dates",
+        "draft_not_booked",
+        "draft_missing",
+        "test_payment",
+    ],
+)
+def test_final_price_adapter_never_guesses_fees_or_accepts_unmatched_receipts(rig, reason):
+    booking, draft = final_price_booking(rig)
+    payments = PaymentAttempt.objects.filter(booking_intent=booking.booking_intent)
+    if reason == "fees":
+        draft.quote.components = [
+            {"type": "baseRate", "total": "650", "included_in_total": True},
+            {"type": "cleaningFee", "total": "50", "included_in_total": True},
+        ]
+        draft.quote.save()
+    elif reason == "partial":
+        payments.update(amount=Decimal("599.00"))
+    elif reason == "overpaid":
+        payments.update(amount=Decimal("700.00"))
+    elif reason == "manual_receipt":
+        payments.update(provider="manual")
+    elif reason == "unverified":
+        payments.update(verified_at=None)
+    elif reason == "test_payment":
+        payments.update(provider_result_code="000.100.112")
+    elif reason == "draft_total":
+        draft.final_total_price = Decimal("700.00")
+        draft.save()
+    elif reason == "draft_dates":
+        draft.check_in -= timedelta(days=1)
+        draft.save()
+    elif reason == "draft_not_booked":
+        draft.status = ManualBookingDraft.Status.QUOTED
+        draft.save()
+    elif reason == "draft_missing":
+        draft.delete()
+    assert quote_blocked(booking)
+    assert not rig[2].send_image.called and not Ledger.objects.exists()
 
 
 @pytest.mark.parametrize(
