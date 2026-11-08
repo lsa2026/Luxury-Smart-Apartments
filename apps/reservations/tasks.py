@@ -24,6 +24,22 @@ def deliver_morning_payment_link(delivery_id):
 
 
 @shared_task(bind=True, ignore_result=True, max_retries=10)
+def complete_morning_payment_link(self, delivery_id, revision):
+    from .models import MorningPaymentLinkDelivery
+    from .morning_auto_payment import complete
+
+    result = complete(delivery_id, revision)
+    if result == "core_pending":
+        if self.request.retries >= self.max_retries:
+            MorningPaymentLinkDelivery.objects.filter(pk=delivery_id, state="waiting_core").update(
+                state="expired", last_error="core_delivery_not_verified"
+            )
+            return "expired"
+        raise self.retry(countdown=30)
+    return result
+
+
+@shared_task(bind=True, ignore_result=True, max_retries=10)
 def invite_paid_morning(self, stay_id):
     """Bounded completion after payment; never replay the booking event or guest journey."""
     import json

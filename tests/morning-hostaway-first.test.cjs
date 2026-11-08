@@ -33,3 +33,27 @@ test('unpaid confirmation stays truthful and uses the exact morning checkout', (
   const cancelled=render({...input,booking:{...booking(),status:'cancelled'},previous:booking()}).jobs;
   assert.deepEqual(cancelled.map(x=>x.kind),['status_cancelled','group_notice']);
 });
+
+test('unpaid delivery progress queues the fourth guest message through the protected website', () => {
+  const branch=workflow.connections['L06 Verified Paid Morning Booking?'].main;
+  assert.equal(branch[0][0].node,'L07 Paid Morning Loyalty Invitation');
+  assert.equal(branch[1][0].node,'P06 Guest Delivery Confirmed?');
+  const guard=workflow.nodes.find(n=>n.name==='P06 Guest Delivery Confirmed?');
+  assert.match(guard.parameters.conditions.conditions[0].leftValue,/delivered === true/);
+  assert.match(guard.parameters.conditions.conditions[0].leftValue,/message_type === 'checkin_guide'/);
+  const expression=guard.parameters.conditions.conditions[0].leftValue.slice(3,-2).trim();
+  const decide=new Function('$json','$','return '+expression);
+  const output=kind=>({item:{json:{message_type:kind}},first:()=>({json:{message_type:'group_notice'}})});
+  assert.equal(decide({delivered:true},()=>output('checkin_guide')),true);
+  assert.equal(decide({delivered:true},()=>output('house_rules')),false);
+  assert.equal(decide({delivered:false},()=>output('checkin_guide')),false);
+  const path=workflow.connections[guard.name].main;
+  assert.equal(path[0][0].node,'P07 Queue Payment Link After Three Messages');
+  assert.equal(path[1][0].node,'D00 Claim Next Morning07 Delivery');
+  const callback=workflow.nodes.find(n=>n.name===path[0][0].node);
+  assert.equal(callback.parameters.url,'https://luxurysmartapartments.com/integrations/morning07/payment-link/');
+  assert.equal(callback.parameters.method,'POST');
+  assert.match(callback.parameters.jsonBody,/core_delivered/);
+  assert.match(callback.parameters.headerParameters.parameters[0].value,/delivery_token/);
+  assert.equal(workflow.connections[callback.name].main[0][0].node,'D00 Claim Next Morning07 Delivery');
+});

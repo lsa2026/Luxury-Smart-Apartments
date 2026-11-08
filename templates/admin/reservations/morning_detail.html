@@ -27,6 +27,7 @@
   </section>
     <section class="lsa-panel morning-payment-send" aria-labelledby="morning-send-title">
       <h3 id="morning-send-title">إرسال رسالة واتساب إلى الضيف</h3>
+      {% if hostaway_first %}<p><strong>يُرسل رابط الدفع تلقائيًا بعد تأكيد تسليم رسائل تأكيد الحجز وقواعد المنزل وتعليمات الدخول. إذا كان الحجز مسددًا، فلن يُرسل طلب دفع جديد.</strong></p>{% endif %}
       <p role="status"><strong>حالة رسالة واتساب:</strong> {{ payment_delivery_status }}</p>
       {% if payment_delivery %}<p>آخر طلب إرسال: {{ payment_delivery.created_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</p>{% endif %}
       {% if send_error %}<p>{{ send_error }}</p>{% else %}

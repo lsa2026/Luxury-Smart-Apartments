@@ -1034,6 +1034,78 @@
         1180,
         680
       ]
+    },
+    {
+      "id": "53139213-4151-4845-8d29-ac8392c4af71",
+      "name": "P06 Guest Delivery Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1400,
+        900
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.delivered === true && $('D00 Claim Next Morning07 Delivery').item.json.message_type === 'checkin_guide' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "24590ab1-2f0d-4d41-aadf-18f28be465c9",
+      "name": "P07 Queue Payment Link After Three Messages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1620,
+        900
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://luxurysmartapartments.com/integrations/morning07/payment-link/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LSA-Morning07-Token",
+              "value": "={{ $('M03 Validate Verified Morning Booking').first().json.delivery_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { core_delivered: $json.delivered === true } }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     }
   ],
   "connections": {
@@ -1490,6 +1562,35 @@
             "index": 0
           }
         ],
+        [
+          {
+            "node": "P06 Guest Delivery Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "P06 Guest Delivery Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "P07 Queue Payment Link After Three Messages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "D00 Claim Next Morning07 Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "P07 Queue Payment Link After Three Messages": {
+      "main": [
         [
           {
             "node": "D00 Claim Next Morning07 Delivery",

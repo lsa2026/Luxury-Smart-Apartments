@@ -60,6 +60,7 @@ jobs:
           tests/test_morning_stays.py
           tests/test_morning_hostaway.py
           tests/test_morning_hostaway_first.py
+          tests/test_morning_auto_payment.py
           tests/test_morning_hyperpay_validation.py
           tests/test_morning_offline_receipts.py
           tests/test_morning_owner_payment_policy.py
