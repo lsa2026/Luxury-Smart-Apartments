@@ -8,6 +8,7 @@ permissions:
   contents: read
 jobs:
   package:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -54,5 +55,62 @@ jobs:
         with:
           name: lsa-public-recovery-toolkit
           path: out/
+          if-no-files-found: error
+          retention-days: 3
+
+  media:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 244f12f05781316d3405aa6c56e001f17f01b92b
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Preserve the public property images already listed in the repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install Pillow==12.3.0
+          python - <<'PY'
+          import concurrent.futures,hashlib,io,json,pathlib,urllib.parse,urllib.request
+          from PIL import Image
+          data=json.loads(pathlib.Path('apps/properties/data/release_properties.json').read_text())
+          urls=set()
+          def walk(value):
+              if isinstance(value,dict):
+                  if value.get('hostaway_url'):urls.add(value['hostaway_url'])
+                  for child in value.values():walk(child)
+              elif isinstance(value,list):
+                  for child in value:walk(child)
+          walk(data)
+          root=pathlib.Path('media-export');root.mkdir()
+          def download(url):
+              parsed=urllib.parse.urlsplit(url)
+              if parsed.scheme!='https' or parsed.hostname!='hostaway-platform.s3.us-west-2.amazonaws.com' or parsed.query:
+                  raise ValueError('Unapproved public media URL')
+              with urllib.request.urlopen(url,timeout=45) as response:
+                  payload=response.read(30*1024*1024+1)
+              if len(payload)>30*1024*1024:raise ValueError('Public image exceeds size bound')
+              with Image.open(io.BytesIO(payload)) as image:
+                  fmt=image.format
+                  image.verify()
+              digest=hashlib.sha256(payload).hexdigest()
+              filename=digest+'.'+{'JPEG':'jpg','PNG':'png','WEBP':'webp','GIF':'gif'}.get(fmt,fmt.lower())
+              (root/filename).write_bytes(payload)
+              return {'url':url,'file':filename,'bytes':len(payload),'sha256':digest,'format':fmt}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              manifest=list(pool.map(download,sorted(urls)))
+          (root/'manifest.json').write_text(json.dumps(manifest,indent=2))
+          print(json.dumps({'images':len(manifest),'bytes':sum(x['bytes'] for x in manifest),'verification':'Pillow verify and SHA-256 for every image'}))
+          PY
+          mkdir -p media-artifact
+          tar -czf media-artifact/website-public-images.tar.gz media-export
+          (cd media-artifact && sha256sum *.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lsa-website-public-media
+          path: media-artifact/
           if-no-files-found: error
           retention-days: 3
