@@ -156,4 +156,3 @@ date. Stored consent snapshots and earlier correspondence are not rewritten.
 Alias creation was read back in Google Admin, but external delivery was not tested;
 Google's stated propagation window can be up to 24 hours. Publication verification
 does not establish email delivery or Send As configuration.
-
