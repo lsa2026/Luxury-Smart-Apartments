@@ -7,13 +7,27 @@ from apps.loyalty.invitation_api import readiness as invitation_integration_read
 from apps.loyalty.invitation_auth import setup as invitation_credential_setup
 from apps.loyalty.welcome_previews import preview as loyalty_welcome_preview
 from apps.payments import owner_payment_links
-from apps.reservations import morning_views, operations_views
+from apps.reservations import day_use_views, morning_views, operations_views
 
 from . import health, invoice_views, views
 
 app_name = "notifications"
 
 urlpatterns = [
+    path("admin/operations/day-use-stays/", day_use_views.day_use_list, name="day_use_list"),
+    path(
+        "admin/operations/day-use-stays/new/", day_use_views.day_use_create, name="day_use_create"
+    ),
+    path(
+        "admin/operations/day-use-stays/available-properties/",
+        day_use_views.day_use_available_properties,
+        name="day_use_available_properties",
+    ),
+    path(
+        "admin/operations/day-use-stays/<uuid:stay_id>/",
+        day_use_views.day_use_detail,
+        name="day_use_detail",
+    ),
     path(
         "admin/operations/morning-address/<str:kind>/",
         morning_views.morning_address,

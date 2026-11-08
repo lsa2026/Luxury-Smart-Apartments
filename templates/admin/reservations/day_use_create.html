@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script>{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head"><h1>إنشاء حجز نهاري</h1><a href="{% url 'notifications:day_use_list' %}">الحجوزات النهارية</a></section>
+  {% if not enabled %}<p role="status">المسار قيد التجهيز ولم يُفعّل بعد. النموذج للمعاينة؛ فحص التوفر وإنشاء الحجز مغلقان.</p>{% endif %}
+  <section class="lsa-panel">
+    <p>حدّد يوم الاستخدام وساعات الدخول والخروج وعدد الضيوف، ثم افحص التوفر واختر الشقة. السعر هو سعر يوم الاستخدام مقسومًا على واحد وعشرين، مضروبًا في عدد الساعات ومعامل واحد ونصف.</p>
+    <p>يحجب هوستاوي من اليوم السابق إلى اليوم التالي. تُرسل رسائل الحجز ثم رابط الدفع بعد ثبوت تسليم الرسائل الثلاث. يقبل الضيف الشروط بنفسه عند الدفع.</p>
+    <form method="post" data-day-use-availability="{% url 'notifications:day_use_available_properties' %}">{% csrf_token %}
+      {{ form.non_field_errors }}{% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
+      <fieldset><legend>فحص التوفر</legend>
+        {% for field in form.visible_fields %}{% if field.name == 'date' or field.name == 'start_time' or field.name == 'end_time' or field.name == 'guests' %}<p>{{ field.label_tag }} {{ field }}{{ field.errors }}</p>{% endif %}{% endfor %}
+        <button type="button" data-check-availability{% if not enabled %} disabled{% endif %}>فحص الشقق المتاحة والسعر</button>
+        <p role="status" aria-live="polite" data-availability-status>افحص التوفر قبل اختيار الشقة والتأكيد.</p>
+        <p>{{ form.property.label_tag }} {{ form.property }}{{ form.property.errors }}</p>
+        <p data-day-use-price></p>
+      </fieldset>
+      <fieldset><legend>بيانات الضيف والعنوان</legend>
+        {% for field in form.visible_fields %}{% if field.name != 'date' and field.name != 'start_time' and field.name != 'end_time' and field.name != 'guests' and field.name != 'property' %}<p>{{ field.label_tag }} {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endif %}{% endfor %}
+      </fieldset>
+      <button type="submit" data-confirm-day-use disabled>تأكيد السعر وإنشاء الحجز في هوستاوي</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

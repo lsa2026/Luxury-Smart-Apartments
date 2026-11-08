@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load presentation tz static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head"><h1>تفاصيل الحجز النهاري</h1><a href="{% url 'notifications:day_use_list' %}">الحجوزات النهارية</a></section>
+  <section class="lsa-panel">
+    <h2>{{ stay.property|localized_property_name }}</h2>
+    <p>الضيف: {{ stay.guest_name }} — <bdi>{{ stay.guest_email }}</bdi> — <bdi>{{ stay.guest_phone }}</bdi></p>
+    <p>الدخول: <bdi>{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</bdi> — الخروج: <bdi>{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</bdi></p>
+    <p>حجب التقويم: من {{ stay.inventory_arrival_date|date:'Y-m-d' }} إلى {{ stay.inventory_departure_date|date:'Y-m-d' }}؛ التاريخ الأخير للمغادرة.</p>
+    <p>الإجمالي: {{ stay.amount_sar|format_money:'SAR' }} — حالة السداد: {{ stay.get_status_display }}</p>
+    <p>عدد الساعات: {{ stay.pricing_snapshot.hours }} — المقسوم عليه: ٢١ — المعامل: ١٫٥.</p>
+    <p>حالة هوستاوي: {% if operation.state == 'confirmed' %}مؤكد — الرقم {{ operation.reservation_id }}{% elif operation.state == 'cancelled' %}ملغى{% elif operation.state == 'creating' %}جارٍ الإنشاء — لا تكرر الطلب{% elif operation.state == 'failed' %}لم يُرسل طلب إنشاء؛ يحتاج مراجعة{% else %}غير محسومة — راجع هوستاوي ولا تكرر الإنشاء{% endif %}</p>
+    <p>مراجعة التواصل: {{ stay.communication_revision }}. قبول خدمة الرسائل لا يثبت تسليمها؛ يراجع المسار الثامن الإيصالات قبل الدفع والولاء.</p>
+  </section>
+  <section class="lsa-panel"><h2>تصحيح رقم الجوال</h2>
+    <p>يلزم حسم أي محاولة دفع أو إرسال مالي أولًا. لا يعيد التصحيح رسالة مالية سبق إرسالها.</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct_phone"><input type="hidden" name="expected_updated_at" value="{{ stay.updated_at|date:'c' }}">
+      <label for="correct-phone">الرقم الدولي الصحيح</label><input id="correct-phone" name="phone" type="tel" dir="ltr" required value="{{ stay.guest_phone }}">
+      <button type="submit">التحقق من التصحيح وحفظه</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

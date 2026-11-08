@@ -59,6 +59,26 @@ def user(number, *, verified=True):
     return u
 
 
+def test_day_use_hostaway_source_cannot_earn_or_qualify_first_stay():
+    from apps.integrations.hostaway.reservation_validators import source_type_from_snapshot
+    from apps.loyalty.site_adapter import booking_facts
+
+    guest = user("day-use-inventory")
+    member = join(guest)
+    record = booking(guest)
+    record.source_type = source_type_from_snapshot(SimpleNamespace(source="LSA_DayUse"))
+    record.save(update_fields=["source_type"])
+    assert record.source_type == Reservation.SourceType.EXTERNAL_CHANNEL
+    assert booking_facts(record)[1] == "outside_program_scope"
+    assert reconcile(record.pk)["movements"] == 0
+    with pytest.raises(ValidationError):
+        issue_invite(guest, record.pk)
+    member.refresh_from_db()
+    assert member.first_completed_reservation is None
+    assert member.first_completed_at is None
+    assert not Ledger.objects.filter(reservation=record).exists()
+
+
 def join(u, **kwargs):
     return enroll(
         u,

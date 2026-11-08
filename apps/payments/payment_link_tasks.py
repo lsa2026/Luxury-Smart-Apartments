@@ -232,6 +232,12 @@ def recover_payment_requests_task():
         from .morning_payments import reconcile_mornings
 
         reconcile_mornings()
+        from django.conf import settings
+
+        if settings.DAY_USE08_ENABLED:
+            from .day_use_payments import reconcile_day_uses
+
+            reconcile_day_uses()
         # Recover a durable bookkeeping request if broker dispatch failed after payment.
         from django.db.models import Q
 

@@ -10,3 +10,10 @@ set -o pipefail
 
 pip install --upgrade pip
 pip install .
+
+# Only the production delivery worker needs the additive application schema.
+# Beat stays dispatch-only: never import Django or require database credentials.
+# A failed wait leaves the old worker running; retry after the web is ready.
+if [[ "${RENDER_SERVICE_ID:-}" == "srv-dal662tbedkc73bdlghg" ]]; then
+    python manage.py check_day_use08_readiness --wait-for-schema
+fi

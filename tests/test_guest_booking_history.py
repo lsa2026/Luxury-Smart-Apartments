@@ -91,6 +91,41 @@ def run(job, rows):
     return result, factory.return_value.__enter__.return_value
 
 
+@pytest.mark.parametrize(
+    "source_fields",
+    [
+        {"source": "LSA_DayUse"},
+        {"source": " lsa_dayuse "},
+        {"source": "", "channelName": "LSA_DayUse"},
+        {"source": None, "channelName": " lsa_dayuse "},
+    ],
+)
+def test_day_use_inventory_is_not_projected_as_two_night_guest_history(guest, source_fields):
+    user, _ = guest
+    job, _ = start_import(user)
+    run(job, [remote(channelId=2000, **source_fields)])
+    assert not GuestBookingHistory.objects.exists()
+    assert not Reservation.objects.exists()
+    assert not Ledger.objects.exists()
+
+
+def test_day_use_reclassification_hides_old_history_without_deleting_it(guest):
+    from apps.accounts.booking_history import _store_match, identity_for
+
+    user, _ = guest
+    job, _ = start_import(user)
+    run(job, [remote()])
+    record = GuestBookingHistory.objects.get()
+    original_dates = (record.check_in, record.check_out)
+    assert record.is_visible
+    assert _store_match(user, identity_for(user), job, remote(source="LSA_DayUse")) == (0, 0)
+    record.refresh_from_db()
+    assert not record.is_visible
+    assert (record.check_in, record.check_out) == original_dates
+    assert GuestBookingHistory.objects.count() == 1
+    assert not Ledger.objects.exists()
+
+
 def test_one_click_claims_only_exact_local_pair_and_never_posts_rewards(guest):
     user, client = guest
     own = booking()

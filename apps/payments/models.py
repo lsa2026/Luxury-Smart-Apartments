@@ -289,3 +289,6 @@ class HostawayFinancialEntry(models.Model):
 
     def __str__(self) -> str:
         return f"Hostaway receipt {self.pk}: {self.status}"
+
+
+from .day_use_models import DayUsePaymentAttempt  # noqa: F401, E402

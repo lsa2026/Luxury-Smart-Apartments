@@ -188,6 +188,13 @@ def _project(row):
 
 
 def _store_match(user, identity, job, row):
+    # These provider dates protect inventory, not two nights of guest lodging.
+    # Keep any old projection for audit, but never expose it as ordinary history.
+    if str(row.get("source") or row.get("channelName") or "").strip().casefold() == "lsa_dayuse":
+        GuestBookingHistory.objects.filter(hostaway_reservation_id=row["id"], user=user).update(
+            is_visible=False
+        )
+        return 0, 0
     values = _project(row)
     existing = (
         Reservation.objects.select_related("booking_intent")

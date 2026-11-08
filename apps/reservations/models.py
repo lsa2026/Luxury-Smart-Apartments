@@ -1078,3 +1078,15 @@ class RefundObligation(models.Model):
         if intent is None:
             return ""
         return f"{intent.guest_first_name} {intent.guest_last_name}".strip()
+
+
+from .day_use_models import (  # noqa: F401, E402
+    DayUse08DeliveryAttempt,
+    DayUse08PaymentDelivery,
+    DayUse08PaymentEvent,
+    DayUseCommunicationEvent,
+    DayUseHostawayOwnership,
+    DayUseOfflineReceipt,
+    DayUsePaymentLinkDelivery,
+    DayUseStay,
+)

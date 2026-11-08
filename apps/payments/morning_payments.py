@@ -23,7 +23,7 @@ from apps.reservations.morning_stays import (
 from .hyperpay.exceptions import HyperPayCheckoutError, HyperPayError
 from .hyperpay.result_codes import HyperPayStatus, map_result_code
 from .hyperpay.service import HyperPayService, build_checkout_payload, merchant_transaction_id
-from .models import MorningPaymentAttempt, PaymentAttempt
+from .models import MorningPaymentAttempt
 from .morning_validation import customer_values, validate_value
 
 SALT = "payments.morning-stay.v1"
@@ -206,12 +206,9 @@ def verify_payment(attempt_id, *, client=None):
             if not isinstance(identifier, str) or not 1 <= len(identifier) <= 255:
                 attempt.status, attempt.failure_code = "review", "payment_id_invalid"
             else:
-                if (
-                    MorningPaymentAttempt.objects.filter(provider_payment_id=identifier)
-                    .exclude(pk=attempt.pk)
-                    .exists()
-                    or PaymentAttempt.objects.filter(provider_payment_id=identifier).exists()
-                ):
+                from .collection_identity import payment_id_conflict
+
+                if payment_id_conflict(identifier, attempt):
                     attempt.status, attempt.failure_code = "review", "payment_id_already_recorded"
                 else:
                     attempt.provider_payment_id = identifier
