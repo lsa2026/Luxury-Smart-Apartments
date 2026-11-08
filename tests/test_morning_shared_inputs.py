@@ -82,3 +82,33 @@ def test_list_has_readable_mobile_field_labels():
     assert "morning-stays-table" in html
     for label in ["الضيف", "الشقة", "الدخول", "الخروج", "الإجمالي", "الحالة"]:
         assert f'data-label="{label}"' in html
+
+
+def test_bare_country_code_number_infers_us_without_creating_a_booking():
+    stay = create()
+    client = Client()
+    client.force_login(stay.created_by)
+    url = reverse("notifications:morning_address", args=["phone"])
+    response = client.post(url, {"phone": "16465550123", "country": "SA"})
+    assert response.status_code == 200
+    assert response.json() == {"phone": "+16465550123", "country": "US"}
+    form = MorningStayForm(
+        {
+            "request_id": uuid.uuid4(),
+            "property": stay.property_id,
+            "date": window()[0].date(),
+            "start_time": "01:00",
+            "end_time": "11:00",
+            "guest_name": "Synthetic Guest",
+            "guest_email": "synthetic@example.test",
+            "guests": 1,
+            "amount_sar": "500",
+            "guest_phone": "16465550123",
+            "guest_phone_country": "SA",
+        }
+    )
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["guest_phone"] == "+16465550123"
+    assert client.get(url).status_code == 405
+    assert Client().post(url, {"phone": "16465550123"}).status_code == 302
+    assert client.post(url, {"phone": "1", "country": "SA"}).status_code == 400

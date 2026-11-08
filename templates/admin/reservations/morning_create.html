@@ -27,7 +27,7 @@
       {% endif %}
       <div class="lsa-form-grid">{% for field in form.visible_fields %}{% if field.name == 'guest_phone' %}
       <div class="form-row morning-phone-row">
-        <div class="checkout-phone" data-checkout-phone data-account-phone data-check-url="{% url 'accounts:profile_phone_format' %}" data-invalid-message="تحقق من رقم الجوال والدولة المختارة.">
+        <div class="checkout-phone" data-checkout-phone data-account-phone data-morning-phone data-check-url="{% url 'notifications:morning_address' kind='phone' %}" data-invalid-message="تحقق من رقم الجوال والدولة المختارة.">
           <div><label for="{{ form.guest_phone_country.id_for_label }}">{{ form.guest_phone_country.label }}</label>{{ form.guest_phone_country }}{{ form.guest_phone_country.errors }}</div>
           <div><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
         </div>{{ field.errors }}<p id="guest-phone-help">{{ field.help_text }}</p><p id="guest-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>

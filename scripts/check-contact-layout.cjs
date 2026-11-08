@@ -17,7 +17,7 @@ const { pathToFileURL } = require("node:url");
         // Every address response is synthetic; no network request is made.
         window.fetch = async (_url, options) => {
           const body = typeof options.body === "string" ? JSON.parse(options.body) : Object.fromEntries(options.body);
-          if (body.phone) return {ok:true, status:200, json:async () => ({phone:"+442079460958", country:"GB"})};
+          if (body.phone) return {ok:true, status:200, json:async () => body.phone.includes("1646") ? ({phone:"+16465550123", country:"US"}) : ({phone:"+442079460958", country:"GB"})};
           return { ok: true, status: 200, json: async () => body.input
             ? { suggestions: [{ place_id: "synthetic-place", label: "10 Test Road, Riyadh" }] }
             : { fields: { billing_street1: "10 Test Road", billing_city: "Riyadh", billing_state: "Riyadh", billing_country: "SA", billing_postcode: "12345" }, next_ticket: "synthetic-only" } };
@@ -39,6 +39,16 @@ const { pathToFileURL } = require("node:url");
           await page.locator('[name="guest_phone"]').fill("+44 20 7946 0958");
           await page.locator('[name="guest_name"]').click();
           await page.waitForFunction(() => document.querySelector('[name="guest_phone_country"]').value === "GB");
+          await page.locator('[name="guest_phone"]').fill("16465550123");
+          await page.waitForFunction(() => document.querySelector('[name="guest_phone_country"]').value === "US");
+          const fullName = page.locator('[name="guest_name"]');
+          await fullName.fill("x".repeat(201));
+          if (await fullName.getAttribute("aria-invalid") !== "true") throw new Error("Name limit warning missing");
+          const number = page.locator('[name="guests"]');
+          await number.fill("21");
+          if (await number.getAttribute("aria-invalid") !== "true") throw new Error("Occupancy limit warning missing");
+          await number.fill("1");
+          await fullName.fill("ضيف تجريبي");
         }
         if (name.startsWith("morning") && name !== "morning-list") {
           const search = page.locator("[data-address-search]");
@@ -47,6 +57,14 @@ const { pathToFileURL } = require("node:url");
           await page.waitForFunction(() => document.querySelector('[name="billing_city"]').value === "Riyadh");
           const street = await page.locator('[name="billing_street1"]').inputValue();
           if (street !== "10 Test Road") throw new Error("Shared address mapping failed");
+          if (name === "morning-create") {
+            const region = page.locator('[name="billing_state"]');
+            await region.fill("x".repeat(51));
+            const border = await region.evaluate(el => getComputedStyle(el).borderTopColor);
+            if (border !== "rgb(161, 33, 33)") throw new Error("Admin error border is not red: " + border);
+            if (!(await page.locator("#id_billing_state_error").innerText()).includes("٥٠")) throw new Error("Region limit explanation missing");
+            await region.fill("Riyadh");
+          }
           if (name === "morning-guest") {
             const state = page.locator('[name="billing_state"]');
             await state.fill("الرياض");
