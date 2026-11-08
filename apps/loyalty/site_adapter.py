@@ -58,7 +58,7 @@ def _lodging(components, total, *, allow_accommodation=False):
 
 
 def _paid_owner_final_price(booking, payments):
-    """Read a completed manual stay's approved, fully HyperPay-funded lodging price.
+    """Read an owner's approved final lodging price against verified full funding.
 
     The original quote is immutable audit evidence, not the final invoice. Only
     a single explicit accommodation line has unambiguous fee allocation here.
@@ -83,12 +83,30 @@ def _paid_owner_final_price(booking, payments):
         or draft.payment_amount_sar != booking.total_price
         or intent.payment_amount_sar != booking.total_price
         or not payments
-        or any(
-            p.provider != "hyperpay" or p.provider_result_code == "000.100.112" for p in payments
-        )
         or sum((p.amount for p in payments), Decimal(0)) != booking.total_price
     ):
         return None
+    offline_receipts = []
+    for payment in payments:
+        if payment.provider == "hyperpay":
+            if payment.provider_result_code == "000.100.112":
+                return None
+        elif payment.provider == "manual":
+            receipt = getattr(payment, "offline_receipt", None)
+            if (
+                not receipt
+                or receipt.reservation_id != booking.pk
+                or receipt.recorded_by_id != draft.created_by_id
+                or receipt.amount != payment.amount
+                or receipt.currency != payment.currency
+                or receipt.received_at != payment.verified_at
+                or payment.provider_payment_id != f"manual:{receipt.pk}"
+                or payment.provider_reference != receipt.reference
+            ):
+                return None
+            offline_receipts.append(str(receipt.pk))
+        else:
+            return None
     components = quote.components
     if not isinstance(components, list) or len(components) != 1:
         return None
@@ -101,13 +119,18 @@ def _paid_owner_final_price(booking, payments):
         or quote.total_price <= 0
     ):
         return None
-    return {
-        "adapter": "owner-final-price-hyperpay-v1",
+    facts = {
+        "adapter": "owner-final-price-offline-receipt-v1"
+        if offline_receipts
+        else "owner-final-price-hyperpay-v1",
         "draft": str(draft.pk),
         "quote": str(quote.pk),
         "original_total": str(quote.total_price),
         "paid_final_total": str(booking.total_price),
     }
+    if offline_receipts:
+        facts["offline_receipts"] = offline_receipts
+    return facts
 
 
 def booking_facts(booking, *, past_preview=False):
@@ -212,6 +235,7 @@ def booking_facts(booking, *, past_preview=False):
             )
             .first()
         )
+        attested_manual_price = False
         if modification:
             if (
                 modification.new_check_in != booking.check_in
@@ -238,8 +262,11 @@ def booking_facts(booking, *, past_preview=False):
             components = [
                 {"type": "baseRate", "total": str(booking.total_price), "included_in_total": True}
             ]
+            attested_manual_price = True
         paid_owner_price = (
-            _paid_owner_final_price(booking, payments) if past and not modification else None
+            _paid_owner_final_price(booking, payments)
+            if past and not modification and not attested_manual_price
+            else None
         )
         if paid_owner_price:
             components = [
