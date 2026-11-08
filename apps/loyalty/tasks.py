@@ -1,5 +1,6 @@
 """Daily fixed mirror, OFF by default. Explicit local rehearsal or approved cloud."""
 
+import os
 from pathlib import Path
 
 from celery import shared_task
@@ -64,3 +65,24 @@ def daily_backup_task():
         "counts": result["counts"],
         "program_balance": result["program_balance"],
     }
+
+
+@shared_task(ignore_result=True, soft_time_limit=240, time_limit=300)
+def owner_replace_backup_task(request_id):
+    """One owner-requested replacement, gated by a worker-only environment value."""
+    from .backup import BackupError
+    from .cloud_backup import CloudMirror, mark_failure, mark_success
+
+    if not request_id or request_id != os.environ.get("LSA_LOYALTY_REPLACEMENT_REQUEST", ""):
+        return {"status": "disabled"}
+    if not settings.LOYALTY_BACKUP_ENABLED or settings.LOYALTY_BACKUP_LOCAL_REHEARSAL:
+        raise ImproperlyConfigured("يلزم تفعيل الوجهة الخارجية المعتمدة للاستبدال.")
+    try:
+        result = CloudMirror.configured().run(replacement_request_id=request_id)
+    except BackupError as exc:
+        mark_failure(exc.code)
+        raise
+    if result.get("already_completed"):
+        return {"status": "already_completed"}
+    mark_success()
+    return {"status": "succeeded"}
