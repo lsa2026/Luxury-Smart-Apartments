@@ -131,6 +131,17 @@ def render_message(stay, *, preview=False):
         ),
     )
     title, guest, total, link, _until, note = labels
+    from .morning_hostaway import hostaway_first
+
+    if hostaway_first(stay):
+        note = {
+            "ar": "الحجز مؤكد في Hostaway؛ هذا الرابط لسداد المبلغ فقط.",
+            "en": "Your booking is confirmed in Hostaway; this link is for payment only.",
+            "fr": (
+                "Votre réservation est confirmée dans Hostaway ; "
+                "ce lien sert uniquement au paiement."
+            ),
+        }.get(lang, "الحجز مؤكد في Hostaway؛ هذا الرابط لسداد المبلغ فقط.")
     arrival, departure = {
         "ar": ("الدخول", "الخروج"),
         "en": ("Check-in", "Check-out"),
@@ -211,6 +222,9 @@ def resend(stay_id, request_id, *, client=None, dispatch_async=True):
         client=client,
         allow_started=True,
         allow_elapsed=True,
+        linked_stay=current
+        if (current.availability_evidence or {}).get("hostaway_morning")
+        else None,
     )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=current.property_id)
@@ -231,7 +245,7 @@ def resend(stay_id, request_id, *, client=None, dispatch_async=True):
         stay.status = "open"
         stay.expires_at = min(timezone.now() + timedelta(minutes=5), stay.ends_at)
         stay.availability_checked_at = timezone.now()
-        stay.availability_evidence = evidence
+        stay.availability_evidence = {**(stay.availability_evidence or {}), **evidence}
         stay.save(
             update_fields=[
                 "status",
@@ -267,6 +281,9 @@ def send_link(delivery_id):
             guests=stay.guests,
             allow_started=True,
             allow_elapsed=True,
+            linked_stay=stay
+            if (stay.availability_evidence or {}).get("hostaway_morning")
+            else None,
         )
     except Exception:
         MorningPaymentLinkDelivery.objects.filter(pk=delivery_id, state="queued").update(

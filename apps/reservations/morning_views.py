@@ -28,7 +28,7 @@ from .booking_forms import GuestDetailsForm
 from .models import MorningStay
 from .morning07_changes import cancel_stay, change_paid_stay
 from .morning_billing import MorningBillingForm, address_context, address_view
-from .morning_hostaway import booking_state, record_in_hostaway
+from .morning_hostaway import booking_state, hostaway_first, record_in_hostaway
 from .morning_phone import normalize_morning_phone
 from .morning_receipts import MorningReceiptForm, record_receipt
 from .morning_stays import (
@@ -208,6 +208,7 @@ class MorningStayForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        self.require_address = kwargs.pop("require_address", False)
         self.stay = kwargs.pop("stay", None)
         super().__init__(*args, **kwargs)
         with translation.override("ar"):
@@ -226,8 +227,15 @@ class MorningStayForm(forms.Form):
             with translation.override("ar"):
                 billing_fields = MorningBillingForm(default_country_code="SA").fields
             for name, field in billing_fields.items():
-                field.required = False
+                field.required = self.require_address
                 self.fields[name] = field
+            if self.require_address:
+                self.fields["confirm_hostaway"] = forms.BooleanField(
+                    label=(
+                        "أؤكد بيانات الضيف والفترة والمبلغ، "
+                        "وأوافق على إنشاء الحجز في Hostaway الآن."
+                    )
+                )
         self.fields["property"].queryset = Property.objects.filter(
             is_visible=True,
             hostaway_is_active=True,
@@ -275,8 +283,13 @@ class MorningStayForm(forms.Form):
 
     def clean(self):
         data = super().clean()
-        if not self.stay and any(
-            data.get(k) for k in self.fields if k.startswith("billing_") and k != "billing_country"
+        if not self.stay and (
+            self.require_address
+            or any(
+                data.get(k)
+                for k in self.fields
+                if k.startswith("billing_") and k != "billing_country"
+            )
         ):
             billing = MorningBillingForm(data)
             if billing.is_valid():
@@ -390,7 +403,7 @@ def morning_list(request):
 def morning_create(request):
     if request.method not in {"GET", "POST"}:
         return HttpResponseNotAllowed(["GET", "POST"])
-    form = MorningStayForm(request.POST or None)
+    form = MorningStayForm(request.POST or None, require_address=True)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
         try:
@@ -413,6 +426,7 @@ def morning_create(request):
                 guest_language=data.get("guest_language") or "ar",
                 billing_address=data.get("billing_address"),
                 allow_started=True,
+                hostaway_first=True,
             )
         except MorningStayError as exc:
             form.add_error(None, str(exc))
@@ -428,12 +442,27 @@ def morning_create(request):
                 object_reference=str(stay.pk),
                 summary="Morning stay saved for an explicit operations send.",
             )
-            if request.POST.get("action") == "create_and_send":
-                delivery = payment_messages.queue_initial(stay, dispatch_async=False)
-                if delivery:
-                    report_payment_send(request, payment_messages.send_link(delivery.pk))
-                else:
-                    messages.error(request, "حُفظ الطلب، لكن إرسال واتساب غير مفعّل؛ لم تُرسل رسالة.")
+            try:
+                identifier = record_in_hostaway(request=request, stay_id=stay.pk)
+            except (MorningStayError, HostawayError):
+                messages.error(
+                    request,
+                    "لم يتأكد تفعيل الحجز في Hostaway. "
+                    "راجع حالة الربط أدناه قبل أي محاولة أخرى؛ لم نرسل تأكيدًا للضيف.",
+                )
+            else:
+                record_audit(
+                    request=request,
+                    action="morning_stay.hostaway_recorded",
+                    object_type="MorningStay",
+                    object_reference=str(stay.pk),
+                    summary="Manager confirmed morning booking in Hostaway before collection.",
+                    metadata={"hostaway_reservation_id": identifier},
+                )
+                messages.success(
+                    request,
+                    "تم تأكيد الحجز في Hostaway، وحُفظ حدث التواصل لمنصة n8n. حالة الدفع مستقلة.",
+                )
             return redirect("notifications:morning_detail", stay_id=stay.pk)
     return render(
         request,
@@ -508,6 +537,7 @@ def morning_detail(request, stay_id):
                     current = MorningStay.objects.select_for_update().get(pk=stay.pk)
                     if (
                         current.status in {"open", "expired"}
+                        and not booking_state(current)
                         and not current.attempts.filter(
                             status__in=["created", "pending", "unknown", "review", "succeeded"]
                         ).exists()
@@ -519,7 +549,9 @@ def morning_detail(request, stay_id):
                         )
                     else:
                         messages.error(
-                            request, "لا يمكن تغيير العنوان أثناء دفع غير محسوم أو بعد السداد."
+                            request,
+                            "لا يمكن تغيير العنوان بعد ربط Hostaway، "
+                            "أو أثناء دفع غير محسوم أو بعد السداد.",
                         )
             else:
                 return render(
@@ -601,6 +633,7 @@ def morning_detail(request, stay_id):
             ),
             receipt_form=receipt_form,
             hostaway_booking=booking_state(stay),
+            hostaway_first=hostaway_first(stay),
             offline_receipt=getattr(stay, "offline_receipt", None),
             send_error=send_error,
             send_token=payment_messages.form_token(stay, request.user),

@@ -22,7 +22,7 @@ from apps.notifications.services.ultramsg import (
 )
 
 from .models import Morning07DeliveryAttempt, MorningStay
-from .morning07_communications import verified_payment
+from .morning07_communications import admitted
 
 KINDS = {
     "status_new",
@@ -48,11 +48,7 @@ def authorize(request, *, latest=True):
         revision = int(revision)
     except (signing.BadSignature, ValueError, MorningStay.DoesNotExist) as exc:
         raise Http404 from exc
-    if (
-        stay.environment != "production"
-        or stay.status not in {"paid", "cancelled"}
-        or not verified_payment(stay)
-    ):
+    if stay.environment != "production" or not admitted(stay):
         raise Http404
     if latest and revision != stay.communication_revision:
         raise Http404

@@ -18,6 +18,16 @@ from .morning_stays import UNRESOLVED, MorningStayError, active_stays, property_
 
 KEY = "hostaway_morning"
 PROVIDER = "LSA_MorningStay"
+HOSTAWAY_FIRST = "hostaway_first_v2"
+
+
+def hostaway_first(stay):
+    return (stay.availability_evidence or {}).get("creation_mode") == HOSTAWAY_FIRST
+
+
+def linked_for_communication(stay):
+    operation = booking_state(stay)
+    return hostaway_first(stay) and operation.get("state") in {"confirmed", "cancelled"}
 
 
 def booking_state(stay):
@@ -63,6 +73,13 @@ def _request(stay):
             "guestName": stay.guest_name,
             "guestFirstName": first,
             "guestLastName": last,
+            "guestEmail": stay.guest_email,
+            "phone": stay.guest_phone,
+            "guestLocale": stay.guest_language,
+            "guestAddress": (stay.billing_address or {}).get("billing_street1", ""),
+            "guestCity": (stay.billing_address or {}).get("billing_city", ""),
+            "guestZipCode": (stay.billing_address or {}).get("billing_postcode", ""),
+            "guestCountry": (stay.billing_address or {}).get("billing_country", ""),
             "numberOfGuests": stay.guests,
             "adults": stay.guests,
             "arrivalDate": previous.isoformat(),
@@ -86,12 +103,13 @@ def _request(stay):
                 }
             ],
             # Guest communication remains in the independent MorningStay journey.
-            # No card, charge, receipt, email or phone is sent by this recording action.
+            # Contact details are booking data; no card or collection is sent.
             "hostNote": (
-                f"MorningStay {stay.pk}; paid externally in the website. "
-                f"ACTUAL arrival {actual_start}; "
+                f"MorningStay {stay.pk}; "
+                + ("Payment recorded in website. " if stay.paid_at else "Payment pending. ")
+                + f"ACTUAL arrival {actual_start}; "
                 f"ACTUAL departure {actual_end}. "
-                "Calendar night is the previous date. Do not collect again."
+                "Calendar night is the previous date. Check the website payment ledger."
             ),
         }
     )
@@ -108,16 +126,42 @@ def record_in_hostaway(*, request, stay_id, client=None):
         stay = _locked(stay_id)
         operation = booking_state(stay)
         if operation.get("state") == "confirmed":
+            if hostaway_first(stay):
+                from .morning07_communications import capture_event
+
+                capture_event(stay.pk)
             return operation["reservation_id"]
         if operation:
             raise MorningStayError("توجد عملية ربط سابقة؛ راجع نتيجتها ولا تنشئ حجزًا مكررًا.")
         if stay.environment != settings.HYPERPAY_ENVIRONMENT:
             raise MorningStayError("بيئة الحجز لا تطابق بيئة التشغيل الحالية.")
-        if stay.status != "paid" or not stay.paid_at:
+        if not hostaway_first(stay) and (stay.status != "paid" or not stay.paid_at):
             raise MorningStayError("وثّق استلام كامل مبلغ الحجز الصباحي قبل تسجيله في هوستاوي.")
+        if hostaway_first(stay) and stay.status not in {"open", "paid"}:
+            raise MorningStayError("حالة الحجز لا تسمح بالتأكيد في هوستاوي.")
+        if hostaway_first(stay):
+            from .morning_billing import MorningBillingForm
+
+            if not settings.MORNING07_N8N_ENABLED:
+                raise MorningStayError(
+                    "ربط التواصل للحجز الصباحي غير مفعّل؛ لم ننشئ حجزًا في هوستاوي."
+                )
+            if not MorningBillingForm(stay.billing_address).is_valid():
+                raise MorningStayError("أكمل عنوان الضيف الصحيح قبل تأكيد الحجز في هوستاوي.")
         if stay.attempts.filter(status__in=UNRESOLVED).exists():
             raise MorningStayError("توجد محاولة دفع غير محسومة؛ تحقق منها أولًا.")
-        expected = (stay.starts_at, stay.ends_at, stay.property_id, stay.guests, stay.amount_sar)
+        expected = (
+            stay.starts_at,
+            stay.ends_at,
+            stay.property_id,
+            stay.guests,
+            stay.amount_sar,
+            stay.guest_name,
+            stay.guest_phone,
+            stay.guest_email,
+            stay.guest_language,
+            dict(stay.billing_address or {}),
+        )
     evidence = verify_window(
         stay.property,
         stay.starts_at,
@@ -125,14 +169,21 @@ def record_in_hostaway(*, request, stay_id, client=None):
         guests=stay.guests,
         client=client,
         allow_started=True,
-        allow_elapsed=True,
+        allow_elapsed=not hostaway_first(stay),
     )
     with transaction.atomic():
         stay = _locked(stay_id)
         operation = booking_state(stay)
         if operation.get("state") == "confirmed":
+            if hostaway_first(stay):
+                from .morning07_communications import capture_event
+
+                capture_event(stay.pk)
             return operation["reservation_id"]
-        if operation or stay.status != "paid" or not stay.paid_at:
+        eligible = stay.status == "paid" and stay.paid_at
+        if hostaway_first(stay):
+            eligible = stay.status in {"open", "paid"}
+        if operation or not eligible:
             raise MorningStayError("تغيرت حالة الحجز؛ افتح التفاصيل مجددًا.")
         if expected != (
             stay.starts_at,
@@ -140,6 +191,11 @@ def record_in_hostaway(*, request, stay_id, client=None):
             stay.property_id,
             stay.guests,
             stay.amount_sar,
+            stay.guest_name,
+            stay.guest_phone,
+            stay.guest_email,
+            stay.guest_language,
+            dict(stay.billing_address or {}),
         ):
             raise MorningStayError("تغيرت تفاصيل الإقامة؛ أعد التحقق قبل التسجيل.")
         if active_stays(
@@ -192,6 +248,11 @@ def record_in_hostaway(*, request, stay_id, client=None):
         raise MorningStayError(
             "أنشئ سجل في هوستاوي لكن تفاصيله تحتاج مراجعة؛ حُفظ رقمه ومنعنا إنشاء سجل آخر."
         )
+    if hostaway_first(current):
+        from .morning07_communications import capture_event
+
+        with transaction.atomic():
+            capture_event(current.pk)
     return snapshot.reservation_id
 
 

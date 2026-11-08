@@ -36,16 +36,26 @@ def verified_payment(stay):
     )
 
 
+def verified_booking(stay):
+    from .morning_hostaway import linked_for_communication
+
+    return linked_for_communication(stay)
+
+
+def admitted(stay):
+    return stay.status in {"open", "processing", "paid", "cancelled"} and (
+        verified_booking(stay) or verified_payment(stay)
+    )
+
+
 def capture_event(stay_id):
     """Called inside save's transaction. Open/processing/review never confirm admission."""
     stay = MorningStay.objects.select_for_update().select_related("property").get(pk=stay_id)
-    if stay.environment != "production" or stay.status not in {"paid", "cancelled"}:
+    if not settings.MORNING07_N8N_ENABLED or stay.environment != "production" or not admitted(stay):
         return
-    if stay.status == "paid" and stay.ends_at <= timezone.now():
+    if stay.status != "cancelled" and stay.ends_at <= timezone.now():
         return
-    if not verified_payment(stay) or (
-        stay.status == "cancelled" and not stay.communication_revision
-    ):
+    if stay.status == "cancelled" and not stay.communication_revision:
         return
     try:
         phone = normalize_phone_number(stay.guest_phone)
@@ -57,8 +67,10 @@ def capture_event(stay_id):
         "source": "morning07",
         "morning_stay_id": str(stay.pk),
         "reservation_key": "morning07:" + str(stay.pk),
-        "status": stay.status,
-        "payment_verified": True,
+        "status": "confirmed"
+        if verified_booking(stay) and stay.status != "cancelled"
+        else stay.status,
+        "payment_verified": verified_payment(stay),
         "listing_map_id": stay.property.hostaway_listing_map_id,
         "listing_name": stay.property.name_ar or stay.property.name_en,
         "starts_at": stay.starts_at.isoformat(),
@@ -75,13 +87,31 @@ def capture_event(stay_id):
         "guests": stay.guests,
         "total_price": str(stay.amount_sar),
         "currency": "SAR",
-        "paid_at": stay.paid_at.isoformat(),
+        "paid_at": stay.paid_at.isoformat() if stay.paid_at else None,
         "management_url": settings.SITE_BASE_URL.rstrip("/")
         + "/admin/operations/morning-stays/"
         + str(stay.pk)
         + "/",
     }
-    fingerprint = hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
+    if verified_booking(stay):
+        from .morning_hostaway import booking_state
+
+        values.update(
+            contract_version=2,
+            booking_verified=True,
+            hostaway_reservation_id=booking_state(stay)["reservation_id"],
+            payment_status="paid" if stay.paid_at else "unpaid",
+        )
+        # A payment-only change is bookkeeping, not a new booking notification.
+        values["paid_at"] = None
+        fingerprint_values = {
+            k: v for k, v in values.items() if k not in {"payment_status", "payment_verified"}
+        }
+    else:
+        fingerprint_values = values
+    fingerprint = hashlib.sha256(
+        json.dumps(fingerprint_values, sort_keys=True).encode()
+    ).hexdigest()
     if fingerprint == stay.communication_fingerprint:
         return
     revision = stay.communication_revision + 1
@@ -138,11 +168,7 @@ def read_event(request, event_id):
     if not event:
         raise Http404
     stay = event.stay
-    if (
-        stay.status not in {"paid", "cancelled"}
-        or not verified_payment(stay)
-        or (stay.status == "paid" and stay.ends_at <= timezone.now())
-    ):
+    if not admitted(stay) or (stay.status != "cancelled" and stay.ends_at <= timezone.now()):
         return JsonResponse({"error": "admission_not_confirmed"}, status=409)
     # An old delivery can only retrieve the latest authoritative version.
     current = stay.communication_events.get(revision=stay.communication_revision)
@@ -168,7 +194,7 @@ def deliver_pending_events(limit=3, *, client=None, stay_id=None):
             )
             if not event:
                 break
-            if event.stay.status == "paid" and event.stay.ends_at <= timezone.now():
+            if event.stay.status != "cancelled" and event.stay.ends_at <= timezone.now():
                 event.state = "expired"
                 event.last_error = "morning_stay_ended"
                 event.save(update_fields=["state", "last_error"])

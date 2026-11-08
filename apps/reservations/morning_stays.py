@@ -58,6 +58,16 @@ def active_stays(property_obj, start, end, *, exclude=None):
             Q(status__in=["paid", "processing", "review"])
             | Q(status="open", expires_at__gt=timezone.now())
             | Q(attempts__status__in=UNRESOLVED)
+            | Q(
+                availability_evidence__hostaway_morning__state__in=[
+                    "creating",
+                    "unknown",
+                    "review",
+                    "confirmed",
+                    "cancelling",
+                    "cancel_unknown",
+                ]
+            )
         )
     )
 
@@ -121,6 +131,7 @@ def verify_window(
     client=None,
     allow_started=False,
     allow_elapsed=False,
+    linked_stay=None,
 ):
     """No cache, quote, payment, reservation write, or phone-based exclusion."""
     zone = property_zone(property_obj)
@@ -145,6 +156,7 @@ def verify_window(
                 client=remote,
                 allow_started=allow_started,
                 allow_elapsed=allow_elapsed,
+                linked_stay=linked_stay,
             )
     if local_inflight_conflict(property_obj, starts_at, ends_at):
         raise MorningStayError("توجد محاولة حجز أو دفع أخرى متداخلة غير محسومة.")
@@ -184,7 +196,7 @@ def verify_window(
         if row.count_blocked_units or row.status.casefold() in {"blocked", "closed", "maintenance"}:
             raise MorningStayError("يوجد حجب أو إغلاق يحتاج مراجعة الإدارة.")
 
-    cursor, seen = None, set()
+    cursor, seen, linked_seen = None, set(), False
     for _ in range(10):
         rows = client.guest_stay_page(previous_day, day, after_id=cursor)
         for row in rows:
@@ -198,6 +210,21 @@ def verify_window(
             if listing_map_id != property_obj.hostaway_listing_map_id:
                 continue
             status = normalize_hostaway_reservation_status(str(row.get("status", "")))
+            if linked_stay is not None:
+                from .morning_hostaway import PROVIDER, booking_state
+
+                own = booking_state(linked_stay)
+                if identifier == own.get("reservation_id"):
+                    if (
+                        own.get("state") != "confirmed"
+                        or row.get("source") != PROVIDER
+                        or row.get("arrivalDate") != own.get("arrival_date")
+                        or row.get("departureDate") != own.get("departure_date")
+                        or status not in {"confirmed", "modified"}
+                    ):
+                        raise MorningStayError("تغير حجز هوستاوي المرتبط؛ راجع الإدارة قبل الدفع.")
+                    linked_seen = True
+                    continue
             if status in {"cancelled", "declined", "expired", "inquiry"}:
                 continue
             if status not in {"confirmed", "modified", "awaiting_payment", "pending"}:
@@ -238,6 +265,8 @@ def verify_window(
         cursor = rows[-1]["id"]
     else:
         raise MorningStayError("تعذر إكمال صفحات الحجوزات؛ لم يُثبت التوفر.")
+    if linked_stay is not None and not linked_seen:
+        raise MorningStayError("لم يظهر حجز هوستاوي المرتبط ضمن التوفر؛ راجع الإدارة قبل الدفع.")
     return {
         "checked_at": timezone.now().isoformat(),
         "source": "hostaway_read_only",
@@ -263,6 +292,7 @@ def create_stay(
     billing_address=None,
     client=None,
     allow_started=False,
+    hostaway_first=False,
 ):
     existing = MorningStay.objects.filter(request_id=request_id).first()
     values = dict(
@@ -280,12 +310,21 @@ def create_stay(
         environment=settings.HYPERPAY_ENVIRONMENT,
     )
     if existing:
+        if (
+            hostaway_first
+            and (existing.availability_evidence or {}).get("creation_mode") != "hostaway_first_v2"
+        ):
+            raise MorningStayError("هذا طلب سابق؛ افتح نموذج تأكيد جديد دون تكرار الحجز.")
         if any(getattr(existing, k) != v for k, v in values.items()):
             raise MorningStayError("تكرر معرف الطلب ببيانات مختلفة؛ أعد فتح النموذج.")
         return existing
     evidence = verify_window(
         property_obj, starts_at, ends_at, guests=guests, client=client, allow_started=allow_started
     )
+    if hostaway_first:
+        from .morning_hostaway import HOSTAWAY_FIRST
+
+        evidence["creation_mode"] = HOSTAWAY_FIRST
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=property_obj.pk)
         existing = MorningStay.objects.filter(request_id=request_id).first()
