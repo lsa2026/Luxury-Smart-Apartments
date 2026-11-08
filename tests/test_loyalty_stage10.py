@@ -516,7 +516,7 @@ def test_daily_local_dispatch_updates_same_copy_with_safe_status(sequence, setti
     assert LocalMirror(settings.LOYALTY_BACKUP_LOCAL_PATH).status()["last_success"]
 
 
-def test_daily_schedule_once_at_one_riyadh_and_off_by_default(settings):
+def test_daily_schedule_once_at_eight_riyadh_and_off_by_default(settings):
     from scheduler_runtime.schedule import build_beat_schedule
 
     required = (
@@ -541,7 +541,7 @@ def test_daily_schedule_once_at_one_riyadh_and_off_by_default(settings):
     enabled = build_beat_schedule(values)
     assert {k: v for k, v in enabled.items() if k != "loyalty-daily-backup"} == old
     entry = enabled["loyalty-daily-backup"]
-    assert entry["schedule"].hour == {1}
+    assert entry["schedule"].hour == {8}
     assert entry["schedule"].minute == {0}
     assert settings.CELERY_TIMEZONE == "Asia/Riyadh"
 

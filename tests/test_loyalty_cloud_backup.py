@@ -313,10 +313,10 @@ def test_owner_replacement_removes_incompatible_copy_and_is_idempotent(sequence,
     good = snapshot()
     mirror.update(good)
     store.state["manifest"]["schema"] = "old-incompatible-schema"
-    store.state["context"]["discarded-old-key"] = {"old": True}
     with pytest.raises(BackupError) as error:
         mirror.read()
     assert error.value.code == "incompatible_snapshot_schema"
+    store.state["context"]["discarded-old-key"] = {"old": True}
     request = "owner-20261108-replace-partial"
     mirror.update(good, replacement_request_id=request)
     assert mirror.read() == good
