@@ -17,6 +17,8 @@ from django.utils.translation import pgettext_lazy
 
 from .morning_models import (  # noqa: F401
     Morning07DeliveryAttempt,
+    Morning07PaymentDelivery,
+    Morning07PaymentEvent,
     MorningCommunicationEvent,
     MorningOfflineReceipt,
     MorningPaymentLinkDelivery,

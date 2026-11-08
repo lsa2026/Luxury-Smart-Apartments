@@ -4,6 +4,7 @@ from apps.loyalty import invitation_api
 from apps.reservations import (
     morning07_communications,
     morning07_gateway,
+    morning07_payments,
     morning_auto_payment,
     morning_loyalty,
 )
@@ -13,6 +14,15 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path(
+        "morning07/payments/events/<uuid:event_id>/",
+        morning07_payments.read_event,
+        name="morning07_payment_event",
+    ),
+    path("morning07/payments/send/", morning07_payments.send, name="morning07_payment_send"),
+    path(
+        "morning07/payments/receipt/", morning07_payments.receipt, name="morning07_payment_receipt"
+    ),
     path("loyalty/invitations/health/", invitation_api.health, name="loyalty_invitation_health"),
     path("loyalty/invitations/claim/", invitation_api.claim, name="loyalty_invitation_claim"),
     path(

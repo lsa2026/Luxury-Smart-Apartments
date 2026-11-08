@@ -68,6 +68,7 @@ jobs:
           tests/test_morning_shared_inputs.py
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
+          tests/test_morning07_payments.py
           tests/test_morning_loyalty.py
           tests/test_offline_payment_receipts.py
           tests/test_automatic_cancellation_refunds.py

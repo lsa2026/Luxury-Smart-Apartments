@@ -792,6 +792,16 @@ SITEMAP_CACHE_SECONDS = 300
 
 MORNING07_N8N_ENABLED = strict_bool("MORNING07_N8N_ENABLED")
 MORNING07_N8N_WEBHOOK_URL = env("MORNING07_N8N_WEBHOOK_URL", default="").strip()
+MORNING07_PAYMENT_HANDOFF_ENABLED = strict_bool("MORNING07_PAYMENT_HANDOFF_ENABLED")
+MORNING07_PAYMENT_WEBHOOK_URL = env("MORNING07_PAYMENT_WEBHOOK_URL", default="").strip()
+if MORNING07_PAYMENT_HANDOFF_ENABLED and (
+    not MORNING07_N8N_ENABLED
+    or MORNING07_PAYMENT_WEBHOOK_URL
+    != "https://lsa25.app.n8n.cloud/webhook/lsa07-morning-payment-v1"
+):
+    raise ImproperlyConfigured(
+        "Morning07 payment handoff requires its dedicated webhook and booking integration."
+    )
 MORNING07_WORK_GROUP_ID = "120363408128237629@g.us"
 if (
     MORNING07_N8N_ENABLED

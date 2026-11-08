@@ -94,6 +94,9 @@ def record_receipt(
         from .morning_loyalty import queue_paid_invitation
 
         stay.refresh_from_db()
+        from .morning07_payments import capture_payment
+
+        capture_payment(stay.pk)
         queue_paid_invitation(stay)
         record_audit(
             request=request,
