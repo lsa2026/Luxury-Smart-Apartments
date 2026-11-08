@@ -21,11 +21,145 @@ from apps.loyalty.services import balance, reconcile
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import ManualBookingDraft, Reservation
 from tests import test_loyalty_booking_invitations as manual
-from tests.test_loyalty_stage8 import join, user
+from tests.test_loyalty_stage8 import completed_change, join, user
 
 pytestmark = pytest.mark.django_db
 rig = manual.rig
 PHONE = "+12025550123"
+
+
+@pytest.mark.parametrize("modified", [False, True])
+@pytest.mark.parametrize("channel", ["whatsapp", "email"])
+def test_all_past_site_guests_can_receive_legacy_accommodation_offer(rig, modified, channel):
+    """Independent guests, pre-launch stays and completed extensions; no ID allowlist."""
+    from apps.loyalty.site_adapter import booking_facts
+
+    for number in range(2):
+        booking = manual.past_booking(f"SYNTHETIC-LEGACY-{number}")
+        phone = f"+1202555012{number}"
+        intent = booking.booking_intent
+        intent.guest_phone = phone
+        intent.guest_email = f"legacy-{number}@example.invalid"
+        intent.save()
+        Reservation.objects.filter(pk=booking.pk).update(
+            created_at=timezone.now() - timedelta(days=100)
+        )
+        if modified:
+            change = completed_change(booking, "2142.00")
+            components = [{"type": "accommodation", "total": "2142", "included_in_total": True}]
+            change.quote_snapshot["components"] = components
+            change.save()
+            payment_amount = Decimal("2142.00")
+            expected_reward = Decimal("64.26")
+        else:
+            components = [
+                {
+                    "type": "accommodation",
+                    "total": str(booking.total_price),
+                    "included_in_total": True,
+                }
+            ]
+            intent.quote.components = components
+            intent.quote.save()
+            payment_amount = booking.total_price
+            expected_reward = booking.total_price * Decimal("0.03")
+        PaymentAttempt.objects.filter(booking_intent=intent).update(amount=payment_amount)
+        client = rig[0]
+        context = client.get(manual.url(booking)).context["loyalty_invitation"]
+        assert all(row.get("confirmation") for row in context["channels"]), context
+        assert Decimal(quote(booking)["reward"]) == expected_reward
+        facts, error = booking_facts(booking, past_preview=True)
+        assert not error and facts["components"] == components
+        client.post(manual.url(booking), manual.payload(client, booking, channel))
+        manual.deliver_latest(booking, channel)
+        guest = user(f"legacy-{modified}-{number}")
+        VerifiedPhone.objects.create(user=guest, phone=phone)
+        member = join(guest)
+        assert balance(member) == expected_reward
+        apply_for_user(guest)
+        assert Ledger.objects.filter(reservation=booking).count() == 1
+        if modified:
+            change.refresh_from_db()
+            assert change.quote_snapshot["components"] == components
+        else:
+            intent.quote.refresh_from_db()
+            assert intent.quote.components == components
+
+
+@pytest.mark.parametrize("modified", [False, True])
+def test_past_accommodation_excludes_explicit_fees(rig, modified):
+    booking = manual.past_booking()
+    if modified:
+        change = completed_change(booking, "500.00")
+    components = [
+        {"type": "accommodation", "total": "450", "included_in_total": True},
+        {"type": "cleaningFee", "total": "50", "included_in_total": True},
+    ]
+    if modified:
+        change.quote_snapshot["components"] = components
+        change.save()
+    else:
+        booking.booking_intent.quote.components = components
+        booking.booking_intent.quote.save()
+    assert quote(booking)["reward"] == "13.50"
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "partial",
+        "unverified",
+        "mismatch",
+        "negative",
+        "excluded",
+        "unknown",
+        "future",
+        "external",
+        "cancelled",
+        "changed_dates",
+    ],
+)
+def test_past_legacy_accommodation_still_requires_valid_stay_and_financial_evidence(rig, reason):
+    booking = manual.past_booking()
+    change = completed_change(booking, "500.00")
+    part = {"type": "accommodation", "total": "500", "included_in_total": True}
+    payments = PaymentAttempt.objects.filter(booking_intent=booking.booking_intent)
+    if reason == "partial":
+        payments.update(amount=Decimal("499.00"))
+    elif reason == "unverified":
+        payments.update(verified_at=None)
+    elif reason == "mismatch":
+        part["total"] = "499"
+    elif reason == "negative":
+        part["total"] = "-500"
+    elif reason == "excluded":
+        part["included_in_total"] = False
+    elif reason == "unknown":
+        part["type"] = "unknown"
+    elif reason == "future":
+        booking.check_out = timezone.now().date() + timedelta(days=1)
+    elif reason == "external":
+        booking.source_type = "hostaway"
+    elif reason == "cancelled":
+        booking.normalized_status = Reservation.Status.CANCELLED
+    elif reason == "changed_dates":
+        change.new_check_out += timedelta(days=1)
+    change.quote_snapshot["components"] = [part]
+    change.save()
+    booking.save()
+    assert quote_blocked(booking)
+    context = rig[0].get(manual.url(booking)).context["loyalty_invitation"]
+    assert all(not row.get("confirmation") for row in context["channels"])
+    assert not rig[2].send_image.called and not Ledger.objects.exists()
+
+
+def test_accommodation_alias_is_explicitly_limited_to_past_offer_reading(rig):
+    from apps.loyalty.site_adapter import _lodging
+
+    components = [{"type": "accommodation", "total": "500", "included_in_total": True}]
+    with pytest.raises(ValueError, match="price_breakdown_mismatch"):
+        _lodging(components, Decimal("500"))
+    assert _lodging(components, Decimal("500"), allow_accommodation=True) == Decimal("500")
 
 
 def send(rig, booking, *, uncertain=False):
