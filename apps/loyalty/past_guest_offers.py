@@ -72,6 +72,33 @@ def issue(booking, target, request_id, channel, operator):
     }
 
 
+def retain_sent_offer(booking, target):
+    """A deliberate repeat must retain the original delivered/ambiguous reward offer."""
+    stored = booking.loyalty_state.get(KEY)
+    if not stored:
+        return False
+    try:
+        offer = signing.loads(stored["proof"], salt=SALT)
+        key = (
+            "owner_join_invitation_requests"
+            if offer["channel"] == "whatsapp"
+            else "owner_join_invitation_email_requests"
+        )
+        row = booking.loyalty_state.get(key, {}).get(offer["request_id"], {})
+        if row.get("status") not in {"accepted", "uncertain"}:
+            return False
+        if (
+            offer["booking"] != str(booking.pk)
+            or offer["phone"] != phone_hash(target["phone"])
+            or offer["quote"] != target["reward"]
+            or (offer["customer"] and offer["customer"] != target["customer"])
+        ):
+            raise ValueError("changed_offer")
+        return True
+    except (signing.BadSignature, KeyError, ValueError, TypeError) as exc:
+        raise ValidationError("تغير عرض المكافأة أو مستلمه؛ راجعه قبل إعادة الإرسال.") from exc
+
+
 def authorized(booking):
     try:
         stored = booking.loyalty_state.get(KEY, {})

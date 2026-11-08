@@ -28,12 +28,13 @@ from apps.notifications.services.email import (
 from apps.notifications.services.ultramsg import UltraMsgClient
 from apps.reservations.models import Reservation
 
+from . import invitation_history as history
 from . import invitation_registry as registry
 from .launch import booking_allowed
 from .models import JoinInvitation
 from .past_guest_invitation_copy import invitation_caption, invitation_image
 from .past_guest_offers import KEY as PAST_OFFER_KEY
-from .past_guest_offers import apply_for_booking, issue, quote
+from .past_guest_offers import apply_for_booking, issue, quote, retain_sent_offer
 from .phone_gifts import delivery_ready, phone_hash, recipient_language
 from .services import digest, posting_transaction
 
@@ -179,6 +180,7 @@ def _channel_context(user, booking, channel):
         **info,
         **preview,
         "language_code": target["language"],
+        "manual_resend": bool(history.receipts(booking)),
         "recipient": target["phone"] if channel == "whatsapp" else target["email"],
         "phone": target["phone"],
         "language": {"ar": "العربية", "en": "الإنجليزية", "fr": "الفرنسية"}[target["language"]],
@@ -189,6 +191,8 @@ def _channel_context(user, booking, channel):
                 "channel": channel,
                 "request_id": str(uuid4()),
                 "target": _target_digest(target, channel),
+                "history": history.fingerprint(booking),
+                "manual_resend": bool(history.receipts(booking)),
             },
             salt=SALT,
         ),
@@ -199,7 +203,39 @@ def invitation_context(user, booking):
     if not is_operations_owner(user):
         return None
     whatsapp = _channel_context(user, booking, "whatsapp")
-    return {**whatsapp, "channels": [whatsapp, _channel_context(user, booking, "email")]}
+    return {
+        **whatsapp,
+        "history": history.receipts(booking),
+        "channels": [whatsapp, _channel_context(user, booking, "email")],
+    }
+
+
+def _manual_repeat_claim(booking, target, request_id, channel):
+    """Explicit owner-only repeat; the n8n suppression receipt is never reset."""
+    if registry.member_exists(target["phone"], target["email"], target["customer"]):
+        raise ValidationError("الضيف عضو بالفعل؛ لا حاجة إلى دعوة انضمام جديدة.")
+    shared = JoinInvitation.objects.filter(reservation_key=registry.booking_key(booking)).first()
+    if shared:
+        if shared.state == "claimed" and shared.expires_at > timezone.now():
+            raise ValidationError("توجد دعوة قيد التحضير؛ انتظر نتيجتها قبل إعادة الإرسال.")
+        return shared, False
+    # Older manual receipts predate the shared registry. This new suppression
+    # row covers the explicit request without fabricating a prior provider result.
+    shared = JoinInvitation.objects.create(
+        reservation_key=registry.booking_key(booking),
+        event_key=registry.keyed("website:manual-repeat:" + request_id),
+        phone=target["phone"],
+        email=target["email"],
+        phone_digest=phone_hash(target["phone"]),
+        email_digest=recipient_hmac(target["email"]) if target["email"] else "",
+        customer_id=target["customer"],
+        language=target["language"],
+        source="website-manual",
+        origin="website",
+        channel=channel,
+        expires_at=timezone.now() + timedelta(minutes=15),
+    )
+    return shared, True
 
 
 def queue_booking_invitation(request, booking_id):
@@ -225,20 +261,32 @@ def queue_booking_invitation(request, booking_id):
         )
         if request_id in booking.loyalty_state.get(requests_key, {}):
             return "حُفظ طلب هذه الضغطة مسبقًا. يمكنك إرسال دعوة جديدة من صفحة الحجز."
+        if proof.get("history") != history.fingerprint(booking):
+            raise ValidationError("تحدّث سجل الدعوات؛ افتح الحجز وراجعه قبل الإرسال.")
+        manual_resend = bool(proof.get("manual_resend"))
+        if manual_resend and request.POST.get("confirm_resend") != "on":
+            raise ValidationError("راجع سجل الدعوات وأكّد رغبتك في إعادة الإرسال.")
+        if history.pending(booking):
+            raise ValidationError("يوجد طلب قيد الإرسال؛ انتظر نتيجته قبل إنشاء طلب آخر.")
         target = _target(booking, channel)
         if proof.get("target") != _target_digest(target, channel):
             raise ValidationError("تغيرت بيانات المستلم؛ افتح الحجز وراجع الدعوة مجددًا.")
-        decision, shared = registry.claim(
-            key=registry.booking_key(booking),
-            phone=target["phone"],
-            email=target["email"],
-            customer_id=target["customer"],
-            language=target["language"],
-            event_id=request_id,
-            source="website-manual",
-            origin="website",
-            channel=channel,
-        )
+        if manual_resend:
+            shared, record_shared = _manual_repeat_claim(booking, target, request_id, channel)
+            decision = "eligible"
+        else:
+            record_shared = True
+            decision, shared = registry.claim(
+                key=registry.booking_key(booking),
+                phone=target["phone"],
+                email=target["email"],
+                customer_id=target["customer"],
+                language=target["language"],
+                event_id=request_id,
+                source="website-manual",
+                origin="website",
+                channel=channel,
+            )
         if decision != "eligible":
             raise ValidationError(
                 "الضيف عضو أو توجد دعوة سابقة/محجوزة؛ راجع السجل المشترك قبل الإرسال."
@@ -249,8 +297,13 @@ def queue_booking_invitation(request, booking_id):
             else recipient_hmac(target["email"])
         )
         recipient_key = "phone_digest" if channel == "whatsapp" else "recipient_digest"
-        issue(booking, target, request_id, channel, request.user)
+        if not (manual_resend and retain_sent_offer(booking, target)):
+            issue(booking, target, request_id, channel, request.user)
         row = {
+            "manual_resend": manual_resend,
+            "record_shared": record_shared,
+            "provider_reference": shared.provider_reference
+            + (":manual:" + request_id if manual_resend else ""),
             "past_guest_offer": PAST_OFFER_KEY,
             "shared_invitation_id": str(shared.pk),
             "status": "queued",
@@ -276,6 +329,7 @@ def queue_booking_invitation(request, booking_id):
                 "request_id": request_id or "",
                 "authorization": "owner_manual",
                 "past_stay_reward": target["reward"],
+                "manual_resend": manual_resend,
             },
         )
         transaction.on_commit(
@@ -301,8 +355,10 @@ def _finish(
         row = _request_row(booking, channel, request_id)
         if row.get("status") != expected:
             return
-        row.update(status=status, updated_at=timezone.now().isoformat())
-        if row.get("shared_invitation_id"):
+        row.update(status=status, updated_at=timezone.now().isoformat(), provider_id=provider_id)
+        if status == "accepted":
+            row["accepted_at"] = row["updated_at"]
+        if row.get("shared_invitation_id") and row.get("record_shared", True):
             shared = JoinInvitation.objects.select_for_update().get(pk=row["shared_invitation_id"])
             registry.record(shared, "unknown" if status == "uncertain" else status, provider_id)
         booking.save(update_fields=["loyalty_state", "updated_at"])
@@ -409,7 +465,19 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
                 )
             else:
                 email_request = invitation_email_request(target)
-            if (
+            if row.get("manual_resend"):
+                if history.pending(booking, exclude_id=request_id) or registry.member_exists(
+                    target["phone"], target["email"], target["customer"]
+                ):
+                    raise ValidationError("Another send or membership exists.")
+                retain_sent_offer(booking, target)
+                if row.get("record_shared"):
+                    if shared.state != "claimed" or shared.expires_at <= timezone.now():
+                        raise ValidationError("Repeat claim expired or consumed.")
+                    shared.state = "unknown"
+                    shared.dispatched_at = timezone.now()
+                    shared.save(update_fields=["state", "dispatched_at", "updated_at"])
+            elif (
                 registry.consume(shared, phone=target["phone"], exclude_legacy=exclude)
                 != "eligible"
             ):
@@ -427,7 +495,7 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
                     recipient=target["phone"],
                     content=content,
                     caption=caption,
-                    reference_id=shared.provider_reference,
+                    reference_id=row.get("provider_reference") or shared.provider_reference,
                 )
             if not isinstance(result, dict) or not result.get("id"):
                 raise ValueError("Unconfirmed provider outcome.")

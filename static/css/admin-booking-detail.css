@@ -108,6 +108,10 @@
   .lsa-booking-detail .lsa-owner-form .form-row label { padding: 0; width: auto; }
 }
 .lsa-stay-controls { margin-bottom: 24px; }
+.lsa-invitation-history { margin-block: 16px; padding: 18px; border: 1px solid var(--lsa-line); border-radius: 12px; background: #f5f1e8; }
+.lsa-invitation-history__table { max-width: 100%; overflow-x: auto; }
+.lsa-invitation-history table { width: 100%; min-width: 580px; }
+.lsa-invitation-history th, .lsa-invitation-history td { padding: 10px; text-align: right; }
 .lsa-booking-invitation__preview { margin-block: 16px; border: 1px solid var(--lsa-line); border-radius: 12px; padding: 12px; }
 .lsa-booking-invitation__artwork { display: block; width: 100%; height: auto; margin-block: 12px; border-radius: 8px; }
 .lsa-booking-invitation__preview summary { cursor: pointer; min-height: 44px; display: list-item; line-height: 1.9; font-weight: 700; }
