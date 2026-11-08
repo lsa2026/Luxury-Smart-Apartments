@@ -1,0 +1,55 @@
+name: Recovery toolkit
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/recovery-toolkit.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 244f12f05781316d3405aa6c56e001f17f01b92b
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Package public code and official recovery tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x /usr/lib/postgresql/17/bin/postgres ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-17 postgresql-client-17
+          fi
+          mkdir -p out kit/pg kit/lib kit/share kit/python kit/site
+          cp -a /usr/lib/postgresql/17/. kit/pg/
+          cp -a /usr/share/postgresql/17/. kit/share/
+          cp -a "$pythonLocation"/. kit/python/
+          python -m pip install --target kit/site .
+          python - <<'PY'
+          import pathlib,re,shutil,subprocess
+          dest=pathlib.Path('kit/lib')
+          candidates=list(pathlib.Path('kit/pg/bin').glob('*'))+list(pathlib.Path('kit/python/bin').glob('python3.13'))+list(pathlib.Path('kit/python/lib').rglob('*.so'))+list(pathlib.Path('kit/site').rglob('*.so'))
+          for p in candidates:
+              if not p.is_file(): continue
+              out=subprocess.run(['ldd',str(p)],capture_output=True,text=True).stdout
+              for line in out.splitlines():
+                  match=re.search(r'=> (/[^ ]+)',line)
+                  if not match: continue
+                  lib=pathlib.Path(match.group(1))
+                  if re.match(r'^(libc|libm|libpthread|libdl|librt|libresolv|ld-linux)\.so',lib.name):continue
+                  if lib.is_file(): shutil.copy2(lib,dest/lib.name)
+          PY
+          git archive --format=tar.gz -o out/source-244f12f05781316d3405aa6c56e001f17f01b92b.tar.gz HEAD
+          tar -czf out/recovery-toolkit-pg17-python313.tar.gz kit
+          (cd out && sha256sum *.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lsa-public-recovery-toolkit
+          path: out/
+          if-no-files-found: error
+          retention-days: 3
