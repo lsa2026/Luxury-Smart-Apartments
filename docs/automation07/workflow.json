@@ -1054,7 +1054,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.delivered === true && $('D00 Claim Next Morning07 Delivery').first().json.message_type === 'checkin_guide' }}",
+              "leftValue": "={{ $json.delivered === true && $('D00 Claim Next Morning07 Delivery').item.json.message_type === 'checkin_guide' }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
