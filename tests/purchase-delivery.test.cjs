@@ -8,7 +8,8 @@ const storageKey = 'lsa:purchase:v2:test-booking';
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
 function run({consent = true, storage = new Map(), results = [204], noPurchase = false,
-    storageFails = false, value = '1090.0', kind, containerId = 'GTM-TEST123'} = {}) {
+    storageFails = false, value = '1090.0', kind, containerId = 'GTM-TEST123',
+    gtmEnabled = 'true', googleEnabled = 'true'} = {}) {
     const handlers = {}, timers = new Map(), scripts = [];
     let nextTimer = 1, acknowledgements = 0;
     const purchase = {dataset: {analyticsValue:value, analyticsTransactionId:'test-booking',
@@ -25,7 +26,8 @@ function run({consent = true, storage = new Map(), results = [204], noPurchase =
         },
         document: {
             cookie:`lsa_cookie_consent=${encodeURIComponent(JSON.stringify({version:1,analytics:consent,marketing:consent}))}`,
-            body:{dataset:{googleIntegrationsEnabled:'true',gtmEnabled:'true',gtmContainerId:containerId,
+            body:{dataset:{googleIntegrationsEnabled:googleEnabled,gtmEnabled,gtmContainerId:containerId,
+                ga4Enabled:'true',ga4MeasurementId:'G-LEGACY123',
                 cookieConsentEnabled:'true',consentModeEnabled:'true'}},
             head:{append:s=>scripts.push(s)},
             createElement:()=>{const s={dataset:{},remove:()=>scripts.splice(scripts.indexOf(s),1)};return s;},
@@ -144,4 +146,37 @@ test('blocked Google remains retryable on a fresh page load',()=>{
 });
 test('invalid purchase on denied page does not load any tracker',()=>{
     const r=run({consent:false,value:'1090,0'});assert.equal(r.scripts.length,0);assert.equal(r.acknowledgements,0);
+});
+
+test('consented purchase retries only the original container without another purchase or legacy config',()=>{
+    const r=run();
+    r.scripts[0].onerror();r.tick(2000);
+    assert.equal(r.scripts.length,1);
+    assert.match(r.scripts[0].src,/\/gtm\.js\?id=GTM-TEST123$/);
+    r.scripts[0].onerror();r.tick(4000);r.scripts[0].onerror();
+    r.context.window.LSAConsent.applyConsent({analytics:true,marketing:true},false);
+    assert.equal(r.scripts.length,0);
+    assert.equal(r.purchases.length,1);
+    assert.equal(r.acknowledgements,0);
+    assert.equal(r.storage.size,0);
+    assert.equal(r.context.window.dataLayer.filter(e=>e.event==='gtm.js').length,1);
+    assert.equal(r.context.window.dataLayer.filter(e=>e[0]==='config'||e[0]==='js').length,0);
+});
+
+test('disabled or invalid container cannot fall back to the retired Google tag',()=>{
+    for(const options of [{gtmEnabled:'false'},{containerId:'invalid'},{googleEnabled:'false'}]){
+        const r=run({...options,noPurchase:true});
+        assert.equal(r.scripts.length,0);
+        assert.equal(r.purchases.length,0);
+        assert.equal(r.context.window.dataLayer.filter(e=>e[0]==='config'||e[0]==='js').length,0);
+    }
+});
+
+test('reapplying consent reuses one container for ordinary browsing',()=>{
+    const r=run({noPurchase:true});
+    r.context.window.LSAConsent.applyConsent({analytics:true,marketing:true},false);
+    assert.equal(r.scripts.length,1);
+    assert.match(r.scripts[0].src,/\/gtm\.js\?id=GTM-TEST123$/);
+    assert.equal(r.purchases.length,0);
+    assert.equal(r.context.window.dataLayer.filter(e=>e.event==='gtm.js').length,1);
 });

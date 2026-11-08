@@ -126,31 +126,12 @@
         if (!googleEnabled) {
             return;
         }
-        const ga4Enabled = body.dataset.ga4Enabled === "true";
         if (!choice.analytics && !choice.marketing) {
             return;
         }
-        if (loadTagManager()) {
-            return;
-        }
-        if (
-            choice.analytics
-            && ga4Enabled
-            && /^G-[A-Z0-9]{4,}$/.test(body.dataset.ga4MeasurementId || "")
-            && !document.querySelector("script[data-lsa-google-script='ga4']")
-        ) {
-            const id = body.dataset.ga4MeasurementId;
-            const script = document.createElement("script");
-            script.async = true;
-            script.dataset.lsaGoogleScript = "ga4";
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
-            document.head.append(script);
-            window.gtag("js", new Date());
-            window.gtag("config", id, {
-                debug_mode: body.dataset.ga4Debug === "true",
-                ...window.LSAMeasurementPrivacy?.fields(),
-            });
-        }
+        // The optimized container owns both Google destinations. Its bounded
+        // retries keep the same dataLayer; never switch to a separate Google tag.
+        loadTagManager();
     }
 
     function applyConsent(choice, emitUpdate) {
