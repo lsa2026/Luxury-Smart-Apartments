@@ -96,7 +96,7 @@ def _request(stay):
 
 def record_in_hostaway(*, request, stay_id, client=None):
     require_operations_access(request)
-    if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED or not settings.HOSTAWAY_DIRECT_CHANNEL_ID:
+    if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED or settings.HOSTAWAY_DIRECT_CHANNEL_ID != 2000:
         raise MorningStayError("ربط إنشاء الحجوزات في هوستاوي غير مفعّل.")
     if client is None:
         with HostawayClient(max_get_attempts=1, timeout=10) as remote:
@@ -108,6 +108,8 @@ def record_in_hostaway(*, request, stay_id, client=None):
             return operation["reservation_id"]
         if operation:
             raise MorningStayError("توجد عملية ربط سابقة؛ راجع نتيجتها ولا تنشئ حجزًا مكررًا.")
+        if stay.environment != settings.HYPERPAY_ENVIRONMENT:
+            raise MorningStayError("بيئة الحجز لا تطابق بيئة التشغيل الحالية.")
         if stay.status != "paid" or not stay.paid_at:
             raise MorningStayError("وثّق استلام كامل مبلغ الحجز الصباحي قبل تسجيله في هوستاوي.")
         if stay.attempts.filter(status__in=UNRESOLVED).exists():

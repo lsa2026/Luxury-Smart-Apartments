@@ -141,6 +141,12 @@ jobs:
       - name: Generate an ephemeral test-only Django secret
         run: python -c 'import os,secrets; open(os.environ["GITHUB_ENV"], "a").write("DJANGO_SECRET_KEY=" + secrets.token_urlsafe(64) + "\n")'
 
+      - name: Run Ruff lint
+        run: ruff check .
+
+      - name: Verify Ruff formatting
+        run: ruff format --diff .
+
       - name: Run tests
         run: pytest
 
@@ -213,12 +219,6 @@ jobs:
 
       - name: Test consented GA4 UPD and purchase isolation
         run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/purchase-delivery.test.cjs tests/meta-measurement.test.cjs
-
-      - name: Run Ruff lint
-        run: ruff check .
-
-      - name: Verify Ruff formatting
-        run: ruff format --diff .
 
       - name: Run Django system checks
         run: python manage.py check

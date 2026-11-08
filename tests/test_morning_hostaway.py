@@ -107,7 +107,37 @@ def test_0500_immediate_admin_stay_can_be_recorded_as_yesterday_without_public_r
             client=remote,
         )
     assert stay.starts_at.astimezone(ZONE).date() == day
-    assert not booking_state(stay)
+    MorningStay.objects.filter(pk=stay.pk).update(status="paid", paid_at=now)
+    snapshot = HostawayReservationSnapshot(
+        reservation_id=99882,
+        listing_map_id=p.hostaway_listing_map_id,
+        channel_id=2000,
+        status="new",
+        check_in=day - timedelta(days=1),
+        check_out=day,
+        guests=1,
+        currency="SAR",
+        total_price=Decimal("500"),
+        payment_status="",
+        source=PROVIDER,
+        updated_at=None,
+    )
+    remote.create_reservation_with_price_details.return_value = SimpleNamespace(snapshot=snapshot)
+    with patch("django.utils.timezone.now", return_value=now):
+        assert record_in_hostaway(
+            request=request_for(stay), stay_id=stay.pk, client=remote
+        ) == 99882
+    wire = remote.create_reservation_with_price_details.call_args.args[0].to_payload()
+    assert wire["arrivalDate"] == (day - timedelta(days=1)).isoformat()
+    assert wire["departureDate"] == day.isoformat()
+    from apps.reservations.services.availability import AvailabilityRequest, AvailabilityService
+
+    result = AvailabilityService._validate_request(
+        AvailabilityRequest(
+            property=p, check_in=day - timedelta(days=1), check_out=day, guests=1
+        )
+    )
+    assert result.code == "past_check_in"
 
 
 def test_unpaid_or_unauthorized_recording_never_calls_hostaway():
@@ -245,3 +275,10 @@ def test_parallel_recording_has_one_provider_post():
             outcomes = list(pool.map(lambda _: run(), range(2)))
     assert 99881 in outcomes
     assert remote.create_reservation_with_price_details.call_count == 1
+
+def test_different_payment_environment_is_not_recorded(settings):
+    stay, remote, _ = paid()
+    settings.HYPERPAY_ENVIRONMENT = "another-environment"
+    with pytest.raises(MorningStayError, match="بيئة"):
+        record_in_hostaway(request=request_for(stay), stay_id=stay.pk, client=remote)
+    remote.create_reservation_with_price_details.assert_not_called()
