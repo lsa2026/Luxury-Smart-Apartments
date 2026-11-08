@@ -140,7 +140,11 @@ class CloudMirror:
             cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
             return self._read(cursor)
 
-    def update(self, snapshot):
+    def update(self, snapshot, *, replacement_request_id=""):
+        if replacement_request_id and not re.fullmatch(
+            r"owner-[a-zA-Z0-9-]{10,100}", replacement_request_id
+        ):
+            _reject("invalid_owner_replacement_request")
         validate(snapshot)
         if snapshot["source_id"] != self.source_id:
             _reject("different_source")
@@ -150,8 +154,29 @@ class CloudMirror:
             rows[table].append((f"{row['model']}:{row['pk']}", Jsonb(row)))
         with self._connect() as db, db.cursor() as cursor:
             # The pre-provisioned singleton locks even the FIRST update.
-            previous = self._read(cursor, lock=True)
-            compare(previous, snapshot)
+            if replacement_request_id:
+                cursor.execute(
+                    f"SELECT payload, project_ref, format_version FROM {SCHEMA}.manifest "
+                    "WHERE id=1 FOR UPDATE"
+                )
+                header = cursor.fetchone()
+                if header is None or header[1:] != (PROJECT, 1):
+                    _reject("cloud_schema_not_provisioned")
+                if header[0] is not None and header[0].get("source_id") != self.source_id:
+                    _reject("different_source")
+            else:
+                previous = self._read(cursor, lock=True)
+                compare(previous, snapshot)
+            cursor.execute(f"SELECT payload FROM {SCHEMA}.status WHERE id=1 FOR UPDATE")
+            status_row = cursor.fetchone()
+            previous_status = status_row[0] if status_row else {}
+            if replacement_request_id:
+                if previous_status.get("owner_replacement_id") == replacement_request_id:
+                    return {"already_completed": True}
+                # Explicit owner replacement only: remove stale rows atomically with
+                # the validated new snapshot. Any write/readback/commit failure rolls back.
+                for table in TABLES:
+                    cursor.execute(f"DELETE FROM {SCHEMA}.{table}")
             for table in TABLES:
                 if rows[table]:
                     cursor.executemany(
@@ -177,6 +202,8 @@ class CloudMirror:
                 "counts": result["counts"],
                 "program_balance": result["program_balance"],
                 "error_code": "",
+                "owner_replacement_id": replacement_request_id
+                or previous_status.get("owner_replacement_id", ""),
             }
             cursor.execute(f"UPDATE {SCHEMA}.status SET payload=%s WHERE id=1", (Jsonb(status),))
         # Only record success locally AFTER destination commit has succeeded.
@@ -196,12 +223,12 @@ class CloudMirror:
         except BackupError:
             pass  # Source-side alert survives a destination outage.
 
-    def run(self):
+    def run(self, *, replacement_request_id=""):
         if connections["default"].vendor != "postgresql":
             _reject("cloud_requires_production_source")
         try:
             snapshot = capture(source_id=self.source_id)
-            return self.update(snapshot)
+            return self.update(snapshot, replacement_request_id=replacement_request_id)
         except Exception as exc:
             code = exc.code if isinstance(exc, BackupError) else "source_capture_failed"
             self.failed(code)

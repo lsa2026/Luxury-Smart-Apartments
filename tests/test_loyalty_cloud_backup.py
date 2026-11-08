@@ -60,6 +60,9 @@ class FakeCursor:
             self.result = sorted(copy.deepcopy(state[table]).items())
         elif query.startswith("SELECT payload FROM"):
             self.result = [(copy.deepcopy(state["status"]),)]
+        elif query.startswith("DELETE FROM "):
+            table = query.split("FROM ")[1].split()[0].split(".")[1]
+            state[table] = {}
         elif query.startswith("UPDATE "):
             table = query.split()[1].split(".")[1]
             state[table] = copy.deepcopy(params[0].obj)
@@ -303,3 +306,112 @@ def test_missing_cloud_connection_notifies_admin_without_reading_source(settings
             daily_backup_task.run()
         source.assert_not_called()
     assert Notification.objects.filter(related_object_type="LoyaltyBackup").exists()
+
+
+def test_owner_replacement_removes_incompatible_copy_and_is_idempotent(sequence, cloud):
+    mirror, store = cloud
+    good = snapshot()
+    mirror.update(good)
+    store.state["manifest"]["schema"] = "old-incompatible-schema"
+    store.state["context"]["discarded-old-key"] = {"old": True}
+    with pytest.raises(BackupError) as error:
+        mirror.read()
+    assert error.value.code == "incompatible_snapshot_schema"
+    request = "owner-20261108-replace-partial"
+    mirror.update(good, replacement_request_id=request)
+    assert mirror.read() == good
+    assert "discarded-old-key" not in store.state["context"]
+    assert store.state["status"]["owner_replacement_id"] == request
+    before = copy.deepcopy(store.state)
+    assert mirror.update(good, replacement_request_id=request) == {"already_completed": True}
+    assert store.state == before
+    mirror.update(good)
+    assert store.state["status"]["owner_replacement_id"] == request
+    assert mirror.update(good, replacement_request_id=request) == {"already_completed": True}
+
+
+@pytest.mark.parametrize("fail_at", ["members", "referrals", "ledger", "context", "commit"])
+def test_owner_replacement_failure_preserves_old_copy(sequence, cloud, fail_at):
+    mirror, store = cloud
+    good = snapshot()
+    mirror.update(good)
+    store.state["manifest"]["schema"] = "old-incompatible-schema"
+    before = copy.deepcopy(store.state)
+    if fail_at == "commit":
+        store.fail_commit = True
+    else:
+        store.fail_table = fail_at
+    with pytest.raises(BackupError) as error:
+        mirror.update(good, replacement_request_id="owner-20261108-replace-partial")
+    assert error.value.code == "cloud_io_failed"
+    assert store.state == before
+
+
+def test_owner_replacement_never_accepts_other_source_or_invalid_snapshot(sequence, cloud):
+    mirror, store = cloud
+    good = snapshot()
+    mirror.update(good)
+    before = copy.deepcopy(store.state)
+    broken = copy.deepcopy(good)
+    broken["digest"] = "not-a-valid-seal"
+    with pytest.raises(BackupError):
+        mirror.update(broken, replacement_request_id="owner-20261108-replace-partial")
+    assert store.state == before
+    store.state["manifest"]["source_id"] = "another-production-source"
+    before = copy.deepcopy(store.state)
+    with pytest.raises(BackupError) as error:
+        mirror.update(good, replacement_request_id="owner-20261108-replace-partial")
+    assert error.value.code == "different_source"
+    assert store.state == before
+
+
+def test_owner_request_is_disabled_without_matching_worker_environment(monkeypatch):
+    from apps.loyalty.tasks import owner_replace_backup_task
+
+    monkeypatch.delenv("LSA_LOYALTY_REPLACEMENT_REQUEST", raising=False)
+    with patch("apps.loyalty.cloud_backup.capture") as source:
+        assert owner_replace_backup_task.run("owner-20261108-replace-partial") == {
+            "status": "disabled"
+        }
+        source.assert_not_called()
+
+
+def test_worker_startup_only_queues_explicit_owner_request(monkeypatch):
+    from unittest.mock import Mock
+
+    from config.celery import queue_owner_backup_replacement
+
+    sender = Mock()
+    monkeypatch.delenv("LSA_LOYALTY_REPLACEMENT_REQUEST", raising=False)
+    queue_owner_backup_replacement(sender=sender)
+    sender.app.send_task.assert_not_called()
+    request = "owner-20261108-replace-partial"
+    monkeypatch.setenv("LSA_LOYALTY_REPLACEMENT_REQUEST", request)
+    queue_owner_backup_replacement(sender=sender)
+    sender.app.send_task.assert_called_once_with(
+        "apps.loyalty.tasks.owner_replace_backup_task",
+        kwargs={"request_id": request},
+        task_id=f"{request}-backup",
+    )
+
+
+def test_backup_schedule_moves_only_existing_backup_to_eight():
+    from scheduler_runtime.schedule import build_beat_schedule
+
+    values = {
+        "LOYALTY_BACKUP_ENABLED": True,
+        "HOSTAWAY_AUTO_SYNC_ENABLED": False,
+        "HOSTAWAY_PRICE_CALENDAR_SYNC_ENABLED": False,
+        "HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED": False,
+        "HOSTAWAY_WEBHOOK_PROCESSING_ENABLED": False,
+        "BOOKING_EXPIRATION_INTERVAL_MINUTES": 5,
+        "TRUSTINDEX_REVIEW_SYNC_ENABLED": True,
+        "CELERY_SYNC_DISPATCH_ENABLED": False,
+        "EMAIL_TASK_SCHEDULE_ENABLED": True,
+    }
+    schedule = build_beat_schedule(values)
+    assert schedule["loyalty-daily-backup"]["schedule"].hour == {8}
+    assert schedule["loyalty-daily-backup"]["schedule"].minute == {0}
+    assert schedule["trustindex-review-metrics"]["schedule"].hour == {17}
+    assert schedule["daily-operations-summary"]["schedule"].hour == {8}
+    assert sum(e["task"] == "apps.loyalty.tasks.daily_backup_task" for e in schedule.values()) == 1
