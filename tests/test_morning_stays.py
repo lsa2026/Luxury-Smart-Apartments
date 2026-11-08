@@ -453,6 +453,8 @@ def test_admin_navigation_and_real_create_form_are_private():
                 guest_email="morning@example.test",
                 guests=2,
                 amount_sar="500",
+                confirm_hostaway="on",
+                **billing(),
             ),
         )
     assert response.status_code == 302

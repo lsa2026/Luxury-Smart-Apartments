@@ -7,7 +7,7 @@
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>{{ title }}</h1><p>دخول بعد منتصف الليل وخروج حتى ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
   <section class="lsa-panel">
-    {% if editing %}<p>حدّث بيانات الضيف أو فترة الإقامة. يُعاد فحص التوفر عند تغيير الشقة أو الفترة. يبقى المبلغ المدفوع كما هو.</p>{% else %}<p>سجّل بيانات الضيف والمبلغ المعتمد شاملًا الرسوم. يُفحص التوفر قبل تجهيز رابط الدفع، ولا يُنشأ حجز في Hostaway.</p>{% endif %}
+    {% if editing %}<p>حدّث بيانات الضيف أو فترة الإقامة. يُعاد فحص التوفر عند تغيير الشقة أو الفترة. يبقى المبلغ المدفوع كما هو.</p>{% else %}<p>افحص التوفر واختر الشقة، ثم أكمل بيانات الضيف والعنوان والمبلغ. تأكيدك ينشئ الحجز مباشرة في Hostaway ويبدأ رحلة التواصل عبر n8n؛ حالة السداد مستقلة.</p>{% endif %}
     <p>توقيت شقق الرياض: Asia/Riyadh. توقيت شقق مراكش: Africa/Casablanca. المبلغ المطلوب أدناه بالريال السعودي.</p>
     <form method="post" class="lsa-manual-booking-form lsa-morning-form" data-morning-validation data-draft-server-bound="{{ form.is_bound|yesno:'true,false' }}"{% if not editing %} data-morning-availability="{% url 'notifications:morning_available_properties' %}"{% endif %}>
       {% csrf_token %}{{ form.non_field_errors }}{% for field in form.hidden_fields %}{{ field }}<p id="{{ field.auto_id }}_help" class="morning-field-help"><strong>{{ field.help_text }}</strong></p><div id="{{ field.auto_id }}_error" class="form-error" aria-live="polite">{{ field.errors }}</div>{% endfor %}
@@ -33,9 +33,9 @@
         </div>{{ field.errors }}<p id="guest-phone-help">{{ field.help_text }}</p><p id="guest-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
       </div>
       {% elif field.name != 'guest_phone_country' and field.name|slice:':8' != 'billing_' %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<p id="{{ field.auto_id }}_help" class="morning-field-help"><strong>{{ field.help_text }}</strong></p><div id="{{ field.auto_id }}_error" class="form-error" aria-live="polite">{{ field.errors }}</div></div>{% endif %}{% endfor %}</div>
-      {% if not editing %}<fieldset class="morning-address-fields"><legend>عنوان الفوترة المرتبط ببطاقة الضيف (اختياري عند إنشاء الطلب)</legend><p>ابحث عن العنوان واختر الاقتراح، ثم راجع الحقول المكتملة أدناه. يمكنك إدخالها يدويًا أيضًا.</p>{% include 'payments/_morning_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
+      {% if not editing %}<fieldset class="morning-address-fields"><legend>عنوان الضيف — مطلوب لتأكيد الحجز</legend><p>ابحث عن العنوان واختر الاقتراح، ثم راجع الحقول المكتملة أدناه. يمكنك إدخالها يدويًا أيضًا.</p>{% include 'payments/_morning_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
       {% if editing %}<p>سيُرسل تحديث الحجز وتُحدّث التذكيرات بحسب بيانات الحجز الجديدة.</p>{% else %}<p>رابط السداد ثابت دون مهلة انتهاء زمنية، ويعاد فحص التوفر قبل الدفع. أدخل عنوان الفوترة المرتبط ببطاقة الضيف ليكتفي بمراجعته والموافقة على الشروط. فتح الرابط وحده لا يحصّل مبلغًا.</p>{% endif %}
-      <button type="submit" class="lsa-btn lsa-btn--gold"{% if not editing %} name="action" value="create_and_send"{% endif %}>{% if editing %}حفظ تعديل الحجز{% else %}إرسال تفاصيل الحجز ورابط الدفع إلى الضيف عبر واتساب{% endif %}</button>
+      <button type="submit" class="lsa-btn lsa-btn--gold"{% if not editing %} name="action" value="confirm_hostaway"{% endif %}>{% if editing %}حفظ تعديل الحجز{% else %}تأكيد الحجز وإنشاؤه في Hostaway{% endif %}</button>
     </form>
   </section>
 </main>

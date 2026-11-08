@@ -1,5 +1,11 @@
 # Independent morning stays
 
+Current private creation follows the manager-confirmed Hostaway-first flow in
+`morning-hostaway.md`: full guest/address data, explicit confirmation, immediate
+Hostaway recording and a version 2 Morning07 handoff before payment. The original
+independent allocation/payment flow below remains applicable to historical stays;
+it is not the current create-screen behavior. Public overnight checkout is unchanged.
+
 Only booking management exposes **إنشاء حجز صباحي**. An authorized
 operations user selects the apartment, one local calendar date, arrival after
 00:00, departure strictly before 12:00, full guest name, international phone,

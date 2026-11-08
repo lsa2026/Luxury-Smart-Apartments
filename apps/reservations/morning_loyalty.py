@@ -79,9 +79,15 @@ def invite(request):
         or type(body["core_delivered"]) is not bool
     ):
         return JsonResponse({"code": "invalid_request"}, status=400)
-    if stay.status != "paid" or stay.ends_at <= timezone.now():
+    return invite_paid_booking(stay, revision, core_claimed=body["core_delivered"])
+
+
+def invite_paid_booking(stay, revision, *, core_claimed=True):
+    from .morning07_communications import verified_payment
+
+    if stay.status != "paid" or stay.ends_at <= timezone.now() or not verified_payment(stay):
         return JsonResponse({"code": "not_eligible"})
-    if not body["core_delivered"]:
+    if not core_claimed:
         return JsonResponse({"code": "core_pending"})
     if not ready():
         return JsonResponse({"code": "programme_unavailable"})
@@ -135,3 +141,21 @@ def invite(request):
         return JsonResponse({"code": state})
     except (ValueError, ValidationError):
         return JsonResponse({"code": "eligibility_unverified"})
+
+
+def queue_paid_invitation(stay):
+    """One stay after collection; use the same invitation registry and receipts as n8n."""
+    from django.db import transaction
+
+    from .morning07_communications import verified_booking, verified_payment
+    from .tasks import invite_paid_morning
+
+    if (
+        settings.MORNING07_N8N_ENABLED
+        and stay.environment == "production"
+        and stay.status == "paid"
+        and stay.ends_at > timezone.now()
+        and verified_booking(stay)
+        and verified_payment(stay)
+    ):
+        transaction.on_commit(lambda: invite_paid_morning.delay(str(stay.pk)), robust=True)

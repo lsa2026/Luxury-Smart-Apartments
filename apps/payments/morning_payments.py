@@ -46,6 +46,10 @@ def resolve_token(token):
 
 
 def require_payable(stay):
+    from apps.reservations.morning_hostaway import booking_state, hostaway_first
+
+    if hostaway_first(stay) and booking_state(stay).get("state") != "confirmed":
+        raise HyperPayCheckoutError("morning_booking_not_confirmed")
     if not settings.HYPERPAY_ENABLED or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise HyperPayCheckoutError("morning_payment_unavailable")
     # The signed link has no clock expiry. The short allocation hold is separate.
@@ -100,6 +104,7 @@ def create_checkout(
         client=hostaway,
         allow_started=True,
         allow_elapsed=True,
+        linked_stay=stay if (stay.availability_evidence or {}).get("hostaway_morning") else None,
     )
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=stay.property_id)
@@ -136,7 +141,7 @@ def create_checkout(
         )
         stay.status = "processing"
         stay.legal_acceptance = acceptance
-        stay.availability_evidence = evidence
+        stay.availability_evidence = {**(stay.availability_evidence or {}), **evidence}
         stay.availability_checked_at = timezone.now()
         stay.save(
             update_fields=[

@@ -59,6 +59,7 @@ jobs:
           tests/test_morning_payment_messages.py
           tests/test_morning_stays.py
           tests/test_morning_hostaway.py
+          tests/test_morning_hostaway_first.py
           tests/test_morning_hyperpay_validation.py
           tests/test_morning_offline_receipts.py
           tests/test_morning_owner_payment_policy.py
@@ -182,7 +183,7 @@ jobs:
         run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
 
       - name: Test noon morning communication contract
-        run: node --test tests/morning-noon-contract.test.cjs
+        run: node --test tests/morning-noon-contract.test.cjs tests/morning-hostaway-first.test.cjs
       - name: Test independent morning communication and delivery evidence
         run: node --test scripts/automation07/test.cjs
 
