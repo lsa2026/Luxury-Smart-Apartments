@@ -1,4 +1,22 @@
 .lsa-morning-form { max-width: 960px; }
+.lsa-morning-form .morning-phone-row { grid-column: 1 / -1; }
+.morning-address-fields { min-width: 0; margin: 24px 0; padding: 20px; border: 1px solid var(--lsa-line); border-radius: 16px; }
+.morning-address-fields legend { font-weight: 700; }
+.morning-address-fields .form-field { min-width: 0; }
+.morning-address-fields input, .morning-address-fields select { box-sizing: border-box; width: 100%; max-width: 100%; min-height: 48px; font-size: 16px; }
+.morning-stays-table td, .morning-stays-table th { line-height: 1.7; }
+.lsa-table-scroll .morning-stays-table { min-width: 0; width: 100%; }
+.morning-address-fields .guest-journey__billing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
+@media (max-width: 767px) {
+  .morning-address-fields .guest-journey__billing-grid { grid-template-columns: minmax(0, 1fr); }
+  .morning-stays-table, .morning-stays-table tbody { display: block; width: 100%; }
+  .morning-stays-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .morning-stays-table tr { display: block; margin-block: 12px; padding: 16px; border: 1px solid var(--lsa-line); border-radius: 14px; background: var(--lsa-paper); }
+  .morning-stays-table td { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 12px; padding: 10px 0; border: 0; white-space: normal; overflow-wrap: anywhere; font-size: 16px; text-align: right; }
+  .morning-stays-table td::before { content: attr(data-label); font-weight: 600; color: var(--lsa-ink); }
+  .morning-stays-table td:first-child a { font-size: 19px; font-weight: 800; display: block; min-height: 44px; line-height: 1.65; }
+  .morning-address-fields { padding: 14px; }
+}
 .lsa-morning-form .lsa-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
 .lsa-morning-form .form-row { display: grid; gap: 8px; padding: 0; border: 0; min-width: 0; }
 .lsa-morning-form .form-row label { font-weight: 700; color: var(--lsa-ink); }
