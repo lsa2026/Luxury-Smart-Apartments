@@ -6,6 +6,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
+from django.utils.html import escape
 
 from apps.accounts.models import OperationsManager
 from apps.core.models import ContactMessage
@@ -89,7 +90,7 @@ def test_contacts_remain_private_and_hidden_from_scoped_managers(settings):
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
 @pytest.mark.parametrize("legacy", [False, True])
-def test_contact_alert_links_to_private_record_without_copying_contact_data(
+def test_contact_alert_includes_message_only_for_operations_and_links_to_private_record(
     settings, owner_client, language, legacy
 ):
     settings.NOTIFICATIONS_ENABLED = True
@@ -129,10 +130,84 @@ def test_contact_alert_links_to_private_record_without_copying_contact_data(
             request.context["action_url"] in html and request.context["action_url"] in rendered.body
         )
         for value in (contact.name, contact.email, contact.phone, contact.message):
-            assert value not in html and value not in rendered.body
+            if legacy:
+                assert value not in html and value not in rendered.body
+            else:
+                assert value in html and value in rendered.body
+        if not legacy:
+            assert contact.subject in html and contact.subject in rendered.body
         assert owner_client.get(path).status_code == 200
         assert send_queued_email(delivery.pk).code == "already_sent"
         send.assert_called_once()
     confirmation = EmailDelivery.objects.get(message_type="contact_confirmation")
     assert confirmation.recipient_source == "contact"
     assert confirmation.recipient_reference == str(contact.pk)
+    with patch("apps.notifications.services.email.DjangoEmailProvider.send") as send:
+        send.return_value = EmailSendResult(True, "sent")
+        assert send_queued_email(confirmation.pk).sent
+        request = send.call_args.args[0]
+        assert request.recipient == contact.email
+        assert "contact_message" not in request.context
+        rendered = build_guest_email(request)
+        assert contact.message not in rendered.body
+        assert contact.message not in rendered.alternatives[0].content
+
+
+def test_contact_alert_escapes_html_and_preserves_full_multiline_message(settings, owner_client):
+    settings.OPERATIONS_EMAIL = "operations@example.invalid"
+    settings.EMAIL_DELIVERY_ENABLED = True
+    contact = make_contact(
+        name='<img src=x onerror="alert(1)">',
+        subject="<script>subject</script>",
+        message="<script>message</script>\nSecond line\n" + "تفاصيل " * 800 + "END-OF-MESSAGE",
+    )
+    with patch("apps.notifications.services.email._dispatch_email_delivery"):
+        from apps.notifications.services.email import queue_email
+
+        delivery = queue_email(
+            message_type="contact_admin_alert",
+            recipient=settings.OPERATIONS_EMAIL,
+            recipient_source="operations",
+            recipient_reference=str(contact.pk),
+            language="ar",
+            idempotency_key=f"synthetic-contact-alert:{contact.pk}",
+        )
+    with patch("apps.notifications.services.email.DjangoEmailProvider.send") as send:
+        from apps.notifications.services.email import EmailSendResult
+
+        send.return_value = EmailSendResult(True, "sent")
+        assert send_queued_email(delivery.pk).sent
+        rendered = build_guest_email(send.call_args.args[0])
+    html = rendered.alternatives[0].content
+    assert escape(contact.name) in html and escape(contact.subject) in html
+    assert "<script>" not in html and "<img src=x" not in html
+    assert "&lt;script&gt;message&lt;/script&gt;<br>Second line<br>" in html
+    assert "END-OF-MESSAGE" in html and contact.message in rendered.body
+
+
+def test_contact_alert_for_removed_record_links_to_inbox_without_guessing_content(
+    settings, owner_client
+):
+    settings.OPERATIONS_EMAIL = "operations@example.invalid"
+    settings.EMAIL_DELIVERY_ENABLED = True
+    contact = make_contact()
+    with patch("apps.notifications.services.email._dispatch_email_delivery"):
+        from apps.notifications.services.email import queue_email
+
+        delivery = queue_email(
+            message_type="contact_admin_alert",
+            recipient=settings.OPERATIONS_EMAIL,
+            recipient_source="operations",
+            recipient_reference=str(contact.pk),
+            language="ar",
+            idempotency_key=f"synthetic-contact-removed:{contact.pk}",
+        )
+    contact.delete()
+    with patch("apps.notifications.services.email.DjangoEmailProvider.send") as send:
+        from apps.notifications.services.email import EmailSendResult
+
+        send.return_value = EmailSendResult(True, "sent")
+        assert send_queued_email(delivery.pk).sent
+    context = send.call_args.args[0].context
+    assert context["contact_message"] is None
+    assert context["action_url"].endswith(reverse("admin:core_contactmessage_changelist"))
