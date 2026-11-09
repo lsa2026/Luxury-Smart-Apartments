@@ -984,12 +984,53 @@ def _resolve_recipient(delivery: EmailDelivery) -> tuple[str, dict[str, Any]]:
         if not settings.OPERATIONS_EMAIL:
             raise EmailProviderError("operations_email_not_configured", permanent=True)
         if delivery.message_type == "contact_admin_alert":
-            # Older queued notices used "operations"; they can still open the inbox.
+            from apps.core.models import ContactMessage
+
+            # Resolve private content only for the operations recipient at send time.
+            # Legacy notices without a message ID can still open the inbox.
             reference = delivery.recipient_reference
             path = reverse("admin:core_contactmessage_changelist")
+            contact = None
             if reference.isdecimal() and int(reference) > 0:
-                path = reverse("admin:core_contactmessage_change", args=[int(reference)])
+                contact = ContactMessage.objects.filter(pk=int(reference)).first()
+            if contact is not None:
+                path = reverse("admin:core_contactmessage_change", args=[contact.pk])
+            labels = {
+                "ar": {
+                    "name": "المرسل",
+                    "email": "البريد الإلكتروني",
+                    "phone": "رقم الجوال",
+                    "subject": "الموضوع",
+                    "body": "نص الرسالة",
+                },
+                "en": {
+                    "name": "Sender",
+                    "email": "Email",
+                    "phone": "Phone",
+                    "subject": "Subject",
+                    "body": "Message",
+                },
+                "fr": {
+                    "name": "Expéditeur",
+                    "email": "Adresse e-mail",
+                    "phone": "Téléphone",
+                    "subject": "Objet",
+                    "body": "Message",
+                },
+            }
             return settings.OPERATIONS_EMAIL, {
+                "contact_message": (
+                    {
+                        "name": contact.name,
+                        "email": contact.email,
+                        "phone": contact.phone,
+                        "subject": contact.subject,
+                        "body": contact.message,
+                    }
+                    if contact is not None
+                    else None
+                ),
+                "contact_labels": labels.get(delivery.language, labels["ar"]),
                 "action_url": f"{settings.SITE_BASE_URL.rstrip('/')}{path}",
                 "action_label": {
                     "ar": "عرض رسالة التواصل",

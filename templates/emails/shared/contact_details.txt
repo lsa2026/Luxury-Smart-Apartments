@@ -1,0 +1,11 @@
+{% if contact_message %}
+{% autoescape off %}
+{{ contact_labels.name }}: {{ contact_message.name }}
+{{ contact_labels.email }}: {{ contact_message.email }}
+{% if contact_message.phone %}{{ contact_labels.phone }}: {{ contact_message.phone }}
+{% endif %}{{ contact_labels.subject }}: {{ contact_message.subject }}
+
+{{ contact_labels.body }}:
+{{ contact_message.body }}
+{% endautoescape %}
+{% endif %}

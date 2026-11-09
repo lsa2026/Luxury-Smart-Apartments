@@ -2,6 +2,7 @@
 
 {{ heading }}
 {{ message }}
+{% include "emails/shared/contact_details.txt" %}
 {% if reply_body %}
 {{ reply_body }}
 {% endif %}

@@ -1,0 +1,12 @@
+{% if contact_message %}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:18px 0;border:1px solid #e5ddce;border-radius:8px">
+<tr><td style="padding:16px;overflow-wrap:anywhere;word-break:break-word">
+<p style="margin:0 0 8px"><strong>{{ contact_labels.name }}:</strong> <span dir="auto">{{ contact_message.name }}</span></p>
+<p style="margin:0 0 8px"><strong>{{ contact_labels.email }}:</strong> <span dir="ltr" style="display:inline-block;unicode-bidi:isolate">{{ contact_message.email }}</span></p>
+{% if contact_message.phone %}<p style="margin:0 0 8px"><strong>{{ contact_labels.phone }}:</strong> <span dir="ltr" style="display:inline-block;unicode-bidi:isolate">{{ contact_message.phone }}</span></p>{% endif %}
+<p style="margin:0 0 16px"><strong>{{ contact_labels.subject }}:</strong> <span dir="auto">{{ contact_message.subject }}</span></p>
+<p style="margin:0 0 8px"><strong>{{ contact_labels.body }}</strong></p>
+<div dir="auto" style="line-height:1.9;overflow-wrap:anywhere;word-break:break-word">{{ contact_message.body|linebreaksbr }}</div>
+</td></tr>
+</table>
+{% endif %}
