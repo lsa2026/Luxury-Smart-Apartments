@@ -21,10 +21,15 @@
             {% if site_setting.contact_email %}
             <a class="contact-channel" href="mailto:{{ site_setting.contact_email }}">
                 <span aria-hidden="true">@</span>
-                <small>{% trans "Email" %}</small>
+                <small>{% if current_language_code == "ar" %}الاستفسارات والتواصل العام{% elif current_language_code == "fr" %}Renseignements généraux{% else %}General enquiries{% endif %}</small>
                 <strong>{{ site_setting.contact_email }}</strong>
             </a>
             {% endif %}
+            <a class="contact-channel" href="mailto:{{ reservations_email }}">
+                <span aria-hidden="true">@</span>
+                <small>{% if current_language_code == "ar" %}الحجوزات{% elif current_language_code == "fr" %}Réservations{% else %}Reservations{% endif %}</small>
+                <strong>{{ reservations_email }}</strong>
+            </a>
             {% if site_setting.contact_phone %}
             <a class="contact-channel" href="tel:{{ site_setting.contact_phone }}" data-analytics-event="phone_click" data-analytics-lead-source="contact_page" data-analytics-contact-placement="contact_page" data-analytics-language="{{ current_language_code }}">
                 <span aria-hidden="true">☎</span>

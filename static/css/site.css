@@ -2534,7 +2534,7 @@ h2 {
 
 .footer-contact-bar {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 1rem;
     margin-block: 0 3.25rem;
     border: 1px solid rgb(255 255 255 / 9%);

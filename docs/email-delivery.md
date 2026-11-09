@@ -135,3 +135,24 @@ Invoice attachment and download names use `Invoice-<platform-reference>.pdf`.
 Unsafe or missing references fall back to `Invoice.pdf`; internal invoice numbers
 and Hostaway IDs remain internal. Renaming the attachment never changes frozen
 PDF bytes, issuance timestamps, totals, currency, or booking/payment state.
+# Public contact aliases — 9 November 2026
+
+General enquiries use `info@luxurysmartapartments.com`; reservations use
+`reservations@luxurysmartapartments.com`. Both are approved aliases of the existing
+business mailbox. The footer, contact page and Organization contact points expose
+the two purposes separately in Arabic, English and French. Migration 0026 replaces
+only the former owner address in public site settings and editable public copy.
+
+Guest email presentation and Reply-To translate the former owner address to the
+appropriate alias. Booking, reservation, modification and invoice templates use
+reservations; general contact and account correspondence use info. Explicitly
+configured addresses outside these business addresses remain unchanged. SMTP
+credentials, From identity, internal alert recipients and the owner's login email
+are unchanged. Contact forms retain their existing inbox and notification routing
+to the same underlying mailbox; no additional forwarding rule is required.
+
+Guest document revision `2026-11-09.1` changes only contact details and the issue
+date. Stored consent snapshots and earlier correspondence are not rewritten.
+Alias creation was read back in Google Admin, but external delivery was not tested;
+Google's stated propagation window can be up to 24 hours. Publication verification
+does not establish email delivery or Send As configuration.

@@ -21,7 +21,7 @@ def test_reference_contact_details_and_public_pages_are_seeded() -> None:
 
     setting = SiteSetting.objects.get()
     assert setting.brand_name_ar == "Luxury Smart Apartments"
-    assert setting.contact_email == "saeed@luxurysmartapartments.com"
+    assert setting.contact_email == "info@luxurysmartapartments.com"
     assert setting.contact_phone == "+966501205651"
     assert setting.public_address_ar == "الرياض، المملكة العربية السعودية"
     assert setting.instagram_url.endswith("/luxury_smart_apartments/")
@@ -35,7 +35,7 @@ def test_legal_content_is_structured_and_no_longer_a_placeholder() -> None:
     assert "مقدم الخدمة ونطاق الشروط" in content
     assert "نسخة أولية للمراجعة القانونية" not in content
     assert VERSION in content
-    assert "٥ أكتوبر ٢٠٢٦" in content
+    assert "٩ نوفمبر ٢٠٢٦" in content
     assert "<h2>" in content
 
 
@@ -46,7 +46,7 @@ def test_contact_copy_and_contact_details_are_dashboard_backed() -> None:
 
     content = Client().get("/ar/contact/").content.decode()
     assert "رسالة تواصل قابلة للتعديل من لوحة الإدارة." in content
-    assert "saeed@luxurysmartapartments.com" in content
+    assert "info@luxurysmartapartments.com" in content
     assert "+966501205651" in content
 
 
@@ -85,7 +85,7 @@ def test_footer_uses_layered_luxury_layout_and_dashboard_contact_details() -> No
     assert 'class="container footer-grid"' in content
     assert 'class="footer-contact-bar"' in content
     assert 'class="footer-lower"' in content
-    assert "saeed@luxurysmartapartments.com" in content
+    assert "info@luxurysmartapartments.com" in content
     assert "+966501205651" in content
     assert "css/site.css?v=" in content
 
