@@ -28,6 +28,7 @@ from .hyperpay.service import (
     merchant_transaction_id,
 )
 from .models import PaymentAttempt, ReservationPaymentRequest
+from .morning_validation import RULES, validate_value
 
 SALT = "payments.existing-reservation.v1"
 SETTLED = ("succeeded", "partially_refunded", "refunded")
@@ -254,6 +255,11 @@ def create_request_checkout(request_id, *, billing_data, acceptance, client=None
         "house_rules": True,
     }:
         raise HyperPayCheckoutError("guest_acceptance_required")
+    billing_data = {
+        name: validate_value(name, billing_data.get(name))
+        for name in RULES
+        if name.startswith("billing_")
+    }
     request = ReservationPaymentRequest.objects.get(pk=request_id)
     reservation = validate_open(request)
     # Read an existing reservation, never an availability query or a booking POST.

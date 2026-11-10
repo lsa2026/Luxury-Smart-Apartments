@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.guest_documents import UI, document_language, documents_digest
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
-from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES, normalize_country_code
+from apps.payments.countries import normalize_country_code
 from apps.payments.morning_validation import MorningBillingFields
 
 
@@ -19,7 +19,7 @@ def _clean_text(value: str) -> str:
     return "".join(character for character in without_markup if character.isprintable()).strip()
 
 
-class GuestDetailsForm(forms.Form):
+class GuestDetailsForm(MorningBillingFields):
     guest_first_name = forms.CharField(
         label=_("First name"),
         max_length=100,
@@ -62,44 +62,6 @@ class GuestDetailsForm(forms.Form):
             }
         ),
     )
-    # HyperPay requires the billing address for the 3-D Secure authentication
-    # journey. Keep this as one clear required field rather than letting the
-    # guest discover the requirement only after reaching payment.
-    billing_street1 = forms.CharField(
-        label=_("Street address"),
-        max_length=100,
-        widget=forms.TextInput(attrs={"autocomplete": "address-line1"}),
-    )
-    billing_city = forms.CharField(
-        label=_("City"),
-        max_length=80,
-        widget=forms.TextInput(attrs={"autocomplete": "address-level2"}),
-    )
-    billing_state = forms.CharField(
-        label=_("State or region"),
-        max_length=50,
-        widget=forms.TextInput(attrs={"autocomplete": "address-level1"}),
-    )
-    billing_country = forms.ChoiceField(
-        label=_("Country"),
-        choices=(),
-        widget=forms.Select(
-            attrs={
-                "autocomplete": "country",
-                "data-country-select": "",
-            }
-        ),
-    )
-    billing_postcode = forms.RegexField(
-        label=_("Postal code"),
-        # Preserve legitimate UK/Canadian spaces and US ZIP+4 / Japanese
-        # hyphens. Still reject punctuation, markup and empty postal codes.
-        regex=r"^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$",
-        max_length=16,
-        widget=forms.TextInput(
-            attrs={"autocomplete": "postal-code", "dir": "ltr", "inputmode": "text"}
-        ),
-    )
     special_requests = forms.CharField(
         label=_("Special requests"),
         max_length=1000,
@@ -127,15 +89,11 @@ class GuestDetailsForm(forms.Form):
         **kwargs: object,
     ) -> None:
         self.default_country_code = default_country_code.upper()
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, default_country_code=self.default_country_code, **kwargs)
         self.initial["documents_digest"] = documents_digest()
         self.fields["guest_phone_country"].choices = [
             (code, f"{code} (+{phonenumbers.country_code_for_region(code)})")
             for code in ["SA", *sorted(phonenumbers.SUPPORTED_REGIONS - {"SA"})]
-        ]
-        self.fields["billing_country"].choices = [
-            ("", _("Choose your country")),
-            *((code, code) for code in sorted(ISO_ALPHA2_COUNTRY_CODES)),
         ]
         if not self.is_bound:
             self.initial["idempotency_key"] = secrets.token_urlsafe(32)
@@ -169,12 +127,6 @@ class GuestDetailsForm(forms.Form):
 
     def clean(self) -> dict[str, object]:
         cleaned = super().clean()
-        for name in ("billing_street1", "billing_city", "billing_state"):
-            value = cleaned.get(name)
-            if isinstance(value, str):
-                cleaned[name] = _clean_text(value)
-        if not cleaned.get("billing_city"):
-            self.add_error("billing_city", _("This field is required."))
         phone = cleaned.get("guest_phone")
         phone_country = cleaned.get("guest_phone_country")
         if isinstance(phone, str) and phone_country:

@@ -49,7 +49,13 @@ ACCOUNT_COPY = {
         "english": "English",
         "french": "French",
         "address": "Address — optional",
-        "address_hint": "An address is not required to use your account.",
+        "address_hint": (
+            "Your residence address is optional for your account. Search by short address code "
+            "when available, select a suggestion and review the fields, or enter them manually. "
+            "Payment separately checks the billing address associated with your card."
+        ),
+        "address_field_hint": "Optional residence detail; maximum {limit} characters.",
+        "address_country_hint": "Optional: select the country of your residence address.",
         "country": "Country",
         "city": "City",
         "address_more": "Additional address details",
@@ -116,7 +122,13 @@ ACCOUNT_COPY = {
         "english": "الإنجليزية",
         "french": "الفرنسية",
         "address": "العنوان — اختياري",
-        "address_hint": "العنوان ليس شرطًا لاستخدام حسابك.",
+        "address_hint": (
+            "عنوان إقامتك اختياري لحسابك. ابحث بالعنوان المختصر إن توفر البحث، "
+            "ثم اختر اقتراحًا وراجع الحقول، أو أدخلها يدويًا. "
+            "عند الدفع يُتحقق بصورة مستقلة من عنوان الفوترة المرتبط ببطاقتك."
+        ),
+        "address_field_hint": "بيان اختياري لعنوان الإقامة؛ الحد الأقصى {limit} حرفًا.",
+        "address_country_hint": "اختياري: اختر بلد عنوان إقامتك.",
         "country": "الدولة",
         "city": "المدينة",
         "address_more": "تفاصيل إضافية للعنوان",
@@ -183,7 +195,14 @@ ACCOUNT_COPY = {
         "english": "Anglais",
         "french": "Français",
         "address": "Adresse — facultative",
-        "address_hint": "L’adresse n’est pas nécessaire pour utiliser votre compte.",
+        "address_hint": (
+            "Votre adresse de résidence est facultative. Recherchez le code d’adresse si la "
+            "recherche est disponible, choisissez une suggestion et vérifiez les champs, "
+            "ou saisissez-les manuellement. Le paiement vérifie séparément l’adresse "
+            "de facturation associée à votre carte."
+        ),
+        "address_field_hint": "Détail de résidence facultatif ; maximum {limit} caractères.",
+        "address_country_hint": "Facultatif : choisissez le pays de votre résidence.",
         "country": "Pays",
         "city": "Ville",
         "address_more": "Complément d’adresse",

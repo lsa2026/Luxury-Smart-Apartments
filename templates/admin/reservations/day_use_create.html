@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -10,7 +10,7 @@
   <section class="lsa-panel">
     <p>حدّد يوم الاستخدام وساعات الدخول والخروج وعدد الضيوف، ثم افحص التوفر واختر الشقة. السعر هو سعر يوم الاستخدام مقسومًا على واحد وعشرين، مضروبًا في عدد الساعات ومعامل واحد ونصف.</p>
     <p>يحجب هوستاوي من اليوم السابق إلى اليوم التالي. تُرسل رسائل الحجز ثم رابط الدفع بعد ثبوت تسليم الرسائل الثلاث. يقبل الضيف الشروط بنفسه عند الدفع.</p>
-    <form method="post" data-day-use-availability="{% url 'notifications:day_use_available_properties' %}">{% csrf_token %}
+    <form method="post" data-morning-validation data-day-use-availability="{% url 'notifications:day_use_available_properties' %}">{% csrf_token %}
       {{ form.non_field_errors }}{% for field in form.hidden_fields %}{{ field }}{{ field.errors }}{% endfor %}
       <fieldset><legend>فحص التوفر</legend>
         {% for field in form.visible_fields %}{% if field.name == 'date' or field.name == 'start_time' or field.name == 'end_time' or field.name == 'guests' %}<p>{{ field.label_tag }} {{ field }}{{ field.errors }}</p>{% endif %}{% endfor %}
@@ -20,7 +20,9 @@
         <p data-day-use-price></p>
       </fieldset>
       <fieldset><legend>بيانات الضيف والعنوان</legend>
-        {% for field in form.visible_fields %}{% if field.name != 'date' and field.name != 'start_time' and field.name != 'end_time' and field.name != 'guests' and field.name != 'property' %}<p>{{ field.label_tag }} {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endif %}{% endfor %}
+        {% for field in form.visible_fields %}{% if field.name|slice:':8' != 'billing_' and field.name != 'date' and field.name != 'start_time' and field.name != 'end_time' and field.name != 'guests' and field.name != 'property' and field.name != 'confirm_hostaway' %}<p>{{ field.label_tag }} {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endif %}{% endfor %}
+        {% include 'payments/_morning_billing_fields.html' with guest_form=form %}
+        <p>{{ form.confirm_hostaway }} {{ form.confirm_hostaway.label_tag }} {{ form.confirm_hostaway.errors }}</p>
       </fieldset>
       <button type="submit" data-confirm-day-use disabled>تأكيد السعر وإنشاء الحجز في هوستاوي</button>
     </form>

@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load presentation tz static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -15,6 +16,15 @@
     <p>حالة هوستاوي: {% if operation.state == 'confirmed' %}مؤكد — الرقم {{ operation.reservation_id }}{% elif operation.state == 'cancelled' %}ملغى{% elif operation.state == 'creating' %}جارٍ الإنشاء — لا تكرر الطلب{% elif operation.state == 'failed' %}لم يُرسل طلب إنشاء؛ يحتاج مراجعة{% else %}غير محسومة — راجع هوستاوي ولا تكرر الإنشاء{% endif %}</p>
     <p>مراجعة التواصل: {{ stay.communication_revision }}. قبول خدمة الرسائل لا يثبت تسليمها؛ يراجع المسار الثامن الإيصالات قبل الدفع والولاء.</p>
   </section>
+  <section class="lsa-panel"><details{% if billing_form.errors %} open{% endif %}><summary><strong>عنوان الفوترة — عرض أو تصحيح</strong></summary>
+    <p>يمكن تصحيح العنوان قبل السداد عندما لا توجد محاولة دفع غير محسومة. لا يعيد التصحيح إرسال رسائل الحجز أو الدفع؛ وتبقى موافقة الضيف على الشروط مطلوبة.</p>
+    <form method="post" class="lsa-manual-booking-form" data-morning-validation>{% csrf_token %}
+      <input type="hidden" name="expected_updated_at" value="{{ stay.updated_at|date:'c' }}">
+      {{ billing_form.non_field_errors }}
+      {% include 'payments/_morning_billing_fields.html' with guest_form=billing_form %}
+      <button type="submit" name="action" value="save_billing">حفظ تصحيح عنوان الفوترة</button>
+    </form>
+  </details></section>
   <section class="lsa-panel"><h2>تصحيح رقم الجوال</h2>
     <p>يلزم حسم أي محاولة دفع أو إرسال مالي أولًا. لا يعيد التصحيح رسالة مالية سبق إرسالها.</p>
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct_phone"><input type="hidden" name="expected_updated_at" value="{{ stay.updated_at|date:'c' }}">
