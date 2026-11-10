@@ -35,7 +35,7 @@ def contact_keys(email, phone):
 
 
 def guest_classifications():
-    """Compare local card identities exclusively against a complete Hostaway scan."""
+    """Both current identity and comparison history come from Hostaway."""
     from .guest_classification_history import provider_snapshot
 
     snapshot = provider_snapshot()
@@ -51,19 +51,23 @@ def guest_classifications():
         .values_list(
             "pk",
             "hostaway_reservation_id",
-            "booking_intent__guest_email",
-            "booking_intent__guest_phone",
         )
     )
-    for pk, reference, email, phone in rows.iterator(chunk_size=500):
-        email, phone = contact_keys(email, phone)
-        if not (email or phone):
-            result[pk] = GuestClassification(
-                "unknown", "بيانات غير كافية", "يلزم بريد أو جوال صالح للمطابقة"
-            )
-            continue
+    for pk, reference in rows.iterator(chunk_size=500):
         if snapshot is None:
             result[pk] = GuestClassification("unknown", "غير متحقق", "لم يكتمل فحص سجلات هوستاوي")
+            continue
+        identity = snapshot["identities"].get(str(reference))
+        if identity is None:
+            result[pk] = GuestClassification(
+                "unknown", "غير متحقق", "يلزم تحديث فحص هوستاوي لهذا الحجز"
+            )
+            continue
+        email, phone = identity
+        if not (email or phone):
+            result[pk] = GuestClassification(
+                "unknown", "بيانات غير كافية", "يلزم بريد أو جوال صالح في هوستاوي للمطابقة"
+            )
             continue
         matched_email = bool(
             email and any(value != reference for value in snapshot["email"].get(email, []))

@@ -131,7 +131,7 @@ def test_booking_com_or_other_external_booking_matches_either_contact(
     factory, publish, first, second, basis
 ):
     current = factory(email=second[0], phone=second[1])
-    publish([[row(777, *first, channel=2002)], []])
+    publish([[row(777, *first, channel=2002), row(current.hostaway_reservation_id, *second)], []])
     result = guest_classifications()[current.pk]
     assert result.code == "returning" and basis in result.basis
     assert "هوستاوي" in result.basis
@@ -148,6 +148,34 @@ def test_local_duplicate_cannot_replace_hostaway_evidence(factory, publish):
 def test_current_hostaway_booking_alone_is_not_a_return(factory, publish):
     current = factory()
     publish([[row(current.hostaway_reservation_id, current.booking_intent.guest_email)], []])
+    assert guest_classifications()[current.pk].code == "new"
+
+
+def test_current_identity_comes_from_hostaway_not_stale_site_contacts(factory, publish):
+    current = factory(email="stale@example.invalid")
+    publish(
+        [
+            [
+                row(current.hostaway_reservation_id, "current@example.invalid"),
+                row(777, "current@example.invalid"),
+            ],
+            [],
+        ]
+    )
+    assert guest_classifications()[current.pk].code == "returning"
+
+
+def test_local_email_cannot_override_different_hostaway_identity(factory, publish):
+    current = factory(email="old@example.invalid")
+    publish(
+        [
+            [
+                row(current.hostaway_reservation_id, "current@example.invalid"),
+                row(777, "old@example.invalid"),
+            ],
+            [],
+        ]
+    )
     assert guest_classifications()[current.pk].code == "new"
 
 
@@ -194,7 +222,15 @@ def test_new_requires_terminal_page_and_full_all_channel_cursor_scan(factory, pu
 @pytest.mark.parametrize("status", ["cancelled", "inquiry", "pending", "declined", "expired"])
 def test_non_booking_provider_statuses_are_excluded(factory, publish, status):
     current = factory(email="match@example.invalid")
-    publish([[row(777, "match@example.invalid", status=status)], []])
+    publish(
+        [
+            [
+                row(current.hostaway_reservation_id, "match@example.invalid"),
+                row(777, "match@example.invalid", status=status),
+            ],
+            [],
+        ]
+    )
     assert guest_classifications()[current.pk].code == "new"
 
 
@@ -203,7 +239,7 @@ def test_non_booking_provider_statuses_are_excluded(factory, publish, status):
 )
 def test_invalid_or_empty_contacts_are_unknown(factory, publish, email, phone):
     current = factory(email=email, phone=phone)
-    publish([[row(777, email, phone)], []])
+    publish([[row(777, email, phone), row(current.hostaway_reservation_id, email, phone)], []])
     assert guest_classifications()[current.pk].code == "unknown"
 
 
@@ -219,6 +255,8 @@ def test_incomplete_or_failed_history_never_labels_guest_new(factory, isolated):
     generation, cursor = isolated.pop(0)
     remote.invoice_search_page.side_effect = TimeoutError("private contact must not be logged")
     assert history.refresh_page(generation, cursor, client=remote) == "unavailable"
+    assert history.provider_state()["failure_code"] == "source_unavailable"
+    assert "private contact" not in json.dumps(history.provider_state())
     assert guest_classifications()[current.pk].code == "unknown"
 
 
@@ -274,7 +312,17 @@ def test_duplicate_tasks_and_busy_workers_do_not_repeat_the_page(factory, isolat
 def test_only_keyed_contacts_are_cached_and_stale_results_cannot_claim_new(factory, publish):
     current = factory(email="private@example.invalid", phone="+16502530000")
     publish(
-        [[row(777, current.booking_intent.guest_email, current.booking_intent.guest_phone)], []]
+        [
+            [
+                row(777, current.booking_intent.guest_email, current.booking_intent.guest_phone),
+                row(
+                    current.hostaway_reservation_id,
+                    current.booking_intent.guest_email,
+                    current.booking_intent.guest_phone,
+                ),
+            ],
+            [],
+        ]
     )
     snapshot = cache.get(history.SNAPSHOT)
     encoded = json.dumps(snapshot)
@@ -303,7 +351,16 @@ def test_search_filters_and_private_status_api_use_hostaway_snapshot(
     returning = factory(email="match@example.invalid", public_reference="source-proof")
     new = factory()
     unknown = factory(email="", phone="")
-    publish([[row(777, "match@example.invalid", channel=2002)], []])
+    publish(
+        [
+            [
+                row(777, "match@example.invalid", channel=2002),
+                row(returning.hostaway_reservation_id, "match@example.invalid"),
+                row(new.hostaway_reservation_id, new.booking_intent.guest_email),
+            ],
+            [],
+        ]
+    )
     url = reverse("notifications:booking_list")
     page = owner_client.get(url, {"q": "source-proof", "guest_type": "returning"})
     assert [b.pk for b in page.context["bookings"]] == [returning.pk]
@@ -326,6 +383,14 @@ def test_search_filters_and_private_status_api_use_hostaway_snapshot(
     assert private.post(url, {"action": "refresh_guest_classification"}).status_code == 403
 
 
+def test_pending_source_is_not_presented_as_an_empty_guest_segment(factory, owner_client):
+    factory()
+    page = owner_client.get(reverse("notifications:booking_list"), {"guest_type": "new"})
+    assert page.context["bookings"] == []
+    assert "لم يكتمل تصنيف الضيوف" in page.content.decode()
+    assert "لا توجد حجوزات مؤكدة في هوستاوي مطابقة" not in page.content.decode()
+
+
 def test_all_channel_api_boundary_has_no_email_phone_channel_or_date_filter():
     client = object.__new__(HostawayClient)
     client._get_json = Mock(return_value={"status": "success", "result": [row(777)]})
@@ -338,11 +403,21 @@ def test_all_channel_api_boundary_has_no_email_phone_channel_or_date_filter():
 def test_render_classification_layout(factory, publish, owner_client, tmp_path):
     from tests.test_contact_layout import _standalone
 
-    factory(email="layout@example.invalid")
-    factory(email="LAYOUT@example.invalid")
-    factory()
+    first = factory(email="layout@example.invalid")
+    second = factory(email="LAYOUT@example.invalid")
+    new = factory()
     factory(email="", phone="")
-    publish([[row(777, "layout@example.invalid", channel=2002)], []])
+    publish(
+        [
+            [
+                row(777, "layout@example.invalid", channel=2002),
+                row(first.hostaway_reservation_id, "layout@example.invalid"),
+                row(second.hostaway_reservation_id, "layout@example.invalid"),
+                row(new.hostaway_reservation_id, new.booking_intent.guest_email),
+            ],
+            [],
+        ]
+    )
     page = owner_client.get(reverse("notifications:booking_list"))
     assert page.status_code == 200
     html = _standalone(page.content.decode())
@@ -351,6 +426,12 @@ def test_render_classification_layout(factory, publish, owner_client, tmp_path):
     output = Path(os.environ.get("LSA_CONTACT_VISUAL_DIR", tmp_path))
     output.mkdir(parents=True, exist_ok=True)
     (output / "guest-classification.html").write_text(html, encoding="utf-8")
+
+
+def test_empty_or_different_account_history_cannot_certify_a_guest_new(factory, publish):
+    current = factory()
+    publish([[]])
+    assert guest_classifications()[current.pk].code == "unknown"
 
 
 def test_classification_is_read_only_and_does_not_link_accounts_or_opt_guests_in(factory, publish):

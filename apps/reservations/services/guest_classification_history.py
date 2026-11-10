@@ -73,7 +73,7 @@ def _provider_state():
     state = cache.get(STATE) or {"status": "unavailable"}
     if state.get("status") == "complete":
         return {"status": "unavailable"}
-    return {key: state[key] for key in ("status", "completed_at") if key in state}
+    return {key: state[key] for key in ("status", "completed_at", "failure_code") if key in state}
 
 
 def provider_state():
@@ -124,6 +124,14 @@ def _ensure_refresh(*, force=False):
                 "cursor": None,
                 "pages": 0,
                 "seen": [],
+                "identities": {},
+                "targets": list(
+                    Reservation.objects.filter(
+                        is_test=False,
+                        normalized_status__in=Reservation.ACTIVE_STATUSES,
+                        hostaway_reservation_id__gt=0,
+                    ).values_list("hostaway_reservation_id", flat=True)
+                ),
                 "email": {},
                 "phone": {},
                 "updated_at": timezone.now().isoformat(),
@@ -134,7 +142,7 @@ def _ensure_refresh(*, force=False):
         try:
             dispatch(generation, None)
         except Exception:
-            fail(generation)
+            fail(generation, "queue_unavailable")
         return provider_state()
 
 
@@ -145,12 +153,16 @@ def ensure_refresh(*, force=False):
         return {"status": "unavailable"}
 
 
-def fail(generation):
+def fail(generation, code="source_unavailable"):
     if cache.get(ACTIVE) == generation:
         cache.delete(ACTIVE)
         cache.set(
             STATE,
-            {"status": "unavailable", "failed_at": timezone.now().isoformat()},
+            {
+                "status": "unavailable",
+                "failed_at": timezone.now().isoformat(),
+                "failure_code": code,
+            },
             timeout=JOB_SECONDS,
         )
         cache.delete(f"{PREFIX}:job:{generation}")
@@ -192,6 +204,7 @@ def refresh_page(generation, expected_cursor, *, client=None):
                     "hostaway_reservation_id", flat=True
                 )
             )
+            targets = set(job["targets"])
             for row in rows:
                 status = row.get("status")
                 if not isinstance(status, str):
@@ -206,11 +219,10 @@ def refresh_page(generation, expected_cursor, *, client=None):
                     for name in ("guestEmail", "phone")
                 ):
                     raise ValueError("invalid_contact")
-                for kind, digest in zip(
-                    ("email", "phone"),
-                    contact_keys(row.get("guestEmail"), row.get("phone")),
-                    strict=True,
-                ):
+                identity = contact_keys(row.get("guestEmail"), row.get("phone"))
+                if row["id"] in targets:
+                    job["identities"][str(row["id"])] = identity
+                for kind, digest in zip(("email", "phone"), identity, strict=True):
                     if digest:
                         references = job[kind].setdefault(digest, [])
                         if row["id"] not in references and len(references) < 2:
@@ -223,6 +235,7 @@ def refresh_page(generation, expected_cursor, *, client=None):
                         "state": "complete",
                         "email": job["email"],
                         "phone": job["phone"],
+                        "identities": job["identities"],
                         "completed_at": completed,
                         "pages": job["pages"],
                         "key_version": salted_hmac(PREFIX, "contact-key-version").hexdigest(),
@@ -246,7 +259,20 @@ def refresh_page(generation, expected_cursor, *, client=None):
             cache.set(STATE, {"status": "running"}, timeout=JOB_SECONDS)
             dispatch(generation, ids[-1])
             return "queued"
-        except Exception:
+        except Exception as exc:
             # Do not log provider responses, exception URLs or contact data.
-            fail(generation)
+            allowed = {
+                "invalid_page",
+                "invalid_cursor",
+                "invalid_status",
+                "unrecognized_status",
+                "invalid_contact",
+                "partial_history",
+            }
+            code = (
+                str(exc)
+                if type(exc) is ValueError and str(exc) in allowed
+                else "source_unavailable"
+            )
+            fail(generation, code)
             return "unavailable"

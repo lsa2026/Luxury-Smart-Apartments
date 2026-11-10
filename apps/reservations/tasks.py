@@ -3,15 +3,20 @@ from celery import shared_task
 
 @shared_task(bind=True, ignore_result=True, max_retries=5, soft_time_limit=35, time_limit=40)
 def refresh_guest_classification_history(self, generation, cursor):
-    from .services.guest_classification_history import refresh_page
+    from .services.guest_classification_history import provider_state, refresh_page
 
     try:
         result = refresh_page(generation, cursor)
     except Exception:
         # Cache/transport errors must not log connection URLs or guest data.
-        return "unavailable"
+        return {"status": "unavailable", "code": "cache_unavailable"}
     if result == "busy":
         raise self.retry(countdown=2)
+    if result == "unavailable":
+        return {
+            "status": "unavailable",
+            "code": provider_state().get("failure_code", "source_unavailable"),
+        }
     return result
 
 
