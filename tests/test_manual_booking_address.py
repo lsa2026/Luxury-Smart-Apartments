@@ -49,7 +49,8 @@ def consents():
     }
 
 
-def test_admin_collects_address_and_carries_it_to_the_payment_intent(isolated_places):
+@pytest.mark.usefixtures("isolated_places")
+def test_admin_collects_address_and_carries_it_to_the_payment_intent():
     draft = make_draft()
     client = Client()
     client.force_login(draft.created_by)
