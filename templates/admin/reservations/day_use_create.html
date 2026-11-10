@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block extrastyle %}<link rel="stylesheet" href="{% static 'css/admin-guest-check.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}<script src="{% static 'js/admin-guest-check.js' %}" defer></script>{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script><script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -20,8 +20,9 @@
         <p data-day-use-price></p>
       </fieldset>
       <fieldset><legend>بيانات الضيف والعنوان</legend>
-        {% for field in form.visible_fields %}{% if field.name|slice:':8' != 'billing_' and field.name != 'date' and field.name != 'start_time' and field.name != 'end_time' and field.name != 'guests' and field.name != 'property' and field.name != 'confirm_hostaway' %}<p>{{ field.label_tag }} {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endif %}{% endfor %}
+        {% for field in form.visible_fields %}{% if field.name == 'guest_phone' %}{% url 'notifications:morning_address' kind='phone' as phone_check_url %}{% include 'reservations/_booking_phone.html' with phone_form=form phone_field=field %}{% elif field.name != 'guest_phone_country' and field.name|slice:':8' != 'billing_' and field.name != 'date' and field.name != 'start_time' and field.name != 'end_time' and field.name != 'guests' and field.name != 'property' and field.name != 'confirm_hostaway' %}<p>{{ field.label_tag }} {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</p>{% endif %}{% endfor %}
         {% include 'payments/_morning_billing_fields.html' with guest_form=form %}
+        {% include 'admin/reservations/includes/guest_check.html' with draft_check=True %}
         <p>{{ form.confirm_hostaway }} {{ form.confirm_hostaway.label_tag }} {{ form.confirm_hostaway.errors }}</p>
       </fieldset>
       <button type="submit" data-confirm-day-use disabled>تأكيد السعر وإنشاء الحجز في هوستاوي</button>

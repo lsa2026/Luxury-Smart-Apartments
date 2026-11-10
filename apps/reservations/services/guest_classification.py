@@ -7,8 +7,8 @@ from django.core.validators import validate_email
 from django.utils.crypto import salted_hmac
 
 from apps.accounts.access import normalize_email
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_comparison_phone
 from apps.reservations.models import Reservation
-from apps.reservations.phone_search import phone_variants
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,10 @@ def contact_keys(email, phone):
         validate_email(email)
     except ValidationError:
         email = ""
-    phone = next((value for value in phone_variants(phone or "") if value.startswith("+")), "")
+    try:
+        phone = normalize_comparison_phone(phone or "")
+    except InvalidPhoneNumber:
+        phone = ""
     return tuple(
         salted_hmac(f"guest-classification-{kind}.v1", value, algorithm="sha256").hexdigest()
         if value
@@ -54,38 +57,47 @@ def guest_classifications():
         )
     )
     for pk, reference in rows.iterator(chunk_size=500):
-        if snapshot is None:
-            result[pk] = GuestClassification("unknown", "غير متحقق", "لم يكتمل فحص سجلات هوستاوي")
-            continue
-        identity = snapshot["identities"].get(str(reference))
-        if identity is None:
-            result[pk] = GuestClassification(
-                "unknown", "غير متحقق", "يلزم تحديث فحص هوستاوي لهذا الحجز"
-            )
-            continue
-        email, phone = identity
-        if not (email or phone):
-            result[pk] = GuestClassification(
-                "unknown", "بيانات غير كافية", "يلزم بريد أو جوال صالح في هوستاوي للمطابقة"
-            )
-            continue
-        matched_email = bool(
-            email and any(value != reference for value in snapshot["email"].get(email, []))
+        result[pk] = classify_reference(reference, snapshot)
+    return result
+
+
+def classify_reference(reference, snapshot):
+    if snapshot is None:
+        return GuestClassification("unknown", "غير متحقق", "لم يكتمل فحص سجلات هوستاوي")
+    identity = snapshot["identities"].get(str(reference))
+    if identity is None:
+        return GuestClassification("unknown", "غير متحقق", "يلزم تحديث فحص هوستاوي لهذا الحجز")
+    return classify_keys(*identity, snapshot=snapshot, exclude=reference)
+
+
+def classify_keys(email, phone, *, snapshot, exclude=None):
+    if not (email or phone):
+        return GuestClassification("unknown", "بيانات غير كافية", "يلزم بريد أو جوال صالح للمطابقة")
+    matched_email = bool(
+        email and any(value != exclude for value in snapshot["email"].get(email, []))
+    )
+    matched_phone = bool(
+        phone and any(value != exclude for value in snapshot["phone"].get(phone, []))
+    )
+    if matched_email or matched_phone:
+        basis = (
+            "تطابق البريد والجوال الدولي"
+            if matched_email and matched_phone
+            else "تطابق البريد الإلكتروني"
+            if matched_email
+            else "تطابق رقم الجوال الدولي الكامل"
         )
-        matched_phone = bool(
-            phone and any(value != reference for value in snapshot["phone"].get(phone, []))
+        return GuestClassification("returning", "ضيف عائد", basis + " في هوستاوي")
+    return GuestClassification("new", "ضيف جديد", "لا يوجد حجز آخر مطابق في سجلات هوستاوي المتحققة")
+
+
+def classify_prospective(email, phone, snapshot):
+    """Admin input before creation; this is not an account-ownership decision."""
+    if snapshot is None:
+        return GuestClassification("unknown", "غير متحقق", "لم يكتمل فحص سجلات هوستاوي")
+    result = classify_keys(*contact_keys(email, phone), snapshot=snapshot)
+    if result.code == "new" and not snapshot["identities"]:
+        return GuestClassification(
+            "unknown", "غير متحقق", "لم يتأكد ربط قراءة هوستاوي بالحجوزات القائمة"
         )
-        if matched_email or matched_phone:
-            basis = (
-                "تطابق البريد والجوال"
-                if matched_email and matched_phone
-                else "تطابق البريد الإلكتروني"
-                if matched_email
-                else "تطابق رقم الجوال"
-            )
-            result[pk] = GuestClassification("returning", "ضيف عائد", basis + " في هوستاوي")
-        else:
-            result[pk] = GuestClassification(
-                "new", "ضيف جديد", "لا يوجد حجز آخر مطابق في سجلات هوستاوي المتحققة"
-            )
     return result

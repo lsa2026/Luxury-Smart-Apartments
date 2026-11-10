@@ -8,10 +8,10 @@ from django import forms
 from django.utils import timezone, translation
 from django.utils.html import strip_tags
 
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.properties.models import Property
 
-from .booking_forms import BillingAddressForm
+from .booking_forms import BillingAddressForm, GuestDetailsForm
 from .models import ManualBookingDraft
 
 
@@ -100,6 +100,7 @@ class ManualBookingFinalizeForm(forms.Form):
         max_length=32,
         widget=forms.TextInput(attrs={"dir": "ltr", "inputmode": "tel", "placeholder": "+966…"}),
     )
+    guest_phone_country = forms.ChoiceField(required=False, initial="SA")
     guest_language = forms.ChoiceField(
         label="لغة الضيف",
         choices=ManualBookingDraft._meta.get_field("guest_language").choices,
@@ -133,6 +134,12 @@ class ManualBookingFinalizeForm(forms.Form):
         self.draft = draft
         self.require_address = require_address
         super().__init__(*args, **kwargs)
+        shared = GuestDetailsForm()
+        self.fields["guest_phone"] = shared.fields["guest_phone"]
+        self.fields["guest_phone_country"] = shared.fields["guest_phone_country"]
+        self.fields["guest_phone"].label = "رقم الجوال"
+        self.fields["guest_phone_country"].label = "دولة رقم الجوال"
+        self.initial.setdefault("guest_phone_country", "SA")
         if self.require_address:
             with translation.override("ar"):
                 self.fields.update(BillingAddressForm().fields)
@@ -185,10 +192,13 @@ class ManualBookingFinalizeForm(forms.Form):
 
     def clean_guest_phone(self) -> str:
         try:
-            return normalize_phone_number(_clean_text(self.cleaned_data["guest_phone"]))
+            return normalize_booking_phone(
+                _clean_text(self.cleaned_data["guest_phone"]),
+                default_region=self.data.get("guest_phone_country") or "SA",
+            )
         except InvalidPhoneNumber as exc:
             raise forms.ValidationError(
-                "أدخل رقمًا دوليًا صالحًا يبدأ بعلامة +، مثل +966500000000."
+                "تحقق من رقم الجوال والدولة المختارة؛ السعودية هي الافتراضية عند غياب المفتاح."
             ) from exc
 
 

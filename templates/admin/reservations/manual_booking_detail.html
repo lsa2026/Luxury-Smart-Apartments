@@ -1,8 +1,8 @@
 {% extends "admin/base_site.html" %}
 {% load presentation static %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script><script src="{% static 'js/morning-validation.js' %}" defer></script>{% endblock %}
+{% block extrastyle %}<link rel="stylesheet" href="{% static 'css/admin-guest-check.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script><script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script src="{% static 'js/admin-guest-check.js' %}" defer></script>{% endblock %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -76,13 +76,15 @@
         {% endif %}
       </section>
     {% elif draft.status == "quoted" %}
-      <form method="post" data-morning-validation novalidate>
+      <form method="post" data-morning-validation data-draft-server-bound="{{ form.is_bound|yesno:'true,false' }}" novalidate>
         {% csrf_token %}
         {{ form.non_field_errors }}
         <fieldset class="module aligned">
           <h2>بيانات الضيف</h2>
           {% for field in form %}
-          {% if field.name|slice:':8' != 'billing_' %}
+          {% if field.name == 'guest_phone' %}
+          <div class="form-row">{% url 'notifications:morning_address' kind='phone' as phone_check_url %}{% include 'reservations/_booking_phone.html' with phone_form=form phone_field=field %}</div>
+          {% elif field.name != 'guest_phone_country' and field.name|slice:':8' != 'billing_' %}
           <div class="form-row">
             {{ field.label_tag }}
             {{ field }}
@@ -91,6 +93,7 @@
           </div>
           {% endif %}
           {% endfor %}
+          {% include 'admin/reservations/includes/guest_check.html' with draft_check=True %}
         </fieldset>
         <fieldset class="module aligned">
           <h2>عنوان الضيف نيابة عنه</h2>

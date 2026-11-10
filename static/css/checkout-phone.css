@@ -10,6 +10,11 @@
 }
 .checkout-phone select { font-size: 1rem; }
 .checkout-phone input { width: 100%; min-width: 0; }
+.booking-phone-field { min-width: 0; }
+.booking-phone-field .checkout-phone label { float: none; width: auto; padding: 0; }
+.booking-phone-field .checkout-phone select,
+.booking-phone-field .checkout-phone input { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; }
+.booking-phone-field small { display: block; margin-block: .5rem; }
 @media (max-width: 420px) {
     .checkout-phone { grid-template-columns: minmax(0, 1fr); }
 }

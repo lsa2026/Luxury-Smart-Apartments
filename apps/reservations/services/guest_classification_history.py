@@ -17,7 +17,7 @@ from apps.reservations.models import Reservation
 
 from .guest_classification import contact_keys
 
-PREFIX = "lsa:guest-classification-hostaway:v1"
+PREFIX = "lsa:guest-classification-hostaway:v2"
 SNAPSHOT = PREFIX + ":complete"
 ACTIVE = PREFIX + ":active"
 STATE = PREFIX + ":state"

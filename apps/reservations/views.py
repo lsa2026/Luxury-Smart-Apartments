@@ -22,7 +22,10 @@ from django.views import View
 
 from apps.accounts.identity import booking_identity_matches
 from apps.core.guest_documents import UI, document_language, guest_documents
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.core.phone_numbers import (
+    InvalidPhoneNumber,
+    normalize_booking_phone,
+)
 from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_choices
 from apps.properties.models import Property, PropertyImage
@@ -461,7 +464,7 @@ class GuestPhoneValidationView(View):
             try:
                 if len(value) > 32:
                     raise InvalidPhoneNumber
-                normalized = normalize_phone_number(value, default_region=country)
+                normalized = normalize_booking_phone(value, default_region=country or "SA")
                 parsed = phonenumbers.parse(normalized, None)
                 region = phonenumbers.region_code_for_number(parsed)
                 response = JsonResponse(

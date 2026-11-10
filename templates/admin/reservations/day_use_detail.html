@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load presentation tz static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block extrastyle %}<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}<script src="{% static 'js/checkout-phone.js' %}" defer></script>{{ block.super }}<script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -28,7 +28,8 @@
   <section class="lsa-panel"><h2>تصحيح رقم الجوال</h2>
     <p>يلزم حسم أي محاولة دفع أو إرسال مالي أولًا. لا يعيد التصحيح رسالة مالية سبق إرسالها.</p>
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="correct_phone"><input type="hidden" name="expected_updated_at" value="{{ stay.updated_at|date:'c' }}">
-      <label for="correct-phone">الرقم الدولي الصحيح</label><input id="correct-phone" name="phone" type="tel" dir="ltr" required value="{{ stay.guest_phone }}">
+      {% url 'notifications:morning_address' kind='phone' as phone_check_url %}
+      {% include 'reservations/_booking_phone.html' with phone_field=phone_form.guest_phone %}
       <button type="submit">التحقق من التصحيح وحفظه</button>
     </form>
   </section>

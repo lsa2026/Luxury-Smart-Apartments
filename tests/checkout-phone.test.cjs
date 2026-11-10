@@ -11,7 +11,7 @@ class Element extends EventTarget {
     setCustomValidity(message) { this.validityMessage = message; }
     focus() { this.focused = true; }
 }
-function setup(fetch, {saved = null, bound = false, initial = "", account = false} = {}) {
+function setup(fetch, {saved = null, bound = false, initial = "", account = false, booking = false} = {}) {
     const country = new Element("SA");
     country.options = ["SA", "US", "CA", "FR", "MA", "IT"].map((value) => ({value, textContent: `${value} (+1)`}));
     const phone = new Element(initial);
@@ -20,6 +20,7 @@ function setup(fetch, {saved = null, bound = false, initial = "", account = fals
     const form = new Element(); form.dataset = {draftServerBound: String(bound)};
     form.querySelector = (selector) => selector === "#guest-phone-validation" ? error : {value: "csrf"};
     const widget = new Element();
+    if (booking) widget.setAttribute("data-booking-phone", "");
     widget.dataset = {checkUrl: "/phone-check/", invalidMessage: "invalid number"};
     if (account) {
         widget.setAttribute("data-account-phone", "");
@@ -42,6 +43,19 @@ test("defaults to Saudi; remembers only country and never overwrites a bound for
     assert.equal(setup(null, {saved: "US"}).country.value, "US");
     assert.equal(setup(null, {saved: "US", bound: true}).country.value, "SA");
     assert.equal(setup(null, {saved: "US", initial: "0501234567"}).country.value, "SA");
+});
+test("booking inputs start Saudi despite saved country and normalize after typing", async () => {
+    const env = setup(async (url, options) => {
+        assert.equal(options.body.get("phone"), "00966501234567");
+        assert.equal(options.body.get("country"), "SA");
+        return response({phone: "+966501234567", country: "SA"});
+    }, {saved: "US", booking: true});
+    assert.equal(env.country.value, "SA");
+    env.phone.value = "00966501234567";
+    env.phone.dispatchEvent(new Event("input"));
+    await new Promise(resolve => setTimeout(resolve, 450));
+    assert.equal(env.phone.value, "+966501234567");
+    assert.equal(env.form.submitRequests, 0);
 });
 test("normalizes once via protected POST, updates pasted international country and reuses result", async () => {
     let calls = 0;

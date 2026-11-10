@@ -6,9 +6,11 @@ from django import forms
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.properties.cities import canonical_city, supported_city_choices
 from apps.properties.models import Property
+
+from .booking_forms import GuestDetailsForm
 
 
 class ReservationAccessForm(forms.Form):
@@ -38,12 +40,24 @@ class ReservationAccessForm(forms.Form):
         ),
     )
 
+    guest_phone_country = forms.ChoiceField(required=False, initial="SA")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        shared = GuestDetailsForm()
+        self.fields["guest_phone_country"] = shared.fields["guest_phone_country"]
+        self.fields["phone"].widget.attrs.update(shared.fields["guest_phone"].widget.attrs)
+        self.fields["phone"].help_text = shared.fields["guest_phone"].help_text
+
     def clean_last_name(self) -> str:
         return self.cleaned_data["last_name"].strip()
 
     def clean_phone(self) -> str:
         try:
-            return normalize_phone_number(self.cleaned_data["phone"])
+            return normalize_booking_phone(
+                self.cleaned_data["phone"],
+                default_region=self.data.get("guest_phone_country") or "SA",
+            )
         except InvalidPhoneNumber as exc:
             raise forms.ValidationError(_("Enter a valid international phone number.")) from exc
 
