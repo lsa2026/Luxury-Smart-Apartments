@@ -1,8 +1,18 @@
 # MorningStay customer validation — 2026-11-07
 
-Scope: independent morning payment and its operations billing forms only.
-Ordinary reservations, payment links, shared guest forms, the provider client and
-the card widget are unchanged. No migration, secret or environment change.
+Scope: independent morning payment and its operations billing forms. Since
+2026-11-10 the same approved **billing-address** contract is also reused when
+management collects an address for a new manual booking and on that booking's
+payment link. The customer-name/email limits remain specific to morning payment.
+Ordinary public checkout, legacy payment links without a collected manual address,
+the provider client and the card widget keep their existing contracts. No new
+migration, secret or environment change is needed for this validation correction.
+
+The manual administration shows the Arabic field guidance and uses the existing
+browser validator as well as server validation. A region such as `Riyadh Province`
+is flagged rather than silently rewritten. Previously collected values remain
+visible for correction, and invalid billing cannot start a checkout. Guest terms
+and house-rule acceptance remain explicit, independent requirements.
 
 ## Sources and exact interpretation
 

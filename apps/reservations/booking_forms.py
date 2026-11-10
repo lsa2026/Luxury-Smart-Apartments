@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.guest_documents import UI, document_language, documents_digest
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES, normalize_country_code
+from apps.payments.morning_validation import MorningBillingFields
 
 
 def _clean_text(value: str) -> str:
@@ -202,11 +203,5 @@ class GuestDetailsForm(forms.Form):
         return value
 
 
-class BillingAddressForm(GuestDetailsForm):
-    """The same address fields and validation without accepting guest terms."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for name in list(self.fields):
-            if not name.startswith("billing_"):
-                self.fields.pop(name)
+class BillingAddressForm(MorningBillingFields):
+    """The approved daytime billing contract, without accepting guest terms."""

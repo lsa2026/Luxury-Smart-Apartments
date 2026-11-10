@@ -883,6 +883,7 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
 
 
 @operations_access_required
+@translation.override("ar")
 def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     from .morning_billing import address_context
 

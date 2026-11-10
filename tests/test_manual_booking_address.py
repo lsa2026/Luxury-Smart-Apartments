@@ -9,8 +9,9 @@ from django.urls import reverse
 from apps.core.guest_documents import documents_digest
 from apps.payments.hyperpay.service import HyperPayService
 from apps.payments.models import PaymentAttempt
-from apps.payments.payment_link_views import saved_manual_billing
+from apps.payments.payment_link_views import PaymentLinkBillingForm, saved_manual_billing
 from apps.payments.payment_links import issue_request
+from apps.reservations.booking_forms import BillingAddressForm
 from apps.reservations.manual_bookings import (
     create_manual_booking_in_hostaway,
     finalize_manual_booking_draft,
@@ -167,3 +168,95 @@ def test_legacy_draft_does_not_treat_placeholder_address_as_collected():
     page = Client().post(page_url(request), consents())
     assert page.status_code == 200 and "billing_city" in page.context["form"].errors
     assert not PaymentAttempt.objects.exists()
+
+
+@pytest.mark.parametrize(
+    "name,value,valid",
+    [
+        ("billing_street1", "12345", False),
+        ("billing_street1", "شارع ١٠", True),
+        ("billing_street1", "X" * 100, True),
+        ("billing_street1", "X" * 101, False),
+        ("billing_city", "الرياض", True),
+        ("billing_city", "X" * 81, False),
+        ("billing_state", "Riyadh Province", False),
+        ("billing_state", "الرياض", False),
+        ("billing_state", "Riyadh-01", False),
+        ("billing_state", "Riyadh.01", True),
+        ("billing_state", "X" * 51, False),
+        ("billing_postcode", "SW1A 1AA", False),
+        ("billing_postcode", "10001-1234", False),
+        ("billing_postcode", "١٢٣٤٥", False),
+        ("billing_postcode", "X" * 16, True),
+        ("billing_postcode", "X" * 17, False),
+        ("billing_country", "ZZ", False),
+    ],
+)
+def test_admin_and_prepared_payment_use_the_approved_billing_contract(name, value, valid):
+    data = billing() | {name: value}
+    address = BillingAddressForm(data)
+    payment = PaymentLinkBillingForm(data | consents(), approved_address=True)
+    assert address.is_valid() is valid
+    assert payment.is_valid() is valid
+    if not valid:
+        assert name in address.errors and name in payment.errors
+
+
+@pytest.mark.usefixtures("isolated_places")
+def test_admin_address_rules_and_search_stay_arabic_even_with_english_browser():
+    draft = make_draft()
+    client = Client()
+    client.force_login(draft.created_by)
+    page = client.get(
+        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        HTTP_ACCEPT_LANGUAGE="en",
+    )
+    content = page.content.decode()
+    assert "عنوان الشارع" in content and "من ١ إلى ١٠٠ حرف" in content
+    assert "دون مسافات" in content and "Riyadh" in content
+    assert "Fill in your address easily" not in content
+    assert "عبّئ عنوانك بسهولة" in content
+    assert b"data-morning-validation" in page.content
+    assert b"js/morning-validation.js" in page.content
+    assert b"data-morning-pattern" in page.content
+
+
+def test_admin_cannot_save_a_region_with_spaces_from_address_suggestions():
+    draft = make_draft()
+    client = Client()
+    client.force_login(draft.created_by)
+    page = client.post(
+        reverse("notifications:manual_booking_detail", args=[draft.pk]),
+        guest_fields(draft) | {"billing_state": "Riyadh Province"},
+    )
+    assert page.status_code == 200 and "billing_state" in page.context["form"].errors
+    assert "دون مسافات" in page.content.decode()
+    draft.refresh_from_db()
+    assert draft.status == "quoted" and draft.billing_address == {}
+
+
+def test_previously_saved_invalid_region_must_be_corrected_before_payment():
+    stay = addressed_stay()
+    stay.booking_intent.billing_state = "Riyadh Province"
+    stay.booking_intent.save(update_fields=["billing_state"])
+    ManualBookingDraft.objects.filter(quote=stay.booking_intent.quote).update(
+        billing_address=billing() | {"billing_state": "Riyadh Province"}
+    )
+    request = issue_request(stay.pk)
+    page = Client().get(page_url(request))
+    assert "billing_state" in page.context["address_errors"]
+    assert "يرجى تصحيح عنوان الفوترة المحفوظ" in page.content.decode()
+    page = Client().post(page_url(request), consents())
+    assert "billing_state" in page.context["form"].errors
+    assert not PaymentAttempt.objects.exists()
+    request.refresh_from_db()
+    assert not request.accepted_at
+
+
+def test_legacy_payment_form_retains_its_existing_address_contract():
+    form = PaymentLinkBillingForm(
+        billing()
+        | consents()
+        | {"billing_state": "Riyadh Province", "billing_postcode": "SW1A 1AA"}
+    )
+    assert form.is_valid(), form.errors
