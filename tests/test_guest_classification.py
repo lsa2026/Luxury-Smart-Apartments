@@ -217,7 +217,11 @@ def test_classification_queries_are_read_only_and_do_not_grow_per_booking(factor
     with CaptureQueriesContext(connection) as large:
         guest_classifications()
     assert len(small) == len(large) == 3
-    assert all(q["sql"].lstrip().upper().startswith("SELECT") for q in large)
+    for query in large:
+        sql = query["sql"].lstrip().upper()
+        # PostgreSQL streams iterator() with a named read cursor. SQLite logs
+        # a direct SELECT; both are reads, with the same constant query budget.
+        assert sql.startswith("SELECT") or (sql.startswith("DECLARE ") and " FOR SELECT " in sql)
 
 
 def test_duplicates_outside_the_visible_hundred_still_change_guest_classification(
