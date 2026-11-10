@@ -41,6 +41,7 @@ INPUTS = [
     ("0044 20 7946 0958", "SA", "+442079460958"),
     ("020 7946 0958", "GB", "+442079460958"),
     ("16465550123", "SA", "+16465550123"),
+    ("+6462817246", "SA", "+6462817246"),
 ]
 
 
@@ -76,7 +77,9 @@ def test_all_booking_forms_share_correction_and_sa_default(phone, country, expec
     assert not Reservation.objects.exists() and not BookingIntent.objects.exists()
 
 
-@pytest.mark.parametrize("phone,country", [("123", "SA"), ("0501234567", "ZZ"), ("hello", "SA")])
+@pytest.mark.parametrize(
+    "phone,country", [("123", "SA"), ("0501234567", "ZZ"), ("hello", "SA"), ("6462817246", "SA")]
+)
 def test_invalid_input_cannot_bypass_final_server_validation(phone, country):
     with pytest.raises(InvalidPhoneNumber):
         normalize_booking_phone(phone, default_region=country)
@@ -127,6 +130,11 @@ def test_identical_national_digits_in_distinct_countries_do_not_match(factory, p
         ]
     )
     assert guest_classifications()[current.pk].code == "new"
+
+
+def test_ambiguous_national_number_cannot_be_guessed_as_foreign_country():
+    assert contact_keys("", "6462817246")[1] == ""
+    assert contact_keys("", "+6462817246")[1]
 
 
 def check_url():

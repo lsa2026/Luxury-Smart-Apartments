@@ -46,7 +46,13 @@ class ReservationAccessForm(forms.Form):
         super().__init__(*args, **kwargs)
         shared = GuestDetailsForm()
         self.fields["guest_phone_country"] = shared.fields["guest_phone_country"]
-        self.fields["phone"].widget.attrs.update(shared.fields["guest_phone"].widget.attrs)
+        self.fields["phone"].widget.attrs.update(
+            {
+                key: value
+                for key, value in shared.fields["guest_phone"].widget.attrs.items()
+                if key != "placeholder"
+            }
+        )
         self.fields["phone"].help_text = shared.fields["guest_phone"].help_text
 
     def clean_last_name(self) -> str:

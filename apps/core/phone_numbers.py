@@ -13,7 +13,10 @@ def normalize_booking_phone(value: str, *, default_region: str = "SA") -> str:
         return normalize_phone_number(value, default_region=region)
     except InvalidPhoneNumber:
         digits = "".join(str(unicodedata.decimal(c)) if c.isdecimal() else c for c in value).strip()
-        if digits and digits[0].isdigit():
+        # Short national numbers can accidentally parse as another country's
+        # calling code (for example a US 646... number as +64...). They need
+        # an explicit prefix or the correct selected region, never a guess.
+        if digits and digits[0].isdigit() and len(re.sub(r"\D", "", digits)) > 10:
             return normalize_phone_number("+" + digits, default_region=region)
         raise
 
@@ -29,7 +32,7 @@ def normalize_comparison_phone(value: str) -> str:
         compact = "+" + compact[2:]
     if compact.startswith("+"):
         return normalize_phone_number(compact)
-    if not compact.startswith("0"):
+    if not compact.startswith("0") and len(compact) > 10:
         try:
             return normalize_phone_number("+" + compact)
         except InvalidPhoneNumber:

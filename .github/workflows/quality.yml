@@ -165,9 +165,6 @@ jobs:
       - name: Verify Ruff formatting
         run: ruff format --diff .
 
-      - name: Run tests
-        run: pytest
-
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
@@ -182,6 +179,9 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-contact-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-classification-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-unified-phone-layout.cjs
+
+      - name: Run tests
+        run: pytest
 
       - name: Save synthetic contact layout screenshots
         uses: actions/upload-artifact@v7.0.2
