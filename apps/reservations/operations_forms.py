@@ -127,12 +127,15 @@ class ManualBookingFinalizeForm(forms.Form):
         self,
         *args: object,
         draft: ManualBookingDraft,
+        require_address: bool = False,
         **kwargs: object,
     ) -> None:
         self.draft = draft
+        self.require_address = require_address
         super().__init__(*args, **kwargs)
-        with translation.override("ar"):
-            self.fields.update(BillingAddressForm().fields)
+        if self.require_address:
+            with translation.override("ar"):
+                self.fields.update(BillingAddressForm().fields)
         self.initial.update(draft.billing_address or {})
         self.initial.setdefault("billing_country", "SA")
         self.fields["final_total_price"].help_text = f"بالعملة الأصلية للحجز: {draft.currency}."
@@ -156,6 +159,8 @@ class ManualBookingFinalizeForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
+        if not self.require_address:
+            return cleaned
         billing = BillingAddressForm(cleaned)
         if billing.is_valid():
             cleaned["billing_address"] = dict(billing.cleaned_data)

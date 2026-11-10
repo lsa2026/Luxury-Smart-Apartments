@@ -897,7 +897,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         and reservation is not None
     ):
         return redirect("notifications:booking_detail", reservation_id=reservation.pk)
-    form = ManualBookingFinalizeForm(draft=draft)
+    form = ManualBookingFinalizeForm(draft=draft, require_address=True)
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "recheck":
@@ -1039,7 +1039,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     "أعد المحاولة بعد مراجعة التوفر.",
                 )
         else:
-            form = ManualBookingFinalizeForm(request.POST, draft=draft)
+            form = ManualBookingFinalizeForm(request.POST, draft=draft, require_address=True)
             if form.is_valid():
                 finalized = finalize_manual_booking_draft(
                     draft_id=draft.pk,

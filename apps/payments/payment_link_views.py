@@ -166,7 +166,7 @@ class ReservationPaymentView(View):
             "form": form
             or PaymentLinkBillingForm(
                 default_country_code=payment_request.reservation.booking_intent.billing_country,
-                initial=saved_billing or {},
+                initial=dict(saved_billing or {}),
             ),
             "saved_billing": saved_billing,
             "guest_documents": guest_documents(request.LANGUAGE_CODE),

@@ -84,7 +84,7 @@ def test_admin_must_complete_address_before_guest_data_can_be_finalized(field):
     draft = make_draft()
     data = guest_fields(draft)
     data.pop(field)
-    form = ManualBookingFinalizeForm(data, draft=draft)
+    form = ManualBookingFinalizeForm(data, draft=draft, require_address=True)
     assert not form.is_valid() and field in form.errors
     draft.refresh_from_db()
     assert draft.status == "quoted" and draft.billing_address == {}
