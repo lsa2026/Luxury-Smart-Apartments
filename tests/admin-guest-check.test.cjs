@@ -60,3 +60,18 @@ test("existing booking sends only its reference and failure allows retry", async
     assert.match(env.output.textContent, /تعذر الاتصال/);
     assert.equal(env.button.disabled, false);
 });
+test("long source reads can be retrieved without restarting a completed scan", async () => {
+    let complete = false, refreshes = 0;
+    const env = setup(async (url, options) => {
+        if (options.body.get("refresh") === "1") refreshes++;
+        return response(complete ? {status: "complete", classification: {label: "returning", basis: "Hostaway"}} : {status: "running"});
+    });
+    env.button.dispatchEvent(new Event("click")); await flush();
+    for (let i = 0; i < 30; i++) { env.timers.shift()(); await flush(); }
+    assert.equal(env.button.disabled, false);
+    assert.match(env.output.textContent, /لم يكتمل/);
+    complete = true;
+    env.button.dispatchEvent(new Event("click")); await flush();
+    assert.equal(refreshes, 1);
+    assert.equal(env.output.textContent, "returning — Hostaway");
+});

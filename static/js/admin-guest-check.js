@@ -4,6 +4,7 @@ document.querySelectorAll("[data-admin-guest-check]").forEach(panel => {
     const output = panel.querySelector("[data-guest-check-result]");
     const form = panel.closest("form");
     let run = 0;
+    let awaitingResult = false;
     const payload = () => panel.dataset.bookingId ? { booking_id: panel.dataset.bookingId } : {
         email: form.elements.guest_email.value,
         phone: form.elements.guest_phone.value,
@@ -26,14 +27,16 @@ document.querySelectorAll("[data-admin-guest-check]").forEach(panel => {
                 if (!response.ok) {
                     output.textContent = result.errors ? Object.values(result.errors).flat().join(" ") : "تعذر فحص الضيف الآن.";
                 } else if (["queued", "running"].includes(result.status)) {
+                    awaitingResult = true;
                     if (attempts < 30 && !document.hidden) { window.setTimeout(() => check(false, attempts + 1), 4000); return; }
                     output.textContent = "الفحص لم يكتمل بعد؛ اضغط التحديث لاحقًا لعرض النتيجة.";
                 } else if (result.status === "complete") {
+                    awaitingResult = false;
                     output.textContent = `${result.classification.label} — ${result.classification.basis}`;
-                } else output.textContent = "غير متحقق؛ تعذر تأكيد اكتمال قراءة هوستاوي.";
+                } else { awaitingResult = false; output.textContent = "غير متحقق؛ تعذر تأكيد اكتمال قراءة هوستاوي."; }
             } catch (_) { if (run === current) output.textContent = "تعذر الاتصال؛ أعد المحاولة."; }
             if (run === current) button.disabled = false;
         }
-        await check(true, 0);
+        await check(!awaitingResult, 0);
     });
 });
