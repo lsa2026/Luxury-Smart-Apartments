@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}">
 <link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">
 <script type="module" src="{% static 'js/checkout-address.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">
+<script src="{% static 'js/morning-validation.js' %}" defer></script>
 {% endblock %}
 {% block content %}
 <section class="section container narrow payment-result reservation-payment">
@@ -32,16 +34,17 @@
         <p>{{ conditions.cancellation_policy_text }}</p>
         <p>{{ payment_request.source_amount|format_money:payment_request.source_currency }}</p>
       </details>
-      <form method="post" class="guest-form">
+      {% if address_errors %}<div class="notice notice--important" role="alert">{% if current_language_code == 'ar' %}يرجى تصحيح عنوان الفوترة المحفوظ قبل الدفع.{% elif current_language_code == 'fr' %}Veuillez corriger l’adresse de facturation enregistrée avant de payer.{% else %}Please correct the saved billing address before paying.{% endif %}{% for errors in address_errors.values %}{% for error in errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}</div>{% endif %}
+      <form method="post" class="guest-form"{% if approved_address %} data-morning-validation{% endif %}>
         <input type="hidden" name="payment_request_version" value="{{ payment_request.pk }}">
         {% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
         {% if saved_billing %}
         <section class="review-panel"><h2>{{ ui.billing }}</h2>
           <p dir="auto">{{ saved_billing.billing_street1 }} · {{ saved_billing.billing_city }} · {{ saved_billing.billing_state }} · {{ saved_billing.billing_postcode }} · {{ saved_billing.billing_country }}</p>
-          <details{% if form.errors %} open{% endif %}><summary>{% if current_language_code == 'ar' %}مراجعة أو تصحيح العنوان{% elif current_language_code == 'fr' %}Vérifier ou corriger l’adresse{% else %}Review or correct address{% endif %}</summary>
+          <details{% if form.errors or address_errors %} open{% endif %}><summary>{% if current_language_code == 'ar' %}مراجعة أو تصحيح العنوان{% elif current_language_code == 'fr' %}Vérifier ou corriger l’adresse{% else %}Review or correct address{% endif %}</summary>
         {% endif %}
         <fieldset><legend>{{ ui.billing }}</legend>
-          {% include "reservations/_billing_fields.html" with guest_form=form %}
+          {% if approved_address %}{% include 'payments/_morning_billing_fields.html' with guest_form=form %}{% else %}{% include "reservations/_billing_fields.html" with guest_form=form %}{% endif %}
         </fieldset>
         {% if saved_billing %}</details></section>{% endif %}
         <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>

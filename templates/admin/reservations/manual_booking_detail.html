@@ -1,8 +1,8 @@
 {% extends "admin/base_site.html" %}
 {% load presentation static %}
 
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endblock %}
-{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script><script src="{% static 'js/morning-validation.js' %}" defer></script>{% endblock %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -76,7 +76,7 @@
         {% endif %}
       </section>
     {% elif draft.status == "quoted" %}
-      <form method="post" novalidate>
+      <form method="post" data-morning-validation novalidate>
         {% csrf_token %}
         {{ form.non_field_errors }}
         <fieldset class="module aligned">
@@ -95,7 +95,7 @@
         <fieldset class="module aligned">
           <h2>عنوان الضيف نيابة عنه</h2>
           <p class="help">أدخل العنوان المرتبط ببطاقة الدفع. استخدم العنوان المختصر أو جزءًا من العنوان واختر الاقتراح، ثم راجع الحقول أو أكملها يدويًا. سيظهر العنوان للضيف جاهزًا للمراجعة؛ يوافق الضيف بنفسه على الشروط قبل الدفع.</p>
-          {% include 'reservations/_billing_fields.html' with guest_form=form %}
+          {% include 'payments/_morning_billing_fields.html' with guest_form=form %}
         </fieldset>
         <p class="help">يمكنك اعتماد السعر أو تعديله مباشرة؛ يبقى سعر Hostaway الأصلي محفوظًا للمراجعة.</p>
         <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit lsa-manual-booking__finalize" type="submit"><span aria-hidden="true">✓</span> اعتماد بيانات الضيف وتجهيز الدفع</button>
