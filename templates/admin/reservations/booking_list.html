@@ -44,7 +44,7 @@
         <tbody>
           {% for booking in bookings %}
           <tr>
-            <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>فتح تفاصيل الحجز ←</small></a>{% include 'admin/reservations/includes/guest_classification.html' %}</td>
+            <td><a class="lsa-booking-list__guest" href="{% url 'notifications:guest_file_for_booking' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>ملف الضيف وسجل حجوزاته ←</small></a>{% include 'admin/reservations/includes/guest_classification.html' %}<a href="{% url 'notifications:booking_detail' booking.pk %}">فتح الحجز وإدارته ←</a></td>
             <td>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</td>
             <td>{{ booking.check_in|localized_date }}</td>
             <td>{{ booking.nights }}</td>
@@ -58,7 +58,7 @@
     </div>
     <div class="lsa-booking-list__cards">
       {% for booking in bookings %}
-      <a class="lsa-booking-card" href="{% url 'notifications:booking_detail' booking.pk %}">
+      <a class="lsa-booking-card" href="{% url 'notifications:guest_file_for_booking' booking.pk %}">
         <div class="lsa-booking-card__top"><strong>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</strong><span class="lsa-booking-status lsa-booking-status--{{ booking.admin_status_code }}">{{ booking.admin_status_label }}</span></div>
         {% include 'admin/reservations/includes/guest_classification.html' %}
         <div class="lsa-booking-card__property"><small>الشقة</small><strong>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</strong></div>
@@ -68,7 +68,7 @@
           <div><dt>تاريخ الدخول</dt><dd>{{ booking.check_in|localized_date }}</dd></div>
           <div><dt>الليالي</dt><dd>{{ booking.nights }}</dd></div>
         </dl>
-        <em>فتح الحجز ←</em>
+        <em>ملف الضيف وسجل حجوزاته ←</em>
       </a>
       {% endfor %}
     </div>

@@ -50,6 +50,7 @@
   <section id="booking-overview" aria-label="بيانات الإقامة والضيف">
     <section class="lsa-panel">
       <h2>بيانات الضيف</h2>
+      <p><a class="lsa-btn" href="{% url 'notifications:guest_file_for_booking' reservation.pk %}">ملف الضيف وسجل حجوزاته ←</a></p>
       {% if reservation.booking_intent %}
       <dl class="lsa-booking-detail__contact">
         <div><dt>الاسم</dt><dd>{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}</dd></div>

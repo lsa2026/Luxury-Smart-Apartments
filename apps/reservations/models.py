@@ -15,6 +15,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
+from .guest_file_models import (  # noqa: F401
+    AdminGuestAnchor,
+    AdminGuestFile,
+    GuestDirectorySnapshot,
+)
 from .morning_models import (  # noqa: F401
     Morning07DeliveryAttempt,
     Morning07PaymentDelivery,

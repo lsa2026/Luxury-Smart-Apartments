@@ -17,7 +17,7 @@ from apps.reservations.models import Reservation
 
 from .guest_classification import contact_keys
 
-PREFIX = "lsa:guest-classification-hostaway:v2"
+PREFIX = "lsa:guest-classification-hostaway:v3"
 SNAPSHOT = PREFIX + ":complete"
 ACTIVE = PREFIX + ":active"
 STATE = PREFIX + ":state"
@@ -61,13 +61,27 @@ def _provider_snapshot():
 
 def provider_snapshot():
     try:
-        return _provider_snapshot()
+        snapshot = _provider_snapshot()
+        if snapshot is not None:
+            return snapshot
     except Exception:
-        return None
+        pass
+    from .guest_files import load_completed
+
+    snapshot = load_completed()
+    if (
+        isinstance(snapshot, dict)
+        and snapshot.get("key_version") == salted_hmac(PREFIX, "contact-key-version").hexdigest()
+    ):
+        return snapshot
+    return None
 
 
 def _provider_state():
     snapshot = provider_snapshot()
+    state = cache.get(STATE) or {}
+    if state.get("status") in {"queued", "running"} or state.get("failure_code"):
+        return state
     if snapshot is not None and not cache.get(ACTIVE):
         return {"status": "complete", "completed_at": snapshot["completed_at"]}
     state = cache.get(STATE) or {"status": "unavailable"}
@@ -95,8 +109,20 @@ def _ensure_refresh(*, force=False):
     with control_lock() as acquired:
         if not acquired:
             return provider_state()
-        if not force and provider_snapshot() is not None:
-            return provider_state()
+        snapshot = provider_snapshot()
+        if not force and snapshot is not None:
+            checked = parse_datetime(snapshot["completed_at"])
+            if (
+                not Reservation.objects.filter(
+                    is_test=False,
+                    normalized_status__in=Reservation.ACTIVE_STATUSES,
+                    hostaway_reservation_id__gt=0,
+                    created_at__gt=checked,
+                )
+                .exclude(hostaway_reservation_id__in=[int(ref) for ref in snapshot["identities"]])
+                .exists()
+            ):
+                return provider_state()
         active = cache.get(ACTIVE)
         job = cache.get(f"{PREFIX}:job:{active}") if active else None
         updated = parse_datetime(job.get("updated_at", "")) if isinstance(job, dict) else None
@@ -134,6 +160,7 @@ def _ensure_refresh(*, force=False):
                 ),
                 "email": {},
                 "phone": {},
+                "history": [],
                 "updated_at": timezone.now().isoformat(),
             },
             timeout=JOB_SECONDS,
@@ -220,6 +247,9 @@ def refresh_page(generation, expected_cursor, *, client=None):
                 ):
                     raise ValueError("invalid_contact")
                 identity = contact_keys(row.get("guestEmail"), row.get("phone"))
+                from .guest_files import project_history
+
+                job["history"].append(project_history(row, identity))
                 if row["id"] in targets:
                     job["identities"][str(row["id"])] = identity
                 for kind, digest in zip(("email", "phone"), identity, strict=True):
@@ -229,17 +259,22 @@ def refresh_page(generation, expected_cursor, *, client=None):
                             references.append(row["id"])
             if not rows:
                 completed = timezone.now().isoformat()
+                snapshot = {
+                    "state": "complete",
+                    "email": job["email"],
+                    "phone": job["phone"],
+                    "identities": job["identities"],
+                    "history": job["history"],
+                    "completed_at": completed,
+                    "pages": job["pages"],
+                    "key_version": salted_hmac(PREFIX, "contact-key-version").hexdigest(),
+                }
+                from .guest_files import save_completed
+
+                save_completed(snapshot)
                 cache.set(
                     SNAPSHOT,
-                    {
-                        "state": "complete",
-                        "email": job["email"],
-                        "phone": job["phone"],
-                        "identities": job["identities"],
-                        "completed_at": completed,
-                        "pages": job["pages"],
-                        "key_version": salted_hmac(PREFIX, "contact-key-version").hexdigest(),
-                    },
+                    snapshot,
                     timeout=60 * 60,
                 )
                 cache.set(
