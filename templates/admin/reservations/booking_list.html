@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load i18n presentation static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}?v=20261023-navigation">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-guest-classification.js' %}" defer></script>{% endblock %}
 {% block content_title %}{% endblock %}
 
 {% block content %}
@@ -24,8 +25,14 @@
   <section class="lsa-panel lsa-booking-list__search">
     <form method="get" class="lsa-inline-form" aria-label="البحث عن حجز">
       <label>البحث عن حجز<input type="search" name="q" value="{{ query }}" placeholder="الاسم أو الجوال أو البريد أو المرجع" autocomplete="off"></label>
+      <label>تصنيف الضيف<select name="guest_type"><option value="">كل الضيوف</option value="new"{% if guest_type == 'new' %} selected{% endif %}>ضيف جديد</option><option value="returning"{% if guest_type == 'returning' %} selected{% endif %}>ضيف عائد</option><option value="unknown"{% if guest_type == 'unknown' %} selected{% endif %}>بيانات غير كافية</option></select></label>
       <button type="submit" class="lsa-btn lsa-btn--gold">بحث</button>
     </form>
+  </section>
+  <section class="lsa-booking-list__classification-note" data-guest-classification-state="{{ classification_state.status }}" data-status-url="{% url 'notifications:booking_list' %}?classification_status=1">
+    <p>ضيف عائد: يوجد حجز مؤكد آخر في هوستاوي يطابق البريد الإلكتروني أو رقم الجوال، ويكفي أحدهما. يشمل الفحص جميع قنوات هوستاوي، ومنها بوكنق، ويستبعد الحجوزات الملغاة وغير المؤكدة. لا يُصنّف الضيف جديدًا قبل اكتمال الفحص.</p>
+    <p role="status" aria-live="polite" data-classification-status>{% if classification_state.status == 'complete' %}اكتمل فحص سجلات هوستاوي: {{ classification_checked_at|localized_datetime }}.{% elif classification_state.status == 'queued' or classification_state.status == 'running' %}جارٍ فحص سجلات هوستاوي؛ ستُحدّث النتائج عند اكتماله.{% else %}تعذر التحقق من سجلات هوستاوي حاليًا؛ يبقى التصنيف غير متحقق حتى اكتمال الفحص.{% endif %}</p>
+    <form method="post">{% csrf_token %}<button class="lsa-btn lsa-btn--ghost" name="action" value="refresh_guest_classification">تحديث التصنيف من هوستاوي</button></form>
   </section>
 
   <section class="lsa-panel lsa-booking-list__panel">
@@ -37,7 +44,7 @@
         <tbody>
           {% for booking in bookings %}
           <tr>
-            <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>فتح تفاصيل الحجز ←</small></a></td>
+            <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>فتح تفاصيل الحجز ←</small></a>{% include 'admin/reservations/includes/guest_classification.html' %}</td>
             <td>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</td>
             <td>{{ booking.check_in|localized_date }}</td>
             <td>{{ booking.nights }}</td>
@@ -53,6 +60,7 @@
       {% for booking in bookings %}
       <a class="lsa-booking-card" href="{% url 'notifications:booking_detail' booking.pk %}">
         <div class="lsa-booking-card__top"><strong>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</strong><span class="lsa-booking-status lsa-booking-status--{{ booking.admin_status_code }}">{{ booking.admin_status_label }}</span></div>
+        {% include 'admin/reservations/includes/guest_classification.html' %}
         <div class="lsa-booking-card__property"><small>الشقة</small><strong>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</strong></div>
         <dl class="lsa-booking-card__summary">
           <div><dt>إجمالي المدفوع</dt><dd>{% include "admin/reservations/includes/booking_paid_summary.html" %}</dd></div>
@@ -65,7 +73,7 @@
       {% endfor %}
     </div>
     <p class="lsa-booking-list__explanation">المدفوع هو مجموع الدفعات الموثقة قبل خصم المسترد، ويُعرض المسترد منفصلًا عند وجوده. متوسط الليلة = إجمالي قيمة الحجز ÷ عدد الليالي، ويشمل الرسوم الداخلة في الإجمالي. تُعرض المبالغ بعملتها المسجلة دون تحويل.</p>
-    {% else %}<p class="help">لا توجد حجوزات مؤكدة في هوستاوي مطابقة للبحث.</p>{% endif %}
+    {% else %}<p class="help">{% if guest_type and guest_type != 'unknown' and classification_state.status != 'complete' %}لم يكتمل تصنيف الضيوف من هوستاوي بعد؛ تظهر نتائج هذا الفلتر بعد اكتمال الفحص.{% else %}لا توجد حجوزات مؤكدة في هوستاوي مطابقة للبحث.{% endif %}</p>{% endif %}
   </section>
 </main>
 {% endlanguage %}

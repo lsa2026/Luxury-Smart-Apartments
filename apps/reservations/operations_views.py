@@ -297,7 +297,18 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     """Only real stays confirmed in Hostaway belong in the operational booking list."""
 
     _require_owner(request)
+    from .services.guest_classification_history import ensure_refresh, provider_state
+
+    if request.GET.get("classification_status") == "1":
+        return JsonResponse(provider_state())
+    if request.method == "POST" and request.POST.get("action") == "refresh_guest_classification":
+        ensure_refresh(force=True)
+        return redirect("notifications:booking_list")
+    classification_state = ensure_refresh()
     query = request.GET.get("q", "").strip()
+    guest_type = request.GET.get("guest_type", "")
+    if guest_type not in {"new", "returning", "unknown"}:
+        guest_type = ""
     if settings.HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED:
         from apps.integrations.website_reservations import refresh_website_reservations
 
@@ -353,9 +364,21 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             if phone_variants(query)
             else bookings.filter(search)
         )
+    from .services.guest_classification import GuestClassification, guest_classifications
+
+    classifications = guest_classifications()
+    classification_state = provider_state()
+    if guest_type:
+        bookings = bookings.filter(
+            pk__in=[pk for pk, value in classifications.items() if value.code == guest_type]
+        )
     bookings = list(bookings[:100])
     attach_booking_list_summaries(bookings)
     for booking in bookings:
+        booking.admin_guest_classification = classifications.get(
+            booking.pk,
+            GuestClassification("unknown", "قيد التحقق", "أعد تحميل القائمة لتحديث المطابقة"),
+        )
         payment_status = (booking.payment_status or "").strip().casefold()
         booking.admin_status_code = (
             "cancelled"
@@ -382,6 +405,13 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             "title": "إدارة الحجوزات",
             "bookings": bookings,
             "query": query,
+            "guest_type": guest_type,
+            "classification_state": classification_state,
+            "classification_checked_at": (
+                timezone.datetime.fromisoformat(classification_state["completed_at"])
+                if classification_state.get("completed_at")
+                else None
+            ),
             "loyalty_ui_enabled": settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED,
         },
     )

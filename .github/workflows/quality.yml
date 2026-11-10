@@ -88,6 +88,7 @@ jobs:
           tests/test_completed_stay_cancellation.py
           tests/test_operations_users.py
           tests/test_operations_booking_summary.py
+          tests/test_guest_classification.py
           tests/test_booking_detail_layout.py
           tests/test_loyalty_stage8.py
           tests/test_loyalty_signed_balances.py
@@ -169,7 +170,7 @@ jobs:
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
-        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py -q
+        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout -q
 
       - name: Check contact inbox layouts on phone and tablet
         env:
@@ -178,6 +179,7 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/lsa-contact-browser" --no-save playwright@1.62.1
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-contact-layout.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-classification-layout.cjs
 
       - name: Save synthetic contact layout screenshots
         uses: actions/upload-artifact@v7.0.2
@@ -190,7 +192,7 @@ jobs:
         run: node --test tests/price-calendar.test.cjs
 
       - name: Test progressive admin booking tabs and form safety
-        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
+        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs tests/admin-guest-classification.test.cjs
 
       - name: Test noon morning communication contract
         run: node --test tests/morning-noon-contract.test.cjs tests/morning-hostaway-first.test.cjs
