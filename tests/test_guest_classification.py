@@ -309,7 +309,7 @@ def test_duplicate_tasks_and_busy_workers_do_not_repeat_the_page(factory, isolat
     assert remote.invoice_search_page.call_count == 1
 
 
-def test_only_keyed_contacts_are_cached_and_stale_results_cannot_claim_new(factory, publish):
+def test_only_keyed_contacts_are_cached_and_verified_results_are_permanent(factory, publish):
     current = factory(email="private@example.invalid", phone="+16502530000")
     publish(
         [
@@ -330,7 +330,9 @@ def test_only_keyed_contacts_are_cached_and_stale_results_cannot_claim_new(facto
     assert guest_classifications()[current.pk].code == "returning"
     snapshot["completed_at"] = (timezone.now() - timedelta(minutes=16)).isoformat()
     cache.set(history.SNAPSHOT, snapshot)
-    assert guest_classifications()[current.pk].code == "unknown"
+    assert guest_classifications()[current.pk].code == "returning"
+    cache.clear()
+    assert guest_classifications()[current.pk].code == "returning"
 
 
 def test_cache_loss_or_wrong_worker_key_is_not_new(factory, publish, monkeypatch):

@@ -1,0 +1,14 @@
+.lsa-guest-file { min-width: 0; }
+.lsa-guest-file .lsa-page-head > div { min-width: 0; }
+.lsa-guest-file p { overflow-wrap: anywhere; }
+.lsa-guest-file .lsa-btn { box-sizing: border-box; max-width: 100%; white-space: normal; min-height: 44px; }
+.lsa-guest-file__table table { width: 100%; border-collapse: collapse; }
+.lsa-guest-file__table td, .lsa-guest-file__table th { padding: 16px 12px; text-align: right; line-height: 1.8; }
+.lsa-guest-file__table a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 900px) {
+  .lsa-guest-file__table table, .lsa-guest-file__table tbody { display: block; width: 100%; }
+  .lsa-guest-file__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .lsa-guest-file__table tr { display: block; margin-block: 14px; padding: 14px; border: 1px solid var(--lsa-line); border-radius: 12px; }
+  .lsa-guest-file__table td { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 12px; padding: 8px 0; overflow-wrap: anywhere; }
+  .lsa-guest-file__table td::before { content: attr(data-label); font-weight: 700; }
+}

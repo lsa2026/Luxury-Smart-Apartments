@@ -1,0 +1,21 @@
+{% extends 'admin/base_site.html' %}
+{% load static presentation %}
+{% block content_title %}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-guest-file.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-guest-classification.js' %}" defer></script>{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen lsa-guest-file" dir="rtl">
+  <section class="lsa-page-head"><div><h1>ملف الضيف</h1>{% if booking.booking_intent %}<p>{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}</p>{% endif %}</div><a class="lsa-btn" href="{% url 'notifications:booking_list' %}">قائمة الحجوزات</a></section>
+  <section class="lsa-panel" data-guest-classification-state="{{ state.status }}" data-status-url="{{ status_url }}">
+    {% if file %}<h2>{{ classification_label }}</h2><p>{{ file.basis }}</p><p>آخر تحقق محفوظ من هوستاوي: {{ file.checked_at|localized_datetime }}</p><p>يبقى التصنيف والسجل محفوظين عند مغادرة الصفحة. يُحدَّثان بعد اكتمال قراءة جديدة من هوستاوي.</p>{% else %}<h2>بانتظار ربط الملف بسجل هوستاوي</h2><p>لم تُثبت بعد هوية الضيف لهذا الحجز في قراءة هوستاوي المحفوظة؛ لن نعتمد بيانات محلية بديلة للمطابقة.</p>{% endif %}
+    <p role="status" aria-live="polite" data-classification-status>{% if state.status == 'queued' or state.status == 'running' %}جارٍ تحديث القراءة من هوستاوي؛ يبقى آخر سجل محفوظ ظاهرًا حتى اكتمالها.{% elif state.status != 'complete' %}تعذر التحديث حاليًا؛ آخر تحقق محفوظ لا يُحذف بسبب تعذر الاتصال.{% endif %}</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="refresh"><button class="lsa-btn lsa-btn--gold" type="submit">تحديث ملف الضيف من هوستاوي</button></form>
+    {% if booking %}<p><a class="lsa-btn" href="{% url 'notifications:booking_detail' booking.pk %}">فتح الحجز وإدارته</a></p>{% endif %}
+  </section>
+  {% if file %}<section class="lsa-panel"><h2>سجل الحجوزات</h2><p>من جميع قنوات هوستاوي، مرتب حسب تاريخ الدخول من الأحدث إلى الأقدم. يظهر كل إجمالي بعملته المسجلة.</p>
+    {% if history %}<div class="lsa-guest-file__table"><table><thead><tr><th>تاريخ الدخول</th><th>تاريخ الخروج</th><th>الليالي</th><th>إجمالي الحجز</th><th>مصدر الحجز</th><th>الإدارة</th></tr></thead><tbody>
+    {% for stay in history %}<tr><td data-label="تاريخ الدخول">{% if stay.check_in %}{{ stay.check_in|localized_date }}{% else %}غير متاح{% endif %}</td><td data-label="تاريخ الخروج">{% if stay.check_out %}{{ stay.check_out|localized_date }}{% else %}غير متاح{% endif %}</td><td data-label="الليالي">{% if stay.nights != None %}{{ stay.nights }}{% else %}غير متاح{% endif %}</td><td data-label="إجمالي الحجز">{% if stay.amount != None %}{{ stay.amount|format_money:stay.currency }}{% else %}غير متاح{% endif %}</td><td data-label="مصدر الحجز">{{ stay.channel_label }}</td><td data-label="الإدارة">{% if stay.manage_url %}<a href="{{ stay.manage_url }}">فتح الحجز وإدارته ←</a>{% else %}<span>سجل حجز من قناة خارجية</span>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p>لا توجد سجلات حجز مطابقة ضمن آخر قراءة متحققة.</p>{% endif %}
+  </section>{% endif %}
+</main>
+{% endblock %}

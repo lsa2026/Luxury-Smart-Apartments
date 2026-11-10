@@ -90,6 +90,7 @@ jobs:
           tests/test_operations_booking_summary.py
           tests/test_guest_classification.py
           tests/test_unified_booking_phone.py
+          tests/test_admin_guest_files.py
           tests/test_booking_detail_layout.py
           tests/test_loyalty_stage8.py
           tests/test_loyalty_signed_balances.py
@@ -168,7 +169,7 @@ jobs:
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
-        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout tests/test_unified_booking_phone.py::test_render_unified_phone_layout -q
+        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout tests/test_unified_booking_phone.py::test_render_unified_phone_layout tests/test_admin_guest_files.py::test_render_guest_file_layout -q
 
       - name: Check contact inbox layouts on phone and tablet
         env:
@@ -179,6 +180,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-contact-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-classification-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-unified-phone-layout.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-file-layout.cjs
 
       - name: Run tests
         run: pytest
