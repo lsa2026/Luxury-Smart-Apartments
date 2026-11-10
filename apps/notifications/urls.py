@@ -8,12 +8,18 @@ from apps.loyalty.invitation_auth import setup as invitation_credential_setup
 from apps.loyalty.welcome_previews import preview as loyalty_welcome_preview
 from apps.payments import owner_payment_links
 from apps.reservations import day_use_views, morning_views, operations_views
+from apps.reservations.guest_check_views import guest_classification_check
 
 from . import health, invoice_views, views
 
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/guest-classification/check/",
+        guest_classification_check,
+        name="guest_classification_check",
+    ),
     path("admin/operations/day-use-stays/", day_use_views.day_use_list, name="day_use_list"),
     path(
         "admin/operations/day-use-stays/new/", day_use_views.day_use_create, name="day_use_create"

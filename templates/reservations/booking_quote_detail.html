@@ -223,7 +223,7 @@
                                 {% for error in guest_form.guest_email.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                             </div>
                             <div class="form-field quote-review__field--guest_phone{% if guest_form.guest_phone.errors %} form-field--error{% endif %}" data-journey-field>
-                                <div class="checkout-phone" data-checkout-phone
+                                <div class="checkout-phone" data-checkout-phone data-booking-phone
                                      data-check-url="{% url 'reservations:phone_check' reference=quote_reference %}"
                                      data-invalid-message="{% trans 'Check your phone number and the selected country.' %}">
                                     <div class="checkout-phone__country">

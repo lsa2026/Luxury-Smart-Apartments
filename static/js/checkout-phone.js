@@ -22,7 +22,7 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
             option.textContent = `${names.of(option.value)} \u2066${callingCode}\u2069`;
         });
     } catch (_) { /* ISO names and calling codes remain available. */ }
-    if (form.dataset.draftServerBound !== "true" && !phone.value) {
+    if (!widget.hasAttribute("data-booking-phone") && form.dataset.draftServerBound !== "true" && !phone.value) {
         try {
             const saved = localStorage.getItem(preferenceKey);
             if (validCountries.has(saved)) country.value = saved;
@@ -90,7 +90,7 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
     };
     phone.addEventListener("input", clearError);
     phone.addEventListener("blur", validate);
-    if (widget.hasAttribute("data-morning-phone")) {
+    if (widget.hasAttribute("data-morning-phone") || widget.hasAttribute("data-booking-phone")) {
         let typingTimer;
         phone.addEventListener("input", () => {
             clearTimeout(typingTimer);
@@ -102,6 +102,7 @@ document.querySelectorAll("[data-checkout-phone]").forEach((widget) => {
         remember();
         if (phone.value.trim()) validate();
     });
+    if (widget.hasAttribute("data-booking-phone") && phone.value.trim()) validate();
     // Account forms keep the browser's native POST. The authoritative server
     // parser accepts local/international input even while blur formatting is
     // pending, unavailable or unsupported. Never cancel then asynchronously

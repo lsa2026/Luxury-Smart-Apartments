@@ -1,0 +1,5 @@
+<section class="lsa-guest-check" data-admin-guest-check data-check-url="{% url 'notifications:guest_classification_check' %}"{% if not draft_check %} data-booking-id="{{ reservation.pk }}"{% endif %}>
+  {% if not draft_check %}{% csrf_token %}{% endif %}
+  <button type="button" class="lsa-btn lsa-btn--ghost" data-check-guest>تحديث حالة الضيف من هوستاوي</button>
+  <p role="status" aria-live="polite" data-guest-check-result>فحص الجديد والعائد من جميع قنوات هوستاوي بالبريد أو رقم الجوال الدولي الكامل.</p>
+</section>

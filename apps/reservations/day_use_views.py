@@ -429,6 +429,7 @@ def day_use_create(request):
 def day_use_detail(request, stay_id):
     stay = get_object_or_404(DayUseStay.objects.select_related("property"), pk=stay_id)
     billing_form = DayUseBillingForm(initial=stay.billing_address)
+    phone_form = GuestDetailsForm(initial={"guest_phone": stay.guest_phone})
     if request.method not in {"GET", "POST"}:
         return HttpResponseNotAllowed(["GET", "POST"])
     if request.method == "POST":
@@ -464,6 +465,7 @@ def day_use_detail(request, stay_id):
                     stay=stay,
                     operation=booking_state(stay),
                     billing_form=billing_form,
+                    phone_form=phone_form,
                 ),
             )
         if request.POST.get("action") == "correct_phone":
@@ -471,7 +473,8 @@ def day_use_detail(request, stay_id):
                 from .day_use_phone import correct_phone
 
                 phone = normalize_day_use_phone(
-                    request.POST.get("phone", ""), request.POST.get("country") or "SA"
+                    request.POST.get("guest_phone", request.POST.get("phone", "")),
+                    request.POST.get("guest_phone_country") or request.POST.get("country") or "SA",
                 )
                 correct_phone(
                     stay.pk, phone, expected_updated_at=request.POST.get("expected_updated_at", "")
@@ -497,5 +500,6 @@ def day_use_detail(request, stay_id):
             stay=stay,
             operation=booking_state(stay),
             billing_form=billing_form,
+            phone_form=phone_form,
         ),
     )

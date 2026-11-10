@@ -1,0 +1,9 @@
+{% load i18n %}
+<div class="booking-phone-field">
+  <div class="checkout-phone" data-checkout-phone data-account-phone data-booking-phone data-check-url="{{ phone_check_url }}" data-invalid-message="{% trans 'Check your phone number and the selected country.' %}">
+    <div><label for="{{ phone_form.guest_phone_country.id_for_label }}">{{ phone_form.guest_phone_country.label }}</label>{{ phone_form.guest_phone_country }}{{ phone_form.guest_phone_country.errors }}</div>
+    <div><label for="{{ phone_field.id_for_label }}">{{ phone_field.label }}</label>{{ phone_field }}{{ phone_field.errors }}</div>
+  </div>
+  <small id="guest-phone-help">{{ phone_field.help_text }}</small>
+  <p id="guest-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
+</div>

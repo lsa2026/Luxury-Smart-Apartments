@@ -9,7 +9,7 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.guest_documents import UI, document_language, documents_digest
-from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.payments.countries import normalize_country_code
 from apps.payments.morning_validation import MorningBillingFields
 
@@ -131,7 +131,9 @@ class GuestDetailsForm(MorningBillingFields):
         phone_country = cleaned.get("guest_phone_country")
         if isinstance(phone, str) and phone_country:
             try:
-                cleaned["guest_phone"] = normalize_phone_number(phone, default_region=phone_country)
+                cleaned["guest_phone"] = normalize_booking_phone(
+                    phone, default_region=phone_country
+                )
             except InvalidPhoneNumber:
                 self.add_error(
                     "guest_phone",

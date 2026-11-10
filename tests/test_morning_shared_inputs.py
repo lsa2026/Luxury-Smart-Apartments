@@ -67,6 +67,11 @@ def test_edit_infers_country_and_create_groups_address_after_phone():
     assert html.count('name="guest_phone_country"') == 1
     assert html.count('name="billing_street1"') == 1
     assert "js/checkout-phone.js" in html
+    assert "data-admin-guest-check" in html
+    edit_page = client.get(reverse("notifications:morning_edit", args=[stay.pk]))
+    assert edit_page.status_code == 200
+    # A creation lookup cannot count this existing morning booking as a prior stay.
+    assert b"data-admin-guest-check" not in edit_page.content
     result = client.post(
         reverse("accounts:profile_phone_format"), {"phone": "+442079460958", "country": "SA"}
     )

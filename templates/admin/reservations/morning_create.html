@@ -1,8 +1,8 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}<link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
+{% block extrastyle %}<link rel="stylesheet" href="{% static 'css/admin-guest-check.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}">{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrahead %}<script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% if not editing %}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endif %}{% endblock %}
+{% block extrahead %}<script src="{% static 'js/admin-guest-check.js' %}" defer></script><script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% if not editing %}<script src="{% static 'js/admin-morning-availability.js' %}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">الإقامة الصباحية</span><h1>{{ title }}</h1><p>دخول بعد منتصف الليل وخروج حتى ١٢ ظهرًا في اليوم نفسه، بتوقيت الشقة.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:booking_list' %}">إدارة الحجوزات</a></section>
@@ -27,7 +27,7 @@
       {% endif %}
       <div class="lsa-form-grid">{% for field in form.visible_fields %}{% if field.name == 'guest_phone' %}
       <div class="form-row morning-phone-row">
-        <div class="checkout-phone" data-checkout-phone data-account-phone data-morning-phone data-check-url="{% url 'notifications:morning_address' kind='phone' %}" data-invalid-message="تحقق من رقم الجوال والدولة المختارة.">
+        <div class="checkout-phone" data-checkout-phone data-account-phone data-booking-phone data-morning-phone data-check-url="{% url 'notifications:morning_address' kind='phone' %}" data-invalid-message="تحقق من رقم الجوال والدولة المختارة.">
           <div><label for="{{ form.guest_phone_country.id_for_label }}">{{ form.guest_phone_country.label }}</label>{{ form.guest_phone_country }}{{ form.guest_phone_country.errors }}</div>
           <div><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
         </div>{{ field.errors }}<p id="guest-phone-help">{{ field.help_text }}</p><p id="guest-phone-validation" class="form-error" role="status" aria-live="polite" hidden></p>
@@ -35,6 +35,7 @@
       {% elif field.name != 'guest_phone_country' and field.name|slice:':8' != 'billing_' %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<p id="{{ field.auto_id }}_help" class="morning-field-help"><strong>{{ field.help_text }}</strong></p><div id="{{ field.auto_id }}_error" class="form-error" aria-live="polite">{{ field.errors }}</div></div>{% endif %}{% endfor %}</div>
       {% if not editing %}<fieldset class="morning-address-fields"><legend>عنوان الضيف — مطلوب لتأكيد الحجز</legend><p>ابحث عن العنوان واختر الاقتراح، ثم راجع الحقول المكتملة أدناه. يمكنك إدخالها يدويًا أيضًا.</p>{% include 'payments/_morning_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
       {% if editing %}<p>سيُرسل تحديث الحجز وتُحدّث التذكيرات بحسب بيانات الحجز الجديدة.</p>{% else %}<p>رابط السداد ثابت دون مهلة انتهاء زمنية، ويعاد فحص التوفر قبل الدفع. أدخل عنوان الفوترة المرتبط ببطاقة الضيف ليكتفي بمراجعته والموافقة على الشروط. فتح الرابط وحده لا يحصّل مبلغًا.</p>{% endif %}
+      {% if not editing %}{% include 'admin/reservations/includes/guest_check.html' with draft_check=True %}{% endif %}
       <button type="submit" class="lsa-btn lsa-btn--gold"{% if not editing %} name="action" value="confirm_hostaway"{% endif %}>{% if editing %}حفظ تعديل الحجز{% else %}تأكيد الحجز وإنشاؤه في Hostaway{% endif %}</button>
     </form>
   </section>
