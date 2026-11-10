@@ -19,9 +19,16 @@
 .lsa-booking-card__property small { display: block; color: var(--lsa-muted); font-size: 12px; font-weight: 400; line-height: 1.7; }
 .lsa-booking-paid .lsa-booking-paid__refund { color: #875c23; }
 .lsa-booking-list__explanation { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--lsa-line); color: var(--lsa-muted); font-size: 12px; line-height: 1.9; }
-.lsa-booking-list__search .lsa-inline-form { display: flex; gap: 12px; align-items: end; }
+.lsa-booking-list__search .lsa-inline-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 .lsa-booking-list__search .lsa-inline-form label { display: grid; gap: 8px; }
-.lsa-booking-list__search input { box-sizing: border-box; min-height: 48px; font: inherit; }
+.lsa-booking-list__search input, .lsa-booking-list__search select { box-sizing: border-box; min-height: 48px; max-width: 100%; font: inherit; }
+.lsa-booking-list__classification-note { color: var(--lsa-muted); line-height: 1.9; margin-block: 16px; }
+.lsa-guest-classification { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-block: 12px; min-width: 0; }
+.lsa-guest-classification__badge { display: inline-block; border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 700; line-height: 1.7; }
+.lsa-guest-classification__badge--returning { color: #654915; background: #f4e8c7; }
+.lsa-guest-classification__badge--new { color: #175246; background: #e2f0eb; }
+.lsa-guest-classification__badge--unknown { color: #4b5261; background: #edf0f4; }
+.lsa-guest-classification small { color: var(--lsa-muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
 .lsa-booking-list__search button { box-sizing: border-box; min-height: 48px; margin: 0; padding: 10px 25px; font: inherit; }
 .lsa-booking-card__property { min-width: 0; }
 .lsa-booking-card__property strong { display: block; color: var(--lsa-ink); font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }

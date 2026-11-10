@@ -24,9 +24,11 @@
   <section class="lsa-panel lsa-booking-list__search">
     <form method="get" class="lsa-inline-form" aria-label="البحث عن حجز">
       <label>البحث عن حجز<input type="search" name="q" value="{{ query }}" placeholder="الاسم أو الجوال أو البريد أو المرجع" autocomplete="off"></label>
+      <label>تصنيف الضيف<select name="guest_type"><option value="">كل الضيوف</option value="new"{% if guest_type == 'new' %} selected{% endif %}>ضيف جديد</option><option value="returning"{% if guest_type == 'returning' %} selected{% endif %}>ضيف عائد</option><option value="unknown"{% if guest_type == 'unknown' %} selected{% endif %}>بيانات غير كافية</option></select></label>
       <button type="submit" class="lsa-btn lsa-btn--gold">بحث</button>
     </form>
   </section>
+  <p class="lsa-booking-list__classification-note">ضيف عائد: يوجد حجز مؤكد آخر يطابق البريد الإلكتروني أو رقم الجوال، ويكفي تطابق أحدهما. التصنيف بحسب السجل المتاح في الموقع، بما فيه الصباحي والنهاري؛ تُستبعد الحجوزات الملغاة والتجريبية والطلبات غير المؤكدة.</p>
 
   <section class="lsa-panel lsa-booking-list__panel">
     {% if bookings %}
@@ -37,7 +39,7 @@
         <tbody>
           {% for booking in bookings %}
           <tr>
-            <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>فتح تفاصيل الحجز ←</small></a></td>
+            <td><a class="lsa-booking-list__guest" href="{% url 'notifications:booking_detail' booking.pk %}"><b>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</b><small>فتح تفاصيل الحجز ←</small></a>{% include 'admin/reservations/includes/guest_classification.html' %}</td>
             <td>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</td>
             <td>{{ booking.check_in|localized_date }}</td>
             <td>{{ booking.nights }}</td>
@@ -53,6 +55,7 @@
       {% for booking in bookings %}
       <a class="lsa-booking-card" href="{% url 'notifications:booking_detail' booking.pk %}">
         <div class="lsa-booking-card__top"><strong>{% if booking.booking_intent %}{{ booking.booking_intent.guest_first_name }} {{ booking.booking_intent.guest_last_name }}{% else %}ضيف غير مسجل{% endif %}</strong><span class="lsa-booking-status lsa-booking-status--{{ booking.admin_status_code }}">{{ booking.admin_status_label }}</span></div>
+        {% include 'admin/reservations/includes/guest_classification.html' %}
         <div class="lsa-booking-card__property"><small>الشقة</small><strong>{{ booking.property|localized_property_name|default:"شقة غير محددة" }}</strong></div>
         <dl class="lsa-booking-card__summary">
           <div><dt>إجمالي المدفوع</dt><dd>{% include "admin/reservations/includes/booking_paid_summary.html" %}</dd></div>

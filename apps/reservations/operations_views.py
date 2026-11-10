@@ -298,6 +298,9 @@ def booking_list(request: HttpRequest) -> HttpResponse:
 
     _require_owner(request)
     query = request.GET.get("q", "").strip()
+    guest_type = request.GET.get("guest_type", "")
+    if guest_type not in {"new", "returning", "unknown"}:
+        guest_type = ""
     if settings.HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED:
         from apps.integrations.website_reservations import refresh_website_reservations
 
@@ -353,9 +356,20 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             if phone_variants(query)
             else bookings.filter(search)
         )
+    from .services.guest_classification import GuestClassification, guest_classifications
+
+    classifications = guest_classifications()
+    if guest_type:
+        bookings = bookings.filter(
+            pk__in=[pk for pk, value in classifications.items() if value.code == guest_type]
+        )
     bookings = list(bookings[:100])
     attach_booking_list_summaries(bookings)
     for booking in bookings:
+        booking.admin_guest_classification = classifications.get(
+            booking.pk,
+            GuestClassification("unknown", "قيد التحقق", "أعد تحميل القائمة لتحديث المطابقة"),
+        )
         payment_status = (booking.payment_status or "").strip().casefold()
         booking.admin_status_code = (
             "cancelled"
@@ -382,6 +396,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             "title": "إدارة الحجوزات",
             "bookings": bookings,
             "query": query,
+            "guest_type": guest_type,
             "loyalty_ui_enabled": settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED,
         },
     )
