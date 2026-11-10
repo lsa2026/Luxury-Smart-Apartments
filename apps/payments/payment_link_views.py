@@ -16,7 +16,7 @@ from apps.reservations.address_places import (
     make_address_ticket,
     places_enabled,
 )
-from apps.reservations.booking_forms import GuestDetailsForm
+from apps.reservations.booking_forms import BillingAddressForm, GuestDetailsForm
 from apps.reservations.security import is_ip_rate_limited, session_key_hash
 from apps.reservations.views import _rate_conditions_snapshot
 
@@ -105,6 +105,22 @@ class PaymentLinkBillingForm(GuestDetailsForm):
                 self.fields.pop(name)
 
 
+def saved_manual_billing(payment_request):
+    """Only explicitly collected manual addresses qualify for the shortened step."""
+    from apps.reservations.models import ManualBookingDraft
+
+    intent = payment_request.reservation.booking_intent
+    draft = (
+        ManualBookingDraft.objects.filter(quote_id=intent.quote_id).only("billing_address").first()
+    )
+    if draft is None or not draft.billing_address:
+        return None
+    if not BillingAddressForm(draft.billing_address).is_valid():
+        return None
+    form = BillingAddressForm({name: getattr(intent, name) for name in BillingAddressForm().fields})
+    return dict(form.cleaned_data) if form.is_valid() else None
+
+
 def private_response(response, *, form_page=False):
     response["Cache-Control"] = "no-store, private"
     # no-referrer can make Safari send Origin: null on a same-origin form POST.
@@ -142,14 +158,17 @@ class ReservationPaymentView(View):
             except (ValueError, ValidationError, CurrencyError, HyperPayError):
                 pass
         ui = COPY[request.LANGUAGE_CODE]
+        saved_billing = saved_manual_billing(payment_request)
         context = {
             "payment_request": payment_request,
             "ui": ui,
             "payable": payable,
             "form": form
             or PaymentLinkBillingForm(
-                default_country_code=payment_request.reservation.booking_intent.billing_country
+                default_country_code=payment_request.reservation.booking_intent.billing_country,
+                initial=dict(saved_billing or {}),
             ),
+            "saved_billing": saved_billing,
             "guest_documents": guest_documents(request.LANGUAGE_CODE),
             "error": error,
             "conditions": _rate_conditions_snapshot(
@@ -190,7 +209,10 @@ class ReservationPaymentView(View):
                 },
                 status=429,
             )
-        form = PaymentLinkBillingForm(request.POST)
+        data = request.POST.copy()
+        for name, value in (saved_manual_billing(self.payment_request) or {}).items():
+            data.setdefault(name, value)
+        form = PaymentLinkBillingForm(data)
         if not form.is_valid():
             return self._render(request, form=form)
         accepted = {

@@ -200,3 +200,13 @@ class GuestDetailsForm(forms.Form):
         if value != documents_digest():
             raise forms.ValidationError(UI[document_language()]["updated"])
         return value
+
+
+class BillingAddressForm(GuestDetailsForm):
+    """The same address fields and validation without accepting guest terms."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in list(self.fields):
+            if not name.startswith("billing_"):
+                self.fields.pop(name)

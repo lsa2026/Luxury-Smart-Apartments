@@ -49,6 +49,11 @@ def guest_fields(draft, language="ar"):
         "guest_phone": "+966501234567",
         "guest_language": language,
         "final_total_price": draft.final_total_price,
+        "billing_street1": "King Road 10",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "SA",
+        "billing_postcode": "12345",
     }
 
 

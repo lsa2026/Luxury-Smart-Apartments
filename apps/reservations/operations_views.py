@@ -884,6 +884,8 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
 
 @operations_access_required
 def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
+    from .morning_billing import address_context
+
     _require_owner(request)
     draft = get_object_or_404(
         ManualBookingDraft.objects.select_related("property", "quote"),
@@ -895,7 +897,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         and reservation is not None
     ):
         return redirect("notifications:booking_detail", reservation_id=reservation.pk)
-    form = ManualBookingFinalizeForm(draft=draft)
+    form = ManualBookingFinalizeForm(draft=draft, require_address=True)
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "recheck":
@@ -1037,7 +1039,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     "أعد المحاولة بعد مراجعة التوفر.",
                 )
         else:
-            form = ManualBookingFinalizeForm(request.POST, draft=draft)
+            form = ManualBookingFinalizeForm(request.POST, draft=draft, require_address=True)
             if form.is_valid():
                 finalized = finalize_manual_booking_draft(
                     draft_id=draft.pk,
@@ -1098,6 +1100,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "reservation": reservation,
             "accounting_delivery": accounting_delivery,
             "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
+            **address_context(request),
         },
     )
 

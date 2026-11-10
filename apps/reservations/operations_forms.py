@@ -5,12 +5,13 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django import forms
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.html import strip_tags
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.properties.models import Property
 
+from .booking_forms import BillingAddressForm
 from .models import ManualBookingDraft
 
 
@@ -126,10 +127,17 @@ class ManualBookingFinalizeForm(forms.Form):
         self,
         *args: object,
         draft: ManualBookingDraft,
+        require_address: bool = False,
         **kwargs: object,
     ) -> None:
         self.draft = draft
+        self.require_address = require_address
         super().__init__(*args, **kwargs)
+        if self.require_address:
+            with translation.override("ar"):
+                self.fields.update(BillingAddressForm().fields)
+        self.initial.update(draft.billing_address or {})
+        self.initial.setdefault("billing_country", "SA")
         self.fields["final_total_price"].help_text = f"بالعملة الأصلية للحجز: {draft.currency}."
         if not self.is_bound:
             self.initial.update(
@@ -148,6 +156,19 @@ class ManualBookingFinalizeForm(forms.Form):
         if not value:
             raise forms.ValidationError("اسم الضيف مطلوب.")
         return value
+
+    def clean(self):
+        cleaned = super().clean()
+        if not self.require_address:
+            return cleaned
+        billing = BillingAddressForm(cleaned)
+        if billing.is_valid():
+            cleaned["billing_address"] = dict(billing.cleaned_data)
+        else:
+            for name, errors in billing.errors.items():
+                if name not in self.errors:
+                    self.add_error(name, errors)
+        return cleaned
 
     def clean_guest_last_name(self) -> str:
         value = _clean_text(self.cleaned_data["guest_last_name"])
