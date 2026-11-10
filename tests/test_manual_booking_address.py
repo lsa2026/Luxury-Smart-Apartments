@@ -34,7 +34,9 @@ pytestmark = pytest.mark.django_db
 
 def addressed_stay(language="ar"):
     stay = manual_stay(language=language)
-    ManualBookingDraft.objects.filter(quote=stay.booking_intent.quote).update(billing_address=billing())
+    ManualBookingDraft.objects.filter(quote=stay.booking_intent.quote).update(
+        billing_address=billing()
+    )
     for name, value in billing().items():
         setattr(stay.booking_intent, name, value)
     stay.booking_intent.save()
@@ -113,7 +115,7 @@ def test_payment_link_shows_address_and_keeps_consents_unchecked(language):
         assert form[name].value() == value
     assert not form["terms_accepted"].value()
     assert not form["house_rules_accepted"].value()
-    assert '<details><summary>' in page.content.decode()
+    assert "<details><summary>" in page.content.decode()
     assert page["Cache-Control"] == "no-store, private"
     assert not PaymentAttempt.objects.exists()
 
