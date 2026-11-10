@@ -1,5 +1,8 @@
 {% extends "admin/base_site.html" %}
-{% load presentation %}
+{% load presentation static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
@@ -17,6 +20,7 @@
     <p><b>فحص التوفر:</b> <span dir="ltr">{{ draft.availability_checked_at }}</span></p>
     <p><b>صلاحية السعر:</b> <span dir="ltr">{{ draft.expires_at }}</span></p>
     {% if draft.guest_language %}<p><b>لغة الضيف:</b> {{ draft.get_guest_language_display }}</p>{% endif %}
+    {% if draft.billing_address %}<p><b>عنوان الضيف:</b> {{ draft.billing_address.billing_street1 }} · {{ draft.billing_address.billing_city }} · {{ draft.billing_address.billing_state }} · {{ draft.billing_address.billing_postcode }} · {{ draft.billing_address.billing_country }}</p>{% endif %}
     {% if draft.status == "quoted" or draft.status == "ready_for_payment" %}
     <form method="post" class="lsa-owner-form" novalidate>
       {% csrf_token %}<input type="hidden" name="action" value="recheck">
@@ -78,13 +82,20 @@
         <fieldset class="module aligned">
           <h2>بيانات الضيف</h2>
           {% for field in form %}
+          {% if field.name|slice:':8' != 'billing_' %}
           <div class="form-row">
             {{ field.label_tag }}
             {{ field }}
             {% if field.help_text %}<small class="help">{{ field.help_text }}</small>{% endif %}
             {{ field.errors }}
           </div>
+          {% endif %}
           {% endfor %}
+        </fieldset>
+        <fieldset class="module aligned">
+          <h2>عنوان الضيف نيابة عنه</h2>
+          <p class="help">أدخل العنوان المرتبط ببطاقة الدفع. استخدم العنوان المختصر أو جزءًا من العنوان واختر الاقتراح، ثم راجع الحقول أو أكملها يدويًا. سيظهر العنوان للضيف جاهزًا للمراجعة؛ يوافق الضيف بنفسه على الشروط قبل الدفع.</p>
+          {% include 'reservations/_billing_fields.html' with guest_form=form %}
         </fieldset>
         <p class="help">يمكنك اعتماد السعر أو تعديله مباشرة؛ يبقى سعر Hostaway الأصلي محفوظًا للمراجعة.</p>
         <button class="lsa-btn lsa-btn--gold lsa-owner-form__submit lsa-manual-booking__finalize" type="submit"><span aria-hidden="true">✓</span> اعتماد بيانات الضيف وتجهيز الدفع</button>

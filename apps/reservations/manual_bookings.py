@@ -15,6 +15,7 @@ from django.utils.crypto import salted_hmac
 from apps.core.phone_numbers import normalize_phone_number
 from apps.payments.currency import CurrencyError, CurrencyService
 
+from .booking_forms import BillingAddressForm
 from .models import BookingIntent, BookingQuote, ManualBookingDraft, Reservation
 from .services.availability import AvailabilityRequest, AvailabilityResult, AvailabilityService
 from .services.booking import create_quote_for_property
@@ -223,6 +224,13 @@ def finalize_manual_booking_draft(
             draft.save(update_fields=["status", "updated_at"])
             return ManualBookingDraftFinalization("quote_expired", draft)
 
+        billing_address = guest_data.get("billing_address")
+        if billing_address is not None:
+            billing = BillingAddressForm(billing_address)
+            if not billing.is_valid():
+                return ManualBookingDraftFinalization("invalid_billing_address", draft)
+            draft.billing_address = dict(billing.cleaned_data)
+
         # Owner-entered totals use two currency decimals. The original Hostaway
         # quote remains untouched for audit, even if that provider uses 4 places.
         final_total = Decimal(final_total_price).quantize(Decimal("0.01"))
@@ -305,6 +313,12 @@ def create_manual_booking_in_hostaway(
 
         intent = BookingIntent.objects.filter(quote=draft.quote).first()
         if intent is None:
+            billing_address = draft.billing_address or {}
+            if billing_address:
+                billing = BillingAddressForm(billing_address)
+                if not billing.is_valid():
+                    return ManualBookingHostawayCreation("invalid_billing_address", draft)
+                billing_address = dict(billing.cleaned_data)
             now = timezone.now()
             intent = BookingIntent(
                 quote=draft.quote,
@@ -323,11 +337,13 @@ def create_manual_booking_in_hostaway(
                 guest_email=draft.guest_email,
                 guest_phone=draft.guest_phone,
                 guest_country_code=_guest_country_code(draft.guest_phone),
-                billing_street1="Not provided",
-                billing_city="Not provided",
-                billing_state="Not provided",
-                billing_country=_guest_country_code(draft.guest_phone),
-                billing_postcode="Not provided",
+                billing_street1=billing_address.get("billing_street1", "Not provided"),
+                billing_city=billing_address.get("billing_city", "Not provided"),
+                billing_state=billing_address.get("billing_state", "Not provided"),
+                billing_country=billing_address.get(
+                    "billing_country", _guest_country_code(draft.guest_phone)
+                ),
+                billing_postcode=billing_address.get("billing_postcode", "Not provided"),
                 language=draft.guest_language or "ar",
                 special_requests="",
                 status=BookingIntent.Status.AWAITING_PAYMENT,

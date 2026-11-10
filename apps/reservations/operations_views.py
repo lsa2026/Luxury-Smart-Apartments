@@ -884,6 +884,8 @@ def manual_booking_create(request: HttpRequest) -> HttpResponse:
 
 @operations_access_required
 def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
+    from .morning_billing import address_context
+
     _require_owner(request)
     draft = get_object_or_404(
         ManualBookingDraft.objects.select_related("property", "quote"),
@@ -1098,6 +1100,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
             "reservation": reservation,
             "accounting_delivery": accounting_delivery,
             "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
+            **address_context(request),
         },
     )
 

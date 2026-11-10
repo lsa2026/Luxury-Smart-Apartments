@@ -34,6 +34,7 @@ class Command(BaseCommand):
                 return {
                     ("payments", "0020_dayusepaymentattempt_stay_and_more"),
                     ("reservations", "0031_dayusestay_dayusepaymentlinkdelivery_and_more"),
+                    ("reservations", "0032_manualbookingdraft_billing_address"),
                 }.issubset(MigrationRecorder(connection).applied_migrations())
 
             while not ready():

@@ -36,6 +36,23 @@ def test_worker_schema_check_accepts_committed_migrations(settings):
     assert "schema present" in output.getvalue() and "disabled" in output.getvalue()
 
 
+@pytest.mark.django_db
+def test_worker_waits_for_manual_address_migration(settings, monkeypatch):
+    from django.db.migrations.recorder import MigrationRecorder
+
+    settings.DAY_USE08_ENABLED = False
+    applied = set(MigrationRecorder(connection).applied_migrations())
+    applied.remove(("reservations", "0032_manualbookingdraft_billing_address"))
+    monkeypatch.setattr(MigrationRecorder, "applied_migrations", lambda self: applied)
+    clock = iter([0, 61])
+    monkeypatch.setattr(
+        "apps.reservations.management.commands.check_day_use08_readiness.time.monotonic",
+        lambda: next(clock),
+    )
+    with pytest.raises(CommandError, match="schema not ready"):
+        call_command("check_day_use08_readiness", wait_for_schema=True, stdout=StringIO())
+
+
 @pytest.mark.parametrize(
     "service_id,expects_django",
     [

@@ -237,6 +237,7 @@ class ManualBookingDraft(models.Model):
         default="",
         db_default="",
     )
+    billing_address = models.JSONField(default=dict, db_default={}, blank=True, editable=False)
     special_requests = models.TextField(max_length=1000, blank=True)
     status = models.CharField(
         max_length=30,

@@ -287,7 +287,8 @@ def create_request_checkout(request_id, *, billing_data, acceptance, client=None
                     previous, previous.provider_checkout_id, previous.widget_integrity
                 )
             raise HyperPayCheckoutError("previous_payment_unresolved")
-        # Billing is entered by the guest, never fabricated from the owner's draft.
+        # Use the validated address, either collected by management or corrected
+        # by the guest. Document acceptance still belongs to the guest alone.
         for field in (
             "billing_street1",
             "billing_city",

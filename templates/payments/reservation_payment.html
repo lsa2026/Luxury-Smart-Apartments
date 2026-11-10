@@ -35,9 +35,15 @@
       <form method="post" class="guest-form">
         <input type="hidden" name="payment_request_version" value="{{ payment_request.pk }}">
         {% csrf_token %}{{ form.non_field_errors }}{{ form.documents_digest }}
+        {% if saved_billing %}
+        <section class="review-panel"><h2>{{ ui.billing }}</h2>
+          <p dir="auto">{{ saved_billing.billing_street1 }} · {{ saved_billing.billing_city }} · {{ saved_billing.billing_state }} · {{ saved_billing.billing_postcode }} · {{ saved_billing.billing_country }}</p>
+          <details{% if form.errors %} open{% endif %}><summary>{% if current_language_code == 'ar' %}مراجعة أو تصحيح العنوان{% elif current_language_code == 'fr' %}Vérifier ou corriger l’adresse{% else %}Review or correct address{% endif %}</summary>
+        {% endif %}
         <fieldset><legend>{{ ui.billing }}</legend>
           {% include "reservations/_billing_fields.html" with guest_form=form %}
         </fieldset>
+        {% if saved_billing %}</details></section>{% endif %}
         <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
         <div class="form-field reservation-payment__consent"><label for="{{ form.terms_accepted.id_for_label }}">{{ form.terms_accepted }} {{ guest_documents.terms.acceptance }}</label>{{ form.terms_accepted.errors }}</div>
         <details><summary>{{ guest_documents.house_rules.title }}</summary><p>{{ guest_documents.house_rules.body|linebreaksbr }}</p></details>
