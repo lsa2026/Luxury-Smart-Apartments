@@ -115,6 +115,8 @@ def saved_manual_billing(payment_request):
     )
     if draft is None or not draft.billing_address:
         return None
+    if not BillingAddressForm(draft.billing_address).is_valid():
+        return None
     form = BillingAddressForm({name: getattr(intent, name) for name in BillingAddressForm().fields})
     return dict(form.cleaned_data) if form.is_valid() else None
 

@@ -23,11 +23,11 @@ from tests.test_manual_booking_operations_phase61 import FakeManualHostawayBooki
 from tests.test_manual_guest_language import guest_fields, make_draft
 from tests.test_reservation_payment_links import (
     billing,
-    isolated_settings as isolated_settings,
     manual_stay,
     page_url,
     remote,
 )
+from tests.test_reservation_payment_links import isolated_settings as isolated_settings
 
 pytestmark = pytest.mark.django_db
 
