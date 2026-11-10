@@ -35,7 +35,7 @@
       {% elif field.name != 'guest_phone_country' and field.name|slice:':8' != 'billing_' %}<div class="form-row"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<p id="{{ field.auto_id }}_help" class="morning-field-help"><strong>{{ field.help_text }}</strong></p><div id="{{ field.auto_id }}_error" class="form-error" aria-live="polite">{{ field.errors }}</div></div>{% endif %}{% endfor %}</div>
       {% if not editing %}<fieldset class="morning-address-fields"><legend>عنوان الضيف — مطلوب لتأكيد الحجز</legend><p>ابحث عن العنوان واختر الاقتراح، ثم راجع الحقول المكتملة أدناه. يمكنك إدخالها يدويًا أيضًا.</p>{% include 'payments/_morning_billing_fields.html' with guest_form=form %}</fieldset>{% endif %}
       {% if editing %}<p>سيُرسل تحديث الحجز وتُحدّث التذكيرات بحسب بيانات الحجز الجديدة.</p>{% else %}<p>رابط السداد ثابت دون مهلة انتهاء زمنية، ويعاد فحص التوفر قبل الدفع. أدخل عنوان الفوترة المرتبط ببطاقة الضيف ليكتفي بمراجعته والموافقة على الشروط. فتح الرابط وحده لا يحصّل مبلغًا.</p>{% endif %}
-      {% include 'admin/reservations/includes/guest_check.html' with draft_check=True %}
+      {% if not editing %}{% include 'admin/reservations/includes/guest_check.html' with draft_check=True %}{% endif %}
       <button type="submit" class="lsa-btn lsa-btn--gold"{% if not editing %} name="action" value="confirm_hostaway"{% endif %}>{% if editing %}حفظ تعديل الحجز{% else %}تأكيد الحجز وإنشاؤه في Hostaway{% endif %}</button>
     </form>
   </section>
