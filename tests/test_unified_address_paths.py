@@ -1,9 +1,10 @@
 """Address journeys on disposable data, with all external providers mocked."""
 # ruff: noqa: F811
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
@@ -22,11 +23,23 @@ from tests.test_booking_views_admin import owned_client_quote
 from tests.test_checkout_address_places import isolated_places as isolated_places
 from tests.test_day_use08 import rig as rig
 from tests.test_day_use08 import stay
+from tests.test_hyperpay import HYPERPAY_SETTINGS
 from tests.test_manual_booking_address import consents
 from tests.test_reservation_payment_links import billing, manual_stay, page_url
-from tests.test_reservation_payment_links import isolated_settings as isolated_settings
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def isolate_providers(settings, monkeypatch):
+    for name, value in HYPERPAY_SETTINGS.items():
+        setattr(settings, name, value)
+    settings.RESERVATION_PAYMENT_LINKS_ENABLED = True
+    settings.SITE_BASE_URL = "https://booking.example"
+    cache.clear()
+    # Share pytest's patch stack with the day-use fixture; do not interleave
+    # patch()/monkeypatch teardown of the same HTTP method and leak a mock.
+    monkeypatch.setattr("httpx.Client.request", Mock(side_effect=AssertionError("no live request")))
 
 
 @pytest.mark.parametrize(
@@ -71,23 +84,25 @@ def test_every_billing_entry_uses_the_same_contract(name, value, valid):
 @pytest.mark.parametrize(
     "language,phrase", [("ar", "دون مسافات"), ("en", "without spaces"), ("fr", "sans espaces")]
 )
+@pytest.mark.parametrize("journey", ["quote", "legacy_payment"])
 def test_public_quote_and_legacy_payment_show_rules_and_short_address_search(
-    language, phrase, settings
+    language, phrase, journey, settings
 ):
-    client, _, reference = owned_client_quote()
-    client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
-    quote_page = client.get(f"/reservations/quotes/{reference}/")
-    request = issue_request(manual_stay(language=language).pk)
-    payment_page = Client().get(page_url(request))
-    for page in (quote_page, payment_page):
-        assert page.status_code == 200
-        content = page.content.decode()
-        assert phrase in content
-        assert "data-morning-validation" in content
-        assert "js/morning-validation.js" in content
-        assert "data-checkout-address hidden" in content
-        assert "id_billing_state_help" in content
-        assert "id_billing_postcode_error" in content
+    if journey == "quote":
+        client, _, reference = owned_client_quote()
+        client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+        page = client.get(f"/reservations/quotes/{reference}/")
+    else:
+        request = issue_request(manual_stay(language=language).pk)
+        page = Client().get(page_url(request))
+    assert page.status_code == 200
+    content = page.content.decode()
+    assert phrase in content
+    assert "data-morning-validation" in content
+    assert "js/morning-validation.js" in content
+    assert "data-checkout-address hidden" in content
+    assert "id_billing_state_help" in content
+    assert "id_billing_postcode_error" in content
     assert not PaymentAttempt.objects.exists()
 
 
@@ -148,7 +163,7 @@ def test_day_use_address_correction_is_local_stale_safe_and_requires_operations_
     }
     current.save()
     data = billing() | {"billing_city": "الرياض"}
-    with patch("apps.reservations.day_use08_communications.queue_stay_event") as messages:
+    with patch("apps.reservations.day_use08_communications.capture_event") as messages:
         corrected = correct_billing(
             current.pk, data, expected_updated_at=current.updated_at.isoformat()
         )

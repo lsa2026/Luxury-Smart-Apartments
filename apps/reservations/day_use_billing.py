@@ -35,5 +35,10 @@ def correct_billing(stay_id, data, *, expected_updated_at):
                 "تغيّرت حالة الحجز أو توجد عملية دفع تحتاج مراجعة؛ لم يُحفظ تغيير العنوان."
             )
         stay.billing_address = dict(form.cleaned_data)
-        stay.save(update_fields=["billing_address", "updated_at"])
+        stay.updated_at = timezone.now()
+        # save() captures booking communication. Billing alone must never create
+        # or recover an outbox event, even for a historical incomplete record.
+        type(stay).objects.filter(pk=stay.pk).update(
+            billing_address=stay.billing_address, updated_at=stay.updated_at
+        )
         return stay

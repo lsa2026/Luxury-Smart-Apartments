@@ -44,7 +44,7 @@
           <details{% if form.errors or address_errors %} open{% endif %}><summary>{% if current_language_code == 'ar' %}مراجعة أو تصحيح العنوان{% elif current_language_code == 'fr' %}Vérifier ou corriger l’adresse{% else %}Review or correct address{% endif %}</summary>
         {% endif %}
         <fieldset><legend>{{ ui.billing }}</legend>
-          {% include 'payments/_morning_billing_fields.html' with guest_form=form %}
+          {% include 'reservations/_billing_fields.html' with guest_form=form %}
         </fieldset>
         {% if saved_billing %}</details></section>{% endif %}
         <details><summary>{{ guest_documents.terms.title }}</summary><p>{{ guest_documents.terms.body|linebreaksbr }}</p></details>
