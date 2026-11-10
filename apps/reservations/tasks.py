@@ -1,6 +1,20 @@
 from celery import shared_task
 
 
+@shared_task(bind=True, ignore_result=True, max_retries=5, soft_time_limit=35, time_limit=40)
+def refresh_guest_classification_history(self, generation, cursor):
+    from .services.guest_classification_history import refresh_page
+
+    try:
+        result = refresh_page(generation, cursor)
+    except Exception:
+        # Cache/transport errors must not log connection URLs or guest data.
+        return "unavailable"
+    if result == "busy":
+        raise self.retry(countdown=2)
+    return result
+
+
 @shared_task(bind=True, ignore_result=True, max_retries=10)
 def deliver_morning07_payment(self, event_id):
     from django.conf import settings

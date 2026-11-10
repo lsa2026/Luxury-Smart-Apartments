@@ -1,20 +1,24 @@
-"""Synthetic contact matching only; no provider access or marketing delivery."""
+"""All-channel Hostaway classification with synthetic provider pages only."""
 
+import json
 import os
 from datetime import timedelta
 from itertools import count
 from pathlib import Path
-from uuid import uuid4
+from unittest.mock import Mock
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import connection
 from django.test import Client
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.reservations.models import DayUseStay, MorningStay
+from apps.integrations.hostaway.client import HostawayClient
+from apps.reservations.models import Reservation
+from apps.reservations.services import guest_classification_history as history
 from apps.reservations.services.guest_classification import guest_classifications
 from apps.reservations.services.hostaway_booking import prepare_local_reservation
 from tests.test_booking_models_services import make_property
@@ -23,16 +27,25 @@ from tests.test_hostaway_booking_phase5 import make_intent
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture
-def factory(settings, monkeypatch):
+@pytest.fixture(autouse=True)
+def isolated(monkeypatch, settings):
+    cache.clear()
     settings.HOSTAWAY_WEBSITE_RESERVATION_SYNC_ENABLED = False
-    settings.MORNING07_ENABLED = False
-    settings.DAY_USE08_ENABLED = False
+    monkeypatch.setattr(history, "shared_cache_available", lambda: True)
+    queued = []
     monkeypatch.setattr(
-        "httpx.Client.request", lambda *args, **kwargs: pytest.fail("no provider IO")
+        history, "dispatch", lambda generation, cursor: queued.append((generation, cursor))
     )
-    property_obj = make_property()
-    identifiers = count(980001)
+    monkeypatch.setattr(
+        "httpx.Client.request", lambda *args, **kwargs: pytest.fail("no live provider IO")
+    )
+    yield queued
+    cache.clear()
+
+
+@pytest.fixture
+def factory():
+    property_obj, identifiers = make_property(), count(980001)
 
     def create(email=None, phone="", **changes):
         identifier = next(identifiers)
@@ -41,8 +54,7 @@ def factory(settings, monkeypatch):
         intent.guest_phone = phone
         intent.save(update_fields=["guest_email", "guest_phone"])
         booking = prepare_local_reservation(intent)
-        booking.normalized_status = "confirmed"
-        booking.hostaway_reservation_id = identifier
+        booking.normalized_status, booking.hostaway_reservation_id = "confirmed", identifier
         for name, value in changes.items():
             setattr(booking, name, value)
         booking.save()
@@ -56,6 +68,33 @@ def owner_client():
     client = Client()
     client.force_login(get_user_model().objects.create_superuser(username="classification-owner"))
     return client
+
+
+def row(reference, email="other@example.invalid", phone="", status="new", channel=2002):
+    return {
+        "id": reference,
+        "guestEmail": email,
+        "phone": phone,
+        "status": status,
+        "channelId": channel,
+    }
+
+
+@pytest.fixture
+def publish(isolated):
+    def complete(pages):
+        history.ensure_refresh(force=True)
+        remote = Mock()
+        remote.invoice_search_page.side_effect = pages
+        for _ in range(20):
+            if not isolated:
+                break
+            generation, cursor = isolated.pop(0)
+            history.refresh_page(generation, cursor, client=remote)
+        assert history.provider_state()["status"] == "complete"
+        return remote
+
+    return complete
 
 
 @pytest.mark.parametrize(
@@ -88,172 +127,222 @@ def owner_client():
         ),
     ],
 )
-def test_either_normalized_contact_is_enough_for_both_guest_cards(factory, first, second, basis):
-    a = factory(email=first[0], phone=first[1])
-    b = factory(email=second[0], phone=second[1])
-    result = guest_classifications()
-    for item in (a, b):
-        assert result[item.pk].code == "returning"
-        assert basis in result[item.pk].basis
+def test_booking_com_or_other_external_booking_matches_either_contact(
+    factory, publish, first, second, basis
+):
+    current = factory(email=second[0], phone=second[1])
+    publish([[row(777, *first, channel=2002)], []])
+    result = guest_classifications()[current.pk]
+    assert result.code == "returning" and basis in result.basis
+    assert "هوستاوي" in result.basis
+    assert not Reservation.objects.filter(hostaway_reservation_id=777).exists()
 
 
-def test_only_exact_contact_matches_count_and_names_do_not(factory):
-    a = factory(email="guest+one@example.invalid", phone="+16502530000")
-    b = factory(email="guest+two@example.invalid", phone="+442079460958")
-    result = guest_classifications()
-    assert result[a.pk].code == result[b.pk].code == "new"
+def test_local_duplicate_cannot_replace_hostaway_evidence(factory, publish):
+    current = factory(email="match@example.invalid")
+    factory(email="match@example.invalid")
+    publish([[row(current.hostaway_reservation_id, "match@example.invalid")], []])
+    assert guest_classifications()[current.pk].code == "new"
+
+
+def test_current_hostaway_booking_alone_is_not_a_return(factory, publish):
+    current = factory()
+    publish([[row(current.hostaway_reservation_id, current.booking_intent.guest_email)], []])
+    assert guest_classifications()[current.pk].code == "new"
+
+
+def test_missing_shared_cache_never_queues_or_claims_new(factory, isolated, monkeypatch):
+    current = factory()
+    monkeypatch.setattr(history, "shared_cache_available", lambda: False)
+    assert history.ensure_refresh()["status"] == "unavailable"
+    assert not isolated
+    assert guest_classifications()[current.pk].code == "unknown"
+
+
+def test_repeated_page_visits_share_one_job_and_stalled_job_is_replaced(factory, isolated):
+    factory()
+    history.ensure_refresh()
+    history.ensure_refresh()
+    assert len(isolated) == 1
+    generation, cursor = isolated[0]
+    key = f"{history.PREFIX}:job:{generation}"
+    job = cache.get(key)
+    job["updated_at"] = (timezone.now() - timedelta(minutes=2)).isoformat()
+    cache.set(key, job)
+    history.ensure_refresh()
+    assert len(isolated) == 2
+    assert history.refresh_page(generation, cursor, client=Mock()) == "obsolete"
+
+
+def test_new_requires_terminal_page_and_full_all_channel_cursor_scan(factory, publish):
+    current = factory(email="match@example.invalid")
+    remote = publish(
+        [
+            [row(current.hostaway_reservation_id, "match@example.invalid")],
+            [row(777, "MATCH@example.invalid", channel=1)],
+            [],
+        ]
+    )
+    assert guest_classifications()[current.pk].code == "returning"
+    assert [call.kwargs for call in remote.invoice_search_page.call_args_list] == [
+        {"after_id": None},
+        {"after_id": current.hostaway_reservation_id},
+        {"after_id": 777},
+    ]
+
+
+@pytest.mark.parametrize("status", ["cancelled", "inquiry", "pending", "declined", "expired"])
+def test_non_booking_provider_statuses_are_excluded(factory, publish, status):
+    current = factory(email="match@example.invalid")
+    publish([[row(777, "match@example.invalid", status=status)], []])
+    assert guest_classifications()[current.pk].code == "new"
 
 
 @pytest.mark.parametrize(
     "email,phone", [("", ""), ("invalid", "123"), ("same invalid", "00000000")]
 )
-def test_empty_invalid_contacts_never_match_and_are_not_falsely_new(factory, email, phone):
-    a, b = factory(email=email, phone=phone), factory(email=email, phone=phone)
-    result = guest_classifications()
-    assert result[a.pk].code == result[b.pk].code == "unknown"
+def test_invalid_or_empty_contacts_are_unknown(factory, publish, email, phone):
+    current = factory(email=email, phone=phone)
+    publish([[row(777, email, phone)], []])
+    assert guest_classifications()[current.pk].code == "unknown"
+
+
+def test_incomplete_or_failed_history_never_labels_guest_new(factory, isolated):
+    current = factory(email="match@example.invalid")
+    history.ensure_refresh()
+    generation, cursor = isolated.pop(0)
+    remote = Mock()
+    remote.invoice_search_page.return_value = [row(777, "match@example.invalid")]
+    assert history.refresh_page(generation, cursor, client=remote) == "queued"
+    assert history.provider_snapshot() is None
+    assert guest_classifications()[current.pk].code == "unknown"
+    generation, cursor = isolated.pop(0)
+    remote.invoice_search_page.side_effect = TimeoutError("private contact must not be logged")
+    assert history.refresh_page(generation, cursor, client=remote) == "unavailable"
+    assert guest_classifications()[current.pk].code == "unknown"
 
 
 @pytest.mark.parametrize(
-    "changes",
+    "pages",
     [
-        {"normalized_status": "cancelled"},
-        {"normalized_status": "inquiry"},
-        {"normalized_status": "awaiting_payment"},
-        {"is_test": True},
-        {"normalized_status": "modified", "hostaway_reservation_id": None},
-        {"normalized_status": "modified", "hostaway_reservation_id": 0},
+        [[row(1)], [row(1)]],
+        [[row(True)]],
+        [[row(1), row(1)]],
+        [[row(1, status="unsupported")]],
+        [[row(1, email={"private": "invalid"})]],
+        [[row(i + 1) for i in range(51)]],
     ],
 )
-def test_cancelled_test_unconfirmed_and_unlinked_rows_do_not_create_returning_guests(
-    factory, changes
-):
-    current = factory(email="match@example.invalid")
-    excluded = factory(email="match@example.invalid", **changes)
-    result = guest_classifications()
-    assert result[current.pk].code == "new"
-    assert excluded.pk not in result
+def test_repeated_malformed_or_unbounded_provider_pages_are_not_complete(factory, isolated, pages):
+    current = factory()
+    history.ensure_refresh()
+    remote = Mock()
+    remote.invoice_search_page.side_effect = pages
+    while isolated:
+        generation, cursor = isolated.pop(0)
+        history.refresh_page(generation, cursor, client=remote)
+    assert history.provider_snapshot() is None
+    assert guest_classifications()[current.pk].code == "unknown"
 
 
-def special_stay(model, current, reference, **changes):
-    now = timezone.now()
-    key = "hostaway_morning" if model is MorningStay else "hostaway_day_use"
-    values = dict(
-        request_id=uuid4(),
-        property=current.property,
-        created_by=get_user_model().objects.first(),
-        starts_at=now,
-        ends_at=now + timedelta(hours=4),
-        expires_at=now + timedelta(hours=1),
-        availability_checked_at=now,
-        environment="production",
-        amount_sar="100.00",
-        guest_name="Synthetic Guest",
-        guest_email=current.booking_intent.guest_email,
-        guest_phone=current.booking_intent.guest_phone,
-        availability_evidence={key: {"state": "confirmed", "reservation_id": reference}},
+def test_page_limit_does_not_publish_a_truncated_scan(factory, isolated, monkeypatch):
+    current = factory()
+    monkeypatch.setattr(history, "MAX_PAGES", 1)
+    history.ensure_refresh()
+    remote = Mock()
+    remote.invoice_search_page.return_value = [row(777)]
+    generation, cursor = isolated.pop(0)
+    assert history.refresh_page(generation, cursor, client=remote) == "unavailable"
+    assert guest_classifications()[current.pk].code == "unknown"
+
+
+def test_duplicate_tasks_and_busy_workers_do_not_repeat_the_page(factory, isolated):
+    factory()
+    history.ensure_refresh()
+    generation, cursor = isolated.pop(0)
+    remote = Mock()
+    remote.invoice_search_page.return_value = [row(777)]
+    cache.set(history.PREFIX + ":lock", "other-worker", timeout=45)
+    assert history.refresh_page(generation, cursor, client=remote) == "busy"
+    remote.invoice_search_page.assert_not_called()
+    cache.delete(history.PREFIX + ":lock")
+    assert history.refresh_page(generation, cursor, client=remote) == "queued"
+    assert history.refresh_page(generation, cursor, client=remote) == "obsolete"
+    assert remote.invoice_search_page.call_count == 1
+
+
+def test_only_keyed_contacts_are_cached_and_stale_results_cannot_claim_new(factory, publish):
+    current = factory(email="private@example.invalid", phone="+16502530000")
+    publish(
+        [[row(777, current.booking_intent.guest_email, current.booking_intent.guest_phone)], []]
     )
-    if model is DayUseStay:
-        values.update(
-            inventory_arrival_date=now.date() - timedelta(days=1),
-            inventory_departure_date=now.date() + timedelta(days=1),
-        )
-    values.update(changes)
-    # Bypass lifecycle dispatch deliberately in fixture construction only.
-    model.objects.bulk_create([model(**values)])
-
-
-@pytest.mark.parametrize("model", [MorningStay, DayUseStay])
-def test_confirmed_production_special_stays_count_once_by_hostaway_booking(
-    factory, owner_client, model
-):
-    current = factory(email="match@example.invalid")
-    special_stay(model, current, current.hostaway_reservation_id)
-    assert guest_classifications()[current.pk].code == "new"
-    special_stay(model, current, 990099)
+    snapshot = cache.get(history.SNAPSHOT)
+    encoded = json.dumps(snapshot)
+    assert "private@example.invalid" not in encoded and "+16502530000" not in encoded
     assert guest_classifications()[current.pk].code == "returning"
+    snapshot["completed_at"] = (timezone.now() - timedelta(minutes=16)).isoformat()
+    cache.set(history.SNAPSHOT, snapshot)
+    assert guest_classifications()[current.pk].code == "unknown"
 
 
-@pytest.mark.parametrize("model", [MorningStay, DayUseStay])
-@pytest.mark.parametrize(
-    "changes", [{"environment": "test"}, {"status": "cancelled"}, {"availability_evidence": {}}]
-)
-def test_unverified_test_or_cancelled_special_stays_are_excluded(
-    factory, owner_client, model, changes
+def test_cache_loss_or_wrong_worker_key_is_not_new(factory, publish, monkeypatch):
+    current = factory()
+    publish([[]])
+    snapshot = cache.get(history.SNAPSHOT)
+    snapshot["key_version"] = "different-worker-key"
+    cache.set(history.SNAPSHOT, snapshot)
+    assert guest_classifications()[current.pk].code == "unknown"
+    monkeypatch.setattr(cache, "get", Mock(side_effect=RuntimeError("cache unavailable")))
+    assert history.ensure_refresh()["status"] == "unavailable"
+    assert guest_classifications()[current.pk].code == "unknown"
+
+
+def test_search_filters_and_private_status_api_use_hostaway_snapshot(
+    factory, publish, owner_client
 ):
-    current = factory(email="match@example.invalid")
-    special_stay(model, current, 990099, **changes)
-    assert guest_classifications()[current.pk].code == "new"
-
-
-def test_search_and_guest_filter_use_full_history_and_render_private_badges(factory, owner_client):
-    first = factory(email="match@example.invalid", public_reference="older-search-proof")
-    second = factory(email="MATCH@example.invalid", public_reference="newer-search-proof")
+    returning = factory(email="match@example.invalid", public_reference="source-proof")
     new = factory()
     unknown = factory(email="", phone="")
+    publish([[row(777, "match@example.invalid", channel=2002)], []])
     url = reverse("notifications:booking_list")
-    page = owner_client.get(url, {"q": "newer-search-proof", "guest_type": "returning"})
-    assert [b.pk for b in page.context["bookings"]] == [second.pk]
-    content = page.content.decode()
-    assert content.count("lsa-guest-classification__badge--returning") == 2
-    assert "تطابق البريد الإلكتروني" in content
-    assert "match@example.invalid" not in content.casefold()
+    page = owner_client.get(url, {"q": "source-proof", "guest_type": "returning"})
+    assert [b.pk for b in page.context["bookings"]] == [returning.pk]
+    assert page.content.count(b"lsa-guest-classification__badge--returning") == 2
+    assert "match@example.invalid" not in page.content.decode().casefold()
     assert "no-store" in page["Cache-Control"]
     for code, expected in (
-        ("returning", {first.pk, second.pk}),
+        ("returning", {returning.pk}),
         ("new", {new.pk}),
         ("unknown", {unknown.pk}),
     ):
-        page = owner_client.get(url, {"guest_type": code})
-        assert {b.pk for b in page.context["bookings"]} == expected
-    assert Client().get(url, {"guest_type": "returning"}).status_code == 302
+        assert {
+            b.pk for b in owner_client.get(url, {"guest_type": code}).context["bookings"]
+        } == expected
+    status = owner_client.get(url, {"classification_status": 1})
+    assert status.json()["status"] == "complete"
+    assert Client().get(url, {"classification_status": 1}).status_code == 302
+    private = Client(enforce_csrf_checks=True)
+    private.force_login(get_user_model().objects.get(username="classification-owner"))
+    assert private.post(url, {"action": "refresh_guest_classification"}).status_code == 403
 
 
-def test_classification_queries_are_read_only_and_do_not_grow_per_booking(factory):
-    factory()
-    with CaptureQueriesContext(connection) as small:
-        guest_classifications()
-    for _ in range(12):
-        factory()
-    with CaptureQueriesContext(connection) as large:
-        guest_classifications()
-    assert len(small) == len(large) == 3
-    for query in large:
-        sql = query["sql"].lstrip().upper()
-        # PostgreSQL streams iterator() with a named read cursor. SQLite logs
-        # a direct SELECT; both are reads, with the same constant query budget.
-        assert sql.startswith("SELECT") or (sql.startswith("DECLARE ") and " FOR SELECT " in sql)
+def test_all_channel_api_boundary_has_no_email_phone_channel_or_date_filter():
+    client = object.__new__(HostawayClient)
+    client._get_json = Mock(return_value={"status": "success", "result": [row(777)]})
+    assert client.invoice_search_page(after_id=500)[0]["id"] == 777
+    client._get_json.assert_called_once_with(
+        "/reservations", params=[("limit", 50), ("includeResources", 0), ("afterId", 500)]
+    )
 
 
-def test_duplicates_outside_the_visible_hundred_still_change_guest_classification(
-    factory, owner_client
-):
-    old = factory(email="match@example.invalid")
-    for _ in range(100):
-        factory()
-    latest = factory(email="match@example.invalid")
-    page = owner_client.get(reverse("notifications:booking_list"), {"guest_type": "returning"})
-    assert {b.pk for b in page.context["bookings"]} == {old.pk, latest.pk}
-
-
-def test_guest_match_does_not_change_guest_ownership_or_marketing_consent(factory):
-    a = factory(email="match@example.invalid")
-    b = factory(email="match@example.invalid")
-    before = [
-        (row.booking_intent.customer_id, row.booking_intent.marketing_consent) for row in (a, b)
-    ]
-    guest_classifications()
-    for row, expected in zip((a, b), before, strict=True):
-        row.booking_intent.refresh_from_db()
-        assert (row.booking_intent.customer_id, row.booking_intent.marketing_consent) == expected
-
-
-def test_render_classification_layout(factory, owner_client, tmp_path):
+def test_render_classification_layout(factory, publish, owner_client, tmp_path):
     from tests.test_contact_layout import _standalone
 
     factory(email="layout@example.invalid")
     factory(email="LAYOUT@example.invalid")
     factory()
     factory(email="", phone="")
+    publish([[row(777, "layout@example.invalid", channel=2002)], []])
     page = owner_client.get(reverse("notifications:booking_list"))
     assert page.status_code == 200
     html = _standalone(page.content.decode())
@@ -262,3 +351,16 @@ def test_render_classification_layout(factory, owner_client, tmp_path):
     output = Path(os.environ.get("LSA_CONTACT_VISUAL_DIR", tmp_path))
     output.mkdir(parents=True, exist_ok=True)
     (output / "guest-classification.html").write_text(html, encoding="utf-8")
+
+
+def test_classification_is_read_only_and_does_not_link_accounts_or_opt_guests_in(factory, publish):
+    current = factory()
+    publish([[]])
+    before = current.booking_intent.customer_id, current.booking_intent.marketing_consent
+    with CaptureQueriesContext(connection) as queries:
+        guest_classifications()
+    assert len(queries) == 1
+    sql = queries[0]["sql"].lstrip().upper()
+    assert sql.startswith("SELECT") or (sql.startswith("DECLARE ") and " FOR SELECT " in sql)
+    current.booking_intent.refresh_from_db()
+    assert (current.booking_intent.customer_id, current.booking_intent.marketing_consent) == before

@@ -192,7 +192,7 @@ jobs:
         run: node --test tests/price-calendar.test.cjs
 
       - name: Test progressive admin booking tabs and form safety
-        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs
+        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs tests/admin-guest-classification.test.cjs
 
       - name: Test noon morning communication contract
         run: node --test tests/morning-noon-contract.test.cjs tests/morning-hostaway-first.test.cjs

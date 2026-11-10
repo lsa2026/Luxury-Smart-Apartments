@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load i18n presentation static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}?v=20261023-navigation">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-guest-classification.js' %}" defer></script>{% endblock %}
 {% block content_title %}{% endblock %}
 
 {% block content %}
@@ -28,7 +29,11 @@
       <button type="submit" class="lsa-btn lsa-btn--gold">بحث</button>
     </form>
   </section>
-  <p class="lsa-booking-list__classification-note">ضيف عائد: يوجد حجز مؤكد آخر يطابق البريد الإلكتروني أو رقم الجوال، ويكفي تطابق أحدهما. التصنيف بحسب السجل المتاح في الموقع، بما فيه الصباحي والنهاري؛ تُستبعد الحجوزات الملغاة والتجريبية والطلبات غير المؤكدة.</p>
+  <section class="lsa-booking-list__classification-note" data-guest-classification-state="{{ classification_state.status }}" data-status-url="{% url 'notifications:booking_list' %}?classification_status=1">
+    <p>ضيف عائد: يوجد حجز مؤكد آخر في هوستاوي يطابق البريد الإلكتروني أو رقم الجوال، ويكفي أحدهما. يشمل الفحص جميع قنوات هوستاوي، ومنها بوكنق، ويستبعد الحجوزات الملغاة وغير المؤكدة. لا يُصنّف الضيف جديدًا قبل اكتمال الفحص.</p>
+    <p role="status" aria-live="polite" data-classification-status>{% if classification_state.status == 'complete' %}اكتمل فحص سجلات هوستاوي: {{ classification_checked_at|localized_datetime }}.{% elif classification_state.status == 'queued' or classification_state.status == 'running' %}جارٍ فحص سجلات هوستاوي؛ ستُحدّث النتائج عند اكتماله.{% else %}تعذر التحقق من سجلات هوستاوي حاليًا؛ يبقى التصنيف غير متحقق حتى اكتمال الفحص.{% endif %}</p>
+    <form method="post">{% csrf_token %}<button class="lsa-btn lsa-btn--ghost" name="action" value="refresh_guest_classification">تحديث التصنيف من هوستاوي</button></form>
+  </section>
 
   <section class="lsa-panel lsa-booking-list__panel">
     {% if bookings %}

@@ -1,42 +1,47 @@
-# Booking-list guest classification — 2026-11-10
+# Hostaway guest classification — owner clarification 2026-11-10
 
-Owner rule: either matching email **or** matching phone is sufficient to label a
-guest returning. This is a private reporting segment, never proof of identity,
-booking ownership, membership, completed physical stays or marketing consent.
-No campaign, audience upload or export is initiated.
+Comparison authority is **Hostaway across all channels**, including Booking.com,
+not local website history. The private list still displays its existing local
+operational bookings, but another local record alone cannot establish returning
+status. A valid normalized email OR phone matching a different confirmed Hostaway
+reservation is sufficient. The current Hostaway reference never counts as another
+booking. Cancelled/unconfirmed records and site-marked test references are excluded.
+Names, account IDs and booking order do not establish identity. This is reporting,
+not account linking, proof of a completed stay or marketing consent/audience export.
 
-The rule applies across distinct confirmed bookings in the local site record:
-regular reservations with a positive Hostaway reference, plus production morning
-and day-use stays with confirmed Hostaway evidence. Cancelled/unconfirmed/test
-records and payment attempts/drafts do not count. Multiple projections of the
-same Hostaway booking count once. A guest with another matching booking is
-returning on both cards, so the earliest card does not also enter the new-guest
-filter. Dates, names and account IDs do not create contact matches.
+The existing vetted `HostawayClient.invoice_search_page()` boundary reads all
+reservations in pages of 50 using `afterId`, with no channel/date/contact filters.
+A finite Celery job processes one page at a time, with a one-second continuation
+delay and no new periodic schedule. Launch is owner/manager-page triggered on
+missing/stale evidence or explicit CSRF-protected refresh. Existing Redis cache
+and worker are used; no new resource, credential, schema or environment is added.
+No Hostaway writes, booking/payment actions or guest messages occur.
 
-Email is validated, trimmed and case-folded; plus tags/dots are not removed or
-guessed as aliases. Phone uses the site's existing staff phone normalization,
-supporting explicit country codes, international 00, Saudi national formats,
-separators and Arabic digits. Blank/invalid contacts never match. With neither
-usable contact, show insufficient data rather than claiming new. Results show
-the match basis without exposing contact values. Contact matching never changes
-guest access, account links or marketing consent.
+Only salted keyed contact digests, up to two distinct Hostaway references per
+contact, technical cursors and timestamps enter private shared cache. Full provider
+rows, raw email/phone, names and amounts are not persisted or logged. Web/worker
+key-version mismatch, absent shared cache or transport failure cannot yield new.
+No contact identifiers enter task arguments, browser polling or analytics.
 
-Search and guest segment filters are applied after classification of the full
-eligible local history and before the existing 100-result display limit. The
-service uses three read-only streaming queries, not per-row lookups. It reads
-only reference/contact columns and maintains per-request indexes, capped at two
-distinct booking references per contact. Runtime/memory are linear in local
-history size; no persistent contact cache or new synchronization job is added.
-If history volume grows substantially, introduce indexed normalized projections
-with a separate reviewed migration rather than silently truncating this scan.
+New is permitted only from a complete, fresh scan ending in an empty page.
+Repeated IDs/cursors, malformed rows/statuses, timeouts, missing job state and the
+bounded 1000-page safety limit do not publish completion. Pending, failed, evicted,
+incompatible or more-than-15-minute-old evidence yields unverified, never new.
+Blank/invalid guest contacts yield insufficient data. The UI shows scan status
+and actual completion time. A finite private status poll refreshes the page on
+completion unless the user is editing search. Polling stops on failure, hidden
+page or its bounded wait; a manual refresh is available. This is not monitoring.
 
-Coverage is explicitly local. Guest account history projections without their
-original contact identity and unimported external-channel history do not prove
-new or returning status. Do not call Hostaway on page load for this feature or
-claim complete external history. Existing operational status refresh is unchanged.
+Email uses validated trim/casefold without invented alias rules. Phone follows
+the existing staff normalization for international/00 and Saudi national forms,
+separators and Arabic digits. Only stored card contact values identify the guest
+being compared; historical comparison comes exclusively from provider evidence.
+Classification and segment filtering precede the existing 100-row display limit.
 
-Verification uses synthetic rows, boundary/OR matching, source deduplication,
-exclusion and query-budget tests, filtered results beyond 100 records, private
-access checks and isolated phone/tablet/desktop layout checks. No production
-guest data is read into the development environment. No migration, schema,
-permissions, provider settings, financial flows or schedules change.
+Synthetic tests cover a Booking.com-only prior reservation absent from the local
+database, email-only/phone-only matches, own-reference exclusion, all-channel
+pagination to terminal empty, partial/error/stale/cache-loss behavior, duplicate
+tasks, malformed/repeated pages, privacy, filters, permissions and responsive
+phone/tablet/desktop layouts. No development copy of production guest data is used.
+Deploy through existing PR/main gates. Verify web/worker versions and source scan
+status separately; publication does not prove the first live scan completed.
