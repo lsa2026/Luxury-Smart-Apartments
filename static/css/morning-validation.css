@@ -5,3 +5,5 @@
 [data-morning-error] { color: #a12121; font-weight: 700; }
 form[data-morning-validation] [aria-invalid="true"]:not([type="hidden"]) { border: 2px solid #a12121 !important; background-color: #fff3f3 !important; outline-color: #a12121; }
 form[data-morning-validation] .form-error, form[data-morning-validation] .errorlist { color: #a12121 !important; font-weight: 700; }
+.billing-address-note { display: grid; gap: .65rem; padding: 1rem; margin-block: 1rem; border: 1px solid #e5ddce; border-radius: .8rem; background: #fbf8f2; color: #173c34; font-size: 1rem; line-height: 1.7; overflow-wrap: anywhere; min-width: 0; }
+.billing-address-note p { margin: 0; }
