@@ -223,7 +223,7 @@ def test_provider_failure_and_bad_json_never_log_address_or_key(google, caplog):
         ("JP", "100-0001"),
     ],
 )
-def test_international_components_preserve_postal_format_and_payment_payload(country, postal):
+def test_international_suggestions_preserve_values_and_require_payment_correction(country, postal):
     values = address_fields(
         {
             "addressComponents": [
@@ -237,7 +237,13 @@ def test_international_components_preserve_postal_format_and_payment_payload(cou
         }
     )
     submitted = form(**values)
-    assert submitted.is_valid(), submitted.errors
+    valid = bool(re.fullmatch(r"[A-Za-z0-9]{1,16}", postal))
+    assert submitted.is_valid() == valid
+    if not valid:
+        assert "billing_postcode" in submitted.errors
+        assert submitted.data["billing_postcode"] == postal
+        assert values["billing_postcode"] == postal
+        return
     assert submitted.cleaned_data["billing_postcode"] == postal
     assert values["billing_country"] == country
     intent = SimpleNamespace(
@@ -275,7 +281,12 @@ def test_region_abbreviations_and_gateway_only_formatting(label, short, expected
     )
     assert values["billing_state"] == short
     submitted = form(**values)
-    assert submitted.is_valid()
+    if short != expected:
+        assert not submitted.is_valid()
+        assert "billing_state" in submitted.errors
+        assert submitted.data["billing_state"] == short
+        return
+    assert submitted.is_valid(), submitted.errors
     intent = SimpleNamespace(**submitted.cleaned_data)
     payload = build_checkout_payload(intent, "synthetic", amount=Decimal("50.00"), currency="SAR")
     assert payload["billing.state"] == expected
@@ -294,19 +305,16 @@ def test_missing_or_unrepresentable_region_does_not_invent_a_payment_value():
     # Existing manual Unicode input is not mangled by deleting its letters.
     original = "منطقة الرياض"
     submitted = form(billing_state=original)
-    assert submitted.is_valid()
-    intent = SimpleNamespace(**submitted.cleaned_data)
-    payload = build_checkout_payload(intent, "synthetic", amount=Decimal("50.00"), currency="SAR")
-    assert payload["billing.state"] == original
+    assert not submitted.is_valid()
+    assert "billing_state" in submitted.errors
+    assert submitted.data["billing_state"] == original
 
 
-def test_manual_latin_region_keeps_original_spelling_in_record():
+def test_manual_latin_region_requires_explicit_correction_before_payment():
     submitted = form(billing_state="Île-de-France")
-    assert submitted.is_valid()
-    intent = SimpleNamespace(**submitted.cleaned_data)
-    payload = build_checkout_payload(intent, "synthetic", amount=Decimal("50.00"), currency="SAR")
-    assert payload["billing.state"] == "IledeFrance"
-    assert intent.billing_state == "Île-de-France"
+    assert not submitted.is_valid()
+    assert "billing_state" in submitted.errors
+    assert submitted.data["billing_state"] == "Île-de-France"
 
 
 def test_missing_invalid_and_overlong_components_are_not_invented_or_truncated():

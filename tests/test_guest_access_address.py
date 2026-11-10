@@ -15,6 +15,23 @@ from apps.reservations.models import Reservation
 pytestmark = pytest.mark.django_db
 
 
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_residence_address_shows_optional_limits_and_distinguishes_billing(guest, language):
+    from apps.accounts.dashboard_copy import account_copy
+
+    _, client = guest
+    client.cookies[settings.LANGUAGE_COOKIE_NAME] = language
+    page = client.get("/my-bookings/details/")
+    assert page.status_code == 200
+    assert account_copy(language)["address_hint"] in page.content.decode()
+    form = page.context["profile_form"]
+    for name, field in form.fields.items():
+        if name.startswith("residence_"):
+            assert not field.required
+            assert field.help_text
+            assert f'id="id_{name}_help"'.encode() in page.content
+
+
 @pytest.fixture
 def guest():
     user = get_user_model().objects.create_user(

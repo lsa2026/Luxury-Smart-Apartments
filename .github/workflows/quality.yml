@@ -55,6 +55,7 @@ jobs:
           tests/test_sama_booking_api.py
           tests/test_manual_booking_operations_phase61.py
           tests/test_manual_booking_address.py
+          tests/test_unified_address_paths.py
           tests/test_booking_modifications_phase6.py
           tests/test_ultramsg_accounting_notifications.py
           tests/test_hyperpay_refunds_phase94.py
@@ -203,7 +204,7 @@ jobs:
         run: node --test tests/property-nearby.test.cjs
 
       - name: Test optional checkout address autocomplete
-        run: node --test tests/checkout-address.test.cjs tests/guest-draft-country.test.cjs
+        run: node --test tests/checkout-address.test.cjs tests/guest-draft-country.test.cjs tests/unified-address-validation.test.cjs
 
       - name: Test checkout phone country and normalization
         run: node --test tests/checkout-phone.test.cjs tests/phone-delivery.test.cjs tests/contact-phone.test.cjs

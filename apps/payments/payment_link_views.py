@@ -1,6 +1,5 @@
 """Public payment-only capability; no login or booking-management grant."""
 
-from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import Http404
@@ -96,8 +95,7 @@ COPY = {
 
 
 class PaymentLinkBillingForm(GuestDetailsForm):
-    def __init__(self, *args, approved_address=False, **kwargs):
-        self.approved_address = approved_address
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name in list(self.fields):
             if not (
@@ -105,24 +103,6 @@ class PaymentLinkBillingForm(GuestDetailsForm):
                 or name in {"terms_accepted", "house_rules_accepted", "documents_digest"}
             ):
                 self.fields.pop(name)
-        if self.approved_address:
-            approved_fields = BillingAddressForm().fields
-            for name, field in approved_fields.items():
-                field.label = self.fields[name].label
-            self.fields.update(approved_fields)
-
-    def clean(self):
-        if not self.approved_address:
-            return super().clean()
-        cleaned = forms.Form.clean(self)
-        billing = BillingAddressForm(cleaned)
-        if billing.is_valid():
-            cleaned.update(billing.cleaned_data)
-        else:
-            for name, errors in billing.errors.items():
-                if name not in self.errors:
-                    self.add_error(name, errors)
-        return cleaned
 
 
 def saved_manual_billing(payment_request):
@@ -188,10 +168,8 @@ class ReservationPaymentView(View):
             or PaymentLinkBillingForm(
                 default_country_code=payment_request.reservation.booking_intent.billing_country,
                 initial=dict(saved_billing or {}),
-                approved_address=bool(saved_billing),
             ),
             "saved_billing": saved_billing,
-            "approved_address": bool(saved_billing),
             "address_errors": address_errors,
             "guest_documents": guest_documents(request.LANGUAGE_CODE),
             "error": error,
@@ -237,7 +215,7 @@ class ReservationPaymentView(View):
         saved_billing = saved_manual_billing(self.payment_request)
         for name, value in (saved_billing or {}).items():
             data.setdefault(name, value)
-        form = PaymentLinkBillingForm(data, approved_address=bool(saved_billing))
+        form = PaymentLinkBillingForm(data)
         if not form.is_valid():
             return self._render(request, form=form)
         accepted = {

@@ -1,4 +1,4 @@
-<div class="form-field" data-morning-field>
+<div class="form-field{% if field.name == 'billing_street1' %} guest-journey__field--street{% elif field.name == 'billing_country' %} guest-journey__field--country{% elif field.name == 'billing_city' %} guest-journey__field--city{% elif field.name == 'billing_state' %} guest-journey__field--state{% elif field.name == 'billing_postcode' %} guest-journey__field--postcode{% endif %}" data-morning-field data-journey-field>
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
   {{ field }}
   <p id="{{ field.auto_id }}_help" class="morning-field-help"><strong>{{ field.help_text }}</strong></p>

@@ -195,7 +195,7 @@ def test_legacy_draft_does_not_treat_placeholder_address_as_collected():
 def test_admin_and_prepared_payment_use_the_approved_billing_contract(name, value, valid):
     data = billing() | {name: value}
     address = BillingAddressForm(data)
-    payment = PaymentLinkBillingForm(data | consents(), approved_address=True)
+    payment = PaymentLinkBillingForm(data | consents())
     assert address.is_valid() is valid
     assert payment.is_valid() is valid
     if not valid:
@@ -253,10 +253,11 @@ def test_previously_saved_invalid_region_must_be_corrected_before_payment():
     assert not request.accepted_at
 
 
-def test_legacy_payment_form_retains_its_existing_address_contract():
+def test_legacy_payment_form_also_requires_the_approved_address_contract():
     form = PaymentLinkBillingForm(
         billing()
         | consents()
         | {"billing_state": "Riyadh Province", "billing_postcode": "SW1A 1AA"}
     )
-    assert form.is_valid(), form.errors
+    assert not form.is_valid()
+    assert set(form.errors) == {"billing_state", "billing_postcode"}

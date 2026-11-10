@@ -1,3 +1,4 @@
+{% include 'reservations/_billing_address_note.html' %}
 {% if address_places_enabled %}{% include 'reservations/_address_places.html' %}{% endif %}
 <div class="quote-review__form-grid guest-journey__billing-grid">
 {% for field in guest_form %}{% if field.name|slice:':8' == 'billing_' %}{% include 'payments/_morning_field.html' %}{% endif %}{% endfor %}

@@ -1,20 +1,21 @@
-/* Only MorningStay forms carry these attributes. Rules come from the server. */
+/* Shared billing/customer validation. Rules come from the server. */
 (function (root) {
     "use strict";
     function fieldError(field) {
         if (field.dataset.morningConsent !== undefined) return field.checked ? "" : field.dataset.morningError;
         const value = field.value.replace(/^[ \t\r\n\f\v]+|[ \t\r\n\f\v]+$/g, "");
         const pattern = field.dataset.morningPattern;
-        const en = field.ownerDocument?.documentElement.lang === "en";
+        const language = field.ownerDocument?.documentElement.lang;
+        const message = (ar, en, fr) => language === "fr" ? fr : language === "en" ? en : ar;
         const maxLength = Number(field.dataset.morningMaxLength || -1);
-        if (maxLength >= 0 && [...value].length > maxLength) return en ? `Use at most ${maxLength} characters.` : `الحد الأقصى ${maxLength} حرفًا. قلّل النص للمتابعة.`;
+        if (maxLength >= 0 && [...value].length > maxLength) return message(`الحد الأقصى ${maxLength} حرفًا. قلّل النص للمتابعة.`, `Use at most ${maxLength} characters.`, `Utilisez au maximum ${maxLength} caractères.`);
         if (!pattern) {
             const validity = field.validity || {};
             if (validity.customError) return field.validationMessage;
-            if (validity.valueMissing) return en ? "Complete this field." : "أكمل هذا الحقل للمتابعة.";
-            if (validity.rangeOverflow) return en ? `Maximum: ${field.max}.` : `القيمة القصوى ${field.max}.`;
-            if (validity.rangeUnderflow) return en ? `Minimum: ${field.min}.` : `القيمة الدنيا ${field.min}.`;
-            if (!validity.valid && field.validity) return en ? "Check this value." : "تحقق من صيغة القيمة المدخلة.";
+            if (validity.valueMissing) return message("أكمل هذا الحقل للمتابعة.", "Complete this field.", "Remplissez ce champ.");
+            if (validity.rangeOverflow) return message(`القيمة القصوى ${field.max}.`, `Maximum: ${field.max}.`, `Maximum : ${field.max}.`);
+            if (validity.rangeUnderflow) return message(`القيمة الدنيا ${field.min}.`, `Minimum: ${field.min}.`, `Minimum : ${field.min}.`);
+            if (!validity.valid && field.validity) return message("تحقق من صيغة القيمة المدخلة.", "Check this value.", "Vérifiez cette valeur.");
             return "";
         }
         if (!field.required && !value) return "";
@@ -63,6 +64,9 @@
             if (!valid || !form.checkValidity()) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
+                const invalid = fields.find(field => !field.disabled && field.willValidate && !field.validity.valid);
+                invalid?.closest("details")?.setAttribute("open", "");
+                if (invalid) form.dispatchEvent(new CustomEvent("billing-validation-invalid", { detail: { field: invalid } }));
                 form.reportValidity();
             }
         }, true);

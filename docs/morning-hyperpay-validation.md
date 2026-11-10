@@ -1,12 +1,14 @@
 # MorningStay customer validation — 2026-11-07
 
-Scope: independent morning payment and its operations billing forms. Since
-2026-11-10 the same approved **billing-address** contract is also reused when
-management collects an address for a new manual booking and on that booking's
-payment link. The customer-name/email limits remain specific to morning payment.
-Ordinary public checkout, legacy payment links without a collected manual address,
-the provider client and the card widget keep their existing contracts. No new
-migration, secret or environment change is needed for this validation correction.
+Scope: independent morning payment and its operations billing forms. The owner’s
+2026-11-10 cross-path audit extends the same approved **billing-address** contract
+to ordinary public checkout, management manual booking, every existing-reservation
+payment link (including legacy/revised links), and day-use management/payment.
+Customer-name/email limits are not imposed on ordinary checkout by this change.
+Optional account residence details retain their own limits and are clearly
+distinguished from card billing. See `unified-address-paths.md` for the inventory.
+The provider client/card widget, credentials and environment remain unchanged.
+No new migration is needed.
 
 The manual administration shows the Arabic field guidance and uses the existing
 browser validator as well as server validation. A region such as `Riyadh Province`
@@ -52,7 +54,7 @@ time window, phone normalization and approved price) are not presented as HyperP
 requirements. Phone is shown for booking reference; it is not sent in this checkout
 payload, so no invented gateway phone restriction is added.
 
-The same field expressions are emitted by the server to morning-only widgets and
+The same billing expressions are emitted by the server to all billing widgets and
 executed by the browser. ASCII edge whitespace is trimmed consistently. Embedded
 NUL is rejected as a local form safety rule. No transliteration, markup stripping,
 truncation or invented first/surname values. Names and email can be corrected for
@@ -61,7 +63,9 @@ remains review-only; invalid saved billing explicitly names the fields needing
 management correction and blocks payment. A previously valid address that changes
 during payment is checked again under the database lock.
 
-Arabic is the default; English guest links follow `MorningStay.guest_language`.
+Arabic is the management default. Ordinary public and existing-reservation links
+show field guidance in Arabic, English or French; morning/day-use links retain
+their existing Arabic/English language selection.
 Persistent bold help, per-field live errors, consent checks and the server gate
 prevent payment creation from invalid customer data. Disabling JavaScript does
 not bypass the server gate. Search suggestions can still be selected, but values

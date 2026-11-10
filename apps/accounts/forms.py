@@ -221,6 +221,14 @@ class CustomerProfileForm(forms.Form):
         }
         for field, key in labels.items():
             self.fields[field].label = copy[key]
+            if field.startswith("residence_"):
+                item = self.fields[field]
+                item.help_text = (
+                    copy["address_country_hint"]
+                    if field == "residence_country"
+                    else copy["address_field_hint"].format(limit=item.max_length)
+                )
+                item.widget.attrs["aria-describedby"] = f"id_{field}_help id_{field}_error"
         self.fields["phone"].widget.attrs["placeholder"] = copy["phone_example"]
         self.fields["preferred_language"].choices = [
             ("", copy["current_language"]),

@@ -33,6 +33,7 @@ from .day_use_stays import (
     verify_window,
 )
 from .models import DayUseStay
+from .morning_billing import address_context
 from .morning_phone import normalize_morning_phone as normalize_day_use_phone
 
 
@@ -338,7 +339,7 @@ def reviewed_quote(data):
 
 
 def context(request, **values):
-    return {**admin.site.each_context(request), "current_language_code": "ar", **values}
+    return {**admin.site.each_context(request), **address_context(request), **values}
 
 
 @operations_access_required
@@ -427,9 +428,44 @@ def day_use_create(request):
 @day_use_arabic_ui
 def day_use_detail(request, stay_id):
     stay = get_object_or_404(DayUseStay.objects.select_related("property"), pk=stay_id)
+    billing_form = DayUseBillingForm(initial=stay.billing_address)
     if request.method not in {"GET", "POST"}:
         return HttpResponseNotAllowed(["GET", "POST"])
     if request.method == "POST":
+        if request.POST.get("action") == "save_billing":
+            from .day_use_billing import correct_billing
+
+            billing_form = DayUseBillingForm(request.POST)
+            if billing_form.is_valid():
+                try:
+                    correct_billing(
+                        stay.pk,
+                        billing_form.cleaned_data,
+                        expected_updated_at=request.POST.get("expected_updated_at", ""),
+                    )
+                except DayUseStayError as exc:
+                    billing_form.add_error(None, str(exc))
+                else:
+                    record_audit(
+                        request=request,
+                        action="day_use_stay.billing_corrected",
+                        object_type="DayUseStay",
+                        object_reference=str(stay.pk),
+                        summary="Day-use billing corrected before collection; no external replay.",
+                    )
+                    messages.success(request, "حُفظ عنوان الفوترة؛ يوافق الضيف بنفسه على الشروط.")
+                    return redirect("notifications:day_use_detail", stay_id=stay.pk)
+            return render(
+                request,
+                "admin/reservations/day_use_detail.html",
+                context(
+                    request,
+                    title="تفاصيل الحجز النهاري",
+                    stay=stay,
+                    operation=booking_state(stay),
+                    billing_form=billing_form,
+                ),
+            )
         if request.POST.get("action") == "correct_phone":
             try:
                 from .day_use_phone import correct_phone
@@ -455,5 +491,11 @@ def day_use_detail(request, stay_id):
     return render(
         request,
         "admin/reservations/day_use_detail.html",
-        context(request, title="تفاصيل الحجز النهاري", stay=stay, operation=booking_state(stay)),
+        context(
+            request,
+            title="تفاصيل الحجز النهاري",
+            stay=stay,
+            operation=booking_state(stay),
+            billing_form=billing_form,
+        ),
     )

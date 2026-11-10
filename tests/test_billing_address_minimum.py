@@ -88,22 +88,22 @@ def test_country_rejects_a_value_outside_the_iso_choices() -> None:
     assert "billing_country" in submitted.errors
 
 
-def test_written_region_is_accepted_for_saudi_arabia() -> None:
+def test_region_spaces_are_rejected_with_the_approved_rule() -> None:
     submitted = form(billing_state="Riyadh Province")
 
-    assert submitted.is_valid(), submitted.errors
-    assert submitted.cleaned_data["billing_state"] == "Riyadh Province"
+    assert not submitted.is_valid()
+    assert "billing_state" in submitted.errors
 
 
-def test_another_country_keeps_the_free_text_region() -> None:
+def test_another_country_uses_the_same_region_rule() -> None:
     submitted = form(
         billing_country="FR",
-        billing_state="Île-de-France",
+        billing_state="IDF",
         billing_phone=None,
     )
 
     assert submitted.is_valid(), submitted.errors
-    assert submitted.cleaned_data["billing_state"] == "Île-de-France"
+    assert submitted.cleaned_data["billing_state"] == "IDF"
 
 
 def test_written_region_is_still_required() -> None:

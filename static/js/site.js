@@ -1601,6 +1601,10 @@ document.querySelectorAll("[data-guest-journey]").forEach((form) => {
     });
 
     form.classList.add("is-enhanced");
+    form.addEventListener("billing-validation-invalid", (event) => {
+        const panel = event.detail.field.closest("[data-journey-panel]");
+        if (panel) showStep(Number(panel.dataset.journeyPanel));
+    });
     if (nextButton) {
         nextButton.hidden = false;
         nextButton.addEventListener("click", async () => {
