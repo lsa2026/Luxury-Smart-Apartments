@@ -5,7 +5,7 @@
 {% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script><script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script src="{% static 'js/admin-guest-check.js' %}" defer></script>{% endblock %}
 
 {% block content %}
-<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+<main class="lsa-dashboard lsa-operations-screen lsa-manual-completion" dir="rtl">
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
       <span class="lsa-kicker"><i></i> حجز جديد · {% if draft.status == "booked_awaiting_payment" %}حجز في Hostaway بانتظار الدفع{% else %}قيد الإعداد · {{ draft.get_status_display }}{% endif %}</span>
@@ -83,7 +83,7 @@
           <h2>بيانات الضيف</h2>
           {% for field in form %}
           {% if field.name == 'guest_phone' %}
-          <div class="form-row">{% url 'notifications:morning_address' kind='phone' as phone_check_url %}{% include 'reservations/_booking_phone.html' with phone_form=form phone_field=field %}</div>
+          <div class="form-row lsa-booking-phone-row">{% url 'notifications:morning_address' kind='phone' as phone_check_url %}{% include 'reservations/_booking_phone.html' with phone_form=form phone_field=field %}</div>
           {% elif field.name != 'guest_phone_country' and field.name|slice:':8' != 'billing_' %}
           <div class="form-row">
             {{ field.label_tag }}

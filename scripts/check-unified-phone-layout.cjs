@@ -67,8 +67,12 @@ const { pathToFileURL } = require("node:url");
             assert.equal(await page.evaluate(() => window.syntheticLookups), 1);
             await form.locator('button[type="submit"]').click();
             assert.equal(await page.evaluate(() => window.syntheticSubmits), 1, "Full valid form can submit after country correction");
-            assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `Overflow at ${width}`);
             await page.screenshot({path: path.join(output, `unified-phone-${width}.png`), fullPage: true});
+            const overflow = await page.evaluate(() => [...document.querySelectorAll("body *")].map(el => {
+                const r = el.getBoundingClientRect();
+                return {tag: el.tagName, id: el.id, class: el.className, name: el.name, x: Math.round(r.x), width: Math.round(r.width), right: Math.round(r.right)};
+            }).filter(r => r.width && (r.right > innerWidth + 1 || r.x < -1)).slice(0, 25));
+            assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `Overflow at ${width}: ${JSON.stringify(overflow)}`);
             await page.close();
             console.log(`Unified booking phone ${width}px: valid country recovery, automatic correction, private guest check and native submit passed`);
         }
