@@ -524,9 +524,14 @@ class ModificationService:
             )
         except (HostawayError, ValueError):
             return ModificationRevalidation("hostaway_temporarily_unavailable"), {}
-        night_prices = priced_nights(
-            SimpleNamespace(quote=quote, calendar_document=calendar.document)
-        )
+        try:
+            night_prices = priced_nights(
+                SimpleNamespace(quote=quote, calendar_document=calendar.document)
+            )
+        except ValueError:
+            # A trusted total may lack an exact lodging-only nightly allocation.
+            # Keep the quote without inventing evidence for loyalty settlement.
+            night_prices = {}
         return ModificationRevalidation("ready", quote), night_prices
 
     def _revalidate_quote(

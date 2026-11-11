@@ -321,7 +321,15 @@ def started_shortening_stay():
 class ShortenedStayAvailability(ModificationAvailabilityStub):
     """The retained nights are occupied by this stay, never new inventory."""
 
-    def __init__(self, reservation, *, day_changes=None, **kwargs):
+    def __init__(self, reservation, *, day_changes=None, lodging_type="baseRate", **kwargs):
+        from dataclasses import replace
+
+        if "quote" in kwargs:
+            quote = kwargs["quote"]
+            kwargs["quote"] = replace(
+                quote,
+                components=tuple(replace(part, type=lodging_type) for part in quote.components),
+            )
         changes = {
             offset: {
                 "is_available": False,
@@ -557,6 +565,28 @@ def test_shortening_payment_revalidation_uses_existing_stay_rules(
     )
     assert not proposal.hostaway_operations.exists()
     assert not PaymentAttempt.objects.exists()
+
+
+def test_shortening_total_without_trusted_nightly_allocation_is_not_a_server_error(
+    started_shortening_stay,
+):
+    reservation = started_shortening_stay
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=price_quote(reservation, check_out=date(2026, 11, 13), total=Decimal("300")),
+        lodging_type="price",
+    )
+    outcome = ModificationService(availability_service=availability).create_change_quote(
+        reservation,
+        new_check_in=reservation.check_in,
+        new_check_out=date(2026, 11, 13),
+        new_guests=reservation.guests,
+        session_hash="owner:test",
+        owner_override=True,
+    )
+    assert outcome.code == "created"
+    assert outcome.request.new_total == Decimal("300")
+    assert outcome.request.quote_snapshot["night_prices"] == {}
 
 
 def test_shortening_execution_keeps_arrival_and_owner_total_and_is_idempotent(
