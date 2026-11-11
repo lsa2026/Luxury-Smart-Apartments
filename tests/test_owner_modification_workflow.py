@@ -544,7 +544,9 @@ def test_shortening_payment_revalidation_uses_existing_stay_rules(
         ),
         day_changes={3: {"closed_on_departure": True}} if failure == "departure" else None,
     )
-    outcome = ModificationService(availability_service=availability).revalidate_for_payment(proposal)
+    outcome = ModificationService(availability_service=availability).revalidate_for_payment(
+        proposal
+    )
     assert (
         outcome.code
         == {
