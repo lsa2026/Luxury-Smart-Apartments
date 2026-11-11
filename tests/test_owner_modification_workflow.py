@@ -610,9 +610,13 @@ def test_shortening_execution_keeps_arrival_and_owner_total_and_is_idempotent(
         first = execute_automatic_modification(
             proposal, service=service, owner_override=True, approved_refund_amount=Decimal("150.25")
         )
-        second = execute_automatic_modification(proposal, service=service, owner_override=True)
+        second = service.execute(proposal)
+        repeated_owner_action = execute_automatic_modification(
+            proposal, service=service, owner_override=True
+        )
     assert first.code == "completed"
     assert second.code == "already_completed"
+    assert repeated_owner_action.code == "previous_refund_requires_reconciliation"
     assert external.calls == 1
     payload = write.call_args.args[1]
     assert payload.check_in == reservation.check_in
