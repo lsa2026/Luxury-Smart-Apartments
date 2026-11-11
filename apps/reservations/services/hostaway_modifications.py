@@ -33,7 +33,7 @@ from ..models import (
     HostawayModificationOperation,
     Reservation,
 )
-from .modifications import ModificationService
+from .modifications import ModificationService, is_stay_shortening
 from .owner_settlement import owner_change_blocker
 from .reservation_payloads import _override_price_details
 from .stay_lifecycle import cancellation_blocker
@@ -107,6 +107,20 @@ class HostawayModificationService:
             else:
                 with ModificationService() as service:
                     validation = service.revalidate_extension_for_execution(modification)
+            if validation.code != "ready":
+                return ModificationExecution(validation.code, modification)
+        elif is_stay_shortening(modification):
+            if modification.quote_snapshot.get("owner_final_total") is not None:
+                blocker = owner_change_blocker(modification)
+                if blocker:
+                    return ModificationExecution(blocker, modification)
+            if self.modification_service is not None:
+                validation = self.modification_service.revalidate_shortening_for_execution(
+                    modification
+                )
+            else:
+                with ModificationService() as service:
+                    validation = service.revalidate_shortening_for_execution(modification)
             if validation.code != "ready":
                 return ModificationExecution(validation.code, modification)
         operation, can_send = _prepare_operation(modification)

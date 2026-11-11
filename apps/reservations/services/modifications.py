@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
+from types import SimpleNamespace
 
 from django.conf import settings
 from django.db import transaction
@@ -23,9 +24,10 @@ from .availability import (
     AvailabilityRequest,
     AvailabilityService,
     evaluate_calendar,
+    evaluate_shortened_stay_calendar,
 )
 from .booking import sanitized_components
-from .host_policy import check_in_datetime, policy_blocker
+from .host_policy import check_in_datetime, listing_timezone, policy_blocker
 from .owner_settlement import settlement_blocker, settlement_for
 from .stay_lifecycle import cancellation_blocker
 
@@ -171,6 +173,27 @@ class ModificationService:
             return ModificationCreation("invalid_dates")
         if new_guests <= 0:
             return ModificationCreation("invalid_guests")
+        if (
+            owner_override
+            and new_check_in == reservation.check_in
+            and new_guests == reservation.guests
+            and new_check_out < reservation.check_out
+        ):
+            validation, night_prices = self._shortening_quote(reservation, new_check_out)
+            if validation.code != "ready":
+                return ModificationCreation(validation.code)
+            return self._persist_priced_request(
+                reservation,
+                request_type=BookingModificationRequest.RequestType.CHANGE_DATES,
+                new_check_in=new_check_in,
+                new_check_out=new_check_out,
+                new_guests=new_guests,
+                session_hash=session_hash,
+                reason=reason,
+                quote=validation.quote,
+                night_prices=night_prices,
+                owner_override=owner_override,
+            )
         assert reservation.property is not None
         refusal = policy_blocker(
             reservation.property,
@@ -442,12 +465,81 @@ class ModificationService:
             return ModificationRevalidation("reservation_changed")
         return self._revalidate_quote(modification)
 
+    def revalidate_shortening_for_execution(
+        self, modification: BookingModificationRequest
+    ) -> ModificationRevalidation:
+        """Recheck a departure-only reduction before any external write."""
+        reservation = modification.reservation
+        if (
+            not is_stay_shortening(modification)
+            or modification.old_check_in != reservation.check_in
+            or modification.old_check_out != reservation.check_out
+            or modification.old_guests != reservation.guests
+            or modification.old_total != reservation.total_price
+            or modification.currency != reservation.currency
+            or modification.new_total is None
+            or reservation.property is None
+        ):
+            return ModificationRevalidation("reservation_changed")
+        return self._revalidate_quote(modification)
+
+    def _shortening_quote(
+        self, reservation: Reservation, new_check_out: date
+    ) -> tuple[ModificationRevalidation, dict]:
+        property_obj = reservation.property
+        if not reservation.check_in < new_check_out < reservation.check_out:
+            return ModificationRevalidation("invalid_dates"), {}
+        zone = listing_timezone(property_obj) or timezone.get_current_timezone()
+        if new_check_out < timezone.now().astimezone(zone).date():
+            return ModificationRevalidation("past_check_out"), {}
+        refusal = policy_blocker(
+            property_obj,
+            check_in=reservation.check_in,
+            check_out=new_check_out,
+            arrival_changed=False,
+        )
+        if refusal:
+            return ModificationRevalidation(refusal), {}
+        try:
+            calendar = self.availability_service.fetch_calendar(
+                property_obj=property_obj,
+                start_date=reservation.check_in,
+                end_date=new_check_out,
+                bypass_cache=True,
+            )
+            reason = evaluate_shortened_stay_calendar(
+                calendar.document.days,
+                check_in=reservation.check_in,
+                check_out=new_check_out,
+            )
+            if reason != AVAILABLE:
+                return ModificationRevalidation(reason), {}
+            quote = self.availability_service.client.calculate_price(
+                property_obj.hostaway_listing_id,
+                check_in=reservation.check_in,
+                check_out=new_check_out,
+                guests=reservation.guests,
+                bypass_currency_cache=True,
+                currency_override=property_obj.price_currency_override,
+            )
+        except (HostawayError, ValueError):
+            return ModificationRevalidation("hostaway_temporarily_unavailable"), {}
+        night_prices = priced_nights(
+            SimpleNamespace(quote=quote, calendar_document=calendar.document)
+        )
+        return ModificationRevalidation("ready", quote), night_prices
+
     def _revalidate_quote(
         self, modification: BookingModificationRequest
     ) -> ModificationRevalidation:
         reservation = modification.reservation
         try:
-            if modification.request_type == BookingModificationRequest.RequestType.EXTEND_STAY:
+            if is_stay_shortening(modification):
+                validation, _ = self._shortening_quote(reservation, modification.new_check_out)
+                if validation.code != "ready":
+                    return validation
+                quote = validation.quote
+            elif modification.request_type == BookingModificationRequest.RequestType.EXTEND_STAY:
                 calendar = self.availability_service.fetch_calendar(
                     property_obj=reservation.property,
                     start_date=reservation.check_out,
@@ -639,6 +731,16 @@ def _status_for_difference(difference: Decimal) -> str:
     if difference > 0:
         return BookingModificationRequest.Status.AWAITING_PAYMENT
     return BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+
+
+def is_stay_shortening(modification: BookingModificationRequest) -> bool:
+    return (
+        modification.request_type == BookingModificationRequest.RequestType.CHANGE_DATES
+        and modification.new_check_in == modification.old_check_in
+        and modification.new_guests == modification.old_guests
+        and modification.new_check_out is not None
+        and modification.old_check_in < modification.new_check_out < modification.old_check_out
+    )
 
 
 def _system_total_from_snapshot(modification: BookingModificationRequest) -> Decimal:
