@@ -4,7 +4,7 @@ Run this file on PostgreSQL in CI as well as SQLite. The original 500 cannot be
 detected by SQLite, which silently omits SELECT FOR UPDATE.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from html.parser import HTMLParser
 from unittest.mock import patch
@@ -294,6 +294,340 @@ def approve(client, reservation, modification, total):
     modification.refresh_from_db()
     assert modification.new_total == Decimal(total)
     assert modification.status == BookingModificationRequest.Status.READY_FOR_HOSTAWAY
+
+
+@pytest.fixture
+def started_shortening_stay():
+    # Friday at 02:00 Riyadh: an existing Tuesday-to-Saturday stay.
+    with (
+        timezone.override("Asia/Riyadh"),
+        patch("django.utils.timezone.now", return_value=datetime(2026, 11, 12, 23, tzinfo=UTC)),
+    ):
+        reservation = confirmed_reservation()
+        reservation.check_in = date(2026, 11, 10)
+        reservation.check_out = date(2026, 11, 14)
+        reservation.nights = 4
+        reservation.save()
+        property_obj = reservation.property
+        property_obj.allow_same_day_booking = False
+        property_obj.same_day_booking_lead_time_hours = 12
+        property_obj.time_zone_name = "Asia/Riyadh"
+        property_obj.min_nights = 1
+        property_obj.max_nights = 30
+        property_obj.save()
+        yield reservation
+
+
+class ShortenedStayAvailability(ModificationAvailabilityStub):
+    """The retained nights are occupied by this stay, never new inventory."""
+
+    def __init__(self, reservation, *, day_changes=None, lodging_type="baseRate", **kwargs):
+        from dataclasses import replace
+
+        if "quote" in kwargs:
+            quote = kwargs["quote"]
+            kwargs["quote"] = replace(
+                quote,
+                components=tuple(replace(part, type=lodging_type) for part in quote.components),
+            )
+        changes = {
+            offset: {
+                "is_available": False,
+                "available_units_to_sell": 0,
+                "closed_on_arrival": True,
+            }
+            for offset in range(4)
+        }
+        for offset, values in (day_changes or {}).items():
+            changes[offset].update(values)
+        super().__init__(reservation, day_changes=changes, **kwargs)
+
+    def fetch_calendar(self, **kwargs):
+        assert kwargs["start_date"] == self.reservation.check_in
+        assert kwargs["end_date"] == date(2026, 11, 13)
+        return super().fetch_calendar(**kwargs)
+
+    def check(self, *args, **kwargs):
+        raise AssertionError("Shortening must not ask to book the retained nights again")
+
+    def calculate_price(self, listing_id, **kwargs):
+        assert listing_id == self.reservation.property.hostaway_listing_id
+        assert kwargs["check_in"] == self.reservation.check_in
+        assert kwargs["check_out"] == date(2026, 11, 13)
+        assert kwargs["guests"] == self.reservation.guests
+        assert kwargs["bypass_currency_cache"] is True
+        return super().calculate_price(listing_id, **kwargs)
+
+
+def shortening_from_owner_form(owner_client, reservation, *, day_changes=None):
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=price_quote(reservation, check_out=date(2026, 11, 13), total=Decimal("300")),
+        day_changes=day_changes,
+    )
+    with patch(
+        "apps.reservations.operations_views.ModificationService",
+        return_value=ModificationService(availability_service=availability),
+    ):
+        response = owner_client.post(
+            reverse("notifications:booking_detail", args=[reservation.pk]),
+            {
+                "action": "quote_change",
+                "new_check_in": reservation.check_in.isoformat(),
+                "new_check_out": "2026-11-13",
+                "new_guests": reservation.guests,
+            },
+        )
+    return response, availability
+
+
+@pytest.mark.parametrize("utc_day", [11, 12])
+def test_owner_can_price_friday_early_departure_after_midnight(
+    owner_client, started_shortening_stay, utc_day
+):
+    reservation = started_shortening_stay
+    with patch(
+        "django.utils.timezone.now", return_value=datetime(2026, 11, utc_day, 23, tzinfo=UTC)
+    ):
+        response, availability = shortening_from_owner_form(owner_client, reservation)
+    assert response.status_code == 302
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    assert proposal.request_type == BookingModificationRequest.RequestType.CHANGE_DATES
+    assert proposal.new_check_in == date(2026, 11, 10)
+    assert proposal.new_check_out == date(2026, 11, 13)
+    assert proposal.new_total == Decimal("300")
+    assert len(proposal.quote_snapshot["night_prices"]["nights"]) == 3
+    assert availability.calendar_calls == availability.price_calls == 1
+    assert not proposal.hostaway_operations.exists()
+    assert not PaymentAttempt.objects.exists()
+    assert not WhatsAppDelivery.objects.exists()
+    reservation.refresh_from_db()
+    assert reservation.check_out == date(2026, 11, 14)
+
+
+@pytest.mark.parametrize(
+    ("changes", "reason"),
+    [
+        ({3: {"closed_on_departure": True}}, "المغادرة غير مسموحة"),
+        ({0: {"minimum_stay": 4}}, "الحد الأدنى"),
+        ({0: {"maximum_stay": 2}}, "الحد الأقصى"),
+    ],
+)
+def test_shortening_still_enforces_departure_and_calendar_stay_rules(
+    owner_client, started_shortening_stay, changes, reason
+):
+    response, availability = shortening_from_owner_form(
+        owner_client, started_shortening_stay, day_changes=changes
+    )
+    assert response.status_code == 200
+    assert reason in response.content.decode()
+    assert not BookingModificationRequest.objects.exists()
+    assert availability.price_calls == 0
+
+
+@pytest.mark.parametrize("departure", [date(2026, 11, 10), date(2026, 11, 12)])
+def test_shortening_rejects_zero_nights_and_departure_before_listing_today(
+    started_shortening_stay, departure
+):
+    reservation = started_shortening_stay
+    availability = ShortenedStayAvailability(reservation)
+    outcome = ModificationService(availability_service=availability).create_change_quote(
+        reservation,
+        new_check_in=reservation.check_in,
+        new_check_out=departure,
+        new_guests=reservation.guests,
+        session_hash="owner:test",
+        owner_override=True,
+    )
+    assert outcome.code == (
+        "invalid_dates" if departure == reservation.check_in else "past_check_out"
+    )
+    assert outcome.request is None
+    assert availability.calendar_calls == availability.price_calls == 0
+
+
+@pytest.mark.parametrize("property_minimum", [4, None])
+def test_shortening_preserves_listing_stay_bounds_and_requires_complete_calendar(
+    started_shortening_stay, property_minimum
+):
+    from dataclasses import replace
+
+    reservation = started_shortening_stay
+    reservation.property.min_nights = property_minimum
+    availability = ShortenedStayAvailability(reservation)
+    fetch = availability.fetch_calendar
+
+    def incomplete_calendar(**kwargs):
+        calendar = fetch(**kwargs)
+        return replace(calendar, document=replace(calendar.document, days=()))
+
+    availability.fetch_calendar = incomplete_calendar
+    outcome = ModificationService(availability_service=availability).create_change_quote(
+        reservation,
+        new_check_in=reservation.check_in,
+        new_check_out=date(2026, 11, 13),
+        new_guests=reservation.guests,
+        session_hash="owner:test",
+        owner_override=True,
+    )
+    assert outcome.code == ("minimum_stay_not_met" if property_minimum else "calendar_incomplete")
+    assert outcome.request is None
+    assert availability.price_calls == 0
+
+
+@pytest.mark.parametrize("failure", ["departure", "price", "currency", "timeout", "stale", "date"])
+def test_shortening_revalidates_before_any_hostaway_write(
+    owner_client, started_shortening_stay, failure
+):
+    from dataclasses import replace
+
+    from apps.integrations.hostaway.exceptions import HostawayTimeoutError
+
+    reservation = started_shortening_stay
+    shortening_from_owner_form(owner_client, reservation)
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    approve(owner_client, reservation, proposal, "350")
+    current_quote = price_quote(reservation, check_out=proposal.new_check_out, total=Decimal("300"))
+    if failure == "price":
+        current_quote = replace(current_quote, total_price=Decimal("301"))
+    elif failure == "currency":
+        current_quote = replace(current_quote, currency="USD")
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=current_quote,
+        day_changes={3: {"closed_on_departure": True}} if failure == "departure" else None,
+    )
+    if failure == "timeout":
+        availability.fetch_calendar = lambda **kwargs: (_ for _ in ()).throw(HostawayTimeoutError())
+    if failure == "stale":
+        reservation.total_price += Decimal("1")
+        reservation.save(update_fields=["total_price"])
+    external = WriteClientStub(snapshot=updated_snapshot(proposal))
+    with patch(
+        "django.utils.timezone.now",
+        return_value=datetime(2026, 11, 13 if failure == "date" else 12, 23, tzinfo=UTC),
+    ):
+        # Keep the quote unexpired to isolate the listing-date recheck.
+        if failure == "date":
+            proposal.expires_at = timezone.now() + timedelta(hours=1)
+            proposal.save(update_fields=["expires_at"])
+        outcome = HostawayModificationService(
+            client=external,
+            modification_service=ModificationService(availability_service=availability),
+        ).execute(proposal)
+    assert (
+        outcome.code
+        == {
+            "departure": "closed_on_departure",
+            "price": "price_changed",
+            "currency": "currency_changed",
+            "timeout": "hostaway_temporarily_unavailable",
+            "stale": "reservation_changed",
+            "date": "past_check_out",
+        }[failure]
+    )
+    assert external.calls == 0
+    assert not proposal.hostaway_operations.exists()
+    assert not PaymentAttempt.objects.exists()
+    assert not WhatsAppDelivery.objects.exists()
+    reservation.refresh_from_db()
+    assert reservation.check_out == date(2026, 11, 14)
+
+
+@pytest.mark.parametrize("failure", [None, "departure", "price"])
+def test_shortening_payment_revalidation_uses_existing_stay_rules(
+    owner_client, started_shortening_stay, failure
+):
+    reservation = started_shortening_stay
+    shortening_from_owner_form(owner_client, reservation)
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    proposal.status = BookingModificationRequest.Status.AWAITING_PAYMENT
+    proposal.save(update_fields=["status"])
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=price_quote(
+            reservation,
+            check_out=proposal.new_check_out,
+            total=Decimal("301" if failure == "price" else "300"),
+        ),
+        day_changes={3: {"closed_on_departure": True}} if failure == "departure" else None,
+    )
+    outcome = ModificationService(availability_service=availability).revalidate_for_payment(
+        proposal
+    )
+    assert (
+        outcome.code
+        == {
+            None: "ready",
+            "departure": "closed_on_departure",
+            "price": "price_changed",
+        }[failure]
+    )
+    assert not proposal.hostaway_operations.exists()
+    assert not PaymentAttempt.objects.exists()
+
+
+def test_shortening_total_without_trusted_nightly_allocation_is_not_a_server_error(
+    started_shortening_stay,
+):
+    reservation = started_shortening_stay
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=price_quote(reservation, check_out=date(2026, 11, 13), total=Decimal("300")),
+        lodging_type="price",
+    )
+    outcome = ModificationService(availability_service=availability).create_change_quote(
+        reservation,
+        new_check_in=reservation.check_in,
+        new_check_out=date(2026, 11, 13),
+        new_guests=reservation.guests,
+        session_hash="owner:test",
+        owner_override=True,
+    )
+    assert outcome.code == "created"
+    assert outcome.request.new_total == Decimal("300")
+    assert outcome.request.quote_snapshot["night_prices"] == {}
+
+
+def test_shortening_execution_keeps_arrival_and_owner_total_and_is_idempotent(
+    owner_client, started_shortening_stay
+):
+    reservation = started_shortening_stay
+    collect(reservation, "500.25")
+    shortening_from_owner_form(owner_client, reservation)
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    approve(owner_client, reservation, proposal, "350")
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=price_quote(reservation, check_out=proposal.new_check_out, total=Decimal("300")),
+    )
+    external = WriteClientStub(snapshot=updated_snapshot(proposal))
+    service = HostawayModificationService(
+        client=external,
+        modification_service=ModificationService(availability_service=availability),
+    )
+    with patch.object(external, "update_reservation", wraps=external.update_reservation) as write:
+        first = execute_automatic_modification(
+            proposal, service=service, owner_override=True, approved_refund_amount=Decimal("150.25")
+        )
+        second = service.execute(proposal)
+        repeated_owner_action = execute_automatic_modification(
+            proposal, service=service, owner_override=True
+        )
+    assert first.code == "completed"
+    assert second.code == repeated_owner_action.code == "previous_refund_requires_reconciliation"
+    assert external.calls == 1
+    payload = write.call_args.args[1]
+    assert payload.check_in == reservation.check_in
+    assert payload.check_out == date(2026, 11, 13)
+    assert payload.total_price == Decimal("350")
+    assert write.call_args.kwargs["extension"] is False
+    reservation.refresh_from_db()
+    assert reservation.nights == 3
+    assert reservation.total_price == Decimal("350")
+    assert first.refund.amount == Decimal("150.25")
+    assert first.refund.status == RefundObligation.Status.DUE
+    assert not WhatsAppDelivery.objects.exists()
 
 
 @pytest.mark.parametrize("system_total", ["2142.0000", "2142.5000", "0.0000"])

@@ -42,6 +42,10 @@ PRICING_UNAVAILABLE = "pricing_unavailable"
 HOSTAWAY_TEMPORARILY_UNAVAILABLE = "hostaway_temporarily_unavailable"
 
 MESSAGES = {
+    "past_check_out": (
+        "لا يمكن تقصير الإقامة إلى تاريخ خروج مضى بتوقيت الشقة.",
+        "The shortened departure cannot be before today in the property's timezone.",
+    ),
     AVAILABLE: ("الفترة متاحة.", "The stay is available."),
     INVALID_DATES: ("تواريخ الإقامة غير صالحة.", "The stay dates are invalid."),
     PAST_CHECK_IN: ("لا يمكن أن يكون الوصول في الماضي.", "Check-in cannot be in the past."),
@@ -510,6 +514,31 @@ class AvailabilityService:
             calendar_cache_hit=calendar.cache_hit if calendar else False,
             calendar_document=calendar.document if calendar else None,
         )
+
+
+def evaluate_shortened_stay_calendar(
+    days: tuple[CalendarDay, ...], *, check_in: date, check_out: date
+) -> str:
+    """Validate a retained stay, whose occupied nights are already reserved.
+
+    Shortening releases inventory; it never buys the same nights a second time.
+    Arrival closure is irrelevant, but stay bounds and the new departure apply.
+    """
+    nights = (check_out - check_in).days
+    if not 1 <= nights <= 366:
+        return INVALID_DATES
+    by_date = {day.date: day for day in days}
+    required = {check_in + timedelta(days=offset) for offset in range(nights + 1)}
+    if not required.issubset(by_date) or len(by_date) != len(days):
+        return CALENDAR_INCOMPLETE
+    arrival, departure = by_date[check_in], by_date[check_out]
+    if departure.closed_on_departure is True:
+        return CLOSED_ON_DEPARTURE
+    if arrival.minimum_stay is not None and nights < arrival.minimum_stay:
+        return MINIMUM_STAY_NOT_MET
+    if arrival.maximum_stay is not None and nights > arrival.maximum_stay:
+        return MAXIMUM_STAY_EXCEEDED
+    return AVAILABLE
 
 
 def evaluate_calendar(
