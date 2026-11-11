@@ -462,9 +462,7 @@ def test_shortening_preserves_listing_stay_bounds_and_requires_complete_calendar
         session_hash="owner:test",
         owner_override=True,
     )
-    assert outcome.code == (
-        "minimum_stay_not_met" if property_minimum else "calendar_incomplete"
-    )
+    assert outcome.code == ("minimum_stay_not_met" if property_minimum else "calendar_incomplete")
     assert outcome.request is None
     assert availability.price_calls == 0
 
@@ -509,20 +507,54 @@ def test_shortening_revalidates_before_any_hostaway_write(
             client=external,
             modification_service=ModificationService(availability_service=availability),
         ).execute(proposal)
-    assert outcome.code == {
-        "departure": "closed_on_departure",
-        "price": "price_changed",
-        "currency": "currency_changed",
-        "timeout": "hostaway_temporarily_unavailable",
-        "stale": "reservation_changed",
-        "date": "past_check_out",
-    }[failure]
+    assert (
+        outcome.code
+        == {
+            "departure": "closed_on_departure",
+            "price": "price_changed",
+            "currency": "currency_changed",
+            "timeout": "hostaway_temporarily_unavailable",
+            "stale": "reservation_changed",
+            "date": "past_check_out",
+        }[failure]
+    )
     assert external.calls == 0
     assert not proposal.hostaway_operations.exists()
     assert not PaymentAttempt.objects.exists()
     assert not WhatsAppDelivery.objects.exists()
     reservation.refresh_from_db()
     assert reservation.check_out == date(2026, 11, 14)
+
+
+@pytest.mark.parametrize("failure", [None, "departure", "price"])
+def test_shortening_payment_revalidation_uses_existing_stay_rules(
+    owner_client, started_shortening_stay, failure
+):
+    reservation = started_shortening_stay
+    shortening_from_owner_form(owner_client, reservation)
+    proposal = BookingModificationRequest.objects.get(reservation=reservation)
+    proposal.status = BookingModificationRequest.Status.AWAITING_PAYMENT
+    proposal.save(update_fields=["status"])
+    availability = ShortenedStayAvailability(
+        reservation,
+        quote=price_quote(
+            reservation,
+            check_out=proposal.new_check_out,
+            total=Decimal("301" if failure == "price" else "300"),
+        ),
+        day_changes={3: {"closed_on_departure": True}} if failure == "departure" else None,
+    )
+    outcome = ModificationService(availability_service=availability).revalidate_for_payment(proposal)
+    assert (
+        outcome.code
+        == {
+            None: "ready",
+            "departure": "closed_on_departure",
+            "price": "price_changed",
+        }[failure]
+    )
+    assert not proposal.hostaway_operations.exists()
+    assert not PaymentAttempt.objects.exists()
 
 
 def test_shortening_execution_keeps_arrival_and_owner_total_and_is_idempotent(
