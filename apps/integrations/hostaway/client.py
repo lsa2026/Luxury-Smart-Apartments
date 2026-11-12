@@ -28,6 +28,7 @@ from .exceptions import (
     HostawayServerError,
     HostawayTimeoutError,
 )
+from .identifiers import normalize_guest_charge, payment_identifier
 from .listing_validators import (
     HostawayCollectionPage,
     HostawayObjectDocument,
@@ -505,12 +506,7 @@ class HostawayClient:
         records = payload.get("result")
         if not isinstance(records, list) or len(records) >= 100:
             raise HostawayResponseError("Incomplete guest charges response.")
-        if any(
-            not isinstance(row, dict) or row.get("reservationId") != reservation_id
-            for row in records
-        ):
-            raise HostawayResponseError("Guest charges reservation mismatch.")
-        return records
+        return [normalize_guest_charge(row, reservation_id=reservation_id) for row in records]
 
     def create_offline_paid_charge(
         self,
@@ -540,10 +536,11 @@ class HostawayClient:
         result = payload.get("result") if isinstance(payload, dict) else None
         from decimal import Decimal
 
+        if isinstance(result, dict):
+            result = normalize_guest_charge(result, reservation_id=reservation_id)
         if not isinstance(result, dict) or (
             payload.get("status") != "success"
-            or not isinstance(result.get("id"), int)
-            or result.get("reservationId") != reservation_id
+            or result.get("reservationId") != payment_identifier(reservation_id)
             or result.get("status") != "paid"
             or result.get("currency") != currency
             or result.get("title") != title

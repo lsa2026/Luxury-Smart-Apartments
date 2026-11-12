@@ -11,6 +11,7 @@ from django.utils.dateparse import parse_datetime
 
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
+from apps.integrations.hostaway.identifiers import payment_identifier
 from apps.integrations.monitoring import alert_operations
 from apps.integrations.tasks import distributed_task_lock
 from apps.payments.currency import CurrencyError, validate_payment_snapshot
@@ -173,7 +174,7 @@ def record_payment_receipt_task(entry_id: str) -> dict[str, str]:
                         paid_at=attempt.verified_at,
                     )
                     charge_id = charge["id"]
-                entry.remote_charge_id = charge_id
+                entry.remote_charge_id = payment_identifier(charge_id)
                 entry.status = "succeeded"
                 entry.error_code = ""
                 entry.completed_at = timezone.now()

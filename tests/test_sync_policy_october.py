@@ -175,9 +175,12 @@ def test_receipt_queue_is_unique_and_requires_verified_payment():
     HOSTAWAY_FINANCIAL_RECEIPTS_START_AT="2020-01-01T00:00:00+00:00",
 )
 @pytest.mark.parametrize("already_remote", [False, True])
-def test_receipt_is_posted_once_or_recovered_by_marker(already_remote):
+@pytest.mark.parametrize("charge_id", [123, "123", "957144035275968076", "HA-charge_2026-A"])
+def test_receipt_is_posted_once_or_recovered_by_marker(already_remote, charge_id):
     reservation, payment = paid_reservation()
-    entry = HostawayFinancialEntry.objects.create(payment_attempt=payment)
+    entry = HostawayFinancialEntry.objects.create(
+        payment_attempt=payment, status="unknown" if already_remote else "pending"
+    )
     client = Mock()
     client.get_reservation.return_value = Mock(
         reservation_id=reservation.hostaway_reservation_id,
@@ -185,7 +188,7 @@ def test_receipt_is_posted_once_or_recovered_by_marker(already_remote):
         currency="SAR",
     )
     charge = {
-        "id": 123,
+        "id": charge_id,
         "title": f"LSA HyperPay receipt {payment.pk}",
         "amount": str(payment.amount),
         "currency": "SAR",
@@ -200,6 +203,8 @@ def test_receipt_is_posted_once_or_recovered_by_marker(already_remote):
         assert record_payment_receipt_task.run(str(entry.pk))["status"] == "succeeded"
         assert record_payment_receipt_task.run(str(entry.pk))["status"] == "already_recorded"
     assert client.create_offline_paid_charge.call_count == (0 if already_remote else 1)
+    entry.refresh_from_db()
+    assert entry.remote_charge_id == str(charge_id)
 
 
 @override_settings(
