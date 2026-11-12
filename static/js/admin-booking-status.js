@@ -28,8 +28,10 @@
       if (pending && !editing()) { window.location.reload(); return; }
       try {
         const response = await fetch(url, {credentials: "same-origin", cache: "no-store", headers: {Accept: "application/json"}});
+        if (stopped) return;
         if (response.ok && !response.redirected) {
           const state = await response.json();
+          if (stopped) return;
           if (typeof state.fingerprint === "string" && state.fingerprint !== watch.fingerprint) {
             pending = true;
             if (!editing()) { window.location.reload(); return; }

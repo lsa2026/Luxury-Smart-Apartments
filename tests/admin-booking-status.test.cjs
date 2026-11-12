@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const source = fs.readFileSync("static/js/admin-booking-status.js", "utf8");
 
-function setup({fingerprint = "new", fields = [], hidden = false, redirected = false, endpoint = "/bookings/"} = {}) {
+function setup({fingerprint = "new", fields = [], hidden = false, redirected = false, endpoint = "/bookings/", response = null} = {}) {
   const timers = [], calls = [], listeners = {};
   let reloads = 0;
   const document = {
@@ -20,6 +20,7 @@ function setup({fingerprint = "new", fields = [], hidden = false, redirected = f
   };
   vm.runInNewContext(source, {document, window, URL, fetch: async (url, options) => {
     calls.push({url, options});
+    if (response) return response;
     return {ok: true, status: 200, redirected, json: async () => ({fingerprint})};
   }});
   return {timers, calls, listeners, document, reloads: () => reloads};
@@ -62,4 +63,19 @@ test("submission, a login redirect and foreign endpoints stop passive checks", a
   assert.equal(redirected.reloads(), 0);
   assert.equal(redirected.timers.length, 0);
   assert.equal(setup({endpoint: "https://untrusted.example/"}).timers.length, 0);
+});
+test("a status response arriving during form submission cannot interrupt the action", async () => {
+  for (const delayedJson of [false, true]) {
+    let release;
+    const pending = new Promise(resolve => {release = resolve;});
+    const reply = {ok: true, status: 200, redirected: false, json: async () => delayedJson ? pending : ({fingerprint: "new"})};
+    const app = setup({response: delayedJson ? reply : pending});
+    const check = app.timers.shift()();
+    await Promise.resolve();
+    app.listeners.submit();
+    release(delayedJson ? {fingerprint: "new"} : reply);
+    await check;
+    assert.equal(app.reloads(), 0);
+    assert.equal(app.timers.length, 0);
+  }
 });
