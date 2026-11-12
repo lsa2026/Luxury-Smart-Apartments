@@ -432,7 +432,10 @@ def _booking_status_watch(bookings):
     from apps.payments.owner_status import booking_status_fingerprint
 
     ids = [str(booking.pk) for booking in bookings]
-    return {"ids": ids, "fingerprint": booking_status_fingerprint(ids)}
+    return {
+        "ids": ids,
+        "fingerprint": booking_status_fingerprint(ids, rendered_bookings=bookings),
+    }
 
 
 def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:

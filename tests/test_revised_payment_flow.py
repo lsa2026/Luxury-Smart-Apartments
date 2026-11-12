@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils import translation
 
 from apps.payments.models import PaymentAttempt
+from apps.payments.owner_status import booking_status_fingerprint
 from apps.payments.payment_link_revisions import prepare_preview
 from apps.payments.payment_link_views import COPY
 from apps.payments.payment_links import complete_request_payment
@@ -131,9 +132,7 @@ def test_status_read_detects_verified_payment_without_any_provider_or_scan():
     active, _ = activate(preview)
     url = reverse("notifications:booking_list")
     params = {"payment_status_snapshot": "1", "ids": str(stay.pk)}
-    with patch(
-        "apps.reservations.services.guest_classification_history.ensure_refresh"
-    ) as scan:
+    with patch("apps.reservations.services.guest_classification_history.ensure_refresh") as scan:
         before = client.get(url, params)
         payment = collect(stay, str(active.amount_sar), request=active)
         complete_request_payment(payment)
@@ -150,6 +149,15 @@ def test_status_read_detects_verified_payment_without_any_provider_or_scan():
     assert Client().get(url, params).status_code == 302
     assert client.get(url, params | {"ids": "invalid"}).status_code == 400
     assert client.get(url, params | {"ids": ",".join([str(stay.pk)] * 101)}).status_code == 400
+
+
+def test_payment_change_during_list_render_is_not_hidden_by_a_newer_status_baseline():
+    _, stay, _, _ = review()
+    old = booking_status_fingerprint([stay.pk])
+    stay.__class__.objects.filter(pk=stay.pk).update(payment_status="paid")
+    rendered = booking_status_fingerprint([stay.pk], rendered_bookings=[stay])
+    assert rendered == old
+    assert rendered != booking_status_fingerprint([stay.pk])
 
 
 def test_address_lookup_is_private_and_uses_the_standard_component(settings):

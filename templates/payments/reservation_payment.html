@@ -13,7 +13,7 @@
 {% endblock %}
 {% block content %}
 <section class="section container narrow payment-result reservation-payment">
-  <div class="section-heading"><h1>{{ ui.title }}</h1></div>
+  {% if payment_request.status != 'paid' %}<div class="section-heading"><h1>{{ ui.title }}</h1></div>{% endif %}
   {% if payment_request.status == 'paid' %}
     {% include 'payments/_payment_outcome.html' with message=ui.paid %}
   {% elif not payable %}
