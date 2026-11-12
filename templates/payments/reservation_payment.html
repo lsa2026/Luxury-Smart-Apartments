@@ -5,6 +5,7 @@
 {% block hreflang %}{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}">
+<link rel="stylesheet" href="{% static 'css/payment-outcome.css' %}">
 <link rel="stylesheet" href="{% static 'css/checkout-address.css' %}">
 <script type="module" src="{% static 'js/checkout-address.js' %}"></script>
 <link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">
@@ -14,7 +15,7 @@
 <section class="section container narrow payment-result reservation-payment">
   <div class="section-heading"><h1>{{ ui.title }}</h1></div>
   {% if payment_request.status == 'paid' %}
-    <p class="notice" role="status">{{ ui.paid }}</p>
+    {% include 'payments/_payment_outcome.html' with message=ui.paid %}
   {% elif not payable %}
     <article class="review-panel"><h2>{{ ui.unavailable }}</h2><p>{{ ui.closed }}</p></article>
   {% else %}

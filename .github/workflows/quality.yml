@@ -62,6 +62,7 @@ jobs:
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
           tests/test_payment_link_revisions.py
+          tests/test_revised_payment_flow.py
           tests/test_payment_link_purchase_receipts.py
           tests/test_morning_payment_messages.py
           tests/test_morning_stays.py
@@ -166,10 +167,13 @@ jobs:
       - name: Verify Ruff formatting
         run: ruff format --diff .
 
+      - name: Test revised payment address, return and status boundaries
+        run: pytest tests/test_revised_payment_flow.py tests/test_payment_link_revisions.py tests/test_payment_link_purchase_receipts.py -q
+
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
-        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout tests/test_unified_booking_phone.py::test_render_unified_phone_layout tests/test_admin_guest_files.py::test_render_guest_file_layout -q
+        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout tests/test_unified_booking_phone.py::test_render_unified_phone_layout tests/test_admin_guest_files.py::test_render_guest_file_layout tests/test_revised_payment_flow.py::test_render_revised_payment_layout -q
 
       - name: Check contact inbox layouts on phone and tablet
         env:
@@ -181,6 +185,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-classification-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-unified-phone-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-file-layout.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-revised-payment-layout.cjs
 
       - name: Run tests
         run: pytest
@@ -196,7 +201,7 @@ jobs:
         run: node --test tests/price-calendar.test.cjs
 
       - name: Test progressive admin booking tabs and form safety
-        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs tests/admin-guest-classification.test.cjs tests/admin-guest-check.test.cjs
+        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs tests/admin-guest-classification.test.cjs tests/admin-guest-check.test.cjs tests/admin-booking-status.test.cjs
 
       - name: Test noon morning communication contract
         run: node --test tests/morning-noon-contract.test.cjs tests/morning-hostaway-first.test.cjs

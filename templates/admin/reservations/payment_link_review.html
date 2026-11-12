@@ -1,7 +1,8 @@
 {% extends "admin/base_site.html" %}
 {% load static presentation %}
 {% block content_title %}{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-invoices.css' %}"><link rel="stylesheet" href="{% static 'css/admin-booking-detail.css' %}"><link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script><script src="{% static 'js/morning-validation.js' %}" defer></script>{% endblock %}
 {% block content %}
 <div class="lsa-dashboard lsa-operations-screen lsa-booking-detail" dir="rtl">
   <nav class="lsa-booking-detail__path" aria-label="مسار الحجز"><a href="{% url 'notifications:booking_detail' preview.reservation_id %}?section=edit">العودة إلى الحجز</a></nav>
@@ -28,7 +29,11 @@
   </section>
   {% if preview.status == 'draft' %}
   <section class="lsa-panel lsa-owner-action">
-    <form method="post" class="lsa-owner-form">{% csrf_token %}
+    <form method="post" class="lsa-owner-form reservation-payment" data-morning-validation>{% csrf_token %}
+      <h2>عنوان الفوترة نيابةً عن الضيف</h2>
+      <p>أدخل العنوان المختصر واختر الاقتراح، ثم راجع الحقول وأكمل الناقص. سيصل العنوان جاهزًا للضيف؛ يوافق بنفسه على الشروط وقواعد المنزل ثم يدفع.</p>
+      {{ billing_form.non_field_errors }}
+      {% include 'reservations/_billing_fields.html' with guest_form=billing_form %}
       <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_updated_link" required><span>راجعت التواريخ والمبلغ والرسالة، وأعتمد تعديل الحجز وتحديث الرابط وإرساله للضيف.</span></label>
       <button type="submit" class="lsa-btn lsa-btn--gold lsa-owner-form__submit" style="max-width:100%;white-space:normal">اعتماد التعديل وتحديث الرابط وإرساله للضيف</button>
     </form>

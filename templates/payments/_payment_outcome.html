@@ -1,0 +1,15 @@
+{% load static presentation %}
+<article class="payment-outcome payment-outcome--{{ payment_outcome|default:'pending' }}" aria-labelledby="payment-outcome-title">
+  <div class="payment-outcome__brand"><img src="{% static 'images/brand/luxury-living-lockup-light.png' %}" width="1920" height="450" alt="Luxury Living"></div>
+  <div class="payment-outcome__symbol" aria-hidden="true">{% if payment_outcome == 'paid' %}✓{% elif payment_outcome == 'failed' %}!{% else %}…{% endif %}</div>
+  <h1 id="payment-outcome-title">{% if payment_outcome == 'paid' %}{{ ui.paid_heading }}{% else %}{{ ui.title }}{% endif %}</h1>
+  <p class="payment-outcome__message" role="status" aria-live="polite">{{ message }}</p>
+  {% if amount or payment_request %}
+  <dl class="payment-outcome__amount"><div><dt>{% if payment_outcome == 'paid' %}{{ ui.paid_amount }}{% else %}{{ ui.total }}{% endif %}</dt><dd>{% if amount %}{{ amount|format_money:currency }}{% else %}{{ payment_request.amount_sar|format_money:'SAR' }}{% endif %}</dd></div></dl>
+  {% endif %}
+  <nav class="payment-outcome__actions" aria-label="{{ ui.contact }}">
+    <a class="payment-outcome__primary" href="{% url 'core:home' %}">{{ ui.home }}</a>
+    <a class="payment-outcome__secondary" href="{% url 'core:contact' %}">{{ ui.contact }}</a>
+  </nav>
+  <p class="payment-outcome__thanks">{{ ui.thanks }}</p>
+</article>

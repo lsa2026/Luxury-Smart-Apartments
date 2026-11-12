@@ -1,12 +1,14 @@
 {% extends "admin/base_site.html" %}
 {% load i18n presentation static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}?v=20261023-navigation">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-guest-classification.js' %}" defer></script>{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-guest-classification.js' %}" defer></script><script src="{% static 'js/admin-booking-status.js' %}" defer></script>{% endblock %}
 {% block content_title %}{% endblock %}
 
 {% block content %}
 {% language "ar" %}
 <main class="lsa-dashboard lsa-operations-screen lsa-booking-list-screen" dir="rtl">
+  {{ booking_status_watch|json_script:"booking-status-watch" }}
+  <span hidden data-booking-status-url="{% url 'notifications:booking_list' %}"></span>
   <section class="lsa-page-head lsa-page-head--operations">
     <div>
       <span class="lsa-kicker"><i></i> مساحة الحجوزات</span>
