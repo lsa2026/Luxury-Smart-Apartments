@@ -83,6 +83,7 @@ jobs:
           tests/test_property_price_calendar.py
           tests/test_indicative_rates.py
           tests/test_sync_policy_october.py
+          tests/test_hostaway_payment_identifiers.py
           tests/test_guest_invoices.py
           tests/test_sama_invoices.py
           tests/test_booking_invoice_navigation.py
@@ -247,6 +248,8 @@ jobs:
       - name: Test consented GA4 UPD and purchase isolation
         run: node --test tests/consent-upd.test.cjs tests/user-provided-data.test.cjs tests/analytics-purchase.test.cjs tests/purchase-delivery.test.cjs tests/meta-measurement.test.cjs
 
+      - name: Verify Hostaway text identifiers in isolated automation code
+        run: node --test tests/hostaway-payment-id-automation.test.cjs
       - name: Run Django system checks
         run: python manage.py check
 

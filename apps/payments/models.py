@@ -194,7 +194,7 @@ class PaymentAttempt(models.Model):
         verbose_name_plural = _("Payment attempts")
 
     def __str__(self) -> str:
-        return f"{self.provider} — {self.amount} {self.currency}"
+        return f"{self.provider} - {self.amount} {self.currency}"
 
 
 class ManualReceiptReference(models.Model):
@@ -278,7 +278,7 @@ class HostawayFinancialEntry(models.Model):
             ("review", "Needs accounting review"),
         ],
     )
-    remote_charge_id = models.PositiveBigIntegerField(null=True, blank=True)
+    remote_charge_id = models.CharField(max_length=64, null=True, blank=True)
     error_code = models.CharField(max_length=100, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
