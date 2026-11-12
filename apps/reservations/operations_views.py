@@ -299,6 +299,16 @@ def booking_list(request: HttpRequest) -> HttpResponse:
     _require_owner(request)
     from .services.guest_classification_history import ensure_refresh, provider_state
 
+    if request.GET.get("payment_status_snapshot") == "1":
+        from apps.payments.owner_status import booking_status_fingerprint
+
+        try:
+            fingerprint = booking_status_fingerprint(request.GET.get("ids", "").split(","))
+        except (TypeError, ValueError):
+            return JsonResponse({"detail": "invalid_bookings"}, status=400)
+        response = JsonResponse({"fingerprint": fingerprint})
+        response["Cache-Control"] = "private, no-store"
+        return response
     if request.GET.get("classification_status") == "1":
         return JsonResponse(provider_state())
     if request.method == "POST" and request.POST.get("action") == "refresh_guest_classification":
@@ -402,6 +412,7 @@ def booking_list(request: HttpRequest) -> HttpResponse:
         request,
         "admin/reservations/booking_list.html",
         {
+            "booking_status_watch": _booking_status_watch(bookings),
             "title": "إدارة الحجوزات",
             "bookings": bookings,
             "query": query,
@@ -415,6 +426,16 @@ def booking_list(request: HttpRequest) -> HttpResponse:
             "loyalty_ui_enabled": settings.LOYALTY_ENABLED and settings.LOYALTY_UI_ENABLED,
         },
     )
+
+
+def _booking_status_watch(bookings):
+    from apps.payments.owner_status import booking_status_fingerprint
+
+    ids = [str(booking.pk) for booking in bookings]
+    return {
+        "ids": ids,
+        "fingerprint": booking_status_fingerprint(ids, rendered_bookings=bookings),
+    }
 
 
 def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:

@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>{{ ui.title }} | Luxury Smart Apartments</title>
   <link rel="stylesheet" href="{% static 'css/site.css' %}?v=49">
+  <link rel="stylesheet" href="{% static 'css/payment-outcome.css' %}">
   {% if purchase_event %}
   <script src="{% static 'js/measurement-privacy.js' %}?v=2" defer></script>
   <script src="{% static 'js/consent.js' %}?v=18" defer></script>
@@ -32,12 +33,8 @@
   data-cookie-consent-max-age="{{ cookie_consent_max_age }}"
   data-cookie-consent-secure="{{ cookie_consent_secure|yesno:'true,false' }}"
 >
-<main class="section container narrow payment-result">
-  <h1>{{ ui.title }}</h1>
-  <article class="review-panel">
-    <p class="notice" role="status">{{ ui.paid }}</p>
-    <p>{{ amount|format_money:currency }}</p>
-  </article>
+<main class="payment-outcome-page">
+  {% include 'payments/_payment_outcome.html' with payment_outcome='paid' message=ui.paid %}
   {% if purchase_event %}
   {% with purchased_item=purchase_event.items.0 %}
   <div hidden

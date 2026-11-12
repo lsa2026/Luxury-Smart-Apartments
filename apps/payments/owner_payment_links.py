@@ -2,19 +2,28 @@
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import translation
+from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required, require_operations_access
 from apps.notifications.services.audit import record_audit
+from apps.reservations.address_places import (
+    CheckoutAddressView,
+    make_address_ticket,
+    places_enabled,
+)
+from apps.reservations.booking_forms import BillingAddressForm
+from apps.reservations.security import session_key_hash
 
 from .currency import CurrencyError
 from .hyperpay.exceptions import HyperPayError
 from .models import ReservationPaymentRequest
 from .payment_link_revisions import approve_preview, prepare_preview, projected_reservation
 from .payment_link_tasks import payment_message, queue_delivery
+from .payment_link_views import saved_manual_billing
 from .payment_links import public_url
 
 ERRORS = {
@@ -30,6 +39,7 @@ ERRORS = {
 
 
 def _render_review(request, context):
+    request.LANGUAGE_CODE = "ar"
     with translation.override("ar"):
         return render(request, "admin/reservations/payment_link_review.html", context)
 
@@ -76,6 +86,7 @@ def preview_updated_link(request, reservation_id):
 
 
 @operations_access_required
+@translation.override("ar")
 def updated_link_review(request, reservation_id, preview_id):
     require_operations_access(request)
     preview = get_object_or_404(
@@ -86,11 +97,29 @@ def updated_link_review(request, reservation_id, preview_id):
         reservation_id=reservation_id,
         modification_request__isnull=False,
     )
+    billing_form = BillingAddressForm(
+        initial=saved_manual_billing(preview) or {"billing_country": "SA"}
+    )
     if request.method == "POST":
+        if preview.status == "draft":
+            billing_form = BillingAddressForm(request.POST)
         if request.POST.get("confirm_updated_link") != "on":
             messages.error(request, "راجع المبلغ والرسالة وأكّد الاعتماد قبل تحديث الرابط وإرساله.")
+        elif preview.status == "draft" and not billing_form.is_valid():
+            messages.error(request, "أكمل عنوان الفوترة عن الضيف وصحّح الحقول الموضحة قبل الإرسال.")
         else:
             try:
+                if preview.status == "draft":
+                    with transaction.atomic():
+                        locked = ReservationPaymentRequest.objects.select_for_update().get(
+                            pk=preview.pk
+                        )
+                        if locked.status == "draft" and locked.approved_at is None:
+                            snapshot = dict(locked.settlement_snapshot)
+                            snapshot["billing_address"] = dict(billing_form.cleaned_data)
+                            snapshot["billing_collected_by_admin"] = True
+                            locked.settlement_snapshot = snapshot
+                            locked.save(update_fields=["settlement_snapshot"])
                 active = approve_preview(preview.pk)
                 delivery = queue_delivery(active.pk)
                 record_audit(
@@ -110,6 +139,8 @@ def updated_link_review(request, reservation_id, preview_id):
                         "sent": "قبل مزود الواتساب الرسالة",
                     }.get(delivery.status, "تحتاج مراجعة سجل الإرسال"),
                 )
+                if delivery.status in {"queued", "sending", "sent"}:
+                    return redirect("notifications:booking_list")
             except (HyperPayError, CurrencyError, ValueError, ValidationError) as exc:
                 _error(request, exc)
             except Exception:
@@ -121,22 +152,54 @@ def updated_link_review(request, reservation_id, preview_id):
     projected = projected_reservation(preview.modification_request)
     preview.reservation = projected
     snapshot = preview.settlement_snapshot
-    response = _render_review(
-        request,
-        {
-            "title": "مراجعة تحديث رابط الدفع",
-            "preview": preview,
-            "projected": projected,
-            "balance_total": snapshot["total"],
-            "balance_paid": snapshot["paid"],
-            "balance_due": snapshot["due"],
-            "payment_url": public_url(preview),
-            "message_preview": payment_message(preview),
-            "deliveries": preview.deliveries.all(),
-        },
-    )
+    context = {
+        "title": "مراجعة تحديث رابط الدفع",
+        "preview": preview,
+        "projected": projected,
+        "balance_total": snapshot["total"],
+        "balance_paid": snapshot["paid"],
+        "balance_due": snapshot["due"],
+        "payment_url": public_url(preview),
+        "message_preview": payment_message(preview),
+        "deliveries": preview.deliveries.all(),
+        "billing_form": billing_form,
+        "address_places_enabled": preview.status == "draft" and places_enabled(),
+    }
+    if context["address_places_enabled"]:
+        context.update(
+            address_places_ticket=make_address_ticket(_review_address_scope(request, preview)),
+            address_suggestions_url=reverse(
+                "notifications:updated_payment_address_suggestions", args=[preview.pk]
+            ),
+            address_details_url=reverse(
+                "notifications:updated_payment_address_details", args=[preview.pk]
+            ),
+        )
+    response = _render_review(request, context)
     response["Cache-Control"] = "private, no-store"
     # Safari can send Origin: null for POSTs from a no-referrer page.
     # Retain same-site CSRF evidence without disclosing guest/link data off-site.
     response["Referrer-Policy"] = "same-origin"
     return response
+
+
+def _review_address_scope(request, preview):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        pk=f"payment-preview:{preview.pk}", session_key_hash=session_key_hash(request)
+    )
+
+
+class UpdatedPaymentAddressView(CheckoutAddressView):
+    def get_address_scope(self, request, reference):
+        require_operations_access(request)
+        preview = get_object_or_404(
+            ReservationPaymentRequest,
+            pk=reference,
+            status="draft",
+            approved_at__isnull=True,
+            modification_request__isnull=False,
+            expires_at__gt=timezone.now(),
+        )
+        return _review_address_scope(request, preview)

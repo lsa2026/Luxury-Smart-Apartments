@@ -1,14 +1,11 @@
 {% extends "base.html" %}
-{% load presentation %}
+{% load presentation static %}
 {% block title %}{{ ui.title }}{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block hreflang %}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/payment-outcome.css' %}">{% endblock %}
 {% block content %}
-<section class="section container narrow payment-result">
-  <div class="section-heading"><h1>{{ ui.title }}</h1></div>
-  <article class="review-panel"><p class="notice" role="status">{{ message }}</p>
-    {% if payment_request %}<p>{{ ui.total }}: {{ payment_request.amount_sar|format_money:'SAR' }}</p>{% endif %}
-  </article>
-  <p><a href="{% url 'core:contact' %}">{{ ui.contact }}</a></p>
+<section class="payment-outcome-page">
+  {% include 'payments/_payment_outcome.html' %}
 </section>
 {% endblock %}

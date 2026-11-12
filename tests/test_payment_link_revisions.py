@@ -44,6 +44,7 @@ from tests.test_booking_modifications_phase6 import (
 from tests.test_manual_booking_operations_phase61 import owner
 from tests.test_reservation_payment_links import (
     approved_document,
+    billing,
     checkout,
     form_data,
     isolated_settings,  # noqa: F401
@@ -290,8 +291,8 @@ def test_owner_approval_updates_and_queues_once_without_fallback_message():
         "apps.payments.owner_payment_links.approve_preview",
         side_effect=lambda pk: activate(draft)[0],
     ):
-        first = client.post(url, {"confirm_updated_link": "on"})
-        second = client.post(url, {"confirm_updated_link": "on"})
+        first = client.post(url, billing() | {"confirm_updated_link": "on"})
+        second = client.post(url, billing() | {"confirm_updated_link": "on"})
     assert first.status_code == second.status_code == 302
     draft.refresh_from_db()
     assert draft.status == "open"
@@ -326,7 +327,7 @@ def test_owner_review_secure_csrf_preserves_origin_and_rejects_untrusted_request
         approve.assert_not_called()
         result = client.post(
             url,
-            {"confirm_updated_link": "on", "csrfmiddlewaretoken": token},
+            billing() | {"confirm_updated_link": "on", "csrfmiddlewaretoken": token},
             secure=True,
             **headers,
         )

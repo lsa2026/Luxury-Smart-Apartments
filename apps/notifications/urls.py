@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.accounts.access import operations_access_required
 from apps.core import contact_draft_api
 from apps.loyalty.booking_invitation_previews import preview as loyalty_invitation_preview
 from apps.loyalty.copy_review_previews import preview as loyalty_copy_review_preview
@@ -160,6 +161,18 @@ urlpatterns = [
         "admin/operations/bookings/<uuid:reservation_id>/payment-link-review/<uuid:preview_id>/",
         owner_payment_links.updated_link_review,
         name="updated_payment_link_review",
+    ),
+    path(
+        "admin/operations/payment-link-reviews/<uuid:reference>/address-suggestions/",
+        operations_access_required(owner_payment_links.UpdatedPaymentAddressView.as_view()),
+        name="updated_payment_address_suggestions",
+    ),
+    path(
+        "admin/operations/payment-link-reviews/<uuid:reference>/address-details/",
+        operations_access_required(
+            owner_payment_links.UpdatedPaymentAddressView.as_view(details=True)
+        ),
+        name="updated_payment_address_details",
     ),
     path(
         "admin/operations/manual-bookings/<uuid:draft_id>/",

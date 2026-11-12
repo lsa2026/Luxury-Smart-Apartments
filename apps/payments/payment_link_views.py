@@ -40,6 +40,10 @@ COPY = {
         "conditions": "شروط السعر والإلغاء",
         "total": "المبلغ المطلوب بالريال السعودي",
         "contact": "التواصل مع الإدارة",
+        "paid_heading": "تم استلام دفعتك بنجاح",
+        "paid_amount": "المبلغ المسدّد",
+        "home": "الصفحة الرئيسية",
+        "thanks": "شكرًا لاختيارك لوكسري ليفينغ",
         "changed": (
             "تحدّث مبلغ الحجز. راجع التواريخ والمبلغ المعروضين الآن، ثم أكّد المتابعة إلى الدفع."
         ),
@@ -63,6 +67,10 @@ COPY = {
         "conditions": "Rate and cancellation conditions",
         "total": "Amount due in Saudi riyals",
         "contact": "Contact management",
+        "paid_heading": "Payment received successfully",
+        "paid_amount": "Amount paid",
+        "home": "Home page",
+        "thanks": "Thank you for choosing Luxury Living",
         "changed": (
             "The booking amount changed. Review the dates and amount now shown before paying."
         ),
@@ -86,6 +94,10 @@ COPY = {
         "conditions": "Conditions tarifaires et d’annulation",
         "total": "Montant dû en riyals saoudiens",
         "contact": "Contacter la direction",
+        "paid_heading": "Paiement reçu avec succès",
+        "paid_amount": "Montant payé",
+        "home": "Page d’accueil",
+        "thanks": "Merci d’avoir choisi Luxury Living",
         "changed": "Le montant a changé. Vérifiez les dates et le montant affichés avant de payer.",
         "booking_total": "Total du séjour modifié",
         "verified_paid": "Déjà payé et vérifié",
@@ -109,6 +121,13 @@ def saved_manual_billing(payment_request):
     """Only explicitly collected manual addresses qualify for the shortened step."""
     from apps.reservations.models import ManualBookingDraft
 
+    snapshot = payment_request.settlement_snapshot
+    if snapshot.get("billing_collected_by_admin") is True and isinstance(
+        snapshot.get("billing_address"), dict
+    ):
+        return {
+            name: snapshot["billing_address"].get(name, "") for name in BillingAddressForm().fields
+        }
     intent = payment_request.reservation.booking_intent
     draft = (
         ManualBookingDraft.objects.filter(quote_id=intent.quote_id).only("billing_address").first()
@@ -162,6 +181,7 @@ class ReservationPaymentView(View):
         address_errors = address_validation.errors if address_validation is not None else {}
         context = {
             "payment_request": payment_request,
+            "payment_outcome": "paid" if payment_request.status == "paid" else "pending",
             "ui": ui,
             "payable": payable,
             "form": form
@@ -304,14 +324,19 @@ def render_request_result(request, attempt, outcome):
     ui = COPY[language]
     if attempt.status in {"refunded", "partially_refunded"}:
         message = ui["pending"]
+        state = "pending"
     elif payment_request.status == "paid":
         message = ui["paid"]
+        state = "paid"
     elif attempt.status == "succeeded" or payment_request.status == "review":
         message = ui["review"]
+        state = "review"
     elif outcome is None or attempt.status in {"created", "pending", "unknown", "review"}:
         message = ui["pending"]
+        state = "pending"
     else:
         message = ui["failed"]
+        state = "failed"
     with translation.override(language):
         return private_response(
             render(
@@ -321,6 +346,7 @@ def render_request_result(request, attempt, outcome):
                     "ui": ui,
                     "message": message,
                     "payment_request": payment_request,
+                    "payment_outcome": state,
                 },
             )
         )

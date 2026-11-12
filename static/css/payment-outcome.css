@@ -1,0 +1,92 @@
+@font-face {
+  font-family: "PaymentCairo";
+  src: url("../fonts/checkout/cairo-arabic.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PaymentInter";
+  src: url("../fonts/checkout/inter-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
+.payment-outcome-page {
+  min-height: 90svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 5vw, 4rem) 1rem;
+}
+.payment-outcome {
+  --receipt-green: #0d6c58;
+  --receipt-gold: #c7a15b;
+  width: min(100%, 38rem);
+  min-width: 0;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  color: #263d3a;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-block-start: 4px solid var(--receipt-gold);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+  font-family: "PaymentInter", var(--font-sans);
+  overflow-wrap: anywhere;
+}
+html[lang="ar"] .payment-outcome { font-family: "PaymentCairo", var(--font-sans); }
+.payment-outcome__brand img {
+  display: block;
+  width: min(100%, 16rem);
+  height: auto;
+  margin: 0 auto 2rem;
+}
+.payment-outcome__symbol {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1.25rem;
+  border: 1px solid #c7a15b;
+  border-radius: 50%;
+  background: #f3e8d3;
+  color: #8d6b3f;
+  font: 700 2rem/1 "PaymentInter", sans-serif;
+}
+.payment-outcome--paid .payment-outcome__symbol {
+  background: #e6f2ed;
+  border-color: #c8e2d7;
+  color: var(--receipt-green);
+}
+.payment-outcome--failed .payment-outcome__symbol { color: var(--color-danger); }
+.payment-outcome h1 {
+  margin: 0 0 1rem;
+  font-family: inherit;
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  font-weight: 750;
+  line-height: 1.6;
+}
+.payment-outcome__message { margin: 0; line-height: 1.9; }
+.payment-outcome__amount {
+  margin: 1.75rem 0;
+  padding: 1.1rem;
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+}
+.payment-outcome__amount dt { color: var(--color-muted); font-size: .9rem; }
+.payment-outcome__amount dd { margin: .25rem 0 0; font-size: 1.65rem; font-weight: 750; }
+.payment-outcome__actions { display: grid; gap: .75rem; margin-block-start: 1.75rem; }
+.payment-outcome__actions a {
+  display: grid;
+  place-items: center;
+  min-height: 3.25rem;
+  padding: .75rem 1rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 700;
+}
+.payment-outcome__primary { background: var(--receipt-green); color: #fff; }
+.payment-outcome__secondary { border: 1px solid var(--receipt-gold); color: #263d3a; }
+.payment-outcome__actions a:focus-visible { outline: 3px solid #0c1c45; outline-offset: 3px; }
+.payment-outcome__thanks { margin: 1.5rem 0 0; font-size: .85rem; color: var(--color-muted); }
