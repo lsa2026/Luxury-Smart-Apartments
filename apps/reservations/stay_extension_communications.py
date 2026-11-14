@@ -13,11 +13,11 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
-from .models import StayExtension, StayExtensionEvent
+from .models import StayExtension, StayExtensionChain, StayExtensionEvent
 from .stay_extensions import (
     booking_verified,
     chain_context,
-    guest_snapshot,
+    communication_contact,
     payment_verified,
     read_source,
     source_snapshot,
@@ -149,7 +149,7 @@ def acknowledge_ownership(extension_id, *, transport=None):
     return False
 
 
-def context(extension, *, verify_live=True, client=None):
+def context(extension, *, verify_live=True, client=None, _retry=True):
     from .services.stay_policy import stay_policy_for
 
     chain = extension.chain
@@ -189,7 +189,8 @@ def context(extension, *, verify_live=True, client=None):
         for member in state["chain_members"]:
             member.update(allow_checkout=False, review_allowed=False, review_anchor_date=None)
     reservation = extension.reservation
-    return {
+    communication, contact_id = communication_contact(chain)
+    values = {
         "source": "stay_extension",
         "contract_version": 1,
         "extension_id": str(extension.pk),
@@ -209,7 +210,8 @@ def context(extension, *, verify_live=True, client=None):
         "communication_ready": ready,
         "activation_generation": extension.activation_generation,
         "creation_ready": extension.draft.status == "ready_for_payment" and bool(reservation),
-        "communication_snapshot": guest_snapshot(extension),
+        "communication_snapshot": communication,
+        "communication_contact_extension_id": contact_id,
         "capability_expires_at": expires_at(extension).isoformat(),
         "check_in_time": f"{policy.check_in_hour:02}:00"
         if policy.check_in_hour is not None
@@ -219,6 +221,19 @@ def context(extension, *, verify_live=True, client=None):
         else None,
         **state,
     }
+    current = StayExtensionChain.objects.values_list("revision", "fingerprint").get(pk=chain.pk)
+    if current != (chain.revision, chain.fingerprint):
+        if _retry:
+            fresh = StayExtension.objects.select_related(
+                "chain__property", "draft", "reservation__booking_intent"
+            ).get(pk=extension.pk)
+            return context(fresh, verify_live=verify_live, client=client, _retry=False)
+        values.update(
+            communication_ready=False, chain_state="review", active_linkage_verified=False
+        )
+        for member in values["chain_members"]:
+            member.update(allow_checkout=False, review_allowed=False, review_anchor_date=None)
+    return values
 
 
 @require_GET

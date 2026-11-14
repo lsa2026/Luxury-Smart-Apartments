@@ -151,8 +151,8 @@ def finalize(case):
             "guest_first_name": "ضيف",
             "guest_last_name": "مصحح",
             "guest_email": "corrected@example.invalid",
-            "guest_phone": "+966500000000",
-            "guest_language": "ar",
+            "guest_phone": getattr(case, "guest_phone_override", "+966500000000"),
+            "guest_language": getattr(case, "guest_language_override", "ar"),
             "billing_address": {
                 "billing_street1": "10 Test Road",
                 "billing_city": "Riyadh",
@@ -511,10 +511,51 @@ def test_chain_never_uses_maximum_checkout_across_cancelled_gap(
         availability_service=availability,
     )
     second = SimpleNamespace(
-        extension=extension, raw=raw, available=available, availability=availability, new_id=93001
+        extension=extension,
+        raw=raw,
+        available=available,
+        availability=availability,
+        new_id=93001,
+        guest_phone_override="+966551234567",
+        guest_language_override="en",
     )
     create_child(second, monkeypatch)
+    first.extension.refresh_from_db()
+    a_context = context(first.extension, verify_live=False)
+    b_context = context(second.extension, verify_live=False)
+    assert a_context["communication_snapshot"] == b_context["communication_snapshot"]
+    assert a_context["communication_snapshot"]["phone"] == "+966551234567"
+    assert a_context["communication_snapshot"]["language"] == "en"
+    assert a_context["extension_id"] != b_context["extension_id"]
     pay(second)
+    exported = []
+
+    def export_contexts(stage):
+        for label, member in (("a", first.extension), ("b", second.extension)):
+            member.refresh_from_db()
+            values = context(member, verify_live=False)
+            event = member.events.order_by("-revision").first()
+            values.update(
+                capability_purpose="event",
+                source_event_id=str(event.pk),
+                source_event_revision=event.revision,
+                source_event_kind=event.kind,
+            )
+            envelope = {
+                "source": "stay_extension",
+                "contract_version": 1,
+                "extension_id": str(member.pk),
+                "phase": "event",
+                "event_token": "synthetic-capability-not-a-secret",
+                "event_id": str(event.pk),
+                "revision": event.revision,
+                "source_revision": event.revision,
+                "dry_run": True,
+            }
+            exported.append({"name": label + "_" + stage, "context": values, "envelope": envelope})
+
+    if not cancel_middle:
+        export_contexts("before_cancel_b")
     target = first if cancel_middle else second
     reservation = target.extension.reservation
     reservation.normalized_status = "cancelled"
@@ -527,6 +568,20 @@ def test_chain_never_uses_maximum_checkout_across_cancelled_gap(
     else:
         assert state["chain_state"] == "active"
         assert state["terminal_hostaway_reservation_id"] == 92001
+        first.extension.refresh_from_db()
+        second.extension.refresh_from_db()
+        a_context = context(first.extension, verify_live=False)
+        b_context = context(second.extension, verify_live=False)
+        assert a_context["communication_snapshot"] == b_context["communication_snapshot"]
+        assert a_context["communication_snapshot"]["phone"] == "+966500000000"
+        assert a_context["communication_snapshot"]["language"] == "ar"
+        export_contexts("after_cancel_b")
+        if os.environ.get("LSA_CONTACT_VISUAL_DIR"):
+            output = Path(os.environ["LSA_CONTACT_VISUAL_DIR"])
+            output.mkdir(parents=True, exist_ok=True)
+            (output / "extension-chain-contact-fixtures.json").write_text(
+                json.dumps({"synthetic": True, "cases": exported}, ensure_ascii=False, indent=2)
+            )
 
 
 class FakeTransport:

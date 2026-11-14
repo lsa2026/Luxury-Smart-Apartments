@@ -212,7 +212,7 @@ jobs:
           name: synthetic-contact-layouts
           path: |
             ${{ runner.temp }}/lsa-contact-layout/*.png
-            ${{ runner.temp }}/lsa-contact-layout/extension-contract-fixtures.json
+            ${{ runner.temp }}/lsa-contact-layout/extension-*-fixtures.json
           retention-days: 3
 
       - name: Test the lazy price calendar interactions

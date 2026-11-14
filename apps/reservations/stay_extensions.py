@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone, translation
 
+from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.reservation_validators import (
     normalize_hostaway_reservation_status,
@@ -434,6 +435,7 @@ def refresh_chain(chain_id):
             "chain": {
                 k: v for k, v in context.items() if k not in {"chain_revision", "chain_fingerprint"}
             },
+            "communication_contact": communication_contact(chain),
             "extensions": [
                 {
                     "id": str(e.pk),
@@ -482,6 +484,45 @@ def guest_snapshot(extension):
         "language": draft.guest_language or "ar",
         "listing_name": listing_name,
     }
+
+
+def communication_contact(chain):
+    """One approved contact for every context, including earlier extensions."""
+    candidates = list(
+        chain.extensions.select_related("draft", "reservation", "chain__property").order_by(
+            "-created_at", "-id"
+        )
+    )
+    verified = []
+    for candidate in candidates:
+        if (
+            candidate.state not in {"creating", "created_unpaid", "active", "cancelled", "review"}
+            or not candidate.reservation_id
+            or candidate.draft.status
+            not in {
+                "ready_for_payment",
+                "booked_awaiting_payment",
+            }
+        ):
+            continue
+        value = guest_snapshot(candidate)
+        try:
+            value["phone"] = normalize_booking_phone(value["phone"])
+        except InvalidPhoneNumber:
+            continue
+        if not value["name"] or value["language"] not in {"ar", "en", "fr"}:
+            continue
+        verified.append((candidate, value))
+    for candidate, value in verified:
+        if (
+            candidate.state in {"creating", "created_unpaid", "active"}
+            and candidate.reservation.normalized_status not in Reservation.CLOSED_STATUSES
+        ):
+            return value, str(candidate.pk)
+    if verified:
+        candidate, value = verified[0]
+        return value, str(candidate.pk)
+    return {"name": "", "phone": "", "language": "ar", "listing_name": ""}, None
 
 
 def refresh_reservation(reservation_id):
@@ -585,8 +626,10 @@ def prepare_ownership(reservation, *, client=None, transport=None):
             or state["terminal_hostaway_reservation_id"] != snapshot["id"]
         ):
             raise ValueError("chain_changed")
-        StayExtension.objects.filter(pk=extension.pk).update(state="creating", last_error="")
-        refresh_chain(extension.chain_id)
+        with transaction.atomic():
+            StayExtensionChain.objects.select_for_update().get(pk=extension.chain_id)
+            StayExtension.objects.filter(pk=extension.pk).update(state="creating", last_error="")
+            refresh_chain(extension.chain_id)
         if not acknowledge_ownership(extension.pk, transport=transport):
             raise ValueError("ownership_unacknowledged")
     except Exception:

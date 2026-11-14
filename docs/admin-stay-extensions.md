@@ -75,6 +75,13 @@ An event capability proves its persisted event ID/revision/kind while reading th
 latest chain. An older valid capability remains useful for later guards. Fresh
 events renew the capability through the connected stay plus 90 days. Original
 loyalty/invitation credentials are not reused.
+Every extension context of one chain returns the same approved contact: the
+latest non-cancelled prepared/creating, created-unpaid or active member. Partial
+drafts never replace it; cancellation restores the preceding eligible contact,
+or the last manager-verified correction if none remains. Contact source is exposed
+as `communication_contact_extension_id`; event identity remains unchanged. The
+contact and member decisions share the global fingerprint. A concurrent revision
+change causes a bounded fresh read and then a hold if the chain keeps changing.
 
 Event ACKs match event ID, extension ID, source revision and contract version.
 `delivery_pending=true` leaves the same event retryable until immediate work for
