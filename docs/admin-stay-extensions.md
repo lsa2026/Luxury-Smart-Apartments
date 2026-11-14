@@ -9,11 +9,14 @@ pagination. Filters are applied to each page, including empty filtered pages;
 the interface keeps the next source page available. Selection and final creation
 re-read the source. Morning/day-use markers, providers and local ownership are
 excluded because those journeys retain their own inventory and messaging rules.
-Gathern source metadata remains visible with an explicit temporary block. Its
-independent `lsa06_*` sender, correction and review queues are not yet guarded by
-the stay chain, and its unpublished draft differs from production. This release
-does not publish that unrelated draft or claim every source is supported. The
-existing n8n registry also refuses pre-create ownership for a known Gathern parent.
+Gathern source metadata remains visible with an explicit temporary block until
+receiver health reports `gathern_guard_ready=true` alongside overall readiness.
+This is a server-side capability, never a browser form option. Its independent
+`lsa06_*` sender, correction and review queues must be tested and their published
+guards verified first. This release does not publish unrelated automation drafts.
+The n8n registry also checks its exact canonical Gathern reservation key before
+acknowledging ownership. Cached display readiness lasts at most ten seconds;
+pre-create readiness and exact ownership acknowledgement remain mandatory.
 
 Guest corrections and approved billing belong to the new draft/intent only.
 Shared address suggestions, HyperPay validation and international phone rules

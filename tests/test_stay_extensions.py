@@ -64,6 +64,9 @@ def setup_extension(settings, monkeypatch):
     settings.HYPERPAY_ENABLED = True
     settings.HYPERPAY_ENVIRONMENT = "production"
     monkeypatch.setattr("apps.reservations.tasks.deliver_stay_extension_events.delay", Mock())
+    monkeypatch.setattr(
+        "apps.reservations.stay_extension_communications.gathern_ready", lambda: False
+    )
     property_obj = make_property()
     property_obj.hostaway_listing_map_id = 8001
     property_obj.hostaway_is_active = True
@@ -508,11 +511,17 @@ class FakeTransport:
     def __init__(self, case, *, wrong=False):
         self.case, self.wrong, self.posts = case, wrong, []
         self.delivery_pending = False
+        self.gathern_guard_ready = False
 
     def get(self, url):
         return SimpleNamespace(
             raise_for_status=lambda: None,
-            json=lambda: {"contract_version": 1, "build_ready": True, "receive_enabled": True},
+            json=lambda: {
+                "contract_version": 1,
+                "build_ready": True,
+                "receive_enabled": True,
+                "gathern_guard_ready": self.gathern_guard_ready,
+            },
         )
 
     def post(self, url, *, json):
@@ -702,6 +711,21 @@ def test_collection_survives_projection_failure_and_recovers(setup_extension, mo
     monkeypatch.setattr("apps.reservations.stay_extension_communications.deliver_events", Mock())
     recover_pending()
     assert case.extension.state == "active"
+
+
+def test_gathern_requires_explicit_verified_receiver_capability(setup_extension, monkeypatch):
+    from apps.reservations.stay_extension_communications import receiver_capabilities
+    from apps.reservations.stay_extensions import eligible_source
+
+    case = setup_extension
+    transport = FakeTransport(case)
+    assert receiver_capabilities(transport=transport)["gathern_guard_ready"] is False
+    transport.gathern_guard_ready = True
+    assert receiver_capabilities(transport=transport)["gathern_guard_ready"] is True
+    monkeypatch.setattr(
+        "apps.reservations.stay_extension_communications.gathern_ready", lambda: True
+    )
+    assert eligible_source({**case.raw, "channelName": "Gathern"})[0]["id"] == case.raw["id"]
 
 
 @pytest.mark.django_db(transaction=True)

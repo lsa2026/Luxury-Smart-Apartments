@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from django.core import signing
+from django.core.cache import cache
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.utils import timezone
@@ -61,16 +62,21 @@ def _envelope(extension, *, phase, event=None):
     }
 
 
-def receiver_ready(*, transport=None):
+def receiver_capabilities(*, transport=None):
     def check(client):
         response = client.get(HEALTH)
         response.raise_for_status()
         body = response.json()
-        return (
-            body.get("contract_version") == 1
+        ready = (
+            type(body.get("contract_version")) is int
+            and body.get("contract_version") == 1
             and body.get("build_ready") is True
             and body.get("receive_enabled") is True
         )
+        return {
+            "ready": ready,
+            "gathern_guard_ready": ready and body.get("gathern_guard_ready") is True,
+        }
 
     try:
         if transport is not None:
@@ -78,7 +84,23 @@ def receiver_ready(*, transport=None):
         with httpx.Client(timeout=15, follow_redirects=False) as client:
             return check(client)
     except Exception:
-        return False
+        return {"ready": False, "gathern_guard_ready": False}
+
+
+def receiver_ready(*, transport=None):
+    return receiver_capabilities(transport=transport)["ready"]
+
+
+def gathern_ready(*, transport=None):
+    key = "stay-extension:gathern-guard-ready:v1"
+    if transport is None:
+        value = cache.get(key)
+        if type(value) is bool:
+            return value
+    value = receiver_capabilities(transport=transport)["gathern_guard_ready"]
+    if transport is None:
+        cache.set(key, value, timeout=10)
+    return value
 
 
 def acknowledge_ownership(extension_id, *, transport=None):

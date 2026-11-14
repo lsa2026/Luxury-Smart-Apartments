@@ -45,6 +45,10 @@ def unsupported_source_reason(raw):
         re.search(r"gathern(?:[.]co)?|gatherin|غاثرن|قاثرن|جاذر", str(raw.get(name) or ""), re.I)
         for name in names
     ):
+        from .stay_extension_communications import gathern_ready
+
+        if gathern_ready():
+            return ""
         return "تمديد غاثرن غير متاح مؤقتًا؛ مسار رسائله المستقل يحتاج ربطًا بالسلسلة."
     return ""
 
