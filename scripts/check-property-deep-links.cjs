@@ -99,8 +99,9 @@ async function chooseEssentialOnly(page) {
         await page.close();
         console.log(`${language} ${width}px: direct/reloaded/hash/calendar/continuation/gallery passed`);
       }
-      const page = await browser.newPage();
-      await page.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+      const cardContext = await browser.newContext();
+      await cardContext.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
+      const page = await cardContext.newPage();
       await page.goto(`${origin}/${language}/properties/`);
       await chooseEssentialOnly(page);
       const card = page.locator('[data-price-calendar-open][href*="anchor-9101/"]').first();
@@ -108,11 +109,11 @@ async function chooseEssentialOnly(page) {
       assert(href.endsWith("#price-calendar"));
       await card.click();
       await page.locator("[data-price-calendar][open]").waitFor();
-      const tab = await page.context().newPage();
+      const tab = await cardContext.newPage();
       await tab.goto(origin + href);
       await tab.locator("[data-price-calendar][open]").waitFor();
       await tab.close();
-      await page.close();
+      await cardContext.close();
     }
     const fallback = await browser.newPage();
     await fallback.route("**/*", route => {
