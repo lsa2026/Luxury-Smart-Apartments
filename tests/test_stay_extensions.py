@@ -655,6 +655,11 @@ def test_source_guest_fields_use_shared_international_phone_and_approved_limits(
         "check_out": case.available.quote.check_out,
         "guests": 2,
         "source_ticket": "synthetic",
+        "billing_street1": "10 Test Road",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "SA",
+        "billing_postcode": "12345",
     }
     form = ExtensionDatesForm(data)
     assert form.is_valid(), form.errors
@@ -672,6 +677,59 @@ def test_marrakech_checkout_matches_current_iana_rule_without_changing_other_pat
     state = chain_context(case.extension.chain)
     assert state["timezone"] == "Africa/Casablanca"
     assert state["effective_checkout_at"].endswith("12:00:00+00:00")
+
+
+@pytest.mark.parametrize("unavailable", [False, True])
+def test_first_step_address_is_required_preserved_and_carried_into_review(
+    setup_extension, monkeypatch, unavailable
+):
+    case = setup_extension
+    raw = {**case.raw, "guestAddress": "Previous Street", "guestCity": "Riyadh"}
+    monkeypatch.setattr(
+        "apps.reservations.stay_extension_views.read_source", lambda *args, **kwargs: raw
+    )
+    url = reverse("notifications:stay_extension_sources") + "?source=91001"
+    page = case.client.get(url)
+    assert page.context["form"]["billing_street1"].value() == "Previous Street"
+    ticket = page.context["form"].initial["source_ticket"]
+    case.extension.delete()
+    data = {
+        "source_ticket": ticket,
+        "guest_first_name": "ضيف",
+        "guest_last_name": "مصطنع",
+        "guest_email": "guest@example.invalid",
+        "guest_phone": "0551234567",
+        "guest_phone_country": "SA",
+        "guest_language": "ar",
+        "guests": 2,
+        "check_out": case.available.quote.check_out,
+        "billing_street1": "10 Test Road",
+        "billing_city": "Riyadh",
+        "billing_state": "Riyadh",
+        "billing_country": "SA",
+        "billing_postcode": "12345",
+    }
+
+    def create(**kwargs):
+        if unavailable:
+            raise ValueError("unavailable")
+        return start_extension(**kwargs, availability_service=case.availability)
+
+    monkeypatch.setattr("apps.reservations.stay_extension_views.start_extension", create)
+    response = case.client.post(url, data)
+    assert Reservation.objects.count() == 0 and PaymentAttempt.objects.count() == 0
+    if unavailable:
+        assert response.status_code == 200
+        assert response.context["selected"] is not None
+        assert response.context["form"]["billing_street1"].value() == "10 Test Road"
+        assert not StayExtension.objects.exists()
+    else:
+        assert response.status_code == 302
+        extension = StayExtension.objects.get()
+        assert extension.draft.billing_address["billing_street1"] == "10 Test Road"
+        assert extension.draft.guest_phone == "+966551234567"
+        detail = case.client.get(response.url)
+        assert detail.context["form"]["billing_street1"].value() == "10 Test Road"
 
 
 @pytest.mark.parametrize("marker", ["MorningStay synthetic", "DU08:synthetic"])
@@ -796,8 +854,11 @@ def test_two_managers_cannot_create_two_children_for_same_parent(setup_extension
     assert len(case.availability.requests) == count + 1
 
 
-def test_render_extension_layout(setup_extension, monkeypatch, tmp_path):
+def test_render_extension_layout(setup_extension, monkeypatch, tmp_path, settings):
     case = setup_extension
+    settings.GOOGLE_PLACES_ENABLED = True
+    settings.GOOGLE_PLACES_API_KEY = "synthetic-key"
+    settings.GOOGLE_PLACES_REQUIRE_SHARED_CACHE = False
     monkeypatch.setattr(
         "apps.reservations.stay_extension_views.read_source", lambda *args, **kwargs: dict(case.raw)
     )

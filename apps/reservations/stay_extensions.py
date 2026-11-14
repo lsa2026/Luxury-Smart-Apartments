@@ -145,6 +145,36 @@ def guest_initial(raw):
     }
 
 
+def billing_initial(raw):
+    fields = {
+        "billing_street1": "guestAddress",
+        "billing_city": "guestCity",
+        "billing_state": "guestState",
+        "billing_postcode": "guestZipCode",
+        "billing_country": "guestCountry",
+    }
+    values = {name: str(raw.get(source) or "")[:500] for name, source in fields.items()}
+    if raw.get("id"):
+        parent = (
+            Reservation.objects.select_related("booking_intent")
+            .filter(
+                hostaway_reservation_id=raw["id"],
+                hostaway_listing_map_id=raw.get("listingMapId"),
+            )
+            .first()
+        )
+        if parent and parent.booking_intent:
+            for name in fields:
+                value = getattr(parent.booking_intent, name, "")
+                if value and value.casefold() not in {"not provided", "unknown", "n/a"}:
+                    values[name] = value
+    return {
+        name: value
+        for name, value in values.items()
+        if value and value.casefold() not in {"not provided", "unknown", "n/a"}
+    }
+
+
 def start_extension(*, raw, check_out, guests, actor, guest_data=None, availability_service=None):
     from .manual_bookings import create_manual_booking_draft
 
@@ -201,6 +231,13 @@ def start_extension(*, raw, check_out, guests, actor, guest_data=None, availabil
             values.update({key: guest_data[key] for key in values})
         for key, value in values.items():
             setattr(draft, key, value)
+        if guest_data and guest_data.get("billing_address"):
+            from .booking_forms import BillingAddressForm
+
+            billing = BillingAddressForm(guest_data["billing_address"])
+            if not billing.is_valid():
+                raise ValueError("invalid_billing_address")
+            draft.billing_address = dict(billing.cleaned_data)
         draft.save()
         extension = StayExtension.objects.create(
             chain=chain,

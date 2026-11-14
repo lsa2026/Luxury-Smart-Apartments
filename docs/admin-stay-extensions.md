@@ -19,6 +19,8 @@ acknowledging ownership. Cached display readiness lasts at most ten seconds;
 pre-create readiness and exact ownership acknowledgement remain mandatory.
 
 Guest corrections and approved billing belong to the new draft/intent only.
+Both are completed before the initial availability/price check and carried into
+the draft for review. An unavailable quote retains the bound guest/address form.
 Shared address suggestions, HyperPay validation and international phone rules
 are reused. Guest terms/house-rule consent is collected by the existing payment
 page. Administrative data entry does not substitute for the guest's consent.

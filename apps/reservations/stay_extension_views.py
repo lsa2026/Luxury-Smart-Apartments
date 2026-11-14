@@ -27,6 +27,7 @@ from .operations_forms import ManualBookingFinalizeForm
 from .stay_extension_communications import context
 from .stay_extensions import (
     UnsupportedStaySource,
+    billing_initial,
     digest,
     eligible_source,
     guest_initial,
@@ -76,12 +77,12 @@ class ExtensionDatesForm(ExtensionGuestForm):
     def __init__(self, *args, raw=None, **kwargs):
         raw = raw or {}
         draft = SimpleNamespace(
-            billing_address={},
+            billing_address=billing_initial(raw),
             final_total_price=Decimal("0"),
             currency=str(raw.get("currency") or "SAR"),
             **guest_initial(raw),
         )
-        super().__init__(*args, draft=draft, **kwargs)
+        super().__init__(*args, draft=draft, require_address=True, **kwargs)
         self.fields.pop("final_total_price")
 
 
@@ -113,6 +114,11 @@ def source_list(request):
                 snapshot, property_obj = eligible_source(raw)
                 if digest(snapshot) != ticket["fingerprint"]:
                     raise ValueError("source_changed")
+                selected = {
+                    "snapshot": snapshot,
+                    "property": property_obj,
+                    "guest": guest_initial(raw),
+                }
                 if (
                     property_obj.person_capacity
                     and dates_form.cleaned_data["guests"] > property_obj.person_capacity
@@ -246,6 +252,7 @@ def source_list(request):
             "query": query,
             "channel": channel,
             "listing": listing,
+            **address_context(request),
         },
     )
 
