@@ -124,9 +124,11 @@ def start_extension(*, raw, check_out, guests, actor, guest_data=None, availabil
     # two clicks, two managers, or a generic draft URL from making a second child.
     with transaction.atomic():
         Property.objects.select_for_update().get(pk=property_obj.pk)
-        existing = StayExtension.objects.filter(
-            previous_hostaway_reservation_id=snapshot["id"]
-        ).first()
+        existing = (
+            StayExtension.objects.filter(previous_hostaway_reservation_id=snapshot["id"])
+            .exclude(state="cancelled")
+            .first()
+        )
         if existing:
             return existing
         prior = (
@@ -257,6 +259,12 @@ def chain_context(chain):
     for extension in extensions:
         reservation = extension.reservation
         provider_id = reservation.hostaway_reservation_id if reservation else None
+        if (
+            extension.state == "cancelled"
+            and reservation
+            and reservation.normalized_status not in Reservation.CLOSED_STATUSES
+        ):
+            review = True
         if provider_id:
             members.append(
                 {

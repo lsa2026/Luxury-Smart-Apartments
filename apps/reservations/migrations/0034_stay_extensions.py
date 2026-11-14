@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
                         primary_key=True, default=uuid.uuid4, editable=False, serialize=False
                     ),
                 ),
-                ("previous_hostaway_reservation_id", models.PositiveBigIntegerField(unique=True)),
+                ("previous_hostaway_reservation_id", models.PositiveBigIntegerField()),
                 ("previous_snapshot", models.JSONField(default=dict)),
                 ("state", models.CharField(max_length=24, default="draft")),
                 ("activation_generation", models.PositiveIntegerField(default=0)),
@@ -85,7 +85,16 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"ordering": ["created_at", "id"]},
+            options={
+                "ordering": ["created_at", "id"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("previous_hostaway_reservation_id",),
+                        condition=~models.Q(state="cancelled"),
+                        name="extension_open_parent_unique",
+                    )
+                ],
+            },
         ),
         migrations.CreateModel(
             name="StayExtensionEvent",

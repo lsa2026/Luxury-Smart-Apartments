@@ -17,7 +17,9 @@ page. Administrative data entry does not substitute for the guest's consent.
 
 ## Creation and collection
 
-One extension per parent and a property row lock prevent concurrent drafts.
+One open extension per parent and a property row lock prevent concurrent drafts.
+An explicitly requested replacement after verified cancellation keeps the old
+extension/history; it never retries an uncertain provider operation.
 The local intent, child reservation and relation exist before a provider POST.
 Creation requires n8n readiness and an exact ownership ACK of the current chain
 revision. The provider note is `EXT01:{extension UUID}`; the note alone is never

@@ -394,6 +394,29 @@ def test_cancelled_child_restores_original_and_changed_active_dates_require_revi
     assert state["chain_state"] == "original"
 
 
+def test_explicit_new_extension_after_verified_cancellation_keeps_old_history(
+    setup_extension, monkeypatch
+):
+    case = setup_extension
+    create_child(case, monkeypatch)
+    reservation = case.extension.reservation
+    reservation.normalized_status = "cancelled"
+    reservation.save()
+    refresh_chain(case.extension.chain_id)
+    replacement = start_extension(
+        raw=case.raw,
+        check_out=case.available.quote.check_out,
+        guests=2,
+        actor=case.actor,
+        availability_service=case.availability,
+    )
+    assert replacement.pk != case.extension.pk
+    assert replacement.chain_id == case.extension.chain_id
+    assert StayExtension.objects.count() == 2
+    case.extension.refresh_from_db()
+    assert case.extension.state == "cancelled"
+
+
 def test_context_is_scoped_latest_read_only_and_fail_closed(setup_extension, monkeypatch):
     case = setup_extension
     token = capability(case.extension)

@@ -27,7 +27,7 @@ class StayExtension(models.Model):
     chain = models.ForeignKey(
         StayExtensionChain, on_delete=models.PROTECT, related_name="extensions"
     )
-    previous_hostaway_reservation_id = models.PositiveBigIntegerField(unique=True)
+    previous_hostaway_reservation_id = models.PositiveBigIntegerField()
     previous_snapshot = models.JSONField(default=dict)
     draft = models.OneToOneField(
         "reservations.ManualBookingDraft", on_delete=models.PROTECT, related_name="stay_extension"
@@ -49,6 +49,13 @@ class StayExtension(models.Model):
 
     class Meta:
         ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["previous_hostaway_reservation_id"],
+                condition=~models.Q(state="cancelled"),
+                name="extension_open_parent_unique",
+            )
+        ]
 
     def __str__(self):
         return str(self.pk)
