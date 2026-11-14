@@ -26,12 +26,14 @@ from .morning_billing import address_context
 from .operations_forms import ManualBookingFinalizeForm
 from .stay_extension_communications import context
 from .stay_extensions import (
+    UnsupportedStaySource,
     digest,
     eligible_source,
     guest_initial,
     read_source,
     refresh_chain,
     start_extension,
+    unsupported_source_reason,
 )
 
 TICKET_SALT = "reservations.extension-source.v1"
@@ -197,7 +199,7 @@ def source_list(request):
                 )
             for raw in raw_rows:
                 try:
-                    snapshot, property_obj = eligible_source(raw)
+                    snapshot, property_obj = eligible_source(raw, for_display=True)
                 except ValueError:
                     continue
                 guest = guest_initial(raw)
@@ -216,7 +218,17 @@ def source_list(request):
                     continue
                 if listing and listing != str(snapshot["listing_map_id"]):
                     continue
-                rows.append({"snapshot": snapshot, "property": property_obj, "name": name})
+                rows.append(
+                    {
+                        "snapshot": snapshot,
+                        "property": property_obj,
+                        "name": name,
+                        "blocked_reason": unsupported_source_reason(raw),
+                    }
+                )
+    except UnsupportedStaySource as exc:
+        error = str(exc)
+        next_url = ""
     except Exception:
         # No raw provider data, contact, or signed ticket enters logs/errors.
         error = "تعذر إكمال القراءة أو تغير الحجز. أعد البحث؛ لم يُنشأ حجز أو دفع أو رسالة."

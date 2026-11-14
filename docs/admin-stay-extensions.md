@@ -9,6 +9,11 @@ pagination. Filters are applied to each page, including empty filtered pages;
 the interface keeps the next source page available. Selection and final creation
 re-read the source. Morning/day-use markers, providers and local ownership are
 excluded because those journeys retain their own inventory and messaging rules.
+Gathern source metadata remains visible with an explicit temporary block. Its
+independent `lsa06_*` sender, correction and review queues are not yet guarded by
+the stay chain, and its unpublished draft differs from production. This release
+does not publish that unrelated draft or claim every source is supported. The
+existing n8n registry also refuses pre-create ownership for a known Gathern parent.
 
 Guest corrections and approved billing belong to the new draft/intent only.
 Shared address suggestions, HyperPay validation and international phone rules

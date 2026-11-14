@@ -3,6 +3,7 @@
 import hashlib
 import json
 import logging
+import re
 from datetime import UTC, date, timedelta
 from types import SimpleNamespace
 
@@ -22,6 +23,30 @@ from .models import Reservation, StayExtension, StayExtensionChain, StayExtensio
 from .services.stay_lifecycle import checkout_datetime
 
 logger = logging.getLogger(__name__)
+
+
+class UnsupportedStaySource(ValueError):
+    pass
+
+
+def unsupported_source_reason(raw):
+    # Same metadata classifier as the published normal automation. No channel
+    # number is guessed; a missing separate registry entry cannot clear a match.
+    names = (
+        "guestEmail",
+        "guest_email",
+        "source",
+        "customerIcalName",
+        "manualIcalName",
+        "channelName",
+        "booking_platform",
+    )
+    if any(
+        re.search(r"gathern(?:[.]co)?|gatherin|غاثرن|قاثرن|جاذر", str(raw.get(name) or ""), re.I)
+        for name in names
+    ):
+        return "تمديد غاثرن غير متاح مؤقتًا؛ مسار رسائله المستقل يحتاج ربطًا بالسلسلة."
+    return ""
 
 
 def _checkout(property_obj, departure):
@@ -62,8 +87,11 @@ def read_source(reservation_id, *, client=None):
         return owned.get_reservation_invoice_data(reservation_id)["result"]
 
 
-def eligible_source(raw):
+def eligible_source(raw, *, for_display=False):
     snapshot = source_snapshot(raw)
+    unsupported = unsupported_source_reason(raw)
+    if unsupported and not for_display:
+        raise UnsupportedStaySource(unsupported)
     note = str(raw.get("hostNote") or "")
     provider = str(raw.get("provider") or "")
     from .models import DayUseHostawayOwnership, DayUseStay, MorningStay

@@ -22,6 +22,17 @@ const { pathToFileURL } = require("node:url");
             shortButtons: [...document.querySelectorAll("main .lsa-btn")].some(el => el.getBoundingClientRect().height < 43),
           }));
           if (facts.scroll > facts.width + 1 || facts.shortButtons) throw new Error(`${name} ${width}: ${JSON.stringify(facts)}`);
+          const poorContrast = await page.locator(".lsa-extension__source h3, .lsa-extension__search input").evaluateAll(elements => {
+            const rgb = value => (value.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+            const lum = color => rgb(color).map(n => n / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4).reduce((sum, n, i) => sum + n * [.2126, .7152, .0722][i], 0);
+            return elements.some(el => {
+              let parent = el, background = "";
+              while (parent) { background = getComputedStyle(parent).backgroundColor; if (background !== "rgba(0, 0, 0, 0)" && background !== "transparent") break; parent = parent.parentElement; }
+              const fg = lum(getComputedStyle(el).color), bg = lum(background || "rgb(255,255,255)");
+              return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05) < 4.5;
+            });
+          });
+          if (poorContrast) throw new Error(`${name} ${width} ${colorScheme}: text contrast below 4.5`);
           if (name === "selection" && await page.locator('[name="guest_phone_country"]').count() !== 1) throw new Error("Shared phone country missing");
           if (name === "review" && await page.locator('[name="confirm_independent_booking"]').count() !== 1) throw new Error("Final review missing");
           if (name === "unpaid" && (await page.locator("main.lsa-extension").innerText()).includes("التمديد ساري بعد التحقق")) throw new Error("Unpaid stay claimed active");

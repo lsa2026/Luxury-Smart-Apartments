@@ -638,6 +638,48 @@ def test_morning_and_day_use_sources_keep_their_independent_journey(setup_extens
         eligible_source({**setup_extension.raw, "hostNote": marker})
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("source", "gatherin"),
+        ("channelName", "قاثرن"),
+        ("guestEmail", "forward@GATHERN.CO"),
+    ],
+)
+def test_independent_gathern_messages_cannot_be_bypassed_by_source_metadata(
+    setup_extension, field, value
+):
+    from apps.reservations.stay_extensions import UnsupportedStaySource, eligible_source
+
+    raw = {**setup_extension.raw, field: value}
+    assert eligible_source(raw, for_display=True)[0]["id"] == raw["id"]
+    with pytest.raises(UnsupportedStaySource):
+        eligible_source(raw)
+
+
+def test_gathern_source_displays_reason_and_direct_selection_is_blocked(
+    setup_extension, monkeypatch
+):
+    case = setup_extension
+    raw = {**case.raw, "channelName": "Gathern"}
+    provider = Mock()
+    provider.__enter__ = Mock(return_value=provider)
+    provider.__exit__ = Mock(return_value=False)
+    provider.guest_stay_page.return_value = [raw]
+    monkeypatch.setattr("apps.reservations.stay_extension_views.HostawayClient", lambda: provider)
+    monkeypatch.setattr(
+        "apps.reservations.stay_extension_views.read_source", lambda *args, **kwargs: raw
+    )
+    url = reverse("notifications:stay_extension_sources")
+    response = case.client.get(url)
+    assert "غاثرن غير متاح مؤقتًا" in response.content.decode()
+    assert 'href="?source=91001"' not in response.content.decode()
+    response = case.client.get(url, {"source": "91001"})
+    assert "غاثرن غير متاح مؤقتًا" in response.content.decode()
+    assert 'name="source_ticket"' not in response.content.decode()
+    assert Reservation.objects.count() == 0
+
+
 def test_collection_survives_projection_failure_and_recovers(setup_extension, monkeypatch):
     from apps.reservations.stay_extensions import capture_reservation_change, recover_pending
 
