@@ -188,6 +188,13 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-file-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-revised-payment-layout.cjs
 
+      - name: Verify direct property calendar and gallery links without live providers
+        env:
+          LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
+        run: |
+          pytest tests/test_property_deep_links.py -q
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-property-deep-links.cjs
+
       - name: Run tests
         run: pytest
 

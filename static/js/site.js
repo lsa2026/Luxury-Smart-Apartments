@@ -2,22 +2,41 @@
 
 document.documentElement.classList.add("js");
 
-// Nothing is fetched until a guest opens a property price. The existing live
+// Nothing is fetched until a guest opens a property price or its direct link. The existing live
 // booking calendar and quote/payment logic remain independent and unchanged.
 let priceCalendarModule;
+function showPropertyPriceCalendar(trigger, { linked = false } = {}) {
+    const dialog = document.querySelector("[data-price-calendar]");
+    if (!trigger || !dialog?.showModal) return false;
+    priceCalendarModule ||= import(dialog.dataset.scriptUrl);
+    priceCalendarModule.then((module) => {
+        if (linked && window.location.hash !== "#price-calendar") return;
+        return module.openPriceCalendar(trigger);
+    }).catch(() => {
+        priceCalendarModule = null;
+        // A failed direct link stays on the property's visible fallback link;
+        // never reload the same fragment in a navigation loop.
+        if (!linked) window.location.assign(trigger.href);
+    });
+    return true;
+}
 document.addEventListener("click", (event) => {
     const trigger = event.target.closest?.("[data-price-calendar-open]");
-    const dialog = document.querySelector("[data-price-calendar]");
-    if (!trigger || !dialog || !dialog.showModal || event.ctrlKey || event.metaKey || event.shiftKey) {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
         return;
     }
-    event.preventDefault();
-    priceCalendarModule ||= import(dialog.dataset.scriptUrl);
-    priceCalendarModule.then((module) => module.openPriceCalendar(trigger)).catch(() => {
-        priceCalendarModule = null;
-        window.location.assign(trigger.href);
-    });
+    if (showPropertyPriceCalendar(trigger)) event.preventDefault();
 });
+
+function openLinkedPriceCalendar() {
+    if (window.location.hash !== "#price-calendar") return;
+    const trigger = document.querySelector("[data-property-price-calendar]");
+    if (!document.querySelector("[data-price-calendar]")?.open) {
+        showPropertyPriceCalendar(trigger, { linked: true });
+    }
+}
+window.addEventListener("hashchange", openLinkedPriceCalendar);
+openLinkedPriceCalendar();
 
 const currencyMenus = [...document.querySelectorAll("[data-currency-menu]")];
 
