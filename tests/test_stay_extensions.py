@@ -60,6 +60,9 @@ def setup_extension(settings, monkeypatch):
     settings.OPERATIONS_OWNER_EMAIL = "synthetic-owner@example.invalid"
     settings.HOSTAWAY_LIVE_BOOKING_ENABLED = True
     settings.HOSTAWAY_DIRECT_CHANNEL_ID = 2000
+    settings.RESERVATION_PAYMENT_LINKS_ENABLED = True
+    settings.HYPERPAY_ENABLED = True
+    settings.HYPERPAY_ENVIRONMENT = "production"
     monkeypatch.setattr("apps.reservations.tasks.deliver_stay_extension_events.delay", Mock())
     property_obj = make_property()
     property_obj.hostaway_listing_map_id = 8001
@@ -319,8 +322,8 @@ def test_online_payment_requires_exact_production_collection(
     case = setup_extension
     settings.RESERVATION_PAYMENT_LINKS_ENABLED = True
     settings.HYPERPAY_ENABLED = True
-    settings.HYPERPAY_ENVIRONMENT = environment
     create_child(case, monkeypatch)
+    settings.HYPERPAY_ENVIRONMENT = environment
     reservation = case.extension.reservation
     reservation.is_test = environment == "test"
     reservation.save(update_fields=["is_test"])
@@ -358,6 +361,18 @@ def test_wrong_ownership_ack_never_sends_provider_post(setup_extension, monkeypa
     assert result.code == "extension_ownership_requires_review"
     assert provider.posts == []
     assert PaymentAttempt.objects.count() == 0
+    resumed, resumed_provider, _ = create_child(case, monkeypatch)
+    assert resumed.code == "created" and len(resumed_provider.posts) == 1
+    assert Reservation.objects.count() == 1
+
+
+def test_disabled_collection_path_cannot_create_unpayable_live_extension(
+    setup_extension, monkeypatch, settings
+):
+    settings.HYPERPAY_ENABLED = False
+    result, provider, _ = create_child(setup_extension, monkeypatch)
+    assert result.code == "extension_ownership_requires_review"
+    assert provider.posts == []
 
 
 def test_parent_changed_blocks_before_ownership_or_provider_write(setup_extension, monkeypatch):

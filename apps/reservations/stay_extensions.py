@@ -478,6 +478,15 @@ def prepare_ownership(reservation, *, client=None, transport=None):
     )
     if extension is None:
         return True
+    if (
+        not settings.RESERVATION_PAYMENT_LINKS_ENABLED
+        or not settings.HYPERPAY_ENABLED
+        or settings.HYPERPAY_ENVIRONMENT != "production"
+        or reservation.total_price <= 0
+        or not reservation.booking_intent.payment_amount_sar
+    ):
+        StayExtension.objects.filter(pk=extension.pk).update(last_error="payment_path_unavailable")
+        return False
     # Another worker may already have received/created this child while this
     # request was checking availability. Never roll its state back to creating.
     current = Reservation.objects.get(pk=reservation.pk)

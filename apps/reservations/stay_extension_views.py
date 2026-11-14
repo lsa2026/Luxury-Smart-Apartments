@@ -39,6 +39,14 @@ CURSOR_SALT = "reservations.extension-selector.v1"
 
 
 class ExtensionGuestForm(ManualBookingFinalizeForm):
+    final_total_price = forms.DecimalField(
+        label="إجمالي السعر النهائي للتمديد",
+        max_digits=14,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0.01"}),
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         approved = MorningBillingFields(customer=True)

@@ -25,6 +25,9 @@ Creation requires n8n readiness and an exact ownership ACK of the current chain
 revision. The provider note is `EXT01:{extension UUID}`; the note alone is never
 ownership proof. An early authenticated webhook may bind only the ACKed planned
 child whose listing, dates, direct channel, currency and total all match.
+The established payment-link path and production gateway must be enabled and the
+approved total must be positive before creation; this journey adds no free or
+unpaid activation exception.
 
 The existing provider operation permits at most one POST attempt. An uncertain
 response is reviewed; it is never retried as a new reservation. After a provider
