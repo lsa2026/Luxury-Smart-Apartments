@@ -162,3 +162,14 @@ def sync_day_use_ownership(self, stay_id):
     if not sync(stay_id):
         raise self.retry(countdown=min(300, 30 * (self.request.retries + 1)))
     return True
+
+
+@shared_task(bind=True, ignore_result=True, max_retries=8)
+def deliver_stay_extension_events(self, extension_id):
+    from .models import StayExtensionEvent
+    from .stay_extension_communications import deliver_events
+
+    result = deliver_events(extension_id)
+    if StayExtensionEvent.objects.filter(extension_id=extension_id, state="pending").exists():
+        raise self.retry(countdown=min(300, 30 * (self.request.retries + 1)))
+    return result

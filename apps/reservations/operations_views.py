@@ -943,6 +943,11 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
         ManualBookingDraft.objects.select_related("property", "quote"),
         pk=draft_id,
     )
+    from .models import StayExtension
+
+    extension = StayExtension.objects.filter(draft=draft).first()
+    if extension:
+        return redirect("notifications:stay_extension_detail", extension_id=extension.pk)
     reservation = Reservation.objects.filter(booking_intent__quote=draft.quote).first()
     if (
         draft.status == ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT

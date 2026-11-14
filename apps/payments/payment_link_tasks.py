@@ -262,4 +262,7 @@ def recover_payment_requests_task():
             .values_list("pk", flat=True)[:3]
         ):
             deliver_payment_request_task.run(delivery_id)
+        from apps.reservations.stay_extensions import recover_pending
+
+        recover_pending()
         return result

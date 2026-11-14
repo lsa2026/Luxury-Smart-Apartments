@@ -3,7 +3,7 @@ from django.urls import path
 from apps.loyalty.booking_ui import booking_points
 from apps.loyalty.checkout_account import booking_account
 
-from . import sama_booking_api, sama_invoice_api
+from . import sama_booking_api, sama_invoice_api, stay_extension_communications
 from .address_places import CheckoutAddressDetailsView, CheckoutAddressView
 from .phone_views import booking_phone_format
 from .views import (
@@ -24,6 +24,16 @@ from .views import (
 app_name = "reservations"
 
 urlpatterns = [
+    path(
+        "stay-extensions/health/",
+        stay_extension_communications.health,
+        name="stay_extension_health",
+    ),
+    path(
+        "stay-extensions/<uuid:extension_id>/context/",
+        stay_extension_communications.read_context,
+        name="stay_extension_context",
+    ),
     path("phone-format/", booking_phone_format, name="booking_phone_format"),
     path("requests/<str:public_reference>/account/", booking_account, name="booking_account"),
     path("requests/<str:public_reference>/points/", booking_points, name="booking_points"),

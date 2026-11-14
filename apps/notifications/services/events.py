@@ -331,11 +331,14 @@ def handle_paid_booking_needs_review(reservation_id: object) -> None:
 
 
 def handle_reservation_confirmed(reservation_id: object) -> None:
-    from apps.reservations.models import Reservation
+    from apps.reservations.models import Reservation, StayExtension
 
     try:
         reservation = Reservation.objects.select_related("booking_intent").get(pk=reservation_id)
         intent = reservation.booking_intent
+        if StayExtension.objects.filter(reservation=reservation).exists():
+            # The extension has its own payment-gated confirmation owned by n8n.
+            return
         if (
             intent is None
             or reservation.normalized_status != Reservation.Status.CONFIRMED
@@ -362,6 +365,9 @@ def handle_modification_completed(modification_id: object) -> None:
         modification = BookingModificationRequest.objects.select_related(
             "reservation__booking_intent"
         ).get(pk=modification_id)
+        from apps.reservations.stay_extensions import refresh_reservation
+
+        refresh_reservation(modification.reservation_id)
         intent = modification.reservation.booking_intent
         if (
             intent is None

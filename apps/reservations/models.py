@@ -29,6 +29,11 @@ from .morning_models import (  # noqa: F401
     MorningPaymentLinkDelivery,
     MorningStay,
 )
+from .stay_extension_models import (  # noqa: F401
+    StayExtension,
+    StayExtensionChain,
+    StayExtensionEvent,
+)
 
 
 def booking_intent_reference() -> str:

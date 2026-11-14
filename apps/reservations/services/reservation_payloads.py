@@ -10,7 +10,7 @@ from apps.integrations.hostaway.reservation_validators import (
     HostawayReservationCreateRequest,
     ReservationFinanceField,
 )
-from apps.reservations.models import Reservation
+from apps.reservations.models import Reservation, StayExtension
 
 
 def build_hostaway_reservation_request(
@@ -52,6 +52,7 @@ def build_hostaway_reservation_request(
             current_total=current_quote.total_price,
             final_total=reservation.total_price,
         )
+    extension = StayExtension.objects.filter(reservation=reservation).first()
     return HostawayReservationCreateRequest(
         listing_map_id=listing_map_id,
         channel_id=channel_id,
@@ -68,6 +69,7 @@ def build_hostaway_reservation_request(
         total_price=reservation.total_price,
         finance_fields=finance_fields,
         provider=settings.HOSTAWAY_RESERVATION_PROVIDER,
+        host_note="EXT01:" + str(extension.pk) if extension else "",
     )
 
 
