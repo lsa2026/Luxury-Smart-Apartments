@@ -14,6 +14,7 @@ from django.utils import timezone, translation
 from apps.accounts.access import operations_access_required
 from apps.integrations.hostaway.client import HostawayClient
 from apps.notifications.services.audit import record_audit
+from apps.payments.morning_validation import MorningBillingFields, validate_value
 
 from .manual_bookings import (
     create_manual_booking_in_hostaway,
@@ -37,7 +38,25 @@ TICKET_SALT = "reservations.extension-source.v1"
 CURSOR_SALT = "reservations.extension-selector.v1"
 
 
-class ExtensionDatesForm(ManualBookingFinalizeForm):
+class ExtensionGuestForm(ManualBookingFinalizeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        approved = MorningBillingFields(customer=True)
+        for name in ("guest_first_name", "guest_last_name", "guest_email"):
+            self.fields[name] = approved.fields[name]
+
+    def clean(self):
+        cleaned = super().clean()
+        for name in ("guest_first_name", "guest_last_name", "guest_email"):
+            if name in cleaned:
+                try:
+                    cleaned[name] = validate_value(name, cleaned[name])
+                except forms.ValidationError as exc:
+                    self.add_error(name, exc)
+        return cleaned
+
+
+class ExtensionDatesForm(ExtensionGuestForm):
     check_out = forms.DateField(
         label="تاريخ الخروج الجديد", widget=forms.DateInput(attrs={"type": "date"})
     )
@@ -221,7 +240,7 @@ def detail(request, extension_id):
         pk=extension_id,
     )
     draft = extension.draft
-    form = ManualBookingFinalizeForm(draft=draft, require_address=True)
+    form = ExtensionGuestForm(draft=draft, require_address=True)
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "recheck" and extension.reservation_id is None:
@@ -277,7 +296,7 @@ def detail(request, extension_id):
                     "لا تعاود إنشاء حجز بديل عند غموض النتيجة.",
                 )
         elif action == "save" and extension.reservation_id is None:
-            form = ManualBookingFinalizeForm(request.POST, draft=draft, require_address=True)
+            form = ExtensionGuestForm(request.POST, draft=draft, require_address=True)
             if form.is_valid():
                 result = finalize_manual_booking_draft(
                     draft_id=draft.pk,
@@ -302,7 +321,7 @@ def detail(request, extension_id):
             "extension": extension,
             "draft": draft,
             "form": form,
-            "chain": context(extension, verify_live=False),
+            "chain": context(extension),
             **address_context(request),
         },
     )

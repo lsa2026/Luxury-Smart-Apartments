@@ -193,7 +193,7 @@ def record_offline_receipt(
         from apps.loyalty.site_adapter import schedule_reconciliation
 
         transaction.on_commit(lambda: schedule_reconciliation(booking.pk), robust=True)
-        from apps.reservations.stay_extensions import refresh_reservation
+        from apps.reservations.stay_extensions import capture_reservation_change
 
-        transaction.on_commit(lambda: refresh_reservation(booking.pk), robust=True)
+        capture_reservation_change(booking.pk)
         return receipt

@@ -206,6 +206,7 @@ jobs:
         run: pytest
 
       - name: Save synthetic contact layout screenshots
+        if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
           name: synthetic-contact-layouts

@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load i18n presentation static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}?v=20261023-navigation">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-booking-list.css' %}?v=20261023-navigation"><link rel="stylesheet" href="{% static 'css/admin-stay-extension.css' %}">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'js/admin-guest-classification.js' %}" defer></script><script src="{% static 'js/admin-booking-status.js' %}" defer></script>{% endblock %}
 {% block content_title %}{% endblock %}
 

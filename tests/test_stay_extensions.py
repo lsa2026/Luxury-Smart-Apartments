@@ -101,6 +101,25 @@ def setup_extension(settings, monkeypatch):
     )
     client = Client()
     client.force_login(actor)
+
+    def current_source(reservation_id, **kwargs):
+        if reservation_id == raw["id"]:
+            return dict(raw)
+        reservation = Reservation.objects.get(hostaway_reservation_id=reservation_id)
+        return {
+            **raw,
+            "id": reservation_id,
+            "channelId": reservation.channel_id,
+            "arrivalDate": reservation.check_in.isoformat(),
+            "departureDate": reservation.check_out.isoformat(),
+            "totalPrice": str(reservation.total_price),
+            "currency": reservation.currency,
+            "status": reservation.normalized_status,
+        }
+
+    monkeypatch.setattr(
+        "apps.reservations.stay_extension_communications.read_source", current_source
+    )
     return SimpleNamespace(
         extension=extension,
         actor=actor,
@@ -285,6 +304,36 @@ def test_uncertain_provider_create_cannot_be_replayed(setup_extension, monkeypat
     assert len(provider.posts) == 1
 
 
+@pytest.mark.parametrize("environment", ["test", "production"])
+def test_online_payment_requires_exact_production_collection(
+    setup_extension, monkeypatch, settings, environment
+):
+    from apps.payments.payment_links import complete_request_payment, issue_request
+
+    case = setup_extension
+    settings.RESERVATION_PAYMENT_LINKS_ENABLED = True
+    settings.HYPERPAY_ENVIRONMENT = environment
+    create_child(case, monkeypatch)
+    reservation = case.extension.reservation
+    request = issue_request(reservation.pk)
+    attempt = PaymentAttempt.objects.create(
+        booking_intent=reservation.booking_intent,
+        payment_request=request,
+        provider="hyperpay",
+        provider_reference="synthetic-online",
+        provider_payment_id="synthetic-online",
+        idempotency_key="synthetic-online",
+        amount=request.amount_sar,
+        currency="SAR",
+        status="succeeded",
+        verified_at=timezone.now(),
+    )
+    complete_request_payment(attempt)
+    refresh_chain(case.extension.chain_id)
+    case.extension.refresh_from_db()
+    assert case.extension.state == ("active" if environment == "production" else "created_unpaid")
+
+
 def test_wrong_ownership_ack_never_sends_provider_post(setup_extension, monkeypatch):
     case = setup_extension
     finalize(case)
@@ -411,6 +460,7 @@ def test_chain_never_uses_maximum_checkout_across_cancelled_gap(
 class FakeTransport:
     def __init__(self, case, *, wrong=False):
         self.case, self.wrong, self.posts = case, wrong, []
+        self.delivery_pending = False
 
     def get(self, url):
         return SimpleNamespace(
@@ -428,6 +478,7 @@ class FakeTransport:
                 "revision": -1 if self.wrong else json["revision"],
                 "contract_version": 1,
                 "accepted": True,
+                "delivery_pending": self.delivery_pending,
                 "event_id": json["event_id"],
             },
         )
@@ -452,6 +503,20 @@ def test_exact_ack_and_event_capability_prove_event_identity(setup_extension, mo
     assert response.json()["source_event_id"] == envelope["event_id"]
     assert response.json()["source_event_revision"] == envelope["revision"]
     assert response.json()["capability_purpose"] == "event"
+
+
+def test_received_event_remains_pending_until_immediate_chain_delivery_finishes(setup_extension):
+    case = setup_extension
+    transport = FakeTransport(case)
+    assert acknowledge_ownership(case.extension.pk, transport=transport)
+    refresh_chain(case.extension.chain_id)
+    transport.delivery_pending = True
+    assert deliver_events(case.extension.pk, transport=transport) == {"accepted": 0}
+    event_id = transport.posts[-1]["event_id"]
+    assert StayExtensionEvent.objects.get(pk=event_id).state == "pending"
+    transport.delivery_pending = False
+    assert deliver_events(case.extension.pk, transport=transport) == {"accepted": 1}
+    assert transport.posts[-1]["event_id"] == event_id
 
 
 def test_source_pages_include_ota_and_advance_even_if_filtered_page_is_empty(
@@ -483,6 +548,70 @@ def test_generic_draft_url_cannot_bypass_extension_review(setup_extension):
     )
     assert response.status_code == 302
     assert response.url == reverse("notifications:stay_extension_detail", args=[case.extension.pk])
+
+
+@pytest.mark.parametrize("marker", ["MorningStay synthetic", "DU08:synthetic"])
+def test_morning_and_day_use_sources_keep_their_independent_journey(setup_extension, marker):
+    from apps.reservations.stay_extensions import eligible_source
+
+    with pytest.raises(ValueError, match="special_stay"):
+        eligible_source({**setup_extension.raw, "hostNote": marker})
+
+
+def test_collection_survives_projection_failure_and_recovers(setup_extension, monkeypatch):
+    from apps.reservations.stay_extensions import capture_reservation_change, recover_pending
+
+    case = setup_extension
+    create_child(case, monkeypatch)
+    reservation = case.extension.reservation
+    reservation.payment_status = "paid"
+    reservation.save()
+    original = refresh_chain
+    monkeypatch.setattr(
+        "apps.reservations.stay_extensions.refresh_chain",
+        Mock(side_effect=RuntimeError("synthetic")),
+    )
+    capture_reservation_change(reservation.pk)
+    reservation.refresh_from_db()
+    assert reservation.payment_status == "paid"
+    monkeypatch.setattr("apps.reservations.stay_extensions.refresh_chain", original)
+    # A verified collection, not the paid label alone, is still required.
+    pay(case)
+    monkeypatch.setattr("apps.reservations.stay_extension_communications.deliver_events", Mock())
+    recover_pending()
+    assert case.extension.state == "active"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_managers_cannot_create_two_children_for_same_parent(setup_extension):
+    from concurrent.futures import ThreadPoolExecutor
+
+    from django.db import close_old_connections, connection
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Production row-lock behavior requires PostgreSQL")
+    case = setup_extension
+    case.extension.delete()
+    count = len(case.availability.requests)
+
+    def start():
+        close_old_connections()
+        try:
+            return start_extension(
+                raw=case.raw,
+                check_out=case.available.quote.check_out,
+                guests=2,
+                actor=case.actor,
+                availability_service=case.availability,
+            ).pk
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: start(), range(2)))
+    assert results[0] == results[1]
+    assert StayExtension.objects.count() == 1
+    assert len(case.availability.requests) == count + 1
 
 
 def test_render_extension_layout(setup_extension, monkeypatch, tmp_path):

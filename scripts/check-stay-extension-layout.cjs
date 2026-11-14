@@ -24,7 +24,7 @@ const { pathToFileURL } = require("node:url");
           if (facts.scroll > facts.width + 1 || facts.shortButtons) throw new Error(`${name} ${width}: ${JSON.stringify(facts)}`);
           if (name === "selection" && await page.locator('[name="guest_phone_country"]').count() !== 1) throw new Error("Shared phone country missing");
           if (name === "review" && await page.locator('[name="confirm_independent_booking"]').count() !== 1) throw new Error("Final review missing");
-          if (name === "unpaid" && (await page.locator("main").innerText()).includes("التمديد ساري بعد التحقق")) throw new Error("Unpaid stay claimed active");
+          if (name === "unpaid" && (await page.locator("main.lsa-extension").innerText()).includes("التمديد ساري بعد التحقق")) throw new Error("Unpaid stay claimed active");
           await page.screenshot({ path: path.join(output, `extension-${name}-${width}-${colorScheme}.png`), fullPage: true });
         }
         await page.close();

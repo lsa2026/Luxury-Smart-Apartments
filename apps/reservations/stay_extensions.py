@@ -2,12 +2,13 @@
 
 import hashlib
 import json
+import logging
 from datetime import date, timedelta
 from types import SimpleNamespace
 
 from django.conf import settings
 from django.db import transaction
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.reservation_validators import (
@@ -19,6 +20,8 @@ from apps.properties.models import Property
 
 from .models import Reservation, StayExtension, StayExtensionChain, StayExtensionEvent
 from .services.stay_lifecycle import checkout_datetime
+
+logger = logging.getLogger(__name__)
 
 
 def digest(values):
@@ -49,6 +52,22 @@ def read_source(reservation_id, *, client=None):
 
 def eligible_source(raw):
     snapshot = source_snapshot(raw)
+    note = str(raw.get("hostNote") or "")
+    provider = str(raw.get("provider") or "")
+    from .models import DayUseHostawayOwnership, DayUseStay, MorningStay
+
+    if (
+        note.startswith(("DU08:", "MorningStay "))
+        or provider in {"LSA_DayUse", "LSA_MorningStay"}
+        or DayUseHostawayOwnership.objects.filter(provider_reservation_id=snapshot["id"]).exists()
+        or DayUseStay.objects.filter(
+            availability_evidence__hostaway_day_use__reservation_id=snapshot["id"]
+        ).exists()
+        or MorningStay.objects.filter(
+            availability_evidence__hostaway_morning__reservation_id=snapshot["id"]
+        ).exists()
+    ):
+        raise ValueError("special_stay_has_own_journey")
     property_obj = Property.objects.filter(
         hostaway_listing_map_id=snapshot["listing_map_id"],
         hostaway_is_active=True,
@@ -178,7 +197,7 @@ def payment_verified(reservation):
         payment_request__source_currency=reservation.currency,
         payment_request__environment=settings.HYPERPAY_ENVIRONMENT,
     )
-    return manual.exists() or online.exists()
+    return manual.exists() or (settings.HYPERPAY_ENVIRONMENT == "production" and online.exists())
 
 
 def booking_verified(extension):
@@ -189,6 +208,7 @@ def booking_verified(extension):
     return bool(
         extension.ownership_acknowledged
         and reservation.hostaway_reservation_id
+        and reservation.channel_id == settings.HOSTAWAY_DIRECT_CHANNEL_ID
         and reservation.normalized_status in Reservation.ACTIVE_STATUSES
         and reservation.source_type == Reservation.SourceType.DIRECT_WEBSITE
         and reservation.hostaway_listing_map_id == extension.chain.property.hostaway_listing_map_id
@@ -361,11 +381,13 @@ def refresh_chain(chain_id):
 
 def guest_snapshot(extension):
     draft = extension.draft
+    with translation.override(draft.guest_language or "ar"):
+        listing_name = extension.chain.property.display_name
     return {
         "name": f"{draft.guest_first_name} {draft.guest_last_name}".strip(),
         "phone": draft.guest_phone,
         "language": draft.guest_language or "ar",
-        "listing_name": extension.chain.property.name_ar or extension.chain.property.name_en,
+        "listing_name": listing_name,
     }
 
 
@@ -397,6 +419,36 @@ def refresh_reservation(reservation_id):
         refresh_chain(chain_id)
 
 
+def capture_reservation_change(reservation_id):
+    # The extension outbox normally commits with the business change. A broken
+    # extension projection must never roll back a verified financial collection.
+    try:
+        with transaction.atomic():
+            refresh_reservation(reservation_id)
+    except Exception:
+        logger.error("Stay-extension projection needs reconciliation")
+
+
+def recover_pending(limit=3):
+    """Scoped addition to the existing recovery task, never a new schedule."""
+    from .stay_extension_communications import deliver_events
+
+    pending = StayExtension.objects.filter(
+        state__in=["created_unpaid", "creating"],
+        reservation__payment_status="paid",
+    ).order_by("updated_at")[:limit]
+    for extension in pending:
+        capture_reservation_change(extension.reservation_id)
+        StayExtension.objects.filter(pk=extension.pk).update(updated_at=timezone.now())
+    ids = list(
+        StayExtensionEvent.objects.filter(state="pending", attempts__lt=10)
+        .order_by("created_at")
+        .values_list("extension_id", flat=True)[:limit]
+    )
+    for extension_id in set(ids):
+        deliver_events(extension_id)
+
+
 def prepare_ownership(reservation, *, client=None, transport=None):
     """Mandatory exact ownership ACK before provider POST. Unrelated stays no-op."""
     from .stay_extension_communications import acknowledge_ownership
@@ -407,6 +459,11 @@ def prepare_ownership(reservation, *, client=None, transport=None):
         .first()
     )
     if extension is None:
+        return True
+    # Another worker may already have received/created this child while this
+    # request was checking availability. Never roll its state back to creating.
+    current = Reservation.objects.get(pk=reservation.pk)
+    if current.hostaway_reservation_id:
         return True
     try:
         raw = read_source(extension.previous_hostaway_reservation_id, client=client)

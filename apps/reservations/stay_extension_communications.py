@@ -256,6 +256,10 @@ def deliver_events(extension_id, *, transport=None):
                 event.lease_until and event.lease_until > timezone.now()
             ):
                 continue
+            if event.attempts >= 10:
+                event.state = "review"
+                event.save(update_fields=["state"])
+                continue
             extension = StayExtension.objects.select_related("chain__property", "draft").get(
                 pk=extension_id
             )
@@ -271,28 +275,32 @@ def deliver_events(extension_id, *, transport=None):
             response = client.post(WEBHOOK, json=_envelope(extension, phase="event", event=event))
             response.raise_for_status()
             body = response.json()
-            return (
+            valid = (
                 body.get("accepted") is True
                 and body.get("event_id") == str(event.pk)
                 and body.get("extension_id") == str(extension.pk)
                 and type(body.get("revision")) is int
                 and body["revision"] == event.revision
                 and body.get("contract_version") == 1
+                and type(body.get("delivery_pending")) is bool
             )
+            return valid, body.get("delivery_pending", True)
 
         try:
             if transport is not None:
-                acknowledged = post(transport)
+                acknowledged, delivery_pending = post(transport)
             else:
                 with httpx.Client(timeout=20, follow_redirects=False) as client:
-                    acknowledged = post(client)
+                    acknowledged, delivery_pending = post(client)
         except Exception:
-            acknowledged = False
+            acknowledged, delivery_pending = False, True
         with transaction.atomic():
             locked = StayExtensionEvent.objects.select_for_update().get(pk=event.pk)
             locked.lease_until = None
             if acknowledged:
-                locked.state, locked.acknowledged_at = "accepted", timezone.now()
-                accepted += 1
+                locked.acknowledged_at = timezone.now()
+                if not delivery_pending:
+                    locked.state = "accepted"
+                    accepted += 1
             locked.save(update_fields=["state", "acknowledged_at", "lease_until"])
     return {"accepted": accepted}

@@ -90,7 +90,7 @@ def sync_reservation_snapshot(
 ) -> tuple[Reservation, str, bool]:
     property_obj, strategy = _match_property(snapshot.listing_map_id)
     with transaction.atomic():
-        from apps.reservations.stay_extensions import bind_webhook_child, refresh_reservation
+        from apps.reservations.stay_extensions import bind_webhook_child, capture_reservation_change
 
         bound = bind_webhook_child(snapshot)
         existing = (
@@ -145,7 +145,7 @@ def sync_reservation_snapshot(
         reservation.full_clean()
         reservation.save()
         _reconcile_modification_requests(reservation, snapshot)
-        transaction.on_commit(lambda: refresh_reservation(reservation.pk), robust=True)
+        capture_reservation_change(reservation.pk)
         return reservation, strategy, False
 
 
