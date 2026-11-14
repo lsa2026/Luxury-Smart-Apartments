@@ -17,6 +17,42 @@ const { pathToFileURL } = require("node:url");
         for (const name of ["sources", "selection", "guest", "review", "unpaid"]) {
           await page.goto(pathToFileURL(path.join(output, `extension-${name}.html`)).href);
           await page.locator("main.lsa-extension").waitFor();
+          if (["selection", "guest"].includes(name)) {
+            await page.evaluate(() => {
+              window.fetch = async (_url, options) => {
+                const data = typeof options.body === "string" ? JSON.parse(options.body) : Object.fromEntries(options.body);
+                if (data.phone) return { ok:true, status:200, json:async () => data.phone.includes("+44")
+                  ? { phone:"+442079460958", country:"GB" }
+                  : { phone:data.phone === "0551234567" ? "+966551234567" : "+966500000000", country:"SA" } };
+                return { ok:true, status:200, json:async () => data.input
+                  ? { suggestions:[{place_id:"synthetic-place",label:"10 Test Road, Riyadh"}] }
+                  : { fields:{billing_street1:"10 Test Road",billing_city:"Riyadh",billing_state:"Riyadh",billing_country:"SA",billing_postcode:"12345"},next_ticket:"synthetic-ticket" } };
+              };
+            });
+            await page.addScriptTag({ path:path.resolve("static/js/checkout-address.js"), type:"module" });
+            await page.addScriptTag({ path:path.resolve("static/js/checkout-phone.js") });
+            await page.addScriptTag({ path:path.resolve("static/js/morning-validation.js") });
+            await page.locator("[data-checkout-address]").waitFor({ state:"visible" });
+            await page.locator("[data-address-search]").fill("RRXA1234");
+            await page.getByRole("option", {name:"10 Test Road, Riyadh"}).click();
+            await page.waitForFunction(() => document.querySelector('[name="billing_state"]').value === "Riyadh");
+            const state = page.locator('[name="billing_state"]');
+            await state.fill("Riyadh Province");
+            if (await state.getAttribute("aria-invalid") !== "true") throw new Error("Approved address rule did not reject spaces");
+            await state.fill("Riyadh");
+            if (await state.getAttribute("aria-invalid") !== "false") throw new Error("Corrected address remains blocked");
+            const phone = page.locator('[name="guest_phone"]');
+            await phone.fill("0551234567");
+            await state.click();
+            await page.waitForFunction(() => document.querySelector('[name="guest_phone"]').value === "+966551234567");
+            await phone.fill("+44 20 7946 0958");
+            await state.click();
+            await page.waitForFunction(() => document.querySelector('[name="guest_phone_country"]').value === "GB");
+            if (await page.locator('[name="billing_country"]').inputValue() !== "SA") throw new Error("Phone country changed billing country");
+            await phone.fill("+966500000000");
+            await state.click();
+            await page.waitForFunction(() => document.querySelector('[name="guest_phone_country"]').value === "SA");
+          }
           const facts = await page.evaluate(() => ({
             width: innerWidth, scroll: document.documentElement.scrollWidth,
             shortButtons: [...document.querySelectorAll("main .lsa-btn")].some(el => el.getBoundingClientRect().height < 43),
