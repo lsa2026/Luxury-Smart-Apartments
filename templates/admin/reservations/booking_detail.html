@@ -9,6 +9,7 @@
 {% language "ar" %}
 <div class="lsa-dashboard lsa-operations-screen lsa-booking-detail" dir="rtl" data-booking-detail data-default-panel="{{ detail_default_panel }}">
   <nav class="lsa-booking-detail__path" aria-label="مسار الحجز"><a href="{% url 'notifications:booking_list' %}">كل الحجوزات</a><span aria-hidden="true">‹</span><span>تفاصيل الحجز</span></nav>
+  {% if reservation.stay_extension %}<p><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:stay_extension_detail' reservation.stay_extension.pk %}">تفاصيل التمديد والحجز السابق</a></p>{% endif %}
   <section class="lsa-booking-detail__overview" aria-label="ملخص الحجز">
     <div class="lsa-booking-detail__hero">
       <div><span class="lsa-booking-detail__kicker">إدارة الحجز</span><h1>{% if reservation.booking_intent %}{{ reservation.booking_intent.guest_first_name }} {{ reservation.booking_intent.guest_last_name }}{% else %}حجز قائم{% endif %}</h1><p>{{ reservation.property|localized_property_name|default:"شقة غير محددة" }}</p></div>
