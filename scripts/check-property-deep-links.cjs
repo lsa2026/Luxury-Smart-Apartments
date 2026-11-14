@@ -7,12 +7,13 @@ const {execFileSync} = require("node:child_process");
 const {chromium} = require("playwright");
 
 async function chooseEssentialOnly(page) {
+  await page.locator("[data-brand-splash]").waitFor({state: "hidden"});
   const reject = page.locator("[data-consent-reject]");
   if (await reject.isVisible()) {
     // Use the supported keyboard action even on long translated banners;
     // do not hide the banner or disable production consent behavior.
     await reject.focus();
-    await reject.press("Enter");
+    await reject.press("Space");
     await page.locator("[data-consent-banner]").waitFor({state: "hidden"});
   }
 }
