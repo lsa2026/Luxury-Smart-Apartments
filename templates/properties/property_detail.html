@@ -187,6 +187,7 @@
         <aside class="booking-sidebar" id="availability">
             <div class="booking-sidebar__card">
                 <div class="booking-sidebar__mode"><span aria-hidden="true">◆</span>{% trans "Daily · Monthly" %}</div>
+                <p><a id="price-calendar" class="text-link" href="#availability" data-price-calendar-open data-property-price-calendar data-price-calendar-url="{% url 'properties:price_calendar' slug=property.slug %}" data-price-calendar-name="{{ property|localized_property_name }}">{% trans "View prices and availability" %}</a></p>
                 {% if preserved_search %}
                 <p class="eyebrow">{% trans "Availability checked" %}</p>
                 <h2>{% trans "Continue with this property" %}</h2>
@@ -238,6 +239,7 @@
     {% if similar_properties %}<section class="section section--soft"><div class="container"><div class="section-heading"><p class="eyebrow">{% trans "You may also like" %}</p><h2>{% trans "Similar stays" %}</h2></div>{% include "properties/_property_cards.html" with properties=similar_properties analytics_list_name="similar_properties" %}</div></section>{% endif %}
 </article>
 {% endblock %}
+{% block price_calendar %}{% include "properties/_price_calendar.html" %}{% endblock %}
 {% block dialogs %}
 {% if nearby_config %}{% include "properties/_nearby_dialog.html" %}{% endif %}
 {% if all_gallery_images %}

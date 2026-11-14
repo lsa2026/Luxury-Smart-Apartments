@@ -152,7 +152,7 @@
                 the refresh window, shown as "from" so it is never read as the
                 price of a stay. With no anchor the original wording stands.
             {% endcomment %}
-            <a class="property-card__price-note property-price-link" href="{{ resolved_property_url }}#availability" data-price-calendar-open data-price-calendar-url="{% url 'properties:price_calendar' slug=property.slug %}" data-price-calendar-name="{{ property_name }}">
+            <a class="property-card__price-note property-price-link" href="{{ resolved_property_url }}#price-calendar" data-price-calendar-open data-price-calendar-url="{% url 'properties:price_calendar' slug=property.slug %}" data-price-calendar-name="{{ property_name }}">
                 {% if property.indicative_nightly_from %}
                 <small>{% trans "Final price depends on your dates" %}</small>
                 <strong>{% blocktrans with amount=property.indicative_nightly_from|format_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>

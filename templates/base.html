@@ -49,7 +49,7 @@
     {% block google_purchase_data %}{% endblock %}
     <script src="{% static 'js/analytics.js' %}?v=20" defer></script>
     <script src="{% static 'js/form-validation.js' %}?v=1" defer></script>
-    <script src="{% static 'js/site.js' %}?v=30" defer></script>
+    <script src="{% static 'js/site.js' %}?v=31" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
     {% block extra_head %}{% endblock %}
@@ -111,9 +111,11 @@
     {% block footer %}{% include "includes/footer.html" %}{% endblock %}
     {% if cookie_consent_enabled %}{% include "includes/cookie_consent.html" %}{% endif %}
     {% block contact_widget %}{% include "includes/whatsapp_button.html" %}{% endblock %}
+    {% block price_calendar %}
     {% if featured_properties or properties or similar_properties %}
     {% include "properties/_price_calendar.html" %}
     {% endif %}
+    {% endblock %}
     {% block dialogs %}{% endblock %}
 </body>
 </html>
