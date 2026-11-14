@@ -1,5 +1,6 @@
 """Synthetic provider/collection tests. No real guest or outgoing provider request."""
 
+import json
 import os
 from dataclasses import replace
 from datetime import timedelta
@@ -38,6 +39,7 @@ from apps.reservations.stay_extension_communications import (
     SALT,
     acknowledge_ownership,
     capability,
+    context,
     deliver_events,
 )
 from apps.reservations.stay_extensions import (
@@ -187,6 +189,10 @@ def create_child(case, monkeypatch, *, unknown=False, early=False):
     finalize(case)
 
     def ack(extension_id, **kwargs):
+        current = StayExtension.objects.select_related(
+            "chain__property", "draft", "reservation__booking_intent"
+        ).get(pk=extension_id)
+        case.ownership_context = context(current, verify_live=False)
         StayExtension.objects.filter(pk=extension_id).update(ownership_acknowledged=True)
         return True
 
@@ -316,6 +322,8 @@ def test_online_payment_requires_exact_production_collection(
     settings.HYPERPAY_ENVIRONMENT = environment
     create_child(case, monkeypatch)
     reservation = case.extension.reservation
+    reservation.is_test = environment == "test"
+    reservation.save(update_fields=["is_test"])
     request = issue_request(reservation.pk)
     attempt = PaymentAttempt.objects.create(
         booking_intent=reservation.booking_intent,
@@ -678,3 +686,33 @@ def test_render_extension_layout(setup_extension, monkeypatch, tmp_path):
     response = case.client.get(detail)
     assert response.status_code == 200
     (output / "extension-unpaid.html").write_text(_standalone(response.content.decode()))
+    snapshots = []
+
+    def save_contract_case(name, values, phase):
+        event = case.extension.events.order_by("-revision").first() if phase == "event" else None
+        values.update(
+            capability_purpose=phase,
+            source_event_id=str(event.pk) if event else None,
+            source_event_revision=event.revision if event else None,
+            source_event_kind=event.kind if event else None,
+        )
+        envelope = {
+            "source": "stay_extension",
+            "contract_version": 1,
+            "extension_id": values["extension_id"],
+            "phase": phase,
+            "event_token": "synthetic-capability-not-a-secret",
+            "event_id": str(event.pk) if event else None,
+            "revision": values["revision"],
+            "source_revision": values["revision"],
+            "dry_run": True,
+        }
+        snapshots.append({"name": name, "context": values, "envelope": envelope})
+
+    save_contract_case("ownership", case.ownership_context, "ownership")
+    save_contract_case("unpaid", context(case.extension, verify_live=False), "event")
+    pay(case)
+    save_contract_case("active", context(case.extension, verify_live=False), "event")
+    (output / "extension-contract-fixtures.json").write_text(
+        json.dumps({"synthetic": True, "cases": snapshots}, ensure_ascii=False, indent=2)
+    )

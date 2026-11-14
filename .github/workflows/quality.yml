@@ -210,7 +210,9 @@ jobs:
         uses: actions/upload-artifact@v7.0.2
         with:
           name: synthetic-contact-layouts
-          path: ${{ runner.temp }}/lsa-contact-layout/*.png
+          path: |
+            ${{ runner.temp }}/lsa-contact-layout/*.png
+            ${{ runner.temp }}/lsa-contact-layout/extension-contract-fixtures.json
           retention-days: 3
 
       - name: Test the lazy price calendar interactions

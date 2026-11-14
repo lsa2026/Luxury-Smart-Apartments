@@ -179,7 +179,12 @@ def start_extension(*, raw, check_out, guests, actor, guest_data=None, availabil
 
 
 def payment_verified(reservation):
-    if not reservation or not reservation.booking_intent_id or reservation.payment_status != "paid":
+    if (
+        not reservation
+        or reservation.is_test
+        or not reservation.booking_intent_id
+        or reservation.payment_status != "paid"
+    ):
         return False
     intent = reservation.booking_intent
     attempts = (
