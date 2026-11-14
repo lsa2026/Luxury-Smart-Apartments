@@ -3,7 +3,7 @@
 import hashlib
 import json
 import logging
-from datetime import date, timedelta
+from datetime import UTC, date, timedelta
 from types import SimpleNamespace
 
 from django.conf import settings
@@ -22,6 +22,18 @@ from .models import Reservation, StayExtension, StayExtensionChain, StayExtensio
 from .services.stay_lifecycle import checkout_datetime
 
 logger = logging.getLogger(__name__)
+
+
+def _checkout(property_obj, departure):
+    value = checkout_datetime(SimpleNamespace(property=property_obj, check_out=departure))
+    zone_name = str(value.tzinfo)
+    # IANA tzdb2026c: Morocco switched permanently to UTC on 2026-09-20.
+    # Match the existing automation compatibility rule if host tzdata is old.
+    if zone_name == "Africa/Casablanca" and (
+        departure > date(2026, 9, 20) or (departure == date(2026, 9, 20) and value.hour >= 2)
+    ):
+        value = value.replace(tzinfo=UTC)
+    return value, zone_name
 
 
 def digest(values):
@@ -75,11 +87,7 @@ def eligible_source(raw):
     ).first()
     if property_obj is None or snapshot["status"] not in Reservation.ACTIVE_STATUSES:
         raise ValueError("source_not_active")
-    zone = checkout_datetime(
-        SimpleNamespace(
-            property=property_obj, check_out=date.fromisoformat(snapshot["departure_date"])
-        )
-    ).tzinfo
+    zone = _checkout(property_obj, date.fromisoformat(snapshot["departure_date"]))[0].tzinfo
     today = timezone.now().astimezone(zone).date()
     if not (
         date.fromisoformat(snapshot["arrival_date"])
@@ -269,10 +277,7 @@ def chain_context(chain):
             continue
         terminal, checkout, active = provider_id, reservation.check_out.isoformat(), True
         connected.add(terminal)
-    checkout_at = checkout_datetime(
-        SimpleNamespace(property=chain.property, check_out=date.fromisoformat(checkout))
-    )
-    zone_name = str(checkout_at.tzinfo)
+    checkout_at, zone_name = _checkout(chain.property, date.fromisoformat(checkout))
     for member in members:
         in_stay = member["hostaway_reservation_id"] in connected
         member.update(

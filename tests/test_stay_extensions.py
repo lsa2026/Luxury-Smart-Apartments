@@ -312,6 +312,7 @@ def test_online_payment_requires_exact_production_collection(
 
     case = setup_extension
     settings.RESERVATION_PAYMENT_LINKS_ENABLED = True
+    settings.HYPERPAY_ENABLED = True
     settings.HYPERPAY_ENVIRONMENT = environment
     create_child(case, monkeypatch)
     reservation = case.extension.reservation
@@ -548,6 +549,39 @@ def test_generic_draft_url_cannot_bypass_extension_review(setup_extension):
     )
     assert response.status_code == 302
     assert response.url == reverse("notifications:stay_extension_detail", args=[case.extension.pk])
+
+
+def test_source_guest_fields_use_shared_international_phone_and_approved_limits(setup_extension):
+    from apps.reservations.stay_extension_views import ExtensionDatesForm
+
+    case = setup_extension
+    data = {
+        "guest_first_name": "ضيف",
+        "guest_last_name": "مصطنع",
+        "guest_email": "guest@example.invalid",
+        "guest_phone": "٠٥٥١٢٣٤٥٦٧",
+        "guest_phone_country": "SA",
+        "guest_language": "ar",
+        "check_out": case.available.quote.check_out,
+        "guests": 2,
+        "source_ticket": "synthetic",
+    }
+    form = ExtensionDatesForm(data)
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["guest_phone"] == "+966551234567"
+    form = ExtensionDatesForm({**data, "guest_first_name": "س" * 51})
+    assert not form.is_valid() and "guest_first_name" in form.errors
+
+
+def test_marrakech_checkout_matches_current_iana_rule_without_changing_other_paths(setup_extension):
+    case = setup_extension
+    case.property.time_zone_name = "Africa/Casablanca"
+    case.property.country_code = "MA"
+    case.property.save()
+    case.extension.chain.refresh_from_db()
+    state = chain_context(case.extension.chain)
+    assert state["timezone"] == "Africa/Casablanca"
+    assert state["effective_checkout_at"].endswith("12:00:00+00:00")
 
 
 @pytest.mark.parametrize("marker", ["MorningStay synthetic", "DU08:synthetic"])
