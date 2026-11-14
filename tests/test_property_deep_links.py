@@ -33,7 +33,7 @@ def test_property_deep_link_pages(language, tmp_path):
             assert f'<html lang="{language}"' in html
             assert "luxury-living" in html
             if name == "detail":
-                assert html.count('data-property-price-calendar ') == 1
+                assert html.count("data-property-price-calendar ") == 1
                 assert f'data-price-calendar-url="{root}price-calendar/"' in html
                 assert 'id="price-calendar"' in html
                 assert 'href="#availability" data-price-calendar-open' in html
