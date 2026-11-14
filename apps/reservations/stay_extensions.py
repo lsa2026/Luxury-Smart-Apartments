@@ -232,7 +232,13 @@ def payment_verified(reservation):
     )
     # Existing collection proofs retain their native currency and amount.
     manual = attempts.filter(
-        provider="manual", amount=reservation.total_price, currency=reservation.currency
+        provider="manual",
+        amount=reservation.total_price,
+        currency=reservation.currency,
+        offline_receipt__reservation=reservation,
+        offline_receipt__amount=reservation.total_price,
+        offline_receipt__currency=reservation.currency,
+        offline_receipt__recorded_by__isnull=False,
     )
     online = attempts.filter(
         provider="hyperpay",

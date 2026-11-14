@@ -22,7 +22,7 @@ from apps.integrations.hostaway.reservation_validators import (
     validate_reservation_response,
 )
 from apps.integrations.hostaway.webhook_processor import sync_reservation_snapshot
-from apps.payments.models import PaymentAttempt
+from apps.payments.models import OfflinePaymentReceipt, PaymentAttempt
 from apps.reservations.manual_bookings import (
     create_manual_booking_in_hostaway,
     finalize_manual_booking_draft,
@@ -214,11 +214,11 @@ def create_child(case, monkeypatch, *, unknown=False, early=False):
     return result, provider, service
 
 
-def pay(case):
+def pay(case, *, with_receipt=True):
     reservation = case.extension.reservation
     reservation.payment_status = "paid"
     reservation.save(update_fields=["payment_status"])
-    PaymentAttempt.objects.create(
+    attempt = PaymentAttempt.objects.create(
         booking_intent=reservation.booking_intent,
         provider="manual",
         provider_reference="synthetic-proof",
@@ -229,6 +229,18 @@ def pay(case):
         status="succeeded",
         verified_at=timezone.now(),
     )
+    if with_receipt:
+        OfflinePaymentReceipt.objects.create(
+            reservation=reservation,
+            payment_attempt=attempt,
+            amount=reservation.total_price,
+            currency=reservation.currency,
+            method="bank_transfer",
+            reference="synthetic:" + str(reservation.pk),
+            received_at=timezone.now(),
+            recorded_by=case.extension.created_by,
+            snapshot_digest="a" * 64,
+        )
     refresh_chain(case.extension.chain_id)
     case.extension.refresh_from_db()
 
@@ -314,6 +326,15 @@ def test_uncertain_provider_create_cannot_be_replayed(setup_extension, monkeypat
     _, provider, service = create_child(case, monkeypatch, unknown=True)
     create_manual_booking_in_hostaway(draft_id=case.extension.draft_id, booking_service=service)
     assert len(provider.posts) == 1
+
+
+def test_manual_attempt_without_manager_collection_receipt_cannot_activate(
+    setup_extension, monkeypatch
+):
+    case = setup_extension
+    create_child(case, monkeypatch)
+    pay(case, with_receipt=False)
+    assert case.extension.state == "created_unpaid"
 
 
 @pytest.mark.parametrize("environment", ["test", "production"])
