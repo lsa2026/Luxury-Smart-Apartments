@@ -12,6 +12,7 @@ from unittest.mock import Mock
 import pytest
 from django.contrib.auth import get_user_model
 from django.core import signing
+from django.db import connection
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
@@ -762,14 +763,15 @@ def test_gathern_requires_explicit_verified_receiver_capability(setup_extension,
     assert eligible_source({**case.raw, "channelName": "Gathern"})[0]["id"] == case.raw["id"]
 
 
+@pytest.mark.skipif(
+    connection.vendor != "postgresql", reason="Production row locks require PostgreSQL"
+)
 @pytest.mark.django_db(transaction=True)
 def test_two_managers_cannot_create_two_children_for_same_parent(setup_extension):
     from concurrent.futures import ThreadPoolExecutor
 
-    from django.db import close_old_connections, connection
+    from django.db import close_old_connections
 
-    if connection.vendor != "postgresql":
-        pytest.skip("Production row-lock behavior requires PostgreSQL")
     case = setup_extension
     case.extension.delete()
     count = len(case.availability.requests)
