@@ -6,6 +6,11 @@ const path = require("node:path");
 const {execFileSync} = require("node:child_process");
 const {chromium} = require("playwright");
 
+async function chooseEssentialOnly(page) {
+  const reject = page.locator("[data-consent-reject]");
+  if (await reject.isVisible()) await reject.click();
+}
+
 (async () => {
   const output = process.env.LSA_CONTACT_VISUAL_DIR;
   assert(output, "Set the synthetic layout directory");
@@ -73,6 +78,7 @@ const {chromium} = require("playwright");
         await page.screenshot({path: path.join(output, `property-calendar-${language}-${width}.png`)});
         await page.locator("[data-price-close]").click();
         assert.equal(await page.locator("[data-property-price-calendar]").evaluate(node => node === document.activeElement), true);
+        await chooseEssentialOnly(page);
         await page.reload();
         await page.locator("[data-price-calendar][open]").waitFor();
         await page.locator("[data-price-close]").click();
@@ -84,6 +90,7 @@ const {chromium} = require("playwright");
         await page.evaluate(() => { location.hash = "price-calendar"; });
         await page.locator("[data-price-calendar][open]").waitFor();
         await page.goto(root + "gallery/");
+        await chooseEssentialOnly(page);
         await page.locator(".gallery-page__item img").first().waitFor();
         await page.locator("[data-lightbox-open]").first().click();
         await page.locator("[data-lightbox][open]").waitFor();
@@ -95,6 +102,7 @@ const {chromium} = require("playwright");
       const page = await browser.newPage();
       await page.route("**/*", route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
       await page.goto(`${origin}/${language}/properties/`);
+      await chooseEssentialOnly(page);
       const card = page.locator('[data-price-calendar-open][href*="anchor-9101/"]').first();
       const href = await card.getAttribute("href");
       assert(href.endsWith("#price-calendar"));
