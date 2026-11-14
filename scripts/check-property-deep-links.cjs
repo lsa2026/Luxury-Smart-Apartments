@@ -8,7 +8,13 @@ const {chromium} = require("playwright");
 
 async function chooseEssentialOnly(page) {
   const reject = page.locator("[data-consent-reject]");
-  if (await reject.isVisible()) await reject.click();
+  if (await reject.isVisible()) {
+    // Use the supported keyboard action even on long translated banners;
+    // do not hide the banner or disable production consent behavior.
+    await reject.focus();
+    await reject.press("Enter");
+    await page.locator("[data-consent-banner]").waitFor({state: "hidden"});
+  }
 }
 
 (async () => {
