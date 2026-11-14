@@ -606,6 +606,19 @@ def test_generic_draft_url_cannot_bypass_extension_review(setup_extension):
     assert response.url == reverse("notifications:stay_extension_detail", args=[case.extension.pk])
 
 
+def test_readiness_exposes_only_current_creation_switches_not_guest_data(setup_extension, settings):
+    url = reverse("reservations:stay_extension_health")
+    response = Client().get(url)
+    assert response.json() == {
+        "source": "stay_extension",
+        "contract_version": 1,
+        "build_ready": True,
+        "creation_prerequisites_ready": True,
+    }
+    settings.RESERVATION_PAYMENT_LINKS_ENABLED = False
+    assert Client().get(url).json()["creation_prerequisites_ready"] is False
+
+
 def test_source_guest_fields_use_shared_international_phone_and_approved_limits(setup_extension):
     from apps.reservations.stay_extension_views import ExtensionDatesForm
 

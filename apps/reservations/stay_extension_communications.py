@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx
+from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 from django.db import transaction
@@ -263,7 +264,21 @@ def read_context(request, extension_id):
 @never_cache
 def health(request):
     # Public readiness metadata contains no guest or private operational data.
-    return JsonResponse({"source": "stay_extension", "contract_version": 1, "build_ready": True})
+    ready = bool(
+        settings.HOSTAWAY_LIVE_BOOKING_ENABLED
+        and settings.HOSTAWAY_DIRECT_CHANNEL_ID
+        and settings.RESERVATION_PAYMENT_LINKS_ENABLED
+        and settings.HYPERPAY_ENABLED
+        and settings.HYPERPAY_ENVIRONMENT == "production"
+    )
+    return JsonResponse(
+        {
+            "source": "stay_extension",
+            "contract_version": 1,
+            "build_ready": True,
+            "creation_prerequisites_ready": ready,
+        }
+    )
 
 
 def deliver_events(extension_id, *, transport=None):
