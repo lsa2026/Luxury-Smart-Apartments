@@ -217,6 +217,11 @@ class HostawayBookingService:
         except ValueError as exc:
             return self._fail_without_post(reservation, str(exc))
 
+        from apps.reservations.stay_extensions import prepare_ownership
+
+        if not prepare_ownership(reservation, client=self.client):
+            return self._block(reservation, "extension_ownership_requires_review")
+
         operation, can_send = self._prepare_operation(reservation, availability)
         if not can_send:
             return ReservationCreationOutcome(

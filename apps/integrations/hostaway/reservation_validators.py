@@ -1,5 +1,6 @@
 """Sanitized DTOs and validators for Hostaway reservation operations."""
 
+import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -92,6 +93,7 @@ class HostawayReservationCreateRequest:
     finance_fields: tuple[ReservationFinanceField, ...]
     provider: str
     guest_locale: str = "ar"
+    host_note: str = ""
 
     def to_payload(self) -> dict[str, Any]:
         if self.listing_map_id <= 0:
@@ -103,7 +105,7 @@ class HostawayReservationCreateRequest:
         guest_locale = self.guest_locale.strip().split("-", 1)[0].casefold()
         if guest_locale not in {"ar", "en", "fr"}:
             raise ValueError("guest_locale_not_supported")
-        return {
+        payload = {
             "channelId": self.channel_id,
             "listingMapId": self.listing_map_id,
             "isManuallyChecked": 0,
@@ -123,6 +125,11 @@ class HostawayReservationCreateRequest:
             "currency": self.currency.upper(),
             "financeField": [item.to_payload() for item in self.finance_fields],
         }
+        if self.host_note:
+            if not re.fullmatch(r"EXT01:[0-9a-f-]{36}", self.host_note):
+                raise ValueError("extension_marker_invalid")
+            payload["hostNote"] = self.host_note
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,6 +146,7 @@ class HostawayReservationSnapshot:
     payment_status: str
     source: str
     updated_at: datetime | None
+    extension_reference: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,7 +170,12 @@ def validate_reservation_response(payload: Any) -> HostawayReservationSnapshot:
     if check_out <= check_in:
         raise HostawayResponseError("Hostaway reservation dates are invalid.")
     currency = _currency(result.get("currency"))
+    marker = re.match(
+        r"^EXT01:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:;|$)",
+        str(result.get("hostNote") or ""),
+    )
     return HostawayReservationSnapshot(
+        extension_reference=marker.group(1) if marker else "",
         reservation_id=reservation_id,
         listing_map_id=listing_map_id,
         channel_id=_optional_positive_int(result.get("channelId"), "reservation.channelId"),

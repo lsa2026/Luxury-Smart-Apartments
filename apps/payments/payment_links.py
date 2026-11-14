@@ -419,6 +419,9 @@ def complete_request_payment(attempt):
         transaction.on_commit(lambda: handle_reservation_confirmed(reservation.pk), robust=True)
         transaction.on_commit(lambda: queue_payment_receipt(attempt.pk), robust=True)
         transaction.on_commit(lambda: queue_delivery(request.pk, kind="receipt"), robust=True)
+        from apps.reservations.stay_extensions import refresh_reservation
+
+        transaction.on_commit(lambda: refresh_reservation(reservation.pk), robust=True)
     return reservation
 
 

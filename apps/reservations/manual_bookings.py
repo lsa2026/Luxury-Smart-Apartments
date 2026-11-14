@@ -131,6 +131,11 @@ def recheck_manual_booking_draft(
     if draft is None:
         unavailable = AvailabilityResult(False, "unavailable_dates", "", "", 0)
         return ManualBookingDraftRecheck("not_found", unavailable)
+    from .models import StayExtension
+
+    if StayExtension.objects.filter(draft=draft, reservation__isnull=False).exists():
+        unavailable = AvailabilityResult(False, "unavailable_dates", "", "", draft.nights)
+        return ManualBookingDraftRecheck("not_recheckable", unavailable, draft)
     if draft.status in {
         ManualBookingDraft.Status.CANCELLED,
         ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT,
@@ -288,6 +293,8 @@ def create_manual_booking_in_hostaway(
     marks the guest as paid.
     """
 
+    from .models import StayExtension
+
     with transaction.atomic():
         draft = (
             ManualBookingDraft.objects.select_for_update()
@@ -302,8 +309,13 @@ def create_manual_booking_in_hostaway(
             return ManualBookingHostawayCreation("already_created", draft, reservation)
         if draft.status != ManualBookingDraft.Status.READY_FOR_PAYMENT:
             return ManualBookingHostawayCreation("not_ready", draft)
+        extension = StayExtension.objects.filter(draft=draft).first()
+        existing_intent = BookingIntent.objects.filter(quote=draft.quote).first()
+        resumable_extension = bool(
+            extension and existing_intent and draft.quote.status == BookingQuote.Status.CONSUMED
+        )
         if (
-            draft.quote.status != BookingQuote.Status.ACTIVE
+            (draft.quote.status != BookingQuote.Status.ACTIVE and not resumable_extension)
             or draft.quote.is_expired
             or not verify_quote_fingerprint(draft.quote)
         ):
@@ -311,7 +323,7 @@ def create_manual_booking_in_hostaway(
             draft.save(update_fields=["status", "updated_at"])
             return ManualBookingHostawayCreation("quote_expired", draft)
 
-        intent = BookingIntent.objects.filter(quote=draft.quote).first()
+        intent = existing_intent
         if intent is None:
             billing_address = draft.billing_address or {}
             if billing_address:
@@ -362,6 +374,12 @@ def create_manual_booking_in_hostaway(
             draft.quote.consumed_at = now
             draft.quote.save(update_fields=["status", "consumed_at", "updated_at"])
         reservation = prepare_local_reservation(intent)
+        # Link before any external write, including an early Hostaway webhook.
+        if extension:
+            if extension.reservation_id not in {None, reservation.pk}:
+                return ManualBookingHostawayCreation("extension_link_mismatch", draft)
+            extension.reservation = reservation
+            extension.save(update_fields=["reservation", "updated_at"])
 
     if booking_service is None:
         with HostawayBookingService() as service:
@@ -377,6 +395,10 @@ def create_manual_booking_in_hostaway(
         locked.status = ManualBookingDraft.Status.BOOKED_AWAITING_PAYMENT
         locked.save(update_fields=["status", "updated_at"])
     outcome.reservation.refresh_from_db()
+    if extension:
+        from .stay_extensions import refresh_chain
+
+        refresh_chain(extension.chain_id)
     return ManualBookingHostawayCreation("created", locked, outcome.reservation)
 
 

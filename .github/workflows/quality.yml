@@ -44,6 +44,7 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_stay_extensions.py
           tests/test_day_use08.py
           tests/test_day_use_payments.py
           tests/test_day_use_delivery.py
@@ -171,6 +172,11 @@ jobs:
       - name: Test revised payment address, return and status boundaries
         run: pytest tests/test_revised_payment_flow.py tests/test_payment_link_revisions.py tests/test_payment_link_purchase_receipts.py -q
 
+      - name: Verify independent extensions and render synthetic operations pages
+        env:
+          LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
+        run: pytest tests/test_stay_extensions.py -q
+
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
@@ -187,6 +193,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-unified-phone-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-file-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-revised-payment-layout.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-stay-extension-layout.cjs
 
       - name: Verify direct property calendar and gallery links without live providers
         env:

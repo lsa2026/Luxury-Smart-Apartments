@@ -17,6 +17,7 @@
     </div>
     <div class="lsa-page-head__actions">
       <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:manual_booking_create' %}">＋ إنشاء حجز جديد</a>
+      <a class="lsa-btn lsa-btn--gold lsa-extension-button" href="{% url 'notifications:stay_extension_sources' %}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M8 3v4m8-4v4M4 10h16M20 13V6H4v15h9m5-6v8m-4-4h8"/></svg> تمديد الحجز</a>
       <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:morning_create' %}">☀ إنشاء حجز صباحي</a>
       <a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:morning_list' %}">الحجوزات الصباحية</a>
       <a class="lsa-btn lsa-btn--gold" href="{% url 'notifications:day_use_list' %}">الحجوزات النهارية</a>
