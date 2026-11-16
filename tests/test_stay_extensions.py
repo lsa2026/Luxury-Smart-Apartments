@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -57,6 +57,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def setup_extension(settings, monkeypatch):
+    settings.SITE_BASE_URL = "https://booking.example"
     settings.OPERATIONS_OWNER_ENFORCEMENT_ENABLED = True
     settings.OPERATIONS_OWNER_EMAIL = "synthetic-owner@example.invalid"
     settings.HOSTAWAY_LIVE_BOOKING_ENABLED = True
@@ -1087,7 +1088,7 @@ def test_extension_combined_message_preserves_delivery_reference_and_uncertain_o
         fake.send_image.side_effect = TimeoutError("synthetic provider uncertainty")
     else:
         fake.send_image.return_value = {"id": "synthetic-extension-message"}
-    transport = Mock()
+    transport = MagicMock()
     transport.return_value.__enter__.return_value = fake
     monkeypatch.setattr("apps.payments.payment_link_tasks.UltraMsgClient", transport)
     settings.ULTRAMSG_ENABLED = True
