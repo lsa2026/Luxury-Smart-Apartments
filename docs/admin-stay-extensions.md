@@ -53,10 +53,25 @@ environment payments do not activate live stay communications.
 
 ## Communication ownership
 
-The website retains payment links and financial receipts. n8n owns the dedicated
-activation confirmation and existing receipt-aware instructions, checkout and
-reviews. Generic child booking confirmation is suppressed. Linking creates no
-marketing consent, loyalty membership or extra invitation.
+The website owns one combined booking-confirmation/payment-link message for a
+verified child booking: additional dates, actual new checkout in the property's
+timezone, amount/currency, secure payment link and an explicit awaiting-payment
+status. The existing logo, AR/EN/FR language and durable delivery row are reused.
+The financial receipt is unchanged. Generic child confirmation stays suppressed.
+For extensions only, n8n sends no second activation confirmation or house/check-in
+instructions; it retains checkout and reviews under the existing paid-stay policy.
+Linking creates no marketing consent, loyalty membership or extra invitation.
+
+Delivery identity remains `(request_id, kind, sequence)` under
+`unique_payment_request_delivery`; default calls return the existing row, receipts
+are always single, and the provider reference remains `payment-request:{delivery.pk}`.
+Unknown/sending outcomes never authorize another automatic POST. A deployment
+does not replay old links or create delivery rows for historical extensions.
+The extension health response adds
+`extension_payment_message_contract=confirmed_booking_link_v1` without changing
+communication contract version1. Publish n8n's `extension_payment_only_v2` policy
+before this website message. Other booking, revised-payment, morning07/day-use08
+messages and financial activation rules are unchanged.
 
 The website advances the final checkout only through contiguous, verified paid
 members. An unpaid child leaves the existing checkout owner unchanged. A cancelled

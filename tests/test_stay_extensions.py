@@ -3,7 +3,7 @@
 import json
 import os
 from dataclasses import replace
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -691,6 +691,7 @@ def test_readiness_exposes_only_current_creation_switches_not_guest_data(setup_e
         "contract_version": 1,
         "build_ready": True,
         "creation_prerequisites_ready": True,
+        "extension_payment_message_contract": "confirmed_booking_link_v1",
     }
     settings.RESERVATION_PAYMENT_LINKS_ENABLED = False
     assert Client().get(url).json()["creation_prerequisites_ready"] is False
@@ -972,3 +973,182 @@ def test_render_extension_layout(setup_extension, monkeypatch, tmp_path, setting
     (output / "extension-contract-fixtures.json").write_text(
         json.dumps({"synthetic": True, "cases": snapshots}, ensure_ascii=False, indent=2)
     )
+
+
+@pytest.mark.parametrize(
+    ("language", "confirmation", "pending", "checkout"),
+    [
+        ("ar", "تم تأكيد إنشاء حجز تمديد إقامتك.", "بانتظار السداد", "موعد الخروج الجديد"),
+        (
+            "en",
+            "Your stay-extension booking has been confirmed.",
+            "Awaiting payment",
+            "New checkout",
+        ),
+        (
+            "fr",
+            "La réservation de votre prolongation est confirmée.",
+            "en attente de règlement",
+            "Nouveau départ",
+        ),
+    ],
+)
+def test_extension_booking_confirmation_is_part_of_one_unpaid_link(
+    setup_extension, monkeypatch, language, confirmation, pending, checkout
+):
+    from django.utils import translation
+
+    from apps.core.templatetags.presentation import localized_date
+    from apps.payments.payment_link_tasks import payment_message, queue_delivery
+    from apps.payments.payment_links import issue_request, public_url
+
+    case = setup_extension
+    case.guest_language_override = language
+    result, provider, _ = create_child(case, monkeypatch)
+    assert result.code == "created"
+    reservation = case.extension.reservation
+    request = issue_request(reservation.pk)
+    first = queue_delivery(request.pk)
+    assert queue_delivery(issue_request(reservation.pk).pk).pk == first.pk
+    assert request.deliveries.count() == 1 and first.sequence == 1
+    body = payment_message(request)
+    assert body.startswith("✨ *Luxury Smart Apartments*\n\n")
+    assert confirmation in body and pending in body and checkout in body
+    assert "12:00" in body and "Asia/Riyadh" in body
+    assert body.count(public_url(request)) == 1
+    assert "✅" not in body
+    with translation.override(language):
+        assert localized_date(reservation.check_in) in body
+        assert localized_date(reservation.check_out) in body
+        assert localized_date(date.fromisoformat(case.raw["arrivalDate"])) not in body
+    assert body in payment_message(request, owner_review=True)
+    if output_dir := os.environ.get("LSA_CONTACT_VISUAL_DIR"):
+        output = Path(output_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        (output / f"extension-payment-message-{language}.txt").write_text(
+            body.replace(public_url(request), "https://example.invalid/pay/extension"),
+            encoding="utf-8",
+        )
+    case.extension.refresh_from_db()
+    reservation.refresh_from_db()
+    assert case.extension.state == "created_unpaid"
+    assert reservation.payment_status != "paid"
+    assert len(provider.posts) == 1
+    assert request.deliveries.filter(kind="receipt").count() == 0
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_extension_paid_receipt_keeps_existing_copy_and_single_delivery(
+    setup_extension, monkeypatch, language
+):
+    from apps.payments.payment_link_tasks import payment_message, queue_delivery
+    from apps.payments.payment_links import issue_request, public_url
+
+    case = setup_extension
+    case.guest_language_override = language
+    create_child(case, monkeypatch)
+    request = issue_request(case.extension.reservation_id)
+    with pytest.raises(ValueError, match="receipt_requires_paid_request"):
+        queue_delivery(request.pk, kind="receipt")
+    pay(case)
+    request.status = "paid"
+    request.save(update_fields=["status"])
+    # Receipts use the existing path even when a linked reservation is present.
+    monkeypatch.setattr(
+        "apps.payments.payment_link_tasks._extension_link_blocks",
+        Mock(side_effect=AssertionError("receipt must not build another booking confirmation")),
+    )
+    body = payment_message(request, "receipt")
+    expected = {
+        "ar": "تم استلام دفعتك بنجاح. لا تدفع مرة أخرى.",
+        "en": "Payment received. Please do not pay again.",
+        "fr": "Paiement reçu. Ne payez pas à nouveau.",
+    }[language]
+    assert expected in body and "✅" in body
+    assert public_url(request) not in body and "🔗" not in body
+    first = queue_delivery(request.pk, kind="receipt")
+    assert queue_delivery(request.pk, kind="receipt", resend=True).pk == first.pk
+    assert request.deliveries.count() == 1
+
+
+@pytest.mark.parametrize("uncertain", [False, True])
+def test_extension_combined_message_preserves_delivery_reference_and_uncertain_outcome(
+    setup_extension, monkeypatch, settings, uncertain
+):
+    from apps.payments.payment_link_tasks import deliver_payment_request_task, queue_delivery
+    from apps.payments.payment_links import issue_request
+
+    case = setup_extension
+    create_child(case, monkeypatch)
+    request = issue_request(case.extension.reservation_id)
+    first = queue_delivery(request.pk)
+    fake = Mock()
+    if uncertain:
+        fake.send_image.side_effect = TimeoutError("synthetic provider uncertainty")
+    else:
+        fake.send_image.return_value = {"id": "synthetic-extension-message"}
+    transport = Mock()
+    transport.return_value.__enter__.return_value = fake
+    monkeypatch.setattr("apps.payments.payment_link_tasks.UltraMsgClient", transport)
+    settings.ULTRAMSG_ENABLED = True
+    expected = "unknown" if uncertain else "sent"
+    assert deliver_payment_request_task.run(first.pk)["status"] == expected
+    assert deliver_payment_request_task.run(first.pk)["status"] == expected
+    assert queue_delivery(request.pk).pk == first.pk
+    fake.send_image.assert_called_once()
+    assert fake.send_image.call_args.kwargs["reference_id"] == f"payment-request:{first.pk}"
+    assert "بانتظار السداد" in fake.send_image.call_args.kwargs["caption"]
+    first.refresh_from_db()
+    assert first.status == expected
+    assert first.provider_message_id == ("" if uncertain else "synthetic-extension-message")
+    assert request.deliveries.count() == 1
+    case.extension.refresh_from_db()
+    assert case.extension.state == "created_unpaid"
+
+
+def test_extension_link_displays_actual_midnight_checkout_and_separate_payment_currency(
+    setup_extension, monkeypatch
+):
+    from django.utils import translation
+
+    from apps.core.templatetags.presentation import localized_date, localized_money_text
+    from apps.payments.payment_link_tasks import payment_message
+    from apps.payments.payment_links import issue_request
+
+    case = setup_extension
+    case.guest_language_override = "en"
+    create_child(case, monkeypatch)
+    request = issue_request(case.extension.reservation_id)
+    # Synthetic formatting fixture; no gateway or currency quote is requested.
+    case.property.display_check_out_hour = 24
+    case.property.save(update_fields=["display_check_out_hour"])
+    reservation = request.reservation
+    reservation.refresh_from_db()
+    reservation.currency = "MAD"
+    reservation.save(update_fields=["currency"])
+    case.extension.draft.currency = "MAD"
+    case.extension.draft.save(update_fields=["currency"])
+    request.source_currency, request.amount_sar = "MAD", Decimal("200.10")
+    body = payment_message(request)
+    with translation.override("en"):
+        actual_departure = localized_date(reservation.check_out + timedelta(days=1))
+        assert f"*New checkout:* {actual_departure} — 00:00" in body
+        assert localized_money_text(request.amount_sar, "SAR", language="en") in body
+        assert localized_money_text(request.source_amount, "MAD", language="en") in body
+    assert "Extension total in booking currency" in body
+    assert "Payment status: Awaiting payment." in body
+
+
+def test_extension_message_cannot_claim_confirmation_without_verified_child(
+    setup_extension, monkeypatch
+):
+    from apps.payments.payment_link_tasks import payment_message
+    from apps.payments.payment_links import issue_request
+
+    case = setup_extension
+    create_child(case, monkeypatch)
+    request = issue_request(case.extension.reservation_id)
+    case.extension.ownership_acknowledged = False
+    case.extension.save(update_fields=["ownership_acknowledged"])
+    with pytest.raises(ValueError, match="extension_booking_unverified"):
+        payment_message(request)

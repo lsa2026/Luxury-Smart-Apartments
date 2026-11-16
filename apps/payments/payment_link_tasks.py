@@ -1,5 +1,7 @@
 """Durable guest delivery and gateway recovery on the existing worker."""
 
+import re
+
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
@@ -12,6 +14,7 @@ from apps.notifications.whatsapp_style import BRAND
 from .models import PaymentRequestDelivery, ReservationPaymentRequest
 
 PAYMENT_MESSAGE_BRAND = BRAND
+EXTENSION_PAYMENT_MESSAGE_CONTRACT = "confirmed_booking_link_v1"
 
 
 def queue_delivery(request_id, *, kind="link", resend=False):
@@ -46,6 +49,82 @@ def _dispatch(delivery_id):
     except Exception:
         # A queued database row can be recovered; never send synchronously as fallback.
         pass
+
+
+def _extension_link_blocks(request, language, dates, amount):
+    """Describe a verified child booking without claiming collection or paid activation."""
+    from apps.core.templatetags.presentation import (
+        localized_date,
+        localized_money_text,
+        localized_property_name,
+    )
+    from apps.reservations.models import StayExtension
+    from apps.reservations.stay_extensions import _checkout, booking_verified
+
+    extension = (
+        StayExtension.objects.select_related("draft", "chain__property")
+        .filter(reservation_id=request.reservation_id)
+        .first()
+    )
+    if extension is None:
+        return None
+    extension.reservation = request.reservation
+    if not booking_verified(extension):
+        raise ValueError("extension_booking_unverified")
+    labels = {
+        "ar": (
+            "تم تأكيد إنشاء حجز تمديد إقامتك.",
+            "الشقة",
+            "الفترة الإضافية",
+            "موعد الخروج الجديد",
+            "المبلغ المطلوب سداده",
+            "حالة السداد: بانتظار السداد.",
+            "توقيت الشقة",
+            "قيمة التمديد بعملة الحجز",
+        ),
+        "en": (
+            "Your stay-extension booking has been confirmed.",
+            "Apartment",
+            "Additional stay",
+            "New checkout",
+            "Amount due",
+            "Payment status: Awaiting payment.",
+            "Property timezone",
+            "Extension total in booking currency",
+        ),
+        "fr": (
+            "La réservation de votre prolongation est confirmée.",
+            "Appartement",
+            "Période supplémentaire",
+            "Nouveau départ",
+            "Montant à régler",
+            "Paiement : en attente de règlement.",
+            "Fuseau horaire du logement",
+            "Total de la prolongation dans la devise de réservation",
+        ),
+    }[language]
+    confirmation, unit, period, checkout, total, pending, zone_label, source_total = labels
+    checkout_at, zone_name = _checkout(request.reservation.property, request.reservation.check_out)
+    with translation.override(language):
+        name = re.sub(r"[\r\n*_~`]", " ", localized_property_name(request.reservation.property))
+        blocks = [
+            f"📌 {confirmation}",
+            f"🏠 *{unit}:* {name}",
+            f"📅 *{period}:* {dates}",
+            f"🚪 *{checkout}:* {localized_date(checkout_at.date())} — {checkout_at:%H:%M}\n"
+            f"{zone_label}: {zone_name}",
+            f"💳 *{total}:* {amount}",
+            pending,
+        ]
+        if request.source_currency != "SAR":
+            blocks.insert(
+                4,
+                f"*{source_total}:* "
+                + localized_money_text(
+                    request.source_amount, request.source_currency, language=language
+                ),
+            )
+    return blocks
 
 
 def payment_message(request, kind="link", *, owner_review=False):
@@ -115,12 +194,20 @@ def payment_message(request, kind="link", *, owner_review=False):
         amount = localized_money_text(request.amount_sar, "SAR", language=language)
         if language == "ar":
             amount = localized_money_text(request.amount_sar, "", language=language) + " ريال سعودي"
-    blocks = [
-        f"✨ *{brand}*",
-        greeting,
-        intro if kind == "link" else f"✅ {receipt}",
-        f"📅 *{stay}:* {dates}\n💳 *{total}:* {amount}",
-    ]
+    extension_blocks = (
+        _extension_link_blocks(request, language, dates, amount)
+        if kind == "link" and not revised
+        else None
+    )
+    blocks = [f"✨ *{brand}*", greeting]
+    blocks.extend(
+        extension_blocks
+        if extension_blocks is not None
+        else [
+            intro if kind == "link" else f"✅ {receipt}",
+            f"📅 *{stay}:* {dates}\n💳 *{total}:* {amount}",
+        ]
+    )
     if revised:
         snapshot = request.settlement_snapshot
         labels = {
