@@ -53,6 +53,11 @@ def _dispatch(delivery_id):
 
 def _extension_link_blocks(request, language, dates, amount):
     """Describe a verified child booking without claiming collection or paid activation."""
+    reservation_id = getattr(request, "reservation_id", None)
+    if reservation_id is None:
+        # The existing message catalogue renders synthetic previews without a DB read.
+        return None
+
     from apps.core.templatetags.presentation import (
         localized_date,
         localized_money_text,
@@ -63,7 +68,7 @@ def _extension_link_blocks(request, language, dates, amount):
 
     extension = (
         StayExtension.objects.select_related("draft", "chain__property")
-        .filter(reservation_id=request.reservation_id)
+        .filter(reservation_id=reservation_id)
         .first()
     )
     if extension is None:
