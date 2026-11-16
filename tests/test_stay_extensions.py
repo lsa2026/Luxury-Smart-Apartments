@@ -1026,8 +1026,18 @@ def test_extension_booking_confirmation_is_part_of_one_unpaid_link(
     if output_dir := os.environ.get("LSA_CONTACT_VISUAL_DIR"):
         output = Path(output_dir)
         output.mkdir(parents=True, exist_ok=True)
-        (output / f"extension-payment-message-{language}.txt").write_text(
-            body.replace(public_url(request), "https://example.invalid/pay/extension"),
+        (output / f"extension-payment-message-{language}-fixtures.json").write_text(
+            json.dumps(
+                {
+                    "synthetic": True,
+                    "language": language,
+                    "body": body.replace(
+                        public_url(request), "https://example.invalid/pay/extension"
+                    ),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
             encoding="utf-8",
         )
     case.extension.refresh_from_db()
