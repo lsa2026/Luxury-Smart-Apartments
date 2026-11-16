@@ -279,6 +279,8 @@ def read_context(request, extension_id):
 @never_cache
 def health(request):
     # Public readiness metadata contains no guest or private operational data.
+    from apps.payments.payment_link_tasks import EXTENSION_PAYMENT_MESSAGE_CONTRACT
+
     ready = bool(
         settings.HOSTAWAY_LIVE_BOOKING_ENABLED
         and settings.HOSTAWAY_DIRECT_CHANNEL_ID
@@ -292,6 +294,7 @@ def health(request):
             "contract_version": 1,
             "build_ready": True,
             "creation_prerequisites_ready": ready,
+            "extension_payment_message_contract": EXTENSION_PAYMENT_MESSAGE_CONTRACT,
         }
     )
 
