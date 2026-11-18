@@ -278,6 +278,7 @@ class AvailabilitySearchView(View):
         measurement = prepurchase.attempt_context(request, form)
         available_results: list[dict[str, object]] = []
         checked_count, error_count = 0, 0
+        error_categories = set()
         with self.service_class() as service:
             for candidate in properties:
                 checked_count += 1
@@ -294,6 +295,7 @@ class AvailabilitySearchView(View):
                 )
                 if prepurchase.technical_failure(availability):
                     error_count += 1
+                    error_categories.add(prepurchase.failure_category(availability))
                 if availability.is_available and availability.quote is not None:
                     available_results.append(
                         {
@@ -324,7 +326,11 @@ class AvailabilitySearchView(View):
             count=len(available_results),
             checked=checked_count,
             errors=error_count,
-            category="provider" if error_count else "none",
+            category=next(iter(error_categories))
+            if len(error_categories) == 1
+            else "provider"
+            if error_count
+            else "none",
         )
         prepurchase.remember_portfolio(request, form, measurement)
         city_label = dict(supported_city_choices(language)).get(city, city) if city else ""
@@ -458,7 +464,9 @@ class AvailabilitySearchView(View):
                     count=0,
                     checked=1,
                     errors=int(technical_error),
-                    category="provider" if technical_error else "none",
+                    category=prepurchase.failure_category(creation.availability)
+                    if technical_error
+                    else "none",
                 ),
                 "property": property_obj,
             },

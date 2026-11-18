@@ -93,6 +93,16 @@ def test_denied_consent_does_not_store_bridge_or_accept_client_identity():
     assert r.session == {}
 
 
+def test_get_never_reads_correlation_or_origin_from_url():
+    r = request()
+    r.method = "GET"
+    r.GET = r.POST
+    context = prepurchase.attempt_context(r)
+    assert context["attempt_id"] != ATTEMPT
+    assert "parent_attempt_id" not in context
+    assert context["entry_page"] == "unknown" and context["journey_entry"] == "unknown"
+
+
 def test_quote_bridge_is_bounded_and_old_quote_is_unlinked():
     r = request()
     for i in range(25):

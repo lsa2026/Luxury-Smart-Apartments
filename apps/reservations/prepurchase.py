@@ -65,6 +65,15 @@ def technical_failure(result):
     return result.reason_code in TECHNICAL_REASONS or (result.is_available and result.quote is None)
 
 
+def failure_category(result):
+    return (
+        "pricing"
+        if result.reason_code == "pricing_unavailable"
+        or (result.is_available and result.quote is None)
+        else "provider"
+    )
+
+
 def _consented(request):
     from apps.core.context_processors import _consent_from_cookie
 
@@ -85,7 +94,7 @@ def attempt_context(request, form=None):
     data = getattr(form, "cleaned_data", {}) or {}
     source = request.POST if request.method == "POST" else request.GET
     kind = "property_quote" if source.get("property") else "portfolio"
-    entry = source.get("measurement_entry", "unknown")
+    entry = source.get("measurement_entry", "unknown") if request.method == "POST" else "unknown"
     context = {
         "measurement_version": VERSION,
         "attempt_id": uuid4().hex,
@@ -94,13 +103,17 @@ def attempt_context(request, form=None):
         "page_kind": "availability_results",
         "stay_kind": "overnight",
     }
-    token = source.get("measurement_attempt", "")
+    token = source.get("measurement_attempt", "") if request.method == "POST" else ""
     if _consented(request) and re.fullmatch(r"[a-f0-9]{32}", token):
         context["attempt_id"] = token
-    parent = source.get("measurement_parent", "")
+    parent = source.get("measurement_parent", "") if request.method == "POST" else ""
     if _consented(request) and re.fullmatch(r"[a-f0-9]{32}", parent):
         context["parent_attempt_id"] = parent
-    journey = source.get("measurement_journey", context["entry_page"])
+    journey = (
+        source.get("measurement_journey", context["entry_page"])
+        if request.method == "POST"
+        else "unknown"
+    )
     context["journey_entry"] = journey if journey in PAGES else "unknown"
     context["city"] = city_code(data.get("city"))
     if data.get("check_in") and data.get("check_out"):
