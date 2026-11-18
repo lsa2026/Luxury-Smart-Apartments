@@ -36,13 +36,13 @@
     </header>
 
     {% if availability_results %}
-    <div data-pp-result>
-    <div class="availability-results__count" role="status">
+    <div>
+    <div class="availability-results__count" role="status"{% if prepurchase_result.result_status != "partial_error" %} data-pp-result{% endif %}>
         <span aria-hidden="true">◆</span>
         {% blocktrans count counter=availability_results|length|localized_count %}We found {{ counter }} available property{% plural %}We found {{ counter }} available properties{% endblocktrans %}
     </div>
     {% if prepurchase_result.result_status == "partial_error" %}
-    <p role="status">{% if pp_language == "ar" %}تعذر التحقق من بعض الشقق. قد تكون النتائج غير مكتملة.{% elif pp_language == "fr" %}Certaines vérifications ont échoué. Les résultats peuvent être incomplets.{% else %}Some properties could not be verified. Results may be incomplete.{% endif %}</p>
+    <p role="status" data-pp-result>{% if pp_language == "ar" %}تعذر التحقق من بعض الشقق. قد تكون النتائج غير مكتملة.{% elif pp_language == "fr" %}Certaines vérifications ont échoué. Les résultats peuvent être incomplets.{% else %}Some properties could not be verified. Results may be incomplete.{% endif %}</p>
     {% endif %}
     </div>
     <div class="property-grid availability-results__grid" data-analytics-list="available_properties">

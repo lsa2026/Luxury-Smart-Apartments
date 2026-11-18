@@ -3,6 +3,7 @@
 import json
 from dataclasses import replace
 from decimal import Decimal
+from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import quote as encode_cookie
 
@@ -289,3 +290,8 @@ def test_parameter_budget_and_independent_status_contract():
         },
     )
     assert payload["result_status"] != payload["display_status"]
+    contract = json.loads(
+        (Path(__file__).parents[1] / "docs/prepurchase-measurement-contract.json").read_text()
+    )
+    for event in contract["events"]:
+        assert EVENT_SCHEMAS[event["name"]] == set(event["parameters"])

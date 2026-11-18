@@ -131,7 +131,17 @@
         form.addEventListener("submit", event => {
             // Run after ALL validation/submit-once listeners, before native navigation.
             window.queueMicrotask(() => {
-                if (event.defaultPrevented || !form.checkValidity() || !allowed()) return;
+                if (event.defaultPrevented || !form.checkValidity()) return;
+                if (!allowed()) {
+                    for (const name of ["measurement_attempt", "measurement_parent", "measurement_journey"]) write(form, name, "");
+                    return;
+                }
+                const arrival = field(form, "check_in")?.value;
+                const departure = field(form, "check_out")?.value;
+                const nights = (Date.parse(departure) - Date.parse(arrival)) / 86400000;
+                const guests = Number(field(form, "guests")?.value);
+                if (!Number.isInteger(nights) || nights < 1 || nights > 3660
+                    || !Number.isInteger(guests) || guests < 1 || guests > 100) return;
                 const attempt = uuid();
                 if (!attempt) return; // Do not use a persistent/user identity as fallback.
                 const requestKind = field(form, "property")?.value ? "property_quote" : "portfolio";
@@ -140,12 +150,8 @@
                     entry_page: page, journey_entry: parent.journey_entry || parent.entry_page || page};
                 delete payload.parent_attempt_id;
                 if (parent.attempt_id) payload.parent_attempt_id = parent.attempt_id;
-                const arrival = field(form, "check_in")?.value;
-                const departure = field(form, "check_out")?.value;
-                const nights = (Date.parse(departure) - Date.parse(arrival)) / 86400000;
-                const guests = Number(field(form, "guests")?.value);
-                if (Number.isInteger(nights) && nights > 0 && nights <= 3660) payload.nights = nights;
-                if (Number.isInteger(guests) && guests > 0 && guests <= 100) payload.guests = guests;
+                payload.nights = nights;
+                payload.guests = guests;
                 payload.city = city(field(form, "city")?.value);
                 write(form, "measurement_attempt", attempt);
                 write(form, "measurement_entry", page);

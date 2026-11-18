@@ -202,6 +202,7 @@ jobs:
         run: |
           pytest tests/test_property_deep_links.py -q
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-property-deep-links.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-prepurchase-visibility.cjs
 
       - name: Run tests
         run: pytest
@@ -214,6 +215,7 @@ jobs:
           path: |
             ${{ runner.temp }}/lsa-contact-layout/*.png
             ${{ runner.temp }}/lsa-contact-layout/extension-*-fixtures.json
+            ${{ runner.temp }}/lsa-contact-layout/prepurchase-browser-results.json
           retention-days: 3
 
       - name: Test the lazy price calendar interactions

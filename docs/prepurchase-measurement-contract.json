@@ -1,0 +1,294 @@
+{
+  "reference": "LSA-PRE-PURCHASE-INSTRUMENTATION-20261118",
+  "version": "pp1",
+  "status": "candidate_for_06_GTM_and_05_GA4_review_not_deployed",
+  "owners": {
+    "01": "website implementation and this contract",
+    "06": "GTM mapping and reviewed publication",
+    "05": "GA4 receiving/custom dimensions and reviewed publication",
+    "03": "campaign/report interpretation; purchase goal preserved"
+  },
+  "authority": "AUTHORITY.md; direct owner message verified in03 turn01a1ef0f-4f7a-7811-8d84-155e657817f6",
+  "commonParameters": {
+    "measurement_version": {
+      "type": "enum",
+      "values": [
+        "pp1"
+      ]
+    },
+    "attempt_id": {
+      "type": "optional32hex",
+      "meaning": "Random per accepted user action, unrelated to guest/session/booking identity. Correlation only, never register as a high-cardinality GA4 custom dimension."
+    },
+    "request_kind": {
+      "type": "enum",
+      "values": [
+        "portfolio",
+        "property_quote",
+        "browse"
+      ]
+    },
+    "entry_page": {
+      "type": "enum",
+      "values": [
+        "home",
+        "property_list",
+        "property_detail",
+        "availability_results",
+        "quote",
+        "unknown"
+      ],
+      "meaning": "Page where this action originated; independent of request_kind and may be home for a specific-property request."
+    },
+    "page_kind": {
+      "type": "enum",
+      "values": [
+        "home",
+        "property_list",
+        "property_detail",
+        "availability_results",
+        "quote",
+        "unknown"
+      ],
+      "meaning": "Current safe logical screen, not a signed URL. Keep existing URL privacy redaction."
+    },
+    "stay_kind": {
+      "type": "enum",
+      "values": [
+        "overnight"
+      ],
+      "meaning": "Only the public overnight journey is instrumented here; do not infer day-use/morning or expand admin tracking."
+    },
+    "page_language": {
+      "type": "languageCode"
+    },
+    "property_id": {
+      "type": "optionalPublicSlug",
+      "meaning": "Existing public apartment slug only, never internal property/Hostaway/booking identifiers."
+    },
+    "property_name": {
+      "type": "optionalPublicListingName"
+    },
+    "parent_attempt_id": {
+      "type": "optional32hex",
+      "meaning": "Random parent portfolio attempt when a new property_quote action follows result selection; never a GA4 custom dimension."
+    },
+    "journey_entry": {
+      "type": "enum",
+      "values": [
+        "home",
+        "property_list",
+        "property_detail",
+        "availability_results",
+        "quote",
+        "unknown"
+      ],
+      "meaning": "First known page of the correlated journey; separate from entry_page of current action and page_kind of current screen."
+    }
+  },
+  "events": [
+    {
+      "name": "availability_view",
+      "meaning": "Search UI became visible",
+      "trigger": "Search form50% visible for1000continuous milliseconds in a visible document, after analytics consent.",
+      "parameters": [
+        "measurement_version",
+        "request_kind",
+        "entry_page",
+        "page_kind",
+        "stay_kind",
+        "page_language",
+        "property_id",
+        "property_name",
+        "parent_attempt_id",
+        "journey_entry",
+        "attempt_id"
+      ],
+      "dedup": "Once per tab, screen/property and30minute window; refresh/back within window does not repeat."
+    },
+    {
+      "name": "availability_request",
+      "meaning": "User submission accepted by client validation; not server success",
+      "trigger": "At end of submit dispatch, only when not defaultPrevented and native/custom validation allows it. Create correlation before native navigation. Rejected/duplicate submissions emit nothing.",
+      "parameters": [
+        "measurement_version",
+        "attempt_id",
+        "request_kind",
+        "entry_page",
+        "page_kind",
+        "stay_kind",
+        "page_language",
+        "property_id",
+        "property_name",
+        "city",
+        "nights",
+        "guests",
+        "parent_attempt_id",
+        "journey_entry"
+      ],
+      "dedup": "One per accepted click. Explicit retry after completed failure creates a new random attempt; automatic POST refresh keeps the posted token and does not fabricate another client request."
+    },
+    {
+      "name": "availability_result_view",
+      "meaning": "Server-classified result became visible, including quote-success redirect",
+      "trigger": "Server renders classification; result summary50% visible for1000continuous milliseconds with consent. Success that redirects to quote detail retains the original attempt context.",
+      "parameters": [
+        "measurement_version",
+        "attempt_id",
+        "request_kind",
+        "entry_page",
+        "page_kind",
+        "stay_kind",
+        "page_language",
+        "property_id",
+        "property_name",
+        "city",
+        "nights",
+        "guests",
+        "result_status",
+        "result_count",
+        "checked_count",
+        "error_count",
+        "error_category",
+        "parent_attempt_id",
+        "journey_entry",
+        "display_status"
+      ],
+      "dedup": "Once per attempt/status in the tab; refresh/back/currency reload of the same result does not repeat."
+    },
+    {
+      "name": "price_view",
+      "meaning": "A valid positive displayed price became visible, not merely a document or API load",
+      "trigger": "Actual priced DOM element50% visible for1000continuous milliseconds in visible document; valid current quote or ready price component; consent required.",
+      "parameters": [
+        "measurement_version",
+        "attempt_id",
+        "request_kind",
+        "entry_page",
+        "page_kind",
+        "stay_kind",
+        "page_language",
+        "property_id",
+        "property_name",
+        "price_context",
+        "currency",
+        "value",
+        "source_currency",
+        "source_value",
+        "parent_attempt_id",
+        "journey_entry"
+      ],
+      "dedup": "Once per attempt or non-exported surface key, property, context and actual display currency/value within30minutes. Calendar uses one first actually-visible positive nightly-price cell per property/month-grid/currency; changing month-grid may count another visible surface, never a stay quote. Dates/group keys are not exported."
+    }
+  ],
+  "result_status": {
+    "available": "All checks completed, at least one available property with verified price; specific quote successfully created or current valid result.",
+    "unavailable": "Specific property definitively unavailable for submitted criteria; no provider error.",
+    "no_results": "Portfolio completed without technical errors and no available priced results, including no eligible candidates.",
+    "partial_error": "Portfolio has at least one successful available result and at least one technical check failure.",
+    "upstream_error": "No available priced results and at least one provider/calendar/pricing verification failure; never label this no_results.",
+    "invalid_request": "Server form validation failed; no availability call.",
+    "rate_limited": "Server refused request due to rate limiting.",
+    "quote_error": "A secure quote could not be prepared after checking; do not label unavailable."
+  },
+  "enums": {
+    "city": [
+      "riyadh",
+      "marrakech",
+      "all",
+      "other"
+    ],
+    "price_context": [
+      "indicative_nightly",
+      "calendar_nightly",
+      "search_total",
+      "quote_total"
+    ],
+    "error_category": [
+      "none",
+      "validation",
+      "rate_limit",
+      "provider",
+      "pricing",
+      "internal"
+    ],
+    "display_status": [
+      "available",
+      "unavailable",
+      "no_results",
+      "partial_results",
+      "verification_error",
+      "invalid_request",
+      "rate_limited",
+      "quote_error"
+    ]
+  },
+  "numericRules": {
+    "nights": "positive integer only, no dates exported",
+    "guests": "positive integer only",
+    "counts": "nonnegative integers from server; missing is omitted, not invented0",
+    "price": "currency/value are the positive finite amount and actual currency rendered. source_currency/source_value separately preserve authority; no amount is invented or summed across currencies."
+  },
+  "sourceOfTruth": {
+    "request": "client accepted submit only",
+    "outcomeAndCounts": "server availability result and actual error classification",
+    "serverCreation": "BookingQuote commit remains a separate backend fact; no new server-to-Google sender or server event in this release",
+    "price": "single structured money-presentation helper feeds both visible text and measurement attributes, including explicit source-currency fallback",
+    "visibility": "IntersectionObserver plus document visibility, uninterrupted1000ms dwell; no visibility support means no price/view event, never unconditional fallback"
+  },
+  "correlationAndPrivacy": {
+    "rawGuestBookingQuoteHostawaySessionIdsDatesSignedUrlsForbidden": true,
+    "serverRedirectBridge": "Only safe attempt metadata in the existing owned session, bounded20entries/30minutes and only when analytics consent is valid; no new cookies or URL tokens. No booking authorization derives from measurement fields.",
+    "unlinkedOldQuote": "Valid owned old quote can count a visible price with unknown origin and no fabricated result/request. Use a non-exported opaque DOM surface key for local dedup, never export raw reference.",
+    "browserStorage": "Consent-gated sessionStorage only, bounded and expiring; no cookies/localStorage; withdrawal clears measurement keys and pauses pending observations.",
+    "lateConsent": "Re-arm current visible surfaces without replaying historical requests. Never queue a denied submit for later export. Existing purchase behavior remains unchanged."
+  },
+  "transition": {
+    "legacyEventsPreserved": [
+      "check_availability",
+      "availability_result",
+      "quote_created",
+      "quote_expired",
+      "view_item_list",
+      "select_item",
+      "view_item"
+    ],
+    "legacyWarning": "These keep their historical meanings for continuity; never add them to new events or treat quote_created as backend creation. New trusted funnel uses pp1 only. Existing ecommerce is not changed.",
+    "receiving": "06 maps only these four new custom events;05 reviews bounded enum dimensions. No attempt_id custom-dimension registration, no new Primary/key event/purchase conversion and no audience/Ads bidding changes.",
+    "rollout": "01 candidate implementation plus unit/DOM tests;06/05 explicit contract reviews in local folders; resolve findings; exact-head CI; coordinated compatible publication only after applicable authority and readiness are evidenced.",
+    "rollback": "Revert the isolated website commit and disable only the four new GTM event mappings/new GA4 definitions as appropriate, preserving consent, purchase, legacy events and booking/payment state."
+  },
+  "reviewStatus": {
+    "06_GTM": "pending",
+    "05_GA4": "pending",
+    "01_tests": "in_progress"
+  },
+  "productionChanges": false,
+  "newServerSenderOrService": false,
+  "internalVersusDisplayed": "result_status classifies server evaluation; display_status independently labels the actual visible result message. upstream_error maps to verification_error, partial_error to partial_results, and definitive unavailable/no_results remain distinct. Marker must wrap the visible message, not a generic page heading.",
+  "optionalResetRule": "Every event push resets all pp1 fields (including parent/journey/status/property/value/currency) to null before merging its own sanitized values. Missing optional values remain null in dataLayer, destination tag omits them. Do not infer a missing field from prior model state.",
+  "correlationGraph": "New property_quote action has a new random attempt_id and optional parent_attempt_id from the portfolio result. journey_entry retains first known journey page; entry_page is the current action origin; page_kind is current screen. Same-tab result-card navigation transfers only consent-gated safe context. Direct property and old owned quote remain unlinked if no verified parent.",
+  "numericParameterBudget": [
+    {
+      "event": "availability_view",
+      "allowedCustomParameters": 11,
+      "maximum": 25
+    },
+    {
+      "event": "availability_request",
+      "allowedCustomParameters": 14,
+      "maximum": 25
+    },
+    {
+      "event": "availability_result_view",
+      "allowedCustomParameters": 20,
+      "maximum": 25
+    },
+    {
+      "event": "price_view",
+      "allowedCustomParameters": 16,
+      "maximum": 25
+    }
+  ],
+  "sourceDedupNotNetworkExactlyOnce": true
+}

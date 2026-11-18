@@ -75,6 +75,7 @@ function run({forms = [], prices = [], results = [], context = {}, consent = tru
         advance(ms) { now += ms; for (const [key, timer] of [...timers]) if (timer.at <= now) { timers.delete(key); timer.fn(); } },
         submit(target, event) { const e = target.fire('submit', event); while (microtasks.length) microtasks.shift()(); return e; },
         dispatch(name, detail = {}) { for (const fn of documentHandlers.get(name) || []) fn({detail}); },
+        click(target) { for (const fn of documentHandlers.get('click') || []) fn({target}); },
         consent(value) { choice = value; api.dispatch('lsa:consent-updated', {analytics: value, marketing: false, version: 'test'}); },
         visibility(state) { document.visibilityState = state; api.dispatch('visibilitychange'); },
         pageHide() { windowHandlers.get('pagehide')?.(); }, pageShow() { windowHandlers.get('pageshow')?.(); },
@@ -157,6 +158,23 @@ test('all validation/default prevention completes before request; denied submit 
     denied.submit(f2); denied.consent(true);
     assert.equal(denied.events('availability_request').length, 0);
 });
+test('invalid cross-field dates are not accepted requests even when native controls are individually valid', () => {
+    const f = form(); f.elements.namedItem('check_out').value = '2030-01-09';
+    const r = run({forms: [f], page: 'home'}); r.submit(f);
+    assert.equal(r.events('availability_request').length, 0);
+});
+test('same-tab result-card navigation transfers parent to a later property-detail request', () => {
+    const store = new Map(), parent = run({store, page: 'availability_results', context: {
+        attempt_id: id, request_kind: 'portfolio', entry_page: 'home', journey_entry: 'home',
+    }});
+    const link = element({ppPropertyId: 'synthetic-apartment'});
+    parent.click(link);
+    const f = form('internal'), detail = run({store, forms: [f], page: 'property_detail'});
+    detail.submit(f);
+    const event = detail.events('availability_request')[0];
+    assert.equal(event.parent_attempt_id, id);
+    assert.equal(event.entry_page, 'property_detail'); assert.equal(event.journey_entry, 'home');
+});
 test('actual submit-once guard rejects double click while a fresh accepted retry gets a new attempt', () => {
     const f = form(), r = run({forms: [f], page: 'home', guard: true});
     r.submit(f); r.submit(f);
@@ -222,3 +240,40 @@ test('new/legacy events reset stale custom data and typed pp1 rejects unsafe inp
     assert.equal(r.events('phone_click')[0].result_status, null);
     assert.equal(r.events('purchase').length, 0);
 });
+
+test('website schemas match every exact reviewed contract parameter and budget', () => {
+    const contract = JSON.parse(fs.readFileSync('docs/prepurchase-measurement-contract.json', 'utf8'));
+    const values = {measurement_version: 'pp1', attempt_id: id, parent_attempt_id: 'b'.repeat(32),
+        request_kind: 'property_quote', entry_page: 'home', journey_entry: 'home', page_kind: 'quote',
+        stay_kind: 'overnight', property_id: 'synthetic-apartment', property_name: 'Synthetic Apartment',
+        page_language: 'en', city: 'riyadh', nights: 2, guests: 2, result_status: 'available', display_status: 'available',
+        result_count: 1, checked_count: 1, error_count: 0, error_category: 'none', price_context: 'quote_total',
+        currency: 'EUR', value: 100, source_currency: 'SAR', source_value: 500};
+    const r = run();
+    for (const event of contract.events) {
+        assert.ok(event.parameters.length <= 25);
+        const input = Object.fromEntries(event.parameters.map(key => [key, values[key]]));
+        const sanitized = r.window.LSAAnalytics.sanitize(event.name, input);
+        assert.ok(sanitized);
+        assert.deepEqual(Object.keys(sanitized).sort(), [...event.parameters].sort());
+    }
+});
+
+if (process.env.LSA_PREPURCHASE_FIXTURES) {
+    const f = form(), start = run({forms: [f], page: 'home'}); start.submit(f);
+    const first = start.events('availability_request')[0];
+    const marker = element(), selected = form('internal');
+    const results = run({forms: [selected], results: [marker], page: 'availability_results', context: {
+        attempt_id: first.attempt_id, request_kind: 'portfolio', entry_page: 'home', journey_entry: 'home',
+        result_status: 'partial_error', display_status: 'partial_results', result_count: 1, checked_count: 2,
+        error_count: 1, error_category: 'provider',
+    }});
+    results.intersect(marker); results.advance(1000); results.submit(selected);
+    const second = results.events('availability_request')[0];
+    const p = price('100', 'EUR'); p.dataset.ppSourceCurrency = 'SAR'; p.dataset.ppSourceValue = '500';
+    const review = run({prices: [p], context: {attempt_id: second.attempt_id,
+        parent_attempt_id: first.attempt_id, request_kind: 'property_quote', entry_page: 'availability_results', journey_entry: 'home'}});
+    review.intersect(p); review.advance(1000);
+    fs.writeFileSync(process.env.LSA_PREPURCHASE_FIXTURES, JSON.stringify({synthetic: true, networkCalls: 0,
+        events: [first, results.events('availability_result_view')[0], second, review.events('price_view')[0]]}, null, 2));
+}
