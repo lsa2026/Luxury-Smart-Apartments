@@ -140,6 +140,17 @@ test('invalid/zero/nonfinite prices cannot emit', () => {
         assert.equal(r.events('price_view').length, 0);
     }
 });
+test('an offer expiring before dwell completes is not a valid price/result view and its deadline is never exported', () => {
+    const p = price(), marker = element();
+    p.dataset.ppValidUntil = marker.dataset.ppValidUntil = new Date(10500).toISOString();
+    const r = run({prices: [p], results: [marker], context: {
+        attempt_id: id, result_status: 'available', display_status: 'available',
+    }});
+    r.intersect(p); r.intersect(marker); r.advance(1000);
+    assert.equal(r.events('price_view').length, 0);
+    assert.equal(r.events('availability_result_view').length, 0);
+    assert.equal(JSON.stringify(r.window.dataLayer).includes('1970-'), false);
+});
 test('valid submission reads approved controls and ignores guest fields/dates in payload', () => {
     const f = form('private-internal-property-key'), r = run({forms: [f], page: 'home'});
     r.submit(f);

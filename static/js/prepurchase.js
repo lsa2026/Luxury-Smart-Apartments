@@ -64,6 +64,7 @@
 
     function price(element) {
         const data = element.dataset;
+        if (data.ppValidUntil && !(Date.parse(data.ppValidUntil) > Date.now())) return;
         const value = Number(data.ppValue);
         if (!Number.isFinite(value) || value <= 0 || !/^[A-Z]{3}$/.test(data.ppCurrency || "")) return;
         const payload = {...base(element), price_context: data.ppPriceContext, currency: data.ppCurrency, value};
@@ -77,6 +78,7 @@
             `${surface}:${payload.property_id || ""}:${payload.price_context}:${group}`);
     }
     function result(element) {
+        if (element.dataset.ppValidUntil && !(Date.parse(element.dataset.ppValidUntil) > Date.now())) return;
         if (!context.result_status || !context.display_status || !context.attempt_id) return;
         const payload = {...base(element)};
         for (const key of ["city", "nights", "guests", "result_status", "display_status", "result_count", "checked_count", "error_count", "error_category"]) {
