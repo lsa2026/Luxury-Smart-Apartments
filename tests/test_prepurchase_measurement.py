@@ -203,6 +203,15 @@ def test_specific_unavailable_vs_technical_error(service):
         assert result.context["prepurchase_result"]["request_kind"] == "property_quote"
 
 
+def test_available_flag_without_verified_price_never_shows_available(service):
+    DummyService.result = replace(available_result(service), quote=None)
+    response = Client().post("/reservations/quotes/", form_data(service), HTTP_ACCEPT_LANGUAGE="en")
+    assert response.context["prepurchase_result"]["result_status"] == "upstream_error"
+    assert response.context["prepurchase_result"]["display_status"] == "verification_error"
+    assert "The property is available" not in response.content.decode()
+    assert BookingQuote.objects.count() == 0
+
+
 def test_invalid_and_rate_limited_never_call_provider(service, monkeypatch):
     result = Client().post("/reservations/quotes/", {})
     assert result.status_code == 400
