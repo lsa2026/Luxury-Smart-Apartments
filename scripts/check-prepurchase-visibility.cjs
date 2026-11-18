@@ -27,7 +27,7 @@ const {chromium} = require('playwright');
         res.setHeader('Content-Type', 'text/html');
         res.end(`<!doctype html><html lang="${language}"><head><meta charset="utf-8">
           <style>body{margin:24px;font:20px sans-serif}p,strong{display:block;padding:15px}.spacer{height:1500px}</style>
-          <script>window.syntheticConsent=false;window.LSAConsent={parseConsent:()=>({analytics:window.syntheticConsent})};</script>
+          <script>window.dataLayer=[];window.syntheticConsent=false;window.LSAConsent={parseConsent:()=>({analytics:window.syntheticConsent})};</script>
           <script src="/analytics.js" defer></script><script src="/prepurchase.js" defer></script></head>
           <body data-google-integrations-enabled="true" data-prepurchase-page-kind="quote">
           <script type="application/json" id="lsa-prepurchase-context">${JSON.stringify(contexts)}</script>
