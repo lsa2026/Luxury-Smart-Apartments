@@ -44,6 +44,7 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_prepurchase_measurement.py
           tests/test_stay_extensions.py
           tests/test_day_use08.py
           tests/test_day_use_payments.py
@@ -201,6 +202,7 @@ jobs:
         run: |
           pytest tests/test_property_deep_links.py -q
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-property-deep-links.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-prepurchase-visibility.cjs
 
       - name: Run tests
         run: pytest
@@ -213,6 +215,7 @@ jobs:
           path: |
             ${{ runner.temp }}/lsa-contact-layout/*.png
             ${{ runner.temp }}/lsa-contact-layout/extension-*-fixtures.json
+            ${{ runner.temp }}/lsa-contact-layout/prepurchase-browser-results.json
           retention-days: 3
 
       - name: Test the lazy price calendar interactions
@@ -257,7 +260,7 @@ jobs:
         run: node --test tests/apple-pay-checkout.test.cjs
 
       - name: Test consented payment journey and gateway callback isolation
-        run: node --test tests/payment-journey.test.cjs tests/analytics-ecommerce.test.cjs tests/measurement-privacy.test.cjs
+        run: node --test tests/payment-journey.test.cjs tests/analytics-ecommerce.test.cjs tests/measurement-privacy.test.cjs tests/prepurchase.test.cjs
 
       - name: Test explicitly consented public Clarity boundaries
         run: node --test tests/clarity-public.test.cjs

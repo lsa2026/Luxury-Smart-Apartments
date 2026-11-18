@@ -252,7 +252,27 @@ def test_consent_dialog_has_keyboard_focus_handling() -> None:
     sorted(EVENT_SCHEMAS),
 )
 def test_analytics_event_allowlist_accepts_known_events(event_name: str) -> None:
-    assert sanitize_analytics_event(event_name, {}) == {}
+    # Versioned events have required fields; allowlisting does not waive their contract.
+    payload = {
+        "availability_view": {"measurement_version": "pp1"},
+        "availability_request": {"measurement_version": "pp1"},
+        "availability_result_view": {
+            "measurement_version": "pp1",
+            "result_status": "no_results",
+            "display_status": "no_results",
+        },
+        "price_view": {"measurement_version": "pp1", "value": 100, "currency": "SAR"},
+    }.get(event_name, {})
+    assert sanitize_analytics_event(event_name, payload) == payload
+
+
+@pytest.mark.parametrize(
+    "event_name",
+    ["availability_view", "availability_request", "availability_result_view", "price_view"],
+)
+def test_versioned_prepurchase_events_reject_unversioned_empty_payload(event_name: str) -> None:
+    with pytest.raises(ValueError, match="invalid_prepurchase_version"):
+        sanitize_analytics_event(event_name, {})
 
 
 def test_analytics_rejects_unknown_event() -> None:

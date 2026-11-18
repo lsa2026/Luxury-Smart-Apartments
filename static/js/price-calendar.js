@@ -176,6 +176,19 @@ export async function openPriceCalendar(trigger) {
                 const price = document.createElement("small");
                 // Prices belong to available nights, not occupied nights.
                 price.textContent = info?.available && info.price !== null ? number.format(Number(info.price)) : "—";
+                if (info?.available && Number.isFinite(Number(info.price)) && Number(info.price) > 0 && !failed) {
+                    const owner = trigger.closest?.("[data-item-id], [data-analytics-property-id]")
+                        || document.querySelector("[data-analytics-view-item]");
+                    const ownerData = owner?.dataset || {};
+                    price.dataset.ppPrice = "";
+                    price.dataset.ppPriceContext = "calendar_nightly";
+                    price.dataset.ppValue = String(info.price);
+                    price.dataset.ppCurrency = currency;
+                    price.dataset.ppPropertyId = ownerData.itemId || ownerData.analyticsPropertyId || "";
+                    price.dataset.ppPropertyName = ownerData.itemName || ownerData.analyticsPropertyName || "";
+                    // Internal dedup group only; calendar dates never enter an analytics payload.
+                    price.dataset.ppGroup = `calendar:${dateKey(currentMonth)}:${currency}`;
+                }
                 button.append(dayLabel, price);
                 if (!info?.available) button.classList.add("is-unavailable");
                 if (info?.available && lowest !== null && Number(info.price) === lowest) button.classList.add("is-lowest");
@@ -203,6 +216,7 @@ export async function openPriceCalendar(trigger) {
         status.textContent = failed ? labels.error :
             `${arrival && departure && !stayIsAvailable(days, arrival, departure) ? labels.invalidStay :
                 arrival && !departure ? labels.chooseDeparture : labels.chooseArrival} · ${labels.nightly}: ${currency} · ${labels.updated}: ${time}`;
+        document.dispatchEvent(new CustomEvent("lsa:prepurchase-surfaces-changed"));
     }
 
     async function loadMonth() {

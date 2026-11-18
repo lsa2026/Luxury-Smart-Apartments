@@ -1,0 +1,1 @@
+{% if prepurchase_result %}{{ prepurchase_result|json_script:"lsa-prepurchase-context" }}{% elif prepurchase_context %}{{ prepurchase_context|json_script:"lsa-prepurchase-context" }}{% endif %}
