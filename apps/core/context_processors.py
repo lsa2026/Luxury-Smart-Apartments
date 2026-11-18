@@ -15,6 +15,7 @@ from django.utils.translation import gettext as _
 
 from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_labels
+from apps.reservations.prepurchase import page_kind
 
 from .branding import BRAND_NAME
 from .middleware import PUBLIC_LOCALIZED_VIEW_NAMES
@@ -165,6 +166,7 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     )
     return {
         "site_setting": site_setting,
+        "prepurchase_page_kind": page_kind(request),
         "reservations_email": RESERVATIONS_EMAIL,
         "social_links": social_links,
         "footer_cities": footer_cities,

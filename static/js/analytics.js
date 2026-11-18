@@ -17,7 +17,30 @@
     const paymentContextKeys = ["payment_type", "payment_brand", "checkout_kind"];
     const paymentJourneyKeys = ["currency", "value", "items", "payment_status", "error_category",
         ...propertyContextKeys, ...paymentContextKeys];
+    const ppCommon = ["measurement_version", "attempt_id", "parent_attempt_id", "request_kind",
+        "entry_page", "journey_entry", "page_kind", "stay_kind", ...propertyContextKeys];
+    const ppSearch = ["city", "nights", "guests"];
+    const ppResult = ["result_status", "display_status", "result_count", "checked_count", "error_count", "error_category"];
+    const ppPrice = ["price_context", "currency", "value", "source_currency", "source_value"];
+    const ppEnums = {
+        measurement_version: new Set(["pp1"]),
+        request_kind: new Set(["portfolio", "property_quote", "browse"]),
+        entry_page: new Set(["home", "property_list", "property_detail", "availability_results", "quote", "unknown"]),
+        page_kind: new Set(["home", "property_list", "property_detail", "availability_results", "quote", "unknown"]),
+        stay_kind: new Set(["overnight"]), city: new Set(["riyadh", "marrakech", "all", "other"]),
+        result_status: new Set(["available", "unavailable", "no_results", "partial_error", "upstream_error", "invalid_request", "rate_limited", "quote_error"]),
+        display_status: new Set(["available", "unavailable", "no_results", "partial_results", "verification_error", "invalid_request", "rate_limited", "quote_error"]),
+        price_context: new Set(["indicative_nightly", "calendar_nightly", "search_total", "quote_total"]),
+        error_category: new Set(["none", "validation", "rate_limit", "provider", "pricing", "internal"]),
+    };
+    ppEnums.journey_entry = ppEnums.entry_page;
+    const ppEvents = new Set(["availability_view", "availability_request", "availability_result_view", "price_view"]);
+    const ppReset = Object.fromEntries([...new Set([...ppCommon, ...ppSearch, ...ppResult, ...ppPrice])].map(key => [key, null]));
     const schemas = {
+        availability_view: new Set(ppCommon),
+        availability_request: new Set([...ppCommon, ...ppSearch]),
+        availability_result_view: new Set([...ppCommon, ...ppSearch, ...ppResult]),
+        price_view: new Set([...ppCommon, ...ppPrice]),
         ...Object.fromEntries([
             "payment_checkout_requested", "secure_payment_view", "payment_widget_ready",
             "payment_method_selected", "payment_submit_clicked", "add_payment_info",
@@ -97,6 +120,25 @@
         if (Object.keys(payload).some((key) => forbiddenKeys.has(key.toLowerCase()))) {
             return null;
         }
+        if (ppEvents.has(eventName)) {
+            if (payload.measurement_version !== "pp1") return null;
+            for (const [key, value] of Object.entries(payload)) {
+                if (value === undefined || value === null) continue;
+                if (!schema.has(key)) return null;
+                if (!["string", "number"].includes(typeof value)) return null;
+                if (["property_id", "property_name", "page_language"].includes(key) && typeof value !== "string") return null;
+                if (ppEnums[key] && !ppEnums[key].has(value)) return null;
+                if (["attempt_id", "parent_attempt_id"].includes(key) && !/^[a-f0-9]{32}$/.test(value)) return null;
+                if (["currency", "source_currency"].includes(key) && !/^[A-Z]{3}$/.test(value)) return null;
+                if (["value", "source_value"].includes(key) && (!Number.isFinite(value) || value <= 0)) return null;
+                if ([...ppSearch.filter(k => k !== "city"), "result_count", "checked_count", "error_count"].includes(key)
+                    && (!Number.isInteger(value) || value < 0 || value > 10000)) return null;
+                if (key === "nights" && (value < 1 || value > 3660)) return null;
+                if (key === "guests" && (value < 1 || value > 100)) return null;
+            }
+            if (eventName === "price_view" && (!Number.isFinite(payload.value) || payload.value <= 0 || !payload.currency)) return null;
+            if (eventName === "availability_result_view" && (!payload.result_status || !payload.display_status)) return null;
+        }
         if (eventName === "purchase" && (
             typeof payload.transaction_id !== "string" || !payload.transaction_id.trim()
             || !Number.isFinite(payload.value) || payload.value <= 0
@@ -109,7 +151,7 @@
             if (!schema.has(key)) {
                 return;
             }
-            if (paymentEnums[key] && !paymentEnums[key].has(value)) {
+            if (paymentEnums[key] && !ppEvents.has(eventName) && !paymentEnums[key].has(value)) {
                 return;
             }
             if (key === "property_id" && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value))) {
@@ -164,7 +206,7 @@
         const paymentReset = Object.fromEntries(
             [...paymentContextKeys, "payment_status", "error_category"].map(key => [key, null]),
         );
-        const event = {event: eventName, ...paymentReset, ...clean,
+        const event = {event: eventName, ...paymentReset, ...ppReset, ...clean,
             ecommerce: Object.keys(ecommerce).length ? ecommerce : null};
         if (eventName === "purchase") {
             if (typeof onProcessed === "function") {

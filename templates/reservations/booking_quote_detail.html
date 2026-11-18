@@ -21,6 +21,7 @@
 {% block hreflang %}{% endblock %}
 
 {% block content %}
+{% include "reservations/_prepurchase_context.html" %}
 <section
     class="quote-review"
     data-analytics-event="{% if quote_is_usable %}quote_created{% else %}quote_expired{% endif %}"
@@ -38,6 +39,7 @@
         {% include "includes/progress_indicator.html" with step=2 %}
 
         <header class="quote-review__heading">
+            {% if prepurchase_result and quote_is_usable %}<p data-pp-result>{% trans "The property is available" %}</p>{% endif %}
             <div>
                 <p class="eyebrow">{% trans "Temporary live quote" %}</p>
                 <h1>{% trans "Review your stay" %}</h1>
@@ -118,7 +120,8 @@
 
                     <div class="quote-review__price">
                         <span>{% trans "Total price" %}</span>
-                        <strong>{% display_money quote.total_price quote.currency quote.exchange_rate_snapshot %}</strong>
+                        {% money_presentation quote.total_price quote.currency quote.exchange_rate_snapshot as pp_money %}
+                        <strong{% if quote_is_usable %} data-pp-price data-pp-price-context="quote_total" data-pp-value="{{ pp_money.value|unlocalize }}" data-pp-currency="{{ pp_money.currency }}" data-pp-source-value="{{ pp_money.source_value|unlocalize }}" data-pp-source-currency="{{ pp_money.source_currency }}"{% endif %}>{{ pp_money.text }}</strong>
                     </div>
 
                     <div class="quote-review__breakdown">

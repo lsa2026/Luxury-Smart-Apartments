@@ -1,4 +1,4 @@
-{% load i18n static presentation currency %}
+{% load i18n l10n static presentation currency %}
 {% firstof property_detail_url property.get_absolute_url as resolved_property_url %}
 {% with property_name=property|localized_property_name images=property.preview_images %}
 <article
@@ -130,13 +130,15 @@
         </div>
 
         {% if availability_result and booking_search %}
+        {% money_presentation availability_result.quote.total_price availability_result.quote.currency as pp_money %}
         <div class="property-card__footer property-card__footer--available">
             <span class="property-card__price-note">
                 <small>{% trans "Total for your stay" %}</small>
-                <strong>{% display_money availability_result.quote.total_price availability_result.quote.currency %}</strong>
+                <strong data-pp-price data-pp-price-context="search_total" data-pp-value="{{ pp_money.value|unlocalize }}" data-pp-currency="{{ pp_money.currency }}" data-pp-source-value="{{ pp_money.source_value|unlocalize }}" data-pp-source-currency="{{ pp_money.source_currency }}">{{ pp_money.text }}</strong>
             </span>
-            <form method="post" action="{% url 'reservations:quote_create' %}" data-submit-once>
+            <form method="post" action="{% url 'reservations:quote_create' %}" data-submit-once data-pp-search>
                 {% csrf_token %}
+                {% include "reservations/_prepurchase_fields.html" %}
                 <input type="hidden" name="city" value="{{ booking_search.city }}">
                 <input type="hidden" name="property" value="{{ property.pk }}">
                 <input type="hidden" name="check_in" value="{{ booking_search.check_in|date:'Y-m-d' }}">
@@ -155,7 +157,7 @@
             <a class="property-card__price-note property-price-link" href="{{ resolved_property_url }}#price-calendar" data-price-calendar-open data-price-calendar-url="{% url 'properties:price_calendar' slug=property.slug %}" data-price-calendar-name="{{ property_name }}">
                 {% if property.indicative_nightly_from %}
                 <small>{% trans "Final price depends on your dates" %}</small>
-                <strong>{% blocktrans with amount=property.indicative_nightly_from|format_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
+                <strong data-pp-price data-pp-price-context="indicative_nightly" data-pp-value="{{ property.indicative_nightly_from|unlocalize }}" data-pp-currency="{{ property.indicative_currency }}">{% blocktrans with amount=property.indicative_nightly_from|format_money:property.indicative_currency %}From {{ amount }} / night{% endblocktrans %}</strong>
                 {% else %}
                 <small>{% trans "Price based on dates" %}</small>
                 <strong>{% trans "Live price checks" %}</strong>

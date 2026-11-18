@@ -1,5 +1,6 @@
 """Privacy-safe browser analytics contracts; this module never calls Google."""
 
+import math
 import re
 from decimal import Decimal
 from typing import Any
@@ -21,6 +22,40 @@ PAYMENT_JOURNEY_FIELDS = (
 )
 
 EVENT_SCHEMAS: dict[str, frozenset[str]] = {
+    **{
+        name: frozenset(
+            {
+                "measurement_version",
+                "attempt_id",
+                "parent_attempt_id",
+                "request_kind",
+                "entry_page",
+                "journey_entry",
+                "page_kind",
+                "stay_kind",
+                "property_id",
+                "property_name",
+                "page_language",
+            }
+        )
+        | frozenset(extra)
+        for name, extra in {
+            "availability_view": (),
+            "availability_request": ("city", "nights", "guests"),
+            "availability_result_view": (
+                "city",
+                "nights",
+                "guests",
+                "result_status",
+                "display_status",
+                "result_count",
+                "checked_count",
+                "error_count",
+                "error_category",
+            ),
+            "price_view": ("price_context", "currency", "value", "source_currency", "source_value"),
+        }.items()
+    },
     "view_item_list": frozenset({"item_list_name", "items", "page_language"}),
     "select_item": frozenset({"item_list_name", "items"}) | PROPERTY_CONTEXT_FIELDS,
     "view_item": frozenset({"currency", "value", "items"}) | PROPERTY_CONTEXT_FIELDS,
@@ -146,6 +181,77 @@ def sanitize_analytics_event(event_name: str, payload: dict[str, Any]) -> dict[s
         raise ValueError("analytics_event_not_allowed")
     if any(key.casefold() in FORBIDDEN_KEYS for key in payload):
         raise ValueError("analytics_payload_contains_forbidden_key")
+    if event_name in {
+        "availability_view",
+        "availability_request",
+        "availability_result_view",
+        "price_view",
+    }:
+        from apps.reservations.prepurchase import DISPLAY, PAGES
+
+        enums = {
+            "measurement_version": {"pp1"},
+            "request_kind": {"portfolio", "property_quote", "browse"},
+            "entry_page": PAGES,
+            "page_kind": PAGES,
+            "journey_entry": PAGES,
+            "stay_kind": {"overnight"},
+            "city": {"riyadh", "marrakech", "all", "other"},
+            "result_status": set(DISPLAY),
+            "display_status": set(DISPLAY.values()),
+            "error_category": {
+                "none",
+                "validation",
+                "rate_limit",
+                "provider",
+                "pricing",
+                "internal",
+            },
+            "price_context": {
+                "indicative_nightly",
+                "calendar_nightly",
+                "search_total",
+                "quote_total",
+            },
+        }
+        if payload.get("measurement_version") != "pp1":
+            raise ValueError("invalid_prepurchase_version")
+        for key, raw in payload.items():
+            if raw is None:
+                continue
+            value = _plain_value(raw)
+            if key not in EVENT_SCHEMAS[event_name] or isinstance(value, bool) or value is None:
+                raise ValueError("invalid_prepurchase_field")
+            if key in {"property_id", "property_name", "page_language"} and not isinstance(
+                value, str
+            ):
+                raise ValueError("invalid_prepurchase_text")
+            if key in enums and (not isinstance(value, str) or value not in enums[key]):
+                raise ValueError("invalid_prepurchase_enum")
+            if key in {"attempt_id", "parent_attempt_id"} and not re.fullmatch(
+                r"[a-f0-9]{32}", str(value)
+            ):
+                raise ValueError("invalid_prepurchase_correlation")
+            if key in {"currency", "source_currency"} and not re.fullmatch(r"[A-Z]{3}", str(value)):
+                raise ValueError("invalid_prepurchase_currency")
+            if key in {"value", "source_value"} and (
+                not isinstance(value, int | float) or not math.isfinite(value) or value <= 0
+            ):
+                raise ValueError("invalid_prepurchase_amount")
+            if key in {"nights", "guests", "result_count", "checked_count", "error_count"}:
+                low, high = (
+                    (1, 100) if key == "guests" else (1, 3660) if key == "nights" else (0, 10000)
+                )
+                if not isinstance(value, int) or not low <= value <= high:
+                    raise ValueError("invalid_prepurchase_count")
+        if event_name == "price_view" and (
+            payload.get("value") is None or not payload.get("currency")
+        ):
+            raise ValueError("missing_prepurchase_price")
+        if event_name == "availability_result_view" and (
+            not payload.get("result_status") or not payload.get("display_status")
+        ):
+            raise ValueError("missing_prepurchase_outcome")
     clean: dict[str, Any] = {}
     for key in EVENT_SCHEMAS[event_name]:
         if key not in payload:

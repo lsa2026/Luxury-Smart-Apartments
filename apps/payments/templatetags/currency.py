@@ -37,12 +37,27 @@ def display_money(
     audit_snapshot: object = None,
 ) -> str:
     """Convert server-side only; on failure show the explicit source amount."""
+    return money_presentation(context, value, source_currency, audit_snapshot)["text"]
+
+
+@register.simple_tag(takes_context=True)
+def money_presentation(context, value, source_currency, audit_snapshot=None):
+    """Use one conversion result for both visible text and safe measurement values."""
+
+    def result(amount, currency, text=None):
+        return {
+            "text": format_money(amount, currency) if text is None else text,
+            "value": amount,
+            "currency": currency,
+            "source_value": value,
+            "source_currency": source_currency,
+        }
 
     try:
         source = normalize_currency(source_currency)
         display = normalize_currency(context.get("display_currency", "SAR"))
         if source == display:
-            return format_money(value, source)
+            return result(value, source)
         if audit_snapshot:
             rates = rates_from_audit_snapshot(audit_snapshot)
         else:
@@ -58,10 +73,11 @@ def display_money(
             rates = live_rates
         amount_sar = CurrencyService.source_to_sar(value, source, rates)
         converted = CurrencyService.sar_to_display(amount_sar, display, rates)
-        return format_money(converted, display)
+        return result(converted, display)
     except CurrencyError:
-        return format_html(
+        text = format_html(
             '<span class="money-conversion-unavailable" title="{}">{}</span>',
             _("Currency conversion is temporarily unavailable; the original price is shown."),
             format_money(value, source_currency),
         )
+        return result(value, source_currency, text)

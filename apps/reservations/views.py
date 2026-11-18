@@ -30,6 +30,7 @@ from apps.payments.currency import selected_currency
 from apps.properties.cities import supported_city_choices
 from apps.properties.models import Property, PropertyImage
 
+from . import prepurchase
 from .access_tokens import consume_access_link_token
 from .booking_forms import GuestDetailsForm
 from .forms import AvailabilitySearchForm, LegacyReservationAccessForm, ReservationAccessForm
@@ -161,7 +162,9 @@ def _owned_quote(request: HttpRequest, reference: str) -> BookingQuote:
     return quote
 
 
-def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, object]:
+def _quote_context(
+    quote: BookingQuote, form: GuestDetailsForm, *, request=None
+) -> dict[str, object]:
     from .address_places import make_address_ticket, places_enabled
 
     cover_image = (
@@ -170,7 +173,13 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
         .order_by("-is_cover", "sort_order", "hostaway_sort_order", "id")
         .first()
     )
+    usable = (
+        quote.status == BookingQuote.Status.ACTIVE
+        and not quote.is_expired
+        and verify_quote_fingerprint(quote)
+    )
     return {
+        **prepurchase.quote_context(request, quote, usable=usable),
         "quote": quote,
         "property": quote.property,
         "cover_image": cover_image,
@@ -183,11 +192,7 @@ def _quote_context(quote: BookingQuote, form: GuestDetailsForm) -> dict[str, obj
         "quote_reference": quote_reference(quote),
         "address_places_enabled": places_enabled(),
         "address_places_ticket": make_address_ticket(quote) if places_enabled() else "",
-        "quote_is_usable": (
-            quote.status == BookingQuote.Status.ACTIVE
-            and not quote.is_expired
-            and verify_quote_fingerprint(quote)
-        ),
+        "quote_is_usable": usable,
         "guest_form_initial_step": (
             2
             if form.is_bound
@@ -230,6 +235,9 @@ class AvailabilitySearchView(View):
                 "reservations/availability_result.html",
                 {
                     "rate_limited": True,
+                    "prepurchase_result": prepurchase.result_context(
+                        prepurchase.attempt_context(request), "rate_limited", category="rate_limit"
+                    ),
                     "user_message": _("Too many checks. Please wait and try again."),
                 },
                 status=429,
@@ -267,9 +275,12 @@ class AvailabilitySearchView(View):
             )
             .order_by("-is_featured", "sort_order", "id")
         )
+        measurement = prepurchase.attempt_context(request, form)
         available_results: list[dict[str, object]] = []
+        checked_count, error_count = 0, 0
         with self.service_class() as service:
             for candidate in properties:
+                checked_count += 1
                 # Portfolio browsing reads the shared Hostaway cache. The binding
                 # quote and payment steps still revalidate independently.
                 availability = service.check(
@@ -281,6 +292,8 @@ class AvailabilitySearchView(View):
                     ),
                     bypass_cache=False,
                 )
+                if prepurchase.technical_failure(availability):
+                    error_count += 1
                 if availability.is_available and availability.quote is not None:
                     available_results.append(
                         {
@@ -300,6 +313,20 @@ class AvailabilitySearchView(View):
                         }
                     )
         language = translation.get_language() or "ar"
+        status = (
+            ("partial_error" if available_results else "upstream_error")
+            if error_count
+            else ("available" if available_results else "no_results")
+        )
+        measurement = prepurchase.result_context(
+            measurement,
+            status,
+            count=len(available_results),
+            checked=checked_count,
+            errors=error_count,
+            category="provider" if error_count else "none",
+        )
+        prepurchase.remember_portfolio(request, form, measurement)
         city_label = dict(supported_city_choices(language)).get(city, city) if city else ""
         search = {
             "city": city,
@@ -320,6 +347,8 @@ class AvailabilitySearchView(View):
             "reservations/availability_result.html",
             {
                 "city_search": True,
+                "prepurchase_context": measurement,
+                "prepurchase_result": measurement,
                 "availability_results": available_results,
                 "searched_city": city_label,
                 "search": search,
@@ -339,6 +368,9 @@ class AvailabilitySearchView(View):
                 "reservations/availability_result.html",
                 {
                     "rate_limited": True,
+                    "prepurchase_result": prepurchase.result_context(
+                        prepurchase.attempt_context(request), "rate_limited", category="rate_limit"
+                    ),
                     "user_message": _("Too many checks. Please wait and try again."),
                 },
                 status=429,
@@ -349,7 +381,14 @@ class AvailabilitySearchView(View):
             return render(
                 request,
                 "reservations/availability_result.html",
-                {"form": form},
+                {
+                    "form": form,
+                    "prepurchase_result": prepurchase.result_context(
+                        prepurchase.attempt_context(request, form),
+                        "invalid_request",
+                        category="validation",
+                    ),
+                },
                 status=400,
             )
 
@@ -360,6 +399,8 @@ class AvailabilitySearchView(View):
 
         if property_obj is None:
             return self._render_city_search(request, form)
+        measurement = prepurchase.attempt_context(request, form)
+        measurement.update(prepurchase.property_context(property_obj))
 
         assert isinstance(property_obj, Property)
         availability_request = AvailabilityRequest(
@@ -382,20 +423,43 @@ class AvailabilitySearchView(View):
                 "reservations/availability_result.html",
                 {
                     "property": property_obj,
+                    "prepurchase_result": prepurchase.result_context(
+                        measurement, "quote_error", checked=1, errors=1, category="pricing"
+                    ),
                     "user_message": _("A secure quote could not be created for these dates."),
                 },
                 status=503,
             )
         if creation.quote is not None:
+            prepurchase.remember_quote(
+                request,
+                creation.quote,
+                prepurchase.result_context(
+                    measurement,
+                    "available",
+                    count=1,
+                    checked=1,
+                    errors=0,
+                ),
+            )
             return redirect(
                 "reservations:quote_detail",
                 reference=quote_reference(creation.quote),
             )
+        technical_error = prepurchase.technical_failure(creation.availability)
         return render(
             request,
             "reservations/availability_result.html",
             {
                 "availability": creation.availability,
+                "prepurchase_result": prepurchase.result_context(
+                    measurement,
+                    "upstream_error" if technical_error else "unavailable",
+                    count=0,
+                    checked=1,
+                    errors=int(technical_error),
+                    category="provider" if technical_error else "none",
+                ),
                 "property": property_obj,
             },
         )
@@ -439,6 +503,7 @@ class BookingQuoteDetailView(View):
                     default_country_code=guest_country_code,
                     initial=initial,
                 ),
+                request=request,
             ),
         )
 
@@ -501,7 +566,7 @@ class GuestDetailsView(View):
             return render(
                 request,
                 "reservations/booking_quote_detail.html",
-                _quote_context(quote, form),
+                _quote_context(quote, form, request=request),
                 status=400,
             )
         if not verify_quote_fingerprint(quote):
