@@ -189,6 +189,7 @@ def test_external_order_and_capture_do_not_create_stay_invoice_message_purchase_
         {"card_number": "synthetic-card"},
         {"cvc": "synthetic-code"},
         {"guest_first_name": "4111111111111111"},
+        {"guest_first_name": "٤١١١١١١١١١١١١١١١"},
         {"billing_state": "Riyadh Province"},
     ],
 )
@@ -375,8 +376,10 @@ def test_capture_identity_cannot_move_between_channel_orders(rig):
         assert payment_id_conflict(first.provider_payment_id, PaymentAttempt())
 
 
-def test_local_paid_status_conflict_is_reviewed_not_assumed_to_be_new_channel_money(rig):
-    Reservation.objects.create(
+def test_channel_paid_label_is_not_merchant_receipt_but_actual_local_money_blocks(rig):
+    from apps.payments.models import OfflinePaymentReceipt
+
+    local = Reservation.objects.create(
         hostaway_reservation_id=930001,
         property=rig.place,
         source_type="external_channel",
@@ -389,8 +392,20 @@ def test_local_paid_status_conflict_is_reviewed_not_assumed_to_be_new_channel_mo
         currency="SAR",
         total_price=Decimal("900"),
     )
-    with pytest.raises(ValidationError, match="مصالحة"):
-        draft(rig)
+    order = draft(rig)
+    assert order.reservation_id == local.pk
+    OfflinePaymentReceipt.objects.create(
+        reservation=local,
+        amount=Decimal("670.24"),
+        currency="SAR",
+        method="bank_transfer",
+        reference="synthetic-local-receipt",
+        received_at=timezone.now(),
+        recorded_by=rig.owner,
+        snapshot_digest="synthetic-only",
+    )
+    with pytest.raises(ValidationError):
+        service.start_checkout(order.pk, actor=rig.owner, client=rig.gateway, hostaway=rig.remote)
     rig.gateway.create_checkout.assert_not_called()
 
 
@@ -495,3 +510,52 @@ def test_render_channel_collection_layouts(rig, settings, monkeypatch, tmp_path)
         assert "googletagmanager.com" not in html and "paymentWidgets" not in html
         assert 'value="start"' not in html
         (output / (name + ".html")).write_text(_standalone(html), encoding="utf-8")
+
+
+def test_manager_gateway_page_uses_only_hosted_visa_master_and_private_return(rig, monkeypatch):
+    order = started(rig)
+    monkeypatch.setattr("apps.payments.channel_views.start_checkout", Mock(return_value=order))
+    client = Client()
+    client.force_login(rig.owner)
+    page = client.post(
+        reverse("notifications:channel_collection_detail", args=[order.pk]), {"action": "start"}
+    )
+    assert page.status_code == 200
+    html = page.content.decode()
+    assert 'data-brands="VISA MASTER"' in html
+    assert 'integrity="sha384-YWJj"' in html and 'crossorigin="anonymous"' in html
+    assert "return_token=" in html
+    assert "billing@example.invalid" not in html
+    assert 'name="card_number"' not in html and 'name="cvc"' not in html
+    assert "googletagmanager.com" not in html and "payment-journey.js" not in html
+    assert "oppwa.com" in page["Content-Security-Policy"]
+
+
+def test_revoked_manager_loses_all_collection_routes(rig):
+    from apps.accounts.access import MANAGER_SESSION_KEY
+    from apps.accounts.models import OperationsManager
+
+    order = draft(rig)
+    user = get_user_model().objects.create_user(username="manager", email="manager@gmail.com")
+    grant = OperationsManager.objects.create(email=user.email, created_by=rig.owner)
+    client = Client()
+    client.force_login(user)
+    session = client.session
+    session[MANAGER_SESSION_KEY] = {
+        "user_id": user.pk,
+        "email": user.email,
+        "grant_id": grant.pk,
+        "version": grant.access_version,
+    }
+    session.save()
+    detail = reverse("notifications:channel_collection_detail", args=[order.pk])
+    assert client.get(detail).status_code == 200
+    grant.is_enabled = False
+    grant.save(update_fields=["is_enabled"])
+    for url in (
+        detail,
+        reverse("notifications:channel_collection_list"),
+        reverse("notifications:channel_collection_result", args=[order.pk]),
+    ):
+        assert client.get(url).status_code == 403
+        assert client.post(url, {"action": "start"}).status_code == 403

@@ -91,8 +91,7 @@ def _local_money(hostaway_id):
     local = rows[0] if rows else None
     if local and (
         local.booking_intent_id
-        or local.source_type
-        in {Reservation.SourceType.DIRECT_WEBSITE, Reservation.SourceType.HOSTAWAY_MANUAL}
+        or local.source_type != Reservation.SourceType.EXTERNAL_CHANNEL
         or hasattr(local, "offline_payment_receipt")
         or PaymentAttempt.objects.filter(
             Q(booking_intent__reservation=local) | Q(modification_request__reservation=local),
@@ -100,13 +99,9 @@ def _local_money(hostaway_id):
         ).exists()
     ):
         raise ValidationError("يوجد مسار حجز أو قبض محلي؛ يلزم مصالحة السجل قبل تحصيل قناة آخر.")
-    if local and local.payment_status.casefold() in {"paid", "fully_paid", "partially_paid"}:
-        # A synced paid label might mean guest->Booking, not Booking->merchant.
-        # It is an unresolved conflict requiring evidence, never permission to debit.
-        raise ValidationError(
-            "حالة السداد المحلية تحتاج مصالحة وإثبات جهة القبض؛ "
-            "لا تفترض أنها قبضنا أو تسمح بتحصيل إضافي."
-        )
+    # An imported channel paid label can mean guest->Booking, not merchant receipt.
+    # Actual local receipt/attempt evidence above blocks a second collection;
+    # current manual balance/no-prior-collection attestation is still mandatory.
     return local
 
 
@@ -334,6 +329,12 @@ def reconcile(order_id, *, actor, client=None):
                 order.status, order.failure_code = "review", "payment_id_already_recorded"
             else:
                 order.provider_payment_id = document["id"]
+                try:
+                    _local_money(order.hostaway_reservation_id)
+                except ValidationError:
+                    # Preserve the verified capture, but require reconciliation
+                    # if another local receipt appeared after the checkout claim.
+                    order.status, order.failure_code = "review", "local_collection_changed"
         order.verified_at = timezone.now()
         try:
             with transaction.atomic():

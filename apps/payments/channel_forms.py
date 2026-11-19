@@ -55,7 +55,7 @@ class ChannelCollectionForm(MorningBillingFields):
             )
         for name in self._billing_rule_names:
             value = values.get(name, "")
-            if re.search(r"(?:[0-9][ -]?){13,19}", value):
+            if re.search(r"(?:\d[\s-]?){13,19}", value):
                 self.add_error(name, "لا تدخل أرقام البطاقات في بيانات الفوترة.")
         start, deadline = values.get("available_on"), values.get("charge_before")
         if deadline and deadline <= timezone.localdate():
