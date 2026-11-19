@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation currency %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}"><link rel="stylesheet" href="{% static 'css/admin-channel-collections.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  <section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">تحصيل القناة</span><h1>{{ title }}</h1><p>أمر خاص للمدير لحجز بوكينج قائم. لا ينشئ حجزًا أو فاتورة أخرى ولا يطلب سدادًا من الضيف.</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:hub' %}">مركز الإدارة</a></section>
+  {% if not activation_ready %}<section class="lsa-panel" role="status"><h2>بدء الخصم غير مفعّل</h2><p>يمكن تجهيز أمر داخلي للمراجعة. فتح بوابة البطاقة ينتظر إثبات قبول حساب التاجر والمصادقة والفوترة؛ لا يتم أي تحصيل من تكوين الأمر.</p></section>{% endif %}
+  <section class="lsa-panel"><h2>تكوين رابط تحصيل للمدير</h2><p>أدخل رقم حجز هوستاوي المنقول من بوكينج والرصيد الحالي وعملته ومواعيده. راجع عدم وجود تحصيل حديث؛ قد تتأخر قائمة بوكينج ٣٠ دقيقة.</p><p><strong>لا تدخل رقم البطاقة أو رمزها هنا. بيانات الفوترة من مصدر حامل البطاقة المعتمد، وليست بيانات الضيف أو عنوان إقامته.</strong></p>
+    <form method="post" data-morning-validate>{% csrf_token %}{{ form.non_field_errors }}
+      <div class="channel-form-grid">{% for field in form %}{% if field.name|slice:':8' != 'billing_' %}{% include 'payments/_morning_field.html' %}{% endif %}{% endfor %}</div>
+      <fieldset><legend>عنوان الفوترة المعتمد لهذه البطاقة</legend>{% include 'payments/_morning_billing_fields.html' with guest_form=form %}</fieldset>
+      <button type="submit" class="lsa-btn lsa-btn--gold">تكوين الأمر والرابط الداخلي — دون خصم</button>
+    </form>
+  </section>
+  <section class="lsa-panel"><h2>أوامر التحصيل الأخيرة</h2>{% for item in collections %}<article class="channel-collection-row"><h3>{{ item.property|localized_property_name }}</h3><p>{{ item.amount|format_money:item.currency }} · {{ item.get_status_display }}</p><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:channel_collection_detail' item.pk %}">فتح أمر التحصيل</a></article>{% empty %}<p>لا أوامر تحصيل مسجلة بعد.</p>{% endfor %}</section>
+</main>{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "admin/base_site.html" %}
+{% load static currency presentation %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-channel-collections.css' %}">{% endblock %}
+{% block extrahead %}{{ block.super }}
+<script nonce="{{ csp_nonce }}">var wpwlOptions = {locale: "ar", paymentTarget: "_top", brandDetection: true};</script>
+<script src="{{ widget_url }}" integrity="{{ widget_integrity }}" crossorigin="anonymous"></script>{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}<main class="lsa-dashboard lsa-operations-screen" dir="rtl"><section class="lsa-page-head lsa-page-head--operations"><div><h1>تحصيل بطاقة بوكينج</h1><p>{{ order.property|localized_property_name }} · {{ order.amount|format_money:order.currency }}</p></div></section>
+<section class="lsa-panel">{% if test_environment %}<p role="status">بيئة اختبار — لا مبلغ حقيقي.</p>{% endif %}<h2>Visa / Mastercard</h2><p>حقول البطاقة الآمنة من HyperPay. رقم البطاقة ورمزها لا يصلان إلى خادم الموقع. لا تعد العملية عند انقطاع الاتصال؛ ارجع إلى الأمر للتحقق.</p><form action="{{ result_url }}" class="paymentWidgets" data-brands="VISA MASTER"></form><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:channel_collection_detail' order.pk %}">العودة إلى حالة أمر التحصيل</a></section></main>{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "admin/base_site.html" %}
+{% load static presentation currency %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-channel-collections.css' %}">{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}<main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+<section class="lsa-page-head lsa-page-head--operations"><div><span class="lsa-kicker">تحصيل القناة</span><h1>{{ title }}</h1><p>{{ order.property|localized_property_name }}</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:channel_collection_list' %}">كل أوامر التحصيل</a></section>
+<section class="lsa-panel"><h2>{{ order.get_status_display }}</h2><p><strong>{{ order.amount|format_money:order.currency }}</strong></p><dl><dt>رقم حجز هوستاوي</dt><dd>{{ order.hostaway_reservation_id }}</dd><dt>الإقامة الخارجية</dt><dd>{{ order.booking_snapshot.check_in }} — {{ order.booking_snapshot.check_out }}</dd><dt>إتاحة التحصيل</dt><dd>{{ order.available_on }} · يجب التحصيل قبل {{ order.charge_before }}</dd><dt>آخر تأكيد للرصيد</dt><dd>{{ order.balance_checked_at }}</dd><dt>وقت تحقق البوابة</dt><dd>{{ order.verified_at|default:'لم يتحقق بعد' }}</dd></dl>
+{% if order.environment == 'test' %}<p role="status">بيئة اختبار — لا يمثل هذا قبضًا حقيقيًا.</p>{% endif %}
+{% if order.status == 'succeeded' %}<p role="status">تحقق الخادم من قبض البطاقة. هذا ليس إثبات تسوية بنكية أو صافي ربح. لم ينشأ حجز أو فاتورة أو طلب سداد للضيف.</p>{% elif order.status != 'draft' %}<p role="alert">لا تعد الدفع ولا تنشئ رابطًا آخر. تحقق من نتيجة الجلسة نفسها؛ قد تكون العملية معلقة أو غير محسومة وتحتاج مراجعة مشروع الدفع.</p>{% endif %}
+{% if order.failure_code %}<p>مرجع المراجعة: <span dir="ltr">{{ order.failure_code }}</span></p>{% endif %}
+<p>الرابط الداخلي يتطلب دخول مدير مأذون؛ لا ترسله إلى الضيف.</p><a href="{{ private_link }}" class="lsa-btn lsa-btn--ghost">فتح الرابط الخاص بهذا الأمر</a>
+</section>
+<section class="lsa-panel"><h2>إجراءات المدير</h2>
+{% if order.status == 'draft' %}<form method="post">{% csrf_token %}<label><input type="checkbox" name="balance_confirmed" required> تحققت الآن من أن الرصيد المعروض ما زال متبقيًا ولم يتم تحصيله، ومن إتاحة البطاقة ومهلتها في بوكينج.</label><button name="action" value="refresh" class="lsa-btn lsa-btn--ghost">حفظ إعادة التحقق من الرصيد</button></form>
+{% if activation_ready %}<form method="post">{% csrf_token %}<p>ستفتح حقول Visa / Mastercard الآمنة لدى البوابة. أدخل بيانات البطاقة هناك فقط، واتبع المصادقة التي تطلبها البوابة.</p><button name="action" value="start" class="lsa-btn lsa-btn--gold">فتح بوابة البطاقة للمبلغ المحدد</button></form>{% else %}<p role="status">فتح بوابة البطاقة محمي من الخادم حتى اعتماد قبول حساب التاجر ومسار المصادقة والفوترة. الأمر محفوظ للمراجعة، ولا يوجد خصم جارٍ.</p>{% endif %}
+{% else %}<form method="post">{% csrf_token %}<button name="action" value="reconcile" class="lsa-btn lsa-btn--gold">التحقق من نتيجة البوابة — دون خصم جديد</button></form>{% endif %}
+</section></main>{% endblock %}
