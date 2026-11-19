@@ -364,7 +364,8 @@ def prepare_purchase_event(
         or reservation.hostaway_reservation_id is None
     ):
         return None, None
-    if payment_attempt.payment_request_id:
+    has_payment_request = bool(getattr(payment_attempt, "payment_request_id", None))
+    if has_payment_request:
         from apps.payments.purchase_receipts import eligible, receipt_for
 
         # Both result routes use the existing capture-scoped ledger; no second sender.
@@ -391,12 +392,8 @@ def prepare_purchase_event(
         if reservation.booking_intent_id
         else None
     )
-    financial_value = (
-        payment_attempt.amount if payment_attempt.payment_request_id else reservation.total_price
-    )
-    financial_currency = (
-        payment_attempt.currency if payment_attempt.payment_request_id else reservation.currency
-    )
+    financial_value = payment_attempt.amount if has_payment_request else reservation.total_price
+    financial_currency = payment_attempt.currency if has_payment_request else reservation.currency
     purchased_item = (
         property_analytics_item(
             property_obj,
@@ -413,7 +410,7 @@ def prepare_purchase_event(
             "transaction_id": reference_hash,
             "value": financial_value,
             "currency": financial_currency,
-            **({"checkout_kind": "payment_link"} if payment_attempt.payment_request_id else {}),
+            **({"checkout_kind": "payment_link"} if has_payment_request else {}),
             "page_language": (translation.get_language() or "ar").split("-")[0],
             **payment_analytics_fields(payment_attempt),
             **purchase_fields(request, payment_attempt, reservation),

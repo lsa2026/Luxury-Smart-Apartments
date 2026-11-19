@@ -175,7 +175,7 @@ jobs:
       - name: Verify assisted attribution and canonical paid receipts in isolation
         run: |
           python manage.py makemigrations --check --dry-run
-          pytest tests/test_assisted_attribution.py tests/test_phase10_marketing_seo.py tests/test_payment_link_purchase_receipts.py tests/test_manual_booking_operations_phase61.py::test_manual_draft_can_be_rechecked_without_creating_a_reservation tests/test_hyperpay.py::test_http_client_uses_bearer_server_side_and_explicit_entity_id -q
+          pytest tests/test_assisted_attribution.py tests/test_phase10_marketing_seo.py tests/test_payment_link_purchase_receipts.py tests/test_payment_journey_analytics.py tests/test_account_email_flows.py tests/test_manual_booking_operations_phase61.py::test_manual_draft_can_be_rechecked_without_creating_a_reservation tests/test_hyperpay.py::test_http_client_uses_bearer_server_side_and_explicit_entity_id -q
           node --test tests/assisted-attribution.test.cjs
 
       - name: Test revised payment address, return and status boundaries
