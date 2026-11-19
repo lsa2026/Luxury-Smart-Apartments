@@ -48,6 +48,7 @@ def isolated(settings, monkeypatch):
     settings.GOOGLE_TAG_MANAGER_CONTAINER_ID = "GTM-SYNTHETIC"
     settings.OPERATIONS_OWNER_ENFORCEMENT_ENABLED = True
     settings.OPERATIONS_OWNER_EMAIL = "owner@example.invalid"
+    settings.MANUAL_PAYMENT_RECEIPTS_ENABLED = True
     cache.clear()
     monkeypatch.setattr(
         "httpx.Client.request", Mock(side_effect=AssertionError("live network forbidden"))
@@ -559,3 +560,119 @@ def test_revoked_manager_loses_all_collection_routes(rig):
     ):
         assert client.get(url).status_code == 403
         assert client.post(url, {"action": "start"}).status_code == 403
+
+
+def local_external(rig):
+    return Reservation.objects.create(
+        hostaway_reservation_id=930001,
+        property=rig.place,
+        source_type="external_channel",
+        payment_status="unpaid",
+        normalized_status="confirmed",
+        check_in=timezone.localdate() - timedelta(days=2),
+        check_out=timezone.localdate() - timedelta(days=1),
+        nights=1,
+        guests=1,
+        currency="SAR",
+        total_price=Decimal("670.24"),
+    )
+
+
+def offline_values(local, actor):
+    from apps.payments.offline_receipts import receipt_snapshot
+
+    return {
+        "request": SimpleNamespace(user=actor),
+        "reservation_id": local.pk,
+        "amount": local.total_price,
+        "currency": local.currency,
+        "method": "bank_transfer",
+        "reference": "synthetic-vcc-manual-receipt",
+        "received_at": timezone.now() - timedelta(minutes=1),
+        "snapshot_digest": receipt_snapshot(local),
+        "confirmed": True,
+    }
+
+
+@pytest.mark.parametrize(
+    "state", ["created", "pending", "unknown", "review", "succeeded", "failed", "cancelled"]
+)
+def test_started_channel_order_blocks_manual_receipt_even_without_local_foreign_key(rig, state):
+    from apps.payments.models import OfflinePaymentReceipt
+    from apps.payments.offline_receipts import record_offline_receipt
+
+    order = draft(rig)
+    local = local_external(rig)
+    order.status = state
+    order.save(update_fields=["status"])
+    assert order.reservation_id is None
+    with pytest.raises(ValidationError, match="تحصيل قناة"):
+        record_offline_receipt(**offline_values(local, rig.owner))
+    assert not OfflinePaymentReceipt.objects.exists()
+
+
+def test_original_manual_receipt_is_preserved_and_unstarted_channel_order_closed(rig, monkeypatch):
+    from apps.payments.offline_receipts import record_offline_receipt
+
+    monkeypatch.setattr("apps.loyalty.site_adapter.schedule_reconciliation", Mock())
+    monkeypatch.setattr("apps.reservations.stay_extensions.capture_reservation_change", Mock())
+    local = local_external(rig)
+    order = draft(rig)
+    values = offline_values(local, rig.owner)
+    receipt = record_offline_receipt(**values)
+    assert record_offline_receipt(**values).pk == receipt.pk
+    order.refresh_from_db()
+    assert order.status == "review" and order.failure_code == "offline_receipt_recorded"
+    with pytest.raises(ValidationError):
+        service.start_checkout(order.pk, actor=rig.owner, client=rig.gateway, hostaway=rig.remote)
+    rig.gateway.create_checkout.assert_not_called()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_postgres_manual_receipt_racing_channel_claim_has_only_one_winner(rig, monkeypatch):
+    from apps.payments.models import OfflinePaymentReceipt
+    from apps.payments.offline_receipts import record_offline_receipt
+
+    if connection.vendor != "postgresql":
+        pytest.skip("Cross-workflow lock requires PostgreSQL")
+    monkeypatch.setattr("apps.loyalty.site_adapter.schedule_reconciliation", Mock())
+    monkeypatch.setattr("apps.reservations.stay_extensions.capture_reservation_change", Mock())
+    local = local_external(rig)
+    order = draft(rig)
+    barrier = Barrier(2)
+
+    def run(kind):
+        close_old_connections()
+        try:
+            actor = get_user_model().objects.get(pk=rig.owner.pk)
+            values = offline_values(local, actor)
+            barrier.wait(timeout=10)
+            try:
+                if kind == "channel":
+                    service.start_checkout(
+                        order.pk, actor=actor, client=rig.gateway, hostaway=rig.remote
+                    )
+                else:
+                    record_offline_receipt(**values)
+                return kind
+            except ValidationError:
+                return "blocked"
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(run, ["channel", "manual"]))
+    assert results.count("blocked") == 1
+    assert rig.gateway.create_checkout.call_count + OfflinePaymentReceipt.objects.count() == 1
+
+
+def test_manager_posts_require_csrf(rig):
+    order = draft(rig)
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(rig.owner)
+    assert (
+        client.post(
+            reverse("notifications:channel_collection_detail", args=[order.pk]), {"action": "start"}
+        ).status_code
+        == 403
+    )

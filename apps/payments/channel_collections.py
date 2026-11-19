@@ -18,6 +18,7 @@ from apps.reservations.models import Reservation
 
 from .channel_forms import ChannelCollectionForm
 from .collection_identity import payment_id_conflict
+from .collection_locks import lock_channel_booking
 from .hyperpay.client import HyperPayClient
 from .hyperpay.exceptions import HyperPayCheckoutError
 from .hyperpay.result_codes import HyperPayStatus, map_result_code
@@ -126,6 +127,7 @@ def create_collection(data, *, actor, hostaway=None):
     place, snapshot = _booking(values["hostaway_id"], client=hostaway)
     payer = {name: values[name] for name in form._billing_rule_names}
     with transaction.atomic():
+        lock_channel_booking(values["hostaway_id"])
         Property.objects.select_for_update().get(pk=place.pk)
         local = _local_money(values["hostaway_id"])
         existing = (
@@ -171,6 +173,7 @@ def refresh_balance(order_id, *, actor, balance_confirmed=False, hostaway=None):
     initial = ChannelCardCollection.objects.get(pk=order_id)
     place, snapshot = _booking(initial.hostaway_reservation_id, client=hostaway)
     with transaction.atomic():
+        lock_channel_booking(initial.hostaway_reservation_id)
         order = ChannelCardCollection.objects.select_for_update().get(pk=order_id)
         if order.status != "draft" or order.provider_checkout_id:
             raise ValidationError("بدأت محاولة بوابة؛ استخدم التحقق من نتيجتها بدل تحديث الرصيد.")
@@ -205,6 +208,7 @@ def start_checkout(order_id, *, actor, client=None, hostaway=None):
     _validate_start(initial)
     place, snapshot = _booking(initial.hostaway_reservation_id, client=hostaway)
     with transaction.atomic():
+        lock_channel_booking(initial.hostaway_reservation_id)
         Property.objects.select_for_update().get(pk=place.pk)
         order = ChannelCardCollection.objects.select_for_update().get(pk=order_id)
         _validate_start(order)
@@ -253,6 +257,7 @@ def start_checkout(order_id, *, actor, client=None, hostaway=None):
         ):
             raise HyperPayCheckoutError("checkout_response_invalid")
         with transaction.atomic():
+            lock_channel_booking(order.hostaway_reservation_id)
             order = ChannelCardCollection.objects.select_for_update().get(pk=order.pk)
             order.provider_checkout_id = checkout_id
             order.widget_integrity = integrity
@@ -309,6 +314,7 @@ def reconcile(order_id, *, actor, client=None):
         if document.get("testMode") and order.environment == "production":
             mismatch = "test_payment_in_production"
     with transaction.atomic():
+        lock_channel_booking(order.hostaway_reservation_id)
         order = ChannelCardCollection.objects.select_for_update().get(pk=order_id)
         if order.status == "succeeded":
             return order

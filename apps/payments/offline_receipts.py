@@ -7,14 +7,16 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.accounts.access import require_operations_access
 from apps.notifications.models import AuditLog
 from apps.reservations.models import BookingIntent, Reservation
 
+from .collection_locks import lock_channel_booking
 from .manual_references import claim_reference
-from .models import OfflinePaymentReceipt, PaymentAttempt
+from .models import ChannelCardCollection, OfflinePaymentReceipt, PaymentAttempt
 
 INTERNAL_REFERENCE_PREFIX = "internal-receipt:"
 
@@ -65,7 +67,13 @@ def record_offline_receipt(
     if not value.is_finite() or value <= 0:
         raise ValidationError("مبلغ القبض غير صحيح.")
     with transaction.atomic():
+        hostaway_id = Reservation.objects.values_list("hostaway_reservation_id", flat=True).get(
+            pk=reservation_id
+        )
+        lock_channel_booking(hostaway_id)
         booking = Reservation.objects.select_for_update().get(pk=reservation_id)
+        if booking.hostaway_reservation_id != hostaway_id:
+            raise ValidationError("تغير مرجع القناة؛ أعد فتح الحجز قبل توثيق القبض.")
         if snapshot_digest != receipt_snapshot(booking):
             raise ValidationError("تغيّرت بيانات الحجز؛ أعد فتحه وراجع المبلغ.")
         # Stable per reservation: a repeated blank-reference POST stays
@@ -90,6 +98,15 @@ def record_offline_receipt(
             ):
                 raise ValidationError("يوجد إيصال مختلف لهذا الحجز؛ راجع السجل دون تكرار.")
             return existing
+        channel_orders = Q(reservation_id=booking.pk)
+        if hostaway_id is not None:
+            channel_orders |= Q(hostaway_reservation_id=str(hostaway_id))
+        # Even failed/cancelled widgets need reconciliation before another receipt;
+        # the original same manual receipt above stays idempotent and preserved.
+        if ChannelCardCollection.objects.filter(channel_orders).exclude(status="draft").exists():
+            raise ValidationError(
+                "يوجد أمر تحصيل قناة بدأ أو يحتاج مصالحة؛ لا توثق القبض نفسه بإيصال جديد."
+            )
         if (
             booking.normalized_status not in {"confirmed", "modified"}
             or value != booking.total_price
@@ -142,6 +159,9 @@ def record_offline_receipt(
             received_at=received_at,
             recorded_by=request.user,
             snapshot_digest=snapshot_digest,
+        )
+        ChannelCardCollection.objects.filter(channel_orders, status="draft").update(
+            status="review", failure_code="offline_receipt_recorded"
         )
         if booking.booking_intent_id:
             payment = PaymentAttempt.objects.create(

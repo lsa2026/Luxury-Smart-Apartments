@@ -178,7 +178,7 @@ jobs:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
         run: |
           python manage.py makemigrations --check --dry-run
-          pytest tests/test_channel_card_collections.py tests/test_reservation_payment_links.py tests/test_hyperpay.py::test_http_client_uses_bearer_server_side_and_explicit_entity_id -q
+          pytest tests/test_channel_card_collections.py tests/test_offline_payment_receipts.py tests/test_reservation_payment_links.py tests/test_hyperpay.py::test_http_client_uses_bearer_server_side_and_explicit_entity_id -q
 
       - name: Verify assisted attribution and canonical paid receipts in isolation
         run: |
