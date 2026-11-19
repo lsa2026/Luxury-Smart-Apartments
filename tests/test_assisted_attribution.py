@@ -3,11 +3,13 @@
 import json
 from datetime import timedelta
 from types import SimpleNamespace
+from unittest.mock import Mock
 from urllib.parse import parse_qs, quote, urlsplit
 
 import pytest
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.test import Client, RequestFactory
 from django.urls import reverse
@@ -19,12 +21,39 @@ from apps.core.marketing import EVENT_SCHEMAS, prepare_purchase_event, sanitize_
 from apps.core.models import MarketingEventReceipt, SiteSetting
 from apps.payments.purchase_receipts import receipt_for, redirect_verified_purchase
 from tests.test_day_use08 import rig as day_use_rig  # noqa: F401
-from tests.test_payment_link_purchase_receipts import callback, google_settings, paid  # noqa: F401
-from tests.test_reservation_payment_links import isolated_settings  # noqa: F401
+from tests.test_hyperpay import HYPERPAY_SETTINGS
+from tests.test_payment_link_purchase_receipts import callback, paid
 
 pytestmark = pytest.mark.django_db
 CAMPAIGN = "24262302633"
 OTHER_CAMPAIGN = "24262298844"
+
+
+@pytest.fixture(autouse=True)
+def safe_environment(settings, monkeypatch):
+    # Use one patch lifetime; mixing patch() and monkeypatch on the same method
+    # can restore a stale mock after this module and poison later transport tests.
+    for key, value in HYPERPAY_SETTINGS.items():
+        setattr(settings, key, value)
+    settings.RESERVATION_PAYMENT_LINKS_ENABLED = True
+    settings.HYPERPAY_ENVIRONMENT = "production"
+    settings.SITE_BASE_URL = "https://booking.example"
+    settings.GOOGLE_INTEGRATIONS_ENABLED = True
+    settings.GOOGLE_TAG_MANAGER_ENABLED = True
+    settings.GOOGLE_TAG_MANAGER_CONTAINER_ID = "GTM-M9VLL75K"
+    settings.GOOGLE_ANALYTICS_ENABLED = True
+    settings.GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-7E43GT39DN"
+    settings.GOOGLE_ADS_ENABLED = True
+    settings.GOOGLE_ADS_CONVERSION_ID = "AW-18090693214"
+    settings.GOOGLE_CONSENT_MODE_ENABLED = True
+    settings.GOOGLE_CONSENT_DEFAULT_ANALYTICS_STORAGE = "denied"
+    settings.GOOGLE_CONSENT_DEFAULT_AD_STORAGE = "denied"
+    settings.GOOGLE_CONSENT_DEFAULT_AD_USER_DATA = "denied"
+    settings.GOOGLE_CONSENT_DEFAULT_AD_PERSONALIZATION = "denied"
+    cache.clear()
+    monkeypatch.setattr(
+        "httpx.Client.request", Mock(side_effect=AssertionError("unexpected network request"))
+    )
 
 
 def visitor(*, allowed=True, staff=False):
@@ -510,4 +539,44 @@ def test_test_reservation_never_prepares_or_redirects_a_purchase():
         payment_attempt=attempt, reservation=reservation, request=visitor()
     ) == (None, None)
     assert redirect_verified_purchase(visitor(), attempt) is None
+    assert not MarketingEventReceipt.objects.exists()
+
+
+def test_manual_recheck_rotates_owner_quote_nonce_without_losing_private_source():
+    from apps.reservations.manual_bookings import (
+        create_manual_booking_draft,
+        recheck_manual_booking_draft,
+    )
+    from tests.test_manual_booking_operations_phase61 import (
+        FakeAvailabilityService,
+        make_availability,
+        make_property,
+        owner,
+    )
+
+    r = visitor()
+    source(r)
+    code = aa.handoff(r)
+    p, actor = make_property(), owner()
+    available = make_availability(p)
+    created = create_manual_booking_draft(
+        property_obj=p,
+        check_in=available.quote.check_in,
+        check_out=available.quote.check_out,
+        guests=2,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+    binding = aa.bind_admin(created.draft.quote, code=code, actor=actor)
+    old_hash = created.draft.quote.session_key_hash
+    result = recheck_manual_booking_draft(
+        draft_id=created.draft.pk,
+        actor=actor,
+        availability_service=FakeAvailabilityService(available),
+    )
+    binding.refresh_from_db()
+    assert result.code == "rechecked"
+    assert result.draft.quote.session_key_hash != old_hash
+    assert binding.quote_id == result.draft.quote_id
+    assert binding.snapshot["first"]["campaign_id"] == CAMPAIGN
     assert not MarketingEventReceipt.objects.exists()

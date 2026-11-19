@@ -182,7 +182,7 @@ def recheck_manual_booking_draft(
             locked.quote = quote
             from apps.core.assisted_attribution import replace_quote_binding
 
-            replace_quote_binding(previous_quote, quote)
+            replace_quote_binding(previous_quote, quote, manual_draft_id=locked.pk)
             locked.currency = quote.currency
             locked.system_total_price = quote.total_price
             locked.final_total_price = quote.total_price

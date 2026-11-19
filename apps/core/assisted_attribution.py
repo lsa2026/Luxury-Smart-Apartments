@@ -270,17 +270,25 @@ def bind_session(request, quote):
         )
 
 
-def replace_quote_binding(old, new):
+def replace_quote_binding(old, new, *, manual_draft_id=None):
     """Repricing the same unconsumed owned quote is not a new guest/source."""
-    from apps.reservations.models import BookingIntent
+    from apps.reservations.models import BookingIntent, ManualBookingDraft
 
-    if old.property_id != new.property_id or old.session_key_hash != new.session_key_hash:
-        raise ValidationError("لا يمكن نقل المصدر إلى طلب مختلف.")
     with transaction.atomic():
         if BookingIntent.objects.filter(quote=old).exists():
             return
         row = BookingAttribution.objects.select_for_update().filter(quote=old).first()
         if row:
+            same_manual_draft = (
+                manual_draft_id is not None
+                and ManualBookingDraft.objects.filter(
+                    pk=manual_draft_id, quote=old, property_id=new.property_id
+                ).exists()
+            )
+            if old.property_id != new.property_id or (
+                old.session_key_hash != new.session_key_hash and not same_manual_draft
+            ):
+                raise ValidationError("لا يمكن نقل المصدر إلى طلب مختلف.")
             row.quote = new
             row.save(update_fields=["quote"])
 
