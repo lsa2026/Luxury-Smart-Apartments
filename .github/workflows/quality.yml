@@ -217,7 +217,7 @@ jobs:
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
         run: |
-          pytest tests/test_property_deep_links.py -q
+          pytest tests/test_property_short_links.py tests/test_property_deep_links.py tests/test_irqah_legacy_redirect.py -q
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-property-deep-links.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-prepurchase-visibility.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-assisted-attribution.cjs
