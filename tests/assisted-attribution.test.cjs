@@ -58,8 +58,9 @@ test('full purchase schema stays within25 fields; unrelated pp1 schema stays fro
     assert.equal(d.window.LSAAnalytics.sanitize('availability_view',{measurement_version:'pp1',first_source:'google'}),null);
 });
 
-function landing({staff=false,resultUrl='/contact/whatsapp/?language=en'}={}){
+function landing({staff=false,resultUrl='/contact/whatsapp/?language=en',holdFirst=false}={}){
     let analytics=false;const handlers=new Map(),posts=[],link={href:'https://wa.me/966500000000'};
+    let releaseFirst;
     const body={dataset:{analyticsStaffBrowser:String(staff),attributionPublicPage:'true',attributionPageKind:'property_detail',
         attributionPropertyId:'synthetic-ad-apartment',attributionConsentUrl:'/analytics/attribution/consent/',
         attributionWhatsappOriginal:link.href}};
@@ -67,9 +68,11 @@ function landing({staff=false,resultUrl='/contact/whatsapp/?language=en'}={}){
         addEventListener:(name,fn)=>handlers.set(name,fn)};
     const window={location:{origin:'https://test.invalid',search:'?utm_source=google&utm_medium=cpc&utm_id=24262302633&gclid=private-click&email=private-email'},
         LSAConsent:{parseConsent:()=>({analytics})},
-        fetch:async(url,options)=>{posts.push({url,options});return{ok:true,json:async()=>({state:analytics?'captured':'cleared',whatsapp_url:resultUrl})};}};
+        fetch:async(url,options)=>{const accepted=analytics;posts.push({url,options});
+            if(holdFirst&&posts.length===1)await new Promise(resolve=>{releaseFirst=resolve;});
+            return{ok:true,json:async()=>({state:accepted?'captured':'cleared',whatsapp_url:resultUrl})};}};
     vm.runInNewContext(source,{window,document,URL,URLSearchParams});
-    return {link,posts,async choice(value){analytics=value;await handlers.get('lsa:consent-updated')?.();}};
+    return {link,posts,release(){releaseFirst();},async choice(value){analytics=value;await handlers.get('lsa:consent-updated')?.();}};
 }
 test('late consent posts bounded campaign parameters but never raw click id, URL or guest data',async()=>{
     const d=landing();assert.equal(d.posts.length,0);await d.choice(true);
@@ -92,5 +95,13 @@ test('staff makes no capture request and an unexpected external redirect is igno
 });
 test('initial essential-only choice sends no capture or unnecessary withdrawal request',async()=>{
     const d=landing();await d.choice(false);assert.equal(d.posts.length,0);
+    assert.equal(d.link.href,'https://wa.me/966500000000');
+});
+test('withdrawal waits for an in-flight capture then clears it without rearming a stale link',async()=>{
+    const d=landing({holdFirst:true});const captured=d.choice(true);
+    await new Promise(resolve=>setImmediate(resolve));assert.equal(d.posts.length,1);
+    const cleared=d.choice(false);await Promise.resolve();assert.equal(d.posts.length,1);
+    d.release();await Promise.all([captured,cleared]);assert.equal(d.posts.length,2);
+    assert.equal(d.posts[1].options.body.has('utm_id'),false);
     assert.equal(d.link.href,'https://wa.me/966500000000');
 });

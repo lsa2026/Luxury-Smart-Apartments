@@ -12,7 +12,7 @@ const {execFileSync}=require('node:child_process'),{chromium}=require('playwrigh
   if(req.method==='POST'&&url.pathname==='/analytics/attribution/consent/'){
    let data='';req.on('data',b=>{data+=b});req.on('end',()=>{
     posts.push(data);res.setHeader('Content-Type','application/json');
-    res.end(JSON.stringify({state:'captured',whatsapp_url:'/contact/whatsapp/?language=en'}));
+    res.end(JSON.stringify({state:new URLSearchParams(data).has('utm_id')?'captured':'cleared',whatsapp_url:'/contact/whatsapp/?language=en'}));
    });return;
   }
   if(req.method!=='GET'){res.writeHead(405).end();return;}
@@ -61,11 +61,13 @@ const {execFileSync}=require('node:child_process'),{chromium}=require('playwrigh
     assert.equal(captured.first_campaign_id,purchase.first_campaign_id);assert.equal(captured.last_campaign_id,purchase.last_campaign_id);
     assert.equal(captured.ecommerce.value,750);assert.equal(captured.ecommerce.first_source,undefined);
     const bad=await page.evaluate(p=>window.LSAAnalytics.pushEvent('purchase',{...p,last_campaign_id:24262302633}),purchase);assert.equal(bad,false);
+    const clearResponse=page.waitForResponse(r=>r.url()===origin+'/analytics/attribution/consent/'&&r.request().method()==='POST');
     await page.evaluate(()=>{window.choice=false;document.dispatchEvent(new CustomEvent('lsa:consent-updated',{detail:{analytics:false,marketing:false,version:'synthetic'}}));});
     await page.waitForFunction(()=>document.querySelector('a').href==='https://wa.me/966500000000');
-    await page.waitForFunction(()=>window.dataLayer.some(e=>e.event==='cookie_consent_updated'&&e.analytics===false));
-    const last=await page.evaluate(()=>window.dataLayer.filter(e=>e.event).at(-1));
-    assert.equal(last.attribution_version,null);assert.equal(last.first_campaign_id,null);
+    assert.equal((await(await clearResponse).json()).state,'cleared');
+    // Denial correctly suppresses non-purchase analytics; do not wait for a denied event.
+    assert.equal(await page.evaluate(p=>window.LSAAnalytics.pushEvent('purchase',p),purchase),false);
+    assert.equal(await page.evaluate(()=>window.dataLayer.filter(e=>e.event==='purchase').length),1);
    }
    cases.push({width,staff,passed:true});await page.close();
   }
