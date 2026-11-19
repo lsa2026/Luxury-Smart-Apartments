@@ -37,12 +37,19 @@ def test_worker_schema_check_accepts_committed_migrations(settings):
 
 
 @pytest.mark.django_db
-def test_worker_waits_for_manual_address_migration(settings, monkeypatch):
+@pytest.mark.parametrize(
+    "required",
+    [
+        ("reservations", "0032_manualbookingdraft_billing_address"),
+        ("payments", "0022_channel_card_collection"),
+    ],
+)
+def test_worker_waits_for_required_additive_migration(settings, monkeypatch, required):
     from django.db.migrations.recorder import MigrationRecorder
 
     settings.DAY_USE08_ENABLED = False
     applied = set(MigrationRecorder(connection).applied_migrations())
-    applied.remove(("reservations", "0032_manualbookingdraft_billing_address"))
+    applied.remove(required)
     monkeypatch.setattr(MigrationRecorder, "applied_migrations", lambda self: applied)
     clock = iter([0, 61])
     monkeypatch.setattr(
