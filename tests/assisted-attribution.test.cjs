@@ -90,3 +90,7 @@ test('staff makes no capture request and an unexpected external redirect is igno
     const d=landing({resultUrl:'https://untrusted.invalid/contact/whatsapp/'});await d.choice(true);
     assert.equal(d.link.href,'https://wa.me/966500000000');
 });
+test('initial essential-only choice sends no capture or unnecessary withdrawal request',async()=>{
+    const d=landing();await d.choice(false);assert.equal(d.posts.length,0);
+    assert.equal(d.link.href,'https://wa.me/966500000000');
+});

@@ -62,6 +62,7 @@
     data-prepurchase-page-kind="{{ prepurchase_page_kind }}"
     data-analytics-staff-browser="{{ request.user.is_staff|yesno:'true,false' }}"
     data-attribution-public-page="{{ attribution_public_page|yesno:'true,false' }}"
+    data-attribution-context-active="{{ attribution_context_active|yesno:'true,false' }}"
     data-attribution-page-kind="{{ attribution_page_kind }}"
     data-attribution-property-id="{{ attribution_property_slug }}"
     data-attribution-consent-url="{% url 'marketing:attribution_consent' %}"

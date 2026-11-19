@@ -479,3 +479,35 @@ def test_frozen_contract_fields_vocab_and_catalogue_match_source():
     assert set(contract["enums"]["last_medium"]) == aa.MEDIUMS
     assert set(contract["campaignCatalogue"]["ids"]) == aa.KNOWN_CAMPAIGNS
     assert set(contract["enums"]["acquisition_kind"]) == aa.ENUMS["acquisition_kind"]
+
+
+def test_independent_extension_keeps_source_but_is_not_new_acquisition():
+    from apps.reservations.models import ManualBookingDraft, StayExtension, StayExtensionChain
+    from tests.test_manual_booking_operations_phase61 import owner
+
+    r, _, _, reservation, _, attempt = code_before_paid()
+    chain = StayExtensionChain.objects.create(
+        property=reservation.property, root_hostaway_reservation_id=97000
+    )
+    StayExtension.objects.create(
+        chain=chain,
+        previous_hostaway_reservation_id=97000,
+        draft=ManualBookingDraft.objects.get(quote=reservation.booking_intent.quote),
+        reservation=reservation,
+        created_by=owner(),
+    )
+    reservation.refresh_from_db()
+    fields = aa.purchase_fields(r, attempt, reservation)
+    assert fields["acquisition_kind"] == "stay_extension"
+    assert fields["first_campaign_id"] == CAMPAIGN
+
+
+def test_test_reservation_never_prepares_or_redirects_a_purchase():
+    reservation, _, attempt = paid()
+    reservation.is_test = True
+    reservation.save()
+    assert prepare_purchase_event(
+        payment_attempt=attempt, reservation=reservation, request=visitor()
+    ) == (None, None)
+    assert redirect_verified_purchase(visitor(), attempt) is None
+    assert not MarketingEventReceipt.objects.exists()

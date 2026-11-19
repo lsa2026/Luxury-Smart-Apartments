@@ -180,6 +180,7 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     ):
         whatsapp["url"] = transition_url(language)
     return {
+        "attribution_context_active": bool(request.session.get("advertising_context_aa1")),
         "attribution_public_page": attribution_public,
         "attribution_page_kind": "contact"
         if match and match.view_name == "core:contact"
