@@ -44,6 +44,7 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py
           tests/test_stay_extensions.py
           tests/test_day_use08.py
@@ -170,6 +171,13 @@ jobs:
       - name: Verify Ruff formatting
         run: ruff format --diff .
 
+      # Focused attribution/schema failures surface before the long regression suites.
+      - name: Verify assisted attribution and canonical paid receipts in isolation
+        run: |
+          python manage.py makemigrations --check --dry-run
+          pytest tests/test_assisted_attribution.py tests/test_phase10_marketing_seo.py tests/test_payment_link_purchase_receipts.py tests/test_payment_journey_analytics.py tests/test_account_email_flows.py tests/test_manual_booking_operations_phase61.py::test_manual_draft_can_be_rechecked_without_creating_a_reservation tests/test_hyperpay.py::test_http_client_uses_bearer_server_side_and_explicit_entity_id -q
+          node --test tests/assisted-attribution.test.cjs
+
       - name: Test revised payment address, return and status boundaries
         run: pytest tests/test_revised_payment_flow.py tests/test_payment_link_revisions.py tests/test_payment_link_purchase_receipts.py -q
 
@@ -203,6 +211,7 @@ jobs:
           pytest tests/test_property_deep_links.py -q
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-property-deep-links.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-prepurchase-visibility.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-assisted-attribution.cjs
 
       - name: Run tests
         run: pytest
@@ -216,6 +225,7 @@ jobs:
             ${{ runner.temp }}/lsa-contact-layout/*.png
             ${{ runner.temp }}/lsa-contact-layout/extension-*-fixtures.json
             ${{ runner.temp }}/lsa-contact-layout/prepurchase-browser-results.json
+            ${{ runner.temp }}/lsa-contact-layout/assisted-attribution-browser-results.json
           retention-days: 3
 
       - name: Test the lazy price calendar interactions

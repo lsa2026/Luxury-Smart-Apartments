@@ -1,0 +1,18 @@
+{% if source %}{% with info=source.summary %}
+<details class="lsa-panel" aria-label="مصدر الحجز">
+  <summary>مصدر الحجز — {{ info.label }}</summary>
+  {% if info.revoked %}<p>سُحبت موافقة استخدام المصدر؛ لا يُرسل هذا السياق إلى التحليلات.</p>
+  {% else %}
+  <p><strong>{{ info.label }}</strong></p>
+  <dl>
+    <dt>المصدر الأول</dt><dd>{{ info.first_source }}</dd>
+    <dt>الحملة الأولى المعلنة في الزيارة</dt><dd>{{ info.first_campaign }}</dd>
+    <dt>آخر مصدر ملتقط</dt><dd>{{ info.last_source }}</dd>
+    <dt>آخر حملة معلنة في الزيارة</dt><dd>{{ info.last_campaign }}</dd>
+    <dt>شقة الدخول الإعلاني الأصلية</dt><dd>{{ info.origin_property }}</dd>
+  </dl>
+  {% if info.staff_source %}<p>إفادة الموظف غير المتحققة: {{ info.staff_source }}</p>{% endif %}
+  <p class="help">حُفظ المصدر مع هذا الطلب، وتبقى الشقة المحجوزة وحالة السداد في بيانات الحجز. بيانات الزيارة وإفادة الموظف لا تثبتان نسبة المبلغ إلى منصة الإعلانات.</p>
+  {% endif %}
+</details>
+{% endwith %}{% endif %}

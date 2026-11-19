@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .attribution_views import attribution_consent, whatsapp_transition
 from .campaign_links import missed_call_welcome_redirect
 from .marketing_views import (
     acknowledge_purchase_event,
@@ -11,6 +12,8 @@ from .marketing_views import (
 app_name = "marketing"
 
 urlpatterns = [
+    path("analytics/attribution/consent/", attribution_consent, name="attribution_consent"),
+    path("contact/whatsapp/", whatsapp_transition, name="whatsapp_transition"),
     path("hello", missed_call_welcome_redirect, name="missed_call_welcome"),
     path("hello/", missed_call_welcome_redirect, name="missed_call_welcome_slash"),
     path(

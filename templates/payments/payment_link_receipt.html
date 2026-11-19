@@ -12,10 +12,13 @@
   <script src="{% static 'js/measurement-privacy.js' %}?v=2" defer></script>
   <script src="{% static 'js/consent.js' %}?v=18" defer></script>
   <script src="{% static 'js/analytics.js' %}?v=21" defer></script>
+  <script src="{% static 'js/assisted-attribution.js' %}?v=1" defer></script>
   {% endif %}
 </head>
 <body
   data-analytics-payment-link-receipt="true"
+  data-analytics-staff-browser="{{ request.user.is_staff|yesno:'true,false' }}"
+  data-attribution-consent-url="{% url 'marketing:attribution_consent' %}"
   data-google-integrations-enabled="{{ google_config.google_integrations_enabled|yesno:'true,false' }}"
   data-meta-measurement-page-allowed="false"
   data-gtm-enabled="{{ google_config.gtm_enabled|yesno:'true,false' }}"
@@ -39,6 +42,7 @@
   {% with purchased_item=purchase_event.items.0 %}
   <div hidden
     data-analytics-purchase-event
+    {% include 'payments/_attribution_attributes.html' %}
     data-analytics-transaction-id="{{ purchase_event.transaction_id }}"
     data-analytics-value="{{ purchase_event.value|unlocalize }}"
     data-analytics-currency="{{ purchase_event.currency }}"

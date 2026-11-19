@@ -180,6 +180,9 @@ def recheck_manual_booking_draft(
                 selected_display_currency=availability.quote.currency,
             )
             locked.quote = quote
+            from apps.core.assisted_attribution import replace_quote_binding
+
+            replace_quote_binding(previous_quote, quote, manual_draft_id=locked.pk)
             locked.currency = quote.currency
             locked.system_total_price = quote.total_price
             locked.final_total_price = quote.total_price
@@ -206,6 +209,7 @@ def finalize_manual_booking_draft(
     draft_id: object,
     guest_data: dict[str, Any],
     final_total_price: Decimal,
+    actor=None,
 ) -> ManualBookingDraftFinalization:
     """Save guest data and a traceable final price; never charge or book externally."""
 
@@ -275,6 +279,19 @@ def finalize_manual_booking_draft(
         draft.exchange_rate_snapshot = exchange_rate_snapshot
         draft.price_source = price_source
         draft.price_override_reason = ""
+        from django.core.exceptions import ValidationError
+
+        from apps.core.assisted_attribution import bind_admin
+
+        try:
+            bind_admin(
+                draft.quote,
+                code=guest_data.get("attribution_reference", ""),
+                staff_source=guest_data.get("attribution_staff_source") or "unknown",
+                actor=actor or draft.created_by,
+            )
+        except ValidationError:
+            return ManualBookingDraftFinalization("invalid_attribution", draft)
         draft.status = ManualBookingDraft.Status.READY_FOR_PAYMENT
         draft.full_clean()
         draft.save()

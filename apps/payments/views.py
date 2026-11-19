@@ -373,6 +373,7 @@ class HyperPayResultView(View):
             purchase_event, purchase_receipt = prepare_purchase_event(
                 payment_attempt=display_attempt,
                 reservation=outcome.reservation,
+                request=request,
             )
         response = render(
             request,

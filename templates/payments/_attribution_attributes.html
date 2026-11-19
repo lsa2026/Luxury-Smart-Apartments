@@ -1,0 +1,15 @@
+{% if purchase_event.attribution_version %}
+data-aa-attribution-version="{{ purchase_event.attribution_version }}"
+data-aa-attribution-status="{{ purchase_event.attribution_status }}"
+data-aa-closure-method="{{ purchase_event.closure_method }}"
+data-aa-acquisition-kind="{{ purchase_event.acquisition_kind }}"
+data-aa-first-source="{{ purchase_event.first_source }}"
+data-aa-first-medium="{{ purchase_event.first_medium }}"
+data-aa-first-campaign-id="{{ purchase_event.first_campaign_id }}"
+data-aa-last-source="{{ purchase_event.last_source }}"
+data-aa-last-medium="{{ purchase_event.last_medium }}"
+data-aa-last-campaign-id="{{ purchase_event.last_campaign_id }}"
+data-aa-campaign-evidence="{{ purchase_event.campaign_evidence }}"
+data-aa-origin-property-id="{{ purchase_event.origin_property_id }}"
+data-aa-market="{{ purchase_event.market }}"
+{% endif %}

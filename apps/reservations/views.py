@@ -437,6 +437,9 @@ class AvailabilitySearchView(View):
                 status=503,
             )
         if creation.quote is not None:
+            from apps.core.assisted_attribution import bind_session
+
+            bind_session(request, creation.quote)
             prepurchase.remember_quote(
                 request,
                 creation.quote,

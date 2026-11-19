@@ -8,6 +8,7 @@ from django import forms
 from django.utils import timezone, translation
 from django.utils.html import strip_tags
 
+from apps.core.attribution_forms import AttributionInputForm
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.properties.models import Property
 
@@ -80,7 +81,7 @@ class ManualBookingAvailabilityForm(forms.Form):
         return self.cleaned_data.get("guests") or 1
 
 
-class ManualBookingFinalizeForm(forms.Form):
+class ManualBookingFinalizeForm(AttributionInputForm):
     guest_first_name = forms.CharField(label="الاسم الأول", max_length=100)
     guest_last_name = forms.CharField(label="اسم العائلة", max_length=100)
     guest_email = forms.EmailField(

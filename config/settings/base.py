@@ -89,6 +89,7 @@ MIDDLEWARE = [
     "apps.core.middleware.LegacyRedirectMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.attribution_views.AttributionCaptureMiddleware",
     "apps.accounts.middleware.GuestIdentityLockMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "apps.accounts.middleware.OwnerOnlyAdminMiddleware",

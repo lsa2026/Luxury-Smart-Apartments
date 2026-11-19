@@ -1102,6 +1102,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     draft_id=draft.pk,
                     guest_data=form.cleaned_data,
                     final_total_price=form.cleaned_data["final_total_price"],
+                    actor=request.user,
                 )
                 if finalized.code == "ready_for_payment" and finalized.draft is not None:
                     record_audit(
@@ -1127,6 +1128,11 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     form.add_error(
                         None,
                         "انتهت صلاحية السعر. أعد فحص التوفر والسعر قبل المتابعة.",
+                    )
+                elif finalized.code == "invalid_attribution":
+                    form.add_error(
+                        "attribution_reference",
+                        "تعذر اعتماد مرجع المصدر؛ راجع صلاحيته واستخدامه السابق.",
                     )
                 elif finalized.code == "currency_unavailable":
                     form.add_error(None, "تعذّر تثبيت تحويل العملة. لم تُحفظ التعديلات.")

@@ -164,7 +164,31 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     pending_event = (
         request.session.pop("analytics_event", None) if hasattr(request, "session") else None
     )
+    from .assisted_attribution import PUBLIC_NAMES
+    from .assisted_attribution import consent as attribution_consent
+    from .assisted_attribution import context as attribution_context
+    from .attribution_views import transition_url
+
+    whatsapp = _whatsapp_contact(site_setting)
+    whatsapp_original = whatsapp["url"]
+    match = getattr(request, "resolver_match", None)
+    attribution_public = bool(match and match.view_name in PUBLIC_NAMES)
+    if (
+        whatsapp_original
+        and attribution_consent(request)
+        and (attribution_public or attribution_context(request))
+    ):
+        whatsapp["url"] = transition_url(language)
     return {
+        "attribution_context_active": bool(
+            getattr(request, "session", {}).get("advertising_context_aa1")
+        ),
+        "attribution_public_page": attribution_public,
+        "attribution_page_kind": "contact"
+        if match and match.view_name == "core:contact"
+        else page_kind(request),
+        "attribution_property_slug": match.kwargs.get("slug", "") if attribution_public else "",
+        "attribution_whatsapp_original": whatsapp_original,
         "site_setting": site_setting,
         "prepurchase_page_kind": page_kind(request),
         "reservations_email": RESERVATIONS_EMAIL,
@@ -232,5 +256,5 @@ def site_context(request: HttpRequest) -> dict[str, object]:
             {"code": "EUR", "symbol": "€"},
         ),
         "currency_return_url": request.get_full_path(),
-        "whatsapp_contact": _whatsapp_contact(site_setting),
+        "whatsapp_contact": whatsapp,
     }
