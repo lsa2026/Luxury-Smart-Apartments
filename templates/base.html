@@ -51,6 +51,7 @@
     <script src="{% static 'js/form-validation.js' %}?v=1" defer></script>
     <script src="{% static 'js/site.js' %}?v=31" defer></script>
     <script src="{% static 'js/prepurchase.js' %}?v=1" defer></script>
+    <script src="{% static 'js/assisted-attribution.js' %}?v=1" defer></script>
     {% json_ld organization_data csp_nonce %}
     {% block structured_data %}{% endblock %}
     {% block extra_head %}{% endblock %}
@@ -59,6 +60,12 @@
     class="{% block body_class %}{% endblock %}"
     data-google-integrations-enabled="{{ google_config.google_integrations_enabled|yesno:'true,false' }}"
     data-prepurchase-page-kind="{{ prepurchase_page_kind }}"
+    data-analytics-staff-browser="{{ request.user.is_staff|yesno:'true,false' }}"
+    data-attribution-public-page="{{ attribution_public_page|yesno:'true,false' }}"
+    data-attribution-page-kind="{{ attribution_page_kind }}"
+    data-attribution-property-id="{{ attribution_property_slug }}"
+    data-attribution-consent-url="{% url 'marketing:attribution_consent' %}"
+    data-attribution-whatsapp-original="{{ attribution_whatsapp_original }}"
     data-meta-measurement-page-allowed="{{ meta_measurement_page_allowed|yesno:'true,false' }}"
     data-gtm-enabled="{{ google_config.gtm_enabled|yesno:'true,false' }}"
     data-gtm-container-id="{{ google_config.gtm_container_id }}"

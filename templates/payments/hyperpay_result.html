@@ -23,6 +23,7 @@
     {% with purchased_item=purchase_event.items.0 %}
     <div
         data-analytics-purchase-event
+        {% include 'payments/_attribution_attributes.html' %}
         data-analytics-transaction-id="{{ purchase_event.transaction_id }}"
         data-analytics-currency="{{ purchase_event.currency }}"
         data-analytics-value="{{ purchase_event.value|unlocalize }}"

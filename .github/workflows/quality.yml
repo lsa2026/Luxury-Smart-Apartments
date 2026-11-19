@@ -44,6 +44,7 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py
           tests/test_stay_extensions.py
           tests/test_day_use08.py
@@ -169,6 +170,13 @@ jobs:
 
       - name: Verify Ruff formatting
         run: ruff format --diff .
+
+      # Focused attribution/schema failures surface before the long regression suites.
+      - name: Verify assisted attribution and canonical paid receipts in isolation
+        run: |
+          python manage.py makemigrations --check --dry-run
+          pytest tests/test_assisted_attribution.py tests/test_phase10_marketing_seo.py tests/test_payment_link_purchase_receipts.py -q
+          node --test tests/assisted-attribution.test.cjs
 
       - name: Test revised payment address, return and status boundaries
         run: pytest tests/test_revised_payment_flow.py tests/test_payment_link_revisions.py tests/test_payment_link_purchase_receipts.py -q

@@ -366,6 +366,8 @@ def create_stay(
     billing_address=None,
     client=None,
     expected_pricing=None,
+    attribution_reference="",
+    attribution_staff_source="unknown",
 ):
     zone = property_zone(property_obj)
     day = starts_at.astimezone(zone).date()
@@ -440,4 +442,9 @@ def create_stay(
         )
         stay.full_clean()
         stay.save()
+        from apps.core.assisted_attribution import bind_admin
+
+        bind_admin(
+            stay, code=attribution_reference, staff_source=attribution_staff_source, actor=actor
+        )
         return stay

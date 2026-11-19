@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required
+from apps.core.attribution_forms import AttributionInputForm
 from apps.core.phone_numbers import InvalidPhoneNumber
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
@@ -174,7 +175,7 @@ def day_use_available_properties(request):
     return response
 
 
-class DayUseStayForm(forms.Form):
+class DayUseStayForm(AttributionInputForm):
     request_id = forms.UUIDField(widget=forms.HiddenInput)
     property = forms.ModelChoiceField(label="الشقة", queryset=Property.objects.none())
     date = forms.DateField(
@@ -395,6 +396,8 @@ def day_use_create(request):
                     )
                 },
                 expected_pricing=pricing,
+                attribution_reference=data.get("attribution_reference", ""),
+                attribution_staff_source=data.get("attribution_staff_source") or "unknown",
             )
         except DayUseStayError as exc:
             form.add_error(None, str(exc))

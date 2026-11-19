@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required
+from apps.core.attribution_forms import AttributionInputForm
 from apps.core.phone_numbers import InvalidPhoneNumber
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
@@ -170,7 +171,7 @@ def morning_available_properties(request):
     return response
 
 
-class MorningStayForm(forms.Form):
+class MorningStayForm(AttributionInputForm):
     request_id = forms.UUIDField(widget=forms.HiddenInput)
     property = forms.ModelChoiceField(label="الشقة", queryset=Property.objects.none())
     date = forms.DateField(
@@ -324,6 +325,8 @@ class MorningStayEditForm(MorningStayForm):
         super().__init__(*args, stay=stay, **kwargs)
         del self.fields["request_id"]
         del self.fields["amount_sar"]
+        self.fields.pop("attribution_reference", None)
+        self.fields.pop("attribution_staff_source", None)
         local_start = stay.starts_at.astimezone(property_zone(stay.property))
         local_end = stay.ends_at.astimezone(property_zone(stay.property))
         self.initial.update(
@@ -427,6 +430,8 @@ def morning_create(request):
                 billing_address=data.get("billing_address"),
                 allow_started=True,
                 hostaway_first=True,
+                attribution_reference=data.get("attribution_reference", ""),
+                attribution_staff_source=data.get("attribution_staff_source") or "unknown",
             )
         except MorningStayError as exc:
             form.add_error(None, str(exc))

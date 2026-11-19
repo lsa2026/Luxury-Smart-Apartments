@@ -275,6 +275,19 @@ def finalize_manual_booking_draft(
         draft.exchange_rate_snapshot = exchange_rate_snapshot
         draft.price_source = price_source
         draft.price_override_reason = ""
+        from django.core.exceptions import ValidationError
+
+        from apps.core.assisted_attribution import bind_admin
+
+        try:
+            bind_admin(
+                draft.quote,
+                code=guest_data.get("attribution_reference", ""),
+                staff_source=guest_data.get("attribution_staff_source") or "unknown",
+                actor=draft.created_by,
+            )
+        except ValidationError:
+            return ManualBookingDraftFinalization("invalid_attribution", draft)
         draft.status = ManualBookingDraft.Status.READY_FOR_PAYMENT
         draft.full_clean()
         draft.save()

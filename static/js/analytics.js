@@ -36,6 +36,23 @@
     ppEnums.journey_entry = ppEnums.entry_page;
     const ppEvents = new Set(["availability_view", "availability_request", "availability_result_view", "price_view"]);
     const ppReset = Object.fromEntries([...new Set([...ppCommon, ...ppSearch, ...ppResult, ...ppPrice])].map(key => [key, null]));
+    const aaKeys = ["attribution_version", "attribution_status", "closure_method", "acquisition_kind",
+        "first_source", "first_medium", "first_campaign_id", "last_source", "last_medium",
+        "last_campaign_id", "campaign_evidence", "origin_property_id", "market"];
+    const aaEnums = {
+        attribution_version: new Set(["aa1"]),
+        attribution_status: new Set(["reference_linked", "session_linked", "staff_reported", "unknown"]),
+        closure_method: new Set(["self_service", "admin_whatsapp", "admin_other"]),
+        acquisition_kind: new Set(["new_booking", "stay_extension", "payment_revision", "partial_payment", "test", "unknown"]),
+        campaign_evidence: new Set(["tagged_id", "click_only", "none", "staff_reported"]),
+        market: new Set(["riyadh", "marrakech", "other"]),
+        first_source: new Set(["google", "bing", "facebook", "instagram", "tiktok", "snapchat", "whatsapp", "email", "referral", "unknown"]),
+        first_medium: new Set(["cpc", "ppc", "paid_social", "social", "organic", "email", "referral", "messaging", "none", "unknown"]),
+    };
+    aaEnums.last_source = aaEnums.first_source;
+    aaEnums.last_medium = aaEnums.first_medium;
+    const aaCampaigns = new Set(["24262302633", "24262298844", "24426104371"]);
+    const aaReset = Object.fromEntries(aaKeys.map(key => [key, null]));
     const schemas = {
         availability_view: new Set(ppCommon),
         availability_request: new Set([...ppCommon, ...ppSearch]),
@@ -82,7 +99,7 @@
         cookie_consent_updated: new Set(["analytics", "marketing", "version"]),
         purchase: new Set([
             "transaction_id", "value", "currency", "items", "tax", "coupon",
-            ...propertyContextKeys, ...paymentContextKeys,
+            ...propertyContextKeys, ...paymentContextKeys, ...aaKeys,
         ]),
         refund: new Set(["transaction_id", "value", "currency"]),
     };
@@ -146,6 +163,16 @@
         )) {
             return null;
         }
+        if (eventName === "purchase" && aaKeys.some(key => payload[key] !== undefined)) {
+            if (payload.attribution_version !== "aa1") return null;
+            for (const key of aaKeys) {
+                const value = payload[key];
+                if (value === undefined || value === null) continue;
+                if (typeof value !== "string" || (aaEnums[key] && !aaEnums[key].has(value))) return null;
+                if (["first_campaign_id", "last_campaign_id"].includes(key) && !aaCampaigns.has(value)) return null;
+                if (key === "origin_property_id" && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) return null;
+            }
+        }
         const clean = {};
         Object.entries(payload).forEach(([key, value]) => {
             if (!schema.has(key)) {
@@ -173,6 +200,7 @@
     }
 
     function pushEvent(eventName, payload, onProcessed) {
+        if (eventName === "purchase" && body.dataset.analyticsStaffBrowser === "true") return false;
         const clean = sanitize(eventName, payload);
         if (!clean) {
             return false;
@@ -189,6 +217,7 @@
         if (!consent?.analytics && !anonymousPurchase) {
             return false;
         }
+        if (!consent?.analytics) aaKeys.forEach(key => { delete clean[key]; });
         window.dataLayer = window.dataLayer || [];
         window.LSAMeasurementPrivacy?.apply();
         // Clear on EVERY event: a contact click must not inherit an earlier
@@ -206,7 +235,7 @@
         const paymentReset = Object.fromEntries(
             [...paymentContextKeys, "payment_status", "error_category"].map(key => [key, null]),
         );
-        const event = {event: eventName, ...paymentReset, ...ppReset, ...clean,
+        const event = {event: eventName, ...paymentReset, ...ppReset, ...aaReset, ...clean,
             ecommerce: Object.keys(ecommerce).length ? ecommerce : null};
         if (eventName === "purchase") {
             if (typeof onProcessed === "function") {
@@ -411,6 +440,10 @@
         const currency = purchase.dataset.analyticsCurrency;
         const purchasedItem = propertyItem(purchase);
         const pushed = pushEvent("purchase", {
+            ...Object.fromEntries(aaKeys.map(key => {
+                const dataKey = "aa" + key.split("_").map(part => part[0].toUpperCase() + part.slice(1)).join("");
+                return [key, purchase.dataset[dataKey]];
+            }).filter(([, value]) => value !== undefined && value !== "")),
             transaction_id: transactionId,
             value,
             currency,

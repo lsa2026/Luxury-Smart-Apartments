@@ -1128,6 +1128,11 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                         None,
                         "انتهت صلاحية السعر. أعد فحص التوفر والسعر قبل المتابعة.",
                     )
+                elif finalized.code == "invalid_attribution":
+                    form.add_error(
+                        "attribution_reference",
+                        "تعذر اعتماد مرجع المصدر؛ راجع صلاحيته واستخدامه السابق.",
+                    )
                 elif finalized.code == "currency_unavailable":
                     form.add_error(None, "تعذّر تثبيت تحويل العملة. لم تُحفظ التعديلات.")
                 else:

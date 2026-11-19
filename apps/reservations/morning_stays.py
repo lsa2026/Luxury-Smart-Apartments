@@ -302,6 +302,8 @@ def create_stay(
     client=None,
     allow_started=False,
     hostaway_first=False,
+    attribution_reference="",
+    attribution_staff_source="unknown",
 ):
     existing = MorningStay.objects.filter(request_id=request_id).first()
     values = dict(
@@ -358,4 +360,9 @@ def create_stay(
         )
         stay.full_clean()
         stay.save()
+        from apps.core.assisted_attribution import bind_admin
+
+        bind_admin(
+            stay, code=attribution_reference, staff_source=attribution_staff_source, actor=actor
+        )
         return stay

@@ -61,6 +61,17 @@ def eligible(attempt):
 
 def receipt_for(attempt):
     """Reuse the financial receipt/HMAC/ack ledger, scoped to the actual capture."""
+    if attempt.payment_request_id and not attempt.payment_request.modification_request_id:
+        # An original stay may already have the older reservation-scoped receipt.
+        # Reuse its opaque identity/status rather than minting a historical purchase.
+        legacy = MarketingEventReceipt.objects.filter(
+            event_name="purchase",
+            object_reference_hash=MarketingEventReceipt.reference_hmac(
+                attempt.payment_request.reservation.public_reference
+            ),
+        ).first()
+        if legacy is not None:
+            return legacy
     reference = MarketingEventReceipt.reference_hmac(f"payment-link-capture:{attempt.pk}")
     receipt, _ = MarketingEventReceipt.objects.get_or_create(
         event_name="purchase",
@@ -83,7 +94,7 @@ def redirect_verified_purchase(request, attempt):
     The browser gets no attempt identifier or bearer token in the destination URL.
     No Google/Ads request occurs here, including on repeated financial callbacks.
     """
-    if not eligible(attempt):
+    if getattr(getattr(request, "user", None), "is_staff", False) or not eligible(attempt):
         return None
     try:
         receipt = receipt_for(attempt)
@@ -124,7 +135,11 @@ def payment_link_receipt(request):
     language = attempt.payment_request.language
     language = language if language in {"ar", "en", "fr"} else "ar"
     event = None
-    if receipt.status == "prepared":
+    if receipt.status == "prepared" and not getattr(
+        getattr(request, "user", None), "is_staff", False
+    ):
+        from apps.core.assisted_attribution import purchase_fields
+
         item = property_analytics_item(
             attempt.payment_request.reservation.property,
             price=attempt.amount,
@@ -140,9 +155,12 @@ def payment_link_receipt(request):
                 "page_language": language,
                 "items": [item],
                 **payment_analytics_fields(attempt),
+                **purchase_fields(request, attempt, attempt.payment_request.reservation),
             },
         )
-    elif receipt.status != "emitted":
+    elif receipt.status != "emitted" and not getattr(
+        getattr(request, "user", None), "is_staff", False
+    ):
         raise Http404
     request._disable_google_integrations = event is None
     request._local_public_context = True

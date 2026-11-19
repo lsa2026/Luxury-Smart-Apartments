@@ -12,6 +12,7 @@ from django.utils.crypto import salted_hmac
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
+from .attribution_models import AttributionHandoff, BookingAttribution  # noqa: F401
 from .branding import BRAND_NAME
 from .uploads import site_interface_image_upload_to, validate_site_interface_image
 

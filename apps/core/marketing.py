@@ -12,6 +12,10 @@ from apps.core.models import MarketingEventReceipt
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import Reservation
 
+from .assisted_attribution import ENUMS as ATTRIBUTION_ENUMS
+from .assisted_attribution import FIELDS as ATTRIBUTION_FIELDS
+from .assisted_attribution import KNOWN_CAMPAIGNS, MEDIUMS, SOURCES, purchase_fields
+
 PURCHASE_RECEIPT_TOKEN_SALT = "marketing.purchase-receipt.v1"
 PROPERTY_CONTEXT_FIELDS = frozenset({"property_id", "property_name", "page_language"})
 PAYMENT_FIELDS = frozenset({"payment_type", "payment_brand", "checkout_kind"})
@@ -106,6 +110,7 @@ EVENT_SCHEMAS: dict[str, frozenset[str]] = {
         frozenset({"transaction_id", "value", "currency", "items", "tax", "coupon"})
         | PROPERTY_CONTEXT_FIELDS
         | PAYMENT_FIELDS
+        | frozenset(ATTRIBUTION_FIELDS)
     ),
     "refund": frozenset({"transaction_id", "value", "currency"}),
 }
@@ -181,6 +186,25 @@ def sanitize_analytics_event(event_name: str, payload: dict[str, Any]) -> dict[s
         raise ValueError("analytics_event_not_allowed")
     if any(key.casefold() in FORBIDDEN_KEYS for key in payload):
         raise ValueError("analytics_payload_contains_forbidden_key")
+    if event_name == "purchase" and any(key in payload for key in ATTRIBUTION_FIELDS):
+        if payload.get("attribution_version") != "aa1":
+            raise ValueError("invalid_attribution_version")
+        for key in ATTRIBUTION_FIELDS:
+            value = payload.get(key)
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                raise ValueError("invalid_attribution_type")
+            if key in ATTRIBUTION_ENUMS and value not in ATTRIBUTION_ENUMS[key]:
+                raise ValueError("invalid_attribution_enum")
+            if key in {"first_source", "last_source"} and value not in SOURCES:
+                raise ValueError("invalid_attribution_source")
+            if key in {"first_medium", "last_medium"} and value not in MEDIUMS:
+                raise ValueError("invalid_attribution_medium")
+            if key in {"first_campaign_id", "last_campaign_id"} and value not in KNOWN_CAMPAIGNS:
+                raise ValueError("invalid_attribution_campaign")
+            if key == "origin_property_id" and not SLUG_PATTERN.fullmatch(value):
+                raise ValueError("invalid_attribution_property")
     if event_name in {
         "availability_view",
         "availability_request",
@@ -325,25 +349,39 @@ def prepare_purchase_event(
     *,
     payment_attempt: PaymentAttempt,
     reservation: Reservation,
+    request=None,
 ) -> tuple[dict[str, Any] | None, MarketingEventReceipt | None]:
     """Prepare, but never transmit, a purchase after both authoritative states exist."""
-    if payment_attempt.status != PaymentAttempt.Status.SUCCEEDED:
+    if (
+        payment_attempt.status != PaymentAttempt.Status.SUCCEEDED
+        or reservation.is_test
+        or (request is not None and getattr(getattr(request, "user", None), "is_staff", False))
+    ):
         return None, None
     if (
         reservation.normalized_status != Reservation.Status.CONFIRMED
         or reservation.hostaway_reservation_id is None
     ):
         return None, None
-    reference_hash = MarketingEventReceipt.reference_hmac(reservation.public_reference)
-    receipt, created = MarketingEventReceipt.objects.get_or_create(
-        event_name="purchase",
-        object_reference_hash=reference_hash,
-        defaults={
-            "object_type": "Reservation",
-            "status": MarketingEventReceipt.Status.PREPARED,
-        },
-    )
-    if not created and receipt.status == MarketingEventReceipt.Status.EMITTED:
+    if payment_attempt.payment_request_id:
+        from apps.payments.purchase_receipts import eligible, receipt_for
+
+        # Both result routes use the existing capture-scoped ledger; no second sender.
+        if not eligible(payment_attempt):
+            return None, None
+        receipt = receipt_for(payment_attempt)
+        reference_hash = receipt.object_reference_hash
+    else:
+        reference_hash = MarketingEventReceipt.reference_hmac(reservation.public_reference)
+        receipt, _ = MarketingEventReceipt.objects.get_or_create(
+            event_name="purchase",
+            object_reference_hash=reference_hash,
+            defaults={
+                "object_type": "Reservation",
+                "status": MarketingEventReceipt.Status.PREPARED,
+            },
+        )
+    if receipt.status != MarketingEventReceipt.Status.PREPARED:
         return None, receipt
     property_obj = (
         reservation.property
@@ -352,11 +390,17 @@ def prepare_purchase_event(
         if reservation.booking_intent_id
         else None
     )
+    financial_value = (
+        payment_attempt.amount if payment_attempt.payment_request_id else reservation.total_price
+    )
+    financial_currency = (
+        payment_attempt.currency if payment_attempt.payment_request_id else reservation.currency
+    )
     purchased_item = (
         property_analytics_item(
             property_obj,
-            price=reservation.total_price,
-            currency=reservation.currency,
+            price=financial_value,
+            currency=financial_currency,
         )
         if property_obj is not None
         else None
@@ -366,10 +410,12 @@ def prepare_purchase_event(
         {
             # Expose only an opaque, non-reversible identifier to the browser.
             "transaction_id": reference_hash,
-            "value": reservation.total_price,
-            "currency": reservation.currency,
+            "value": financial_value,
+            "currency": financial_currency,
+            **({"checkout_kind": "payment_link"} if payment_attempt.payment_request_id else {}),
             "page_language": (translation.get_language() or "ar").split("-")[0],
             **payment_analytics_fields(payment_attempt),
+            **purchase_fields(request, payment_attempt, reservation),
             **(
                 {
                     "property_id": purchased_item["item_id"],
