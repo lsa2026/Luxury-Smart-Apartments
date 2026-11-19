@@ -76,7 +76,7 @@ def test_short_links_ignore_external_targets_and_all_query_values(method, photos
 
 
 @pytest.mark.parametrize("photos", [False, True])
-@pytest.mark.parametrize("fields", [{"is_visible": False}, {"hostaway_is_active": False}])
+@pytest.mark.parametrize("fields", [{"is_visible": False}, {"hostaway_special_status": "archived"}])
 def test_short_link_cannot_expose_a_hidden_or_inactive_apartment(fields, photos):
     apartment(**fields)
     suffix = "photos/" if photos else ""
@@ -157,9 +157,16 @@ def test_following_short_link_reaches_existing_calendar_or_gallery_without_a_quo
     assert not Reservation.objects.exists()
 
 
-@pytest.mark.parametrize("url", ["/p/e12/", "/de/p/e12/", "/ar/p/e12/other/"])
+@pytest.mark.parametrize("url", ["/de/p/e12/", "/ar/p/e12/other/"])
 def test_short_links_do_not_invent_a_language_or_another_destination(url):
     apartment()
     response = Client().get(url)
     assert response.status_code == 404
     assert "Location" not in response
+
+
+def test_unprefixed_alias_keeps_the_existing_site_locale_redirect():
+    apartment()
+    response = Client().get("/p/e12/")
+    assert response.status_code == 302
+    assert response["Location"] == "/ar/p/e12/"
