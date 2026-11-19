@@ -49,6 +49,9 @@ MANAGER_VIEW_NAMES = frozenset(
     for name in (
         "hub",
         "booking_list",
+        "channel_collection_list",
+        "channel_collection_detail",
+        "channel_collection_result",
         "booking_detail",
         "guest_classification_check",
         "guest_file",

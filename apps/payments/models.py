@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
+from .channel_models import ChannelCardCollection  # noqa: F401
 from .morning_models import MorningPaymentAttempt  # noqa: F401
 
 

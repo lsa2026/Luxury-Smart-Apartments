@@ -4,7 +4,12 @@ from django.db import connection
 
 
 def payment_id_conflict(identifier, attempt):
-    from .models import DayUsePaymentAttempt, MorningPaymentAttempt, PaymentAttempt
+    from .models import (
+        ChannelCardCollection,
+        DayUsePaymentAttempt,
+        MorningPaymentAttempt,
+        PaymentAttempt,
+    )
 
     if not isinstance(identifier, str) or not identifier:
         return False
@@ -15,7 +20,12 @@ def payment_id_conflict(identifier, attempt):
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
                 ["hyperpay:payment:" + identifier],
             )
-    for model in (PaymentAttempt, MorningPaymentAttempt, DayUsePaymentAttempt):
+    for model in (
+        PaymentAttempt,
+        MorningPaymentAttempt,
+        DayUsePaymentAttempt,
+        ChannelCardCollection,
+    ):
         rows = model.objects.filter(provider_payment_id=identifier)
         if isinstance(attempt, model):
             rows = rows.exclude(pk=attempt.pk)

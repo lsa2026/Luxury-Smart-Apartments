@@ -7,7 +7,7 @@ from apps.loyalty.copy_review_previews import preview as loyalty_copy_review_pre
 from apps.loyalty.invitation_api import readiness as invitation_integration_readiness
 from apps.loyalty.invitation_auth import setup as invitation_credential_setup
 from apps.loyalty.welcome_previews import preview as loyalty_welcome_preview
-from apps.payments import owner_payment_links
+from apps.payments import channel_views, owner_payment_links
 from apps.reservations import day_use_views, morning_views, operations_views, stay_extension_views
 from apps.reservations.guest_check_views import guest_classification_check
 from apps.reservations.guest_file_views import guest_file, guest_file_for_booking
@@ -17,6 +17,21 @@ from . import health, invoice_views, views
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/channel-collections/",
+        channel_views.collection_list,
+        name="channel_collection_list",
+    ),
+    path(
+        "admin/operations/channel-collections/<uuid:collection_id>/",
+        channel_views.collection_detail,
+        name="channel_collection_detail",
+    ),
+    path(
+        "admin/operations/channel-collections/<uuid:collection_id>/result/",
+        channel_views.collection_result,
+        name="channel_collection_result",
+    ),
     path(
         "admin/operations/stay-extensions/",
         stay_extension_views.source_list,
