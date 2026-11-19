@@ -13,6 +13,7 @@ from apps.core.views import service_worker
 from apps.loyalty.invitation_links import invitation_shortlink
 from apps.notifications.views import admin_landing
 from apps.payments.apple_pay_domain import apple_pay_domain_association
+from apps.properties.short_links import catalogue_short_link
 from apps.reservations.views import AvailabilitySearchView
 
 urlpatterns = [
@@ -55,6 +56,13 @@ urlpatterns = [
 
 urlpatterns += i18n_patterns(
     path("", include("apps.core.urls")),
+    path("p/<slug:code>/", catalogue_short_link, name="property_short_calendar"),
+    path(
+        "p/<slug:code>/photos/",
+        catalogue_short_link,
+        {"photos": True},
+        name="property_short_gallery",
+    ),
     path("properties/", include("apps.properties.urls")),
     path("reviews/", include("apps.reviews.urls")),
     prefix_default_language=True,
