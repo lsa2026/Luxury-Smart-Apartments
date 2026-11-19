@@ -36,7 +36,12 @@ class AttributionInputForm(forms.Form):
             row = lookup(value)
             if hasattr(row, "binding"):
                 anchor = getattr(getattr(self, "draft", None), "quote_id", None)
-                if row.binding.quote_id != anchor:
+                same = bool(anchor and row.binding.quote_id == anchor)
+                for field in ("morning_stay", "day_use_stay"):
+                    stay = getattr(row.binding, field)
+                    if stay and str(stay.request_id) == self.data.get("request_id"):
+                        same = True
+                if not same:
                     raise ValidationError("استُخدم هذا المرجع لطلب آخر.")
         return value
 

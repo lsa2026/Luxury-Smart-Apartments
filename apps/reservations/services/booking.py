@@ -235,6 +235,9 @@ def consume_revalidated_quote(
                 property_obj=quote.property,
                 session_hash=session_hash,
             )
+            from apps.core.assisted_attribution import replace_quote_binding
+
+            replace_quote_binding(quote, replacement)
             from apps.notifications.services.events import dispatch_event
 
             transaction.on_commit(

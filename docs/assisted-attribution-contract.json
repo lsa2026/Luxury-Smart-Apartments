@@ -1,0 +1,194 @@
+{
+  "reference": "ADS03-ASSISTED-ATTRIBUTION-20261119",
+  "version": "aa1",
+  "owner": "01",
+  "status": "early_candidate_for05and06_review",
+  "base": "09f3c80cc91793fc33299b85b72d476a991edc39",
+  "events": {
+    "purchase": {
+      "strategy": "Enrich existing verified-paid browser purchase only; no new purchase event/sender/conversion",
+      "addedParameters": [
+        "attribution_version",
+        "attribution_status",
+        "closure_method",
+        "acquisition_kind",
+        "first_source",
+        "first_medium",
+        "first_campaign_id",
+        "last_source",
+        "last_medium",
+        "last_campaign_id",
+        "campaign_evidence",
+        "origin_property_id",
+        "market"
+      ],
+      "existingDeclaredFields": 12,
+      "maximumDeclaredFields": 25
+    }
+  },
+  "enums": {
+    "closure_method": [
+      "self_service",
+      "admin_whatsapp",
+      "admin_other"
+    ],
+    "attribution_status": [
+      "reference_linked",
+      "session_linked",
+      "staff_reported",
+      "unknown"
+    ],
+    "campaign_evidence": [
+      "tagged_id",
+      "click_only",
+      "none",
+      "staff_reported"
+    ],
+    "attribution_version": [
+      "aa1"
+    ],
+    "acquisition_kind": [
+      "new_booking",
+      "stay_extension",
+      "payment_revision",
+      "partial_payment",
+      "test",
+      "unknown"
+    ],
+    "market": [
+      "riyadh",
+      "marrakech",
+      "other"
+    ],
+    "first_source": [
+      "google",
+      "bing",
+      "facebook",
+      "instagram",
+      "tiktok",
+      "snapchat",
+      "whatsapp",
+      "email",
+      "referral",
+      "unknown"
+    ],
+    "last_source": [
+      "google",
+      "bing",
+      "facebook",
+      "instagram",
+      "tiktok",
+      "snapchat",
+      "whatsapp",
+      "email",
+      "referral",
+      "unknown"
+    ],
+    "first_medium": [
+      "cpc",
+      "ppc",
+      "paid_social",
+      "social",
+      "organic",
+      "email",
+      "referral",
+      "messaging",
+      "none",
+      "unknown"
+    ],
+    "last_medium": [
+      "cpc",
+      "ppc",
+      "paid_social",
+      "social",
+      "organic",
+      "email",
+      "referral",
+      "messaging",
+      "none",
+      "unknown"
+    ]
+  },
+  "safeFields": {
+    "last_source": "same",
+    "first_campaign_id": "Decimal TEXT only and must be in03verified catalogue; unknown ids omitted, never coerced to numbers",
+    "first_medium": "Controlled vocabulary only: cpc,ppc,paid_social,social,organic,email,referral,messaging,none,unknown",
+    "last_medium": "same",
+    "last_campaign_id": "same",
+    "campaignNames": "Free utm_campaign/content/term not retained or exported; names mapped by03from verified catalogue, not click ids",
+    "origin_property_id": "First tagged public landing property only, immutable thereafter; landing on home keeps property unknown even when later touch is another apartment",
+    "first_source": "Controlled vocabulary only: google,bing,facebook,instagram,tiktok,snapchat,whatsapp,email,referral,unknown"
+  },
+  "privateJoin": {
+    "capture": "Existing consent-gated Django session, first and last tagged touch/time/origin property and consent provenance; no raw click/browser ids retained",
+    "staffReport": "Controlled optional staff source is labelled staff_reported; never promoted to a captured campaign",
+    "whatsapp": "Server transition creates random non-secret capability-limited reference; hash stored privately; code only in WhatsApp prepared text and admin input; never dataLayer/page_location/referrer",
+    "linkEvidence": "Link transition/prepared text does not prove message was sent or conversation closed; admin action records closure method",
+    "association": "Explicit code entered by authorized admin; no name/email/phone matching; one code per booking anchor, expiry30days, no guest read/payment capability",
+    "binding": "Existing quote->intent->reservation->verified payment relation, plus immutable private first/last snapshot; test/extension/revision separate"
+  },
+  "consent": {
+    "revocation": "Clear session capture on withdrawal; never replay denied actions or grant consent from admin reference",
+    "export": "Current non-staff guest analytics consent and valid captured consent/version for source tuple; no aa1fields on anonymous/denied purchase; no purchase event from staff browser",
+    "capture": "analytics consent required; current consent version and timestamp kept privately; late consent can capture current public landing only"
+  },
+  "dedup": {
+    "strategy": "Existing capture ledger for payment-link attempts in both routes, same attempt.amount/currency; reuse any older original reservation receipt identity/status; revisions are separately verified actual captures. No historical replay or second sender.",
+    "history": "No historical purchase replay/backfill; missing historical campaign context remains unknown",
+    "transaction_id": "Existing opaque non-reversible transaction id remains standard; no raw reservation/payment ids"
+  },
+  "preserved": [
+    "pp1names/schemas/meaning",
+    "purchase goal/conversion action",
+    "budget/bids/campaigns",
+    "price/booking/payment authority",
+    "no new keys/provider/schedules"
+  ],
+  "scopeStatus": "Private explicit binding covers regular admin overnight, morning and daytime anchors; GA4 enrichment reuses only existing verified payment receipt flow. Cash/bank and morning/daytime may be privately joined but no new server conversion sender is introduced.",
+  "syntheticExample": {
+    "first_medium": "cpc",
+    "attribution_version": "aa1",
+    "last_source": "google",
+    "first_campaign_id": "24262302633",
+    "currency": "SAR",
+    "closure_method": "admin_whatsapp",
+    "bookedItem": "synthetic-other-riyadh-apartment",
+    "value": 750,
+    "synthetic": true,
+    "first_source": "google",
+    "campaign_evidence": "tagged_id",
+    "acquisition_kind": "new_booking",
+    "event": "purchase",
+    "attribution_status": "reference_linked",
+    "notForProductionReplay": true,
+    "last_medium": "cpc",
+    "transaction_id": "synthetic-opaque-dedup",
+    "last_campaign_id": "24262298844",
+    "origin_property_id": "synthetic-ad-apartment",
+    "market": "riyadh"
+  },
+  "campaignCatalogue": {
+    "source": "03-ADS-BASELINE.json",
+    "verifiedAtRiyadh": "2026-11-19T09:15:06+03:00",
+    "ids": [
+      "24262302633",
+      "24262298844",
+      "24426104371"
+    ],
+    "acceptedSuffix": "utm_source=google&utm_medium=cpc&utm_id={campaignid}",
+    "changesBy01": false,
+    "matchMeaning": "Captured declared id in known account catalogue; NOT a Google matched click/conversion",
+    "unknownId": "Omitted from storage and GA4; source/medium may remain controlled, campaign unknown"
+  },
+  "evidenceSemantics": "campaign_evidence qualifies LAST touch only; FIRST tuple is independently retained. tagged_id means captured catalogue-listed id, not provider confirmed attribution.",
+  "paidCoverage": {
+    "regularHyperPay": "Existing verified capture, production environment, paid request, confirmed non-test reservation, owned clean guest receipt; enrich existing purchase only",
+    "staffBrowser": "No browser purchase created/rendered/forwarded as a guest; staff may save private evidence only",
+    "manualBankCash": "Private source binding retained and joins existing recorded receipt evidence; no new server/offline conversion upload or staff-browser purchase",
+    "morningDaytime": "Private explicit source binding at creation; existing independent financial proof stays authoritative; no invented GA4 receipt/sender",
+    "partial": "Existing capture-scoped purchase semantics preserved; actual captured amount only and acquisition_kind=partial_payment, excluded from new-booking acquisition cohorts",
+    "extensions": "Existing child reservation classified stay_extension; not a new acquisition",
+    "revisions": "Existing modification link/payment classified payment_revision; no double sender",
+    "tests": "Production test reservations ineligible purchase; private test-environment evidence not treated as live acquisition"
+  }
+}

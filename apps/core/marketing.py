@@ -354,7 +354,8 @@ def prepare_purchase_event(
     """Prepare, but never transmit, a purchase after both authoritative states exist."""
     if (
         payment_attempt.status != PaymentAttempt.Status.SUCCEEDED
-        or reservation.is_test
+        or getattr(payment_attempt, "provider", "hyperpay") != "hyperpay"
+        or getattr(reservation, "is_test", False)
         or (request is not None and getattr(getattr(request, "user", None), "is_staff", False))
     ):
         return None, None

@@ -80,3 +80,9 @@ class BookingAttribution(models.Model):
 
     def __str__(self):
         return f"Booking source — {self.linkage}"
+
+    @property
+    def summary(self):
+        from .assisted_attribution import binding_summary
+
+        return binding_summary(self)

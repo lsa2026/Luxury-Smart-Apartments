@@ -18,6 +18,7 @@ from apps.core.attribution_models import AttributionHandoff, BookingAttribution
 from apps.core.marketing import EVENT_SCHEMAS, prepare_purchase_event, sanitize_analytics_event
 from apps.core.models import MarketingEventReceipt, SiteSetting
 from apps.payments.purchase_receipts import receipt_for, redirect_verified_purchase
+from tests.test_day_use08 import rig as day_use_rig  # noqa: F401
 from tests.test_payment_link_purchase_receipts import callback, google_settings, paid  # noqa: F401
 from tests.test_reservation_payment_links import isolated_settings  # noqa: F401
 
@@ -333,3 +334,148 @@ def test_private_source_never_changes_marrakech_into_riyadh():
     reservation.property.city = "Marrakech"
     reservation.property.city_ar = "مراكش"
     assert aa.purchase_fields(r, attempt, reservation)["market"] == "marrakech"
+
+
+def test_morning_creation_persists_private_reference_without_a_purchase(settings):
+    from decimal import Decimal
+    from uuid import uuid4
+
+    from apps.reservations.morning_stays import create_stay
+    from tests.test_manual_booking_operations_phase61 import owner
+    from tests.test_morning_stays import property_and_remote, window
+
+    settings.MORNING07_N8N_ENABLED = False
+    settings.MORNING07_PAYMENT_HANDOFF_ENABLED = False
+    r = visitor()
+    source(r)
+    code = aa.handoff(r)
+    p, remote = property_and_remote()
+    start, end = window()
+    stay = create_stay(
+        actor=owner(),
+        request_id=uuid4(),
+        property_obj=p,
+        starts_at=start,
+        ends_at=end,
+        guest_name="Synthetic Guest",
+        guest_phone="+16502530000",
+        guest_email="synthetic@example.invalid",
+        guests=1,
+        amount_sar=Decimal("500"),
+        client=remote,
+        attribution_reference=code,
+    )
+    binding = BookingAttribution.objects.get(morning_stay=stay)
+    assert binding.linkage == "reference_linked"
+    assert binding.quote_id is None and binding.day_use_stay_id is None
+    assert not MarketingEventReceipt.objects.exists()
+
+
+def test_daytime_creation_persists_private_reference_without_a_purchase(day_use_rig):  # noqa: F811
+    from apps.reservations.day_use_stays import create_stay
+
+    r = visitor()
+    source(r)
+    code = aa.handoff(r)
+    stay = create_stay(**day_use_rig.values, attribution_reference=code)
+    binding = BookingAttribution.objects.get(day_use_stay=stay)
+    assert (
+        binding.linkage == "reference_linked"
+        and binding.snapshot["first"]["campaign_id"] == CAMPAIGN
+    )
+    assert not MarketingEventReceipt.objects.exists()
+
+
+@pytest.mark.parametrize("method", ["cash", "bank_transfer"])
+def test_private_source_remains_joined_to_real_manager_receipt_without_staff_purchase(
+    method, settings
+):
+    from apps.payments.offline_receipts import receipt_snapshot, record_offline_receipt
+    from tests.test_manual_booking_operations_phase61 import owner
+    from tests.test_reservation_payment_links import manual_stay
+
+    settings.MANUAL_PAYMENT_RECEIPTS_ENABLED = True
+    r = visitor()
+    source(r)
+    code = aa.handoff(r)
+    reservation = manual_stay()
+    reservation.is_test = False
+    reservation.save()
+    actor = owner()
+    binding = aa.bind_admin(reservation.booking_intent.quote, code=code, actor=actor)
+    staff = RequestFactory().post("/admin/")
+    staff.user = actor
+    receipt = record_offline_receipt(
+        request=staff,
+        reservation_id=reservation.pk,
+        amount=reservation.total_price,
+        currency=reservation.currency,
+        method=method,
+        reference="synthetic-receipt-only",
+        received_at=timezone.now() - timedelta(minutes=1),
+        snapshot_digest=receipt_snapshot(reservation),
+        confirmed=True,
+    )
+    reservation.refresh_from_db()
+    assert receipt.reservation_id == binding.quote.booking_intent.reservation.pk
+    assert reservation.payment_status == "paid"
+    assert binding.summary["first_campaign"] == "البحث العربي"
+    assert prepare_purchase_event(
+        payment_attempt=receipt.payment_attempt, reservation=reservation, request=staff
+    ) == (None, None)
+    assert not MarketingEventReceipt.objects.exists()
+
+
+def test_repriced_unconsumed_quote_keeps_exact_source_and_handoff_identity():
+    from uuid import uuid4
+
+    from apps.reservations.models import BookingQuote
+
+    reservation, _, _ = paid()
+    old = BookingQuote.objects.get(pk=reservation.booking_intent.quote_id)
+    old.pk = uuid4()
+    old.save(force_insert=True)
+    r = visitor()
+    source(r)
+    aa.bind_session(r, old)
+    binding = BookingAttribution.objects.get(quote=old)
+    new = BookingQuote.objects.get(pk=old.pk)
+    new.pk = uuid4()
+    new.save(force_insert=True)
+    aa.replace_quote_binding(old, new)
+    binding.refresh_from_db()
+    assert binding.quote_id == new.pk and binding.snapshot["first"]["campaign_id"] == CAMPAIGN
+    assert not BookingAttribution.objects.filter(quote=old).exists()
+
+
+def test_private_summary_is_readable_and_never_exposes_reference_or_guest_data():
+    from django.template.loader import render_to_string
+
+    _, code, binding, reservation, _, _ = code_before_paid()
+    html = render_to_string(
+        "admin/reservations/includes/attribution_summary.html", {"source": binding}
+    )
+    assert "مصدر الحجز" in html and "البحث العربي" in html and "مرتبط بمرجع واتساب" in html
+    for secret in (
+        code,
+        binding.journey_hash,
+        reservation.public_reference,
+        reservation.booking_intent.guest_email,
+        reservation.booking_intent.guest_phone,
+    ):
+        assert secret not in html
+
+
+def test_frozen_contract_fields_vocab_and_catalogue_match_source():
+    from pathlib import Path
+
+    contract = json.loads(
+        (Path(__file__).parents[1] / "docs/assisted-attribution-contract.json").read_text(
+            encoding="utf-8-sig"
+        )
+    )
+    assert set(contract["events"]["purchase"]["addedParameters"]) == set(aa.FIELDS)
+    assert set(contract["enums"]["first_source"]) == aa.SOURCES
+    assert set(contract["enums"]["last_medium"]) == aa.MEDIUMS
+    assert set(contract["campaignCatalogue"]["ids"]) == aa.KNOWN_CAMPAIGNS
+    assert set(contract["enums"]["acquisition_kind"]) == aa.ENUMS["acquisition_kind"]

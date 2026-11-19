@@ -270,6 +270,71 @@ def bind_session(request, quote):
         )
 
 
+def replace_quote_binding(old, new):
+    """Repricing the same unconsumed owned quote is not a new guest/source."""
+    from apps.reservations.models import BookingIntent
+
+    if old.property_id != new.property_id or old.session_key_hash != new.session_key_hash:
+        raise ValidationError("لا يمكن نقل المصدر إلى طلب مختلف.")
+    with transaction.atomic():
+        if BookingIntent.objects.filter(quote=old).exists():
+            return
+        row = BookingAttribution.objects.select_for_update().filter(quote=old).first()
+        if row:
+            row.quote = new
+            row.save(update_fields=["quote"])
+
+
+def binding_summary(binding):
+    """Only render on the existing access-controlled booking pages."""
+    from apps.properties.models import Property
+
+    from .templatetags.presentation import localized_property_name
+
+    source_labels = {
+        "google": "جوجل",
+        "bing": "بينج",
+        "facebook": "فيسبوك",
+        "instagram": "إنستغرام",
+        "tiktok": "تيك توك",
+        "snapchat": "سناب شات",
+        "whatsapp": "واتساب",
+        "email": "البريد",
+        "referral": "إحالة",
+        "unknown": "غير معلوم",
+    }
+    campaign_labels = {
+        "24262302633": "البحث العربي",
+        "24262298844": "البحث الإنجليزي",
+        "24426104371": "الأداء الأقصى",
+    }
+    data = binding.snapshot
+    first, last = data.get("first", {}), data.get("last", {})
+    origin = Property.objects.filter(slug=data.get("origin_property_id", "")).first()
+    return {
+        "label": {
+            "reference_linked": "مرتبط بمرجع واتساب",
+            "session_linked": "مرتبط بزيارة الموقع",
+            "staff_reported": "إفادة الموظف فقط",
+            "unknown": "المصدر غير معلوم",
+        }.get(binding.linkage, "المصدر غير معلوم"),
+        "first_source": source_labels.get(first.get("source"), "غير معلوم"),
+        "last_source": source_labels.get(last.get("source"), "غير معلوم"),
+        "first_campaign": campaign_labels.get(first.get("campaign_id"), "غير معلومة"),
+        "last_campaign": campaign_labels.get(last.get("campaign_id"), "غير معلومة"),
+        "origin_property": localized_property_name(origin) if origin else "غير معلومة",
+        "staff_source": {
+            "google_ads": "ذكر إعلان جوجل",
+            "social": "ذكر وسائل التواصل",
+            "referral": "توصية أو إحالة",
+            "returning": "ضيف عائد",
+            "other": "مصدر آخر",
+        }.get(binding.staff_source, ""),
+        "captured_at": first.get("captured_at", ""),
+        "revoked": bool(binding.revoked_at),
+    }
+
+
 def purchase_fields(request, attempt, reservation):
     """Called only by paid-event preparation; does not create or emit a purchase."""
     from .context_processors import _consent_from_cookie
@@ -334,12 +399,21 @@ def purchase_fields(request, attempt, reservation):
         return result
     for prefix in ("first", "last"):
         touch = data.get(prefix, {})
-        for key in ("source", "medium", "campaign_id"):
-            if touch.get(key):
-                result[f"{prefix}_{key}"] = touch[key]
+        if touch.get("source") in SOURCES:
+            result[f"{prefix}_source"] = touch["source"]
+        if touch.get("medium") in MEDIUMS:
+            result[f"{prefix}_medium"] = touch["medium"]
+        if touch.get("campaign_id") in KNOWN_CAMPAIGNS:
+            result[f"{prefix}_campaign_id"] = touch["campaign_id"]
     last = data.get("last", {})
-    result["campaign_evidence"] = last.get("campaign_evidence", "none")
+    result["campaign_evidence"] = (
+        "tagged_id"
+        if result.get("last_campaign_id")
+        else "click_only"
+        if last.get("click_id_seen")
+        else "none"
+    )
     origin = data.get("origin_property_id")
-    if origin:
+    if origin and _slug(origin):
         result["origin_property_id"] = origin
     return result

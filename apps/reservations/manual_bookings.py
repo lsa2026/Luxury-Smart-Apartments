@@ -180,6 +180,9 @@ def recheck_manual_booking_draft(
                 selected_display_currency=availability.quote.currency,
             )
             locked.quote = quote
+            from apps.core.assisted_attribution import replace_quote_binding
+
+            replace_quote_binding(previous_quote, quote)
             locked.currency = quote.currency
             locked.system_total_price = quote.total_price
             locked.final_total_price = quote.total_price
@@ -206,6 +209,7 @@ def finalize_manual_booking_draft(
     draft_id: object,
     guest_data: dict[str, Any],
     final_total_price: Decimal,
+    actor=None,
 ) -> ManualBookingDraftFinalization:
     """Save guest data and a traceable final price; never charge or book externally."""
 
@@ -284,7 +288,7 @@ def finalize_manual_booking_draft(
                 draft.quote,
                 code=guest_data.get("attribution_reference", ""),
                 staff_source=guest_data.get("attribution_staff_source") or "unknown",
-                actor=draft.created_by,
+                actor=actor or draft.created_by,
             )
         except ValidationError:
             return ManualBookingDraftFinalization("invalid_attribution", draft)

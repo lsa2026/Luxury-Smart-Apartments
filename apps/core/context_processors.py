@@ -166,13 +166,18 @@ def site_context(request: HttpRequest) -> dict[str, object]:
     )
     from .assisted_attribution import PUBLIC_NAMES
     from .assisted_attribution import consent as attribution_consent
+    from .assisted_attribution import context as attribution_context
     from .attribution_views import transition_url
 
     whatsapp = _whatsapp_contact(site_setting)
     whatsapp_original = whatsapp["url"]
     match = getattr(request, "resolver_match", None)
     attribution_public = bool(match and match.view_name in PUBLIC_NAMES)
-    if attribution_public and whatsapp_original and attribution_consent(request):
+    if (
+        whatsapp_original
+        and attribution_consent(request)
+        and (attribution_public or attribution_context(request))
+    ):
         whatsapp["url"] = transition_url(language)
     return {
         "attribution_public_page": attribution_public,

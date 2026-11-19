@@ -1102,6 +1102,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     draft_id=draft.pk,
                     guest_data=form.cleaned_data,
                     final_total_price=form.cleaned_data["final_total_price"],
+                    actor=request.user,
                 )
                 if finalized.code == "ready_for_payment" and finalized.draft is not None:
                     record_audit(
