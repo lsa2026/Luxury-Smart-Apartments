@@ -676,3 +676,50 @@ def test_manager_posts_require_csrf(rig):
         ).status_code
         == 403
     )
+
+
+def test_verified_capture_kept_for_review_when_legacy_receipt_appears_after_claim(rig):
+    from apps.payments.models import OfflinePaymentReceipt
+    from apps.payments.offline_receipts import receipt_snapshot
+
+    local = local_external(rig)
+    order = started(rig)
+    # Simulate an already-present external/legacy receipt, not a permitted new
+    # receipt call: the current receipt service now blocks this reverse race.
+    receipt = OfflinePaymentReceipt.objects.create(
+        reservation=local,
+        amount=local.total_price,
+        currency=local.currency,
+        method="bank_transfer",
+        reference="synthetic-legacy-late-receipt",
+        received_at=timezone.now() - timedelta(minutes=1),
+        recorded_by=rig.owner,
+        snapshot_digest=receipt_snapshot(local),
+    )
+    original = (
+        receipt.pk,
+        receipt.amount,
+        receipt.reference,
+        receipt.received_at,
+        receipt.snapshot_digest,
+    )
+    before = counts()
+    rig.gateway.get_checkout_payment.return_value = document(order)
+    for _ in range(2):
+        result = service.reconcile(order.pk, actor=rig.owner, client=rig.gateway)
+        assert result.status == "review" and result.failure_code == "local_collection_changed"
+        assert result.provider_payment_id == "synthetic-capture-1234" and result.verified_at
+        assert result.provider_result_code == "000.000.000"
+    receipt.refresh_from_db()
+    assert (
+        receipt.pk,
+        receipt.amount,
+        receipt.reference,
+        receipt.received_at,
+        receipt.snapshot_digest,
+    ) == original
+    assert OfflinePaymentReceipt.objects.count() == 1 and counts() == before
+    with pytest.raises(ValidationError):
+        service.start_checkout(order.pk, actor=rig.owner, client=rig.gateway, hostaway=rig.remote)
+    assert rig.gateway.create_checkout.call_count == 1
+    assert rig.gateway.get_checkout_payment.call_count == 2
