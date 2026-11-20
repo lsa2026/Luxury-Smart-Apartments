@@ -13,6 +13,13 @@ MISSED_CALL_CAMPAIGN = {
     "utm_content": "scenario_05",
 }
 
+WHATSAPP_GREETING_CAMPAIGN = {
+    "utm_source": "whatsapp",
+    "utm_medium": "messaging",
+    "utm_campaign": "whatsapp_greeting",
+    "utm_content": "business_app_greeting",
+}
+
 
 @require_safe
 def missed_call_welcome_redirect(request: HttpRequest) -> HttpResponse:
@@ -23,6 +30,20 @@ def missed_call_welcome_redirect(request: HttpRequest) -> HttpResponse:
     a GA event; the existing consent-aware homepage tag handles collection.
     """
     destination = f"{reverse('core:home')}?{urlencode(MISSED_CALL_CAMPAIGN)}"
+    response = HttpResponseRedirect(destination)
+    response["Cache-Control"] = "no-store, max-age=0"
+    response["X-Robots-Tag"] = "noindex"
+    return response
+
+
+@require_safe
+def whatsapp_greeting_redirect(request: HttpRequest) -> HttpResponse:
+    """Resolve the business-app greeting to the localized home with fixed UTMs.
+
+    Ignore all incoming query parameters, including destination overrides and
+    personal identifiers. Keep this campaign separate from the missed-call link.
+    """
+    destination = f"{reverse('core:home')}?{urlencode(WHATSAPP_GREETING_CAMPAIGN)}"
     response = HttpResponseRedirect(destination)
     response["Cache-Control"] = "no-store, max-age=0"
     response["X-Robots-Tag"] = "noindex"

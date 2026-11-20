@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .attribution_views import attribution_consent, whatsapp_transition
-from .campaign_links import missed_call_welcome_redirect
+from .campaign_links import missed_call_welcome_redirect, whatsapp_greeting_redirect
 from .marketing_views import (
     acknowledge_purchase_event,
     marketing_diagnostics,
@@ -16,6 +16,8 @@ urlpatterns = [
     path("contact/whatsapp/", whatsapp_transition, name="whatsapp_transition"),
     path("hello", missed_call_welcome_redirect, name="missed_call_welcome"),
     path("hello/", missed_call_welcome_redirect, name="missed_call_welcome_slash"),
+    path("welcome", whatsapp_greeting_redirect, name="whatsapp_greeting"),
+    path("welcome/", whatsapp_greeting_redirect, name="whatsapp_greeting_slash"),
     path(
         "analytics/purchase/acknowledge/",
         acknowledge_purchase_event,
