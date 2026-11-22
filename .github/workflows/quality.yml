@@ -172,6 +172,11 @@ jobs:
       - name: Verify Ruff formatting
         run: ruff format --diff .
 
+      - name: Verify scoped website source and future-only relay without live providers
+        run: |
+          python manage.py makemigrations --check --dry-run
+          pytest tests/test_message_source_authorization.py tests/test_message_source_relay.py tests/test_guest_message_transport.py -q
+
       # Focused attribution/schema failures surface before the long regression suites.
       - name: Verify private Booking channel collection boundaries
         env:

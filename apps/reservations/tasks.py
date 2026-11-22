@@ -1,6 +1,13 @@
 from celery import shared_task
 
 
+@shared_task(ignore_result=True, soft_time_limit=55, time_limit=60)
+def forward_due_message_sources():
+    from .message_source_relay import forward_due
+
+    return forward_due()
+
+
 @shared_task(bind=True, ignore_result=True, max_retries=5, soft_time_limit=35, time_limit=40)
 def refresh_guest_classification_history(self, generation, cursor):
     from .services.guest_classification_history import provider_state, refresh_page

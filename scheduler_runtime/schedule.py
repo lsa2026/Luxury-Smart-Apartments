@@ -20,6 +20,11 @@ def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]
             "schedule": 60,
         },
     }
+    if settings.get("MESSAGE_SOURCE_RELAY_ENABLED", False):
+        schedule["website-source-relay"] = {
+            "task": "apps.reservations.tasks.forward_due_message_sources",
+            "schedule": 60,
+        }
     if settings.get("LOYALTY_WHATSAPP_NOTICES_ENABLED", False):
         schedule["loyalty-movement-whatsapp"] = {
             "task": "apps.loyalty.tasks.recover_movement_notices_task",

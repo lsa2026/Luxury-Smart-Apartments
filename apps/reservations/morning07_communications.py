@@ -142,13 +142,19 @@ def capture_event(stay_id):
     MorningStay.objects.filter(pk=stay.pk).update(
         communication_revision=revision, communication_fingerprint=fingerprint
     )
+    from .message_source_relay import register_event
+
+    register_event(event, "07")
     transaction.on_commit(lambda: queue_stay_event(str(stay.pk)))
 
 
 def queue_stay_event(stay_id):
     """Dispatch only this committed booking; no periodic poller."""
+    from .guest_message_transport import mode
     from .tasks import deliver_morning07_events
 
+    if mode() != "ultramsg":
+        return
     try:
         deliver_morning07_events.delay(stay_id)
     except Exception:
@@ -186,6 +192,10 @@ def read_event(request, event_id):
 
 
 def deliver_pending_events(limit=3, *, client=None, stay_id=None):
+    from .guest_message_transport import mode
+
+    if mode() != "ultramsg":
+        return {"accepted": 0}
     if not settings.MORNING07_N8N_ENABLED or not settings.MORNING07_N8N_WEBHOOK_URL:
         return {"accepted": 0}
     accepted = 0
