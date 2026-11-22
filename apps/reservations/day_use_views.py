@@ -430,6 +430,8 @@ def day_use_create(request):
 @operations_access_required
 @day_use_arabic_ui
 def day_use_detail(request, stay_id):
+    from .telegram_stay_activation import context as telegram_context
+
     stay = get_object_or_404(DayUseStay.objects.select_related("property"), pk=stay_id)
     billing_form = DayUseBillingForm(initial=stay.billing_address)
     phone_form = GuestDetailsForm(initial={"guest_phone": stay.guest_phone})
@@ -500,6 +502,7 @@ def day_use_detail(request, stay_id):
         context(
             request,
             title="تفاصيل الحجز النهاري",
+            telegram=telegram_context(request, stay, "08"),
             stay=stay,
             operation=booking_state(stay),
             billing_form=billing_form,

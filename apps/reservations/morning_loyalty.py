@@ -182,6 +182,10 @@ def invite_paid_booking(
 
 
 def queue_paid_invitation(stay):
+    from .telegram_stay_transport import selected
+
+    if selected(stay):
+        return
     """One stay after collection; use the same invitation registry and receipts as n8n."""
     from django.db import transaction
 

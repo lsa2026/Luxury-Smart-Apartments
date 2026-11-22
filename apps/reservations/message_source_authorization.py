@@ -465,6 +465,10 @@ def source_authorization(request, *, scenario, financial=False):
             .get(pk=event.stay_id)
         )
         event.stay = stay
+        from .telegram_stay_transport import selected as telegram_selected
+
+        if telegram_selected(stay):
+            return response({"code": "telegram_owned_stay", "dispatch_allowed": False}, 409)
         if not isinstance(event.payload, dict):
             return response({"code": "unverified"}, 409)
         try:

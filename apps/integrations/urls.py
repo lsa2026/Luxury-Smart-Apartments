@@ -15,6 +15,7 @@ from apps.reservations import (
     morning_auto_payment,
     morning_loyalty,
     telegram_authority,
+    telegram_stay_journey,
     telegram_stay_source,
 )
 
@@ -23,6 +24,7 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path("telegram39/stays/record/", telegram_stay_journey.record, name="telegram39_stay_record"),
     path(
         "telegram39/stays/source/", telegram_stay_source.read_source, name="telegram39_stay_source"
     ),

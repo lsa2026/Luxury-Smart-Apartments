@@ -64,7 +64,12 @@ def fingerprint(stay):
 
 
 def require_unpaid(stay):
-    if not configured() or stay.environment != settings.HYPERPAY_ENVIRONMENT:
+    from .telegram_stay_transport import enabled, selected
+
+    transport_ready = (
+        bool(settings.HYPERPAY_ENABLED and enabled()) if selected(stay) else configured()
+    )
+    if not transport_ready or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise MorningStayError("إرسال رابط الدفع عبر واتساب غير مفعّل لهذا الطلب.")
     if stay.status not in {"open", "expired"} or stay.paid_at:
         raise MorningStayError("الطلب مدفوع أو ملغى أو يحتاج حسم حالة الدفع؛ لم يُرسل رابط جديد.")
@@ -210,6 +215,10 @@ def queue_initial(stay, *, dispatch_async=True):
 
 def resend(stay_id, request_id, *, client=None, dispatch_async=True):
     current = MorningStay.objects.select_related("property").get(pk=stay_id)
+    from .telegram_stay_transport import selected
+
+    if selected(current):
+        raise MorningStayError("تُدار رسائل هذا الحجز عبر تليجرام ضمن مساره المعتمد.")
     existing = MorningPaymentLinkDelivery.objects.filter(pk=request_id).first()
     if existing:
         if existing.stay_id != current.pk:
@@ -279,6 +288,10 @@ def send_link(delivery_id):
     if delivery.state != "queued":
         return delivery.state
     stay = delivery.stay
+    from .telegram_stay_transport import selected
+
+    if selected(stay):
+        return "transport_held"
     try:
         require_unpaid(stay)
         if fingerprint(stay) != delivery.fingerprint:

@@ -42,7 +42,14 @@ LABELS = {
 
 
 class AdminProofForm(forms.Form):
-    phone = forms.CharField(label="رقم الضيف الدولي بعد التحقق", max_length=32)
+    phone = forms.CharField(
+        label="رقم الضيف الدولي بعد التحقق",
+        max_length=32,
+        help_text=(
+            "إذا كان الهاتف مفقودًا أو مختلفًا في هوستاوي، صححه هناك أولًا "
+            "ثم أعد فتح الحجز لتحديث بياناته قبل التفعيل."
+        ),
+    )
     evidence_ref = forms.RegexField(
         label="مرجع إجراء التحقق الخاص بالحجز", regex=r"^[A-Za-z0-9:_-]{6,100}$", max_length=100
     )
@@ -58,10 +65,13 @@ class AdminProofForm(forms.Form):
 
 
 def eligible(reservation):
+    from .stay_extension_models import StayExtension
+
     return bool(
         reservation.hostaway_reservation_id
         and reservation.normalized_status in Reservation.ACTIVE_STATUSES
         and not reservation.is_test
+        and not StayExtension.objects.filter(reservation=reservation).exists()
     )
 
 

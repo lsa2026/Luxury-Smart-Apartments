@@ -28,8 +28,18 @@ class Route:
     purpose: str
     reference: str
     transport: str
+    verify_telegram_owner: bool = False
 
     def open(self, legacy_factory):
+        from .telegram_stay_models import TelegramStayChannel
+
+        scenario = {"morning07": "07", "day_use08": "08"}.get(self.source)
+        if (
+            self.verify_telegram_owner
+            and scenario
+            and TelegramStayChannel.objects.filter(scenario=scenario, stay_id=self.stay_id).exists()
+        ):
+            raise TransportHeld("telegram_owned_stay")
         if self.transport != "ultramsg" or mode() != "ultramsg":
             raise TransportHeld("ycloud_contract_pending")
         # Defer construction until AFTER the caller's committed delivery claim,
@@ -44,6 +54,11 @@ def prepare(stay, *, source, purpose, reference, recipient_kind="guest"):
     template/consent mapping37, source-event cutoff20 and durable transport/receipt
     correlation must all be reviewed before implementing the central branch.
     """
+    from .telegram_stay_transport import scenario_for
+    from .telegram_stay_transport import selected as telegram_selected
+
+    if telegram_selected(stay):
+        raise TransportHeld("telegram_owned_stay")
     selected = mode()
     if selected != "ultramsg":
         if selected != "ycloud_central":
@@ -52,7 +67,13 @@ def prepare(stay, *, source, purpose, reference, recipient_kind="guest"):
             raise TransportHeld("workgroup_transport_not_supported")
         raise TransportHeld("ycloud_contract_pending")
     return Route(
-        source, str(stay.pk), stay.communication_revision, purpose, str(reference), selected
+        source,
+        str(stay.pk),
+        stay.communication_revision,
+        purpose,
+        str(reference),
+        selected,
+        verify_telegram_owner=bool(scenario_for(stay)),
     )
 
 

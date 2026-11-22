@@ -5,6 +5,7 @@
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  {% if telegram %}{% include 'reservations/_telegram_activation.html' %}{% endif %}
   {% include 'admin/reservations/includes/attribution_summary.html' with source=stay.advertising_attribution %}
   <section class="lsa-page-head"><h1>تفاصيل الحجز النهاري</h1><a href="{% url 'notifications:day_use_list' %}">الحجوزات النهارية</a></section>
   <section class="lsa-panel">

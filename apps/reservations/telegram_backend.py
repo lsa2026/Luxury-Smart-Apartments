@@ -43,11 +43,14 @@ class Backend:
         try:
             scope = self.authority_context
             envelope = authority.mint(scope, action, key or (scope or {}).get("key"))
+            # Private render context includes both canonical JSON strings and
+            # their parsed values. Ordinary activation results remain capped8KiB.
+            limit = {"render_source": 131072, "review_policy": 32768}.get(action, 8192)
             with self.client.stream("POST", BASE, json=envelope) as response:
                 body = bytearray()
                 for chunk in response.iter_bytes():
                     body.extend(chunk)
-                    if len(body) > 8192:
+                    if len(body) > limit:
                         raise Unavailable
                 if response.status_code != 200:
                     raise Unavailable
@@ -150,7 +153,9 @@ class Backend:
         return "unverified" if state == "none" else state
 
 
-def checked_invitation(value):
+def checked_invitation(value, *, prefixes="bg"):
+    if prefixes not in {"bg", "h", "d"}:
+        raise Unavailable
     url = value.get("url", "")
     try:
         expiry = parse_datetime(str(value.get("expires_at", "")))
@@ -158,7 +163,9 @@ def checked_invitation(value):
         raise Unavailable from exc
     if (
         not isinstance(url, str)
-        or not re.fullmatch(r"https://t\.me/LuxurySmartApartmentsBot\?start=[bg]_[a-f0-9]{48}", url)
+        or not re.fullmatch(
+            r"https://t\.me/LuxurySmartApartmentsBot\?start=[" + prefixes + r"]_[a-f0-9]{48}", url
+        )
         or not expiry
         or not timezone.is_aware(expiry)
         or not 0 < (expiry - timezone.now()).total_seconds() <= 7500

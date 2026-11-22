@@ -45,6 +45,10 @@ def register_event(event, scenario, *, financial=False):
     """Called in the source capture transaction, not from a caller's locator."""
     if not enabled():
         return
+    from .telegram_stay_transport import selected as telegram_selected
+
+    if telegram_selected(event.stay):
+        return
     start = cutover()
     stay = event.stay
     if (

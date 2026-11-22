@@ -50,6 +50,13 @@ def require_payable(stay):
 
     if hostaway_first(stay) and booking_state(stay).get("state") != "confirmed":
         raise HyperPayCheckoutError("morning_booking_not_confirmed")
+    from apps.reservations.telegram_stay_transport import selected
+
+    if selected(stay):
+        from apps.reservations.telegram_stay_financial import payable_link
+
+        if not payable_link(stay, "07"):
+            raise HyperPayCheckoutError("morning_telegram_payment_not_released")
     if not settings.HYPERPAY_ENABLED or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise HyperPayCheckoutError("morning_payment_unavailable")
     # The signed link has no clock expiry. The short allocation hold is separate.

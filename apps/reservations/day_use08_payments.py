@@ -56,14 +56,14 @@ def reference(event_id, kind):
     return key, "lsa08pay-" + hashlib.md5(key.encode(), usedforsecurity=False).hexdigest()
 
 
-def verified_facts(stay):
+def verified_facts(stay, *, allow_ended=False):
     """One full collection, no competing or unresolved money, confirmed Hostaway."""
     operation = booking_state(stay)
     if (
         stay.environment != "production"
         or stay.status != "paid"
         or not stay.paid_at
-        or stay.ends_at <= timezone.now()
+        or (stay.ends_at <= timezone.now() and not allow_ended)
         or not stay.communication_revision
         or not hostaway_first(stay)
         or operation.get("state") != "confirmed"
@@ -168,7 +168,9 @@ def capture_payment(stay_id):
     event.payload = {**facts, "payment_event_id": str(event.pk), "payment_revision": revision}
     event.save()
     from .message_source_relay import register_event
+    from .telegram_stay_transport import register as register_telegram
 
+    register_telegram(event, "08", financial=True)
     register_event(event, "08", financial=True)
     transaction.on_commit(lambda: queue_event(str(event.pk)), robust=True)
     return event
@@ -176,6 +178,11 @@ def capture_payment(stay_id):
 
 def queue_event(event_id):
     from .tasks import deliver_day_use08_payment
+    from .telegram_stay_models import TelegramStayChannel
+
+    event = DayUse08PaymentEvent.objects.get(pk=event_id)
+    if TelegramStayChannel.objects.filter(scenario="08", stay_id=event.stay_id).exists():
+        return
 
     if guest_transport.mode() != "ultramsg":
         return
@@ -500,6 +507,10 @@ def deliver_event(event_id, *, client=None):
             .select_related("stay__property")
             .get(pk=event_id)
         )
+        from .telegram_stay_transport import selected as telegram_selected
+
+        if telegram_selected(event.stay):
+            return {"accepted": False, "code": "telegram_owned_stay"}
         if (
             event.state != "pending"
             or event.next_attempt_at > now

@@ -62,7 +62,12 @@ def fingerprint(stay):
 
 
 def require_unpaid(stay):
-    if not configured() or stay.environment != settings.HYPERPAY_ENVIRONMENT:
+    from .telegram_stay_transport import enabled, selected
+
+    transport_ready = (
+        bool(settings.HYPERPAY_ENABLED and enabled()) if selected(stay) else configured()
+    )
+    if not transport_ready or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise DayUseStayError("إرسال رابط الدفع عبر واتساب غير مفعّل لهذا الطلب.")
     from .day_use_hostaway import booking_state
 
@@ -171,6 +176,10 @@ def send_link(delivery_id):
     if delivery.state != "queued":
         return delivery.state
     stay = delivery.stay
+    from .telegram_stay_transport import selected
+
+    if selected(stay):
+        return "transport_held"
     try:
         require_unpaid(stay)
         from .day_use_loyalty import core_delivered

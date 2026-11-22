@@ -238,6 +238,7 @@ def consume(
     morning_stay=None,
     day_use_stay=None,
     day_use_payment_event_id=None,
+    telegram_stay_message=None,
 ):
     """One send permit only. Lost preflight responses MUST NOT trigger a provider POST."""
     if proof is not None:
@@ -249,7 +250,12 @@ def consume(
             raise ValidationError("ticket_mismatch")
     if row.phone != phone:
         raise ValidationError("phone_changed")
-    if day_use_stay is not None:
+    if telegram_stay_message is not None:
+        from apps.reservations.telegram_stay_financial import validate_loyalty_permit
+
+        validate_loyalty_permit(row, telegram_stay_message, phone)
+        booking = None
+    elif day_use_stay is not None:
         from apps.reservations import day_use_loyalty
         from apps.reservations.day_use08_payments import invitation_allowed, verified_facts
         from apps.reservations.models import DayUseStay

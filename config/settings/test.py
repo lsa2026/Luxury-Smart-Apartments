@@ -43,5 +43,8 @@ os.environ["MESSAGE_SOURCE_RELAY_ENABLED"] = "false"
 os.environ["MESSAGE_RECEIPTS_ENABLED"] = "false"
 os.environ["MESSAGE_SOURCE_CUTOVER_AT"] = ""
 os.environ["WEBSITE_GUEST_MESSAGE_TRANSPORT"] = "ultramsg"
+os.environ["TELEGRAM_STAY_MESSAGES_ENABLED"] = "false"
+os.environ["TELEGRAM_STAY_RECEIPTS_ENABLED"] = "false"
+os.environ["TELEGRAM_STAY_CUTOVER_AT"] = ""
 
 from .development import *  # noqa: E402,F403

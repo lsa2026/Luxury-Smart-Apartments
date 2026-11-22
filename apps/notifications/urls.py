@@ -11,12 +11,18 @@ from apps.payments import channel_views, owner_payment_links
 from apps.reservations import day_use_views, morning_views, operations_views, stay_extension_views
 from apps.reservations.guest_check_views import guest_classification_check
 from apps.reservations.guest_file_views import guest_file, guest_file_for_booking
+from apps.reservations.telegram_stay_activation import activate as telegram_stay_activate
 
 from . import health, invoice_views, views
 
 app_name = "notifications"
 
 urlpatterns = [
+    path(
+        "admin/operations/telegram-stays/<str:scenario>/<uuid:stay_id>/",
+        telegram_stay_activate,
+        name="telegram_stay_activation",
+    ),
     path(
         "admin/operations/channel-collections/",
         channel_views.collection_list,
