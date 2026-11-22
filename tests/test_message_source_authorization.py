@@ -241,6 +241,22 @@ def test_canonical_export_preserves_legacy_status_key_and_receipt(client, record
     assert facts["semantic_key_version"] == "website-message-slot-v1"
 
 
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("check_in_time", "23:00"),
+        ("arrival_date", "2000-01-01"),
+        ("event_type", "modified"),
+        ("hostaway_reservation_id", 123),
+    ],
+)
+def test_event_snapshot_cannot_override_current_dates_kind_or_booking(client, record, field, value):
+    scenario, _, event = record
+    payload = dict(event.payload, **{field: value})
+    source.SOURCES[scenario][1].objects.filter(pk=event.pk).update(payload=payload)
+    assert request_source(client, record).status_code == 409
+
+
 def paid_record(record):
     scenario, stay, _ = record
     actor = get_user_model().objects.create_user(username="synthetic-operator")

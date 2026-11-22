@@ -5,6 +5,7 @@ import json
 import re
 from datetime import timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core import signing
@@ -151,6 +152,8 @@ def core_history(stay, purpose, scenario):
 
 def current_core(stay, event, comms):
     p = event.payload
+    start = stay.starts_at.astimezone(ZoneInfo(stay.time_zone))
+    end = stay.ends_at.astimezone(ZoneInfo(stay.time_zone))
     expected = {
         "source_revision": stay.communication_revision,
         "state_fingerprint": stay.communication_fingerprint,
@@ -161,6 +164,15 @@ def current_core(stay, event, comms):
         "starts_at": stay.starts_at.isoformat(),
         "ends_at": stay.ends_at.isoformat(),
         "timezone": stay.time_zone,
+        "arrival_date": start.date().isoformat(),
+        "departure_date": end.date().isoformat(),
+        "check_in_time": start.strftime("%H:%M"),
+        "check_out_time": end.strftime("%H:%M"),
+        "event_type": "cancelled"
+        if stay.status == "cancelled"
+        else "new"
+        if event.revision == 1
+        else "modified",
         "guest_name": stay.guest_name,
         "guest_email": stay.guest_email,
         "guest_language": stay.guest_language,
@@ -171,6 +183,16 @@ def current_core(stay, event, comms):
         if comms.verified_booking(stay) and stay.status != "cancelled"
         else stay.status,
     }
+    if comms.verified_booking(stay):
+        from . import day_use_hostaway, morning_hostaway
+
+        hostaway = morning_hostaway if isinstance(stay, MorningStay) else day_use_hostaway
+        reservation_id = hostaway.booking_state(stay).get("reservation_id")
+        if type(reservation_id) is not int or reservation_id <= 0:
+            return False
+        expected.update(
+            contract_version=2, booking_verified=True, hostaway_reservation_id=reservation_id
+        )
     return event.revision == stay.communication_revision and all(
         p.get(k) == v for k, v in expected.items()
     )
@@ -411,6 +433,10 @@ def source_authorization(request, *, scenario, financial=False):
             return response({"code": "unverified"}, 409)
         try:
             valid = payments.current(event) if financial else current_core(stay, event, comms)
+            if financial:
+                valid = valid and event.payload.get("payment_event_id") == str(event.pk)
+                valid = valid and event.payload.get("payment_revision") == event.payment_revision
+                valid = valid and event.payload.get("proof_key") == event.proof_key
             valid = valid and comms.admitted(stay) and stay.environment == "production"
             # Past stays, including old cancellation backlogs, are deliberately held.
             valid = valid and stay.ends_at > timezone.now()
