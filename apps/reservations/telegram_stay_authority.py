@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.core import signing
 from django.utils import timezone
+from django.views.decorators.debug import sensitive_variables
 
 from . import telegram_authority as authority
 from . import telegram_backend as backend
@@ -99,6 +100,7 @@ def record_capability(row):
     )
 
 
+@sensitive_variables()
 def record_row(token):
     value = signing.loads(token, salt=RECORD_SALT, max_age=120)
     row = TelegramStayMessage.objects.get(pk=uuid.UUID(value["job"]))
