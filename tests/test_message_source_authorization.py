@@ -121,6 +121,7 @@ def test_source_is_read_only_and_unknown_facts_never_grant_dispatch(client, reco
     )
     facts = result.json()
     assert facts["source_family"] == "website" and facts["scenario"] == scenario
+    assert facts["reservation_revision"] == str(stay.communication_revision)
     assert facts["environment"] == "production"
     assert facts["current_source_verified"] and facts["domain_authorized"]
     assert facts["dispatch_allowed"] is False and facts["legacy_state"] == "not_attempted"
@@ -219,6 +220,25 @@ def test_old_phone_delivery_and_history_gap_never_appear_new(client, record):
 def test_checkout_time_is_one_hour_before_actual_end(client, record):
     result = request_source(client, record, "reminder_checkout").json()
     assert result["not_before"] == (record[1].ends_at - timedelta(hours=1)).isoformat()
+
+
+@pytest.mark.parametrize("legacy", ["accepted", "uncertain"])
+def test_canonical_export_preserves_legacy_status_key_and_receipt(client, record, legacy):
+    scenario, stay, event = record
+    key = source.core_keys(stay.pk, event.payload, scenario)["status_new"]
+    source.SOURCES[scenario][3].objects.create(
+        reference_id=source.legacy_reference(key, scenario),
+        stay=stay,
+        revision=1,
+        payload_hash="a" * 64,
+        state=legacy,
+    )
+    facts = request_source(client, record, "status_new").json()
+    assert facts["purpose"] == "booking_confirmation"
+    assert facts["source_message_type"] == "status_new"
+    assert facts["legacy_state"] == legacy
+    assert facts["semantic_key"] == source.sha(f"website:{scenario}:{stay.pk}:status_new")
+    assert facts["semantic_key_version"] == "website-message-slot-v1"
 
 
 def paid_record(record):

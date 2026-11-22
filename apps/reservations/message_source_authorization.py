@@ -189,7 +189,7 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         "source_event_key": f"website:{scenario}:{event_kind}:{event.pk}",
         "source_occurred_at": event.created_at.isoformat(),
         "reservation_key": ("morning07:" if scenario == "07" else "dayuse08:") + str(stay.pk),
-        "reservation_revision": stay.communication_revision,
+        "reservation_revision": str(stay.communication_revision),
         "recipient_e164": phone,
         "recipient_ref": "site01:"
         + salted_hmac(
@@ -199,7 +199,8 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         "source_message_type": purpose,
         # Exclude phone and routine source revision. A changed schedule must be
         # explicitly reconciled before the dispatcher authorises any new action.
-        "semantic_key": sha(f"website:{scenario}:{stay.pk}:{canonical_purpose}"),
+        "semantic_key": sha(f"website:{scenario}:{stay.pk}:{purpose}"),
+        "semantic_key_version": "website-message-slot-v1",
         "not_before": event.created_at.isoformat(),
         "expires_at": stay.ends_at.isoformat(),
         "environment": stay.environment,
