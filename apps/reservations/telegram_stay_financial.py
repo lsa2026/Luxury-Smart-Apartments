@@ -160,6 +160,9 @@ def financial(packet, stay, event):
     from .telegram_stay_journey import accepted_core, plan, send_packet
 
     scenario = packet["scenario"]
+    stay = source.SOURCES[scenario][0].objects.select_related("property").get(pk=stay.pk)
+    event = source.SOURCES[scenario][2].objects.get(pk=event.pk, stay=stay)
+    event.stay = stay
     if not source.SOURCES[scenario][5].current(event) or not accepted_core(stay, scenario):
         return {**packet, "decision": "wait", "reason": "current_paid_core_required"}
     row = plan(packet, "payment_success", 6, event.created_at, stay.ends_at)

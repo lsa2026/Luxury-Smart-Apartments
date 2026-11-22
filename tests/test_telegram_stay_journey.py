@@ -288,6 +288,86 @@ def test_approved_financial_copy_escapes_guest_markup_before_static_bold(owned):
     assert "<script>" not in text and "&lt;script&gt;" in text and "*name*" in text
 
 
+def test_real_payment_proof_then_success_acceptance_then_one_cross_channel_loyalty_permit(
+    owned,
+    private_source,
+    monkeypatch,
+):
+    from apps.loyalty.models import JoinInvitation
+    from apps.reservations import telegram_stay_financial as financial
+
+    for _ in range(3):
+        accepted(owned)
+    paid = fixtures.paid_record(owned)
+    data = source_tests.payload(paid, operation="next")
+    with transaction.atomic():
+        value = source.snapshot(data)
+    monkeypatch.setattr("apps.loyalty.invitation_api.ready", lambda: True)
+    result = journey.next_packet(value, data)
+    assert result["job"]["purpose"] == "payment_success" and not JoinInvitation.objects.exists()
+    row = TelegramStayMessage.objects.get(job_key=result["job"]["job_key"])
+    journey.import_evidence(row, proof(row))
+    invitation_packet = journey.next_packet(value, data)
+    assert invitation_packet["job"]["purpose"] == "loyalty_invitation"
+    invitation = JoinInvitation.objects.get()
+    assert invitation.channel == "telegram" and invitation.state == "unknown"
+    # Retrying the same source packet never mints a second cross-channel permit.
+    assert journey.next_packet(value, data)["job"]["job_key"] == invitation_packet["job"]["job_key"]
+    assert JoinInvitation.objects.count() == 1
+    row = TelegramStayMessage.objects.get(job_key=invitation_packet["job"]["job_key"])
+    journey.import_evidence(row, proof(row))
+    invitation.refresh_from_db()
+    assert invitation.state == "accepted" and invitation.provider_id
+    assert financial.financial(value, paid[1], paid[2])["decision"] == "done"
+    type(paid[1]).objects.filter(pk=paid[1].pk).update(amount_sar="999.00")
+    paid[1].refresh_from_db()
+    assert financial.financial(value, paid[1], paid[2])["reason"] == "current_paid_core_required"
+
+
+def test_review_template_has_its_own_parser_and_source_profile_evidence(
+    owned, private_source, monkeypatch
+):
+    from apps.reservations import telegram_stay_reviews as reviews
+
+    _, stay, _ = owned
+    stay.starts_at = timezone.now() - timedelta(hours=5)
+    stay.ends_at = timezone.now() - timedelta(hours=2)
+    body = "*Welcome {guest_name}*\n{listing_name}\n{review_url}"
+    policy = {
+        "contract": "tg39_stay_review_policy_v1",
+        "available": True,
+        "decision": "send",
+        "step": 1,
+        "purpose": "review_request",
+        "template_key": "website_review_1_en",
+        "template_body": body,
+        "template_sha256": render.sha(body),
+        "not_before": (stay.ends_at + timedelta(minutes=1)).isoformat(),
+        "expires_at": (stay.ends_at + timedelta(days=1)).isoformat(),
+        "google_profile_id": "12345",
+        "review_url": "https://g.page/r/SYNTHETIC/review",
+        "profile_evidence": {
+            "kind": "owner_maintained_approved_mapping",
+            "source": "public.website_review_properties",
+            "row_sha256": "a" * 64,
+            "read_at": timezone.now().isoformat(),
+            "approval_at": None,
+        },
+    }
+    due, expiry = reviews.checked(policy, stay)
+    value = packet(owned)
+    row = journey.plan(value, "review_request", 11, due, expiry)
+    stay.guest_name = "<script>guest</script> *literal*"
+    monkeypatch.setattr(bridge, "read", lambda *a, **k: policy)
+    content, sha = reviews.content(row, stay)
+    assert sha == render.sha(body) and "<script>" not in content["body_html"]
+    assert "*literal*" in content["body_html"] and "{review_url}" not in content["body_html"]
+    assert "<b>Welcome " in content["body_html"]
+    policy["profile_evidence"]["kind"] = "caller_assertion"
+    with pytest.raises(authority.Denied):
+        reviews.checked(policy, stay)
+
+
 @pytest.mark.parametrize("prefix", ["h", "d"])
 def test_same_day_prefixes_cannot_be_used_by_ordinary_activation(prefix):
     from apps.reservations.telegram_backend import Unavailable, checked_invitation
@@ -299,3 +379,88 @@ def test_same_day_prefixes_cannot_be_used_by_ordinary_activation(prefix):
     with pytest.raises(Unavailable):
         checked_invitation(value)
     assert checked_invitation(value, prefixes=prefix)[0] == value["url"]
+
+
+@pytest.fixture
+def admin_proof(owned, settings, monkeypatch):
+    from django.contrib.auth import get_user_model
+    from django.test import RequestFactory
+
+    from apps.reservations import telegram_stay_activation as service
+
+    settings.TELEGRAM_ACTIVATION_ENABLED = True
+    user = get_user_model().objects.create_user(
+        "synthetic-tg-owner",
+        email=settings.OPERATIONS_OWNER_EMAIL,
+        is_staff=True,
+        is_superuser=True,
+    )
+    request = RequestFactory().post(
+        "/private-stay-activation/",
+        {
+            "phone": owned[1].guest_phone,
+            "evidence_ref": "synthetic-independent-proof",
+            "confirmed": "on",
+        },
+    )
+    request.user, request.session = user, {}
+    calls = []
+
+    class FakeBackend:
+        authority_context = None
+
+        def prepare(self, key):
+            pass
+
+        def rpc(self, name, values):
+            action = "approve_phone" if name.endswith("approve_phone") else "issue_invitation"
+            envelope = authority.mint(self.authority_context, action, values["p_key"])
+            envelope["contract"] = "tg39_activation_readback_v1"
+            approved = authority.authorize(envelope)
+            calls.append(action)
+            if action == "approve_phone":
+                assert approved["phone"] == owned[1].guest_phone.lstrip("+")
+                assert approved["evidence_ref"].startswith("admin_verified:")
+                with pytest.raises(authority.Denied):
+                    authority.authorize(envelope)
+                return {"action": "approved"}
+            assert "phone" not in approved
+            return {
+                "action": "issued",
+                "url": "https://t.me/LuxurySmartApartmentsBot?start="
+                + ("h" if owned[0] == "07" else "d")
+                + "_"
+                + "a" * 48,
+                "expires_at": (timezone.now() + timedelta(hours=2)).isoformat(),
+            }
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(service, "Backend", FakeBackend)
+    return service, request, calls
+
+
+def test_admin_independent_phone_proof_is_once_and_never_stores_link_or_phone(owned, admin_proof):
+    from apps.reservations.telegram_stay_models import TelegramStayActivation
+
+    service, request, calls = admin_proof
+    result = service.issue(request, owned[1], owned[0])
+    assert result["state"] == "issued" and result["url"]
+    assert service.issue(request, owned[1], owned[0])["state"] == "active"
+    assert calls == ["approve_phone", "issue_invitation"]
+    row = TelegramStayActivation.objects.get()
+    assert row.approve_authorized_at and row.issue_authorized_at
+    stored = str(list(TelegramStayActivation.objects.values()))
+    assert owned[1].guest_phone not in stored and result["url"] not in stored
+
+
+def test_admin_phone_must_match_this_stay_and_confirmation_is_required(owned, admin_proof):
+    from apps.reservations.telegram_stay_models import TelegramStayActivation
+
+    service, request, calls = admin_proof
+    request.POST = {"phone": "+12025550999", "evidence_ref": "synthetic-proof", "confirmed": "on"}
+    assert service.issue(request, owned[1], owned[0])["state"] == "unverified"
+    request.POST = {"phone": owned[1].guest_phone, "evidence_ref": "synthetic-proof"}
+    assert service.issue(request, owned[1], owned[0])["state"] == "unverified"
+    assert not calls and not TelegramStayActivation.objects.exists()

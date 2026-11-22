@@ -31,12 +31,21 @@ def key_for(stay, scenario):
 
 
 def eligible(stay):
+    from . import day_use_hostaway, morning_hostaway
+    from .telegram_stay_transport import scenario_for
+
+    scenario = scenario_for(stay)
+    owner = morning_hostaway if scenario == "07" else day_use_hostaway
+    operation = owner.booking_state(stay)
     return bool(
         getattr(settings, "TELEGRAM_STAY_MESSAGES_ENABLED", False)
         and stay.environment == "production"
         and stay.status != "cancelled"
         and stay.ends_at > timezone.now()
         and selected(stay)
+        and owner.hostaway_first(stay)
+        and operation.get("state") == "confirmed"
+        and source.SOURCES[scenario][4].admitted(stay)
     )
 
 

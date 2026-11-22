@@ -64,6 +64,7 @@ MANAGER_VIEW_NAMES = frozenset(
         "morning_create",
         "morning_available_properties",
         "morning_detail",
+        "telegram_stay_activation",
         "morning_address",
         "booking_invoice",
         "manual_booking_list",
