@@ -40,11 +40,15 @@ def resolve(data):
         raise Denied
     canonical_uuid(data["request_id"])
     scenario = data["scenario"]
-    model, events, _, _, comms, _ = source.SOURCES[scenario]
+    model, events, pay_events, _, comms, payments = source.SOURCES[scenario]
     event = None
+    financial = False
     stay_id = None
     if data["event_id"] is not None:
         event = events.objects.filter(pk=canonical_uuid(data["event_id"])).first()
+        if event is None:
+            event = pay_events.objects.filter(pk=data["event_id"]).first()
+            financial = event is not None
         if event is None:
             raise Denied
         stay_id = event.stay_id
@@ -62,6 +66,17 @@ def resolve(data):
         raise Denied
     stay = model.objects.select_for_update(of=("self",)).select_related("property").get(pk=stay_id)
     event = event or events.objects.filter(stay=stay, revision=stay.communication_revision).first()
+    if event:
+        event.stay = stay
+    current = (
+        bool(event and payments.current(event))
+        if financial
+        else bool(event and source.current_core(stay, event, comms))
+    )
+    if financial:
+        current = current and event.payload.get("payment_event_id") == str(event.pk)
+        current = current and event.payload.get("payment_revision") == event.payment_revision
+        current = current and event.payload.get("proof_key") == event.proof_key
     hostaway = morning_hostaway if scenario == "07" else day_use_hostaway
     operation = hostaway.booking_state(stay)
     provider_id = operation.get("reservation_id")
@@ -73,7 +88,7 @@ def resolve(data):
         or operation.get("state") not in {"confirmed", "cancelled"}
         or not comms.admitted(stay)
         or event is None
-        or not source.current_core(stay, event, comms)
+        or not current
         or stay.ends_at <= timezone.now()
     ):
         raise Denied
@@ -97,15 +112,15 @@ def resolve(data):
         **{f"availability_evidence__{other_key}__reservation_id": provider_id},
     ).exists():
         raise Denied
-    return scenario, stay, event, provider_id, reference
+    return scenario, stay, event, provider_id, reference, financial
 
 
 def snapshot(data):
-    scenario, stay, event, provider_id, reference = resolve(data)
+    scenario, stay, event, provider_id, reference, financial = resolve(data)
     now = timezone.now()
     phone = normalize_phone_number(stay.guest_phone)
     first, _, last = stay.guest_name.partition(" ")
-    return {
+    packet = {
         "contract": "tg39_stay_source_packet_v1",
         "scenario": scenario,
         "source_owner": OWNERS[scenario],
@@ -114,6 +129,7 @@ def snapshot(data):
         "hostaway_reservation_id": str(provider_id),
         "ownership_reference": reference,
         "ownership_verified": True,
+        "source_event_kind": "payment" if financial else "core",
         "event_id": str(event.pk),
         "source_revision": stay.communication_revision,
         "authoritative_at": now.isoformat(),
@@ -137,6 +153,18 @@ def snapshot(data):
         # No provisional job or false success while render/binding/ledger are absent.
         "reason": "snapshot_only" if data["operation"] == "snapshot" else "stay_dispatch_not_ready",
     }
+    if financial:
+        packet["payment"] = {
+            "payment_event_id": str(event.pk),
+            "payment_revision": event.payment_revision,
+            "proof_ref": event.proof_key,
+            "paid_at": stay.paid_at.isoformat(),
+            "status": "paid",
+            "currency": "SAR",
+            "amount_sar": f"{stay.amount_sar:.2f}",
+            "booking_revision": stay.communication_revision,
+        }
+    return packet
 
 
 @private_endpoint

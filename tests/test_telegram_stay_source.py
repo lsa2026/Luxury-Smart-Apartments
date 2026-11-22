@@ -117,7 +117,7 @@ def test_source_needs_existing_auth_and_explicit_flag(source_record, settings):
 def test_dayuse_snapshot_needs_actual_acknowledged_ownership(source_record):
     scenario, stay, _ = source_record
     if scenario == "07":
-        return
+        pytest.skip("Day-use-specific ownership record")
     DayUseHostawayOwnership.objects.filter(stay=stay).update(acknowledged_revision=1)
     assert post(payload(source_record)).status_code == 409
 
@@ -126,3 +126,19 @@ def test_duplicate_json_cannot_override_source_owner(source_record):
     body = json.dumps(payload(source_record))
     body = body[:-1] + ',"scenario":"08"}'
     assert post(body).status_code == 409
+
+
+def test_payment_uuid_is_resolved_from_its_own_model_and_current_financial_proof(source_record):
+    _, stay, core = source_record
+    _, stay, payment = source_tests.paid_record(source_record)
+    result = post(payload(source_record, event_id=str(payment.pk)))
+    assert result.status_code == 200
+    packet = result.json()
+    assert packet["event_id"] != str(core.pk)
+    assert packet["source_event_kind"] == "payment"
+    assert packet["source_revision"] == stay.communication_revision
+    assert packet["payment"]["payment_event_id"] == str(payment.pk)
+    assert packet["payment"]["proof_ref"] == payment.proof_key
+    assert packet["payment"]["payment_revision"] == payment.payment_revision
+    type(stay).objects.filter(pk=stay.pk).update(amount_sar="999.00")
+    assert post(payload(source_record, event_id=str(payment.pk))).status_code == 409
