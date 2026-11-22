@@ -2,6 +2,7 @@
 
 import re
 import uuid
+from datetime import timedelta
 
 from django import forms
 from django.db import transaction
@@ -11,13 +12,14 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.views.decorators.debug import sensitive_variables
 
-from apps.accounts.models import VerifiedPhone
+from apps.accounts.models import PhoneChallenge, VerifiedPhone
 from apps.accounts.phone_auth import recent_primary
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.notifications.models import AuditLog
 
 from . import telegram_backend as backend
 from .models import Reservation, TelegramActivation
+from .security import SESSION_MARKER_KEY, session_key_hash
 from .telegram_copy import STATES, UI, copy_for
 
 LABELS = {
@@ -75,11 +77,28 @@ def guest_proof(request, reservation):
         or not request.user.is_authenticated
         or not request.user.is_active
         or intent.customer_id != request.user.pk
-        or not recent_primary(request)
     ):
         return None
     binding = VerifiedPhone.objects.filter(user=request.user).first()
     if not binding or binding.phone != intent.guest_phone:
+        return None
+    # A completed mobile sign-in deliberately does not set PRIMARY_AUTH. Accept
+    # its existing consumed, session-bound proof without changing the login flow.
+    recent_mobile = bool(
+        request.session.get(SESSION_MARKER_KEY)
+        and PhoneChallenge.objects.filter(
+            user=request.user,
+            phone=binding.phone,
+            binding_version=binding.version,
+            purpose="login",
+            status="consumed",
+            code_digest="",
+            session_digest=session_key_hash(request),
+            created_at__gte=timezone.now() - timedelta(minutes=15),
+            created_at__lte=timezone.now(),
+        ).exists()
+    )
+    if not recent_primary(request) and not recent_mobile:
         return None
     return binding.phone, "website_verified", "verified-phone:" + str(binding.version)
 

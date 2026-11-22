@@ -14,7 +14,7 @@ from django.db import close_old_connections, connection
 from django.test import Client, RequestFactory
 from django.utils import timezone, translation
 
-from apps.accounts.models import VerifiedPhone
+from apps.accounts.models import PhoneChallenge, VerifiedPhone
 from apps.accounts.phone_auth import PRIMARY_AUTH
 from apps.notifications.models import AuditLog
 from apps.reservations import telegram_activation as service
@@ -99,6 +99,33 @@ def test_management_access_is_not_phone_proof(rig, kind):
         rig.booking.booking_intent.save(update_fields=["customer"])
     assert service.issue(rig.request, rig.booking)["state"] == "unverified"
     assert not rig.state.calls and not TelegramActivation.objects.exists()
+
+
+@pytest.mark.parametrize("case", ["valid", "pending", "wrong_session", "old", "wrong_binding"])
+def test_existing_mobile_login_proof_is_scoped_and_recent(rig, case):
+    import uuid
+
+    from apps.reservations.security import SESSION_MARKER_KEY, hash_session_marker
+
+    rig.request.session.pop(PRIMARY_AUTH)
+    rig.request.session[SESSION_MARKER_KEY] = "synthetic-mobile-session"
+    binding = VerifiedPhone.objects.get(user=rig.user)
+    PhoneChallenge.objects.create(
+        user=rig.user,
+        phone=binding.phone,
+        purpose="login",
+        code_digest="",
+        binding_version=binding.version if case != "wrong_binding" else uuid.uuid4(),
+        session_digest=hash_session_marker(
+            "different-session" if case == "wrong_session" else "synthetic-mobile-session"
+        ),
+        status="pending" if case == "pending" else "consumed",
+        created_at=timezone.now() - timedelta(minutes=30 if case == "old" else 1),
+        expires_at=timezone.now() + timedelta(minutes=3),
+    )
+    result = service.issue(rig.request, rig.booking)
+    assert result["state"] == ("issued" if case == "valid" else "unverified")
+    assert len(rig.state.calls) == (2 if case == "valid" else 0)
 
 
 def test_admin_external_booking_requires_independent_evidence(rig):
