@@ -61,11 +61,12 @@ PROOF_FIELDS = set(IDENTITY_FIELDS) | {
 }
 
 
-def independent_render_policy(event, facts):
-    # Owner20's read-only renderer and owner37's approved registry are separate
-    # authorities. Null is intentional until those contracts are installed.
-    # Never return a caller body, backend planned content or receipt hash here.
-    return None
+def independent_render_policy(event, facts, context=None):
+    from .website_message_policy import policy_from_source
+
+    # Owner20's private RPC is independent of planned content. This adapter
+    # proves content only; provider approval and consent remain separate gates.
+    return policy_from_source(event, facts, context)
 
 
 def content_digest(language, message):
@@ -99,10 +100,11 @@ def content_digest(language, message):
 
 
 @sensitive_variables()
-def fetch(request_id, capability, *, content=False):
+def fetch(request_id, capability, *, content=False, render_source=False):
+    view = "render-source" if render_source else "content"
     path = (
-        f"/v1/automation/prepared-intents/{request_id}/content/"
-        if content
+        f"/v1/automation/prepared-intents/{request_id}/{view}/"
+        if content or render_source
         else f"/v1/automation/receipts/{request_id}/"
     )
     with httpx.Client(timeout=httpx.Timeout(8, connect=3), follow_redirects=False) as client:
@@ -215,6 +217,7 @@ def reconcile(row_id, request_id, capability):
         and proof.get("provider_attempted") is False
     )
     planned = fetch(request_id, capability, content=True) if before else None
+    render_source = fetch(request_id, capability, render_source=True) if before else None
     with transaction.atomic():
         row = relay.WebsiteMessageRelay.objects.select_for_update().get(pk=row_id)
         current = relay.current_event(row)
@@ -232,7 +235,31 @@ def reconcile(row_id, request_id, capability):
         if prior is None:
             # Existing attempts, unknown posts, legacy receipts and held old
             # intents can never be adopted as a new source expectation.
-            policy = independent_render_policy(event, facts)
+            if before and (
+                not isinstance(render_source, dict)
+                or set(render_source)
+                != {
+                    "contract_version",
+                    "request_id",
+                    "prepare_ref",
+                    "prepared_at_epoch",
+                    "context",
+                    "source_provenance",
+                    "domain_recheck_required",
+                    "dispatch_allowed",
+                }
+                or render_source.get("contract_version") != "yc19-render-source-view-1"
+                or render_source.get("request_id") != request_id
+                or render_source.get("prepare_ref") != proof.get("prepare_ref")
+                or render_source.get("prepared_at_epoch") != proof.get("prepared_at_epoch")
+                or render_source.get("source_provenance") != "private_runtime_rpc_source20"
+                or render_source.get("domain_recheck_required") is not True
+                or render_source.get("dispatch_allowed") is not False
+            ):
+                raise ValueError
+            policy = independent_render_policy(
+                event, facts, render_source.get("context") if before else None
+            )
             if not before or not policy or row.state != "forwarding":
                 return "held"
             now = int(timezone.now().timestamp())

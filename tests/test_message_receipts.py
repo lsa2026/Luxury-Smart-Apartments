@@ -86,11 +86,22 @@ def prepared(journal, settings, monkeypatch):
         "dispatch_allowed": False,
         "content_binding_basis": "planned_pending_source_render_verification",
     }
-    monkeypatch.setattr(
-        receipts,
-        "fetch",
-        lambda _request, _cap, *, content=False: deepcopy(prepared_content if content else proof),
-    )
+
+    def fetch(_request, _cap, *, content=False, render_source=False):
+        if render_source:
+            return {
+                "contract_version": "yc19-render-source-view-1",
+                "request_id": proof["request_id"],
+                "prepare_ref": proof["prepare_ref"],
+                "prepared_at_epoch": proof["prepared_at_epoch"],
+                "context": {},
+                "source_provenance": "private_runtime_rpc_source20",
+                "domain_recheck_required": True,
+                "dispatch_allowed": False,
+            }
+        return deepcopy(prepared_content if content else proof)
+
+    monkeypatch.setattr(receipts, "fetch", fetch)
     prepared_content = content
     return row, facts, policy, proof, content
 
