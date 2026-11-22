@@ -487,4 +487,7 @@ def source_authorization(request, *, scenario, financial=False):
             return response({"code": "unverified"}, 409)
         if facts is None:
             return response({"code": "job_not_in_scope"}, 404)
+        from .transaction_permission_candidate import project
+
+        facts.update(project(stay, scenario, facts, events))
         return response(facts)
