@@ -620,6 +620,9 @@ ACCOUNTING_WHATSAPP_NUMBER = env("ACCOUNTING_WHATSAPP_NUMBER", default="").strip
 # deployment has the instance credentials; the public WhatsApp support button
 # never uses these values.
 ULTRAMSG_ENABLED = strict_bool("ULTRAMSG_ENABLED")
+# Review-only transport seam. ycloud_central always holds until contract19 is
+# implemented; this setting does not enable sending or alter provider secrets.
+WEBSITE_GUEST_MESSAGE_TRANSPORT = env("WEBSITE_GUEST_MESSAGE_TRANSPORT", default="ultramsg")
 ULTRAMSG_API_BASE_URL = env("ULTRAMSG_API_BASE_URL", default="https://api.ultramsg.com").rstrip("/")
 ULTRAMSG_INSTANCE_ID = env("ULTRAMSG_INSTANCE_ID", default="").strip()
 ULTRAMSG_TOKEN = env("ULTRAMSG_TOKEN", default="").strip()

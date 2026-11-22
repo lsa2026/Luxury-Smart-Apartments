@@ -21,6 +21,7 @@ from apps.notifications.services.ultramsg import (
     UltraMsgResponseError,
 )
 
+from . import guest_message_transport as guest_transport
 from .day_use08_communications import admitted
 from .models import DayUse08DeliveryAttempt, DayUseStay
 
@@ -99,6 +100,16 @@ def send_message(request):
             raise ValueError
     except (KeyError, TypeError, ValueError, AttributeError):
         return JsonResponse({"sent": False, "error": "invalid_day_use08_job"}, status=400)
+    try:
+        route = guest_transport.prepare(
+            stay,
+            source="day_use08",
+            purpose=kind,
+            reference=reference,
+            recipient_kind=recipient_kind,
+        )
+    except guest_transport.TransportHeld as exc:
+        return JsonResponse({"sent": False, "error": exc.code}, status=503)
     fingerprint = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     with transaction.atomic():
         attempt, created = DayUse08DeliveryAttempt.objects.select_for_update().get_or_create(
@@ -113,13 +124,13 @@ def send_message(request):
                 attempt.response or {"sent": "unknown", "id": attempt.provider_id}, status=202
             )
     try:
-        with UltraMsgClient() as provider:
+        with route.open(UltraMsgClient) as provider:
             result = provider.send_text(
                 recipient=expected_recipient, body=body, reference_id=reference
             )
         result = {"sent": "true", "id": str(result.get("id") or ""), "referenceId": reference}
         state = "accepted"
-    except UltraMsgConfigurationError:
+    except (UltraMsgConfigurationError, guest_transport.TransportHeld):
         result, state = {"sent": False, "error": "provider_disabled"}, "rejected"
     except UltraMsgResponseError:
         result, state = {"sent": False, "error": "provider_rejected"}, "rejected"
@@ -161,6 +172,7 @@ def receipt(request):
 
 
 def exact_receipt_messages(attempt):
+    guest_transport.require_legacy_receipt()
     try:
         with UltraMsgClient() as provider:
             response = provider.http.get(
