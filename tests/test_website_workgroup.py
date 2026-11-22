@@ -188,6 +188,11 @@ def test_original_loyalty_admin_approval_yields_workgroup_copy_without_guest_sen
     assert result["status"] == "handed_off" and not result["guest_accepted"]
     booking.refresh_from_db()
     assert loyalty.whatsapp_row(booking)["status"] == "handed_off"
+    from apps.loyalty import invitation_history
+
+    history = invitation_history.receipts(booking)
+    assert history[0]["channel_label"] == "قروب العمل — إرسال يدوي"
+    assert "لا إثبات إرسال للضيف" in history[0]["status_label"]
     invitation = JoinInvitation.objects.get()
     assert invitation.channel == "workgroup_manual" and invitation.state == "handed_off"
     assert not provider.send_image.called

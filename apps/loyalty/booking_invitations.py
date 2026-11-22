@@ -330,6 +330,11 @@ def queue_booking_invitation(request, booking_id):
             "target_digest": _target_digest(target, channel),
             recipient_key: recipient_digest,
             "channel": channel,
+            **(
+                {"dispatch_mode": "workgroup_manual"}
+                if channel == "whatsapp" and workgroup_enabled()
+                else {}
+            ),
             "language": target["language"],
         }
         booking.loyalty_state.setdefault(requests_key, {})[request_id] = row
