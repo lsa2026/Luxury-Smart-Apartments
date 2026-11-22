@@ -16,6 +16,7 @@ class TelegramActivation(models.Model):
     proof_kind = models.CharField(max_length=20)
     evidence_ref = models.CharField(max_length=100, blank=True)
     phone_digest = models.CharField(max_length=64)
+    proof_id = models.UUIDField(default=uuid.uuid4, editable=False)
     expires_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

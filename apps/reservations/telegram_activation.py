@@ -1,6 +1,7 @@
 """Booking-scoped proof and issuance; no Telegram sends or account credential writes."""
 
 import re
+import uuid
 
 from django import forms
 from django.db import transaction
@@ -13,6 +14,7 @@ from django.views.decorators.debug import sensitive_variables
 from apps.accounts.models import VerifiedPhone
 from apps.accounts.phone_auth import recent_primary
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
+from apps.notifications.models import AuditLog
 
 from . import telegram_backend as backend
 from .models import Reservation, TelegramActivation
@@ -163,21 +165,43 @@ def issue(request, reservation, *, admin=False):
         row.state, row.proof_kind = "processing", kind
         row.evidence_ref = evidence
         row.phone_digest = salted_hmac("telegram-activation-phone.v1", phone).hexdigest()
+        row.proof_id = uuid.uuid4()
         row.expires_at = None
         row.save()
+        AuditLog.objects.create(
+            actor_user=request.user,
+            action="telegram.activation_phone_proof",
+            object_type="Reservation",
+            object_reference=str(current.pk),
+            summary="Booking-specific phone proof recorded; no message sent.",
+            metadata={
+                "proof_id": str(row.proof_id),
+                "method": kind,
+                "evidence_ref": evidence,
+                "phone_digest": row.phone_digest,
+            },
+        )
     client = None
     state, url, expiry = "uncertain", "", None
     try:
         client = backend.Backend()
+        if not admin and guest_proof(request, current) != proof:
+            raise backend.NotReady
         approved = client.rpc(
             "tg20_s01_approve_phone",
-            {"p_key": key_for(current), "p_phone": phone[1:], "p_evidence_ref": f"{kind}:{row.pk}"},
+            {
+                "p_key": key_for(current),
+                "p_phone": phone[1:],
+                "p_evidence_ref": f"{kind}:{row.proof_id}",
+            },
         )
         if approved["action"] == "approved":
             issued = client.rpc("tg20_s01_issue_invitation", {"p_key": key_for(current)})
             if issued["action"] == "issued":
                 url, expiry = backend.checked_invitation(issued)
                 state = "issued"
+                if not admin and guest_proof(request, current) != proof:
+                    state, url = "uncertain", ""
             else:
                 state = "bound" if issued["action"] == "bound" else "hold"
         else:

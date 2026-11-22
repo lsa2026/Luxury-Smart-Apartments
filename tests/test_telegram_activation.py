@@ -16,6 +16,7 @@ from django.utils import timezone, translation
 
 from apps.accounts.models import VerifiedPhone
 from apps.accounts.phone_auth import PRIMARY_AUTH
+from apps.notifications.models import AuditLog
 from apps.reservations import telegram_activation as service
 from apps.reservations import telegram_backend as backend
 from apps.reservations.models import Reservation, TelegramActivation
@@ -133,6 +134,36 @@ def test_explicit_expired_replacement_but_no_rebinding(rig):
     TelegramActivation.objects.update(state="bound")
     assert service.issue(rig.request, rig.booking)["state"] == "bound"
     assert len(rig.state.calls) == 4
+    proofs = AuditLog.objects.filter(action="telegram.activation_phone_proof")
+    assert proofs.count() == 2
+    assert len({row.metadata["proof_id"] for row in proofs}) == 2
+
+
+def test_owner_http_issuance_with_csrf_and_external_booking(rig, settings):
+    owner = get_user_model().objects.create_superuser(
+        username=settings.OPERATIONS_OWNER_EMAIL,
+        email=settings.OPERATIONS_OWNER_EMAIL,
+        password="synthetic-test-only",
+    )
+    rig.booking.booking_intent = None
+    rig.booking.source_type = "external_channel"
+    rig.booking.save(update_fields=["booking_intent", "source_type"])
+    client = Client(enforce_csrf_checks=True)
+    client.force_login(owner)
+    path = f"/admin/operations/bookings/{rig.booking.pk}/"
+    data = {
+        "action": "telegram_activation",
+        "phone": "+12025550123",
+        "evidence_ref": "channel:test-proof",
+        "confirmed": "on",
+    }
+    assert client.post(path, data).status_code == 403
+    client.cookies["csrftoken"] = "a" * 32
+    response = client.post(path, data, HTTP_X_CSRFTOKEN="a" * 32)
+    assert response.status_code == 200 and URL.encode() in response.content
+    assert response["Referrer-Policy"] == "no-referrer"
+    assert client.post(path, data, HTTP_X_CSRFTOKEN="a" * 32).status_code == 200
+    assert len(rig.state.calls) == 2
 
 
 def test_cancelled_or_missing_provider_id_never_issues(rig):
@@ -311,6 +342,16 @@ def test_render_telegram_review_layout(rig, tmp_path):
             assert "telegram-activation-card" in html
             assert ("noreferrer noopener nofollow" in html) == (state == "issued")
             (output / f"telegram-{language}-{state}.html").write_text(_standalone(html))
+    from django.template import RequestContext, Template
+
+    rig.request.path = "/admin/operations/bookings/synthetic/"
+    card = service.context(rig.request, rig.booking, admin=True)
+    template = Template(
+        '{% extends "base.html" %}{% block content %}'
+        '{% include "reservations/_telegram_activation.html" %}{% endblock %}'
+    )
+    html = template.render(RequestContext(rig.request, {"telegram": card}))
+    (output / "telegram-ar-admin.html").write_text(_standalone(html))
 
 
 @pytest.mark.django_db(transaction=True)

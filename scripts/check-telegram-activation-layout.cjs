@@ -7,7 +7,7 @@ const { pathToFileURL } = require("node:url");
     const output = process.env.LSA_CONTACT_VISUAL_DIR;
     const browser = await chromium.launch({executablePath: execFileSync("which", ["google-chrome"], {encoding: "utf8"}).trim(), args: ["--allow-file-access-from-files"]});
     try {
-        for (const fixture of ["ar-issued", "en-issued", "fr-issued", "ar-bound", "ar-expired", "ar-unverified"]) {
+        for (const fixture of ["ar-issued", "en-issued", "fr-issued", "ar-bound", "ar-expired", "ar-unverified", "ar-admin"]) {
             for (const width of [390, 820]) {
                 const page = await browser.newPage({viewport: {width, height: 900}});
                 await page.route(/^https?:/, route => route.abort());
