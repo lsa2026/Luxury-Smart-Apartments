@@ -158,7 +158,7 @@ def checked_invitation(value):
         raise Unavailable from exc
     if (
         not isinstance(url, str)
-        or not re.fullmatch(r"https://t\.me/LuxurySmartApartmentsBot\?start=b_[a-f0-9]{48}", url)
+        or not re.fullmatch(r"https://t\.me/LuxurySmartApartmentsBot\?start=[bg]_[a-f0-9]{48}", url)
         or not expiry
         or not timezone.is_aware(expiry)
         or not 0 < (expiry - timezone.now()).total_seconds() <= 7500

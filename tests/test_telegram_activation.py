@@ -249,13 +249,29 @@ def test_admin_endpoint_rejects_guest(rig):
 
 
 @pytest.mark.parametrize(
-    "url", ["https://evil.invalid/", URL + "&phone=bad", URL.replace("Bot", "OtherBot")]
+    "url",
+    [
+        "https://evil.invalid/",
+        URL + "&phone=bad",
+        URL.replace("Bot", "OtherBot"),
+        URL.replace("start=b_", "start=h_"),
+        URL.replace("start=b_", "start=d_"),
+    ],
 )
 def test_no_destination_override(url):
     with pytest.raises(backend.Unavailable):
         backend.checked_invitation(
             {"url": url, "expires_at": (timezone.now() + timedelta(hours=2)).isoformat()}
         )
+
+
+@pytest.mark.parametrize("prefix", ["b", "g"])
+def test_only_published_ordinary_and_gathern_invitation_prefixes(prefix):
+    value = {
+        "url": URL.replace("start=b_", f"start={prefix}_"),
+        "expires_at": (timezone.now() + timedelta(hours=2)).isoformat(),
+    }
+    assert backend.checked_invitation(value)[0] == value["url"]
 
 
 @pytest.mark.parametrize(
