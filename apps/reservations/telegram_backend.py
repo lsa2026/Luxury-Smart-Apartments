@@ -54,8 +54,8 @@ class Backend:
                 or not isinstance(value, dict)
                 or value.get("contract") != "tg20_guest_journey_v1"
                 or value.get("ready") is not True
-                or type(value.get("dispatch_enabled")) is not bool
-                or type(value.get("cutover_configured")) is not bool
+                or value.get("dispatch_enabled") is not True
+                or value.get("cutover_configured") is not True
                 or not isinstance(value.get("components"), dict)
                 or any(
                     value["components"].get(k) is not True

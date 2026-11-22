@@ -57,8 +57,10 @@ loyalty backup database connection is purpose-specific and is not repurposed.
 The adapter is pinned to the Apartments project `rsqgwepnowpnpealrzbn` and calls
 `tg20_s01_health` first. HTTP 200 alone is not readiness. Contract must equal
 `tg20_guest_journey_v1`, ready must be true, and s01/reminders/reviews/contacts/loyalty
-must all be true. Dispatch/cutover flags must be booleans; activation itself never
-enables dispatch. The backend functions, schema and manifest must be deployed and
+must all be true. Dispatch and cutover flags must both be true, matching the
+backend's ready calculation including manifest verification. Activation therefore
+remains closed until the package has an authorized cutover; this code never enables
+dispatch. The backend functions, schema and manifest must be deployed and
 verified by their owner before those checks can pass. Missing/malformed/false
 health fails closed. No cloud DDL or grant changes are performed by this code.
 

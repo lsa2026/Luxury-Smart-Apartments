@@ -98,3 +98,31 @@ def test_same_event_cannot_change_channel(rig, target):
     result = legacy.post("claim", legacy.data(channel="telegram"))
     assert result.status_code == 409
     assert JoinInvitation.objects.get().channel == "whatsapp"
+
+
+def test_record_json_contract_uses_code_not_ok(rig, target):
+    result = legacy.claim(channel="telegram")
+    permit = legacy.preflight(result).json()
+    assert permit["code"] == "ok" and "ok" not in permit
+    assert permit["status"] == "unknown" and permit["send_allowed"] is True
+    reply = legacy.report(result, "accepted", "123").json()
+    assert set(reply) == {
+        "code",
+        "decision",
+        "send_allowed",
+        "retry_provider_post",
+        "invitation_id",
+        "provider_reference",
+        "status",
+        "provider_id",
+        "outcomes",
+        "language",
+        "channel",
+        "provider_receipt_lookup",
+    }
+    assert reply["code"] == "ok" and reply["status"] == "accepted"
+    assert reply["invitation_id"] == result["invitation_id"]
+    assert reply["provider_reference"] == result["provider_reference"]
+    assert reply["provider_id"] == "123" and reply["send_allowed"] is False
+    assert reply["decision"] == "duplicate" and reply["retry_provider_post"] is False
+    assert reply["outcomes"][0]["status"] == "accepted"

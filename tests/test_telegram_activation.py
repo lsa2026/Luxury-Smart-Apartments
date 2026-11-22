@@ -261,7 +261,15 @@ def test_malformed_expiry_is_rejected_safely(expiry):
 
 
 @pytest.mark.parametrize(
-    "change", ["not_ready", "missing_component", "wrong_contract", "malformed"]
+    "change",
+    [
+        "not_ready",
+        "missing_component",
+        "wrong_contract",
+        "malformed",
+        "dispatch_disabled",
+        "no_cutover",
+    ],
 )
 def test_http_200_is_not_readiness(settings, monkeypatch, change):
     settings.TELEGRAM_ACTIVATION_ENABLED = True
@@ -269,8 +277,8 @@ def test_http_200_is_not_readiness(settings, monkeypatch, change):
     value = {
         "contract": "tg20_guest_journey_v1",
         "ready": True,
-        "dispatch_enabled": False,
-        "cutover_configured": False,
+        "dispatch_enabled": True,
+        "cutover_configured": True,
         "components": dict.fromkeys(("s01", "reminders", "reviews", "contacts", "loyalty"), True),
     }
     if change == "not_ready":
@@ -279,6 +287,10 @@ def test_http_200_is_not_readiness(settings, monkeypatch, change):
         value["components"]["loyalty"] = False
     elif change == "wrong_contract":
         value["contract"] = "old"
+    elif change == "dispatch_disabled":
+        value["dispatch_enabled"] = False
+    elif change == "no_cutover":
+        value["cutover_configured"] = False
     else:
         value = []
     calls = []
@@ -316,8 +328,8 @@ def test_fixed_backend_ready_approve_issue_and_private_binding(settings, monkeyp
                 json={
                     "contract": "tg20_guest_journey_v1",
                     "ready": True,
-                    "dispatch_enabled": False,
-                    "cutover_configured": False,
+                    "dispatch_enabled": True,
+                    "cutover_configured": True,
                     "components": dict.fromkeys(
                         ("s01", "reminders", "reviews", "contacts", "loyalty"), True
                     ),
