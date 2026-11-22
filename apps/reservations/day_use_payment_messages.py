@@ -18,6 +18,7 @@ from apps.notifications.services.ultramsg import (
 from apps.payments.day_use_payments import public_url
 from apps.properties.models import Property
 
+from . import guest_message_transport as guest_transport
 from .day_use_stays import (
     UNRESOLVED,
     DayUseStayError,
@@ -217,17 +218,26 @@ def send_link(delivery_id):
             delivery.state, delivery.last_error = "expired", "eligibility_changed"
             delivery.save(update_fields=["state", "last_error"])
             return delivery.state
+        try:
+            route = guest_transport.prepare(
+                stay,
+                source="day_use08",
+                purpose="payment_link",
+                reference="day-use-pay-" + str(delivery.pk),
+            )
+        except guest_transport.TransportHeld:
+            return "transport_held"
         delivery.state = "sending"
         delivery.save(update_fields=["state"])
         body = render_message(stay)
         recipient = normalize_phone_number(stay.guest_phone)
     try:
-        with UltraMsgClient() as provider:
+        with route.open(UltraMsgClient) as provider:
             result = provider.send_text(
                 recipient=recipient, body=body, reference_id="day-use-pay-" + str(delivery.pk)
             )
         state, error, provider_id = "accepted", "", str(result.get("id") or "")
-    except UltraMsgConfigurationError:
+    except (UltraMsgConfigurationError, guest_transport.TransportHeld):
         state, error, provider_id = "failed", "provider_disabled", ""
     except UltraMsgResponseError:
         state, error, provider_id = "failed", "provider_rejected", ""

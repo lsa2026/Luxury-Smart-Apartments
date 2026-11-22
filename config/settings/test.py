@@ -38,5 +38,10 @@ os.environ["NOTIFICATIONS_ENABLED"] = "true"
 os.environ["EMAIL_LOCAL_SMTP_ENABLED"] = "false"
 
 os.environ["DAY_USE08_ENABLED"] = "false"
+os.environ["MESSAGE_SOURCE_AUTH_ENABLED"] = "false"
+os.environ["MESSAGE_SOURCE_RELAY_ENABLED"] = "false"
+os.environ["MESSAGE_RECEIPTS_ENABLED"] = "false"
+os.environ["MESSAGE_SOURCE_CUTOVER_AT"] = ""
+os.environ["WEBSITE_GUEST_MESSAGE_TRANSPORT"] = "ultramsg"
 
 from .development import *  # noqa: E402,F403

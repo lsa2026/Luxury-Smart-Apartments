@@ -20,6 +20,7 @@ from apps.notifications.services.ultramsg import (
     UltraMsgResponseError,
 )
 
+from . import guest_message_transport as guest_transport
 from .day_use08_gateway import authorize, exact_receipt_messages
 from .models import DayUse08DeliveryAttempt, DayUseStay
 
@@ -55,6 +56,10 @@ def caption(stay):
 
 
 def core_delivered(stay, revision, *, reconcile_uncertain=False):
+    if guest_transport.mode() != "ultramsg":
+        from .message_receipts import core_delivered as central_delivered
+
+        return central_delivered(stay, revision, "08")
     phone = "".join(c for c in stay.guest_phone if c.isdigit())
     stamp = int(stay.starts_at.timestamp() * 1000)
     guide = f"guide:{stay.property.hostaway_listing_map_id}:{stamp}:{phone}"
@@ -140,6 +145,15 @@ def invite_paid_booking(
         if not core_delivered(stay, revision, reconcile_uncertain=True):
             return JsonResponse({"code": "core_pending"})
         content, text = invitation_image(stay.guest_language), caption(stay)
+        try:
+            route = guest_transport.prepare(
+                stay,
+                source="day_use08",
+                purpose="loyalty_invitation",
+                reference=payment_delivery_id or key + ":paid-invitation-v1",
+            )
+        except guest_transport.TransportHeld as exc:
+            return JsonResponse({"code": exc.code})
         with registry.invitation_lock():
             stay = DayUseStay.objects.select_for_update().get(pk=stay.pk)
             if stay.communication_revision != revision or stay.status != "paid":
@@ -191,7 +205,7 @@ def invite_paid_booking(
                 if updated != 1:
                     raise ValidationError("day_use_delivery_changed")
         try:
-            with UltraMsgClient() as provider:
+            with route.open(UltraMsgClient) as provider:
                 result = provider.send_image(
                     recipient=phone,
                     content=content,
@@ -199,7 +213,7 @@ def invite_paid_booking(
                     reference_id=row.provider_reference,
                 )
             state, provider_id = "accepted", str(result.get("id") or "")
-        except (UltraMsgConfigurationError, UltraMsgResponseError):
+        except (UltraMsgConfigurationError, UltraMsgResponseError, guest_transport.TransportHeld):
             state, provider_id = "failed", ""
         except Exception:
             state, provider_id = "unknown", ""

@@ -20,6 +20,7 @@ from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.loyalty.models import JoinInvitation
 from apps.notifications.services.ultramsg import UltraMsgClient
 
+from . import guest_message_transport as guest_transport
 from .day_use08_gateway import exact_receipt_messages
 from .day_use_hostaway import booking_state, hostaway_first
 from .models import DayUse08PaymentDelivery, DayUse08PaymentEvent, DayUseStay
@@ -166,6 +167,9 @@ def capture_payment(stay_id):
     )
     event.payload = {**facts, "payment_event_id": str(event.pk), "payment_revision": revision}
     event.save()
+    from .message_source_relay import register_event
+
+    register_event(event, "08", financial=True)
     transaction.on_commit(lambda: queue_event(str(event.pk)), robust=True)
     return event
 
@@ -173,6 +177,8 @@ def capture_payment(stay_id):
 def queue_event(event_id):
     from .tasks import deliver_day_use08_payment
 
+    if guest_transport.mode() != "ultramsg":
+        return
     deliver_day_use08_payment.delay(event_id)
 
 
@@ -377,6 +383,12 @@ def send(request):
                 return JsonResponse({"code": "payment_notice_pending", "sent": False})
         except ValueError:
             return JsonResponse({"code": "receipt_lookup_uncertain", "sent": False})
+        try:
+            route = guest_transport.prepare(
+                event.stay, source="day_use08", purpose=kind, reference=ref
+            )
+        except guest_transport.TransportHeld as exc:
+            return JsonResponse({"code": exc.code, "sent": False}, status=503)
         if prior:
             prior.state, prior.response = "posting", {}
             prior.save(update_fields=["state", "response", "updated_at"])
@@ -392,7 +404,7 @@ def send(request):
     state, provider_id, provider_ref = "unknown", "", ref
     try:
         if kind == "payment_success":
-            with UltraMsgClient() as provider:
+            with route.open(UltraMsgClient) as provider:
                 response = provider.send_text(
                     recipient=event.payload["phone"],
                     body=render_success(event.stay),
@@ -476,7 +488,9 @@ def receipt(request):
 
 
 def deliver_event(event_id, *, client=None):
-    """Retry only the webhook envelope; guest sends have a different durable claim."""
+    """Retry the legacy webhook envelope only while its transport is selected."""
+    if guest_transport.mode() != "ultramsg":
+        return {"accepted": False}
     if not enabled() or not settings.DAY_USE08_PAYMENT_WEBHOOK_URL:
         return {"accepted": False}
     now = timezone.now()

@@ -7,6 +7,8 @@ from apps.reservations import (
     day_use08_payments,
     day_use_auto_payment,
     day_use_ownership,
+    message_receipts,
+    message_source_authorization,
     morning07_communications,
     morning07_gateway,
     morning07_payments,
@@ -19,6 +21,31 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path("website-messages/receipt/", message_receipts.receipt, name="website_message_receipt"),
+    path(
+        "morning07/source-authorization/",
+        message_source_authorization.source_authorization,
+        {"scenario": "07"},
+        name="morning07_source_authorization",
+    ),
+    path(
+        "day-use08/source-authorization/",
+        message_source_authorization.source_authorization,
+        {"scenario": "08"},
+        name="day_use08_source_authorization",
+    ),
+    path(
+        "morning07/payments/source-authorization/",
+        message_source_authorization.source_authorization,
+        {"scenario": "07", "financial": True},
+        name="morning07_payment_source_authorization",
+    ),
+    path(
+        "day-use08/payments/source-authorization/",
+        message_source_authorization.source_authorization,
+        {"scenario": "08", "financial": True},
+        name="day_use08_payment_source_authorization",
+    ),
     path(
         "day-use08/ownership/<uuid:stay_id>/",
         day_use_ownership.read_ownership,

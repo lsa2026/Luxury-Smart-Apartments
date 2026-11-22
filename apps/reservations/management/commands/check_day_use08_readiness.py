@@ -28,6 +28,8 @@ class Command(BaseCommand):
                 "payments_dayusepaymentattempt",
                 # The shared payment-ID verifier also reads this additive ledger.
                 "payments_channelcardcollection",
+                "reservations_websitemessagerelay",
+                "reservations_websitemessageexpectation",
             }
 
             def ready():
@@ -38,6 +40,7 @@ class Command(BaseCommand):
                     ("payments", "0022_channel_card_collection"),
                     ("reservations", "0031_dayusestay_dayusepaymentlinkdelivery_and_more"),
                     ("reservations", "0032_manualbookingdraft_billing_address"),
+                    ("reservations", "0035_website_message_relay"),
                 }.issubset(MigrationRecorder(connection).applied_migrations())
 
             while not ready():

@@ -1,0 +1,1556 @@
+{
+  "syntheticOnly": true,
+  "fixtures": [
+    {
+      "context": {
+        "purpose": "booking_confirmation",
+        "language": "ar",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "09:00",
+          "check_out_time": "12:00"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": true,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "0afd327ff41ed009e34e4c225fac110331be4bdb14c483ecce5c5141b6e083f1",
+        "source_message_type": "status_new",
+        "reservation_revision": "1",
+        "source_template_name": "status_new",
+        "source_template_text": "<b>تم تأكيد حجزك</b> ✅<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزي <b>{{guest_name}}</b>، تم تأكيد حجزك لدينا.<br><br>📍 <b>الوجهة:</b> {{listing_name}}<br><br>📅 <b>التاريخ:</b> {{arrival_date}}<br><br>🕒 <b>الدخول:</b> {{check_in_time}}<br><br>🕛 <b>الخروج:</b> {{check_out_time}}<br><br>⏰ {{timezone}}<br><br>---<br><br>🌟 <b>مزايا الحجز المباشر:</b><br><br>للحصول على أفضل الأسعار في رحلاتكم القادمة، ننصحكم بالحجز مباشرة عبر موقعنا الإلكتروني:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>فريق الدعم في خدمتك:</b><br><br>لأي استفسار، يسعدنا تواصلك مع خدمة العملاء:<br><br>+966501205651<br><br><b>نتمنى لك إقامة سعيدة في Luxury Smart Apartments</b> ✨",
+        "source_template_sha256": "8b5ec0ed1b6c2f1dd91c36b9eaeb63d40bebb7b6619f12f3793eb77a04e3cc3b",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": false,
+        "reason": "media_contract_required",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_change",
+        "language": "ar",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "09:00",
+          "check_out_time": "12:00",
+          "departure_date": "2026-12-03"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "506f20661b1915c82326a7eb23b83f7f04ad12e8d977e5751af7657023b3b1e6",
+        "source_message_type": "status_modified",
+        "reservation_revision": "1",
+        "source_template_name": "status_modified",
+        "source_template_text": "<b>تعديل حجز 🔄</b><br><br>ضيفنا العزيز <b>{{guest_name}}</b>، نود إبلاغك بأنه تم تحديث بيانات إقامتك بنجاح:<br><br>📍 <b>الوجهة المحجوزة:</b> {{listing_name}}<br><br>📅 <b>تاريخ الدخول:</b> {{arrival_date}}<br><br>📅 <b>تاريخ المغادرة:</b> {{departure_date}}<br><br>---<br><br>🛎️ <b>للتواصل والدعم:</b><br><br>يسعدنا خدمتك عبر واتساب:<br><br>+966501205651<br><br><b>نتمنى لك إقامة سعيدة ✨</b><br><br>📅 <b>التاريخ:</b> {{arrival_date}}<br><br>🕒 <b>الدخول:</b> {{check_in_time}}<br><br>🕛 <b>الخروج:</b> {{check_out_time}}<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "8a21c33cdc8f46ad77d14d23fcb2915edfe2e6d955bc0a6d3dbadc3ca6e098d5",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تعديل حجز 🔄*\n‏\n‏ضيفنا العزيز *SYNTHETIC_GUEST*، نود إبلاغك بأنه تم تحديث بيانات إقامتك بنجاح:\n‏\n‏📍 *الوجهة المحجوزة:* SYNTHETIC_APARTMENT\n‏\n‏📅 *تاريخ الدخول:* 2026-12-03\n‏\n‏📅 *تاريخ المغادرة:* 2026-12-03\n‏\n‏---\n‏\n‏🛎️ *للتواصل والدعم:*\n‏\n‏يسعدنا خدمتك عبر واتساب:\n‏\n‏+966501205651\n‏\n‏*نتمنى لك إقامة سعيدة ✨*\n‏\n‏📅 *التاريخ:* 2026-12-03\n‏\n‏🕒 *الدخول:* 09:00\n‏\n‏🕛 *الخروج:* 12:00\n‏\n‏⏰ Asia/Riyadh"
+        },
+        "content_digest": "e775ca66ab883ad04152424d2e97ca6f31c3ca028e60387c03dbb5377d676586",
+        "render_policy_ref": "yc20-web-render-v1:28e43e10484f65ec67d7a97571efcfe903f89fe7480f6b60327d2464b8918855",
+        "source_template_sha256": "8a21c33cdc8f46ad77d14d23fcb2915edfe2e6d955bc0a6d3dbadc3ca6e098d5",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_cancellation",
+        "language": "ar",
+        "scenario": "07",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": null,
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "e379a985dffd77a2616b4cd62dfce3505884ea6285a642f135a762da41857a6c",
+        "source_message_type": "status_cancelled",
+        "reservation_revision": "1",
+        "source_template_name": "status_cancelled",
+        "source_template_text": "<b>تم تأكيد إلغاء الحجز</b> 🛑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزي <b>{{guest_name}}</b>، نؤكد لك استلام طلب إلغاء إقامتك في <b>{{listing_name}}</b>.<br><br>نأسف جداً لعدم تمكننا من استضافتك هذه المرة، ونقدر لك اختيارك واهتمامك بـ Luxury Smart Apartments.<br><br>📝 <b>رأيك يهمنا:</b><br><br>إن أمكن، نرجو منك مشاركتنا سبب الإلغاء، حيث تساهم ملاحظاتك في تطوير جودة خدماتنا بشكل مستمر لتلبية تطلعاتكم.<br><br>🌟 <b>رحلتك القادمة:</b><br><br>نتمنى أن نراك قريباً في إحدى شققنا الفاخرة، يمكنك دائماً استكشاف خياراتنا المتاحة عبر الموقع:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>فريق الدعم في خدمتك:</b><br><br>إذا كان لديك أي استفسار بخصوص سياسة الاسترداد، يسعدنا تواصلك معنا عبر الرقم التالي:<br><br>+966501205651<br><br><b>نتطلع للترحيب بك في مناسبة قادمة</b> ✨",
+        "source_template_sha256": "c816b099ee933942f7dc70aa2a37d874da65f3e82330afb5d3b37274808f1133",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تم تأكيد إلغاء الحجز* 🛑\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزي *SYNTHETIC_GUEST*، نؤكد لك استلام طلب إلغاء إقامتك في *SYNTHETIC_APARTMENT*.\n‏\n‏نأسف جداً لعدم تمكننا من استضافتك هذه المرة، ونقدر لك اختيارك واهتمامك بـ Luxury Smart Apartments.\n‏\n‏📝 *رأيك يهمنا:*\n‏\n‏إن أمكن، نرجو منك مشاركتنا سبب الإلغاء، حيث تساهم ملاحظاتك في تطوير جودة خدماتنا بشكل مستمر لتلبية تطلعاتكم.\n‏\n‏🌟 *رحلتك القادمة:*\n‏\n‏نتمنى أن نراك قريباً في إحدى شققنا الفاخرة، يمكنك دائماً استكشاف خياراتنا المتاحة عبر الموقع:\n‏\n‏🔗 https://luxurysmartapartments.com/\n‏\n‏---\n‏\n‏🛎️ *فريق الدعم في خدمتك:*\n‏\n‏إذا كان لديك أي استفسار بخصوص سياسة الاسترداد، يسعدنا تواصلك معنا عبر الرقم التالي:\n‏\n‏+966501205651\n‏\n‏*نتطلع للترحيب بك في مناسبة قادمة* ✨"
+        },
+        "content_digest": "46400a2c3f7c121eb50104e57c89a53af04c098a3a250c11747c0e12d1c17219",
+        "render_policy_ref": "yc20-web-render-v1:5e8f81884a8d31c4855c142f6fa2e45e520104c4cb439f936c149a31c9732afe",
+        "source_template_sha256": "c816b099ee933942f7dc70aa2a37d874da65f3e82330afb5d3b37274808f1133",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "house_rules",
+        "language": "ar",
+        "scenario": "07",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "6454160975fc0f473a2aa02899e80ea14649d3c4a1aa36c1de3a7b5d48aafba5",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "6656224fb462b3c7e79680c57445e04d8b51cfe33159ee04781c41807d37b3f4",
+        "source_message_type": "house_rules",
+        "reservation_revision": "1",
+        "source_template_name": "house_rules",
+        "source_template_text": "<b>تعليمات هامة قبل الإقامة</b> ⚠️<br><br><b>Luxury Smart Apartments 🌿</b><br><br>أهلاً بك <b>{{guest_name}}</b>، نسعى دائماً لضمان إقامة هادئة ومريحة لك ولجميع جيراننا في هذا الحي السكني الهادئ.<br><br>📋 <b>قواعد الإقامة:</b><br><br>حرصاً على جودة المكان وخصوصيتكم، نرجو الالتزام بما يلي:<br><br>🚭 1. يمنع التدخين منعاً باتاً داخل الشقة.<br><br>🚫 2. يمنع إقامة الحفلات أو التجمعات.<br><br>🔇 3. يمنع رفع صوت الموسيقى أو أي مصدر للإزعاج.<br><br>🤝 4. نرجو احترام الجيران والالتزام بالهدوء التام.<br><br>🚗 5. يرجى الالتزام بالموقف الخاص بالشقة فقط.<br><br>👤 6. تزويدنا بصورة هوية سارية للتحقق قبل الدخول.<br><br>تعاونكم محل تقدير كبير، ويساهم في استمرار تقديم تجربة راقية تليق بكم 🌟<br><br>---<br><br>🛎️ <b>فريق الدعم في خدمتك:</b><br><br>لأي استفسار بخصوص هذه التعليمات، يسعدنا تواصلك:<br><br>+966501205651<br><br><b>نتمنى لك إقامة ذكية ومريحة</b> ✨",
+        "source_template_sha256": "3fc6d2581877a86e80f0a4a249a2d82612b51dad1a856e8e055effca07a37558",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تعليمات هامة قبل الإقامة* ⚠️\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏أهلاً بك *SYNTHETIC_GUEST*، نسعى دائماً لضمان إقامة هادئة ومريحة لك ولجميع جيراننا في هذا الحي السكني الهادئ.\n‏\n‏📋 *قواعد الإقامة:*\n‏\n‏حرصاً على جودة المكان وخصوصيتكم، نرجو الالتزام بما يلي:\n‏\n‏🚭 1. يمنع التدخين منعاً باتاً داخل الشقة.\n‏\n‏🚫 2. يمنع إقامة الحفلات أو التجمعات.\n‏\n‏🔇 3. يمنع رفع صوت الموسيقى أو أي مصدر للإزعاج.\n‏\n‏🤝 4. نرجو احترام الجيران والالتزام بالهدوء التام.\n‏\n‏🚗 5. يرجى الالتزام بالموقف الخاص بالشقة فقط.\n‏\n‏👤 6. تزويدنا بصورة هوية سارية للتحقق قبل الدخول.\n‏\n‏تعاونكم محل تقدير كبير، ويساهم في استمرار تقديم تجربة راقية تليق بكم 🌟\n‏\n‏---\n‏\n‏🛎️ *فريق الدعم في خدمتك:*\n‏\n‏لأي استفسار بخصوص هذه التعليمات، يسعدنا تواصلك:\n‏\n‏+966501205651\n‏\n‏*نتمنى لك إقامة ذكية ومريحة* ✨"
+        },
+        "content_digest": "15cfa2cdfa075306fc3c18cf14c0f389ab01fb31ea4b72a4594d1a85ffea06f6",
+        "render_policy_ref": "yc20-web-render-v1:6c33b03ce643c940aee2ebed262d27d991be49b7e70e7838ecb5d6ba161d8eb8",
+        "source_template_sha256": "3fc6d2581877a86e80f0a4a249a2d82612b51dad1a856e8e055effca07a37558",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkin_guide",
+        "language": "ar",
+        "scenario": "07",
+        "variables": {
+          "map_url": "https://example.invalid/map",
+          "wifi_net": "SYNTHETIC_WIFI",
+          "gate_code": "SYNTHETIC_GATE",
+          "video_url": "https://example.invalid/video",
+          "wifi_pass": "SYNTHETIC_WIFI_PASSWORD",
+          "address_ar": "SYNTHETIC_ADDRESS_AR",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "2ca8fb167dbd7501826059b0b6f60213e66c8ee9c70ecc607c6e782ff13eb53e",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "12345201db7c3df80a849acf228d7b078851ebafae927cda4f813f8885a92152",
+        "source_message_type": "checkin_guide",
+        "reservation_revision": "1",
+        "source_template_name": "checkin_guide",
+        "source_template_text": "<b>تعليمات الدخول</b> 🔑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزنا <b>{{guest_name}}</b>، إليك دليل الوصول لـ <b>{{listing_name}}</b>:<br><br>📍 <b>الموقع والعنوان:</b><br><br>• خرائط جوجل: {{map_url}}<br><br>• العنوان: {{address_ar}}<br><br>📶 <b>الاتصال بالواي فاي:</b><br><br>• الشبكة: {{wifi_net}}<br><br>• الرقم السري: {{wifi_pass}}<br><br>🚪 <b>كود بوابة المجمع الخارجية:</b> {{gate_code}}<br><br>🎥 <b>فيديو شرح الوصول:</b><br><br>🔗 {{video_url}}<br><br>🔑 <b>كود دخول الشقة:</b><br><br>للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.<br><br>🛎️ <b>فريق الدعم:</b><br><br>+966501205651 ✨",
+        "source_template_sha256": "2e0b294ef3e836f802baf6ae03fbf9da02724950e0046b2f73c0c08b2a834407",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تعليمات الدخول* 🔑\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزنا *SYNTHETIC_GUEST*، إليك دليل الوصول لـ *SYNTHETIC_APARTMENT*:\n‏\n‏📍 *الموقع والعنوان:*\n‏\n‏• خرائط جوجل: https://example.invalid/map\n‏\n‏• العنوان: SYNTHETIC_ADDRESS_AR\n‏\n‏📶 *الاتصال بالواي فاي:*\n‏\n‏• الشبكة: SYNTHETIC_WIFI\n‏\n‏• الرقم السري: SYNTHETIC_WIFI_PASSWORD\n‏\n‏🚪 *كود بوابة المجمع الخارجية:* SYNTHETIC_GATE\n‏\n‏🎥 *فيديو شرح الوصول:*\n‏\n‏🔗 https://example.invalid/video\n‏\n‏🔑 *كود دخول الشقة:*\n‏\n‏للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.\n‏\n‏🛎️ *فريق الدعم:*\n‏\n‏+966501205651 ✨"
+        },
+        "content_digest": "b0614b5d83e3973cc2d2d1326c75f54728302b140bce8b23db58848da19feca7",
+        "render_policy_ref": "yc20-web-render-v1:6d1ef5f7802471b95ebbdb357381a64a9b2657f5e766682803d31ee0bb809214",
+        "source_template_sha256": "2e0b294ef3e836f802baf6ae03fbf9da02724950e0046b2f73c0c08b2a834407",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkout_reminder",
+        "language": "ar",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_out_time": "12:00"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "2817927a705b9b9c62d5ff3818f72ef2a28c57c9afd4d5d2c77561262869953a",
+        "not_before": "2026-12-03T08:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "95e7c266164a082bf036a84aecf1d1623de8e239197bd219e19b2a1bef7ddd3f",
+        "source_message_type": "reminder_checkout",
+        "reservation_revision": "1",
+        "source_template_name": "reminder_checkout",
+        "source_template_text": "<b>تذكير بموعد المغادرة</b> 🧹<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزي <b>{{guest_name}}</b>، نود تذكيرك بأن موعد المغادرة اليوم من <b>{{listing_name}}</b> هو في تمام الساعة <b>{{check_out_time}}</b>.<br><br>نشكرك جزيلاً على اختيارك لنا.<br><br>نتمنى أن تكون قد استمتعت بإقامة سعيدة وذكية معنا.<br><br>نتطلع لاستضافتك مرة أخرى في القريب العاجل.<br><br><b>رافقتك السلامة في رحلتك</b> ✨<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "613bc601fbdac9c00bcb5707e265215a5fe456cd6dfed5e145f906f6e11cef08",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تذكير بموعد المغادرة* 🧹\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزي *SYNTHETIC_GUEST*، نود تذكيرك بأن موعد المغادرة اليوم من *SYNTHETIC_APARTMENT* هو في تمام الساعة *12:00*.\n‏\n‏نشكرك جزيلاً على اختيارك لنا.\n‏\n‏نتمنى أن تكون قد استمتعت بإقامة سعيدة وذكية معنا.\n‏\n‏نتطلع لاستضافتك مرة أخرى في القريب العاجل.\n‏\n‏*رافقتك السلامة في رحلتك* ✨\n‏\n‏⏰ Asia/Riyadh"
+        },
+        "content_digest": "245d5b2dc22abe35db395c2b7562b15ef62a208bb998063b73400ec67e5bb2de",
+        "render_policy_ref": "yc20-web-render-v1:3153b770e0ab4d88ff5ceb209b95908eeadeb9cf9785cd17e4c745d0ea4eefd0",
+        "source_template_sha256": "613bc601fbdac9c00bcb5707e265215a5fe456cd6dfed5e145f906f6e11cef08",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_confirmation",
+        "language": "en",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "09:00",
+          "check_out_time": "12:00"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": true,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "8e45e1bcb0234dd6bc47b0d4242ef385067c10d92e57125901856688aca9972d",
+        "source_message_type": "status_new",
+        "reservation_revision": "1",
+        "source_template_name": "status_new",
+        "source_template_text": "<b>Booking Confirmed</b> ✅<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, your booking has been confirmed with us.<br><br>📍 <b>Destination:</b> {{listing_name}}<br><br>📅 <b>Date:</b> {{arrival_date}}<br><br>🕒 <b>Check-in:</b> {{check_in_time}}<br><br>🕛 <b>Check-out:</b> {{check_out_time}}<br><br>⏰ {{timezone}}<br><br>---<br><br>🌟 <b>Exclusive Direct Booking:</b><br><br>For the best rates on your future stays, we recommend booking directly through our website:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Our Team is at Your Service:</b><br><br>If you have any questions, please feel free to contact customer service:<br><br>+966501205651<br><br><b>We wish you a pleasant stay at Luxury Smart Apartments</b> ✨",
+        "source_template_sha256": "6e4651767c41209b6b5869a85fefbb1bdeb8917d954a97a027a117b326e6aae8",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": false,
+        "reason": "media_contract_required",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_change",
+        "language": "en",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "09:00",
+          "check_out_time": "12:00",
+          "departure_date": "2026-12-03"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "e5a53d061b39c53a672cf51fcd12c4dc65e149922ecd81baab0a47d82106e75a",
+        "source_message_type": "status_modified",
+        "reservation_revision": "1",
+        "source_template_name": "status_modified",
+        "source_template_text": "<b>Booking Updated 🔄</b><br><br>Dear <b>{{guest_name}}</b>, we would like to inform you that your stay details have been successfully updated:<br><br>📍 <b>Destination:</b> {{listing_name}}<br><br>📅 <b>Check-in:</b> {{arrival_date}}<br><br>📅 <b>Check-out:</b> {{departure_date}}<br><br>---<br><br>🛎️ <b>Support & Contact:</b><br><br>We are happy to serve you via WhatsApp:<br><br>+966501205651<br><br><b>We wish you a pleasant stay ✨</b><br><br>📅 <b>Date:</b> {{arrival_date}}<br><br>🕒 <b>Check-in:</b> {{check_in_time}}<br><br>🕛 <b>Check-out:</b> {{check_out_time}}<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "9e82cf465dd10c71c9a01e2f4c5627a68ad4720b3b75ffad03f04397f14f244b",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Booking Updated 🔄*\n\nDear *SYNTHETIC_GUEST*, we would like to inform you that your stay details have been successfully updated:\n\n📍 *Destination:* SYNTHETIC_APARTMENT\n\n📅 *Check-in:* 2026-12-03\n\n📅 *Check-out:* 2026-12-03\n\n---\n\n🛎️ *Support & Contact:*\n\nWe are happy to serve you via WhatsApp:\n\n+966501205651\n\n*We wish you a pleasant stay ✨*\n\n📅 *Date:* 2026-12-03\n\n🕒 *Check-in:* 09:00\n\n🕛 *Check-out:* 12:00\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "eb1c8803f4f0c9142fd35a1a3658a438f4af37219b6ef09e5e8943d4f0054040",
+        "render_policy_ref": "yc20-web-render-v1:1eb78d99deeff5412b375d7ad7ac8a9526ca4be205f15d0fdd47891406bdbcb0",
+        "source_template_sha256": "9e82cf465dd10c71c9a01e2f4c5627a68ad4720b3b75ffad03f04397f14f244b",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_cancellation",
+        "language": "en",
+        "scenario": "07",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": null,
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "dd57906227ea2bc0502dfb1571404d7911787a464e8d7c8eafa9bda88c9a4716",
+        "source_message_type": "status_cancelled",
+        "reservation_revision": "1",
+        "source_template_name": "status_cancelled",
+        "source_template_text": "<b>Booking Cancellation Confirmed</b> 🛑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, we confirm the receipt of your cancellation request for your stay at <b>{{listing_name}}</b>.<br><br>We are truly sorry that we won’t be able to host you this time and appreciate your interest in Luxury Smart Apartments.<br><br>📝 <b>Your Feedback Matters:</b><br><br>If possible, please share the reason for your cancellation. Your feedback helps us continuously improve our services to meet your expectations.<br><br>🌟 <b>Future Stays:</b><br><br>We hope to see you soon in one of our other luxury apartments. You can always explore our available options on our website:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Our Team is at Your Service:</b><br><br>If you have any questions regarding the refund policy or any other assistance, please feel free to contact us:<br><br>+966501205651<br><br><b>We look forward to welcoming you on a future occasion</b> ✨",
+        "source_template_sha256": "4fef5e5b77fe569e64005fc035f460e1b68ec767fcb441e86694684e26e22740",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Booking Cancellation Confirmed* 🛑\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, we confirm the receipt of your cancellation request for your stay at *SYNTHETIC_APARTMENT*.\n\nWe are truly sorry that we won’t be able to host you this time and appreciate your interest in Luxury Smart Apartments.\n\n📝 *Your Feedback Matters:*\n\nIf possible, please share the reason for your cancellation. Your feedback helps us continuously improve our services to meet your expectations.\n\n🌟 *Future Stays:*\n\nWe hope to see you soon in one of our other luxury apartments. You can always explore our available options on our website:\n\n🔗 https://luxurysmartapartments.com/\n\n---\n\n🛎️ *Our Team is at Your Service:*\n\nIf you have any questions regarding the refund policy or any other assistance, please feel free to contact us:\n\n+966501205651\n\n*We look forward to welcoming you on a future occasion* ✨"
+        },
+        "content_digest": "7f7a182fc20204fe7ad3e1888466af7ecf5a8abb53c64a1d5edccde9d0b3f584",
+        "render_policy_ref": "yc20-web-render-v1:adee697d1ba16429bbab95b97a87bfd8d2e82e6725d289d32c8c784009c48d3f",
+        "source_template_sha256": "4fef5e5b77fe569e64005fc035f460e1b68ec767fcb441e86694684e26e22740",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "house_rules",
+        "language": "en",
+        "scenario": "07",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "6454160975fc0f473a2aa02899e80ea14649d3c4a1aa36c1de3a7b5d48aafba5",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "ae5f7e9a627687e01b5336779adb2d85f472d26b60038b44ce22fd0eeac851c4",
+        "source_message_type": "house_rules",
+        "reservation_revision": "1",
+        "source_template_name": "house_rules",
+        "source_template_text": "<b>Important House Rules</b> ⚠️<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, we want to ensure a peaceful and comfortable stay for you and our neighbors in this quiet residential area.<br><br>📋 <b>House Rules:</b><br><br>To maintain the privacy and quality of the property, please adhere to the following:<br><br>🚭 1. Smoking is strictly prohibited inside the apartment.<br><br>🚫 2. Parties or gatherings are not allowed.<br><br>🔇 3. Loud music or any noise disturbance is not permitted.<br><br>🤝 4. Please respect neighbors and maintain quiet at all times.<br><br>🅿️ 5. Use only the designated parking space assigned to the apartment.<br><br>🆔 6. A valid ID must be provided for verification prior to check-in.<br><br>Your cooperation is highly appreciated and helps us maintain a refined experience for all our guests 🌟<br><br>---<br><br>🛎️ <b>Our Team is at Your Service:</b><br><br>If you have any questions regarding these rules, please contact us:<br><br>+966501205651<br><br><b>We wish you a smart and comfortable stay</b> ✨",
+        "source_template_sha256": "33a42b767e689e54ba0bdb864ae83ed195de083b128b1a22fa989f7ff3061163",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Important House Rules* ⚠️\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, we want to ensure a peaceful and comfortable stay for you and our neighbors in this quiet residential area.\n\n📋 *House Rules:*\n\nTo maintain the privacy and quality of the property, please adhere to the following:\n\n🚭 1. Smoking is strictly prohibited inside the apartment.\n\n🚫 2. Parties or gatherings are not allowed.\n\n🔇 3. Loud music or any noise disturbance is not permitted.\n\n🤝 4. Please respect neighbors and maintain quiet at all times.\n\n🅿️ 5. Use only the designated parking space assigned to the apartment.\n\n🆔 6. A valid ID must be provided for verification prior to check-in.\n\nYour cooperation is highly appreciated and helps us maintain a refined experience for all our guests 🌟\n\n---\n\n🛎️ *Our Team is at Your Service:*\n\nIf you have any questions regarding these rules, please contact us:\n\n+966501205651\n\n*We wish you a smart and comfortable stay* ✨"
+        },
+        "content_digest": "2d92de8fc0650c77d9f613173fd6b52be2f3d6d39259ced3662baf0eb805668c",
+        "render_policy_ref": "yc20-web-render-v1:a69bc36090afe705884d7e8d7d788c0a7b49fbc4b38d05d0ac37db8f6c4209c3",
+        "source_template_sha256": "33a42b767e689e54ba0bdb864ae83ed195de083b128b1a22fa989f7ff3061163",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkin_guide",
+        "language": "en",
+        "scenario": "07",
+        "variables": {
+          "map_url": "https://example.invalid/map",
+          "wifi_net": "SYNTHETIC_WIFI",
+          "gate_code": "SYNTHETIC_GATE",
+          "video_url": "https://example.invalid/video",
+          "wifi_pass": "SYNTHETIC_WIFI_PASSWORD",
+          "address_en": "SYNTHETIC_ADDRESS_EN",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "2ca8fb167dbd7501826059b0b6f60213e66c8ee9c70ecc607c6e782ff13eb53e",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "0f0888252c5bca8a9db04250847300015d6b8ba5f1a80246388ff759407e474f",
+        "source_message_type": "checkin_guide",
+        "reservation_revision": "1",
+        "source_template_name": "checkin_guide",
+        "source_template_text": "<b>Check-in Instructions</b> 🔑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, please find the access guide for <b>{{listing_name}}</b>:<br><br>📍 <b>Location & Address:</b><br><br>• Google Maps: {{map_url}}<br><br>• Address: {{address_en}}<br><br>📶 <b>Wi-Fi Connectivity:</b><br><br>• Network: {{wifi_net}}<br><br>• Password: {{wifi_pass}}<br><br>🚪 <b>External Gate Code:</b> {{gate_code}}<br><br>🎥 <b>Access Tutorial (Video):</b><br><br>🔗 {{video_url}}<br><br>🔑 <b>Apartment Access Code:</b><br><br>Contact support after ID verification for your apartment access code: +966501205651.<br><br>🛎️ <b>Support Team:</b><br><br>+966501205651 ✨",
+        "source_template_sha256": "403af4a8ef213552591223e555b479d01332109253fed20191a9bb4e6e96f2a3",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Check-in Instructions* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, please find the access guide for *SYNTHETIC_APARTMENT*:\n\n📍 *Location & Address:*\n\n• Google Maps: https://example.invalid/map\n\n• Address: SYNTHETIC_ADDRESS_EN\n\n📶 *Wi-Fi Connectivity:*\n\n• Network: SYNTHETIC_WIFI\n\n• Password: SYNTHETIC_WIFI_PASSWORD\n\n🚪 *External Gate Code:* SYNTHETIC_GATE\n\n🎥 *Access Tutorial (Video):*\n\n🔗 https://example.invalid/video\n\n🔑 *Apartment Access Code:*\n\nContact support after ID verification for your apartment access code: +966501205651.\n\n🛎️ *Support Team:*\n\n+966501205651 ✨"
+        },
+        "content_digest": "9be8ef56536f13575eee4fc86d98cde89d4bd3cb27a9e0f09d1625d5b0254a79",
+        "render_policy_ref": "yc20-web-render-v1:7aeb34eb356806e3d16f42b5716e56414b5f2916d46a69e5865c9ce9220cc540",
+        "source_template_sha256": "403af4a8ef213552591223e555b479d01332109253fed20191a9bb4e6e96f2a3",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkout_reminder",
+        "language": "en",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_out_time": "12:00"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "2817927a705b9b9c62d5ff3818f72ef2a28c57c9afd4d5d2c77561262869953a",
+        "not_before": "2026-12-03T08:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "d894285690f7fc891a19e848e228d609939aeee161f198fbca2b0845deff83a1",
+        "source_message_type": "reminder_checkout",
+        "reservation_revision": "1",
+        "source_template_name": "reminder_checkout",
+        "source_template_text": "<b>Check-out Reminder</b> 🧹<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, this is a reminder that check-out from <b>{{listing_name}}</b> is today at <b>{{check_out_time}}</b>.<br><br>Thank you for staying with us!<br><br>We hope you had a pleasant and smart experience.<br><br>We look forward to hosting you again soon.<br><br><b>Safe travels!</b> ✨<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "7cfa20b80c006baeac80d1e08b0ea4944371d1a8dfddd16610f41115e2a813ee",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Check-out Reminder* 🧹\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, this is a reminder that check-out from *SYNTHETIC_APARTMENT* is today at *12:00*.\n\nThank you for staying with us!\n\nWe hope you had a pleasant and smart experience.\n\nWe look forward to hosting you again soon.\n\n*Safe travels!* ✨\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "15a08d5335b227d1f5747eee9866111d9d62fa203c2a74adad84933c286e9067",
+        "render_policy_ref": "yc20-web-render-v1:aaa4622863bef3562c098966b10e34d1b8811f1555164241524a1fb2f44a1e61",
+        "source_template_sha256": "7cfa20b80c006baeac80d1e08b0ea4944371d1a8dfddd16610f41115e2a813ee",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_confirmation",
+        "language": "fr",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "09:00",
+          "check_out_time": "12:00"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": true,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "6cbe772626f19875bdb16f823d23cb43cbf9a1c5323f60d47d30f28a33f2b43a",
+        "source_message_type": "status_new",
+        "reservation_revision": "1",
+        "source_template_name": "status_new",
+        "source_template_text": "<b>Réservation confirmée</b> ✅<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, votre réservation chez nous est confirmée.<br><br>📍 <b>Destination :</b> {{listing_name}}<br><br>📅 <b>Date :</b> {{arrival_date}}<br><br>🕒 <b>Arrivée :</b> {{check_in_time}}<br><br>🕛 <b>Départ :</b> {{check_out_time}}<br><br>⏰ {{timezone}}<br><br>---<br><br>🌟 <b>Avantages de la réservation directe :</b><br><br>Pour bénéficier des meilleurs tarifs lors de vos prochains séjours, nous vous recommandons de réserver directement sur notre site :<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Notre équipe est à votre service :</b><br><br>Pour toute question, n'hésitez pas à contacter notre service client :<br><br>+966501205651<br><br><b>Nous vous souhaitons un agréable séjour chez Luxury Smart Apartments</b> ✨",
+        "source_template_sha256": "046a3c53b4a796a15c0f4242a83fe23fd56493c7a7cc534706849f0e795d132a",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": false,
+        "reason": "media_contract_required",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_change",
+        "language": "fr",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "09:00",
+          "check_out_time": "12:00",
+          "departure_date": "2026-12-03"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "ee3c629fa163ac67c2f9a1698af9f179cd9da1a48f14e9e894aaa070d695dfcd",
+        "source_message_type": "status_modified",
+        "reservation_revision": "1",
+        "source_template_name": "status_modified",
+        "source_template_text": "<b>Réservation modifiée 🔄</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous vous informons que les détails de votre séjour ont été mis à jour avec succès :<br><br>📍 <b>Destination :</b> {{listing_name}}<br><br>📅 <b>Arrivée :</b> {{arrival_date}}<br><br>📅 <b>Départ :</b> {{departure_date}}<br><br>---<br><br>🛎️ <b>Assistance et contact :</b><br><br>Nous sommes à votre service sur WhatsApp :<br><br>+966501205651<br><br><b>Nous vous souhaitons un agréable séjour ✨</b><br><br>📅 <b>Date :</b> {{arrival_date}}<br><br>🕒 <b>Arrivée :</b> {{check_in_time}}<br><br>🕛 <b>Départ :</b> {{check_out_time}}<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "a29e3acac0fabafd325d6cdb6b31469ea8369f69b1ea5119d2bedd9cc0d2f7af",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Réservation modifiée 🔄*\n\nCher/Chère *SYNTHETIC_GUEST*, nous vous informons que les détails de votre séjour ont été mis à jour avec succès :\n\n📍 *Destination :* SYNTHETIC_APARTMENT\n\n📅 *Arrivée :* 2026-12-03\n\n📅 *Départ :* 2026-12-03\n\n---\n\n🛎️ *Assistance et contact :*\n\nNous sommes à votre service sur WhatsApp :\n\n+966501205651\n\n*Nous vous souhaitons un agréable séjour ✨*\n\n📅 *Date :* 2026-12-03\n\n🕒 *Arrivée :* 09:00\n\n🕛 *Départ :* 12:00\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "b9d8098d69cb5d00a2c1c0fcc4ecc848c6eab37b880ab75cf35ff20ee27716f2",
+        "render_policy_ref": "yc20-web-render-v1:ca81bfbe8d2eea6fa6023fbdfb16740a246128df736f304fa11bf56c4b2bdc1e",
+        "source_template_sha256": "a29e3acac0fabafd325d6cdb6b31469ea8369f69b1ea5119d2bedd9cc0d2f7af",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_cancellation",
+        "language": "fr",
+        "scenario": "07",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": null,
+        "job_sha256": "dc9d88b955b20ef72eabcfd6c27346aab871f47ed67724fe18798ab0e6eda7af",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "fd772c1b04b6ceb8d865741318e78e21c6a3567a98d66e6b3077a08d6cd4084b",
+        "source_message_type": "status_cancelled",
+        "reservation_revision": "1",
+        "source_template_name": "status_cancelled",
+        "source_template_text": "<b>Annulation de réservation confirmée</b> 🛑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous vous confirmons la réception de votre demande d’annulation pour votre séjour à <b>{{listing_name}}</b>.<br><br>Nous sommes sincèrement désolés de ne pas pouvoir vous accueillir cette fois-ci et vous remercions de l’intérêt que vous portez à Luxury Smart Apartments.<br><br>📝 <b>Votre avis compte :</b><br><br>Si possible, nous vous invitons à nous indiquer la raison de votre annulation. Vos commentaires nous aident à améliorer continuellement nos services afin de mieux répondre à vos attentes.<br><br>🌟 <b>Vos prochains séjours :</b><br><br>Nous espérons avoir bientôt le plaisir de vous accueillir dans l’un de nos appartements de luxe. Vous pouvez consulter nos disponibilités sur notre site :<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Notre équipe est à votre service :</b><br><br>Pour toute question concernant la politique de remboursement ou toute autre demande d’assistance, n’hésitez pas à nous contacter :<br><br>+966501205651<br><br><b>Au plaisir de vous accueillir lors d’un prochain séjour</b> ✨",
+        "source_template_sha256": "312f2aa947ee8e032c8c04596b817b4349724d78f696b4a639da79ea9af05487",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Annulation de réservation confirmée* 🛑\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, nous vous confirmons la réception de votre demande d’annulation pour votre séjour à *SYNTHETIC_APARTMENT*.\n\nNous sommes sincèrement désolés de ne pas pouvoir vous accueillir cette fois-ci et vous remercions de l’intérêt que vous portez à Luxury Smart Apartments.\n\n📝 *Votre avis compte :*\n\nSi possible, nous vous invitons à nous indiquer la raison de votre annulation. Vos commentaires nous aident à améliorer continuellement nos services afin de mieux répondre à vos attentes.\n\n🌟 *Vos prochains séjours :*\n\nNous espérons avoir bientôt le plaisir de vous accueillir dans l’un de nos appartements de luxe. Vous pouvez consulter nos disponibilités sur notre site :\n\n🔗 https://luxurysmartapartments.com/\n\n---\n\n🛎️ *Notre équipe est à votre service :*\n\nPour toute question concernant la politique de remboursement ou toute autre demande d’assistance, n’hésitez pas à nous contacter :\n\n+966501205651\n\n*Au plaisir de vous accueillir lors d’un prochain séjour* ✨"
+        },
+        "content_digest": "4156eeeec1a61d9f48f54bae33b0083cfd38c7eb09c8ef64c03b5a936b92265a",
+        "render_policy_ref": "yc20-web-render-v1:697b1c86a664939cda1495d453ec6f8f13b614655d93137ffb46fae7b657031d",
+        "source_template_sha256": "312f2aa947ee8e032c8c04596b817b4349724d78f696b4a639da79ea9af05487",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "house_rules",
+        "language": "fr",
+        "scenario": "07",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "6454160975fc0f473a2aa02899e80ea14649d3c4a1aa36c1de3a7b5d48aafba5",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "fcf70edaa7a8eb8d19d8aace28201c15ce685fde3b57e80706a8f4fde618c6e4",
+        "source_message_type": "house_rules",
+        "reservation_revision": "1",
+        "source_template_name": "house_rules",
+        "source_template_text": "<b>Règlement intérieur important</b> ⚠️<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous souhaitons vous garantir un séjour paisible et confortable, ainsi qu’à nos voisins dans ce quartier résidentiel calme.<br><br>📋 <b>Règlement intérieur :</b><br><br>Afin de préserver la qualité du logement et la tranquillité de chacun, merci de respecter les règles suivantes :<br><br>🚭 1. Il est strictement interdit de fumer à l’intérieur de l’appartement.<br><br>🚫 2. Les fêtes et les rassemblements ne sont pas autorisés.<br><br>🔇 3. La musique forte et toute autre nuisance sonore sont interdites.<br><br>🤝 4. Merci de respecter les voisins et de préserver le calme à tout moment.<br><br>🅿️ 5. Veuillez utiliser uniquement la place de stationnement réservée à l’appartement.<br><br>🆔 6. Une pièce d’identité valide doit être fournie pour vérification avant l’arrivée.<br><br>Votre coopération est très appréciée et nous aide à offrir une expérience haut de gamme à tous nos voyageurs 🌟<br><br>---<br><br>🛎️ <b>Notre équipe est à votre service :</b><br><br>Pour toute question concernant ce règlement, contactez-nous :<br><br>+966501205651<br><br><b>Nous vous souhaitons un séjour intelligent et confortable</b> ✨",
+        "source_template_sha256": "43a73b873c48a918ff1151d81c61e8aeb848a88e8179cbe04af07fd831ea2b01",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Règlement intérieur important* ⚠️\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, nous souhaitons vous garantir un séjour paisible et confortable, ainsi qu’à nos voisins dans ce quartier résidentiel calme.\n\n📋 *Règlement intérieur :*\n\nAfin de préserver la qualité du logement et la tranquillité de chacun, merci de respecter les règles suivantes :\n\n🚭 1. Il est strictement interdit de fumer à l’intérieur de l’appartement.\n\n🚫 2. Les fêtes et les rassemblements ne sont pas autorisés.\n\n🔇 3. La musique forte et toute autre nuisance sonore sont interdites.\n\n🤝 4. Merci de respecter les voisins et de préserver le calme à tout moment.\n\n🅿️ 5. Veuillez utiliser uniquement la place de stationnement réservée à l’appartement.\n\n🆔 6. Une pièce d’identité valide doit être fournie pour vérification avant l’arrivée.\n\nVotre coopération est très appréciée et nous aide à offrir une expérience haut de gamme à tous nos voyageurs 🌟\n\n---\n\n🛎️ *Notre équipe est à votre service :*\n\nPour toute question concernant ce règlement, contactez-nous :\n\n+966501205651\n\n*Nous vous souhaitons un séjour intelligent et confortable* ✨"
+        },
+        "content_digest": "9030d80ddffafdd08be57ed0f29f40f4a510bad332c561e54961d1f2f54cce88",
+        "render_policy_ref": "yc20-web-render-v1:8ccdb799099baca3a029380595081488fe0edb6cda3432d001e5afa9ab6c3005",
+        "source_template_sha256": "43a73b873c48a918ff1151d81c61e8aeb848a88e8179cbe04af07fd831ea2b01",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkin_guide",
+        "language": "fr",
+        "scenario": "07",
+        "variables": {
+          "map_url": "https://example.invalid/map",
+          "wifi_net": "SYNTHETIC_WIFI",
+          "gate_code": "SYNTHETIC_GATE",
+          "video_url": "https://example.invalid/video",
+          "wifi_pass": "SYNTHETIC_WIFI_PASSWORD",
+          "address_fr": "SYNTHETIC_ADDRESS_EN",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "2ca8fb167dbd7501826059b0b6f60213e66c8ee9c70ecc607c6e782ff13eb53e",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "e19e662f633446203890022730a236824ffa6c4cb2c3d210a33cd91105200774",
+        "source_message_type": "checkin_guide",
+        "reservation_revision": "1",
+        "source_template_name": "checkin_guide",
+        "source_template_text": "<b>Instructions d’arrivée</b> 🔑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, voici le guide d’accès à <b>{{listing_name}}</b> :<br><br>📍 <b>Localisation et adresse :</b><br><br>• Google Maps : {{map_url}}<br><br>• Adresse : {{address_fr}}<br><br>📶 <b>Connexion Wi-Fi :</b><br><br>• Réseau : {{wifi_net}}<br><br>• Mot de passe : {{wifi_pass}}<br><br>🚪 <b>Code du portail extérieur :</b> {{gate_code}}<br><br>🎥 <b>Tutoriel d’accès en vidéo :</b><br><br>🔗 {{video_url}}<br><br>🔑 <b>Code d’accès à l’appartement :</b><br><br>Après vérification de votre identité, contactez notre équipe pour le code : +966501205651.<br><br>🛎️ <b>Équipe d’assistance :</b><br><br>+966501205651 ✨",
+        "source_template_sha256": "65a06442863e66be84438104be1dca425fc7655b39c17099ecfbf0ea7785440a",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Instructions d’arrivée* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, voici le guide d’accès à *SYNTHETIC_APARTMENT* :\n\n📍 *Localisation et adresse :*\n\n• Google Maps : https://example.invalid/map\n\n• Adresse : SYNTHETIC_ADDRESS_EN\n\n📶 *Connexion Wi-Fi :*\n\n• Réseau : SYNTHETIC_WIFI\n\n• Mot de passe : SYNTHETIC_WIFI_PASSWORD\n\n🚪 *Code du portail extérieur :* SYNTHETIC_GATE\n\n🎥 *Tutoriel d’accès en vidéo :*\n\n🔗 https://example.invalid/video\n\n🔑 *Code d’accès à l’appartement :*\n\nAprès vérification de votre identité, contactez notre équipe pour le code : +966501205651.\n\n🛎️ *Équipe d’assistance :*\n\n+966501205651 ✨"
+        },
+        "content_digest": "c6623e19c39afadc7874db355031a228527d17978f5fafd2158505c95c805a4f",
+        "render_policy_ref": "yc20-web-render-v1:d3a504b77e4b674568ac010073a471e1cd4bd0acddd4a9cd5052bed09b48185e",
+        "source_template_sha256": "65a06442863e66be84438104be1dca425fc7655b39c17099ecfbf0ea7785440a",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkout_reminder",
+        "language": "fr",
+        "scenario": "07",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_out_time": "12:00"
+        },
+        "expires_at": "2026-12-03T09:00:00+00:00",
+        "job_sha256": "2817927a705b9b9c62d5ff3818f72ef2a28c57c9afd4d5d2c77561262869953a",
+        "not_before": "2026-12-03T08:00:00+00:00",
+        "source_family": "lsa07",
+        "media_required": false,
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "reservation_key": "morning07:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:07:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "78a227a686eb27f8f322ed758d21d4e2b4e0a0b82dcc2d2c57c815df68c7b7f0",
+        "source_message_type": "reminder_checkout",
+        "reservation_revision": "1",
+        "source_template_name": "reminder_checkout",
+        "source_template_text": "<b>Rappel de départ</b> 🧹<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous vous rappelons que votre départ de <b>{{listing_name}}</b> est prévu aujourd’hui à <b>{{check_out_time}}</b>.<br><br>Merci d’avoir séjourné chez nous !<br><br>Nous espérons que vous avez apprécié cette expérience agréable et intelligente.<br><br>Au plaisir de vous accueillir à nouveau très bientôt.<br><br><b>Bon voyage !</b> ✨<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "013feca5cfd52c6feeddee9bdeefe5828cffdf368631afd7958a3b59fa843b3e",
+        "recipient_binding_sha256": "eaf6169b41994dd9a58d339aea70b10c7e8324ad86f831a34660b5519e3df195"
+      },
+      "expected_renderer_sha": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Rappel de départ* 🧹\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, nous vous rappelons que votre départ de *SYNTHETIC_APARTMENT* est prévu aujourd’hui à *12:00*.\n\nMerci d’avoir séjourné chez nous !\n\nNous espérons que vous avez apprécié cette expérience agréable et intelligente.\n\nAu plaisir de vous accueillir à nouveau très bientôt.\n\n*Bon voyage !* ✨\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "574d9c40245db6bbb1f8763fe05f807ecce8e52846eae65018ad2aed60e3b883",
+        "render_policy_ref": "yc20-web-render-v1:9db8319d51e2c5cf4964f75b80dda31b431034b1219247ba855b627f4219e49e",
+        "source_template_sha256": "013feca5cfd52c6feeddee9bdeefe5828cffdf368631afd7958a3b59fa843b3e",
+        "renderer_sha256": "6e0fca4a439d2da888a0f5069b77787ab69c58eceb7388562c4a160bdef6bd12",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_confirmation",
+        "language": "ar",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "13:00",
+          "check_out_time": "18:00"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "ace106856cb514f2a511fd097f2dbb7b4b81eb2270268bf2b606a794ebccbef6",
+        "source_message_type": "status_new",
+        "reservation_revision": "1",
+        "source_template_name": "status_new",
+        "source_template_text": "<b>تم تأكيد حجزك</b> ✅<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزي <b>{{guest_name}}</b>، تم تأكيد حجزك لدينا.<br><br>📍 <b>الوجهة:</b> {{listing_name}}<br><br>📅 <b>التاريخ:</b> {{arrival_date}}<br><br>🕒 <b>الدخول:</b> {{check_in_time}}<br><br>🕛 <b>الخروج:</b> {{check_out_time}}<br><br>⏰ {{timezone}}<br><br>---<br><br>🌟 <b>مزايا الحجز المباشر:</b><br><br>للحصول على أفضل الأسعار في رحلاتكم القادمة، ننصحكم بالحجز مباشرة عبر موقعنا الإلكتروني:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>فريق الدعم في خدمتك:</b><br><br>لأي استفسار، يسعدنا تواصلك مع خدمة العملاء:<br><br>+966501205651<br><br><b>نتمنى لك إقامة سعيدة في Luxury Smart Apartments</b> ✨",
+        "source_template_sha256": "8b5ec0ed1b6c2f1dd91c36b9eaeb63d40bebb7b6619f12f3793eb77a04e3cc3b",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تم تأكيد حجزك* ✅\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزي *SYNTHETIC_GUEST*، تم تأكيد حجزك لدينا.\n‏\n‏📍 *الوجهة:* SYNTHETIC_APARTMENT\n‏\n‏📅 *التاريخ:* 2026-12-03\n‏\n‏🕒 *الدخول:* 13:00\n‏\n‏🕛 *الخروج:* 18:00\n‏\n‏⏰ Asia/Riyadh\n‏\n‏---\n‏\n‏🌟 *مزايا الحجز المباشر:*\n‏\n‏للحصول على أفضل الأسعار في رحلاتكم القادمة، ننصحكم بالحجز مباشرة عبر موقعنا الإلكتروني:\n‏\n‏🔗 https://luxurysmartapartments.com/\n‏\n‏---\n‏\n‏🛎️ *فريق الدعم في خدمتك:*\n‏\n‏لأي استفسار، يسعدنا تواصلك مع خدمة العملاء:\n‏\n‏+966501205651\n‏\n‏*نتمنى لك إقامة سعيدة في Luxury Smart Apartments* ✨"
+        },
+        "content_digest": "4a6b8bb6bd03a30be935ce0f783f09049c77599c6ebc41318ea40faafd93ed1d",
+        "render_policy_ref": "yc20-web-render-v1:8530a945a672f3bafc63de1a3df530d7ed457a52d6f3660369a60d6fc256c40a",
+        "source_template_sha256": "8b5ec0ed1b6c2f1dd91c36b9eaeb63d40bebb7b6619f12f3793eb77a04e3cc3b",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_change",
+        "language": "ar",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "13:00",
+          "check_out_time": "18:00",
+          "departure_date": "2026-12-03"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "77fb26dcacf4e3f2ab27d0b887a43bb9817922a326c76f57ad9e86ea3aadb71d",
+        "source_message_type": "status_modified",
+        "reservation_revision": "1",
+        "source_template_name": "status_modified",
+        "source_template_text": "<b>تعديل حجز 🔄</b><br><br>ضيفنا العزيز <b>{{guest_name}}</b>، نود إبلاغك بأنه تم تحديث بيانات إقامتك بنجاح:<br><br>📍 <b>الوجهة المحجوزة:</b> {{listing_name}}<br><br>📅 <b>تاريخ الدخول:</b> {{arrival_date}}<br><br>📅 <b>تاريخ المغادرة:</b> {{departure_date}}<br><br>---<br><br>🛎️ <b>للتواصل والدعم:</b><br><br>يسعدنا خدمتك عبر واتساب:<br><br>+966501205651<br><br><b>نتمنى لك إقامة سعيدة ✨</b><br><br>📅 <b>التاريخ:</b> {{arrival_date}}<br><br>🕒 <b>الدخول:</b> {{check_in_time}}<br><br>🕛 <b>الخروج:</b> {{check_out_time}}<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "8a21c33cdc8f46ad77d14d23fcb2915edfe2e6d955bc0a6d3dbadc3ca6e098d5",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تعديل حجز 🔄*\n‏\n‏ضيفنا العزيز *SYNTHETIC_GUEST*، نود إبلاغك بأنه تم تحديث بيانات إقامتك بنجاح:\n‏\n‏📍 *الوجهة المحجوزة:* SYNTHETIC_APARTMENT\n‏\n‏📅 *تاريخ الدخول:* 2026-12-03\n‏\n‏📅 *تاريخ المغادرة:* 2026-12-03\n‏\n‏---\n‏\n‏🛎️ *للتواصل والدعم:*\n‏\n‏يسعدنا خدمتك عبر واتساب:\n‏\n‏+966501205651\n‏\n‏*نتمنى لك إقامة سعيدة ✨*\n‏\n‏📅 *التاريخ:* 2026-12-03\n‏\n‏🕒 *الدخول:* 13:00\n‏\n‏🕛 *الخروج:* 18:00\n‏\n‏⏰ Asia/Riyadh"
+        },
+        "content_digest": "522168ef94650d51a9249401265c7da607c57fd8e30043d1ee05ffdcaf764074",
+        "render_policy_ref": "yc20-web-render-v1:3aefb2f7eb3ea482c0a7b0bbe757e5a38e96cd2dcc78dd3ef806fb6e72369a45",
+        "source_template_sha256": "8a21c33cdc8f46ad77d14d23fcb2915edfe2e6d955bc0a6d3dbadc3ca6e098d5",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_cancellation",
+        "language": "ar",
+        "scenario": "08",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": null,
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "e379a985dffd77a2616b4cd62dfce3505884ea6285a642f135a762da41857a6c",
+        "source_message_type": "status_cancelled",
+        "reservation_revision": "1",
+        "source_template_name": "status_cancelled",
+        "source_template_text": "<b>تم تأكيد إلغاء الحجز</b> 🛑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزي <b>{{guest_name}}</b>، نؤكد لك استلام طلب إلغاء إقامتك في <b>{{listing_name}}</b>.<br><br>نأسف جداً لعدم تمكننا من استضافتك هذه المرة، ونقدر لك اختيارك واهتمامك بـ Luxury Smart Apartments.<br><br>📝 <b>رأيك يهمنا:</b><br><br>إن أمكن، نرجو منك مشاركتنا سبب الإلغاء، حيث تساهم ملاحظاتك في تطوير جودة خدماتنا بشكل مستمر لتلبية تطلعاتكم.<br><br>🌟 <b>رحلتك القادمة:</b><br><br>نتمنى أن نراك قريباً في إحدى شققنا الفاخرة، يمكنك دائماً استكشاف خياراتنا المتاحة عبر الموقع:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>فريق الدعم في خدمتك:</b><br><br>إذا كان لديك أي استفسار بخصوص سياسة الاسترداد، يسعدنا تواصلك معنا عبر الرقم التالي:<br><br>+966501205651<br><br><b>نتطلع للترحيب بك في مناسبة قادمة</b> ✨",
+        "source_template_sha256": "c816b099ee933942f7dc70aa2a37d874da65f3e82330afb5d3b37274808f1133",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تم تأكيد إلغاء الحجز* 🛑\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزي *SYNTHETIC_GUEST*، نؤكد لك استلام طلب إلغاء إقامتك في *SYNTHETIC_APARTMENT*.\n‏\n‏نأسف جداً لعدم تمكننا من استضافتك هذه المرة، ونقدر لك اختيارك واهتمامك بـ Luxury Smart Apartments.\n‏\n‏📝 *رأيك يهمنا:*\n‏\n‏إن أمكن، نرجو منك مشاركتنا سبب الإلغاء، حيث تساهم ملاحظاتك في تطوير جودة خدماتنا بشكل مستمر لتلبية تطلعاتكم.\n‏\n‏🌟 *رحلتك القادمة:*\n‏\n‏نتمنى أن نراك قريباً في إحدى شققنا الفاخرة، يمكنك دائماً استكشاف خياراتنا المتاحة عبر الموقع:\n‏\n‏🔗 https://luxurysmartapartments.com/\n‏\n‏---\n‏\n‏🛎️ *فريق الدعم في خدمتك:*\n‏\n‏إذا كان لديك أي استفسار بخصوص سياسة الاسترداد، يسعدنا تواصلك معنا عبر الرقم التالي:\n‏\n‏+966501205651\n‏\n‏*نتطلع للترحيب بك في مناسبة قادمة* ✨"
+        },
+        "content_digest": "46400a2c3f7c121eb50104e57c89a53af04c098a3a250c11747c0e12d1c17219",
+        "render_policy_ref": "yc20-web-render-v1:2432dd39a6fc485e12520d0d26b9c3df37930c724ffa10b33ac41ea0d798fae7",
+        "source_template_sha256": "c816b099ee933942f7dc70aa2a37d874da65f3e82330afb5d3b37274808f1133",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "house_rules",
+        "language": "ar",
+        "scenario": "08",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ed6bd9ae257bb37ada297fb526d90d44cfe189e741c406e866449b349c3e129f",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "6656224fb462b3c7e79680c57445e04d8b51cfe33159ee04781c41807d37b3f4",
+        "source_message_type": "house_rules",
+        "reservation_revision": "1",
+        "source_template_name": "house_rules",
+        "source_template_text": "<b>تعليمات هامة قبل الإقامة</b> ⚠️<br><br><b>Luxury Smart Apartments 🌿</b><br><br>أهلاً بك <b>{{guest_name}}</b>، نسعى دائماً لضمان إقامة هادئة ومريحة لك ولجميع جيراننا في هذا الحي السكني الهادئ.<br><br>📋 <b>قواعد الإقامة:</b><br><br>حرصاً على جودة المكان وخصوصيتكم، نرجو الالتزام بما يلي:<br><br>🚭 1. يمنع التدخين منعاً باتاً داخل الشقة.<br><br>🚫 2. يمنع إقامة الحفلات أو التجمعات.<br><br>🔇 3. يمنع رفع صوت الموسيقى أو أي مصدر للإزعاج.<br><br>🤝 4. نرجو احترام الجيران والالتزام بالهدوء التام.<br><br>🚗 5. يرجى الالتزام بالموقف الخاص بالشقة فقط.<br><br>👤 6. تزويدنا بصورة هوية سارية للتحقق قبل الدخول.<br><br>تعاونكم محل تقدير كبير، ويساهم في استمرار تقديم تجربة راقية تليق بكم 🌟<br><br>---<br><br>🛎️ <b>فريق الدعم في خدمتك:</b><br><br>لأي استفسار بخصوص هذه التعليمات، يسعدنا تواصلك:<br><br>+966501205651<br><br><b>نتمنى لك إقامة ذكية ومريحة</b> ✨",
+        "source_template_sha256": "3fc6d2581877a86e80f0a4a249a2d82612b51dad1a856e8e055effca07a37558",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تعليمات هامة قبل الإقامة* ⚠️\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏أهلاً بك *SYNTHETIC_GUEST*، نسعى دائماً لضمان إقامة هادئة ومريحة لك ولجميع جيراننا في هذا الحي السكني الهادئ.\n‏\n‏📋 *قواعد الإقامة:*\n‏\n‏حرصاً على جودة المكان وخصوصيتكم، نرجو الالتزام بما يلي:\n‏\n‏🚭 1. يمنع التدخين منعاً باتاً داخل الشقة.\n‏\n‏🚫 2. يمنع إقامة الحفلات أو التجمعات.\n‏\n‏🔇 3. يمنع رفع صوت الموسيقى أو أي مصدر للإزعاج.\n‏\n‏🤝 4. نرجو احترام الجيران والالتزام بالهدوء التام.\n‏\n‏🚗 5. يرجى الالتزام بالموقف الخاص بالشقة فقط.\n‏\n‏👤 6. تزويدنا بصورة هوية سارية للتحقق قبل الدخول.\n‏\n‏تعاونكم محل تقدير كبير، ويساهم في استمرار تقديم تجربة راقية تليق بكم 🌟\n‏\n‏---\n‏\n‏🛎️ *فريق الدعم في خدمتك:*\n‏\n‏لأي استفسار بخصوص هذه التعليمات، يسعدنا تواصلك:\n‏\n‏+966501205651\n‏\n‏*نتمنى لك إقامة ذكية ومريحة* ✨"
+        },
+        "content_digest": "15cfa2cdfa075306fc3c18cf14c0f389ab01fb31ea4b72a4594d1a85ffea06f6",
+        "render_policy_ref": "yc20-web-render-v1:eee1065e61531b547888487fc6cfaaa6ed66e091c1a5c68186e7a0c9746b316d",
+        "source_template_sha256": "3fc6d2581877a86e80f0a4a249a2d82612b51dad1a856e8e055effca07a37558",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkin_guide",
+        "language": "ar",
+        "scenario": "08",
+        "variables": {
+          "map_url": "https://example.invalid/map",
+          "wifi_net": "SYNTHETIC_WIFI",
+          "gate_code": "SYNTHETIC_GATE",
+          "video_url": "https://example.invalid/video",
+          "wifi_pass": "SYNTHETIC_WIFI_PASSWORD",
+          "address_ar": "SYNTHETIC_ADDRESS_AR",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "0f8a13c06224923e6c2f954d05aeaf6a8dc3a7b4db049ceeee5c62442f95e953",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "12345201db7c3df80a849acf228d7b078851ebafae927cda4f813f8885a92152",
+        "source_message_type": "checkin_guide",
+        "reservation_revision": "1",
+        "source_template_name": "checkin_guide",
+        "source_template_text": "<b>تعليمات الدخول</b> 🔑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزنا <b>{{guest_name}}</b>، إليك دليل الوصول لـ <b>{{listing_name}}</b>:<br><br>📍 <b>الموقع والعنوان:</b><br><br>• خرائط جوجل: {{map_url}}<br><br>• العنوان: {{address_ar}}<br><br>📶 <b>الاتصال بالواي فاي:</b><br><br>• الشبكة: {{wifi_net}}<br><br>• الرقم السري: {{wifi_pass}}<br><br>🚪 <b>كود بوابة المجمع الخارجية:</b> {{gate_code}}<br><br>🎥 <b>فيديو شرح الوصول:</b><br><br>🔗 {{video_url}}<br><br>🔑 <b>كود دخول الشقة:</b><br><br>للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.<br><br>🛎️ <b>فريق الدعم:</b><br><br>+966501205651 ✨",
+        "source_template_sha256": "2e0b294ef3e836f802baf6ae03fbf9da02724950e0046b2f73c0c08b2a834407",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تعليمات الدخول* 🔑\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزنا *SYNTHETIC_GUEST*، إليك دليل الوصول لـ *SYNTHETIC_APARTMENT*:\n‏\n‏📍 *الموقع والعنوان:*\n‏\n‏• خرائط جوجل: https://example.invalid/map\n‏\n‏• العنوان: SYNTHETIC_ADDRESS_AR\n‏\n‏📶 *الاتصال بالواي فاي:*\n‏\n‏• الشبكة: SYNTHETIC_WIFI\n‏\n‏• الرقم السري: SYNTHETIC_WIFI_PASSWORD\n‏\n‏🚪 *كود بوابة المجمع الخارجية:* SYNTHETIC_GATE\n‏\n‏🎥 *فيديو شرح الوصول:*\n‏\n‏🔗 https://example.invalid/video\n‏\n‏🔑 *كود دخول الشقة:*\n‏\n‏للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.\n‏\n‏🛎️ *فريق الدعم:*\n‏\n‏+966501205651 ✨"
+        },
+        "content_digest": "b0614b5d83e3973cc2d2d1326c75f54728302b140bce8b23db58848da19feca7",
+        "render_policy_ref": "yc20-web-render-v1:9785d9bb6076beba54e95c6bd8893455451c5f3ff0678e0ec2995da2d8524e49",
+        "source_template_sha256": "2e0b294ef3e836f802baf6ae03fbf9da02724950e0046b2f73c0c08b2a834407",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkout_reminder",
+        "language": "ar",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_out_time": "18:00"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "683813d7774a42d29dee19f66e799615b34077b5ff16ce92fab7aa0be101019c",
+        "not_before": "2026-12-03T14:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "1e1179ffba250f9e1d79ecd588b8975968a0dcfb6c2046b632aae05c71d68611",
+        "source_message_type": "reminder_checkout",
+        "reservation_revision": "1",
+        "source_template_name": "reminder_checkout",
+        "source_template_text": "<b>تذكير بموعد المغادرة</b> 🧹<br><br><b>Luxury Smart Apartments 🌿</b><br><br>عزيزي <b>{{guest_name}}</b>، نود تذكيرك بأن موعد المغادرة اليوم من <b>{{listing_name}}</b> هو في تمام الساعة <b>{{check_out_time}}</b>.<br><br>نشكرك جزيلاً على اختيارك لنا.<br><br>نتمنى أن تكون قد استمتعت بإقامة سعيدة وذكية معنا.<br><br>نتطلع لاستضافتك مرة أخرى في القريب العاجل.<br><br><b>رافقتك السلامة في رحلتك</b> ✨<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "613bc601fbdac9c00bcb5707e265215a5fe456cd6dfed5e145f906f6e11cef08",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "‏*تذكير بموعد المغادرة* 🧹\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزي *SYNTHETIC_GUEST*، نود تذكيرك بأن موعد المغادرة اليوم من *SYNTHETIC_APARTMENT* هو في تمام الساعة *18:00*.\n‏\n‏نشكرك جزيلاً على اختيارك لنا.\n‏\n‏نتمنى أن تكون قد استمتعت بإقامة سعيدة وذكية معنا.\n‏\n‏نتطلع لاستضافتك مرة أخرى في القريب العاجل.\n‏\n‏*رافقتك السلامة في رحلتك* ✨\n‏\n‏⏰ Asia/Riyadh"
+        },
+        "content_digest": "db71c3ac72fd5fa70a9bb978b4654ac01898fb2ec5b9122c9e75e15433ad1ba4",
+        "render_policy_ref": "yc20-web-render-v1:d2b0df149d048fba2266885e3fc5f7ae719e6fc57ca27684bc7a3a50326b5c0a",
+        "source_template_sha256": "613bc601fbdac9c00bcb5707e265215a5fe456cd6dfed5e145f906f6e11cef08",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_confirmation",
+        "language": "en",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "13:00",
+          "check_out_time": "18:00"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "663a61c5e8f8e4aa9e0a0e2efc0595080e04ec4c635dd980df8b8b60efb4db0d",
+        "source_message_type": "status_new",
+        "reservation_revision": "1",
+        "source_template_name": "status_new",
+        "source_template_text": "<b>Booking Confirmed</b> ✅<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, your booking has been confirmed with us.<br><br>📍 <b>Destination:</b> {{listing_name}}<br><br>📅 <b>Date:</b> {{arrival_date}}<br><br>🕒 <b>Check-in:</b> {{check_in_time}}<br><br>🕛 <b>Check-out:</b> {{check_out_time}}<br><br>⏰ {{timezone}}<br><br>---<br><br>🌟 <b>Exclusive Direct Booking:</b><br><br>For the best rates on your future stays, we recommend booking directly through our website:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Our Team is at Your Service:</b><br><br>If you have any questions, please feel free to contact customer service:<br><br>+966501205651<br><br><b>We wish you a pleasant stay at Luxury Smart Apartments</b> ✨",
+        "source_template_sha256": "6e4651767c41209b6b5869a85fefbb1bdeb8917d954a97a027a117b326e6aae8",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Booking Confirmed* ✅\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, your booking has been confirmed with us.\n\n📍 *Destination:* SYNTHETIC_APARTMENT\n\n📅 *Date:* 2026-12-03\n\n🕒 *Check-in:* 13:00\n\n🕛 *Check-out:* 18:00\n\n⏰ Asia/Riyadh\n\n---\n\n🌟 *Exclusive Direct Booking:*\n\nFor the best rates on your future stays, we recommend booking directly through our website:\n\n🔗 https://luxurysmartapartments.com/\n\n---\n\n🛎️ *Our Team is at Your Service:*\n\nIf you have any questions, please feel free to contact customer service:\n\n+966501205651\n\n*We wish you a pleasant stay at Luxury Smart Apartments* ✨"
+        },
+        "content_digest": "6a7cacda649eeeb9afcca7acdc7031a5085dab5a12db406c328453cc9cd0f3b3",
+        "render_policy_ref": "yc20-web-render-v1:45ff7d3bd66b56fe0e973ba60f52a3b9477d29bc370a4a35219fd32fbc054cde",
+        "source_template_sha256": "6e4651767c41209b6b5869a85fefbb1bdeb8917d954a97a027a117b326e6aae8",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_change",
+        "language": "en",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "13:00",
+          "check_out_time": "18:00",
+          "departure_date": "2026-12-03"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "217c256aff4119f8a05390dcd8af8c5b60c49b6e4c638d9f596225e5b2640a2d",
+        "source_message_type": "status_modified",
+        "reservation_revision": "1",
+        "source_template_name": "status_modified",
+        "source_template_text": "<b>Booking Updated 🔄</b><br><br>Dear <b>{{guest_name}}</b>, we would like to inform you that your stay details have been successfully updated:<br><br>📍 <b>Destination:</b> {{listing_name}}<br><br>📅 <b>Check-in:</b> {{arrival_date}}<br><br>📅 <b>Check-out:</b> {{departure_date}}<br><br>---<br><br>🛎️ <b>Support & Contact:</b><br><br>We are happy to serve you via WhatsApp:<br><br>+966501205651<br><br><b>We wish you a pleasant stay ✨</b><br><br>📅 <b>Date:</b> {{arrival_date}}<br><br>🕒 <b>Check-in:</b> {{check_in_time}}<br><br>🕛 <b>Check-out:</b> {{check_out_time}}<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "9e82cf465dd10c71c9a01e2f4c5627a68ad4720b3b75ffad03f04397f14f244b",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Booking Updated 🔄*\n\nDear *SYNTHETIC_GUEST*, we would like to inform you that your stay details have been successfully updated:\n\n📍 *Destination:* SYNTHETIC_APARTMENT\n\n📅 *Check-in:* 2026-12-03\n\n📅 *Check-out:* 2026-12-03\n\n---\n\n🛎️ *Support & Contact:*\n\nWe are happy to serve you via WhatsApp:\n\n+966501205651\n\n*We wish you a pleasant stay ✨*\n\n📅 *Date:* 2026-12-03\n\n🕒 *Check-in:* 13:00\n\n🕛 *Check-out:* 18:00\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "744ce7f593215754a9413b71d37e1c198384326b2f765e4b9e305cce32a4a000",
+        "render_policy_ref": "yc20-web-render-v1:73c02e7189a51378dae5a2f7366bfa721e40ca62eb4e26a2167fe3ec15cba5d4",
+        "source_template_sha256": "9e82cf465dd10c71c9a01e2f4c5627a68ad4720b3b75ffad03f04397f14f244b",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_cancellation",
+        "language": "en",
+        "scenario": "08",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": null,
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "dd57906227ea2bc0502dfb1571404d7911787a464e8d7c8eafa9bda88c9a4716",
+        "source_message_type": "status_cancelled",
+        "reservation_revision": "1",
+        "source_template_name": "status_cancelled",
+        "source_template_text": "<b>Booking Cancellation Confirmed</b> 🛑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, we confirm the receipt of your cancellation request for your stay at <b>{{listing_name}}</b>.<br><br>We are truly sorry that we won’t be able to host you this time and appreciate your interest in Luxury Smart Apartments.<br><br>📝 <b>Your Feedback Matters:</b><br><br>If possible, please share the reason for your cancellation. Your feedback helps us continuously improve our services to meet your expectations.<br><br>🌟 <b>Future Stays:</b><br><br>We hope to see you soon in one of our other luxury apartments. You can always explore our available options on our website:<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Our Team is at Your Service:</b><br><br>If you have any questions regarding the refund policy or any other assistance, please feel free to contact us:<br><br>+966501205651<br><br><b>We look forward to welcoming you on a future occasion</b> ✨",
+        "source_template_sha256": "4fef5e5b77fe569e64005fc035f460e1b68ec767fcb441e86694684e26e22740",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Booking Cancellation Confirmed* 🛑\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, we confirm the receipt of your cancellation request for your stay at *SYNTHETIC_APARTMENT*.\n\nWe are truly sorry that we won’t be able to host you this time and appreciate your interest in Luxury Smart Apartments.\n\n📝 *Your Feedback Matters:*\n\nIf possible, please share the reason for your cancellation. Your feedback helps us continuously improve our services to meet your expectations.\n\n🌟 *Future Stays:*\n\nWe hope to see you soon in one of our other luxury apartments. You can always explore our available options on our website:\n\n🔗 https://luxurysmartapartments.com/\n\n---\n\n🛎️ *Our Team is at Your Service:*\n\nIf you have any questions regarding the refund policy or any other assistance, please feel free to contact us:\n\n+966501205651\n\n*We look forward to welcoming you on a future occasion* ✨"
+        },
+        "content_digest": "7f7a182fc20204fe7ad3e1888466af7ecf5a8abb53c64a1d5edccde9d0b3f584",
+        "render_policy_ref": "yc20-web-render-v1:6f0b3b7fb4a6b86a2e9bb600d7b48e2575ce805f459cba8012422aea33ad39fa",
+        "source_template_sha256": "4fef5e5b77fe569e64005fc035f460e1b68ec767fcb441e86694684e26e22740",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "house_rules",
+        "language": "en",
+        "scenario": "08",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ed6bd9ae257bb37ada297fb526d90d44cfe189e741c406e866449b349c3e129f",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "ae5f7e9a627687e01b5336779adb2d85f472d26b60038b44ce22fd0eeac851c4",
+        "source_message_type": "house_rules",
+        "reservation_revision": "1",
+        "source_template_name": "house_rules",
+        "source_template_text": "<b>Important House Rules</b> ⚠️<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, we want to ensure a peaceful and comfortable stay for you and our neighbors in this quiet residential area.<br><br>📋 <b>House Rules:</b><br><br>To maintain the privacy and quality of the property, please adhere to the following:<br><br>🚭 1. Smoking is strictly prohibited inside the apartment.<br><br>🚫 2. Parties or gatherings are not allowed.<br><br>🔇 3. Loud music or any noise disturbance is not permitted.<br><br>🤝 4. Please respect neighbors and maintain quiet at all times.<br><br>🅿️ 5. Use only the designated parking space assigned to the apartment.<br><br>🆔 6. A valid ID must be provided for verification prior to check-in.<br><br>Your cooperation is highly appreciated and helps us maintain a refined experience for all our guests 🌟<br><br>---<br><br>🛎️ <b>Our Team is at Your Service:</b><br><br>If you have any questions regarding these rules, please contact us:<br><br>+966501205651<br><br><b>We wish you a smart and comfortable stay</b> ✨",
+        "source_template_sha256": "33a42b767e689e54ba0bdb864ae83ed195de083b128b1a22fa989f7ff3061163",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Important House Rules* ⚠️\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, we want to ensure a peaceful and comfortable stay for you and our neighbors in this quiet residential area.\n\n📋 *House Rules:*\n\nTo maintain the privacy and quality of the property, please adhere to the following:\n\n🚭 1. Smoking is strictly prohibited inside the apartment.\n\n🚫 2. Parties or gatherings are not allowed.\n\n🔇 3. Loud music or any noise disturbance is not permitted.\n\n🤝 4. Please respect neighbors and maintain quiet at all times.\n\n🅿️ 5. Use only the designated parking space assigned to the apartment.\n\n🆔 6. A valid ID must be provided for verification prior to check-in.\n\nYour cooperation is highly appreciated and helps us maintain a refined experience for all our guests 🌟\n\n---\n\n🛎️ *Our Team is at Your Service:*\n\nIf you have any questions regarding these rules, please contact us:\n\n+966501205651\n\n*We wish you a smart and comfortable stay* ✨"
+        },
+        "content_digest": "2d92de8fc0650c77d9f613173fd6b52be2f3d6d39259ced3662baf0eb805668c",
+        "render_policy_ref": "yc20-web-render-v1:2332a7298b5700f618e191d3556d12f829918d70a5182a10e84b474413c5cde1",
+        "source_template_sha256": "33a42b767e689e54ba0bdb864ae83ed195de083b128b1a22fa989f7ff3061163",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkin_guide",
+        "language": "en",
+        "scenario": "08",
+        "variables": {
+          "map_url": "https://example.invalid/map",
+          "wifi_net": "SYNTHETIC_WIFI",
+          "gate_code": "SYNTHETIC_GATE",
+          "video_url": "https://example.invalid/video",
+          "wifi_pass": "SYNTHETIC_WIFI_PASSWORD",
+          "address_en": "SYNTHETIC_ADDRESS_EN",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "0f8a13c06224923e6c2f954d05aeaf6a8dc3a7b4db049ceeee5c62442f95e953",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "0f0888252c5bca8a9db04250847300015d6b8ba5f1a80246388ff759407e474f",
+        "source_message_type": "checkin_guide",
+        "reservation_revision": "1",
+        "source_template_name": "checkin_guide",
+        "source_template_text": "<b>Check-in Instructions</b> 🔑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, please find the access guide for <b>{{listing_name}}</b>:<br><br>📍 <b>Location & Address:</b><br><br>• Google Maps: {{map_url}}<br><br>• Address: {{address_en}}<br><br>📶 <b>Wi-Fi Connectivity:</b><br><br>• Network: {{wifi_net}}<br><br>• Password: {{wifi_pass}}<br><br>🚪 <b>External Gate Code:</b> {{gate_code}}<br><br>🎥 <b>Access Tutorial (Video):</b><br><br>🔗 {{video_url}}<br><br>🔑 <b>Apartment Access Code:</b><br><br>Contact support after ID verification for your apartment access code: +966501205651.<br><br>🛎️ <b>Support Team:</b><br><br>+966501205651 ✨",
+        "source_template_sha256": "403af4a8ef213552591223e555b479d01332109253fed20191a9bb4e6e96f2a3",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Check-in Instructions* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, please find the access guide for *SYNTHETIC_APARTMENT*:\n\n📍 *Location & Address:*\n\n• Google Maps: https://example.invalid/map\n\n• Address: SYNTHETIC_ADDRESS_EN\n\n📶 *Wi-Fi Connectivity:*\n\n• Network: SYNTHETIC_WIFI\n\n• Password: SYNTHETIC_WIFI_PASSWORD\n\n🚪 *External Gate Code:* SYNTHETIC_GATE\n\n🎥 *Access Tutorial (Video):*\n\n🔗 https://example.invalid/video\n\n🔑 *Apartment Access Code:*\n\nContact support after ID verification for your apartment access code: +966501205651.\n\n🛎️ *Support Team:*\n\n+966501205651 ✨"
+        },
+        "content_digest": "9be8ef56536f13575eee4fc86d98cde89d4bd3cb27a9e0f09d1625d5b0254a79",
+        "render_policy_ref": "yc20-web-render-v1:6a0b06d7bf6411b1679be72da5292ddd8cbd23febeaf0d72817487ba1fad53a0",
+        "source_template_sha256": "403af4a8ef213552591223e555b479d01332109253fed20191a9bb4e6e96f2a3",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkout_reminder",
+        "language": "en",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_out_time": "18:00"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "683813d7774a42d29dee19f66e799615b34077b5ff16ce92fab7aa0be101019c",
+        "not_before": "2026-12-03T14:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "ceaabcb913b1c1cd351d25ca7f006e3e3f3147bbf87f7da63fa6825b536d7099",
+        "source_message_type": "reminder_checkout",
+        "reservation_revision": "1",
+        "source_template_name": "reminder_checkout",
+        "source_template_text": "<b>Check-out Reminder</b> 🧹<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Dear <b>{{guest_name}}</b>, this is a reminder that check-out from <b>{{listing_name}}</b> is today at <b>{{check_out_time}}</b>.<br><br>Thank you for staying with us!<br><br>We hope you had a pleasant and smart experience.<br><br>We look forward to hosting you again soon.<br><br><b>Safe travels!</b> ✨<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "7cfa20b80c006baeac80d1e08b0ea4944371d1a8dfddd16610f41115e2a813ee",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Check-out Reminder* 🧹\n\n*Luxury Smart Apartments 🌿*\n\nDear *SYNTHETIC_GUEST*, this is a reminder that check-out from *SYNTHETIC_APARTMENT* is today at *18:00*.\n\nThank you for staying with us!\n\nWe hope you had a pleasant and smart experience.\n\nWe look forward to hosting you again soon.\n\n*Safe travels!* ✨\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "c3dba8b02ed48d7cdb786bce79b7be935e6efc5cf2d6938ea131ec4e318c480a",
+        "render_policy_ref": "yc20-web-render-v1:cc224d99ff5fc16ea4aeebbf5bd0c4d6a0d4d8cf9d2ff141f6a4f8c5a06331ce",
+        "source_template_sha256": "7cfa20b80c006baeac80d1e08b0ea4944371d1a8dfddd16610f41115e2a813ee",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_confirmation",
+        "language": "fr",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "13:00",
+          "check_out_time": "18:00"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "b73156c385d76e9e28492007b02f69589d4e9c53a4be131b9c94eeafd2d13ebb",
+        "source_message_type": "status_new",
+        "reservation_revision": "1",
+        "source_template_name": "status_new",
+        "source_template_text": "<b>Réservation confirmée</b> ✅<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, votre réservation chez nous est confirmée.<br><br>📍 <b>Destination :</b> {{listing_name}}<br><br>📅 <b>Date :</b> {{arrival_date}}<br><br>🕒 <b>Arrivée :</b> {{check_in_time}}<br><br>🕛 <b>Départ :</b> {{check_out_time}}<br><br>⏰ {{timezone}}<br><br>---<br><br>🌟 <b>Avantages de la réservation directe :</b><br><br>Pour bénéficier des meilleurs tarifs lors de vos prochains séjours, nous vous recommandons de réserver directement sur notre site :<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Notre équipe est à votre service :</b><br><br>Pour toute question, n'hésitez pas à contacter notre service client :<br><br>+966501205651<br><br><b>Nous vous souhaitons un agréable séjour chez Luxury Smart Apartments</b> ✨",
+        "source_template_sha256": "046a3c53b4a796a15c0f4242a83fe23fd56493c7a7cc534706849f0e795d132a",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Réservation confirmée* ✅\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, votre réservation chez nous est confirmée.\n\n📍 *Destination :* SYNTHETIC_APARTMENT\n\n📅 *Date :* 2026-12-03\n\n🕒 *Arrivée :* 13:00\n\n🕛 *Départ :* 18:00\n\n⏰ Asia/Riyadh\n\n---\n\n🌟 *Avantages de la réservation directe :*\n\nPour bénéficier des meilleurs tarifs lors de vos prochains séjours, nous vous recommandons de réserver directement sur notre site :\n\n🔗 https://luxurysmartapartments.com/\n\n---\n\n🛎️ *Notre équipe est à votre service :*\n\nPour toute question, n'hésitez pas à contacter notre service client :\n\n+966501205651\n\n*Nous vous souhaitons un agréable séjour chez Luxury Smart Apartments* ✨"
+        },
+        "content_digest": "0ff7d47d9ea47cdb43650938c1a57ced1766bc736e5b632bc9a4123924888b2e",
+        "render_policy_ref": "yc20-web-render-v1:99ddd7e9278c907499acc420501294691e86165ab1b0f7d0294ed3e75f5224ed",
+        "source_template_sha256": "046a3c53b4a796a15c0f4242a83fe23fd56493c7a7cc534706849f0e795d132a",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_change",
+        "language": "fr",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "arrival_date": "2026-12-03",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_in_time": "13:00",
+          "check_out_time": "18:00",
+          "departure_date": "2026-12-03"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "947bd66e95b791f13bb18f7439d6932ab9d1497020b90c005daed667a18c4ff6",
+        "source_message_type": "status_modified",
+        "reservation_revision": "1",
+        "source_template_name": "status_modified",
+        "source_template_text": "<b>Réservation modifiée 🔄</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous vous informons que les détails de votre séjour ont été mis à jour avec succès :<br><br>📍 <b>Destination :</b> {{listing_name}}<br><br>📅 <b>Arrivée :</b> {{arrival_date}}<br><br>📅 <b>Départ :</b> {{departure_date}}<br><br>---<br><br>🛎️ <b>Assistance et contact :</b><br><br>Nous sommes à votre service sur WhatsApp :<br><br>+966501205651<br><br><b>Nous vous souhaitons un agréable séjour ✨</b><br><br>📅 <b>Date :</b> {{arrival_date}}<br><br>🕒 <b>Arrivée :</b> {{check_in_time}}<br><br>🕛 <b>Départ :</b> {{check_out_time}}<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "a29e3acac0fabafd325d6cdb6b31469ea8369f69b1ea5119d2bedd9cc0d2f7af",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Réservation modifiée 🔄*\n\nCher/Chère *SYNTHETIC_GUEST*, nous vous informons que les détails de votre séjour ont été mis à jour avec succès :\n\n📍 *Destination :* SYNTHETIC_APARTMENT\n\n📅 *Arrivée :* 2026-12-03\n\n📅 *Départ :* 2026-12-03\n\n---\n\n🛎️ *Assistance et contact :*\n\nNous sommes à votre service sur WhatsApp :\n\n+966501205651\n\n*Nous vous souhaitons un agréable séjour ✨*\n\n📅 *Date :* 2026-12-03\n\n🕒 *Arrivée :* 13:00\n\n🕛 *Départ :* 18:00\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "d278805ec4f5473d376491c5c965d3d7c646d0090e95acf7b1f3d51f19d392fc",
+        "render_policy_ref": "yc20-web-render-v1:1bf6a13feacf2e127276f7c3b37fd36fc44b7da6b96ec88041c42ebe8cf8b216",
+        "source_template_sha256": "a29e3acac0fabafd325d6cdb6b31469ea8369f69b1ea5119d2bedd9cc0d2f7af",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "booking_cancellation",
+        "language": "fr",
+        "scenario": "08",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": null,
+        "job_sha256": "ea01b101437b66358204c35066b08a72b1f6f9eb4faaeccf45a5681e931bc528",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "fd772c1b04b6ceb8d865741318e78e21c6a3567a98d66e6b3077a08d6cd4084b",
+        "source_message_type": "status_cancelled",
+        "reservation_revision": "1",
+        "source_template_name": "status_cancelled",
+        "source_template_text": "<b>Annulation de réservation confirmée</b> 🛑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous vous confirmons la réception de votre demande d’annulation pour votre séjour à <b>{{listing_name}}</b>.<br><br>Nous sommes sincèrement désolés de ne pas pouvoir vous accueillir cette fois-ci et vous remercions de l’intérêt que vous portez à Luxury Smart Apartments.<br><br>📝 <b>Votre avis compte :</b><br><br>Si possible, nous vous invitons à nous indiquer la raison de votre annulation. Vos commentaires nous aident à améliorer continuellement nos services afin de mieux répondre à vos attentes.<br><br>🌟 <b>Vos prochains séjours :</b><br><br>Nous espérons avoir bientôt le plaisir de vous accueillir dans l’un de nos appartements de luxe. Vous pouvez consulter nos disponibilités sur notre site :<br><br>🔗 https://luxurysmartapartments.com/<br><br>---<br><br>🛎️ <b>Notre équipe est à votre service :</b><br><br>Pour toute question concernant la politique de remboursement ou toute autre demande d’assistance, n’hésitez pas à nous contacter :<br><br>+966501205651<br><br><b>Au plaisir de vous accueillir lors d’un prochain séjour</b> ✨",
+        "source_template_sha256": "312f2aa947ee8e032c8c04596b817b4349724d78f696b4a639da79ea9af05487",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Annulation de réservation confirmée* 🛑\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, nous vous confirmons la réception de votre demande d’annulation pour votre séjour à *SYNTHETIC_APARTMENT*.\n\nNous sommes sincèrement désolés de ne pas pouvoir vous accueillir cette fois-ci et vous remercions de l’intérêt que vous portez à Luxury Smart Apartments.\n\n📝 *Votre avis compte :*\n\nSi possible, nous vous invitons à nous indiquer la raison de votre annulation. Vos commentaires nous aident à améliorer continuellement nos services afin de mieux répondre à vos attentes.\n\n🌟 *Vos prochains séjours :*\n\nNous espérons avoir bientôt le plaisir de vous accueillir dans l’un de nos appartements de luxe. Vous pouvez consulter nos disponibilités sur notre site :\n\n🔗 https://luxurysmartapartments.com/\n\n---\n\n🛎️ *Notre équipe est à votre service :*\n\nPour toute question concernant la politique de remboursement ou toute autre demande d’assistance, n’hésitez pas à nous contacter :\n\n+966501205651\n\n*Au plaisir de vous accueillir lors d’un prochain séjour* ✨"
+        },
+        "content_digest": "4156eeeec1a61d9f48f54bae33b0083cfd38c7eb09c8ef64c03b5a936b92265a",
+        "render_policy_ref": "yc20-web-render-v1:039919185e463557787000fed8eb9657b781abe89cd470dceb176af42d4f4387",
+        "source_template_sha256": "312f2aa947ee8e032c8c04596b817b4349724d78f696b4a639da79ea9af05487",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "house_rules",
+        "language": "fr",
+        "scenario": "08",
+        "variables": {
+          "guest_name": "SYNTHETIC_GUEST"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "ed6bd9ae257bb37ada297fb526d90d44cfe189e741c406e866449b349c3e129f",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "fcf70edaa7a8eb8d19d8aace28201c15ce685fde3b57e80706a8f4fde618c6e4",
+        "source_message_type": "house_rules",
+        "reservation_revision": "1",
+        "source_template_name": "house_rules",
+        "source_template_text": "<b>Règlement intérieur important</b> ⚠️<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous souhaitons vous garantir un séjour paisible et confortable, ainsi qu’à nos voisins dans ce quartier résidentiel calme.<br><br>📋 <b>Règlement intérieur :</b><br><br>Afin de préserver la qualité du logement et la tranquillité de chacun, merci de respecter les règles suivantes :<br><br>🚭 1. Il est strictement interdit de fumer à l’intérieur de l’appartement.<br><br>🚫 2. Les fêtes et les rassemblements ne sont pas autorisés.<br><br>🔇 3. La musique forte et toute autre nuisance sonore sont interdites.<br><br>🤝 4. Merci de respecter les voisins et de préserver le calme à tout moment.<br><br>🅿️ 5. Veuillez utiliser uniquement la place de stationnement réservée à l’appartement.<br><br>🆔 6. Une pièce d’identité valide doit être fournie pour vérification avant l’arrivée.<br><br>Votre coopération est très appréciée et nous aide à offrir une expérience haut de gamme à tous nos voyageurs 🌟<br><br>---<br><br>🛎️ <b>Notre équipe est à votre service :</b><br><br>Pour toute question concernant ce règlement, contactez-nous :<br><br>+966501205651<br><br><b>Nous vous souhaitons un séjour intelligent et confortable</b> ✨",
+        "source_template_sha256": "43a73b873c48a918ff1151d81c61e8aeb848a88e8179cbe04af07fd831ea2b01",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Règlement intérieur important* ⚠️\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, nous souhaitons vous garantir un séjour paisible et confortable, ainsi qu’à nos voisins dans ce quartier résidentiel calme.\n\n📋 *Règlement intérieur :*\n\nAfin de préserver la qualité du logement et la tranquillité de chacun, merci de respecter les règles suivantes :\n\n🚭 1. Il est strictement interdit de fumer à l’intérieur de l’appartement.\n\n🚫 2. Les fêtes et les rassemblements ne sont pas autorisés.\n\n🔇 3. La musique forte et toute autre nuisance sonore sont interdites.\n\n🤝 4. Merci de respecter les voisins et de préserver le calme à tout moment.\n\n🅿️ 5. Veuillez utiliser uniquement la place de stationnement réservée à l’appartement.\n\n🆔 6. Une pièce d’identité valide doit être fournie pour vérification avant l’arrivée.\n\nVotre coopération est très appréciée et nous aide à offrir une expérience haut de gamme à tous nos voyageurs 🌟\n\n---\n\n🛎️ *Notre équipe est à votre service :*\n\nPour toute question concernant ce règlement, contactez-nous :\n\n+966501205651\n\n*Nous vous souhaitons un séjour intelligent et confortable* ✨"
+        },
+        "content_digest": "9030d80ddffafdd08be57ed0f29f40f4a510bad332c561e54961d1f2f54cce88",
+        "render_policy_ref": "yc20-web-render-v1:fe8ec03def01dfcd8d8c14cedda6f6d9ecaa1193857504f07acf575a2676e8bc",
+        "source_template_sha256": "43a73b873c48a918ff1151d81c61e8aeb848a88e8179cbe04af07fd831ea2b01",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkin_guide",
+        "language": "fr",
+        "scenario": "08",
+        "variables": {
+          "map_url": "https://example.invalid/map",
+          "wifi_net": "SYNTHETIC_WIFI",
+          "gate_code": "SYNTHETIC_GATE",
+          "video_url": "https://example.invalid/video",
+          "wifi_pass": "SYNTHETIC_WIFI_PASSWORD",
+          "address_fr": "SYNTHETIC_ADDRESS_EN",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "0f8a13c06224923e6c2f954d05aeaf6a8dc3a7b4db049ceeee5c62442f95e953",
+        "not_before": "2026-12-03T05:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "e19e662f633446203890022730a236824ffa6c4cb2c3d210a33cd91105200774",
+        "source_message_type": "checkin_guide",
+        "reservation_revision": "1",
+        "source_template_name": "checkin_guide",
+        "source_template_text": "<b>Instructions d’arrivée</b> 🔑<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, voici le guide d’accès à <b>{{listing_name}}</b> :<br><br>📍 <b>Localisation et adresse :</b><br><br>• Google Maps : {{map_url}}<br><br>• Adresse : {{address_fr}}<br><br>📶 <b>Connexion Wi-Fi :</b><br><br>• Réseau : {{wifi_net}}<br><br>• Mot de passe : {{wifi_pass}}<br><br>🚪 <b>Code du portail extérieur :</b> {{gate_code}}<br><br>🎥 <b>Tutoriel d’accès en vidéo :</b><br><br>🔗 {{video_url}}<br><br>🔑 <b>Code d’accès à l’appartement :</b><br><br>Après vérification de votre identité, contactez notre équipe pour le code : +966501205651.<br><br>🛎️ <b>Équipe d’assistance :</b><br><br>+966501205651 ✨",
+        "source_template_sha256": "65a06442863e66be84438104be1dca425fc7655b39c17099ecfbf0ea7785440a",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Instructions d’arrivée* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, voici le guide d’accès à *SYNTHETIC_APARTMENT* :\n\n📍 *Localisation et adresse :*\n\n• Google Maps : https://example.invalid/map\n\n• Adresse : SYNTHETIC_ADDRESS_EN\n\n📶 *Connexion Wi-Fi :*\n\n• Réseau : SYNTHETIC_WIFI\n\n• Mot de passe : SYNTHETIC_WIFI_PASSWORD\n\n🚪 *Code du portail extérieur :* SYNTHETIC_GATE\n\n🎥 *Tutoriel d’accès en vidéo :*\n\n🔗 https://example.invalid/video\n\n🔑 *Code d’accès à l’appartement :*\n\nAprès vérification de votre identité, contactez notre équipe pour le code : +966501205651.\n\n🛎️ *Équipe d’assistance :*\n\n+966501205651 ✨"
+        },
+        "content_digest": "c6623e19c39afadc7874db355031a228527d17978f5fafd2158505c95c805a4f",
+        "render_policy_ref": "yc20-web-render-v1:71094c72bb02e92bc5deae2261682462d62997cec5e75f05e88d2196ab26691d",
+        "source_template_sha256": "65a06442863e66be84438104be1dca425fc7655b39c17099ecfbf0ea7785440a",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    },
+    {
+      "context": {
+        "purpose": "checkout_reminder",
+        "language": "fr",
+        "scenario": "08",
+        "variables": {
+          "timezone": "Asia/Riyadh",
+          "guest_name": "SYNTHETIC_GUEST",
+          "listing_name": "SYNTHETIC_APARTMENT",
+          "check_out_time": "18:00"
+        },
+        "expires_at": "2026-12-03T15:00:00+00:00",
+        "job_sha256": "683813d7774a42d29dee19f66e799615b34077b5ff16ce92fab7aa0be101019c",
+        "not_before": "2026-12-03T14:00:00+00:00",
+        "source_family": "lsa08",
+        "media_required": false,
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "reservation_key": "dayuse08:11111111-1111-4111-8111-111111111111",
+        "contract_version": "yc20-website-render-source-1",
+        "dispatch_allowed": false,
+        "source_event_key": "website:08:core:22222222-2222-4222-8222-222222222222",
+        "stored_body_sha256": "3b435d5f2c43d8a52b02738e7e83eda8f725ecf43fce042797e5342298e29b91",
+        "source_message_type": "reminder_checkout",
+        "reservation_revision": "1",
+        "source_template_name": "reminder_checkout",
+        "source_template_text": "<b>Rappel de départ</b> 🧹<br><br><b>Luxury Smart Apartments 🌿</b><br><br>Cher/Chère <b>{{guest_name}}</b>, nous vous rappelons que votre départ de <b>{{listing_name}}</b> est prévu aujourd’hui à <b>{{check_out_time}}</b>.<br><br>Merci d’avoir séjourné chez nous !<br><br>Nous espérons que vous avez apprécié cette expérience agréable et intelligente.<br><br>Au plaisir de vous accueillir à nouveau très bientôt.<br><br><b>Bon voyage !</b> ✨<br><br>⏰ {{timezone}}",
+        "source_template_sha256": "013feca5cfd52c6feeddee9bdeefe5828cffdf368631afd7958a3b59fa843b3e",
+        "recipient_binding_sha256": "aeb94060e73e3269e9d487424229e127f88e0c58cb3f9dbc38716031b5abd93b"
+      },
+      "expected_renderer_sha": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+      "expected": {
+        "ok": true,
+        "message": {
+          "mode": "text",
+          "text": "*Rappel de départ* 🧹\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *SYNTHETIC_GUEST*, nous vous rappelons que votre départ de *SYNTHETIC_APARTMENT* est prévu aujourd’hui à *18:00*.\n\nMerci d’avoir séjourné chez nous !\n\nNous espérons que vous avez apprécié cette expérience agréable et intelligente.\n\nAu plaisir de vous accueillir à nouveau très bientôt.\n\n*Bon voyage !* ✨\n\n⏰ Asia/Riyadh"
+        },
+        "content_digest": "56cf37210faf544cafe0a4f59df04f49bcbd590cfc026f969ea78d1b70d7a647",
+        "render_policy_ref": "yc20-web-render-v1:aa1986ab875261e83d72b0cc4dd35ce546ee487b21ff4686c124f0df10f36f58",
+        "source_template_sha256": "013feca5cfd52c6feeddee9bdeefe5828cffdf368631afd7958a3b59fa843b3e",
+        "renderer_sha256": "73c3496d6696be6b1e59fcb93729de8b5dde64e87db52b5491a157bce7c1c84c",
+        "dispatch_allowed": false
+      }
+    }
+  ]
+}
