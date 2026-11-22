@@ -23,6 +23,7 @@ class Migration(migrations.Migration):
                 ("phone_digest", models.CharField(max_length=64, editable=False)),
                 ("binding_version", models.UUIDField(editable=False)),
                 ("booking_revision", models.PositiveBigIntegerField(editable=False)),
+                ("sequence", models.PositiveBigIntegerField(editable=False)),
                 ("granted", models.BooleanField(editable=False)),
                 ("text_version", models.CharField(max_length=48, editable=False)),
                 ("language", models.CharField(max_length=2, editable=False)),
@@ -59,7 +60,17 @@ class Migration(migrations.Migration):
                             | models.Q(morning_stay__isnull=True, day_use_stay__isnull=False)
                         ),
                         name="wa_choice_exactly_one_stay",
-                    )
+                    ),
+                    models.UniqueConstraint(
+                        fields=["morning_stay", "sequence"],
+                        condition=models.Q(morning_stay__isnull=False),
+                        name="wa_choice_morning_sequence",
+                    ),
+                    models.UniqueConstraint(
+                        fields=["day_use_stay", "sequence"],
+                        condition=models.Q(day_use_stay__isnull=False),
+                        name="wa_choice_day_use_sequence",
+                    ),
                 ]
             },
         )

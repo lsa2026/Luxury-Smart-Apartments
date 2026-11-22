@@ -1,16 +1,22 @@
 """Guest choice tests use disposable records and never send a message."""
 # ruff: noqa: F811
 
+import os
+from datetime import timedelta
+from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import VerifiedPhone
 from apps.reservations import whatsapp_preferences as choices
 from apps.reservations.models import BookingWhatsAppChoice
+from tests.test_contact_layout import _standalone
 from tests.test_message_source_authorization import record as record  # noqa: F401
 from tests.test_message_source_authorization import request_source
 
@@ -119,7 +125,7 @@ def test_disabled_no_schema_query_and_csrf_required(client, record, guest, setti
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
 def test_all_languages_show_brand_channel_and_no_promotional_choice(
-    client, record, guest, language
+    client, record, guest, language, tmp_path
 ):
     model = type(record[1])
     model.objects.filter(pk=record[1].pk).update(guest_language=language)
@@ -130,3 +136,22 @@ def test_all_languages_show_brand_channel_and_no_promotional_choice(
         and "Luxury Smart Apartments" in result.content.decode()
     )
     assert 'name="marketing"' not in result.content.decode()
+    output = Path(os.environ.get("LSA_CONTACT_VISUAL_DIR", tmp_path))
+    output.mkdir(exist_ok=True, parents=True)
+    # Static synthetic page only. Remove the disposable CSRF value from artifacts.
+    html = _standalone(result.content.decode())
+    import re
+
+    html = re.sub(r'(name="csrfmiddlewaretoken" value=")[^"]*', r"\1synthetic-only", html)
+    (output / f"whatsapp-choice-{record[0]}-{language}.html").write_text(html, encoding="utf-8")
+
+
+def test_latest_withdrawal_wins_even_if_wall_clock_moves_back(client, record, guest):
+    post(client, record)
+    earlier = timezone.now() - timedelta(hours=1)
+    with patch("django.utils.timezone.now", return_value=earlier):
+        post(client, record, action="withdraw")
+    assert choices.consent_facts(record[1], record[0])["revoked"] is True
+    assert list(
+        BookingWhatsAppChoice.objects.order_by("sequence").values_list("sequence", flat=True)
+    ) == [1, 2]

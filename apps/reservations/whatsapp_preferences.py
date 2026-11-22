@@ -96,7 +96,7 @@ def consent_facts(stay, scenario):
     }
     if not getattr(settings, "BOOKING_WHATSAPP_CHOICE_ENABLED", False):
         return empty
-    row = subject_rows(stay, scenario).order_by("-recorded_at", "-pk").first()
+    row = subject_rows(stay, scenario).order_by("-sequence").first()
     if not row:
         return empty
     try:
@@ -164,7 +164,7 @@ def preferences(request, scenario, stay_id):
             raise Http404
         language = stay.guest_language if stay.guest_language in COPY else "ar"
         copy = COPY[language]
-        latest = subject_rows(stay, scenario).order_by("-recorded_at", "-pk").first()
+        latest = subject_rows(stay, scenario).order_by("-sequence").first()
         latest_id = str(latest.pk) if latest else "none"
         context = {
             "copy": copy,
@@ -199,6 +199,7 @@ def preferences(request, scenario, stay_id):
                         phone_digest=phone_digest(binding.phone),
                         binding_version=binding.version,
                         booking_revision=stay.communication_revision,
+                        sequence=latest.sequence + 1 if latest else 1,
                         granted=granted,
                         text_version=VERSION,
                         language=language,

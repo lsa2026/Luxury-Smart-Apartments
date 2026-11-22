@@ -226,7 +226,11 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-assisted-attribution.cjs
 
       - name: Verify isolated website source facts and optional guest choice
-        run: pytest tests/test_message_source_authorization.py tests/test_booking_whatsapp_choice.py tests/test_same_day_financial_catalog.py -q
+        env:
+          LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
+        run: |
+          pytest tests/test_message_source_authorization.py tests/test_booking_whatsapp_choice.py tests/test_same_day_financial_catalog.py -q
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-whatsapp-choice-layout.cjs
 
       - name: Save synthetic website financial catalog
         uses: actions/upload-artifact@v7.0.2
