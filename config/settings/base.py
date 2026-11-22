@@ -351,6 +351,7 @@ BOOKING_MANAGEMENT_ACCESS_LINK_MAX_AGE_SECONDS = optional_positive_int(
 # Draft integration only. No credential is copied from another service or sent to clients.
 TELEGRAM_ACTIVATION_ENABLED = strict_bool("TELEGRAM_ACTIVATION_ENABLED")
 TELEGRAM_LOYALTY_INVITATIONS_ENABLED = strict_bool("TELEGRAM_LOYALTY_INVITATIONS_ENABLED")
+TELEGRAM_STAY_MESSAGES_ENABLED = strict_bool("TELEGRAM_STAY_MESSAGES_ENABLED")
 
 # Local, cardless payment simulation for development and acceptance testing only.
 # DEBUG is deliberately part of the guard so this can never be enabled in production
