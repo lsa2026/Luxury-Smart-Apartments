@@ -65,7 +65,7 @@ def register_event(event, scenario, *, financial=False):
     for kind, key in keys.items():
         if stay.status == "cancelled" and kind != "status_cancelled":
             continue
-        due = stay.ends_at - timedelta(hours=1) if kind == "reminder_checkout" else occurred_at
+        due = stay.ends_at - timedelta(hours=1) if kind == "reminder_checkout" else event.created_at
         # A new event must not awaken a checkout reminder already due in the past.
         if kind == "reminder_checkout" and due < event.created_at:
             continue
@@ -139,7 +139,7 @@ def current_event(row):
 
 
 @sensitive_variables()
-def forward_due(*, client=None, limit=3):
+def forward_due(*, client=None, limit=1):
     if not enabled():
         return {"accepted": 0}
     accepted = 0
@@ -186,7 +186,7 @@ def forward_due(*, client=None, limit=3):
         try:
             if client is None:
                 with httpx.Client(
-                    timeout=httpx.Timeout(15, connect=5), follow_redirects=False
+                    timeout=httpx.Timeout(40, connect=5), follow_redirects=False
                 ) as remote:
                     reply = remote.post(RELAY_URL, json=envelope, headers={READ_HEADER: capability})
             else:

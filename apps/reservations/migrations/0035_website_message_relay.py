@@ -1,5 +1,6 @@
 import uuid
 
+import django.db.models.deletion
 from django.db import migrations, models
 from django.utils import timezone
 
@@ -44,5 +45,24 @@ class Migration(migrations.Migration):
                     )
                 ],
             },
+        ),
+        migrations.CreateModel(
+            name="WebsiteMessageExpectation",
+            fields=[
+                ("request_id", models.CharField(max_length=70, primary_key=True, serialize=False)),
+                ("expectation_ref", models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                ("prepare_ref", models.CharField(max_length=64, unique=True)),
+                ("identity", models.JSONField()),
+                ("render_policy_ref", models.CharField(max_length=128)),
+                ("prepared_at_epoch", models.BigIntegerField()),
+                ("registered_at", models.DateTimeField(default=timezone.now, editable=False)),
+                ("state", models.CharField(default="prepared", max_length=16)),
+                ("attempts_claimed", models.PositiveSmallIntegerField(default=0)),
+                ("provider_message_id", models.CharField(blank=True, max_length=512)),
+                ("wamid", models.CharField(blank=True, max_length=512)),
+                ("receipt_evidence_ref", models.CharField(blank=True, max_length=512)),
+                ("observed_at_epoch", models.BigIntegerField(null=True)),
+                ("relay", models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, to="reservations.websitemessagerelay")),
+            ],
         ),
     ]

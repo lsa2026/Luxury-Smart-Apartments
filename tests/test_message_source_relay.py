@@ -87,7 +87,7 @@ def test_registration_rejects_unconfigured_and_backlog(record, settings, config)
 def test_due_forward_has_fresh_scoped_read_only_in_header_and_immutable_source_time(journal):
     scenario, _, event = journal
     receiver = Receiver()
-    assert relay.forward_due(client=receiver) == {"accepted": 3}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 3}
     assert len(receiver.calls) == 3
     for envelope, headers in receiver.calls:
         assert len(envelope) == 12
@@ -97,7 +97,7 @@ def test_due_forward_has_fresh_scoped_read_only_in_header_and_immutable_source_t
             headers[relay.READ_HEADER], max_age=60
         ) == str(event.pk)
         assert not any("token" in k or "capability" in k or "phone" in k for k in envelope)
-    assert relay.forward_due(client=receiver) == {"accepted": 0}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
     assert WebsiteMessageRelay.objects.filter(
         message_type="reminder_checkout", state="pending"
     ).exists()
@@ -106,8 +106,8 @@ def test_due_forward_has_fresh_scoped_read_only_in_header_and_immutable_source_t
 @pytest.mark.parametrize("reply", ["timeout", "held", "sent"])
 def test_missing_or_held_ack_never_retries_or_counts_delivery(journal, reply):
     receiver = Receiver(reply)
-    assert relay.forward_due(client=receiver) == {"accepted": 0}
-    assert relay.forward_due(client=receiver) == {"accepted": 0}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
     assert len(receiver.calls) == 3
     assert (
         WebsiteMessageRelay.objects.filter(state="held" if reply == "held" else "uncertain").count()
@@ -127,7 +127,7 @@ def test_source_is_rechecked_at_due_and_changed_event_does_not_dispatch(journal,
     }[change]
     type(stay).objects.filter(pk=stay.pk).update(**updates)
     receiver = Receiver()
-    assert relay.forward_due(client=receiver) == {"accepted": 0}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
     assert receiver.calls == []
 
 
@@ -135,7 +135,7 @@ def test_checkout_waits_for_original_due_and_old_read_is_not_reused(journal, mon
     scenario, stay, event = journal
     WebsiteMessageRelay.objects.exclude(message_type="reminder_checkout").delete()
     receiver = Receiver()
-    assert relay.forward_due(client=receiver) == {"accepted": 0}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
     original_time = signing.time.time
     monkeypatch.setattr(signing.time, "time", lambda: original_time() - 20 * 86400)
     expired = source.SOURCES[scenario][4].event_token(event)
@@ -145,7 +145,7 @@ def test_checkout_waits_for_original_due_and_old_read_is_not_reused(journal, mon
             expired, max_age=15 * 86400
         )
     monkeypatch.setattr(timezone, "now", lambda: stay.ends_at - timedelta(minutes=50))
-    assert relay.forward_due(client=receiver) == {"accepted": 1}
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 1}
     assert receiver.calls[0][1][relay.READ_HEADER] != expired
 
 
@@ -156,3 +156,18 @@ def test_legacy_outbox_is_closed_in_central_mode(journal):
     assert comms.deliver_pending_events(client=receiver, stay_id=stay.pk) == {"accepted": 0}
     assert payments.deliver_event("not-a-real-event", client=receiver) == {"accepted": False}
     assert receiver.calls == []
+
+
+def test_financial_due_and_original_payment_time_are_distinct(record, settings):
+    scenario, stay, event = source_tests.paid_record(record)
+    settings.MESSAGE_SOURCE_RELAY_ENABLED = True
+    settings.WEBSITE_GUEST_MESSAGE_TRANSPORT = "ycloud_central"
+    settings.MESSAGE_SOURCE_CUTOVER_AT = (stay.paid_at - timedelta(seconds=1)).isoformat()
+    relay.register_event(event, scenario, financial=True)
+    row = WebsiteMessageRelay.objects.get(message_type="payment_success")
+    assert row.source_occurred_at == stay.paid_at
+    assert row.not_before == event.created_at
+    with transaction.atomic():
+        current = relay.current_event(row)
+    assert current is not None
+    assert current[1]["domain_authorized"] is False

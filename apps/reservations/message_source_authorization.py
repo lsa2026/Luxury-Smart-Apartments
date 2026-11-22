@@ -136,6 +136,8 @@ def legacy_state(states):
 
 
 def core_history(stay, purpose, scenario):
+    from .message_receipt_models import WebsiteMessageExpectation
+
     events = list(stay.communication_events.order_by("revision")[: HISTORY_LIMIT + 1])
     if len(events) != stay.communication_revision or len(events) > HISTORY_LIMIT:
         return "unknown"
@@ -155,6 +157,14 @@ def core_history(stay, purpose, scenario):
     model = SOURCES[scenario][3]
     return legacy_state(
         list(model.objects.filter(stay=stay, pk__in=refs).values_list("state", flat=True))
+        + list(
+            WebsiteMessageExpectation.objects.filter(
+                relay__stay_id=stay.pk,
+                relay__scenario=scenario,
+                relay__message_type=purpose,
+                attempts_claimed__gt=0,
+            ).values_list("state", flat=True)
+        )
     )
 
 
@@ -211,7 +221,7 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
     event_kind = "payment" if financial else "core"
     canonical_purpose = PURPOSES[purpose]
     consent = projected_consent(stay, scenario, canonical_purpose)
-    return {
+    result = {
         "contract_version": "yc19-source-facts-1",
         "source_family": "website",
         "scenario": scenario,
@@ -247,6 +257,10 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         "blockers": (["whatsapp_consent_unverified"] if consent["service"] is not True else [])
         + ["render_policy_unverified", "human_takeover_requires_owner_ledger"],
     }
+    from .message_receipts import projected_expectation
+
+    result["receipt_expectation"] = projected_expectation(result)
+    return result
 
 
 def core_facts(stay, event, scenario, locator):
@@ -324,6 +338,8 @@ def payment_link_facts(stay, event, scenario, locator):
 
 
 def payment_facts(stay, event, scenario, locator, payments):
+    from .message_receipt_models import WebsiteMessageExpectation
+
     purpose = next(
         (
             kind
@@ -353,6 +369,14 @@ def payment_facts(stay, event, scenario, locator, payments):
             deliveries.objects.filter(event__stay=stay, message_type=purpose).values_list(
                 "state", flat=True
             )
+        )
+        + list(
+            WebsiteMessageExpectation.objects.filter(
+                relay__stay_id=stay.pk,
+                relay__scenario=scenario,
+                relay__message_type=purpose,
+                attempts_claimed__gt=0,
+            ).values_list("state", flat=True)
         )
     )
     result["blockers"].append("core_delivery_dependency_requires_verified_receipts")

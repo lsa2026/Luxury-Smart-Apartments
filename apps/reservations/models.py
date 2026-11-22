@@ -20,6 +20,7 @@ from .guest_file_models import (  # noqa: F401
     AdminGuestFile,
     GuestDirectorySnapshot,
 )
+from .message_receipt_models import WebsiteMessageExpectation  # noqa: F401
 from .message_relay_models import WebsiteMessageRelay  # noqa: F401
 from .morning_models import (  # noqa: F401
     Morning07DeliveryAttempt,
