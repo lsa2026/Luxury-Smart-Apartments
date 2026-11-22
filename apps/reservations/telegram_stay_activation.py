@@ -39,7 +39,8 @@ def eligible(stay):
     owner = morning_hostaway if scenario == "07" else day_use_hostaway
     operation = owner.booking_state(stay)
     return bool(
-        getattr(settings, "TELEGRAM_STAY_MESSAGES_ENABLED", False)
+        backend.configured()
+        and getattr(settings, "TELEGRAM_STAY_MESSAGES_ENABLED", False)
         and stay.environment == "production"
         and stay.status != "cancelled"
         and stay.ends_at > timezone.now()

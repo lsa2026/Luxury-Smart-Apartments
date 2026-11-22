@@ -92,6 +92,10 @@ def require_unpaid(stay):
         allow_started=True,
         allow_elapsed=False,
     )
+    from .telegram_workgroup import enabled as workgroup_enabled
+
+    if selected(stay) and workgroup_enabled():
+        return  # All payment/availability guards above remain required.
     try:
         normalize_phone_number(stay.guest_phone)
     except InvalidPhoneNumber as exc:

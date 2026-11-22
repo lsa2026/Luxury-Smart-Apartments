@@ -46,5 +46,6 @@ os.environ["WEBSITE_GUEST_MESSAGE_TRANSPORT"] = "ultramsg"
 os.environ["TELEGRAM_STAY_MESSAGES_ENABLED"] = "false"
 os.environ["TELEGRAM_STAY_RECEIPTS_ENABLED"] = "false"
 os.environ["TELEGRAM_STAY_CUTOVER_AT"] = ""
+os.environ["TELEGRAM_WORKGROUP_HANDOFF_ENABLED"] = "false"
 
 from .development import *  # noqa: E402,F403

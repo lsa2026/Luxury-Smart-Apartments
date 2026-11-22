@@ -86,6 +86,10 @@ def require_unpaid(stay):
         allow_started=True,
         allow_elapsed=True,
     )
+    from .telegram_workgroup import enabled as workgroup_enabled
+
+    if selected(stay) and workgroup_enabled():
+        return  # Only phone validation is unnecessary for a fixed workgroup copy.
     try:
         normalize_phone_number(stay.guest_phone)
     except InvalidPhoneNumber as exc:

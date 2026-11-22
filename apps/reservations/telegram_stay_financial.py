@@ -12,10 +12,10 @@ from django.views.decorators.debug import sensitive_variables
 
 from . import message_source_authorization as source
 from . import telegram_stay_render as render
+from . import telegram_workgroup as workgroup
 from .day_use_stays import DayUseStayError
 from .morning_stays import MorningStayError
 from .telegram_authority import Denied
-from .telegram_stay_models import TelegramStayMessage
 
 
 def modules(scenario):
@@ -77,11 +77,11 @@ def image(purpose, scenario, language):
 def payment_link(packet, stay, event, next_check=None):
     from uuid import uuid4
 
-    from .telegram_stay_journey import accepted_core, plan, send_packet
+    from .telegram_stay_journey import core_complete, plan, send_packet
     from .telegram_stay_source import snapshot
 
     scenario = packet["scenario"]
-    if not accepted_core(stay, scenario):
+    if not core_complete(stay, scenario):
         return {**packet, "decision": "wait", "reason": "core_acceptance_pending"}
     if stay.paid_at:
         pay_events = source.SOURCES[scenario][2]
@@ -132,7 +132,7 @@ def payment_link(packet, stay, event, next_check=None):
     except (MorningStayError, DayUseStayError, ValidationError):
         return {**packet, "decision": "hold", "reason": "payment_eligibility_unverified"}
     row = plan(packet, "payment_link", 5, event.created_at, stay.ends_at)
-    if row.state == "accepted":
+    if row.state == workgroup.completed_state(row):
         return {
             **packet,
             "decision": "wait",
@@ -160,16 +160,16 @@ def content(row, stay):
 
 
 def financial(packet, stay, event):
-    from .telegram_stay_journey import accepted_core, plan, send_packet
+    from .telegram_stay_journey import core_complete, plan, send_packet
 
     scenario = packet["scenario"]
     stay = source.SOURCES[scenario][0].objects.select_related("property").get(pk=stay.pk)
     event = source.SOURCES[scenario][2].objects.get(pk=event.pk, stay=stay)
     event.stay = stay
-    if not source.SOURCES[scenario][5].current(event) or not accepted_core(stay, scenario):
+    if not source.SOURCES[scenario][5].current(event) or not core_complete(stay, scenario):
         return {**packet, "decision": "wait", "reason": "current_paid_core_required"}
     row = plan(packet, "payment_success", 6, event.created_at, stay.ends_at)
-    if row.state != "accepted":
+    if row.state != workgroup.completed_state(row):
         return send_packet(row, packet, stay)
     return loyalty_packet(packet, stay, event)
 
@@ -184,21 +184,22 @@ def loyalty_packet(packet, stay, event):
         return {**packet, "decision": "wait", "reason": "programme_unavailable"}
     scenario = packet["scenario"]
     row = plan(packet, "loyalty_invitation", 7, event.created_at, stay.ends_at)
-    if row.state == "accepted":
+    if row.state == workgroup.completed_state(row):
         return {**packet, "decision": "done", "reason": "paid_journey_accepted"}
     phone = registry.normalize_phone(stay.guest_phone)
     key = packet["stay_key"] if scenario == "07" else registry.day_use_booking_key(stay)
     with registry.invitation_lock():
-        current = TelegramStayMessage.objects.select_for_update().get(pk=row.pk)
+        current = type(row).objects.select_for_update().get(pk=row.pk)
         invitation_id = current.booking_basis.get("loyalty_invitation_id")
         if invitation_id:
             from apps.loyalty.models import JoinInvitation
 
             invitation = JoinInvitation.objects.get(pk=invitation_id)
             if (
-                invitation.channel != "telegram"
+                invitation.channel
+                != ("workgroup_manual" if workgroup.is_handoff(row) else "telegram")
                 or invitation.reservation_key != key
-                or invitation.state not in {"unknown", "accepted"}
+                or invitation.state not in {"unknown", workgroup.completed_state(row)}
             ):
                 raise Denied
         else:
@@ -211,7 +212,7 @@ def loyalty_packet(packet, stay, event):
                 event_id=key + ":paid-invitation-v1",
                 source="morning07" if scenario == "07" else "day_use08",
                 origin="website",
-                channel="telegram",
+                channel="workgroup_manual" if workgroup.is_handoff(row) else "telegram",
             )
             if decision != "eligible":
                 return {**packet, "decision": "done", "reason": "loyalty_" + decision}
@@ -233,16 +234,17 @@ def payable_link(stay, scenario):
     precedes the provider POST. A fast click must not race the receipt import.
     HyperPay and current booking/amount/availability checks remain with checkout.
     """
-    from .telegram_stay_journey import accepted_core
+    from .telegram_stay_journey import core_complete
 
     links, _, _ = modules(scenario)
     rows = list(
-        TelegramStayMessage.objects.filter(
+        workgroup.message_model()
+        .objects.filter(
             scenario=scenario,
             stay_id=stay.pk,
             revision=stay.communication_revision,
             purpose="payment_link",
-            state__in=["planned", "uncertain", "accepted"],
+            state__in=["planned", "uncertain", workgroup.completed_state()],
             expires_at__gt=timezone.now(),
             booking_basis__payment_fingerprint=links.fingerprint(stay),
         )
@@ -253,14 +255,14 @@ def payable_link(stay, scenario):
     return bool(
         stay.ends_at > timezone.now()
         and len(rows) == 1
-        and accepted_core(stay, scenario, fingerprint=rows[0].binding_fingerprint)
+        and core_complete(stay, scenario, fingerprint=rows[0].binding_fingerprint)
     )
 
 
 def validate_loyalty_permit(invitation, message, phone):
     from apps.loyalty import invitation_registry as registry
 
-    from .telegram_stay_journey import accepted_core
+    from .telegram_stay_journey import core_complete
 
     scenario = message.scenario
     stay = (
@@ -273,7 +275,7 @@ def validate_loyalty_permit(invitation, message, phone):
     event.stay = stay
     key = "morning07:" + str(stay.pk) if scenario == "07" else registry.day_use_booking_key(stay)
     if (
-        invitation.channel != "telegram"
+        invitation.channel != ("workgroup_manual" if workgroup.is_handoff(message) else "telegram")
         or invitation.origin != "website"
         or invitation.source != ("morning07" if scenario == "07" else "day_use08")
         or invitation.reservation_key != key
@@ -285,14 +287,16 @@ def validate_loyalty_permit(invitation, message, phone):
         or stay.communication_revision != message.revision
         or stay.ends_at <= timezone.now()
         or not source.SOURCES[scenario][5].current(event)
-        or not accepted_core(stay, scenario)
-        or not TelegramStayMessage.objects.filter(
+        or not core_complete(stay, scenario)
+        or not type(message)
+        .objects.filter(
             scenario=scenario,
             stay_id=stay.pk,
             event_id=event.pk,
             revision=message.revision,
             purpose="payment_success",
-            state="accepted",
-        ).exists()
+            state=workgroup.completed_state(message),
+        )
+        .exists()
     ):
         raise ValidationError("telegram_stay_invitation_not_verified")

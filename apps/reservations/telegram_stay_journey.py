@@ -20,6 +20,7 @@ from apps.loyalty.invitation_auth import authenticated
 
 from . import telegram_stay_authority as bridge
 from . import telegram_stay_render as render
+from . import telegram_workgroup as workgroup
 from .telegram_authority import Denied, duplicate_safe, private_endpoint, private_response
 from .telegram_backend import Unavailable
 from .telegram_stay_models import TelegramStayChannel, TelegramStayMessage
@@ -34,8 +35,9 @@ class ReceiptPagePending(Unavailable):
 
 def identity(packet, purpose, sequence):
     booking = packet["booking"]
+    prefix = "tg39wg" if workgroup.enabled() else "tg39"
     key = (
-        f"tg39:{packet['scenario']}:{packet['source_key']}:r{packet['source_revision']}:"
+        f"{prefix}:{packet['scenario']}:{packet['source_key']}:r{packet['source_revision']}:"
         f"{packet['event_id']}:{purpose}"
     )
     return {
@@ -66,9 +68,16 @@ def plan(packet, purpose, sequence, due, expiry):
     booking = {
         k: v
         for k, v in packet["booking"].items()
-        if k not in {"guest_name", "guest_first_name", "guest_last_name", "guest_email"}
+        if k
+        not in {
+            "guest_name",
+            "guest_first_name",
+            "guest_last_name",
+            "guest_email",
+            "guest_phone_e164",
+        }
     }
-    row, _ = TelegramStayMessage.objects.get_or_create(
+    row, _ = workgroup.message_model().objects.get_or_create(
         job_key=expected["job_key"],
         defaults={
             "scenario": packet["scenario"],
@@ -97,14 +106,24 @@ def checked_evidence(row, proof, attempt=None):
     if not isinstance(proof, dict) or proof.get("available") is not True:
         return None
     if (
-        proof.get("contract") != "tg39_stay_delivery_status_v1"
-        or proof.get("channel") != "telegram"
+        proof.get("contract")
+        != (
+            "tg39_workgroup_handoff_v1"
+            if workgroup.is_handoff(row)
+            else "tg39_stay_delivery_status_v1"
+        )
+        or proof.get("channel") != ("workgroup_manual" if workgroup.is_handoff(row) else "telegram")
         or proof.get("delivered") is not False
         or proof.get("read") is not False
         or not row.content_sha256
         or proof.get("content_sha256") != row.content_sha256
         or proof.get("phone_hash") != row.identity["phone_hash"]
-        or proof.get("chat_binding_fingerprint") != row.binding_fingerprint
+        or proof.get(
+            "workgroup_binding_fingerprint"
+            if workgroup.is_handoff(row)
+            else "chat_binding_fingerprint"
+        )
+        != row.binding_fingerprint
         or not row.binding_fingerprint
         or any(
             type(proof.get(k)) is not type(row.identity[k]) or proof[k] != row.identity[k]
@@ -123,12 +142,18 @@ def checked_evidence(row, proof, attempt=None):
         )
     ):
         raise Denied
+    if workgroup.is_handoff(row) and (
+        proof.get("workgroup_id") != workgroup.WORKGROUP_ID
+        or proof.get("guest_accepted") is not False
+        or row.binding_fingerprint != workgroup.fingerprint()
+    ):
+        raise Denied
     aid = proof.get("attempt_id")
     if not isinstance(aid, str) or str(uuid.UUID(aid)) != aid or attempt and aid != attempt:
         raise Denied
     if row.attempt_id and str(row.attempt_id) != aid:
         raise Denied
-    if proof.get("status") == "accepted" and proof.get("api_accepted") is True:
+    if proof.get("status") == workgroup.completed_state(row) and proof.get("api_accepted") is True:
         message_id = proof.get("provider_message_id")
         at = parse_datetime(proof.get("accepted_at", ""))
         if (
@@ -141,7 +166,7 @@ def checked_evidence(row, proof, attempt=None):
         ):
             raise Denied
         return {
-            "state": "accepted",
+            "state": workgroup.completed_state(row),
             "attempt_id": aid,
             "provider_message_id": str(message_id),
             "accepted_at": at,
@@ -161,11 +186,11 @@ def import_evidence(row, proof, attempt=None):
         registry.invitation_lock() if row.purpose == "loyalty_invitation" else nullcontext(),
         transaction.atomic(),
     ):
-        current = TelegramStayMessage.objects.select_for_update().get(pk=row.pk)
+        current = type(row).objects.select_for_update().get(pk=row.pk)
         checked_evidence(current, proof, attempt)
-        if current.state == "accepted":
+        if current.state == workgroup.completed_state(row):
             if (
-                value["state"] != "accepted"
+                value["state"] != workgroup.completed_state(row)
                 or current.provider_message_id != value["provider_message_id"]
             ):
                 raise Denied
@@ -173,17 +198,23 @@ def import_evidence(row, proof, attempt=None):
         for field, val in value.items():
             setattr(current, field, val)
         current.save(update_fields=[*value, "updated_at"])
-        if current.purpose == "loyalty_invitation" and value["state"] == "accepted":
+        if current.purpose == "loyalty_invitation" and value["state"] == workgroup.completed_state(
+            row
+        ):
             from apps.loyalty import invitation_registry as registry
             from apps.loyalty.models import JoinInvitation
 
             invitation = JoinInvitation.objects.get(
                 pk=current.booking_basis["loyalty_invitation_id"]
             )
-            if invitation.channel != "telegram":
+            if invitation.channel != (
+                "workgroup_manual" if workgroup.is_handoff(row) else "telegram"
+            ):
                 raise Denied
-            registry.record(invitation, "accepted", value["provider_message_id"])
-    return value["state"] == "accepted"
+            registry.record(
+                invitation, workgroup.completed_state(row), value["provider_message_id"]
+            )
+    return value["state"] == workgroup.completed_state(row)
 
 
 def outstanding(scenario, stay_id):
@@ -192,10 +223,11 @@ def outstanding(scenario, stay_id):
     if channel is None:
         return None
     rows = (
-        TelegramStayMessage.objects.filter(
+        workgroup.message_model()
+        .objects.filter(
             scenario=scenario,
             stay_id=stay_id,
-            state__in=["planned", "uncertain", "accepted"],
+            state__in=["planned", "uncertain", workgroup.completed_state()],
         )
         .filter(Q(booking_basis__ack_seen__isnull=True) | Q(booking_basis__ack_seen=False))
         .exclude(content_sha256="")
@@ -205,10 +237,12 @@ def outstanding(scenario, stay_id):
     page = list(rows.order_by("pk")[:9])
     for row in page[:8]:
         proof = bridge.read(
-            row, "delivery_status", attempt=str(row.attempt_id) if row.attempt_id else None
+            row,
+            "handoff_status" if workgroup.is_handoff(row) else "delivery_status",
+            attempt=str(row.attempt_id) if row.attempt_id else None,
         )
         value = checked_evidence(row, proof)
-        if value and value["state"] == "accepted":
+        if value and value["state"] == workgroup.completed_state(row):
             recorded = proof.get("recorded_at")
             if recorded is not None:
                 at = parse_datetime(recorded)
@@ -236,6 +270,8 @@ def outstanding(scenario, stay_id):
 
 
 def binding(row):
+    if workgroup.is_handoff(row):
+        return workgroup.fingerprint()
     proof = bridge.read(row, "binding")
     chat = proof.get("chat_id")
     if (
@@ -309,19 +345,29 @@ def core_message(row, packet, stay):
 
 
 def accepted_core(stay, scenario, *, fingerprint=None):
+    if workgroup.enabled():
+        return False
+    return core_complete(stay, scenario, fingerprint=fingerprint)
+
+
+def core_handed_off(stay, scenario, *, fingerprint=None):
+    return workgroup.enabled() and core_complete(stay, scenario, fingerprint=fingerprint)
+
+
+def core_complete(stay, scenario, *, fingerprint=None):
     rows = list(
-        TelegramStayMessage.objects.filter(
+        workgroup.message_model()
+        .objects.filter(
             scenario=scenario,
             stay_id=stay.pk,
             revision=stay.communication_revision,
             sequence__in=[1, 2, 3],
-            state="accepted",
-            recipient_kind="guest",
-        ).order_by("sequence")
+            state=workgroup.completed_state(),
+            recipient_kind="workgroup" if workgroup.enabled() else "guest",
+        )
+        .order_by("sequence")
     )
-    from apps.core.phone_numbers import normalize_phone_number
-
-    phone_hash = render.sha(normalize_phone_number(stay.guest_phone).lstrip("+"))
+    phone_hash = render.sha(workgroup.canonical_phone(stay.guest_phone).lstrip("+"))
     return bool(
         len(rows) == 3
         and [r.sequence for r in rows] == [1, 2, 3]
@@ -369,7 +415,7 @@ def next_packet(packet, data):
     for sequence, purpose in enumerate(purposes, 1):
         due = event.created_at
         row = plan(packet, purpose, sequence, due, stay.ends_at)
-        if row.state == "accepted":
+        if row.state == workgroup.completed_state(row):
             continue
         if row.state == "uncertain":
             return {**packet, "decision": "hold", "reason": "prior_post_unconfirmed_no_retry"}
@@ -388,13 +434,13 @@ def next_packet(packet, data):
     if due > timezone.now():
         return {**payment, "decision": "wait", "next_check_at": due.isoformat()}
     row = plan(packet, "reminder_checkout", 4, due, stay.ends_at)
-    if row.state == "accepted":
+    if row.state == workgroup.completed_state(row):
         return payment
     return send_packet(row, packet, stay)
 
 
 def send_packet(row, packet, stay):
-    if row.state in {"uncertain", "accepted"}:
+    if row.state in {"uncertain", workgroup.completed_state(row)}:
         raise Denied("prior_attempt_not_sendable")
     try:
         fingerprint = binding(row)
@@ -411,7 +457,7 @@ def send_packet(row, packet, stay):
     else:
         content, source_sha = core_message(row, packet, stay)
     with transaction.atomic():
-        current = TelegramStayMessage.objects.select_for_update().get(pk=row.pk)
+        current = type(row).objects.select_for_update().get(pk=row.pk)
         if current.content_sha256 and (
             current.content_sha256 != content["content_sha256"]
             or current.binding_fingerprint != fingerprint
@@ -442,6 +488,7 @@ def send_packet(row, packet, stay):
         )
     return {
         **packet,
+        **workgroup.packet_fields(),
         "decision": "send",
         "reason": "current_source_job",
         "job": {
@@ -501,7 +548,12 @@ def record(request):
                 "attempt_id",
                 "source_capability",
             }
-            or data["contract"] != "tg39_stay_record_request_v1"
+            or data["contract"]
+            != (
+                "tg39_workgroup_record_request_v1"
+                if workgroup.enabled()
+                else "tg39_stay_record_request_v1"
+            )
         ):
             raise Denied
         row = bridge.record_row(data["source_capability"])
@@ -510,11 +562,17 @@ def record(request):
             for k in ("scenario", "stay_key", "source_revision", "job_key", "reference_id")
         ):
             raise Denied
-        proof = bridge.read(row, "delivery_status", attempt=data["attempt_id"])
+        proof = bridge.read(
+            row,
+            "handoff_status" if workgroup.is_handoff(row) else "delivery_status",
+            attempt=data["attempt_id"],
+        )
         accepted = import_evidence(row, proof, data["attempt_id"])
         return private_response(
             {
-                "contract": "tg39_stay_record_result_v1",
+                "contract": "tg39_workgroup_record_result_v1"
+                if workgroup.is_handoff(row)
+                else "tg39_stay_record_result_v1",
                 "recorded": accepted,
                 "job_key": row.job_key,
                 "attempt_id": data["attempt_id"],
@@ -530,5 +588,6 @@ def record(request):
         TypeError,
         KeyError,
         TelegramStayMessage.DoesNotExist,
+        workgroup.message_model().DoesNotExist,
     ):
         return private_response({"error": "stay_receipt_unverified"}, 409)

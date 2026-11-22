@@ -48,7 +48,7 @@ class TelegramStayNotice(models.Model):
         return f"Telegram event {self.scenario}:{self.event_id}"
 
 
-class TelegramStayMessage(models.Model):
+class StayMessageJournal(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     scenario = models.CharField(max_length=2)
     stay_id = models.UUIDField()
@@ -77,12 +77,30 @@ class TelegramStayMessage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        abstract = True
+
+    def __str__(self):
+        return f"Stay message {self.pk}"
+
+
+class TelegramStayMessage(StayMessageJournal):
+    """Historical direct-guest journal; workgroup receipts never write here."""
+
+    class Meta:
         indexes = [
             models.Index(fields=["scenario", "stay_id", "state"], name="tg_stay_message_state_idx")
         ]
 
-    def __str__(self):
-        return f"Telegram message {self.pk}"
+
+class TelegramWorkgroupHandoff(StayMessageJournal):
+    """Copies accepted by the fixed workgroup, never proof of guest delivery."""
+
+    recipient_kind = models.CharField(max_length=16, default="workgroup")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["scenario", "stay_id", "state"], name="tg_workgroup_state_idx")
+        ]
 
 
 class TelegramStayActivation(models.Model):
