@@ -12,6 +12,7 @@
 {% block extrahead %}<script src="{% static 'js/morning-validation.js' %}" defer></script><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{{ block.super }}<script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
+  {% if telegram %}{% include 'reservations/_telegram_activation.html' %}{% endif %}
   {% include 'admin/reservations/includes/attribution_summary.html' with source=stay.advertising_attribution %}
   <section class="lsa-page-head lsa-page-head--operations"><div><h1>تفاصيل الحجز الصباحي</h1><p>{{ stay }}</p></div><a class="lsa-btn lsa-btn--ghost" href="{% url 'notifications:morning_list' %}">الحجوزات الصباحية</a></section>
   <section class="lsa-panel morning-receipt-panel" aria-labelledby="morning-receipt-title">

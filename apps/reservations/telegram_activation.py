@@ -58,10 +58,13 @@ class AdminProofForm(forms.Form):
 
 
 def eligible(reservation):
+    from .stay_extension_models import StayExtension
+
     return bool(
         reservation.hostaway_reservation_id
         and reservation.normalized_status in Reservation.ACTIVE_STATUSES
         and not reservation.is_test
+        and not StayExtension.objects.filter(reservation=reservation).exists()
     )
 
 

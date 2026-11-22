@@ -53,15 +53,24 @@ def require_payable(stay):
         raise HyperPayCheckoutError("day_use_booking_not_confirmed")
     if not settings.DAY_USE08_ENABLED or stay.ends_at <= timezone.now():
         raise HyperPayCheckoutError("day_use_payment_closed")
-    if not stay.payment_link_deliveries.filter(
+    from apps.reservations.telegram_stay_transport import selected
+
+    if selected(stay):
+        from apps.reservations.telegram_stay_financial import payable_link
+
+        if not payable_link(stay, "08"):
+            raise HyperPayCheckoutError("day_use_telegram_payment_not_released")
+        released = True  # Separate channel release; no legacy receipt is written.
+    elif not stay.payment_link_deliveries.filter(
         state__in=["queued", "sending", "accepted", "uncertain", "delivered", "read"]
     ).exists():
         raise HyperPayCheckoutError("day_use_payment_not_released")
-    try:
-        delivered = core_delivered(stay, stay.communication_revision)
-    except ValueError:
-        delivered = False
-    if not delivered:
+    else:
+        try:
+            released = core_delivered(stay, stay.communication_revision)
+        except ValueError:
+            released = False
+    if not released:
         raise HyperPayCheckoutError("day_use_core_not_delivered")
     if not settings.HYPERPAY_ENABLED or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise HyperPayCheckoutError("day_use_payment_unavailable")

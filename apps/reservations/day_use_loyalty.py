@@ -226,5 +226,9 @@ def invite_paid_booking(
 
 
 def queue_paid_invitation(stay):
+    from .telegram_stay_transport import selected
+
+    if selected(stay):
+        return
     """Compatibility hook only: the day-use financial outbox is the sole sender."""
     return None

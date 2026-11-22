@@ -1,10 +1,36 @@
 from celery import shared_task
 
 
+@shared_task(
+    bind=True,
+    ignore_result=True,
+    max_retries=12,
+    soft_time_limit=30,
+    time_limit=35,
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def deliver_telegram_stay_notice(self, notice_id):
+    from django.utils import timezone
+
+    from .telegram_stay_models import TelegramStayNotice
+    from .telegram_stay_transport import deliver, enabled
+
+    result = deliver(notice_id)
+    row = TelegramStayNotice.objects.get(pk=notice_id)
+    if enabled() and row.state == "pending" and row.attempts < 10:
+        when = max(row.next_attempt_at, row.lease_until or row.next_attempt_at)
+        delay = max(1, int((when - timezone.now()).total_seconds()) + 1)
+        raise self.retry(countdown=delay)
+    return result
+
+
 @shared_task(ignore_result=True, soft_time_limit=55, time_limit=60)
 def forward_due_message_sources():
     from .message_source_relay import forward_due
+    from .telegram_stay_transport import recover_due
 
+    recover_due()
     return forward_due()
 
 
@@ -37,6 +63,8 @@ def deliver_morning07_payment(self, event_id):
     if not enabled() or not settings.MORNING07_PAYMENT_WEBHOOK_URL:
         return {"accepted": False}
     result = deliver_event(event_id)
+    if result.get("code") == "telegram_owned_stay":
+        return result
     if Morning07PaymentEvent.objects.filter(pk=event_id, state="pending").exists():
         raise self.retry(countdown=30)
     return result
@@ -48,6 +76,10 @@ def deliver_morning07_events(self, stay_id):
 
     from .models import MorningCommunicationEvent
     from .morning07_communications import deliver_pending_events
+    from .telegram_stay_models import TelegramStayChannel
+
+    if TelegramStayChannel.objects.filter(scenario="07", stay_id=stay_id).exists():
+        return {"accepted": 0}
 
     if not settings.MORNING07_N8N_ENABLED:
         return {"accepted": 0}
@@ -119,6 +151,8 @@ def deliver_day_use08_payment(self, event_id):
     if not enabled() or not settings.DAY_USE08_PAYMENT_WEBHOOK_URL:
         return {"accepted": False}
     result = deliver_event(event_id)
+    if result.get("code") == "telegram_owned_stay":
+        return result
     if DayUse08PaymentEvent.objects.filter(pk=event_id, state="pending").exists():
         raise self.retry(countdown=30)
     return result
@@ -130,6 +164,10 @@ def deliver_day_use08_events(self, stay_id):
 
     from .day_use08_communications import deliver_pending_events
     from .models import DayUseCommunicationEvent
+    from .telegram_stay_models import TelegramStayChannel
+
+    if TelegramStayChannel.objects.filter(scenario="08", stay_id=stay_id).exists():
+        return {"accepted": 0}
 
     if not settings.DAY_USE08_ENABLED:
         return {"accepted": 0}

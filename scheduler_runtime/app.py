@@ -48,6 +48,7 @@ schedule_settings = {
         "LOYALTY_MESSAGES_ENABLED",
         "LOYALTY_WHATSAPP_NOTICES_ENABLED",
         "MESSAGE_SOURCE_RELAY_ENABLED",
+        "TELEGRAM_STAY_MESSAGES_ENABLED",
     )
 }
 schedule_settings.update(

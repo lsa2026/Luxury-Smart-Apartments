@@ -74,7 +74,7 @@ def test_source_snapshot_is_current_model_owned_read_only_and_phone_hashed(sourc
 
 def test_next_does_not_invent_job_or_acceptance_before_sender_ready(source_record):
     result = post(payload(source_record, operation="next")).json()
-    assert result["decision"] == "wait" and result["reason"] == "stay_dispatch_not_ready"
+    assert result["decision"] == "hold" and result["reason"] == "telegram_channel_not_selected"
     assert "job" not in result and "core_accepted" not in result
 
 

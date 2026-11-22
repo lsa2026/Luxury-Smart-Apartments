@@ -41,7 +41,11 @@ LABELS = {
 }
 
 
-def configured():
+def configured(stay=None):
+    from .telegram_stay_transport import enabled, selected
+
+    if stay is not None and selected(stay):
+        return bool(settings.HYPERPAY_ENABLED and enabled())
     return bool(
         settings.HYPERPAY_ENABLED
         and settings.ULTRAMSG_ENABLED
@@ -62,7 +66,7 @@ def fingerprint(stay):
 
 
 def require_unpaid(stay):
-    if not configured() or stay.environment != settings.HYPERPAY_ENVIRONMENT:
+    if not configured(stay) or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise DayUseStayError("إرسال رابط الدفع عبر واتساب غير مفعّل لهذا الطلب.")
     from .day_use_hostaway import booking_state
 

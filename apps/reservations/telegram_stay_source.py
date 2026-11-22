@@ -18,6 +18,7 @@ from . import day_use_hostaway, morning_hostaway
 from . import message_source_authorization as source
 from .models import DayUseHostawayOwnership
 from .telegram_authority import Denied, duplicate_safe, private_endpoint, private_response
+from .telegram_backend import Unavailable
 
 OWNERS = {"07": "morning07", "08": "dayuse08"}
 FIELDS = {"contract", "scenario", "operation", "request_id", "event_id", "stay_key"}
@@ -35,7 +36,7 @@ def resolve(data):
         or set(data) != FIELDS
         or data["contract"] != "tg39_stay_source_request_v1"
         or data["scenario"] not in OWNERS
-        or data["operation"] not in {"snapshot", "next"}
+        or data["operation"] not in {"snapshot", "next", "review_next"}
     ):
         raise Denied
     canonical_uuid(data["request_id"])
@@ -89,7 +90,11 @@ def resolve(data):
         or not comms.admitted(stay)
         or event is None
         or not current
-        or stay.ends_at <= timezone.now()
+        or (stay.ends_at <= timezone.now() and data["operation"] != "review_next")
+        or (
+            data["operation"] == "review_next"
+            and stay.ends_at + timedelta(days=3) <= timezone.now()
+        )
     ):
         raise Denied
     if scenario == "08":
@@ -172,15 +177,37 @@ def snapshot(data):
 @sensitive_variables()
 def read_source(request):
     request._disable_google_integrations = True
-    if not getattr(settings, "TELEGRAM_STAY_MESSAGES_ENABLED", False):
+    sending_enabled = getattr(settings, "TELEGRAM_STAY_MESSAGES_ENABLED", False)
+    if not sending_enabled and not getattr(settings, "TELEGRAM_STAY_RECEIPTS_ENABLED", False):
         return private_response({"error": "stay_source_closed"}, 404)
     try:
         if request.GET or len(request.body) > 8192:
             raise Denied
         data = json.loads(request.body, object_pairs_hook=duplicate_safe)
         request._body = b""
+        if isinstance(data, dict) and data.get("operation") in {"next", "review_next"}:
+            # Historical receipt reconciliation precedes all current window and
+            # revision checks. It never creates another provider attempt.
+            if set(data) != FIELDS or data.get("contract") != "tg39_stay_source_request_v1":
+                raise Denied
+            canonical_uuid(data["request_id"])
+            scenario = data["scenario"]
+            prefix, identifier = data["stay_key"].split(":", 1)
+            if scenario not in OWNERS or prefix != OWNERS[scenario]:
+                raise Denied
+            from .telegram_stay_journey import outstanding
+
+            previous = outstanding(scenario, canonical_uuid(identifier))
+            if previous:
+                return private_response(previous)
+        if not sending_enabled:
+            return private_response({"error": "stay_source_closed"}, 404)
         with transaction.atomic():
             packet = snapshot(data)
+        if data["operation"] != "snapshot":
+            from .telegram_stay_journey import next_packet
+
+            packet = next_packet(packet, data)
         return private_response(packet)
     except (
         Denied,
@@ -190,6 +217,7 @@ def read_source(request):
         AttributeError,
         ValidationError,
         InvalidPhoneNumber,
+        Unavailable,
         source.SOURCES["07"][0].DoesNotExist,
         source.SOURCES["08"][0].DoesNotExist,
     ):

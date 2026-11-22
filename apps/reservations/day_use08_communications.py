@@ -139,7 +139,9 @@ def capture_event(stay_id):
         communication_revision=revision, communication_fingerprint=fingerprint
     )
     from .message_source_relay import register_event
+    from .telegram_stay_transport import register as register_telegram
 
+    register_telegram(event, "08")
     register_event(event, "08")
     transaction.on_commit(lambda: queue_stay_event(str(stay.pk)))
 
@@ -148,6 +150,10 @@ def queue_stay_event(stay_id):
     """Dispatch only this committed booking; no periodic poller."""
     from .guest_message_transport import mode
     from .tasks import deliver_day_use08_events
+    from .telegram_stay_models import TelegramStayChannel
+
+    if TelegramStayChannel.objects.filter(scenario="08", stay_id=stay_id).exists():
+        return
 
     if mode() != "ultramsg":
         return
@@ -189,6 +195,7 @@ def read_event(request, event_id):
 
 def deliver_pending_events(limit=3, *, client=None, stay_id=None):
     from .guest_message_transport import mode
+    from .telegram_stay_models import TelegramStayChannel
 
     if mode() != "ultramsg":
         return {"accepted": 0}
@@ -205,6 +212,9 @@ def deliver_pending_events(limit=3, *, client=None, stay_id=None):
                     **({"stay_id": stay_id} if stay_id else {}),
                 )
                 .exclude(lease_until__gt=timezone.now())
+                .exclude(
+                    stay_id__in=TelegramStayChannel.objects.filter(scenario="08").values("stay_id")
+                )
                 .order_by("created_at")
                 .first()
             )

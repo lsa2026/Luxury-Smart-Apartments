@@ -20,7 +20,9 @@ def build_beat_schedule(settings: Mapping[str, Any]) -> dict[str, dict[str, Any]
             "schedule": 60,
         },
     }
-    if settings.get("MESSAGE_SOURCE_RELAY_ENABLED", False):
+    if settings.get("MESSAGE_SOURCE_RELAY_ENABLED", False) or settings.get(
+        "TELEGRAM_STAY_MESSAGES_ENABLED", False
+    ):
         schedule["website-source-relay"] = {
             "task": "apps.reservations.tasks.forward_due_message_sources",
             "schedule": 60,

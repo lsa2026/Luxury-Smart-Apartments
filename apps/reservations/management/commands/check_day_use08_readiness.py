@@ -30,6 +30,10 @@ class Command(BaseCommand):
                 "payments_channelcardcollection",
                 "reservations_websitemessagerelay",
                 "reservations_websitemessageexpectation",
+                "reservations_telegramstaychannel",
+                "reservations_telegramstaynotice",
+                "reservations_telegramstaymessage",
+                "reservations_telegramstayactivation",
             }
 
             def ready():
@@ -41,6 +45,7 @@ class Command(BaseCommand):
                     ("reservations", "0031_dayusestay_dayusepaymentlinkdelivery_and_more"),
                     ("reservations", "0032_manualbookingdraft_billing_address"),
                     ("reservations", "0035_website_message_relay"),
+                    ("reservations", "0037_telegram_stay_transport"),
                 }.issubset(MigrationRecorder(connection).applied_migrations())
 
             while not ready():

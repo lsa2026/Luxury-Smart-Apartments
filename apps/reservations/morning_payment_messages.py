@@ -43,7 +43,11 @@ LABELS = {
 }
 
 
-def configured():
+def configured(stay=None):
+    from .telegram_stay_transport import enabled, selected
+
+    if stay is not None and selected(stay):
+        return bool(settings.HYPERPAY_ENABLED and enabled())
     return bool(
         settings.HYPERPAY_ENABLED
         and settings.ULTRAMSG_ENABLED
@@ -64,7 +68,7 @@ def fingerprint(stay):
 
 
 def require_unpaid(stay):
-    if not configured() or stay.environment != settings.HYPERPAY_ENVIRONMENT:
+    if not configured(stay) or stay.environment != settings.HYPERPAY_ENVIRONMENT:
         raise MorningStayError("إرسال رابط الدفع عبر واتساب غير مفعّل لهذا الطلب.")
     if stay.status not in {"open", "expired"} or stay.paid_at:
         raise MorningStayError("الطلب مدفوع أو ملغى أو يحتاج حسم حالة الدفع؛ لم يُرسل رابط جديد.")
