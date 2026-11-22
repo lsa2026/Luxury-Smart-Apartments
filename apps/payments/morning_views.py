@@ -18,6 +18,7 @@ from apps.reservations.address_places import (
 from apps.reservations.morning_billing import saved_billing
 from apps.reservations.morning_stays import MorningStayError
 from apps.reservations.security import is_ip_rate_limited, session_key_hash
+from apps.reservations.whatsapp_preferences import choice_context
 
 from .hyperpay.exceptions import HyperPayError
 from .models import MorningPaymentAttempt
@@ -58,6 +59,7 @@ class MorningPaymentView(View):
             address_errors.is_valid()
             payable = False
         context = {
+            **choice_context(request, self.stay, "07"),
             "stay": self.stay,
             "payable": payable,
             "form": form

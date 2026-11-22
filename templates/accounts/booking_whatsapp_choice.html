@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ copy.title }} | Luxury Smart Apartments{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block hreflang %}{% endblock %}
+{% block content %}
+<section class="section container narrow reservation-payment" dir="{% if language == 'ar' %}rtl{% else %}ltr{% endif %}" lang="{{ language }}">
+  <article class="review-panel">
+    <h1>{{ copy.title }}</h1>
+    <p>{% if active %}{{ copy.active }}{% else %}{{ copy.inactive }}{% endif %}</p>
+    <p>{{ copy.note }}</p>
+    {% if error %}<p class="notice notice--important" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" class="guest-form">{% csrf_token %}
+      <input type="hidden" name="version" value="{{ choice_version }}">
+      <input type="hidden" name="latest_id" value="{{ latest_id }}">
+      <input type="hidden" name="booking_revision" value="{{ booking_revision }}">
+      <label><input type="checkbox" name="service" value="yes"> {{ copy.choice }}</label>
+      <button class="button button--primary" name="action" value="save">{{ copy.save }}</button>
+      {% if active %}<button class="button" name="action" value="withdraw">{{ copy.withdraw }}</button>{% endif %}
+    </form>
+  </article>
+</section>
+{% endblock %}

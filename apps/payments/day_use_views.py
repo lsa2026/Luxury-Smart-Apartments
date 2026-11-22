@@ -18,6 +18,7 @@ from apps.reservations.address_places import (
 from apps.reservations.day_use_billing import saved_billing
 from apps.reservations.day_use_stays import DayUseStayError
 from apps.reservations.security import is_ip_rate_limited, session_key_hash
+from apps.reservations.whatsapp_preferences import choice_context
 
 from .day_use_payments import create_checkout, require_payable, resolve_token, verify_payment
 from .day_use_validation import DayUsePaymentForm, copy, customer_values
@@ -58,6 +59,7 @@ class DayUsePaymentView(View):
             address_errors.is_valid()
             payable = False
         context = {
+            **choice_context(request, self.stay, "08"),
             "stay": self.stay,
             "payable": payable,
             "form": form

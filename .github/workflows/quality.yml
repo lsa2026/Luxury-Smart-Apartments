@@ -16,10 +16,10 @@ permissions:
 jobs:
   postgres-booking-regressions:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
-        image: postgres:17
+        image: postgres:15
         env:
           POSTGRES_USER: lsa_test
           POSTGRES_PASSWORD: ci-test-only
@@ -43,7 +43,10 @@ jobs:
       - run: python -m pip install ".[dev]"
       - name: Test booking writes on the production database engine
         run: >-
-          pytest tests/test_owner_modification_workflow.py
+          pytest tests/test_message_source_authorization.py
+          tests/test_booking_whatsapp_choice.py
+          tests/test_same_day_financial_catalog.py
+          tests/test_owner_modification_workflow.py
           tests/test_channel_card_collections.py
           tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py
@@ -131,7 +134,7 @@ jobs:
           tests/test_loyalty_unified_welcome.py
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       DJANGO_SETTINGS_MODULE: config.settings.test
       DJANGO_ALLOWED_HOSTS: testserver,localhost,luxurysmartapartments.com
@@ -221,6 +224,16 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-property-deep-links.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-prepurchase-visibility.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-assisted-attribution.cjs
+
+      - name: Verify isolated website source facts and optional guest choice
+        run: pytest tests/test_message_source_authorization.py tests/test_booking_whatsapp_choice.py tests/test_same_day_financial_catalog.py -q
+
+      - name: Save synthetic website financial catalog
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: site01-same-day-financial-catalog
+          path: artifacts/site01-same-day-financial-catalog.json
+          retention-days: 3
 
       - name: Run tests
         run: pytest
