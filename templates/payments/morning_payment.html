@@ -5,6 +5,7 @@
 {% block hreflang %}{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{% static 'css/morning-validation.css' %}"><script src="{% static 'js/morning-validation.js' %}" defer></script><link rel="stylesheet" href="{% static 'css/reservation-payment.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content %}
+{% if whatsapp_choice_url %}<div class="section container narrow"><a href="{{ whatsapp_choice_url }}" rel="noreferrer">{{ whatsapp_choice_label }}</a></div>{% endif %}
 <section class="section container narrow reservation-payment" dir="{% if current_language_code == 'en' %}ltr{% else %}rtl{% endif %}">
   <h1>{% if current_language_code == 'en' %}Morning stay payment{% else %}سداد الحجز الصباحي{% endif %}</h1>
   {% if stay.paid_at %}<p class="notice">{% if current_language_code == 'en' %}Payment received. Do not pay again.{% else %}تم استلام الدفعة. لا تدفع مرة أخرى.{% endif %}{% if stay.status == 'review' %}{% if current_language_code == 'en' %} Please confirm admission with management.{% else %} يرجى تأكيد موعد الدخول مع الإدارة.{% endif %}{% endif %}</p>

@@ -38,5 +38,7 @@ os.environ["NOTIFICATIONS_ENABLED"] = "true"
 os.environ["EMAIL_LOCAL_SMTP_ENABLED"] = "false"
 
 os.environ["DAY_USE08_ENABLED"] = "false"
+os.environ["MESSAGE_SOURCE_AUTH_ENABLED"] = "false"
+os.environ["BOOKING_WHATSAPP_CHOICE_ENABLED"] = "false"
 
 from .development import *  # noqa: E402,F403

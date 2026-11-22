@@ -1,6 +1,8 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
+from apps.reservations.whatsapp_preferences import preferences
+
 from .address_places import AccountAddressDetailsView, AccountAddressView
 from .history_views import restore_bookings, restore_status
 from .operations_users import manager_list, manager_revoke
@@ -20,6 +22,11 @@ from .views import (
 app_name = "accounts"
 
 urlpatterns = [
+    path(
+        "my-bookings/messages/<str:scenario>/<uuid:stay_id>/",
+        preferences,
+        name="booking_whatsapp_choice",
+    ),
     path("admin/operations/users/", manager_list, name="operations_users"),
     path(
         "admin/operations/users/<int:manager_id>/revoke/",
