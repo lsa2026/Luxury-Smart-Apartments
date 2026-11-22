@@ -29,6 +29,7 @@ class Migration(migrations.Migration):
                     "selected_at",
                     models.DateTimeField(default=django.utils.timezone.now, editable=False),
                 ),
+                ("receipt_cursor", models.UUIDField(null=True)),
             ],
             options={
                 "constraints": [

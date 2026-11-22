@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core import signing
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.debug import sensitive_variables
@@ -25,6 +26,10 @@ from .telegram_stay_models import TelegramStayChannel, TelegramStayMessage
 
 CORE = ("status_new", "house_rules", "checkin_guide")
 HEX = re.compile(r"[a-f0-9]{64}")
+
+
+class ReceiptPagePending(Unavailable):
+    pass
 
 
 def identity(packet, purpose, sequence):
@@ -183,19 +188,50 @@ def import_evidence(row, proof, attempt=None):
 
 def outstanding(scenario, stay_id):
     """Historical evidence first, independent of current admission/end/phone."""
-    rows = TelegramStayMessage.objects.filter(
-        scenario=scenario, stay_id=stay_id, state__in=["planned", "uncertain"]
-    ).exclude(content_sha256="")
-    for row in rows.order_by("created_at")[:8]:
+    channel = TelegramStayChannel.objects.filter(scenario=scenario, stay_id=stay_id).first()
+    if channel is None:
+        return None
+    rows = (
+        TelegramStayMessage.objects.filter(
+            scenario=scenario,
+            stay_id=stay_id,
+            state__in=["planned", "uncertain", "accepted"],
+        )
+        .filter(Q(booking_basis__ack_seen__isnull=True) | Q(booking_basis__ack_seen=False))
+        .exclude(content_sha256="")
+    )
+    if channel.receipt_cursor:
+        rows = rows.filter(pk__gt=channel.receipt_cursor)
+    page = list(rows.order_by("pk")[:9])
+    for row in page[:8]:
         proof = bridge.read(
             row, "delivery_status", attempt=str(row.attempt_id) if row.attempt_id else None
         )
         value = checked_evidence(row, proof)
         if value and value["state"] == "accepted":
+            recorded = proof.get("recorded_at")
+            if recorded is not None:
+                at = parse_datetime(recorded)
+                if (
+                    not at
+                    or not timezone.is_aware(at)
+                    or at < value["accepted_at"]
+                    or at > timezone.now() + timedelta(seconds=5)
+                ):
+                    raise Denied
+                import_evidence(row, proof)
+                row.refresh_from_db()
+                row.booking_basis = {**row.booking_basis, "ack_seen": True}
+                row.save(update_fields=["booking_basis", "updated_at"])
+                continue
             return bridge.packet_for(row, attempt=value["attempt_id"])
         if value:
             import_evidence(row, proof)
             raise Denied("prior_post_unconfirmed_no_retry")
+    channel.receipt_cursor = page[7].pk if len(page) > 8 else None
+    channel.save(update_fields=["receipt_cursor"])
+    if len(page) > 8:
+        raise ReceiptPagePending
     return None
 
 
@@ -308,27 +344,33 @@ def next_packet(packet, data):
             "status_new" if kind == "new" else "status_modified",
             "house_rules",
             "checkin_guide",
-            "reminder_checkout",
         ]
     )
     for sequence, purpose in enumerate(purposes, 1):
-        due = (
-            stay.ends_at - timedelta(hours=1)
-            if purpose == "reminder_checkout"
-            else event.created_at
-        )
+        due = event.created_at
         row = plan(packet, purpose, sequence, due, stay.ends_at)
         if row.state == "accepted":
             continue
         if row.state == "uncertain":
             return {**packet, "decision": "hold", "reason": "prior_post_unconfirmed_no_retry"}
-        if due > timezone.now():
-            # Payment must follow the first three, without waiting for checkout reminder.
-            return payment_link_packet(packet, stay, event, next_check=due)
         return send_packet(row, packet, stay)
     if kind == "cancelled":
         return {**packet, "decision": "done", "reason": "cancellation_accepted"}
-    return payment_link_packet(packet, stay, event)
+    due = stay.ends_at - timedelta(hours=1)
+    payment = payment_link_packet(packet, stay, event, next_check=due)
+    if payment["decision"] not in {"done", "wait"} or payment.get("reason") not in {
+        "awaiting_payment",
+        "paid_journey_accepted",
+        "loyalty_member",
+        "loyalty_duplicate",
+    }:
+        return payment
+    if due > timezone.now():
+        return {**payment, "decision": "wait", "next_check_at": due.isoformat()}
+    row = plan(packet, "reminder_checkout", 4, due, stay.ends_at)
+    if row.state == "accepted":
+        return payment
+    return send_packet(row, packet, stay)
 
 
 def send_packet(row, packet, stay):

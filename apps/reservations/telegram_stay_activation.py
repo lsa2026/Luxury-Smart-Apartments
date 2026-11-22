@@ -8,6 +8,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.debug import sensitive_post_parameters, sensitive_variables
 
 from apps.accounts.access import (
     MANAGER_SESSION_KEY,
@@ -64,6 +65,7 @@ class Backend(backend.Backend):
         self.ready_checked = True
 
 
+@sensitive_variables()
 def scope_for(request, stay, scenario, row=None, phone=None):
     if not has_operations_access(request) or not eligible(stay):
         raise authority.Denied
@@ -84,6 +86,7 @@ def scope_for(request, stay, scenario, row=None, phone=None):
     return value
 
 
+@sensitive_variables()
 def authorize(scope, action, key, data, claims):
     scenario = scope["scenario"]
     if scenario not in source.SOURCES or action not in {
@@ -170,6 +173,7 @@ def context(request, stay, scenario):
     return value
 
 
+@sensitive_variables()
 def issue(request, stay, scenario):
     if not eligible(stay):
         return {"state": "closed", "url": ""}
@@ -245,6 +249,7 @@ def issue(request, stay, scenario):
 
 
 @operations_access_required
+@sensitive_post_parameters("phone", "evidence_ref")
 def activate(request, scenario, stay_id):
     if scenario not in source.SOURCES:
         from django.http import Http404

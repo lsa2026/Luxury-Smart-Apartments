@@ -149,6 +149,23 @@ def test_due_recovery_uses_only_registered_notice_rows_not_old_events(owned, mon
     assert transport.recover_due() == 1 and ids == [TelegramStayNotice.objects.get().pk]
 
 
+def test_exhausted_source_notice_queues_one_safe_operations_email_and_no_retry(owned):
+    from apps.notifications.models import EmailDelivery
+
+    row = TelegramStayNotice.objects.get()
+    row.attempts, row.last_error = 10, "snapshot_persistence_unconfirmed"
+    row.save(update_fields=["attempts", "last_error"])
+    assert transport.recover_due() == transport.recover_due() == 0
+    delivery = EmailDelivery.objects.get(idempotency_key=f"telegram-source-exhausted:{row.pk}")
+    assert delivery.recipient_source == "operations"
+    assert owned[1].guest_phone not in delivery.recipient_reference
+    assert owned[1].guest_email not in delivery.recipient_reference
+    assert (
+        EmailDelivery.objects.filter(idempotency_key=f"telegram-source-exhausted:{row.pk}").count()
+        == 1
+    )
+
+
 def test_ycloud_source_cannot_authorize_a_telegram_owned_stay(owned, client):
     response = source_tests.request_source(client, owned, "status_new")
     assert response.status_code == 409 and response.json()["code"] == "telegram_owned_stay"

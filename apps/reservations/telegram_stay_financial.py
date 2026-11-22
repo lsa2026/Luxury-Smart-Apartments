@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+from django.views.decorators.debug import sensitive_variables
 
 from . import message_source_authorization as source
 from . import telegram_stay_render as render
@@ -29,14 +30,15 @@ def modules(scenario):
     return links, domain, loyalty
 
 
+@sensitive_variables()
 def trusted_copy(function, stay):
     """Transform approved static markup before inserting any guest/property text."""
     property_copy = SimpleNamespace(
-        **{f"name_{lang}": "{{listing_name}}" for lang in ("ar", "en", "fr")}
+        **{f"name_{lang}": "{{listingname}}" for lang in ("ar", "en", "fr")}
     )
 
     class Copy:
-        guest_name = "{{guest_name}}"
+        guest_name = "{{guestname}}"
         property = property_copy
 
         def __getattr__(self, key):
@@ -45,8 +47,8 @@ def trusted_copy(function, stay):
     text = function(Copy())
     text = re.sub(r"\*([^*\n]+)\*", r"<b>\1</b>", text)
     values = {
-        "guest_name": stay.guest_name,
-        "listing_name": getattr(stay.property, "name_" + stay.guest_language, "")
+        "guestname": stay.guest_name,
+        "listingname": getattr(stay.property, "name_" + stay.guest_language, "")
         or stay.property.name_en,
     }
     return render.render_html(text, values, stay.guest_language)
@@ -140,6 +142,7 @@ def payment_link(packet, stay, event, next_check=None):
     return send_packet(row, packet, stay)
 
 
+@sensitive_variables()
 def content(row, stay):
     links, _, loyalty = modules(row.scenario)
     if row.purpose == "payment_link":
@@ -229,13 +232,15 @@ def payable_link(stay, scenario):
 
     links, _, _ = modules(scenario)
     return bool(
-        accepted_core(stay, scenario)
+        stay.ends_at > timezone.now()
+        and accepted_core(stay, scenario)
         and TelegramStayMessage.objects.filter(
             scenario=scenario,
             stay_id=stay.pk,
             revision=stay.communication_revision,
             purpose="payment_link",
             state="accepted",
+            expires_at__gt=timezone.now(),
             booking_basis__payment_fingerprint=links.fingerprint(stay),
         ).exists()
     )

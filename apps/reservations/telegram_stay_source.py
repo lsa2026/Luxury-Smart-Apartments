@@ -19,6 +19,7 @@ from . import message_source_authorization as source
 from .models import DayUseHostawayOwnership
 from .telegram_authority import Denied, duplicate_safe, private_endpoint, private_response
 from .telegram_backend import Unavailable
+from .telegram_stay_journey import ReceiptPagePending
 
 OWNERS = {"07": "morning07", "08": "dayuse08"}
 FIELDS = {"contract", "scenario", "operation", "request_id", "event_id", "stay_key"}
@@ -36,7 +37,7 @@ def resolve(data):
         or set(data) != FIELDS
         or data["contract"] != "tg39_stay_source_request_v1"
         or data["scenario"] not in OWNERS
-        or data["operation"] not in {"snapshot", "next", "review_next"}
+        or data["operation"] not in {"snapshot", "next", "review_next", "review_snapshot"}
     ):
         raise Denied
     canonical_uuid(data["request_id"])
@@ -90,9 +91,12 @@ def resolve(data):
         or not comms.admitted(stay)
         or event is None
         or not current
-        or (stay.ends_at <= timezone.now() and data["operation"] != "review_next")
         or (
-            data["operation"] == "review_next"
+            stay.ends_at <= timezone.now()
+            and data["operation"] not in {"review_next", "review_snapshot"}
+        )
+        or (
+            data["operation"] in {"review_next", "review_snapshot"}
             and stay.ends_at + timedelta(days=3) <= timezone.now()
         )
     ):
@@ -139,7 +143,7 @@ def snapshot(data):
         "source_revision": stay.communication_revision,
         "authoritative_at": now.isoformat(),
         "expires_at": (now + timedelta(seconds=30)).isoformat(),
-        "decision": "snapshot" if data["operation"] == "snapshot" else "wait",
+        "decision": "snapshot" if data["operation"] in {"snapshot", "review_snapshot"} else "wait",
         "booking": {
             "phone_hash": hashlib.sha256(phone.lstrip("+").encode()).hexdigest(),
             "guest_name": stay.guest_name,
@@ -156,7 +160,9 @@ def snapshot(data):
             "cancelled": stay.status == "cancelled",
         },
         # No provisional job or false success while render/binding/ledger are absent.
-        "reason": "snapshot_only" if data["operation"] == "snapshot" else "stay_dispatch_not_ready",
+        "reason": "snapshot_only"
+        if data["operation"] in {"snapshot", "review_snapshot"}
+        else "stay_dispatch_not_ready",
     }
     if financial:
         packet["payment"] = {
@@ -204,11 +210,13 @@ def read_source(request):
             return private_response({"error": "stay_source_closed"}, 404)
         with transaction.atomic():
             packet = snapshot(data)
-        if data["operation"] != "snapshot":
+        if data["operation"] not in {"snapshot", "review_snapshot"}:
             from .telegram_stay_journey import next_packet
 
             packet = next_packet(packet, data)
         return private_response(packet)
+    except ReceiptPagePending:
+        return private_response({"error": "receipt_scan_incomplete", "retry_only": True}, 503)
     except (
         Denied,
         ValueError,

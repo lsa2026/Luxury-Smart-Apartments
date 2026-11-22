@@ -210,6 +210,14 @@ def test_historical_accepted_attempt_can_be_recorded_after_end_and_phone_change(
         pending["decision"] == "record"
         and pending["booking"]["phone_hash"] == row.identity["phone_hash"]
     )
+    envelope = authority.mint(
+        bridge.scope_for(row, attempt=evidence["attempt_id"]),
+        "delivery_status",
+        row.identity["stay_key"],
+    )
+    envelope["contract"] = "tg39_activation_readback_v1"
+    historical = authority.authorize(envelope)
+    assert historical["phone_hash"] == row.identity["phone_hash"]
     body = {
         "contract": "tg39_stay_record_request_v1",
         "scenario": scenario,
@@ -235,6 +243,59 @@ def test_historical_accepted_attempt_can_be_recorded_after_end_and_phone_change(
     assert row.state == "accepted" and not journey.accepted_core(
         model.objects.get(pk=stay.pk), scenario
     )
+
+
+def test_native_record_ack_loss_reissues_record_only_until_confirmed(
+    owned, private_source, monkeypatch
+):
+    result = next_job(owned)
+    row = TelegramStayMessage.objects.get(job_key=result["job"]["job_key"])
+    evidence = proof(row, recorded_at=None)
+    journey.import_evidence(row, evidence)
+    monkeypatch.setattr(bridge, "read", lambda *a, **k: evidence)
+    assert journey.outstanding(owned[0], owned[1].pk)["decision"] == "record"
+    evidence["recorded_at"] = timezone.now().isoformat()
+    assert journey.outstanding(owned[0], owned[1].pk) is None
+    row.refresh_from_db()
+    assert row.booking_basis["ack_seen"] is True and row.state == "accepted"
+
+
+def test_receipt_pages_never_hide_later_accepted_rows_or_open_a_partial_send(
+    owned, private_source, monkeypatch
+):
+    proofs = {}
+    value = packet(owned)
+    for n in range(9):
+        row = journey.plan(
+            value, "synthetic_" + str(n), 20 + n, owned[2].created_at, owned[1].ends_at
+        )
+        row.content_sha256, row.binding_fingerprint = "a" * 64, "b" * 64
+        row.save(update_fields=["content_sha256", "binding_fingerprint"])
+        evidence = proof(row)
+        journey.import_evidence(row, evidence)
+        evidence["recorded_at"] = timezone.now().isoformat()
+        proofs[row.pk] = evidence
+    monkeypatch.setattr(bridge, "read", lambda row, *a, **k: proofs[row.pk])
+    with pytest.raises(journey.ReceiptPagePending):
+        journey.outstanding(owned[0], owned[1].pk)
+    assert journey.outstanding(owned[0], owned[1].pk) is None
+    assert TelegramStayMessage.objects.filter(booking_basis__ack_seen=True).count() == 9
+
+
+def test_review_snapshot_after_checkout_is_read_only_and_does_not_reopen_send_window(
+    owned, monkeypatch
+):
+    end = owned[1].ends_at
+    monkeypatch.setattr(source.timezone, "now", lambda: end + timedelta(hours=1))
+    data = source_tests.payload(owned, operation="review_snapshot")
+    with transaction.atomic():
+        result = source.snapshot(data)
+    assert result["decision"] == "snapshot" and "job" not in result
+    with transaction.atomic(), pytest.raises(authority.Denied):
+        source.snapshot({**data, "operation": "snapshot"})
+    monkeypatch.setattr(source.timezone, "now", lambda: end + timedelta(days=3))
+    with transaction.atomic(), pytest.raises(authority.Denied):
+        source.snapshot(data)
 
 
 def test_render_and_receipt_authorities_are_action_job_and_channel_scoped(owned, private_source):
@@ -286,6 +347,19 @@ def test_approved_financial_copy_escapes_guest_markup_before_static_bold(owned):
     stay.guest_name = "</b><script>SYNTHETIC</script> *name*"
     text = trusted_copy(modules(scenario)[0].render_message, stay)
     assert "<script>" not in text and "&lt;script&gt;" in text and "*name*" in text
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_existing_loyalty_name_cleaner_cannot_modify_template_variable_identity(owned, language):
+    from apps.reservations.telegram_stay_financial import modules, trusted_copy
+
+    scenario, stay, _ = owned
+    stay.guest_language = language
+    stay.guest_name = "SYNTHETIC <guest> *literal*"
+    value = trusted_copy(modules(scenario)[2].caption, stay)
+    assert "{{" not in value and "<guest>" not in value
+    if scenario == "07":
+        assert "SYNTHETIC &lt;guest&gt; *literal*" in value
 
 
 def test_real_payment_proof_then_success_acceptance_then_one_cross_channel_loyalty_permit(

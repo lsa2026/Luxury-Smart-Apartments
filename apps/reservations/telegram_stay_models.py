@@ -13,6 +13,7 @@ class TelegramStayChannel(models.Model):
     hostaway_id = models.CharField(max_length=16)
     cutover_at = models.DateTimeField()
     selected_at = models.DateTimeField(default=timezone.now, editable=False)
+    receipt_cursor = models.UUIDField(null=True)
 
     class Meta:
         constraints = [
