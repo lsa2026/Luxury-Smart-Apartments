@@ -1,7 +1,9 @@
-# Telegram activation — review only, not enabled or published
+# Booking-scoped Telegram activation — coordinated rollout
 
-Owner request: TG-JOURNEY-COMPLETE-20261122. Do not merge, deploy, migrate a live
-database, create credentials, or send any messages while reviewing this draft.
+Owner approval in local thread39 now authorizes sequential deployment. Deploy
+code/migrations with flags closed, then coordinate activation against the current
+backend manifest. Do not create credentials or real bookings/payments/messages
+for tests. Earlier draft-only restrictions and results remain historical.
 
 ## Website contract
 
@@ -45,17 +47,17 @@ These defaults are deliberately closed:
 ```
 TELEGRAM_ACTIVATION_ENABLED=false
 TELEGRAM_LOYALTY_INVITATIONS_ENABLED=false
-TELEGRAM_ACTIVATION_SERVICE_KEY=
 ```
 
-No suitable existing website service-role REST credential was found in the source
-configuration. No secret was read, copied, shared or created. A later deployment
-must determine whether an existing authorized server-only credential can be used;
-this draft does not authorize adding privileges or creating a credential. The
-loyalty backup database connection is purpose-specific and is not repurposed.
+The website needs no service-role REST key or reusable outbound credential. Its
+fixed bridge is https://lsa25.app.n8n.cloud/webhook/tg39-private-activation-v1.
+It sends only contract, request_id, action and a signed capability valid for120s.
+The bridge reads authority back from the fixed POST endpoint
+`/integrations/telegram39/activation-authority/` using the existing Loyalty v1
+credential held in n8n. The site retains only that credential's hash. No secret
+is read/copied/shared/created, and the loyalty backup connection is not reused.
 
-The adapter is pinned to the Apartments project `rsqgwepnowpnpealrzbn` and calls
-`tg20_s01_health` first. HTTP 200 alone is not readiness. Contract must equal
+The adapter calls the bridge's health action first. HTTP200 alone is not readiness. Contract must equal
 `tg20_guest_journey_v1`, ready must be true, and s01/reminders/reviews/contacts/loyalty
 must all be true. Dispatch and cutover flags must both be true, matching the
 backend's ready calculation including manifest verification. Activation therefore
@@ -64,18 +66,27 @@ dispatch. The backend functions, schema and manifest must be deployed and
 verified by their owner before those checks can pass. Missing/malformed/false
 health fails closed. No cloud DDL or grant changes are performed by this code.
 
-Subsequent mutating RPCs are only `tg20_s01_approve_phone(p_key,p_phone,p_evidence_ref)`
-and `tg20_s01_issue_invitation(p_key)`. Minimal service-role-only reads access the
-existing binding and invitation tables for state and recipient verification; see
-the full handoff BACKEND-REQUIREMENTS.md. TLS is verified, redirects and environment
+Before approval/issuance, prepare refreshes and verifies the current backend
+booking snapshot. Source readback validates booking ownership or an active
+operations grant; writes additionally require the durable local phone proof.
+Approve and issue have separate one-use consumed timestamps committed before
+returning authority. A new proof/action UUID cannot bypass an uncertain result.
+Capabilities are signed, not encrypted, and never persisted/logged: approved
+phone claims travel only over HTTPS to the same trusted bridge authorized to
+receive that phone. Only approve readback returns phone/evidence. Loyalty reads
+can request health/binding under their existing active invitation credential,
+never prepare/approve/issue. The bridge alone performs its private RPC/reads.
+TLS is verified, redirects and environment
 proxy inheritance are disabled, timeouts are bounded, and failures do not expose
 provider bodies or automatically retry a possibly accepted POST.
 
-The two Django migrations in this draft are **not applied to production**:
-reservations/0035_telegramactivation and loyalty/0011_joininvitation_telegram_target_digest.
-They must precede any later code rollout, even when feature flags are off. Unknown
+The migrations are reservations/0036_telegramactivation (after deployed0035
+WebsiteMessageRelay) and loyalty/0011_joininvitation_telegram_target_digest.
+Follow the current rollout record for actual application state. Unknown
 attempts require explicit reconciliation against backend evidence; this draft adds
-no reset/retry bypass or administrator shortcut around that decision.
+no reset/retry bypass or administrator shortcut around that decision. Activation
+UI currently covers ordinary Reservation only. MorningStay07 and DayUseStay08
+require separate source/transport contracts and remain outside this UI scope.
 
 ## Loyalty
 

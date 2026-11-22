@@ -30,7 +30,6 @@ URL = "https://t.me/LuxurySmartApartmentsBot?start=b_" + "a" * 48
 @pytest.fixture
 def rig(settings, monkeypatch):
     settings.TELEGRAM_ACTIVATION_ENABLED = True
-    settings.TELEGRAM_ACTIVATION_SERVICE_KEY = "synthetic-server-secret"
     booking = make_reservation()
     Reservation.objects.filter(pk=booking.pk).update(
         hostaway_reservation_id=70012345, normalized_status="confirmed", is_test=False
@@ -280,7 +279,6 @@ def test_malformed_expiry_is_rejected_safely(expiry):
 )
 def test_http_200_is_not_readiness(settings, monkeypatch, change):
     settings.TELEGRAM_ACTIVATION_ENABLED = True
-    settings.TELEGRAM_ACTIVATION_SERVICE_KEY = "test-only"
     value = {
         "contract": "tg20_guest_journey_v1",
         "ready": True,
@@ -336,7 +334,6 @@ def test_fixed_backend_ready_approve_issue_and_private_binding(settings, monkeyp
     from hashlib import sha256
 
     settings.TELEGRAM_ACTIVATION_ENABLED = True
-    settings.TELEGRAM_ACTIVATION_SERVICE_KEY = "test-only"
     original, calls = httpx.Client, []
 
     def handle(request):
