@@ -146,6 +146,7 @@ def test_admin_external_booking_requires_independent_evidence(rig, settings):
     request.user = get_user_model().objects.create_superuser(
         "telegram-operator", email=settings.OPERATIONS_OWNER_EMAIL, password="test-only"
     )
+    request.session = {}
     assert service.issue(request, rig.booking, admin=True)["state"] == "issued"
     assert rig.state.calls[0][1]["p_phone"] == "12025550123"
     assert rig.state.calls[0][1]["p_evidence_ref"].startswith("admin_verified:")
