@@ -39,7 +39,26 @@ IDENTITY_FIELDS = (
     "business_sender",
     "waba_id",
     "phone_id",
+    "language",
 )
+PROOF_FIELDS = set(IDENTITY_FIELDS) | {
+    "contract_version",
+    "source",
+    "provider_message_id",
+    "wamid",
+    "transport",
+    "state",
+    "delivered",
+    "receipt_evidence_ref",
+    "observed_at_epoch",
+    "proof_stage",
+    "attempts_claimed",
+    "provider_attempted",
+    "prepare_ref",
+    "prepared_at_epoch",
+    "attempt_count_basis",
+    "dispatch_allowed",
+}
 
 
 def independent_render_policy(event, facts):
@@ -102,6 +121,15 @@ def fetch(request_id, capability, *, content=False):
 
 
 def verified_identity(proof, facts, request_id):
+    if (
+        set(proof) != PROOF_FIELDS
+        or proof.get("source") != "backend19"
+        or proof.get("language") not in {"ar", "en", "fr"}
+        or proof.get("dispatch_allowed") is not False
+        or proof.get("attempt_count_basis") != "durable_claim_not_observed_post_count"
+        or not isinstance(proof.get("receipt_evidence_ref"), str)
+    ):
+        raise ValueError
     identity = {key: proof.get(key) for key in IDENTITY_FIELDS}
     if any(not isinstance(value, str) or not 1 <= len(value) <= 512 for value in identity.values()):
         raise ValueError
@@ -194,6 +222,8 @@ def reconcile(row_id, request_id, capability):
             raise ValueError
         event, facts = current
         identity = verified_identity(proof, facts, request_id)
+        if proof["language"] != event.stay.guest_language:
+            raise ValueError
         prior = (
             WebsiteMessageExpectation.objects.select_for_update()
             .filter(request_id=request_id)
@@ -229,6 +259,7 @@ def reconcile(row_id, request_id, capability):
                 or planned.get("prepare_ref") != prepare_ref
                 or planned.get("prepared_at_epoch") != prepared_at
                 or planned.get("language") != policy["language"]
+                or planned.get("language") != proof["language"]
                 or planned.get("message_input") != policy["message"]
                 or planned.get("content_binding_basis")
                 != "planned_pending_source_render_verification"

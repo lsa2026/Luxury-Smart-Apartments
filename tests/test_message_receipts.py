@@ -38,6 +38,10 @@ def prepared(journal, settings, monkeypatch):
     at = int(timezone.now().timestamp()) - 1
     proof = {
         "contract_version": "yc19-receipt-proof-1",
+        "source": "backend19",
+        "language": "en",
+        "attempt_count_basis": "durable_claim_not_observed_post_count",
+        "dispatch_allowed": False,
         "request_id": REQUEST_ID,
         "binding_ref": "synthetic-binding",
         "source_family": f"lsa{scenario}",
@@ -66,7 +70,7 @@ def prepared(journal, settings, monkeypatch):
         "wamid": None,
         "state": "prepared",
         "delivered": False,
-        "receipt_evidence_ref": None,
+        "receipt_evidence_ref": "",
         "observed_at_epoch": None,
         "prepare_ref": "b" * 64,
         "prepared_at_epoch": at,
@@ -244,4 +248,82 @@ def test_endpoint_accepts_no_read_capability_cookie_or_caller_delivery_flag(clie
         result = client.post(url, data=json.dumps(body), content_type="application/json", **headers)
         assert result.status_code == 409
         assert result["Cache-Control"] == "private, no-store, max-age=0"
+    assert not WebsiteMessageExpectation.objects.exists()
+
+
+def test_all_three_verified_receipts_satisfy_original_gate_and_phone_change_revokes_it(
+    prepared, monkeypatch
+):
+    first, _, policy, proof, content = prepared
+    synthetic_policy(monkeypatch, policy)
+    stay = (
+        source.SOURCES[first.scenario][0].objects.select_related("property").get(pk=first.stay_id)
+    )
+    rows = relay.WebsiteMessageRelay.objects.exclude(message_type="reminder_checkout").order_by(
+        "message_type"
+    )
+    for sequence, row in enumerate(rows, 1):
+        row.state = "forwarding"
+        row.save(update_fields=["state"])
+        with transaction.atomic():
+            _, facts = relay.current_event(row)
+        request_id = "n8n20-" + f"{sequence:064x}"
+        prepare_ref = f"{sequence + 10:064x}"
+        proof.update(
+            {
+                k: facts[k]
+                for k in (
+                    "job_sha256",
+                    "source_event_key",
+                    "reservation_key",
+                    "reservation_revision",
+                    "recipient_ref",
+                    "purpose",
+                    "source_message_type",
+                )
+            }
+        )
+        proof.update(
+            request_id=request_id,
+            prepare_ref=prepare_ref,
+            proof_stage="intake_held",
+            attempts_claimed=0,
+            provider_attempted=False,
+            provider_message_id=None,
+            wamid=None,
+            state="prepared",
+            delivered=False,
+            receipt_evidence_ref="",
+            observed_at_epoch=None,
+        )
+        content.update(request_id=request_id, prepare_ref=prepare_ref)
+        assert receipts.reconcile(row.pk, request_id, "synthetic-capability") == "prepared"
+        deliver(proof)
+        assert receipts.reconcile(row.pk, request_id, "synthetic-capability") == "delivered"
+    assert receipts.core_delivered(stay, stay.communication_revision, first.scenario)
+    if first.scenario == "07":
+        from apps.reservations.morning_loyalty import core_delivered
+    else:
+        from apps.reservations.day_use_loyalty import core_delivered
+    assert core_delivered(stay, stay.communication_revision)
+    stay.guest_phone = "+442079460000"
+    assert not core_delivered(stay, stay.communication_revision)
+
+
+@pytest.mark.parametrize("mutation", ["expired", "wrong-request", "extra", "language", "acktrue"])
+def test_proof_schema_and_prepare_lifetime_fail_closed(prepared, monkeypatch, mutation):
+    row, _, policy, proof, _ = prepared
+    synthetic_policy(monkeypatch, policy)
+    if mutation == "expired":
+        proof["prepared_at_epoch"] -= 301
+    elif mutation == "wrong-request":
+        proof["request_id"] = "n8n20-" + "d" * 64
+    elif mutation == "extra":
+        proof["caller_delivered"] = True
+    elif mutation == "language":
+        proof["language"] = "ar"
+    else:
+        proof["dispatch_allowed"] = True
+    with pytest.raises(ValueError):
+        receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability")
     assert not WebsiteMessageExpectation.objects.exists()
