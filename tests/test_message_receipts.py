@@ -381,3 +381,15 @@ def test_callback_reference_cannot_create_first_expectation(client, prepared):
         HTTP_X_LSA_RECEIPT_CAPABILITY="x" * 43,
     )
     assert reply.status_code == 409 and not WebsiteMessageExpectation.objects.exists()
+
+
+def test_read_receipt_advances_delivery_and_cannot_be_downgraded(prepared, monkeypatch):
+    row, _, policy, proof, _ = prepared
+    synthetic_policy(monkeypatch, policy)
+    receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability")
+    deliver(proof)
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "delivered"
+    proof["state"] = "read"
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "read"
+    proof.update(state="accepted", delivered=False)
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "read"

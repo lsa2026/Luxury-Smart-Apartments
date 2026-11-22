@@ -356,6 +356,11 @@ def reconcile(row_id, request_id, capability):
         elif delivered is not False or state in {"delivered", "read"}:
             raise ValueError
         if prior.state in {"delivered", "read"}:
+            if prior.state == "delivered" and delivered is True and state == "read":
+                prior.state = "read"
+                prior.observed_at_epoch = observed
+                prior.receipt_evidence_ref = evidence
+                prior.save(update_fields=["state", "observed_at_epoch", "receipt_evidence_ref"])
             return prior.state  # Never downgrade a trusted delivery.
         prior.attempts_claimed = claims
         prior.provider_message_id, prior.wamid = provider_id or "", wamid or ""
