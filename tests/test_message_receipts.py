@@ -412,7 +412,8 @@ def test_existing_expectation_import_survives_future_send_changes(
         settings.MESSAGE_SOURCE_CUTOVER_AT = timezone.now() + timedelta(days=1)
     elif change == "ended":
         stay_model.objects.filter(pk=row.stay_id).update(
-            ends_at=timezone.now() - timedelta(hours=1)
+            starts_at=timezone.now() - timedelta(hours=4),
+            ends_at=timezone.now() - timedelta(hours=1),
         )
     elif change == "recipient":
         stay_model.objects.filter(pk=row.stay_id).update(guest_phone="+12025550999")
