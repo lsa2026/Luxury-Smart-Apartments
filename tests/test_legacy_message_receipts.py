@@ -3,7 +3,7 @@
 from copy import deepcopy
 from datetime import timedelta
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 
 import pytest
 from django.utils import timezone
@@ -44,7 +44,7 @@ def old_delivery(record, settings, monkeypatch):
         model.objects.filter(pk=row.pk).update(created_at=timezone.now() - timedelta(minutes=2))
         row.refresh_from_db()
         rows[kind] = row
-    factory = Mock()
+    factory = MagicMock()
     provider = factory.return_value.__enter__.return_value
     provider.http.get.return_value.json.return_value = [
         {"id": row.provider_id, "referenceId": row.pk, "ack": 2, "status": "delivered"}
