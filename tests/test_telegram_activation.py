@@ -43,6 +43,9 @@ def rig(settings, monkeypatch):
     state = SimpleNamespace(calls=[], outcome="issued", status="unverified", fail=False)
 
     class FakeBackend:
+        def prepare(self, key):
+            pass
+
         def status(self, key):
             return state.status
 
@@ -129,7 +132,7 @@ def test_existing_mobile_login_proof_is_scoped_and_recent(rig, case):
     assert len(rig.state.calls) == (2 if case == "valid" else 0)
 
 
-def test_admin_external_booking_requires_independent_evidence(rig):
+def test_admin_external_booking_requires_independent_evidence(rig, settings):
     rig.booking.booking_intent = None
     rig.booking.source_type = "external_channel"
     rig.booking.save(update_fields=["booking_intent", "source_type"])
@@ -140,7 +143,9 @@ def test_admin_external_booking_requires_independent_evidence(rig):
         "/private-admin/",
         {"phone": "+12025550123", "evidence_ref": "channel-proof:test-001", "confirmed": "on"},
     )
-    request.user = rig.user
+    request.user = get_user_model().objects.create_superuser(
+        "telegram-operator", email=settings.OPERATIONS_OWNER_EMAIL, password="test-only"
+    )
     assert service.issue(request, rig.booking, admin=True)["state"] == "issued"
     assert rig.state.calls[0][1]["p_phone"] == "12025550123"
     assert rig.state.calls[0][1]["p_evidence_ref"].startswith("admin_verified:")
@@ -298,22 +303,35 @@ def test_http_200_is_not_readiness(settings, monkeypatch, change):
     original = httpx.Client
 
     def handle(request):
+        import json
+
         calls.append(request.url.path)
-        return httpx.Response(200, json=value)
+        envelope = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "contract": "tg39_activation_bridge_result_v1",
+                "request_id": envelope["request_id"],
+                "action": envelope["action"],
+                "result": value,
+            },
+        )
 
     monkeypatch.setattr(
         backend.httpx, "Client", lambda **kw: original(**kw, transport=httpx.MockTransport(handle))
     )
     client = backend.Backend()
+    client.authority_context = {"kind": "synthetic", "key": "70012345"}
     try:
         with pytest.raises(backend.NotReady):
             client.rpc("tg20_s01_issue_invitation", {"p_key": "70012345"})
     finally:
         client.close()
-    assert calls == ["/rest/v1/rpc/tg20_s01_health"]
+    assert calls == ["/webhook/tg39-private-activation-v1"]
 
 
 def test_fixed_backend_ready_approve_issue_and_private_binding(settings, monkeypatch):
+    import json
     from hashlib import sha256
 
     settings.TELEGRAM_ACTIVATION_ENABLED = True
@@ -321,47 +339,71 @@ def test_fixed_backend_ready_approve_issue_and_private_binding(settings, monkeyp
     original, calls = httpx.Client, []
 
     def handle(request):
-        calls.append(request.url.path)
-        assert request.url.host == "rsqgwepnowpnpealrzbn.supabase.co"
-        if request.url.path.endswith("tg20_s01_health"):
-            return httpx.Response(
-                200,
-                json={
-                    "contract": "tg20_guest_journey_v1",
-                    "ready": True,
-                    "dispatch_enabled": True,
-                    "cutover_configured": True,
-                    "components": dict.fromkeys(
-                        ("s01", "reminders", "reviews", "contacts", "loyalty"), True
-                    ),
-                },
-            )
-        if request.url.path.endswith("tg20_s01_bindings"):
-            return httpx.Response(
-                200,
-                json=[
-                    {
-                        "user_id": "12345678",
-                        "chat_id": "12345678",
-                        "revoked": False,
-                        "phone_hash": sha256(b"12025550123").hexdigest(),
-                    }
-                ],
-            )
-        return httpx.Response(200, json={"action": "approved"})
+        envelope = json.loads(request.content)
+        action = envelope["action"]
+        calls.append(action)
+        assert request.url.host == "lsa25.app.n8n.cloud"
+        assert not request.url.query and "authorization" not in request.headers
+        assert set(envelope) == {"contract", "request_id", "action", "capability"}
+        if action == "health":
+            result = {
+                "contract": "tg20_guest_journey_v1",
+                "ready": True,
+                "dispatch_enabled": True,
+                "cutover_configured": True,
+                "components": dict.fromkeys(
+                    ("s01", "reminders", "reviews", "contacts", "loyalty"), True
+                ),
+            }
+        elif action == "binding":
+            result = {
+                "available": True,
+                "user_id": "12345678",
+                "chat_id": "12345678",
+                "revoked": False,
+                "phone_hash": sha256(b"12025550123").hexdigest(),
+            }
+        else:
+            result = {"action": "approved", "reservation_key": "70012345"}
+        return httpx.Response(
+            200,
+            json={
+                "contract": "tg39_activation_bridge_result_v1",
+                "request_id": envelope["request_id"],
+                "action": action,
+                "result": result,
+            },
+        )
 
     monkeypatch.setattr(
         backend.httpx, "Client", lambda **kw: original(**kw, transport=httpx.MockTransport(handle))
     )
     client = backend.Backend()
+    client.authority_context = {
+        "kind": "synthetic",
+        "key": "70012345",
+        "proof": "12345678-1234-1234-1234-123456789abc",
+        "phone": "+12025550123",
+        "evidence_ref": "admin_verified:12345678-1234-1234-1234-123456789abc",
+    }
     try:
         assert client.binding("70012345", "+12025550123") == "12345678"
         with pytest.raises(backend.Unavailable):
             client.binding("70012345", "+12025550999")
-        assert client.rpc("tg20_s01_approve_phone", {})["action"] == "approved"
+        assert (
+            client.rpc(
+                "tg20_s01_approve_phone",
+                {
+                    "p_key": "70012345",
+                    "p_phone": "12025550123",
+                    "p_evidence_ref": client.authority_context["evidence_ref"],
+                },
+            )["action"]
+            == "approved"
+        )
     finally:
         client.close()
-    assert sum(path.endswith("tg20_s01_health") for path in calls) == 1
+    assert calls.count("health") == 1
 
 
 def test_render_telegram_review_layout(rig, tmp_path):

@@ -52,6 +52,7 @@ jobs:
           tests/test_guest_message_transport.py
           tests/test_telegram_activation.py
           tests/test_telegram_loyalty.py
+          tests/test_telegram_authority.py
           tests/test_channel_card_collections.py
           tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py

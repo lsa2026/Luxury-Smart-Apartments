@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
+from apps.reservations.telegram_authority import Denied, loyalty_scope
 from apps.reservations.telegram_backend import Backend, Unavailable
 
 from .invitation_registry import keyed
@@ -16,8 +17,9 @@ def target(reservation_key, phone):
     client = None
     try:
         client = Backend()
+        client.authority_context = loyalty_scope(reservation_key[9:])
         return client.binding(reservation_key[9:], phone)
-    except Unavailable as exc:
+    except (Unavailable, Denied) as exc:
         raise ValidationError("telegram_binding_unconfirmed") from exc
     finally:
         if client:

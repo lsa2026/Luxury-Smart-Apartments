@@ -17,6 +17,7 @@ from apps.accounts.phone_auth import recent_primary
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.notifications.models import AuditLog
 
+from . import telegram_authority as authority
 from . import telegram_backend as backend
 from .models import Reservation, TelegramActivation
 from .security import SESSION_MARKER_KEY, session_key_hash
@@ -118,6 +119,9 @@ def context(request, reservation, *, admin=False):
             client = None
             try:
                 client = backend.Backend()
+                client.authority_context = authority.booking_scope(
+                    request, reservation, admin=admin
+                )
                 value["state"] = client.status(key_for(reservation))
                 previous = TelegramActivation.objects.filter(reservation=reservation).first()
                 if value["state"] not in {"bound", "active"} and previous:
@@ -134,7 +138,7 @@ def context(request, reservation, *, admin=False):
                 )
                 if not admin and not reservation.booking_intent.guest_phone:
                     value["state"], value["can_issue"] = "missing", False
-            except backend.Unavailable:
+            except (backend.Unavailable, authority.Denied):
                 value["state"] = "unavailable"
             finally:
                 if client:
@@ -185,6 +189,7 @@ def issue(request, reservation, *, admin=False):
         row.evidence_ref = evidence
         row.phone_digest = salted_hmac("telegram-activation-phone.v1", phone).hexdigest()
         row.proof_id = uuid.uuid4()
+        row.approve_authorized_at = row.issue_authorized_at = None
         row.expires_at = None
         row.save()
         AuditLog.objects.create(
@@ -204,8 +209,12 @@ def issue(request, reservation, *, admin=False):
     state, url, expiry = "uncertain", "", None
     try:
         client = backend.Backend()
+        client.authority_context = authority.booking_scope(
+            request, current, admin=admin, row=row, phone=phone
+        )
         if not admin and guest_proof(request, current) != proof:
             raise backend.NotReady
+        client.prepare(key_for(current))
         approved = client.rpc(
             "tg20_s01_approve_phone",
             {
@@ -225,7 +234,7 @@ def issue(request, reservation, *, admin=False):
                 state = "bound" if issued["action"] == "bound" else "hold"
         else:
             state = "hold"
-    except backend.NotReady:
+    except (backend.NotReady, authority.Denied):
         state = "hold"
     except backend.Unavailable:
         pass  # No exception/provider body/contact/token is logged or returned.

@@ -7,7 +7,7 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("reservations", "0034_stay_extensions"),
+        ("reservations", "0035_website_message_relay"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
     operations = [
@@ -25,6 +25,8 @@ class Migration(migrations.Migration):
                 ("evidence_ref", models.CharField(blank=True, max_length=100)),
                 ("phone_digest", models.CharField(max_length=64)),
                 ("proof_id", models.UUIDField(default=uuid.uuid4, editable=False)),
+                ("approve_authorized_at", models.DateTimeField(null=True)),
+                ("issue_authorized_at", models.DateTimeField(null=True)),
                 ("expires_at", models.DateTimeField(null=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("updated_at", models.DateTimeField(auto_now=True)),
