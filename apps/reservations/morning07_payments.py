@@ -20,6 +20,7 @@ from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from apps.loyalty.models import JoinInvitation
 from apps.notifications.services.ultramsg import UltraMsgClient
 
+from . import guest_message_transport as guest_transport
 from .models import Morning07PaymentDelivery, Morning07PaymentEvent, MorningStay
 from .morning07_gateway import exact_receipt_messages
 from .morning_hostaway import booking_state, hostaway_first
@@ -377,6 +378,12 @@ def send(request):
                 return JsonResponse({"code": "payment_notice_pending", "sent": False})
         except ValueError:
             return JsonResponse({"code": "receipt_lookup_uncertain", "sent": False})
+        try:
+            route = guest_transport.prepare(
+                event.stay, source="morning07", purpose=kind, reference=ref
+            )
+        except guest_transport.TransportHeld as exc:
+            return JsonResponse({"code": exc.code, "sent": False}, status=503)
         if prior:
             prior.state, prior.response = "posting", {}
             prior.save(update_fields=["state", "response", "updated_at"])
@@ -392,7 +399,7 @@ def send(request):
     state, provider_id, provider_ref = "unknown", "", ref
     try:
         if kind == "payment_success":
-            with UltraMsgClient() as provider:
+            with route.open(UltraMsgClient) as provider:
                 response = provider.send_text(
                     recipient=event.payload["phone"],
                     body=render_success(event.stay),

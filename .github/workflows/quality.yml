@@ -81,6 +81,7 @@ jobs:
           tests/test_morning07_communications.py
           tests/test_morning07_gateway.py
           tests/test_morning07_payments.py
+          tests/test_guest_message_transport.py
           tests/test_morning_loyalty.py
           tests/test_offline_payment_receipts.py
           tests/test_automatic_cancellation_refunds.py
@@ -131,7 +132,7 @@ jobs:
           tests/test_loyalty_unified_welcome.py
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       DJANGO_SETTINGS_MODULE: config.settings.test
       DJANGO_ALLOWED_HOSTS: testserver,localhost,luxurysmartapartments.com
@@ -168,6 +169,11 @@ jobs:
 
       - name: Run Ruff lint
         run: ruff check .
+
+      - name: Verify closed website guest transport boundaries
+        run: |
+          python manage.py makemigrations --check --dry-run
+          pytest tests/test_guest_message_transport.py tests/test_morning07_gateway.py tests/test_morning07_payments.py tests/test_day_use_delivery.py tests/test_day_use_loyalty.py tests/test_morning_loyalty.py -q
 
       - name: Verify Ruff formatting
         run: ruff format --diff .
