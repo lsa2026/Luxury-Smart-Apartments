@@ -327,12 +327,14 @@ def test_payment_link_waits_for_three_and_uses_separate_acceptance_release(
     settings.HYPERPAY_ENVIRONMENT = "production"
     monkeypatch.setattr(domain, "verify_window", lambda *a, **k: {})
     monkeypatch.setattr(domain, "local_inflight_conflict", lambda *a, **k: False)
+    assert not payable_link(stay, scenario)
     for _ in range(3):
         accepted(owned)
     result = next_job(owned)
     assert result["job"]["purpose"] == "payment_link"
-    assert not payable_link(stay, scenario)
+    assert payable_link(stay, scenario)  # Prepared release, before provider acceptance/import.
     row = TelegramStayMessage.objects.get(job_key=result["job"]["job_key"])
+    assert row.state == "planned" and row.attempt_id is None
     assert row.booking_basis["payment_fingerprint"] == links.fingerprint(stay)
     journey.import_evidence(row, proof(row))
     assert payable_link(stay, scenario) and not stay.payment_link_deliveries.exists()

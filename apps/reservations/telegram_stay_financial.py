@@ -227,22 +227,33 @@ def loyalty_packet(packet, stay, event):
 
 
 def payable_link(stay, scenario):
-    """Acceptance permits this channel's payment page; it never means delivered."""
+    """A source-prepared release permits checkout, independently of message status.
+
+    Like the original queued/sending/uncertain delivery resource, preparation
+    precedes the provider POST. A fast click must not race the receipt import.
+    HyperPay and current booking/amount/availability checks remain with checkout.
+    """
     from .telegram_stay_journey import accepted_core
 
     links, _, _ = modules(scenario)
-    return bool(
-        stay.ends_at > timezone.now()
-        and accepted_core(stay, scenario)
-        and TelegramStayMessage.objects.filter(
+    rows = list(
+        TelegramStayMessage.objects.filter(
             scenario=scenario,
             stay_id=stay.pk,
             revision=stay.communication_revision,
             purpose="payment_link",
-            state="accepted",
+            state__in=["planned", "uncertain", "accepted"],
             expires_at__gt=timezone.now(),
             booking_basis__payment_fingerprint=links.fingerprint(stay),
-        ).exists()
+        )
+        .exclude(content_sha256="")
+        .exclude(binding_fingerprint="")
+        .order_by("created_at")[:2]
+    )
+    return bool(
+        stay.ends_at > timezone.now()
+        and len(rows) == 1
+        and accepted_core(stay, scenario, fingerprint=rows[0].binding_fingerprint)
     )
 
 
