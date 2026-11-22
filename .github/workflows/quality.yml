@@ -54,6 +54,8 @@ jobs:
           tests/test_telegram_activation.py
           tests/test_telegram_loyalty.py
           tests/test_telegram_authority.py
+          tests/test_telegram_stay_source.py
+          tests/test_telegram_stay_render.py
           tests/test_channel_card_collections.py
           tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py
@@ -184,7 +186,7 @@ jobs:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
         run: |
           python manage.py makemigrations --check --dry-run
-          pytest tests/test_telegram_activation.py tests/test_telegram_authority.py tests/test_telegram_loyalty.py tests/test_reservation_access_links.py tests/test_loyalty_invitation_api.py -q
+          pytest tests/test_telegram_activation.py tests/test_telegram_authority.py tests/test_telegram_stay_source.py tests/test_telegram_stay_render.py tests/test_telegram_loyalty.py tests/test_reservation_access_links.py tests/test_loyalty_invitation_api.py -q
 
       - name: Verify Ruff formatting
         run: ruff format --diff .
