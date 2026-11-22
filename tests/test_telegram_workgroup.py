@@ -12,6 +12,7 @@ from apps.loyalty.models import JoinInvitation
 from apps.reservations import telegram_authority as authority
 from apps.reservations import telegram_backend as backend
 from apps.reservations import telegram_stay_authority as bridge
+from apps.reservations import telegram_stay_financial as financial
 from apps.reservations import telegram_stay_journey as journey
 from apps.reservations import telegram_stay_render as render
 from apps.reservations import telegram_stay_source as source
@@ -24,6 +25,7 @@ from tests.test_telegram_stay_transport import owned as owned  # noqa: F401
 
 pytestmark = pytest.mark.django_db
 record = fixtures.record
+auth = source_tests.auth
 
 
 @pytest.fixture
@@ -105,6 +107,7 @@ def handoff(owned, event=None):
     assert packet["decision"] == "send"
     row = TelegramWorkgroupHandoff.objects.get(job_key=packet["job"]["job_key"])
     assert journey.import_evidence(row, proof(row))
+    row.refresh_from_db()
     return row, packet
 
 
@@ -210,3 +213,74 @@ def test_real_payment_then_success_handoff_then_one_loyalty_handoff(
 def test_manual_mode_closes_guest_activation_even_if_old_flags_are_true(group, settings):
     settings.TELEGRAM_ACTIVATION_ENABLED = True
     assert not backend.configured()
+
+
+def test_record_endpoint_imports_only_the_private_group_proof(
+    owned, private_source, auth, monkeypatch
+):
+    from django.test import Client
+
+    result = next_packet(owned)
+    row = TelegramWorkgroupHandoff.objects.get(job_key=result["job"]["job_key"])
+    evidence = proof(row)
+    monkeypatch.setattr(bridge, "read", lambda row, action, **kw: evidence)
+    body = {
+        "contract": "tg39_workgroup_record_request_v1",
+        "scenario": row.scenario,
+        "stay_key": row.identity["stay_key"],
+        "source_revision": row.revision,
+        "job_key": row.job_key,
+        "reference_id": row.reference_id,
+        "attempt_id": evidence["attempt_id"],
+        "source_capability": result["job"]["source_capability"],
+    }
+    path = "/integrations/telegram39/stays/record/"
+    client = Client(enforce_csrf_checks=True)
+    for _ in range(2):
+        reply = client.post(
+            path, body, content_type="application/json", secure=True, **source_tests.loyalty.HEADERS
+        )
+        assert reply.status_code == 200
+        assert reply.json()["contract"] == "tg39_workgroup_record_result_v1"
+        assert reply.json()["recorded"] is True
+        assert "no-store" in reply["Cache-Control"] and reply["Referrer-Policy"] == "no-referrer"
+    assert client.post(path, body, content_type="application/json", secure=True).status_code == 401
+    assert not TelegramStayMessage.objects.exists()
+
+
+def test_historical_handoff_record_survives_end_and_phone_change_without_guest_send(
+    owned, private_source, monkeypatch
+):
+    row, _ = handoff(owned)
+    old = proof(
+        row,
+        attempt_id=str(row.attempt_id),
+        provider_message_id=row.provider_message_id,
+        accepted_at=row.accepted_at.isoformat(),
+        recorded_at=None,
+    )
+    monkeypatch.setattr(bridge, "read", lambda row, action, **kw: old)
+    type(owned[1]).objects.filter(pk=owned[1].pk).update(
+        ends_at=timezone.now() - timedelta(hours=1), guest_phone=""
+    )
+    packet = journey.outstanding(row.scenario, str(row.stay_id))
+    assert packet["decision"] == "record" and packet["job"]["recipient_kind"] == "workgroup"
+    assert "method" not in packet["job"] and "guest_phone_e164" not in packet["booking"]
+    assert packet["job"]["attempt_id"] == str(row.attempt_id)
+    assert not TelegramStayMessage.objects.exists()
+
+
+def test_old_guest_accepted_rows_never_release_workgroup_payment(owned, private_source):
+    scenario, stay, _ = owned
+    for _ in range(3):
+        row, _ = handoff(owned)
+        values = {
+            field.name: getattr(row, field.name)
+            for field in row._meta.fields
+            if field.name not in {"id", "recipient_kind", "state"}
+        }
+        TelegramStayMessage.objects.create(**values, recipient_kind="guest", state="accepted")
+    TelegramWorkgroupHandoff.objects.all().delete()
+    assert not journey.core_handed_off(stay, scenario)
+    assert not journey.accepted_core(stay, scenario)
+    assert not financial.payable_link(stay, scenario)
