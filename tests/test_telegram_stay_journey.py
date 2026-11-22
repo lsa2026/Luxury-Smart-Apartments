@@ -316,6 +316,44 @@ def test_render_and_receipt_authorities_are_action_job_and_channel_scoped(owned,
         authority.authorize(wrong)
 
 
+def test_private_render_bridge_has_bounded_context_budget_separate_from_plain_results(
+    owned, settings
+):
+    import httpx
+
+    from apps.reservations.telegram_backend import Backend, Unavailable
+
+    settings.TELEGRAM_ACTIVATION_ENABLED = True
+    row = journey.plan(packet(owned), "checkin_guide", 3, owned[2].created_at, owned[1].ends_at)
+    client = Backend()
+    client.client.close()
+    client.authority_context = bridge.scope_for(row)
+    padding = ["x" * 12000]
+
+    def response(request):
+        envelope = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "contract": "tg39_activation_bridge_result_v1",
+                "request_id": envelope["request_id"],
+                "action": envelope["action"],
+                "result": {"available": False, "padding": padding[0]},
+            },
+        )
+
+    client.client = httpx.Client(transport=httpx.MockTransport(response))
+    try:
+        assert len(client.call("render_source", row.identity["stay_key"])["padding"]) == 12000
+        with pytest.raises(Unavailable):
+            client.call("binding", row.identity["stay_key"])
+        padding[0] = "x" * 140000
+        with pytest.raises(Unavailable):
+            client.call("render_source", row.identity["stay_key"])
+    finally:
+        client.close()
+
+
 def test_payment_link_waits_for_three_and_uses_separate_acceptance_release(
     owned, private_source, settings, monkeypatch
 ):

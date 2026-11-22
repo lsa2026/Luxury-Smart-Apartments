@@ -43,11 +43,14 @@ class Backend:
         try:
             scope = self.authority_context
             envelope = authority.mint(scope, action, key or (scope or {}).get("key"))
+            # Private render context includes both canonical JSON strings and
+            # their parsed values. Ordinary activation results remain capped8KiB.
+            limit = {"render_source": 131072, "review_policy": 32768}.get(action, 8192)
             with self.client.stream("POST", BASE, json=envelope) as response:
                 body = bytearray()
                 for chunk in response.iter_bytes():
                     body.extend(chunk)
-                    if len(body) > 8192:
+                    if len(body) > limit:
                         raise Unavailable
                 if response.status_code != 200:
                     raise Unavailable
