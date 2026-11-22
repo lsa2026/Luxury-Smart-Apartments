@@ -1,7 +1,9 @@
 """Synthetic activation; all cloud calls replaced, no provider or guest IO."""
 
+import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from pathlib import Path
 from threading import Event
 from types import SimpleNamespace
 
@@ -10,7 +12,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.db import close_old_connections, connection
 from django.test import Client, RequestFactory
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.accounts.models import VerifiedPhone
 from apps.accounts.phone_auth import PRIMARY_AUTH
@@ -230,6 +232,85 @@ def test_http_200_is_not_readiness(settings, monkeypatch, change):
     finally:
         client.close()
     assert calls == ["/rest/v1/rpc/tg20_s01_health"]
+
+
+def test_fixed_backend_ready_approve_issue_and_private_binding(settings, monkeypatch):
+    from hashlib import sha256
+
+    settings.TELEGRAM_ACTIVATION_ENABLED = True
+    settings.TELEGRAM_ACTIVATION_SERVICE_KEY = "test-only"
+    original, calls = httpx.Client, []
+
+    def handle(request):
+        calls.append(request.url.path)
+        assert request.url.host == "rsqgwepnowpnpealrzbn.supabase.co"
+        if request.url.path.endswith("tg20_s01_health"):
+            return httpx.Response(
+                200,
+                json={
+                    "contract": "tg20_guest_journey_v1",
+                    "ready": True,
+                    "dispatch_enabled": False,
+                    "cutover_configured": False,
+                    "components": dict.fromkeys(
+                        ("s01", "reminders", "reviews", "contacts", "loyalty"), True
+                    ),
+                },
+            )
+        if request.url.path.endswith("tg20_s01_bindings"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "user_id": "12345678",
+                        "chat_id": "12345678",
+                        "revoked": False,
+                        "phone_hash": sha256(b"12025550123").hexdigest(),
+                    }
+                ],
+            )
+        return httpx.Response(200, json={"action": "approved"})
+
+    monkeypatch.setattr(
+        backend.httpx, "Client", lambda **kw: original(**kw, transport=httpx.MockTransport(handle))
+    )
+    client = backend.Backend()
+    try:
+        assert client.binding("70012345", "+12025550123") == "12345678"
+        with pytest.raises(backend.Unavailable):
+            client.binding("70012345", "+12025550999")
+        assert client.rpc("tg20_s01_approve_phone", {})["action"] == "approved"
+    finally:
+        client.close()
+    assert sum(path.endswith("tg20_s01_health") for path in calls) == 1
+
+
+def test_render_telegram_review_layout(rig, tmp_path):
+    from tests.test_contact_layout import _standalone
+
+    output = Path(os.environ.get("LSA_CONTACT_VISUAL_DIR", tmp_path))
+    output.mkdir(parents=True, exist_ok=True)
+    for language, state in (
+        ("ar", "issued"),
+        ("en", "issued"),
+        ("fr", "issued"),
+        ("ar", "bound"),
+        ("ar", "expired"),
+        ("ar", "unverified"),
+    ):
+        with translation.override(language):
+            response = service.result_response(
+                rig.request,
+                {
+                    "state": state,
+                    "url": URL if state == "issued" else "",
+                    "expires_at": timezone.now() + timedelta(hours=2),
+                },
+            )
+            html = response.content.decode()
+            assert "telegram-activation-card" in html
+            assert ("noreferrer noopener nofollow" in html) == (state == "issued")
+            (output / f"telegram-{language}-{state}.html").write_text(_standalone(html))
 
 
 @pytest.mark.django_db(transaction=True)

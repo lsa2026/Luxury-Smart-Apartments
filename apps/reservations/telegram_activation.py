@@ -16,6 +16,7 @@ from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 
 from . import telegram_backend as backend
 from .models import Reservation, TelegramActivation
+from .telegram_copy import STATES, UI, copy_for
 
 LABELS = {
     "disabled": "تفعيل تليجرام غير متاح حاليًا.",
@@ -101,7 +102,11 @@ def context(request, reservation, *, admin=False):
                 if value["state"] not in {"bound", "active"} and previous:
                     if previous.state in {"uncertain", "processing"}:
                         value["state"] = previous.state
-                    elif previous.state == "issued" and previous.expires_at > timezone.now():
+                    elif (
+                        previous.state == "issued"
+                        and previous.expires_at
+                        and previous.expires_at > timezone.now()
+                    ):
                         value["state"] = "active"
                 value["can_issue"] = value["state"] in {"unverified", "expired", "hold"} and (
                     admin or bool(guest_proof(request, reservation))
@@ -113,7 +118,9 @@ def context(request, reservation, *, admin=False):
             finally:
                 if client:
                     client.close()
-    value["message"] = LABELS.get(value["state"], LABELS["hold"])
+    language = copy_for(request)
+    value["copy"] = UI[language]
+    value["message"] = STATES.get(language, LABELS).get(value["state"], LABELS["hold"])
     return value
 
 
@@ -191,7 +198,9 @@ def issue(request, reservation, *, admin=False):
 
 def result_response(request, result):
     request._disable_google_integrations = True
-    result["message"] = LABELS.get(result["state"], LABELS["hold"])
+    language = copy_for(request)
+    result["copy"] = UI[language]
+    result["message"] = STATES.get(language, LABELS).get(result["state"], LABELS["hold"])
     response = render(request, "reservations/telegram_activation_result.html", {"telegram": result})
     response["Cache-Control"] = "no-store, private"
     response["Referrer-Policy"] = "no-referrer"

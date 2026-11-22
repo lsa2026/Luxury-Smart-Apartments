@@ -3,6 +3,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
+from apps.accounts.models import VerifiedPhone
 from apps.loyalty import telegram_invitations
 from apps.loyalty.models import JoinInvitation
 from tests import test_loyalty_invitation_api as legacy
@@ -81,3 +82,19 @@ def test_binding_gate_off_without_network(settings):
     settings.TELEGRAM_LOYALTY_INVITATIONS_ENABLED = False
     with pytest.raises(ValidationError):
         telegram_invitations.target("hostaway:70012345", "+12025550123")
+
+
+def test_existing_member_is_suppressed_across_telegram(rig, target):
+    account = legacy.user("telegram-existing-member")
+    legacy.join(account)
+    VerifiedPhone.objects.create(user=account, phone="+12025550123")
+    result = legacy.claim(channel="telegram")
+    assert result["decision"] == "member" and not result["send_allowed"]
+    assert not JoinInvitation.objects.exists()
+
+
+def test_same_event_cannot_change_channel(rig, target):
+    legacy.claim()
+    result = legacy.post("claim", legacy.data(channel="telegram"))
+    assert result.status_code == 409
+    assert JoinInvitation.objects.get().channel == "whatsapp"

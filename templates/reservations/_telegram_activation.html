@@ -1,12 +1,13 @@
-<section class="lsa-panel booking-access-card" aria-labelledby="telegram-activation-title">
-  <h2 id="telegram-activation-title">تفعيل تليجرام للحجز</h2>
+{% load static %}<link rel="stylesheet" href="{% static 'css/telegram-activation.css' %}">
+<section class="lsa-panel booking-access-card telegram-activation-card" aria-labelledby="telegram-activation-title">
+  <h2 id="telegram-activation-title">{{ telegram.copy.title }}</h2>
   <p>{{ telegram.message }}</p>
   {% if telegram.can_issue %}
   <form method="post" action="{{ telegram.action_url }}" autocomplete="off">
     {% csrf_token %}<input type="hidden" name="action" value="telegram_activation">
     {% if telegram.admin %}{{ telegram.form.as_p }}{% endif %}
-    <button class="button lsa-btn lsa-btn--gold" type="submit">تجهيز رابط التفعيل</button>
+    <button class="button lsa-btn lsa-btn--gold" type="submit">{{ telegram.copy.button }}</button>
   </form>
   {% endif %}
-  <p class="help">خاص بهذا الحجز فقط. لا يتم إرسال رسالة أو تعديل الحجز عند تجهيز الرابط.</p>
+  <p class="help">{{ telegram.copy.private }}</p>
 </section>
