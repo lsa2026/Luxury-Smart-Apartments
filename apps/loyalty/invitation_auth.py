@@ -3,6 +3,7 @@
 import hashlib
 import re
 import secrets
+from contextvars import ContextVar
 from datetime import timedelta
 from functools import wraps
 from uuid import uuid4
@@ -24,6 +25,7 @@ from apps.reservations.sama_booking_api import response
 from .models import InvitationAPICredential
 
 SETUP_SALT = "loyalty.invitation-credential-setup.v1"
+active_credential = ContextVar("loyalty_invitation_credential", default=None)
 
 
 def authenticated(method):
@@ -38,9 +40,13 @@ def authenticated(method):
                 return response("unauthorized", 401)
             digest = hashlib.sha256(header[7:].encode()).hexdigest()
             try:
-                valid = InvitationAPICredential.objects.filter(
-                    key_sha256=digest, expires_at__gt=timezone.now(), revoked_at__isnull=True
-                ).exists()
+                valid = (
+                    InvitationAPICredential.objects.filter(
+                        key_sha256=digest, expires_at__gt=timezone.now(), revoked_at__isnull=True
+                    )
+                    .values_list("pk", flat=True)
+                    .first()
+                )
                 if not valid:
                     return response("unauthorized", 401)
                 if request.method != method:
@@ -49,7 +55,11 @@ def authenticated(method):
                     request.content_type != "application/json" or len(request.body) > 8192
                 ):
                     return response("invalid_request", 400)
-                return view(request, *args, **kwargs)
+                context = active_credential.set(str(valid))
+                try:
+                    return view(request, *args, **kwargs)
+                finally:
+                    active_credential.reset(context)
             except DatabaseError:
                 return response("coordination_unavailable", 503)
             except Exception:

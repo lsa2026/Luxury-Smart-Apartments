@@ -36,6 +36,7 @@ from .stay_extension_models import (  # noqa: F401
     StayExtensionChain,
     StayExtensionEvent,
 )
+from .telegram_models import TelegramActivation  # noqa: F401
 
 
 def booking_intent_reference() -> str:

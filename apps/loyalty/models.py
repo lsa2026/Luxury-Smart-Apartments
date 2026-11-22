@@ -84,6 +84,7 @@ class JoinInvitation(models.Model):
     source = models.CharField(max_length=80)
     origin = models.CharField(max_length=16)
     channel = models.CharField(max_length=16)
+    telegram_target_digest = models.CharField(max_length=64, blank=True)
     state = models.CharField(max_length=16, default="claimed")
     generation = models.PositiveIntegerField(default=1)
     expires_at = models.DateTimeField()

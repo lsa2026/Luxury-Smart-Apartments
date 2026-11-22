@@ -86,6 +86,7 @@
     data-ga4-debug="{{ google_config.ga4_debug_mode|yesno:'true,false' }}"
     data-pending-analytics-event="{{ pending_analytics_event }}"
 >
+    {% block brand_splash %}
     <div class="brand-splash" data-brand-splash role="status" aria-label="{% trans 'Daily and monthly smart stays' %}">
         <div class="brand-splash__glow" aria-hidden="true"></div>
         <div class="brand-splash__content">
@@ -107,6 +108,7 @@
             </div>
         </div>
     </div>
+    {% endblock %}
     {% if google_config.gtm_enabled and google_config.consent %}
         {% if google_config.consent.analytics or google_config.consent.marketing %}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ google_config.gtm_container_id }}" height="0" width="0" class="tracking-noscript" title="Google Tag Manager"></iframe></noscript>

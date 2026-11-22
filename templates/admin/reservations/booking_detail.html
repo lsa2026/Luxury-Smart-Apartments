@@ -50,6 +50,7 @@
     {% include "admin/reservations/includes/booking_detail_edit.html" %}
   </section>
   <section id="booking-overview" aria-label="بيانات الإقامة والضيف">
+    {% include "reservations/_telegram_activation.html" %}
     <section class="lsa-panel">
       <h2>بيانات الضيف</h2>
       <p><a class="lsa-btn" href="{% url 'notifications:guest_file_for_booking' reservation.pk %}">ملف الضيف وسجل حجوزاته ←</a></p>

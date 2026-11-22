@@ -14,6 +14,7 @@ from apps.reservations import (
     morning07_payments,
     morning_auto_payment,
     morning_loyalty,
+    telegram_authority,
 )
 
 from .views import hostaway_unified_webhook
@@ -21,6 +22,11 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path(
+        "telegram39/activation-authority/",
+        telegram_authority.authority,
+        name="telegram39_authority",
+    ),
     path("website-messages/receipt/", message_receipts.receipt, name="website_message_receipt"),
     path(
         "morning07/source-authorization/",

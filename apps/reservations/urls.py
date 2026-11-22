@@ -6,6 +6,7 @@ from apps.loyalty.checkout_account import booking_account
 from . import sama_booking_api, sama_invoice_api, stay_extension_communications
 from .address_places import CheckoutAddressDetailsView, CheckoutAddressView
 from .phone_views import booking_phone_format
+from .telegram_views import activate as telegram_activate
 from .views import (
     AvailabilitySearchView,
     BookingIntentDetailView,
@@ -35,6 +36,7 @@ urlpatterns = [
         name="stay_extension_context",
     ),
     path("phone-format/", booking_phone_format, name="booking_phone_format"),
+    path("manage/<str:public_reference>/telegram/", telegram_activate, name="telegram_activation"),
     path("requests/<str:public_reference>/account/", booking_account, name="booking_account"),
     path("requests/<str:public_reference>/points/", booking_points, name="booking_points"),
     path(
