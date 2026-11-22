@@ -45,6 +45,8 @@ ACTIONS = {
     "render_source",
     "delivery_status",
     "handoff_status",
+    "website_handoff",
+    "website_handoff_status",
     "review_policy",
 }
 WRITES = {"approve_phone": "approve_authorized_at", "issue_invitation": "issue_authorized_at"}
@@ -189,6 +191,18 @@ def authorize(data):
     ):
         raise Denied
     scope, action, key = claims["scope"], data["action"], claims["key"]
+    if scope.get("kind") == "website_handoff":
+        from .telegram_website_workgroup import authorize as website_authorize
+
+        result = {
+            "contract": "tg39_activation_authority_v1",
+            "authorized": True,
+            "request_id": data["request_id"],
+            "action": action,
+            "reservation_key": key,
+            "expires_at": datetime.fromtimestamp(claims["expires"], UTC).isoformat(),
+        }
+        return website_authorize(scope, action, key, result)
     if scope.get("kind") == "stay_operations":
         from .telegram_stay_activation import authorize as authorize_stay_operations
 
@@ -205,7 +219,14 @@ def authorize(data):
             "expires_at": datetime.fromtimestamp(claims["expires"], UTC).isoformat(),
         }
         return authorize_stay(scope, action, key, result)
-    if action in {"render_source", "delivery_status", "handoff_status", "review_policy"}:
+    if action in {
+        "render_source",
+        "delivery_status",
+        "handoff_status",
+        "review_policy",
+        "website_handoff",
+        "website_handoff_status",
+    }:
         raise Denied
     from .telegram_workgroup import enabled as workgroup_enabled
 

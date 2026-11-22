@@ -444,6 +444,9 @@ def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
     from .telegram_activation import context as telegram_context
 
     context["telegram"] = telegram_context(request, reservation, admin=True)
+    from .telegram_workgroup import enabled as workgroup_enabled
+
+    context["workgroup_manual"] = workgroup_enabled()
     from apps.loyalty.booking_invitations import invitation_context
     from apps.loyalty.booking_operations import stay_controls
 

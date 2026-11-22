@@ -31,7 +31,15 @@ def forward_due_message_sources():
     from .telegram_stay_transport import recover_due
 
     recover_due()
+    recover_telegram_website_handoffs.delay()
     return forward_due()
+
+
+@shared_task(ignore_result=True, soft_time_limit=45, time_limit=50)
+def recover_telegram_website_handoffs():
+    from .telegram_website_workgroup import recover
+
+    recover()
 
 
 @shared_task(bind=True, ignore_result=True, max_retries=5, soft_time_limit=35, time_limit=40)

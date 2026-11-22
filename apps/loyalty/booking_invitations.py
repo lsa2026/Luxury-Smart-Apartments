@@ -47,6 +47,9 @@ EMAIL_LATEST = "owner_join_invitation_email_latest"
 CHANNELS = {"whatsapp": "واتساب", "email": "البريد الإلكتروني"}
 SALT = "loyalty-booking-join-invitation-v1"
 STATUSES = {
+    "handed_off": "سُلّمت نسخة الدعوة لقروب العمل لإرسالها يدويًا؛ لا إثبات إرسال للضيف",
+    "handoff_wait": "جارٍ تجهيز نسخة الدعوة لقروب العمل",
+    "handoff_hold": "تعذر تأكيد تسليم نسخة القروب؛ لا تعاود الإرسال قبل المراجعة",
     "queued": "بانتظار إرسال دعوة الولاء",
     "sending": "جارٍ طلب الإرسال؛ لا تكرر الدعوة",
     "accepted": "قبِل مزود واتساب الدعوة؛ الوصول والقراءة غير مؤكدين",
@@ -79,6 +82,8 @@ def _request_keys(channel):
 
 def _target(booking, channel="whatsapp"):
     """Membership invitation only: no earned-stay, arrival or payment assertion."""
+    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+
     from .views import approved_terms
 
     if not (
@@ -95,7 +100,7 @@ def _target(booking, channel="whatsapp"):
     reward = quote(booking)
     _state(channel)
     email = intent.guest_email.strip()
-    if channel == "whatsapp" and not delivery_ready():
+    if channel == "whatsapp" and not workgroup_enabled() and not delivery_ready():
         raise ValidationError("إرسال واتساب غير متاح ضمن إعدادات الإرسال الحالية.")
     if channel == "email":
         if (
@@ -144,6 +149,10 @@ def _target(booking, channel="whatsapp"):
 
 def _channel_context(user, booking, channel):
     info = {"channel": channel, "label": CHANNELS[channel]}
+    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+
+    if channel == "whatsapp" and workgroup_enabled():
+        info["label"] = "نسخة لقروب العمل لإرسالها يدويًا عبر واتساب"
     requests_key, latest_key = _request_keys(channel)
     row = booking.loyalty_state.get(requests_key, {}).get(
         booking.loyalty_state.get(latest_key), {}
@@ -239,6 +248,8 @@ def _manual_repeat_claim(booking, target, request_id, channel):
 
 
 def queue_booking_invitation(request, booking_id):
+    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+
     require_operations_owner(request.user)
     channel = request.POST.get("channel", "whatsapp")
     requests_key, latest_key = _request_keys(channel)
@@ -272,7 +283,12 @@ def queue_booking_invitation(request, booking_id):
         if proof.get("target") != _target_digest(target, channel):
             raise ValidationError("تغيرت بيانات المستلم؛ افتح الحجز وراجع الدعوة مجددًا.")
         if manual_resend:
-            shared, record_shared = _manual_repeat_claim(booking, target, request_id, channel)
+            shared, record_shared = _manual_repeat_claim(
+                booking,
+                target,
+                request_id,
+                "workgroup_manual" if channel == "whatsapp" and workgroup_enabled() else channel,
+            )
             decision = "eligible"
         else:
             record_shared = True
@@ -285,7 +301,9 @@ def queue_booking_invitation(request, booking_id):
                 event_id=request_id,
                 source="website-manual",
                 origin="website",
-                channel=channel,
+                channel="workgroup_manual"
+                if channel == "whatsapp" and workgroup_enabled()
+                else channel,
             )
         if decision != "eligible":
             raise ValidationError(
@@ -415,6 +433,9 @@ def invitation_email_request(target):
 
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=45)
 def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
+    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+
+    workgroup_copy = channel == "whatsapp" and workgroup_enabled()
     _state(channel)
     with registry.invitation_lock():
         booking = (
@@ -425,6 +446,13 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
         row = _request_row(booking, channel, request_id)
         if row.get("status") != "queued":
             return
+        if workgroup_copy:
+            from apps.reservations.telegram_website_workgroup import admitted
+
+            if not admitted(datetime.fromisoformat(row["requested_at"])):
+                row["status"] = "handoff_hold"
+                booking.save(update_fields=["loyalty_state", "updated_at"])
+                return
         try:
             if row.get("past_guest_offer") != PAST_OFFER_KEY:
                 raise ValidationError("Legacy invitation needs a fresh owner review.")
@@ -452,7 +480,7 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
                     event_id=request_id or str(booking.pk),
                     source="website-manual",
                     origin="website",
-                    channel=channel,
+                    channel="workgroup_manual" if workgroup_copy else channel,
                     exclude_legacy=exclude,
                 )
                 if decision != "eligible":
@@ -486,8 +514,12 @@ def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
             row["status"] = "blocked"
             booking.save(update_fields=["loyalty_state", "updated_at"])
             return
-        row["status"] = "sending"
+        row["status"] = "handoff_wait" if workgroup_copy else "sending"
         booking.save(update_fields=["loyalty_state", "updated_at"])
+    if workgroup_copy:
+        from apps.reservations.telegram_website_workgroup import deliver_loyalty
+
+        return deliver_loyalty(str(booking.pk), request_id)
     try:
         if channel == "whatsapp":
             with UltraMsgClient() as provider:

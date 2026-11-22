@@ -98,6 +98,7 @@ def proof(row, **changes):
         "guest_accepted": False,
         "workgroup_binding_fingerprint": workgroup.fingerprint(),
         "status": "handed_off",
+        "provider_message_ids": [str(value["provider_message_id"])],
         **changes,
     }
 
@@ -215,6 +216,28 @@ def test_manual_mode_closes_guest_activation_even_if_old_flags_are_true(group, s
     assert not backend.configured()
 
 
+def test_payment_resource_requires_three_group_handoffs_and_current_amount(
+    owned, private_source, settings, monkeypatch
+):
+    scenario, stay, _ = owned
+    links, domain, _ = financial.modules(scenario)
+    settings.HYPERPAY_ENABLED = True
+    settings.HYPERPAY_ENVIRONMENT = "production"
+    monkeypatch.setattr(domain, "verify_window", lambda *a, **k: {})
+    monkeypatch.setattr(domain, "local_inflight_conflict", lambda *a, **k: False)
+    assert not financial.payable_link(stay, scenario)
+    for _ in range(3):
+        handoff(owned)
+    packet = next_packet(owned)
+    assert packet["job"]["purpose"] == "payment_link"
+    assert financial.payable_link(stay, scenario)
+    row = TelegramWorkgroupHandoff.objects.get(job_key=packet["job"]["job_key"])
+    assert row.state == "planned" and row.attempt_id is None
+    assert row.booking_basis["payment_fingerprint"] == links.fingerprint(stay)
+    stay.amount_sar += 1
+    assert not financial.payable_link(stay, scenario)
+
+
 def test_record_endpoint_imports_only_the_private_group_proof(
     owned, private_source, auth, monkeypatch
 ):
@@ -261,7 +284,9 @@ def test_historical_handoff_record_survives_end_and_phone_change_without_guest_s
     )
     monkeypatch.setattr(bridge, "read", lambda row, action, **kw: old)
     type(owned[1]).objects.filter(pk=owned[1].pk).update(
-        ends_at=timezone.now() - timedelta(hours=1), guest_phone=""
+        starts_at=timezone.now() - timedelta(hours=2),
+        ends_at=timezone.now() - timedelta(hours=1),
+        guest_phone="",
     )
     packet = journey.outstanding(row.scenario, str(row.stay_id))
     assert packet["decision"] == "record" and packet["job"]["recipient_kind"] == "workgroup"

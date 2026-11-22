@@ -155,6 +155,17 @@ def checked_evidence(row, proof, attempt=None):
         raise Denied
     if proof.get("status") == workgroup.completed_state(row) and proof.get("api_accepted") is True:
         message_id = proof.get("provider_message_id")
+        if workgroup.is_handoff(row):
+            ids = proof.get("provider_message_ids")
+            if (
+                not isinstance(ids, list)
+                or not 1 <= len(ids) <= 64
+                or any(
+                    not isinstance(x, str) or not re.fullmatch(r"[1-9][0-9]{0,19}", x) for x in ids
+                )
+                or ids[-1] != str(message_id)
+            ):
+                raise Denied
         at = parse_datetime(proof.get("accepted_at", ""))
         if (
             not isinstance(message_id, str | int)
@@ -192,11 +203,20 @@ def import_evidence(row, proof, attempt=None):
             if (
                 value["state"] != workgroup.completed_state(row)
                 or current.provider_message_id != value["provider_message_id"]
+                or workgroup.is_handoff(row)
+                and current.booking_basis.get("workgroup_message_ids")
+                != proof["provider_message_ids"]
             ):
                 raise Denied
             return True
         for field, val in value.items():
             setattr(current, field, val)
+        if workgroup.is_handoff(row) and value["state"] == "handed_off":
+            current.booking_basis = {
+                **current.booking_basis,
+                "workgroup_message_ids": proof["provider_message_ids"],
+            }
+            value["booking_basis"] = current.booking_basis
         current.save(update_fields=[*value, "updated_at"])
         if current.purpose == "loyalty_invitation" and value["state"] == workgroup.completed_state(
             row

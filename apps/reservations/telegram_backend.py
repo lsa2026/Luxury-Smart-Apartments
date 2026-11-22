@@ -49,7 +49,11 @@ class Backend:
             envelope = authority.mint(scope, action, key or (scope or {}).get("key"))
             # Private render context includes both canonical JSON strings and
             # their parsed values. Ordinary activation results remain capped8KiB.
-            limit = {"render_source": 131072, "review_policy": 32768}.get(action, 8192)
+            limit = {
+                "render_source": 131072,
+                "review_policy": 32768,
+                "website_handoff": 524288,
+            }.get(action, 8192)
             with self.client.stream("POST", BASE, json=envelope) as response:
                 body = bytearray()
                 for chunk in response.iter_bytes():
