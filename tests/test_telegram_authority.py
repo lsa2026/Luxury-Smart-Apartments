@@ -144,7 +144,10 @@ def test_readback_fails_closed_for_invalid_or_changed_authority(proof, rig, sett
 
 def test_bearer_alone_and_public_reference_never_approve(proof):
     _, scope = proof
-    assert Client().post(PATH, {}, content_type="application/json", secure=True).status_code == 401
+    unauthorized = Client().post(PATH, {}, content_type="application/json", secure=True)
+    assert unauthorized.status_code == 401
+    assert unauthorized["Referrer-Policy"] == "no-referrer"
+    assert "no-store" in unauthorized["Cache-Control"]
     assert (
         post(
             {"request_id": str(uuid.uuid4()), "action": "approve_phone", "capability": "x"}

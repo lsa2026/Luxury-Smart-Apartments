@@ -107,7 +107,9 @@ def test_unverified_source_identity_and_window_are_held(source_record, case):
 
 
 def test_source_needs_existing_auth_and_explicit_flag(source_record, settings):
-    assert Client().post(PATH, {}, content_type="application/json", secure=True).status_code == 401
+    unauthorized = Client().post(PATH, {}, content_type="application/json", secure=True)
+    assert unauthorized.status_code == 401
+    assert unauthorized["Referrer-Policy"] == "no-referrer"
     settings.TELEGRAM_STAY_MESSAGES_ENABLED = False
     assert post(payload(source_record)).status_code == 404
 

@@ -9,6 +9,7 @@ import json
 import re
 import uuid
 from datetime import UTC, datetime
+from functools import wraps
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -252,6 +253,10 @@ def authorize(data):
 
 def private_response(value, status=200):
     result = JsonResponse(value, status=status)
+    return seal(result)
+
+
+def seal(result):
     result["Cache-Control"] = "no-store, private, max-age=0"
     result["Referrer-Policy"] = "no-referrer"
     result["X-Robots-Tag"] = "noindex, nofollow"
@@ -259,6 +264,16 @@ def private_response(value, status=200):
     return result
 
 
+def private_endpoint(view):
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        request._disable_google_integrations = True
+        return seal(view(request, *args, **kwargs))
+
+    return wrapped
+
+
+@private_endpoint
 @authenticated("POST")
 @sensitive_variables()
 def authority(request):

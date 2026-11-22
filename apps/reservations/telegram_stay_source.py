@@ -17,7 +17,7 @@ from apps.loyalty.invitation_auth import authenticated
 from . import day_use_hostaway, morning_hostaway
 from . import message_source_authorization as source
 from .models import DayUseHostawayOwnership
-from .telegram_authority import Denied, duplicate_safe, private_response
+from .telegram_authority import Denied, duplicate_safe, private_endpoint, private_response
 
 OWNERS = {"07": "morning07", "08": "dayuse08"}
 FIELDS = {"contract", "scenario", "operation", "request_id", "event_id", "stay_key"}
@@ -139,6 +139,7 @@ def snapshot(data):
     }
 
 
+@private_endpoint
 @authenticated("POST")
 @sensitive_variables()
 def read_source(request):
