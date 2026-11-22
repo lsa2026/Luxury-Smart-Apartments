@@ -106,7 +106,9 @@ def test_wrong_identity_signed_payment_link_and_admin_contact_are_not_consent(
     assert client.get(url(record)).status_code == 302
 
 
-def test_binding_rotation_and_booking_revision_invalidate_old_grant(client, record, guest):
+def test_binding_rotation_invalidates_but_same_booking_updates_retain_explicit_scope(
+    client, record, guest
+):
     post(client, record)
     binding = VerifiedPhone.objects.get(user=guest)
     binding.version = uuid4()
@@ -114,7 +116,10 @@ def test_binding_rotation_and_booking_revision_invalidate_old_grant(client, reco
     assert choices.consent_facts(record[1], record[0])["service"] is None
     post(client, record)
     record[1].communication_revision += 1
-    assert choices.consent_facts(record[1], record[0])["service"] is None
+    proof = choices.consent_facts(record[1], record[0])
+    assert proof["service"] is True
+    assert proof["booking_revision"] == record[1].communication_revision - 1
+    assert proof["current_booking_revision"] == str(record[1].communication_revision)
 
 
 def test_disabled_no_schema_query_and_csrf_required(client, record, guest, settings):

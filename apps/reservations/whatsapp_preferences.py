@@ -120,8 +120,11 @@ def consent_facts(stay, scenario):
     ).first()
     if not binding or row.phone_digest != digest or phone_digest(binding.phone) != digest:
         return empty
-    valid = row.booking_revision == stay.communication_revision and row.text_version == VERSION
-    # A latest withdrawal remains authoritative even after a booking revision.
+    # The explicit scope is updates to THIS booking, including later changes.
+    # Keep the recorded revision as evidence; never fabricate a new acceptance
+    # after an edit or require a second opt-in merely to notify that edit.
+    valid = row.text_version == VERSION
+    # A latest withdrawal remains authoritative even after a text/booking revision.
     if not valid and row.granted:
         return empty
     return {
@@ -136,6 +139,7 @@ def consent_facts(stay, scenario):
         "source": "verified_guest_booking_portal",
         "decision_sequence": row.sequence,
         "booking_revision": row.booking_revision,
+        "current_booking_revision": str(stay.communication_revision),
         "phone_proof_ref": "site01-wa-phone:"
         + salted_hmac(
             "booking-wa-phone-proof.v1", str(row.binding_version), algorithm="sha256"
