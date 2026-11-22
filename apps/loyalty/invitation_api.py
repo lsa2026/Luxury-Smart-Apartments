@@ -143,7 +143,9 @@ def claim(request):
 
     if channel == "workgroup_manual" and not workgroup_enabled():
         return response("workgroup_handoff_closed", 503)
-    if channel != "workgroup_manual" and workgroup_enabled():
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if channel != "workgroup_manual" and manual_mode():
         return response("direct_guest_closed", 409)
     if not data or any(not isinstance(data[k], str) for k in FIELDS):
         return response("invalid_request", 400)
@@ -216,8 +218,9 @@ def preflight(request):
         if not row or row.origin != "n8n":
             return response("not_found", 404)
         from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+        from apps.reservations.telegram_workgroup import manual_mode
 
-        if workgroup_enabled() and row.channel != "workgroup_manual":
+        if manual_mode() and row.channel != "workgroup_manual":
             return response("direct_guest_closed", 409)
         if row.channel == "workgroup_manual":
             if not workgroup_enabled():

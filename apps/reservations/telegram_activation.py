@@ -115,7 +115,7 @@ def guest_proof(request, reservation):
 
 
 def context(request, reservation, *, admin=False):
-    from .telegram_workgroup import enabled as workgroup_enabled
+    from .telegram_workgroup import manual_mode as workgroup_enabled
 
     if workgroup_enabled():
         return None

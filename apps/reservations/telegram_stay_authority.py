@@ -47,10 +47,15 @@ def authorize(scope, action, key, result):
     )
     row = model.objects.get(pk=uuid.UUID(scope["job"]))
     if workgroup.is_handoff(row):
-        if not workgroup.enabled() or action in {"binding", "delivery_status"}:
+        if (
+            not workgroup.manual_mode()
+            or action in {"binding", "delivery_status"}
+            or action != "handoff_status"
+            and not workgroup.enabled()
+        ):
             raise authority.Denied
         result.update(dispatch_mode="workgroup_manual", workgroup_id=workgroup.WORKGROUP_ID)
-    elif action == "handoff_status" or workgroup.enabled() and action != "delivery_status":
+    elif action == "handoff_status" or workgroup.manual_mode() and action != "delivery_status":
         raise authority.Denied
     identity = row.identity
     if (
@@ -126,7 +131,7 @@ def record_capability(row):
 def record_row(token):
     value = signing.loads(token, salt=RECORD_SALT, max_age=120)
     model = TelegramWorkgroupHandoff if value.get("ledger") == "workgroup" else TelegramStayMessage
-    if workgroup.enabled() != (model is TelegramWorkgroupHandoff):
+    if workgroup.manual_mode() != (model is TelegramWorkgroupHandoff):
         raise authority.Denied
     row = model.objects.get(pk=uuid.UUID(value["job"]))
     if not row.content_sha256 or row.content_sha256 != value["content"]:

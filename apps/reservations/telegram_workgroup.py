@@ -11,8 +11,12 @@ def enabled():
     return bool(getattr(settings, "TELEGRAM_WORKGROUP_HANDOFF_ENABLED", False))
 
 
+def manual_mode():
+    return enabled() or bool(getattr(settings, "TELEGRAM_WORKGROUP_ONLY_POLICY", True))
+
+
 def message_model():
-    return TelegramWorkgroupHandoff if enabled() else TelegramStayMessage
+    return TelegramWorkgroupHandoff if manual_mode() else TelegramStayMessage
 
 
 def is_handoff(row):
@@ -20,7 +24,7 @@ def is_handoff(row):
 
 
 def completed_state(row=None):
-    return "handed_off" if (is_handoff(row) if row is not None else enabled()) else "accepted"
+    return "handed_off" if (is_handoff(row) if row is not None else manual_mode()) else "accepted"
 
 
 def fingerprint():
@@ -30,7 +34,9 @@ def fingerprint():
 
 
 def packet_fields():
-    return {"dispatch_mode": "workgroup_manual", "workgroup_id": WORKGROUP_ID} if enabled() else {}
+    return (
+        {"dispatch_mode": "workgroup_manual", "workgroup_id": WORKGROUP_ID} if manual_mode() else {}
+    )
 
 
 def canonical_phone(value):
@@ -39,6 +45,6 @@ def canonical_phone(value):
     try:
         return normalize_phone_number(value)
     except (ValueError, TypeError):
-        if not enabled():
+        if not manual_mode():
             raise
         return ""

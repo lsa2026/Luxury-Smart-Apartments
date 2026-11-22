@@ -83,6 +83,10 @@ def _request_keys(channel):
 def _target(booking, channel="whatsapp"):
     """Membership invitation only: no earned-stay, arrival or payment assertion."""
     from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if channel == "whatsapp" and manual_mode() and not workgroup_enabled():
+        raise ValidationError("تجهيز نسخ قروب العمل متوقف مؤقتًا؛ لا إرسال مباشر للضيف.")
 
     from .views import approved_terms
 
@@ -439,6 +443,10 @@ def invitation_email_request(target):
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=45)
 def deliver_booking_invitation(booking_id, channel="whatsapp", request_id=None):
     from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if channel == "whatsapp" and manual_mode() and not workgroup_enabled():
+        return {"status": "handoff_paused", "guest_accepted": False}
 
     workgroup_copy = channel == "whatsapp" and workgroup_enabled()
     _state(channel)

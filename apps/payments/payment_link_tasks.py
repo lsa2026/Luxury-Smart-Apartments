@@ -253,7 +253,7 @@ def payment_message(request, kind="link", *, owner_review=False):
     time_limit=60,
 )
 def deliver_payment_request_task(delivery_id):
-    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+    from apps.reservations.telegram_workgroup import manual_mode as workgroup_enabled
 
     if workgroup_enabled():
         from apps.reservations.telegram_website_workgroup import deliver_payment

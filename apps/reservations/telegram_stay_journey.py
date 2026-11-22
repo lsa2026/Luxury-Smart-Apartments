@@ -35,7 +35,7 @@ class ReceiptPagePending(Unavailable):
 
 def identity(packet, purpose, sequence):
     booking = packet["booking"]
-    prefix = "tg39wg" if workgroup.enabled() else "tg39"
+    prefix = "tg39wg" if workgroup.manual_mode() else "tg39"
     key = (
         f"{prefix}:{packet['scenario']}:{packet['source_key']}:r{packet['source_revision']}:"
         f"{packet['event_id']}:{purpose}"
@@ -366,13 +366,13 @@ def core_message(row, packet, stay):
 
 
 def accepted_core(stay, scenario, *, fingerprint=None):
-    if workgroup.enabled():
+    if workgroup.manual_mode():
         return False
     return core_complete(stay, scenario, fingerprint=fingerprint)
 
 
 def core_handed_off(stay, scenario, *, fingerprint=None):
-    return workgroup.enabled() and core_complete(stay, scenario, fingerprint=fingerprint)
+    return workgroup.manual_mode() and core_complete(stay, scenario, fingerprint=fingerprint)
 
 
 def core_complete(stay, scenario, *, fingerprint=None):
@@ -384,7 +384,7 @@ def core_complete(stay, scenario, *, fingerprint=None):
             revision=stay.communication_revision,
             sequence__in=[1, 2, 3],
             state=workgroup.completed_state(),
-            recipient_kind="workgroup" if workgroup.enabled() else "guest",
+            recipient_kind="workgroup" if workgroup.manual_mode() else "guest",
         )
         .order_by("sequence")
     )
@@ -461,6 +461,8 @@ def next_packet(packet, data):
 
 
 def send_packet(row, packet, stay):
+    if workgroup.manual_mode() and not workgroup.enabled():
+        return {**packet, "decision": "hold", "reason": "workgroup_sender_paused"}
     if row.state in {"uncertain", workgroup.completed_state(row)}:
         raise Denied("prior_attempt_not_sendable")
     try:
@@ -572,7 +574,7 @@ def record(request):
             or data["contract"]
             != (
                 "tg39_workgroup_record_request_v1"
-                if workgroup.enabled()
+                if workgroup.manual_mode()
                 else "tg39_stay_record_request_v1"
             )
         ):

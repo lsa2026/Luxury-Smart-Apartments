@@ -228,7 +228,7 @@ def authorize(data):
         "website_handoff_status",
     }:
         raise Denied
-    from .telegram_workgroup import enabled as workgroup_enabled
+    from .telegram_workgroup import manual_mode as workgroup_enabled
 
     if workgroup_enabled():
         raise Denied  # Guest enrollment/binding never resumes in manual handoff mode.

@@ -207,6 +207,18 @@ def test_no_historical_queue_backfill(delivery, settings, monkeypatch):
     assert not called.called and not TelegramWebsiteHandoff.objects.exists()
 
 
+def test_paused_workgroup_policy_never_falls_back_to_guest_payment_sender(
+    delivery, settings, monkeypatch
+):
+    settings.TELEGRAM_WORKGROUP_ONLY_POLICY = True
+    settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+    provider = Mock(side_effect=AssertionError("guest sender retired"))
+    monkeypatch.setattr("apps.payments.payment_link_tasks.UltraMsgClient", provider)
+    assert deliver_payment_request_task(delivery.pk)["status"] == "handoff_paused"
+    delivery.refresh_from_db()
+    assert delivery.status == "queued" and not provider.called
+
+
 def test_guest_markup_is_literal_in_managers_copy():
     guest = "<script> *Guest*"
     body = service.as_html("*Welcome* " + guest, guest)

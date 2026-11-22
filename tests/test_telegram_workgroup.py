@@ -216,6 +216,22 @@ def test_manual_mode_closes_guest_activation_even_if_old_flags_are_true(group, s
     assert not backend.configured()
 
 
+def test_permanent_policy_does_not_reopen_legacy_guest_senders_when_paused(settings):
+    from types import SimpleNamespace
+
+    from apps.reservations import guest_message_transport
+
+    settings.TELEGRAM_WORKGROUP_ONLY_POLICY = True
+    settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+    settings.TELEGRAM_ACTIVATION_ENABLED = True
+    assert not backend.configured()
+    assert workgroup.message_model() is TelegramWorkgroupHandoff
+    with pytest.raises(guest_message_transport.TransportHeld, match="workgroup_manual_only"):
+        guest_message_transport.prepare(
+            SimpleNamespace(), source="morning07", purpose="status_new", reference="synthetic"
+        )
+
+
 def test_workgroup_long_copy_can_be_chunked_without_weakening_private_guest_limits():
     asset = {"asset_ref": "synthetic", "asset_sha256": "a" * 64, "asset_mime": "image/png"}
     for text, media in [("a" * 1025, asset), ("a" * 4097, None), ("😀" * 1500, asset)]:

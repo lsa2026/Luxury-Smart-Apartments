@@ -24,16 +24,16 @@ class NotReady(Unavailable):
 
 
 def configured():
-    from .telegram_workgroup import enabled
+    from .telegram_workgroup import manual_mode
 
-    return bool(getattr(settings, "TELEGRAM_ACTIVATION_ENABLED", False) and not enabled())
+    return bool(getattr(settings, "TELEGRAM_ACTIVATION_ENABLED", False) and not manual_mode())
 
 
 class Backend:
     def __init__(self):
-        from .telegram_workgroup import enabled
+        from .telegram_workgroup import manual_mode
 
-        if not configured() and not enabled():
+        if not configured() and not manual_mode():
             raise Unavailable
         self.ready_checked = False
         self.authority_context = None

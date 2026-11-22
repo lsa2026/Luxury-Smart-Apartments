@@ -201,7 +201,9 @@ def metadata(row):
 
 @sensitive_variables()
 def authorize(scope, action, key, result):
-    if not group.enabled() or action not in {"website_handoff", "website_handoff_status"}:
+    if not group.manual_mode() or action not in {"website_handoff", "website_handoff_status"}:
+        raise Denied
+    if action == "website_handoff" and not group.enabled():
         raise Denied
     row = TelegramWebsiteHandoff.objects.get(pk=uuid.UUID(scope["job"]))
     if key != str(row.pk):
@@ -370,7 +372,7 @@ def call(row, action):
 
 
 def recover():
-    if not group.enabled():
+    if not group.manual_mode():
         return
     for row in TelegramWebsiteHandoff.objects.filter(
         state__in=["dispatching", "uncertain"], probes__lt=10, next_probe_at__lte=timezone.now()
@@ -400,6 +402,9 @@ def alert(row):
 
 def deliver_payment(delivery_id):
     from apps.payments.models import PaymentRequestDelivery
+
+    if not group.enabled():
+        return {"status": "handoff_paused", "guest_accepted": False}
 
     with transaction.atomic():
         row = PaymentRequestDelivery.objects.select_for_update().get(pk=delivery_id)

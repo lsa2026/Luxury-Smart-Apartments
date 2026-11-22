@@ -10,7 +10,7 @@ from .invitation_registry import keyed
 
 
 def target(reservation_key, phone):
-    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+    from apps.reservations.telegram_workgroup import manual_mode as workgroup_enabled
 
     if workgroup_enabled() or not getattr(settings, "TELEGRAM_LOYALTY_INVITATIONS_ENABLED", False):
         raise ValidationError("telegram_invitation_disabled")
