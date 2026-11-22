@@ -159,7 +159,10 @@ class Backend:
 
 def checked_invitation(value):
     url = value.get("url", "")
-    expiry = parse_datetime(str(value.get("expires_at", "")))
+    try:
+        expiry = parse_datetime(str(value.get("expires_at", "")))
+    except (ValueError, TypeError) as exc:
+        raise Unavailable from exc
     if (
         not isinstance(url, str)
         or not re.fullmatch(r"https://t\.me/LuxurySmartApartmentsBot\?start=b_[a-f0-9]{48}", url)

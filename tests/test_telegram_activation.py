@@ -226,6 +226,14 @@ def test_no_destination_override(url):
 
 
 @pytest.mark.parametrize(
+    "expiry", ["2026-99-99T00:00:00Z", "nonsense", "2026-01-01T00:00:00", None]
+)
+def test_malformed_expiry_is_rejected_safely(expiry):
+    with pytest.raises(backend.Unavailable):
+        backend.checked_invitation({"url": URL, "expires_at": expiry})
+
+
+@pytest.mark.parametrize(
     "change", ["not_ready", "missing_component", "wrong_contract", "malformed"]
 )
 def test_http_200_is_not_readiness(settings, monkeypatch, change):
