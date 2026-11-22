@@ -14,6 +14,9 @@ const { pathToFileURL } = require("node:url");
                 await page.goto(pathToFileURL(path.join(output, `telegram-${fixture}.html`)).href);
                 const card = page.locator(".telegram-activation-card");
                 assert.ok(await card.isVisible());
+                assert.equal(await page.locator("[data-brand-splash]").count(), 0);
+                await card.scrollIntoViewIfNeeded();
+                assert.ok(await card.evaluate(el => { const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + Math.min(30, r.height / 2))); }), `${fixture} is covered at ${width}`);
                 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `${fixture} overflows at ${width}`);
                 assert.equal(await card.locator("a").count(), fixture.endsWith("issued") ? 1 : 0);
                 if (fixture.endsWith("issued")) {

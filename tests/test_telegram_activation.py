@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import close_old_connections, connection
 from django.test import Client, RequestFactory
@@ -387,6 +388,7 @@ def test_render_telegram_review_layout(rig, tmp_path):
             )
             html = response.content.decode()
             assert "telegram-activation-card" in html
+            assert "data-brand-splash" not in html
             assert ("noreferrer noopener nofollow" in html) == (state == "issued")
             (output / f"telegram-{language}-{state}.html").write_text(_standalone(html))
     from django.template import RequestContext, Template
@@ -394,7 +396,7 @@ def test_render_telegram_review_layout(rig, tmp_path):
     rig.request.path = "/admin/operations/bookings/synthetic/"
     card = service.context(rig.request, rig.booking, admin=True)
     template = Template(
-        '{% extends "base.html" %}{% block content %}'
+        '{% extends "base.html" %}{% block brand_splash %}{% endblock %}{% block content %}'
         '{% include "reservations/_telegram_activation.html" %}{% endblock %}'
     )
     html = template.render(RequestContext(rig.request, {"telegram": card}))
@@ -402,6 +404,10 @@ def test_render_telegram_review_layout(rig, tmp_path):
 
 
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.skipif(
+    settings.DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql",
+    reason="Concurrent issuance requires PostgreSQL before fixture setup.",
+)
 def test_concurrent_issuance_one_rpc_sequence(rig, monkeypatch):
     if connection.vendor != "postgresql":
         pytest.skip("Requires PostgreSQL row locks")
