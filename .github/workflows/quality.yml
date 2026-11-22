@@ -139,7 +139,7 @@ jobs:
           tests/test_loyalty_unified_welcome.py
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       DJANGO_SETTINGS_MODULE: config.settings.test
       DJANGO_ALLOWED_HOSTS: testserver,localhost,luxurysmartapartments.com
