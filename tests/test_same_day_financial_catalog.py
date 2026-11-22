@@ -33,7 +33,7 @@ def test_catalog_from_unchanged_renderers_with_synthetic_fixture(settings, monke
         )
     catalog = []
     replacements = {
-        "SYNTHETIC_GUEST": "guest_name",
+        "SYNTHETICGUEST": "guest_name",
         "SYNTHETIC_APARTMENT": "listing_name",
         "AM-SYNTHETI": "booking_reference",
         "DU-SYNTHETI": "booking_reference",
@@ -55,7 +55,7 @@ def test_catalog_from_unchanged_renderers_with_synthetic_fixture(settings, monke
         for language in ("ar", "en", "fr"):
             stay = SimpleNamespace(
                 pk="SYNTHETIC",
-                guest_name="SYNTHETIC_GUEST",
+                guest_name="SYNTHETICGUEST",
                 guest_language=language,
                 property=SimpleNamespace(
                     **{f"name_{lang}": "SYNTHETIC_APARTMENT" for lang in ("ar", "en", "fr")}
@@ -98,6 +98,9 @@ def test_catalog_from_unchanged_renderers_with_synthetic_fixture(settings, monke
                     return "{{" + str(variables.index(field) + 1) + "}}"
 
                 body = re.sub(r"\{\{(\w+)\}\}", positional, named)
+                assert "SYNTHETIC" not in body, "Fixture values must never become fixed copy"
+                if kind == "loyalty_invitation" and scenario == "07":
+                    assert "guest_name" in variables
                 restored = body
                 # Named source fields reconstruct the exact fixture-rendered body.
                 fixture_values = {
@@ -140,6 +143,16 @@ def test_catalog_from_unchanged_renderers_with_synthetic_fixture(settings, monke
                         "whatsapp_opt_in": {"channel": None, "purpose": None, "timestamp": None},
                         "meta_approved_template": None,
                         "unchanged_source_copy": True,
+                        "submission_ready": False,
+                        "intended_meta_category": "MARKETING"
+                        if kind == "loyalty_invitation"
+                        else None,
+                        "copy_review_note": (
+                            "Loyalty copy ends with a URL variable; owner37 must review "
+                            "format and Marketing category before any submission."
+                            if kind == "loyalty_invitation"
+                            else None
+                        ),
                         "fixture_roundtrip_verified": True,
                     }
                 )
