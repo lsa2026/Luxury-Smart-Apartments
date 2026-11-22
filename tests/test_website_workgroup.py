@@ -56,6 +56,11 @@ def proof(row, **changes):
 @pytest.fixture
 def bridge(monkeypatch):
     calls = []
+    # The reused invitation fixture freezes the clock. Model field defaults were
+    # bound at import, so make this synthetic journal follow that same clock.
+    monkeypatch.setattr(
+        TelegramWebsiteHandoff._meta.get_field("created_at"), "_get_default", lambda: timezone.now()
+    )
 
     class Backend:
         authority_context = None
