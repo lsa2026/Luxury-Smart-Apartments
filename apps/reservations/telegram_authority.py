@@ -202,7 +202,7 @@ def authorize(data):
         raise Denied
     with transaction.atomic():
         reservation = (
-            Reservation.objects.select_for_update()
+            Reservation.objects.select_for_update(of=("self",))
             .select_related("booking_intent")
             .get(pk=scope["reservation"])
         )
