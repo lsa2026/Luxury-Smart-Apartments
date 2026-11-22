@@ -151,7 +151,7 @@ def forward_due(*, client=None, limit=1):
                 WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
                 .filter(state="pending", not_before__lte=timezone.now())
                 .exclude(pk__in=examined)
-                .order_by("not_before", "created_at")
+                .order_by("updated_at", "not_before", "created_at")
                 .first()
             )
             if row is None:
@@ -174,6 +174,8 @@ def forward_due(*, client=None, limit=1):
                     row.save(update_fields=["state", "reason", "updated_at"])
                     continue
             if not facts["domain_authorized"]:
+                row.reason = "predecessor_or_domain_pending"
+                row.save(update_fields=["reason", "updated_at"])
                 continue  # Wait for actual predecessor delivery, not an ACK.
             row.state = "forwarding"
             row.save(update_fields=["state", "updated_at"])
