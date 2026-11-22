@@ -301,6 +301,10 @@ def reconcile(row_id, request_id, capability):
             raise ValueError
         if prior.wamid and prior.wamid != wamid:
             raise ValueError
+        if (provider_id and proof.get("provider_attempted") is not True) or (
+            not provider_id and proof.get("provider_attempted") is not None
+        ):
+            raise ValueError
         delivered = proof.get("delivered")
         state = proof.get("state")
         observed = proof.get("observed_at_epoch")

@@ -87,7 +87,10 @@ def test_domain_recipient_validation_precedes_transport_hold(rig, settings):
         h.core_client.assert_not_called()
 
 
-def test_central_payment_success_and_loyalty_do_not_consume_claim(rig, settings):
+def test_central_payment_success_and_loyalty_do_not_consume_claim(rig, settings, monkeypatch):
+    # Isolate the transport boundary after its independent core-delivery gate.
+    # Real central receipt correlations are covered by test_message_receipts.
+    monkeypatch.setattr(rig.loyalty, "core_delivered", lambda *a, **kw: True)
     with rig.factory() as h:
         h.acks["core"] = 2
         settings.WEBSITE_GUEST_MESSAGE_TRANSPORT = "ycloud_central"
@@ -116,7 +119,8 @@ def test_stale_financial_proof_precedes_transport_and_never_confirms_payment(rig
         h.text_client.assert_not_called()
 
 
-def test_direct_loyalty_transport_holds_before_registry_consume(rig, settings):
+def test_direct_loyalty_transport_holds_before_registry_consume(rig, settings, monkeypatch):
+    monkeypatch.setattr(rig.loyalty, "core_delivered", lambda *a, **kw: True)
     with rig.factory() as h:
         h.acks["core"] = 2
         assert h.send("payment_success").json()["code"] == "accepted"
@@ -135,7 +139,10 @@ def test_direct_loyalty_transport_holds_before_registry_consume(rig, settings):
         h.image_client.assert_not_called()
 
 
-def test_payment_link_transport_holds_without_mutating_booking_or_delivery(rig, settings):
+def test_payment_link_transport_holds_without_mutating_booking_or_delivery(
+    rig, settings, monkeypatch
+):
+    monkeypatch.setattr(rig.loyalty, "core_delivered", lambda *a, **kw: True)
     with rig.factory(full_journey=True) as h:
         fixtures = importlib.import_module(
             "tests.test_morning_auto_payment" if rig.code == "07" else "tests.day_use08_fixtures"
@@ -165,6 +172,17 @@ def test_central_receipts_never_query_or_translate_ultramsg_ack(rig, settings, m
             SimpleNamespace(provider_id="synthetic", reference_id="r")
         )
     factory.assert_not_called()
+
+
+def test_legacy_core_ack_is_not_central_delivery_or_financial_permission(rig, settings):
+    with rig.factory() as h:
+        h.acks["core"] = 2
+        settings.WEBSITE_GUEST_MESSAGE_TRANSPORT = "ycloud_central"
+        settings.MESSAGE_RECEIPTS_ENABLED = True
+        assert not rig.loyalty.core_delivered(h.stay, h.stay.communication_revision)
+        assert h.send("payment_success").json()["code"] == "core_pending"
+        assert not h.event.deliveries.exists()
+        h.text_client.assert_not_called()
 
 
 @pytest.mark.parametrize("selected", ["ycloud_central", "invalid", "", "ultramsg "])
