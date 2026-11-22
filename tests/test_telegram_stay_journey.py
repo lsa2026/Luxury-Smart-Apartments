@@ -299,7 +299,7 @@ def test_real_payment_proof_then_success_acceptance_then_one_cross_channel_loyal
     for _ in range(3):
         accepted(owned)
     paid = fixtures.paid_record(owned)
-    data = source_tests.payload(paid, operation="next")
+    data = source_tests.payload(owned, operation="next", event_id=str(paid[2].pk))
     with transaction.atomic():
         value = source.snapshot(data)
     monkeypatch.setattr("apps.loyalty.invitation_api.ready", lambda: True)
