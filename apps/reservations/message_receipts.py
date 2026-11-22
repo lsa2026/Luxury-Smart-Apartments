@@ -220,18 +220,42 @@ def reconcile(row_id, request_id, capability):
     render_source = fetch(request_id, capability, render_source=True) if before else None
     with transaction.atomic():
         row = relay.WebsiteMessageRelay.objects.select_for_update().get(pk=row_id)
-        current = relay.current_event(row)
-        if current is None:
-            raise ValueError
-        event, facts = current
-        identity = verified_identity(proof, facts, request_id)
-        if proof["language"] != event.stay.guest_language:
-            raise ValueError
         prior = (
             WebsiteMessageExpectation.objects.select_for_update()
             .filter(request_id=request_id)
             .first()
         )
+        if prior:
+            # A late signed receipt describes the immutable pre-attempt binding,
+            # not authority for a new send. Pausing dispatch or ending/changing
+            # the stay must not erase its history. Current payment/slot gates
+            # still check the current recipient and booking separately.
+            if prior.relay_id != row.pk:
+                raise ValueError
+            expected = {
+                "scenario": row.scenario,
+                "job_sha256": row.job_sha256,
+                "source_event_key": f"website:{row.scenario}:"
+                f"{'payment' if row.financial else 'core'}:{row.event_id}",
+                "reservation_key": (
+                    f"{'morning07' if row.scenario == '07' else 'dayuse08'}:{row.stay_id}"
+                ),
+                "reservation_revision": row.revision,
+                "source_message_type": row.message_type,
+            }
+            if any(prior.identity.get(key) != value for key, value in expected.items()):
+                raise ValueError
+            identity = verified_identity(proof, prior.identity, request_id)
+        else:
+            if not relay.enabled():
+                return "held"
+            current = relay.current_event(row)
+            if current is None:
+                raise ValueError
+            event, facts = current
+            identity = verified_identity(proof, facts, request_id)
+            if proof["language"] != event.stay.guest_language:
+                raise ValueError
         if prior is None:
             # Existing attempts, unknown posts, legacy receipts and held old
             # intents can never be adopted as a new source expectation.
@@ -386,7 +410,9 @@ def receipt(request):
     request._disable_google_integrations = True
     capability = request.META.pop("HTTP_X_LSA_RECEIPT_CAPABILITY", "")
     request.__dict__.pop("headers", None)
-    if not getattr(settings, "MESSAGE_RECEIPTS_ENABLED", False) or not relay.enabled():
+    if not getattr(settings, "MESSAGE_RECEIPTS_ENABLED", False) or not getattr(
+        settings, "MESSAGE_SOURCE_AUTH_ENABLED", False
+    ):
         return source.response({"code": "unavailable"}, 404)
     if request.method != "POST":
         return source.response({"code": "method_not_allowed"}, 405)

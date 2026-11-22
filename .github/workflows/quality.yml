@@ -45,6 +45,7 @@ jobs:
         run: >-
           pytest tests/test_owner_modification_workflow.py
           tests/test_message_source_authorization.py
+          tests/test_transaction_permission_candidate.py
           tests/test_message_source_relay.py
           tests/test_message_receipts.py
           tests/test_legacy_message_receipts.py
@@ -191,7 +192,7 @@ jobs:
       - name: Verify scoped website source and future-only relay without live providers
         run: |
           python manage.py makemigrations --check --dry-run
-          pytest tests/test_message_source_authorization.py tests/test_message_source_relay.py tests/test_message_receipts.py tests/test_legacy_message_receipts.py tests/test_guest_message_transport.py tests/test_website_message_policy.py -q
+          pytest tests/test_message_source_authorization.py tests/test_transaction_permission_candidate.py tests/test_message_source_relay.py tests/test_message_receipts.py tests/test_legacy_message_receipts.py tests/test_guest_message_transport.py tests/test_website_message_policy.py -q
 
       # Focused attribution/schema failures surface before the long regression suites.
       - name: Verify private Booking channel collection boundaries

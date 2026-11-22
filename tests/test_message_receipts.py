@@ -393,3 +393,48 @@ def test_read_receipt_advances_delivery_and_cannot_be_downgraded(prepared, monke
     assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "read"
     proof.update(state="accepted", delivered=False)
     assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "read"
+
+
+@pytest.mark.parametrize("change", ["paused", "cutover", "ended", "recipient", "revision"])
+def test_existing_expectation_import_survives_future_send_changes(
+    prepared, monkeypatch, settings, client, change
+):
+    from datetime import timedelta
+
+    row, _, policy, proof, _ = prepared
+    synthetic_policy(monkeypatch, policy)
+    receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability")
+    expectation = WebsiteMessageExpectation.objects.get()
+    stay_model = source.SOURCES[row.scenario][0]
+    if change == "paused":
+        settings.MESSAGE_SOURCE_RELAY_ENABLED = False
+    elif change == "cutover":
+        settings.MESSAGE_SOURCE_CUTOVER_AT = timezone.now() + timedelta(days=1)
+    elif change == "ended":
+        stay_model.objects.filter(pk=row.stay_id).update(
+            starts_at=timezone.now() - timedelta(hours=4),
+            ends_at=timezone.now() - timedelta(hours=1),
+        )
+    elif change == "recipient":
+        stay_model.objects.filter(pk=row.stay_id).update(guest_phone="+12025550999")
+    else:
+        stay_model.objects.filter(pk=row.stay_id).update(communication_revision=999)
+    monkeypatch.setattr(relay, "current_event", lambda *_: pytest.fail("No new send authorization"))
+    deliver(proof)
+    result = client.post(
+        reverse("integrations:website_message_receipt"),
+        {"request_id": REQUEST_ID, "expectation_ref": str(expectation.expectation_ref)},
+        content_type="application/json",
+        HTTP_X_LSA_RECEIPT_CAPABILITY="x" * 43,
+    )
+    assert result.status_code == 200 and result.json()["code"] == "delivered"
+    assert result.json()["dispatch_allowed"] is False
+    assert WebsiteMessageExpectation.objects.count() == 1
+
+
+def test_paused_relay_cannot_create_first_expectation(prepared, settings, monkeypatch):
+    row, _, policy, _, _ = prepared
+    synthetic_policy(monkeypatch, policy)
+    settings.MESSAGE_SOURCE_RELAY_ENABLED = False
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "held"
+    assert not WebsiteMessageExpectation.objects.exists()
