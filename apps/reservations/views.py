@@ -1185,11 +1185,13 @@ class ReservationManageView(View):
     def get(self, request: HttpRequest, public_reference: str) -> HttpResponse:
         request._disable_google_integrations = True
         reservation = _owned_reservation(request, public_reference)
+        from .telegram_activation import context as telegram_context
+
         return _private_response(
             render(
                 request,
                 "reservations/manage_reservation.html",
-                _management_context(reservation),
+                _management_context(reservation, telegram=telegram_context(request, reservation)),
             )
         )
 

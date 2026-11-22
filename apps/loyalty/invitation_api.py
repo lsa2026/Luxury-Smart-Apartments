@@ -16,6 +16,7 @@ from apps.accounts.access import operations_access_required, require_operations_
 from apps.reservations.sama_booking_api import payload, response
 
 from . import invitation_registry as registry
+from . import telegram_invitations
 from .invitation_auth import authenticated
 from .models import InvitationAPICredential, JoinInvitation
 
@@ -53,6 +54,8 @@ def snapshot(row, decision="duplicate", *, allow=False):
             outcomes=row.outcomes,
             language=row.language,
         )
+        if row.channel == "telegram":
+            result.update(channel="telegram", provider_receipt_lookup=False)
     return result
 
 
@@ -117,7 +120,12 @@ def readiness(request):
 def claim(request):
     if not ready():
         return response("programme_unavailable", 503)
-    data = payload(request, FIELDS)
+    data = payload(request, FIELDS + ("channel",))
+    if data is None:
+        data = payload(request, FIELDS)
+    channel = data.pop("channel", "whatsapp") if data else "whatsapp"
+    if channel not in {"whatsapp", "telegram"}:
+        return response("invalid_channel", 400)
     if not data or any(not isinstance(data[k], str) for k in FIELDS):
         return response("invalid_request", 400)
     limits = dict(zip(FIELDS, (80, 80, 254, 2, 150, 80, 150), strict=True))
@@ -132,6 +140,7 @@ def claim(request):
     phone = registry.normalize_phone(data["phone"])
     with registry.invitation_lock():
         key, booking = registry.canonical_booking(data["reservation_key"])
+        chat = telegram_invitations.target(key, phone) if channel == "telegram" else None
         if booking and (
             booking.source_type == "direct_website"
             or booking.is_test
@@ -150,8 +159,16 @@ def claim(request):
             event_id=event_id,
             source=source,
             origin="n8n",
-            channel="whatsapp",
+            channel=channel,
         )
+        if decision == "eligible" and row.channel != channel:
+            raise ValidationError("event_channel_conflict")
+        if decision == "eligible" and channel == "telegram":
+            target_digest = telegram_invitations.digest(chat)
+            if row.telegram_target_digest and row.telegram_target_digest != target_digest:
+                raise ValidationError("telegram_binding_changed")
+            row.telegram_target_digest = target_digest
+            row.save(update_fields=["telegram_target_digest", "updated_at"])
         result = snapshot(row, decision)
         if decision == "eligible":
             result.update(
@@ -159,6 +176,8 @@ def claim(request):
                 expires_at=row.expires_at.isoformat(),
                 recipient_phone=row.phone,
             )
+            if channel == "telegram":
+                result["recipient_chat_id"] = chat
         return response("ok", **result)
 
 
@@ -177,6 +196,7 @@ def preflight(request):
         row = row_from(data)
         if not row or row.origin != "n8n":
             return response("not_found", 404)
+        chat = telegram_invitations.verify(row) if row.channel == "telegram" else None
         decision = registry.consume(
             row, phone=registry.normalize_phone(data["phone"]), proof=data["ticket"]
         )
@@ -187,6 +207,8 @@ def preflight(request):
                 send_within_seconds=60,
                 send_expires_at=(timezone.now() + timedelta(seconds=60)).isoformat(),
             )
+            if chat:
+                result["recipient_chat_id"] = chat
         return response("ok", **result)
 
 
@@ -203,6 +225,12 @@ def record(request):
         row = row_from(data)
         if not row or row.origin != "n8n":
             return response("not_found", 404)
+        if row.channel == "telegram" and (
+            data["status"] not in {"accepted", "unknown"}
+            or data["provider_id"]
+            and not re.fullmatch(r"[1-9][0-9]{0,18}", data["provider_id"])
+        ):
+            return response("invalid_telegram_outcome", 400)
         if data["provider_reference"] != row.provider_reference:
             return response("reference_conflict", 409)
         registry.record(row, data["status"], data["provider_id"])

@@ -441,6 +441,9 @@ def _booking_status_watch(bookings):
 def _render_booking_detail(request: HttpRequest, context: dict) -> HttpResponse:
     """Presentation only: preserve the existing action handlers and permissions."""
     reservation = context["reservation"]
+    from .telegram_activation import context as telegram_context
+
+    context["telegram"] = telegram_context(request, reservation, admin=True)
     from apps.loyalty.booking_invitations import invitation_context
     from apps.loyalty.booking_operations import stay_controls
 
@@ -513,6 +516,10 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         Reservation.objects.select_related("property", "booking_intent"), pk=reservation_id
     )
     intent = reservation.booking_intent
+    if request.method == "POST" and request.POST.get("action") == "telegram_activation":
+        from .telegram_activation import issue, result_response
+
+        return result_response(request, issue(request, reservation, admin=True))
     if request.method == "POST" and request.POST.get("action") == "send_loyalty_invitation":
         from apps.loyalty.booking_invitations import queue_booking_invitation
 

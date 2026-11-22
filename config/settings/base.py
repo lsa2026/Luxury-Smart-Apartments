@@ -348,6 +348,11 @@ BOOKING_MANAGEMENT_ACCESS_LINK_MAX_AGE_SECONDS = optional_positive_int(
     30 * 60,
 )
 
+# Draft integration only. No credential is copied from another service or sent to clients.
+TELEGRAM_ACTIVATION_ENABLED = strict_bool("TELEGRAM_ACTIVATION_ENABLED")
+TELEGRAM_LOYALTY_INVITATIONS_ENABLED = strict_bool("TELEGRAM_LOYALTY_INVITATIONS_ENABLED")
+TELEGRAM_ACTIVATION_SERVICE_KEY = env.str("TELEGRAM_ACTIVATION_SERVICE_KEY", default="")
+
 # Local, cardless payment simulation for development and acceptance testing only.
 # DEBUG is deliberately part of the guard so this can never be enabled in production
 # by a stale environment variable.

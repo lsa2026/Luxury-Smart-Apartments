@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}تفعيل تليجرام للحجز{% endblock %}
+{% block content %}
+<section class="section container booking-access-shell" dir="rtl">
+ <div class="booking-access-card">
+  <h1>تفعيل تليجرام للحجز</h1><p role="status">{{ telegram.message }}</p>
+  {% if telegram.form %}{{ telegram.form.errors }}{% endif %}
+  {% if telegram.url %}
+   <p><a class="button button--gold" href="{{ telegram.url }}" rel="noreferrer noopener nofollow" target="_blank">فتح البوت وإكمال التفعيل</a></p>
+   <p>تنتهي صلاحية الرابط: {{ telegram.expires_at }}</p>
+   <p>لن يُعرض الرابط مرة أخرى بعد مغادرة هذه الصفحة. لا تشاركه مع شخص آخر.</p>
+  {% endif %}
+  <p>تجهيز الرابط لا يعد إتمامًا للربط أو قبولًا لشروط الولاء أو تأكيدًا للدفع.</p>
+ </div>
+</section>
+{% endblock %}
