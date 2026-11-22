@@ -146,11 +146,14 @@ def render_html(template, variables, language):
     return result
 
 
-def message(language, rendered, asset=None):
+def message(language, rendered, asset=None, *, manual_handoff=False):
     if language not in {"ar", "en", "fr"} or not isinstance(rendered, str) or not rendered:
         raise Denied
     plain = html.unescape(re.sub(r"</?b>", "", rendered))
-    if len(plain.encode("utf-16-le")) // 2 > (1024 if asset else 4096):
+    limit = 16384 if manual_handoff else (1024 if asset else 4096)
+    if len(plain.encode("utf-16-le")) // 2 > limit or (
+        manual_handoff and len(rendered.encode("utf-16-le")) // 2 > 16384
+    ):
         raise Denied("telegram_message_oversize")
     if asset and (
         set(asset) != {"asset_ref", "asset_sha256", "asset_mime"}

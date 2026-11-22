@@ -22,7 +22,16 @@ from .phone_gifts import phone_hash
 
 SALT = "loyalty.n8n.invitation.claim.v1"
 TTL = 300
-IN_FLIGHT = {"queued", "sending", "accepted", "uncertain", "unknown", "delivered", "read"}
+IN_FLIGHT = {
+    "queued",
+    "sending",
+    "accepted",
+    "uncertain",
+    "unknown",
+    "delivered",
+    "read",
+    "handed_off",
+}
 
 
 @contextmanager
@@ -351,15 +360,21 @@ def record(row, state, provider_id=""):
         "failed",
         "queue_failed",
         "blocked",
+        "handed_off",
     }:
         raise ValidationError("invalid_status")
+    if (
+        row.channel == "workgroup_manual"
+        and state not in {"handed_off", "unknown", "blocked", "queue_failed"}
+    ) or (row.channel != "workgroup_manual" and state == "handed_off"):
+        raise ValidationError("invalid_channel_outcome")
     if state in {"accepted", "delivered", "read"} and row.origin == "n8n" and not provider_id:
         raise ValidationError("provider_id_required")
     if row.provider_id and provider_id and row.provider_id != provider_id:
         raise ValidationError("provider_id_conflict")
     if row.dispatched_at is None and state not in {"queue_failed", "blocked"}:
         raise ValidationError("preflight_required")
-    ranks = {"unknown": 0, "failed": 0, "accepted": 1, "delivered": 2, "read": 3}
+    ranks = {"unknown": 0, "failed": 0, "handed_off": 1, "accepted": 1, "delivered": 2, "read": 3}
     history = {"status": state, "at": timezone.now().isoformat()}
     if history["status"] not in {h["status"] for h in row.outcomes}:
         row.outcomes = row.outcomes + [history]

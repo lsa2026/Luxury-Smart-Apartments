@@ -10,7 +10,9 @@ from .invitation_registry import keyed
 
 
 def target(reservation_key, phone):
-    if not getattr(settings, "TELEGRAM_LOYALTY_INVITATIONS_ENABLED", False):
+    from apps.reservations.telegram_workgroup import manual_mode as workgroup_enabled
+
+    if workgroup_enabled() or not getattr(settings, "TELEGRAM_LOYALTY_INVITATIONS_ENABLED", False):
         raise ValidationError("telegram_invitation_disabled")
     if not reservation_key.startswith("hostaway:") or not phone:
         raise ValidationError("telegram_binding_required")

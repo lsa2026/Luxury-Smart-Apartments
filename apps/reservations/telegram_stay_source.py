@@ -16,6 +16,7 @@ from apps.loyalty.invitation_auth import authenticated
 
 from . import day_use_hostaway, morning_hostaway
 from . import message_source_authorization as source
+from . import telegram_workgroup as workgroup
 from .models import DayUseHostawayOwnership
 from .telegram_authority import Denied, duplicate_safe, private_endpoint, private_response
 from .telegram_backend import Unavailable
@@ -127,10 +128,16 @@ def resolve(data):
 def snapshot(data):
     scenario, stay, event, provider_id, reference, financial = resolve(data)
     now = timezone.now()
-    phone = normalize_phone_number(stay.guest_phone)
+    try:
+        phone = normalize_phone_number(stay.guest_phone)
+    except (InvalidPhoneNumber, ValueError, TypeError):
+        if not workgroup.manual_mode():
+            raise
+        phone = ""
     first, _, last = stay.guest_name.partition(" ")
     packet = {
         "contract": "tg39_stay_source_packet_v1",
+        **workgroup.packet_fields(),
         "scenario": scenario,
         "source_owner": OWNERS[scenario],
         "source_key": str(stay.pk),
@@ -146,6 +153,7 @@ def snapshot(data):
         "decision": "snapshot" if data["operation"] in {"snapshot", "review_snapshot"} else "wait",
         "booking": {
             "phone_hash": hashlib.sha256(phone.lstrip("+").encode()).hexdigest(),
+            **({"guest_phone_e164": phone or None} if workgroup.enabled() else {}),
             "guest_name": stay.guest_name,
             "guest_first_name": first,
             "guest_last_name": last,
@@ -184,6 +192,7 @@ def snapshot(data):
 def read_source(request):
     request._disable_google_integrations = True
     sending_enabled = getattr(settings, "TELEGRAM_STAY_MESSAGES_ENABLED", False)
+    sending_enabled = sending_enabled and (not workgroup.manual_mode() or workgroup.enabled())
     if not sending_enabled and not getattr(settings, "TELEGRAM_STAY_RECEIPTS_ENABLED", False):
         return private_response({"error": "stay_source_closed"}, 404)
     try:

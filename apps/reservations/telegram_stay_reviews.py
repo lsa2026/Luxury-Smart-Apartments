@@ -10,6 +10,7 @@ from django.utils.dateparse import parse_datetime
 from . import message_source_authorization as source
 from . import telegram_stay_authority as bridge
 from . import telegram_stay_render as render
+from . import telegram_workgroup as workgroup
 from .telegram_authority import Denied
 
 PURPOSES = {1: "review_request", 2: "review_reminder_1", 3: "review_reminder_2"}
@@ -76,7 +77,7 @@ def next_review(packet, stay, event):
             **({"next_check_at": policy["not_before"]} if policy.get("not_before") else {}),
         }
     row = plan(packet, policy["purpose"], 10 + policy["step"], *window)
-    if row.state == "accepted":
+    if row.state == workgroup.completed_state(row):
         return {**packet, "decision": "wait", "reason": "review_step_already_accepted"}
     return send_packet(row, packet, stay)
 
@@ -98,5 +99,7 @@ def content(row, stay):
         "review_url": policy["review_url"],
     }
     return render.message(
-        stay.guest_language, render.render_html(template, values, stay.guest_language)
+        stay.guest_language,
+        render.render_html(template, values, stay.guest_language),
+        manual_handoff=workgroup.is_handoff(row),
     ), policy["template_sha256"]

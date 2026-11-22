@@ -137,9 +137,12 @@ def updated_link_review(request, reservation_id, preview_id):
                         "queued": "بانتظار الإرسال",
                         "sending": "جارٍ الإرسال",
                         "sent": "قبل مزود الواتساب الرسالة",
+                        "handed_off": "سُلّمت نسخة لقروب العمل لإرسالها يدويًا",
+                        "handoff_wait": "بانتظار تسليم نسخة لقروب العمل",
+                        "handoff_hold": "نسخة القروب تحتاج مراجعة؛ لا إثبات إرسال للضيف",
                     }.get(delivery.status, "تحتاج مراجعة سجل الإرسال"),
                 )
-                if delivery.status in {"queued", "sending", "sent"}:
+                if delivery.status in {"queued", "sending", "sent", "handed_off", "handoff_wait"}:
                     return redirect("notifications:booking_list")
             except (HyperPayError, CurrencyError, ValueError, ValidationError) as exc:
                 _error(request, exc)
@@ -152,7 +155,10 @@ def updated_link_review(request, reservation_id, preview_id):
     projected = projected_reservation(preview.modification_request)
     preview.reservation = projected
     snapshot = preview.settlement_snapshot
+    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+
     context = {
+        "workgroup_manual": workgroup_enabled(),
         "title": "مراجعة تحديث رابط الدفع",
         "preview": preview,
         "projected": projected,

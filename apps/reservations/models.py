@@ -42,6 +42,8 @@ from .telegram_stay_models import (  # noqa: F401
     TelegramStayChannel,
     TelegramStayMessage,
     TelegramStayNotice,
+    TelegramWebsiteHandoff,
+    TelegramWorkgroupHandoff,
 )
 
 

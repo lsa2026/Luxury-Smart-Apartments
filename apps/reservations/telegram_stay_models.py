@@ -48,7 +48,7 @@ class TelegramStayNotice(models.Model):
         return f"Telegram event {self.scenario}:{self.event_id}"
 
 
-class TelegramStayMessage(models.Model):
+class StayMessageJournal(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     scenario = models.CharField(max_length=2)
     stay_id = models.UUIDField()
@@ -77,12 +77,30 @@ class TelegramStayMessage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        abstract = True
+
+    def __str__(self):
+        return f"Stay message {self.pk}"
+
+
+class TelegramStayMessage(StayMessageJournal):
+    """Historical direct-guest journal; workgroup receipts never write here."""
+
+    class Meta:
         indexes = [
             models.Index(fields=["scenario", "stay_id", "state"], name="tg_stay_message_state_idx")
         ]
 
-    def __str__(self):
-        return f"Telegram message {self.pk}"
+
+class TelegramWorkgroupHandoff(StayMessageJournal):
+    """Copies accepted by the fixed workgroup, never proof of guest delivery."""
+
+    recipient_kind = models.CharField(max_length=16, default="workgroup")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["scenario", "stay_id", "state"], name="tg_workgroup_state_idx")
+        ]
 
 
 class TelegramStayActivation(models.Model):
@@ -107,3 +125,31 @@ class TelegramStayActivation(models.Model):
 
     def __str__(self):
         return f"Telegram stay proof {self.pk}"
+
+
+class TelegramWebsiteHandoff(models.Model):
+    """Standalone website copies. No message body, phone, link or capability."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    source_kind = models.CharField(max_length=32)
+    source_id = models.CharField(max_length=180)
+    source_revision = models.CharField(max_length=64)
+    job_key = models.CharField(max_length=220, unique=True)
+    reference_id = models.CharField(max_length=100, unique=True)
+    phone_hash = models.CharField(max_length=64)
+    content_sha256 = models.CharField(max_length=64)
+    asset_sha256 = models.CharField(max_length=64)
+    state = models.CharField(max_length=16, default="planned")
+    attempt_id = models.UUIDField(null=True)
+    provider_message_id = models.CharField(max_length=32, blank=True)
+    provider_message_ids = models.JSONField(default=list)
+    accepted_at = models.DateTimeField(null=True)
+    not_before = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    probes = models.PositiveSmallIntegerField(default=0)
+    next_probe_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Website workgroup copy {self.pk}"

@@ -56,6 +56,19 @@ def snapshot(row, decision="duplicate", *, allow=False):
         )
         if row.channel == "telegram":
             result.update(channel="telegram", provider_receipt_lookup=False)
+        elif row.channel == "workgroup_manual":
+            from apps.reservations.telegram_workgroup import WORKGROUP_ID
+
+            result.update(
+                channel="workgroup_manual",
+                workgroup_id=WORKGROUP_ID,
+                handoff_allowed=allow,
+                send_allowed=False,
+                guest_accepted=False,
+                delivered=False,
+                read=False,
+                provider_receipt_lookup=False,
+            )
     return result
 
 
@@ -124,8 +137,16 @@ def claim(request):
     if data is None:
         data = payload(request, FIELDS)
     channel = data.pop("channel", "whatsapp") if data else "whatsapp"
-    if channel not in {"whatsapp", "telegram"}:
+    if channel not in {"whatsapp", "telegram", "workgroup_manual"}:
         return response("invalid_channel", 400)
+    from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+
+    if channel == "workgroup_manual" and not workgroup_enabled():
+        return response("workgroup_handoff_closed", 503)
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if channel != "workgroup_manual" and manual_mode():
+        return response("direct_guest_closed", 409)
     if not data or any(not isinstance(data[k], str) for k in FIELDS):
         return response("invalid_request", 400)
     limits = dict(zip(FIELDS, (80, 80, 254, 2, 150, 80, 150), strict=True))
@@ -196,6 +217,14 @@ def preflight(request):
         row = row_from(data)
         if not row or row.origin != "n8n":
             return response("not_found", 404)
+        from apps.reservations.telegram_workgroup import enabled as workgroup_enabled
+        from apps.reservations.telegram_workgroup import manual_mode
+
+        if manual_mode() and row.channel != "workgroup_manual":
+            return response("direct_guest_closed", 409)
+        if row.channel == "workgroup_manual":
+            if not workgroup_enabled():
+                return response("workgroup_handoff_closed", 503)
         chat = telegram_invitations.verify(row) if row.channel == "telegram" else None
         decision = registry.consume(
             row, phone=registry.normalize_phone(data["phone"]), proof=data["ticket"]
@@ -209,6 +238,13 @@ def preflight(request):
             )
             if chat:
                 result["recipient_chat_id"] = chat
+            if row.channel == "workgroup_manual":
+                result.pop("send_within_seconds", None)
+                result.pop("send_expires_at", None)
+                result.update(
+                    handoff_within_seconds=60,
+                    handoff_expires_at=(timezone.now() + timedelta(seconds=60)).isoformat(),
+                )
         return response("ok", **result)
 
 
@@ -217,7 +253,7 @@ def record(request):
     data = payload(request, ("invitation_id", "provider_reference", "status", "provider_id"))
     if not data or any(not isinstance(v, str) or len(v) > 150 for v in data.values()):
         return response("invalid_request", 400)
-    if data["status"] not in {"accepted", "unknown", "delivered", "read", "failed"}:
+    if data["status"] not in {"accepted", "unknown", "delivered", "read", "failed", "handed_off"}:
         return response("invalid_status", 400)
     if data["provider_id"] and not re.fullmatch(r"[A-Za-z0-9._:-]{1,100}", data["provider_id"]):
         return response("invalid_provider_id", 400)
@@ -225,6 +261,14 @@ def record(request):
         row = row_from(data)
         if not row or row.origin != "n8n":
             return response("not_found", 404)
+        if row.channel == "workgroup_manual" and (
+            data["status"] not in {"handed_off", "unknown"}
+            or data["status"] == "handed_off"
+            and not re.fullmatch(r"[1-9][0-9]{0,18}", data["provider_id"])
+        ):
+            return response("invalid_workgroup_outcome", 400)
+        if row.channel != "workgroup_manual" and data["status"] == "handed_off":
+            return response("invalid_channel_outcome", 400)
         if row.channel == "telegram" and (
             data["status"] not in {"accepted", "unknown"}
             or data["provider_id"]

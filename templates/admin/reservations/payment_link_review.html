@@ -35,11 +35,11 @@
       {{ billing_form.non_field_errors }}
       {% include 'reservations/_billing_fields.html' with guest_form=billing_form %}
       <label class="lsa-booking-detail__check"><input type="checkbox" name="confirm_updated_link" required><span>راجعت التواريخ والمبلغ والرسالة، وأعتمد تعديل الحجز وتحديث الرابط وإرساله للضيف.</span></label>
-      <button type="submit" class="lsa-btn lsa-btn--gold lsa-owner-form__submit" style="max-width:100%;white-space:normal">اعتماد التعديل وتحديث الرابط وإرساله للضيف</button>
+      <button type="submit" class="lsa-btn lsa-btn--gold lsa-owner-form__submit" style="max-width:100%;white-space:normal">{% if workgroup_manual %}اعتماد التعديل وتجهيز نسخة الرابط لقروب العمل{% else %}اعتماد التعديل وتحديث الرابط وإرساله للضيف{% endif %}</button>
     </form>
   </section>
   {% endif %}
   <p class="help">يبقى خيار أسيل متاحًا في شاشة الحجز. هذا التحديث يخص رابط الموقع، ولا يُلغي رابطًا منفصلًا أعدّته المحاسبة.</p>
-  {% for delivery in deliveries %}<section class="lsa-panel"><p>حالة الإرسال: {% if delivery.status == 'sent' %}قبل مزود الواتساب الرسالة{% elif delivery.status == 'queued' %}بانتظار الإرسال{% elif delivery.status == 'sending' %}جارٍ الإرسال{% else %}تحتاج مراجعة{% endif %}</p></section>{% endfor %}
+  {% for delivery in deliveries %}<section class="lsa-panel"><p>حالة النسخة: {% if delivery.status == 'handed_off' %}سُلّمت لقروب العمل لإرسالها يدويًا{% elif delivery.status == 'handoff_wait' %}بانتظار نسخة القروب{% elif delivery.status == 'handoff_hold' %}نسخة القروب تحتاج مراجعة{% elif delivery.status == 'sent' %}قبل مزود الواتساب الرسالة{% elif delivery.status == 'queued' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}جارٍ الإرسال{% else %}تحتاج مراجعة{% endif %}</p></section>{% endfor %}
 </div>
 {% endblock %}

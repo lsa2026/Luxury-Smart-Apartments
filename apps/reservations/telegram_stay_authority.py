@@ -10,14 +10,19 @@ from django.views.decorators.debug import sensitive_variables
 
 from . import telegram_authority as authority
 from . import telegram_backend as backend
-from .telegram_stay_models import TelegramStayChannel, TelegramStayMessage
+from . import telegram_workgroup as workgroup
+from .telegram_stay_models import TelegramStayChannel, TelegramStayMessage, TelegramWorkgroupHandoff
 
-READS = {"render_source", "delivery_status", "review_policy", "binding"}
+READS = {"render_source", "delivery_status", "handoff_status", "review_policy", "binding"}
 RECORD_SALT = "telegram39.stay-record.v1"
 
 
 def scope_for(row, *, attempt=None):
-    return {"kind": "stay_message", "job": str(row.pk), "attempt": attempt}
+    return {
+        "kind": "stay_workgroup" if workgroup.is_handoff(row) else "stay_message",
+        "job": str(row.pk),
+        "attempt": attempt,
+    }
 
 
 def read(row, action, *, attempt=None):
@@ -32,12 +37,26 @@ def read(row, action, *, attempt=None):
 def authorize(scope, action, key, result):
     flag = (
         "TELEGRAM_STAY_RECEIPTS_ENABLED"
-        if action == "delivery_status"
+        if action in {"delivery_status", "handoff_status"}
         else "TELEGRAM_STAY_MESSAGES_ENABLED"
     )
     if action not in READS or not getattr(settings, flag, False):
         raise authority.Denied
-    row = TelegramStayMessage.objects.get(pk=uuid.UUID(scope["job"]))
+    model = (
+        TelegramWorkgroupHandoff if scope.get("kind") == "stay_workgroup" else TelegramStayMessage
+    )
+    row = model.objects.get(pk=uuid.UUID(scope["job"]))
+    if workgroup.is_handoff(row):
+        if (
+            not workgroup.manual_mode()
+            or action in {"binding", "delivery_status"}
+            or action != "handoff_status"
+            and not workgroup.enabled()
+        ):
+            raise authority.Denied
+        result.update(dispatch_mode="workgroup_manual", workgroup_id=workgroup.WORKGROUP_ID)
+    elif action == "handoff_status" or workgroup.manual_mode() and action != "delivery_status":
+        raise authority.Denied
     identity = row.identity
     if (
         key != identity["stay_key"]
@@ -48,7 +67,7 @@ def authorize(scope, action, key, result):
         ).exists()
     ):
         raise authority.Denied
-    if action not in {"delivery_status", "binding"}:
+    if action not in {"delivery_status", "handoff_status", "binding"}:
         # All current-domain locks end before the bridge reads its own context.
         from django.db import transaction
 
@@ -84,7 +103,9 @@ def authorize(scope, action, key, result):
                 raise authority.Denied
     result.update(identity)
     result["source_scope"] = "stay_review" if action == "review_policy" else "stay_message"
-    if action == "delivery_status":
+    if action == "handoff_status":
+        result["source_scope"] = "stay_workgroup"
+    if action in {"delivery_status", "handoff_status"}:
         attempt = scope.get("attempt")
         if attempt is not None and str(uuid.UUID(attempt)) != attempt:
             raise authority.Denied
@@ -96,14 +117,23 @@ def authorize(scope, action, key, result):
 
 def record_capability(row):
     return signing.dumps(
-        {"job": str(row.pk), "content": row.content_sha256}, salt=RECORD_SALT, compress=True
+        {
+            "job": str(row.pk),
+            "content": row.content_sha256,
+            **({"ledger": "workgroup"} if workgroup.is_handoff(row) else {}),
+        },
+        salt=RECORD_SALT,
+        compress=True,
     )
 
 
 @sensitive_variables()
 def record_row(token):
     value = signing.loads(token, salt=RECORD_SALT, max_age=120)
-    row = TelegramStayMessage.objects.get(pk=uuid.UUID(value["job"]))
+    model = TelegramWorkgroupHandoff if value.get("ledger") == "workgroup" else TelegramStayMessage
+    if workgroup.manual_mode() != (model is TelegramWorkgroupHandoff):
+        raise authority.Denied
+    row = model.objects.get(pk=uuid.UUID(value["job"]))
     if not row.content_sha256 or row.content_sha256 != value["content"]:
         raise authority.Denied
     return row
@@ -113,6 +143,7 @@ def packet_for(row, *, attempt):
     now = timezone.now()
     return {
         "contract": "tg39_stay_source_packet_v1",
+        **workgroup.packet_fields(),
         "scenario": row.scenario,
         "source_owner": row.identity["source_owner"],
         "source_key": str(row.stay_id),

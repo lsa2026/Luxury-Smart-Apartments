@@ -44,6 +44,9 @@ ACTIONS = {
     "issue_invitation",
     "render_source",
     "delivery_status",
+    "handoff_status",
+    "website_handoff",
+    "website_handoff_status",
     "review_policy",
 }
 WRITES = {"approve_phone": "approve_authorized_at", "issue_invitation": "issue_authorized_at"}
@@ -188,11 +191,23 @@ def authorize(data):
     ):
         raise Denied
     scope, action, key = claims["scope"], data["action"], claims["key"]
+    if scope.get("kind") == "website_handoff":
+        from .telegram_website_workgroup import authorize as website_authorize
+
+        result = {
+            "contract": "tg39_activation_authority_v1",
+            "authorized": True,
+            "request_id": data["request_id"],
+            "action": action,
+            "reservation_key": key,
+            "expires_at": datetime.fromtimestamp(claims["expires"], UTC).isoformat(),
+        }
+        return website_authorize(scope, action, key, result)
     if scope.get("kind") == "stay_operations":
         from .telegram_stay_activation import authorize as authorize_stay_operations
 
         return authorize_stay_operations(scope, action, key, data, claims)
-    if scope.get("kind") == "stay_message":
+    if scope.get("kind") in {"stay_message", "stay_workgroup"}:
         from .telegram_stay_authority import authorize as authorize_stay
 
         result = {
@@ -204,8 +219,19 @@ def authorize(data):
             "expires_at": datetime.fromtimestamp(claims["expires"], UTC).isoformat(),
         }
         return authorize_stay(scope, action, key, result)
-    if action in {"render_source", "delivery_status", "review_policy"}:
+    if action in {
+        "render_source",
+        "delivery_status",
+        "handoff_status",
+        "review_policy",
+        "website_handoff",
+        "website_handoff_status",
+    }:
         raise Denied
+    from .telegram_workgroup import manual_mode as workgroup_enabled
+
+    if workgroup_enabled():
+        raise Denied  # Guest enrollment/binding never resumes in manual handoff mode.
     if key is not None and (not isinstance(key, str) or not re.fullmatch(r"[1-9][0-9]{1,15}", key)):
         raise Denied
     result = {

@@ -115,6 +115,10 @@ def guest_proof(request, reservation):
 
 
 def context(request, reservation, *, admin=False):
+    from .telegram_workgroup import manual_mode as workgroup_enabled
+
+    if workgroup_enabled():
+        return None
     request._disable_google_integrations = True
     value = {"admin": admin, "state": "disabled", "can_issue": False, "form": AdminProofForm()}
     value["action_url"] = reverse(

@@ -9,6 +9,9 @@ KEYS = (
     ("email", "owner_join_invitation_email", "owner_join_invitation_email_requests"),
 )
 LABELS = {
+    "handed_off": "سُلّمت نسخة لقروب العمل لإرسالها يدويًا؛ لا إثبات إرسال للضيف",
+    "handoff_wait": "نسخة القروب قيد التجهيز",
+    "handoff_hold": "نتيجة نسخة القروب غير مؤكدة؛ راجع قبل التكرار",
     "queued": "بانتظار الإرسال",
     "sending": "جارٍ الإرسال",
     "accepted": "أُرسلت الدعوة؛ قبلها مزود الإرسال",
@@ -41,7 +44,9 @@ def receipts(booking):
                 {
                     "id": request_id,
                     "channel": channel,
-                    "channel_label": "واتساب" if channel == "whatsapp" else "البريد الإلكتروني",
+                    "channel_label": "قروب العمل — إرسال يدوي"
+                    if row.get("dispatch_mode") == "workgroup_manual"
+                    else ("واتساب" if channel == "whatsapp" else "البريد الإلكتروني"),
                     "status": row.get("status", "unknown"),
                     "status_label": LABELS.get(row.get("status"), "حالة غير معروفة"),
                     "requested_at": timestamp(row.get("requested_at")),
@@ -65,7 +70,7 @@ def fingerprint(booking):
 def pending(booking, *, exclude_id=None):
     return any(
         row["id"] != exclude_id
-        and row["status"] in {"queued", "sending"}
+        and row["status"] in {"queued", "sending", "handoff_wait"}
         and (
             not row["requested_at"] or (timezone.now() - row["requested_at"]).total_seconds() < 900
         )

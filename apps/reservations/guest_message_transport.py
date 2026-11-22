@@ -32,6 +32,10 @@ class Route:
 
     def open(self, legacy_factory):
         from .telegram_stay_models import TelegramStayChannel
+        from .telegram_workgroup import manual_mode as workgroup_enabled
+
+        if workgroup_enabled():
+            raise TransportHeld("workgroup_manual_only")
 
         scenario = {"morning07": "07", "day_use08": "08"}.get(self.source)
         if (
@@ -56,6 +60,10 @@ def prepare(stay, *, source, purpose, reference, recipient_kind="guest"):
     """
     from .telegram_stay_transport import scenario_for
     from .telegram_stay_transport import selected as telegram_selected
+    from .telegram_workgroup import manual_mode as workgroup_enabled
+
+    if workgroup_enabled():
+        raise TransportHeld("workgroup_manual_only")
 
     if telegram_selected(stay):
         raise TransportHeld("telegram_owned_stay")

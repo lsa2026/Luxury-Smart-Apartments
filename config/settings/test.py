@@ -46,5 +46,10 @@ os.environ["WEBSITE_GUEST_MESSAGE_TRANSPORT"] = "ultramsg"
 os.environ["TELEGRAM_STAY_MESSAGES_ENABLED"] = "false"
 os.environ["TELEGRAM_STAY_RECEIPTS_ENABLED"] = "false"
 os.environ["TELEGRAM_STAY_CUTOVER_AT"] = ""
+os.environ["TELEGRAM_WORKGROUP_HANDOFF_ENABLED"] = "false"
+os.environ["TELEGRAM_WORKGROUP_CUTOVER_AT"] = ""
 
 from .development import *  # noqa: E402,F403
+
+# Historical regressions opt out; the workgroup suites explicitly enable the owner policy.
+TELEGRAM_WORKGROUP_ONLY_POLICY = False

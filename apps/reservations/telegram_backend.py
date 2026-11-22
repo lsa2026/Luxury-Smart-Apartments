@@ -24,12 +24,16 @@ class NotReady(Unavailable):
 
 
 def configured():
-    return bool(getattr(settings, "TELEGRAM_ACTIVATION_ENABLED", False))
+    from .telegram_workgroup import manual_mode
+
+    return bool(getattr(settings, "TELEGRAM_ACTIVATION_ENABLED", False) and not manual_mode())
 
 
 class Backend:
     def __init__(self):
-        if not configured():
+        from .telegram_workgroup import manual_mode
+
+        if not configured() and not manual_mode():
             raise Unavailable
         self.ready_checked = False
         self.authority_context = None
@@ -45,7 +49,11 @@ class Backend:
             envelope = authority.mint(scope, action, key or (scope or {}).get("key"))
             # Private render context includes both canonical JSON strings and
             # their parsed values. Ordinary activation results remain capped8KiB.
-            limit = {"render_source": 131072, "review_policy": 32768}.get(action, 8192)
+            limit = {
+                "render_source": 131072,
+                "review_policy": 32768,
+                "website_handoff": 524288,
+            }.get(action, 8192)
             with self.client.stream("POST", BASE, json=envelope) as response:
                 body = bytearray()
                 for chunk in response.iter_bytes():
