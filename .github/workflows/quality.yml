@@ -175,6 +175,18 @@ jobs:
       - name: Verify Ruff formatting
         run: ruff format --diff .
 
+      - name: Verify isolated website source facts and optional guest choice
+        env:
+          LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
+        run: pytest tests/test_message_source_authorization.py tests/test_booking_whatsapp_choice.py tests/test_same_day_financial_catalog.py -q
+
+      - name: Save synthetic website financial catalog
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: site01-same-day-financial-catalog
+          path: artifacts/site01-same-day-financial-catalog.json
+          retention-days: 3
+
       # Focused attribution/schema failures surface before the long regression suites.
       - name: Verify private Booking channel collection boundaries
         env:
@@ -225,19 +237,11 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-prepurchase-visibility.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-assisted-attribution.cjs
 
-      - name: Verify isolated website source facts and optional guest choice
+      - name: Verify guest choice layout without submitting or sending
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
         run: |
-          pytest tests/test_message_source_authorization.py tests/test_booking_whatsapp_choice.py tests/test_same_day_financial_catalog.py -q
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-whatsapp-choice-layout.cjs
-
-      - name: Save synthetic website financial catalog
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: site01-same-day-financial-catalog
-          path: artifacts/site01-same-day-financial-catalog.json
-          retention-days: 3
 
       - name: Run tests
         run: pytest

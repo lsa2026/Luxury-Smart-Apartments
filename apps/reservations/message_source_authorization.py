@@ -34,7 +34,7 @@ from .models import (
     MorningCommunicationEvent,
     MorningStay,
 )
-from .whatsapp_preferences import consent_facts
+from .whatsapp_preferences import projected_consent
 
 SOURCES = {
     "07": (
@@ -55,6 +55,17 @@ SOURCES = {
     ),
 }
 HISTORY_LIMIT = 100
+PURPOSES = {
+    "status_new": "booking_confirmation",
+    "status_modified": "booking_change",
+    "status_cancelled": "booking_cancellation",
+    "house_rules": "house_rules",
+    "checkin_guide": "checkin_guide",
+    "reminder_checkout": "checkout_reminder",
+    "payment_success": "payment_confirmation",
+    "loyalty_invitation": "loyalty_invitation",
+    "payment_link": "payment_link",
+}
 
 
 def sha(value):
@@ -168,7 +179,8 @@ def current_core(stay, event, comms):
 def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
     phone = normalize_phone_number(stay.guest_phone)
     event_kind = "payment" if financial else "core"
-    consent = consent_facts(stay, scenario)
+    canonical_purpose = PURPOSES[purpose]
+    consent = projected_consent(stay, scenario, canonical_purpose)
     return {
         "contract_version": "yc19-source-facts-1",
         "source_family": "website",
@@ -183,16 +195,18 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         + salted_hmac(
             "website-source-recipient.v1", f"{scenario}:{stay.pk}:{phone}", algorithm="sha256"
         ).hexdigest(),
-        "purpose": purpose,
+        "purpose": canonical_purpose,
+        "source_message_type": purpose,
         # Exclude phone and routine source revision. A changed schedule must be
         # explicitly reconciled before the dispatcher authorises any new action.
-        "semantic_key": sha(f"website:{scenario}:{stay.pk}:{purpose}"),
+        "semantic_key": sha(f"website:{scenario}:{stay.pk}:{canonical_purpose}"),
         "not_before": event.created_at.isoformat(),
         "expires_at": stay.ends_at.isoformat(),
         "environment": stay.environment,
         "domain_authorized": False,
         "current_source_verified": True,
         "current_source_cancelled": stay.status == "cancelled",
+        "final_cancellation_verified": None,
         "legacy_state": "unknown",
         "consent": consent,
         "human_takeover": None,
@@ -269,7 +283,11 @@ def payment_link_facts(stay, event, scenario, locator):
     )
     # Never mint a payment URL, check live inventory, or claim an old queued row here.
     result["blockers"].extend(
-        ["live_availability_required", "core_delivery_dependency_requires_verified_receipts"]
+        [
+            "live_availability_required",
+            "core_delivery_dependency_requires_verified_receipts",
+            "payment_link_not_admitted_by_current_intent_contract",
+        ]
     )
     return result
 

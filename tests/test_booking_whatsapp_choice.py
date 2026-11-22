@@ -63,7 +63,10 @@ def test_choice_is_optional_unchecked_and_not_marketing(client, record, guest):
     facts = request_source(client, record).json()
     assert facts["consent"]["service"] is True and facts["consent"]["marketing"] is None
     assert facts["consent"]["channel"] == "whatsapp"
-    assert facts["consent"]["purpose"] == "booking_updates"
+    assert facts["consent"]["purpose"] == "house_rules"
+    assert facts["consent"]["source_scope"] == "booking_updates"
+    assert facts["consent"]["booking_revision"] == record[1].communication_revision
+    assert facts["consent"]["phone_proof_ref"].startswith("site01-wa-phone:")
     assert facts["dispatch_allowed"] is False
     assert post(client, record, action="withdraw").status_code == 302
     assert BookingWhatsAppChoice.objects.count() == 2
@@ -155,3 +158,24 @@ def test_latest_withdrawal_wins_even_if_wall_clock_moves_back(client, record, gu
     assert list(
         BookingWhatsAppChoice.objects.order_by("sequence").values_list("sequence", flat=True)
     ) == [1, 2]
+
+
+@pytest.mark.parametrize("purpose", sorted(choices.SERVICE_PURPOSES))
+def test_service_scope_maps_only_explicit_operational_purposes(client, record, guest, purpose):
+    post(client, record)
+    proof = choices.projected_consent(record[1], record[0], purpose)
+    assert proof["service"] is True and proof["purpose"] == purpose
+    assert proof["source_scope"] == "booking_updates" and proof["marketing"] is None
+    post(client, record, action="withdraw")
+    withdrawn = choices.projected_consent(record[1], record[0], purpose)
+    assert withdrawn["revoked"] is True and withdrawn["service"] is False
+
+
+@pytest.mark.parametrize(
+    "purpose", ["loyalty_invitation", "review_request", "marketing", "unknown"]
+)
+def test_service_scope_never_grants_loyalty_reviews_or_marketing(client, record, guest, purpose):
+    post(client, record)
+    proof = choices.projected_consent(record[1], record[0], purpose)
+    assert proof["service"] is None and proof["marketing"] is None
+    assert proof["purpose"] is None and proof["evidence_ref"] is None

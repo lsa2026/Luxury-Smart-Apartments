@@ -17,6 +17,18 @@ from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 from .models import BookingWhatsAppChoice, DayUseStay, MorningStay
 
 VERSION = "booking-whatsapp-service-v1"
+SERVICE_PURPOSES = frozenset(
+    {
+        "booking_confirmation",
+        "booking_change",
+        "booking_cancellation",
+        "house_rules",
+        "checkin_guide",
+        "checkout_reminder",
+        "payment_link",
+        "payment_confirmation",
+    }
+)
 COPY = {
     "ar": {
         "title": "تحديثات الحجز عبر واتساب",
@@ -122,6 +134,28 @@ def consent_facts(stay, scenario):
         "recorded_at": row.recorded_at.isoformat(),
         "text_version": row.text_version,
         "source": "verified_guest_booking_portal",
+        "decision_sequence": row.sequence,
+        "booking_revision": row.booking_revision,
+        "phone_proof_ref": "site01-wa-phone:"
+        + salted_hmac(
+            "booking-wa-phone-proof.v1", str(row.binding_version), algorithm="sha256"
+        ).hexdigest(),
+    }
+
+
+def projected_consent(stay, scenario, purpose):
+    """Project one explicit service scope, never promotion, loyalty or reviews."""
+    facts = consent_facts(stay, scenario)
+    scope = facts["purpose"]
+    if scope == "booking_updates" and purpose in SERVICE_PURPOSES:
+        return {**facts, "purpose": purpose, "source_scope": scope}
+    return {
+        "service": None,
+        "marketing": None,
+        "purpose": None,
+        "evidence_ref": None,
+        "revoked": None,
+        "source_scope": scope,
     }
 
 
