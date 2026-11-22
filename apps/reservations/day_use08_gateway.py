@@ -172,7 +172,12 @@ def receipt(request):
 
 
 def exact_receipt_messages(attempt):
-    guest_transport.require_legacy_receipt()
+    from . import legacy_message_receipts
+
+    guest_transport.require_legacy_receipt(attempt)
+    cached = legacy_message_receipts.cached_rows(attempt)
+    if cached:
+        return cached
     try:
         with UltraMsgClient() as provider:
             response = provider.http.get(
@@ -206,4 +211,5 @@ def exact_receipt_messages(attempt):
                     "status": row.get("status"),
                 }
             )
+    legacy_message_receipts.remember(attempt, exact)
     return exact

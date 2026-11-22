@@ -87,8 +87,9 @@ def test_registration_rejects_unconfigured_and_backlog(record, settings, config)
 def test_due_forward_has_fresh_scoped_read_only_in_header_and_immutable_source_time(journal):
     scenario, _, event = journal
     receiver = Receiver()
-    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 3}
-    assert len(receiver.calls) == 3
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 1}
+    assert len(receiver.calls) == 1
+    assert receiver.calls[0][0]["source_message_type"] == "status_new"
     for envelope, headers in receiver.calls:
         assert len(envelope) == 12
         assert envelope["source_occurred_at"] == event.created_at.isoformat()
@@ -108,10 +109,10 @@ def test_missing_or_held_ack_never_retries_or_counts_delivery(journal, reply):
     receiver = Receiver(reply)
     assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
     assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
-    assert len(receiver.calls) == 3
+    assert len(receiver.calls) == 1
     assert (
         WebsiteMessageRelay.objects.filter(state="held" if reply == "held" else "uncertain").count()
-        == 3
+        == 1
     )
 
 

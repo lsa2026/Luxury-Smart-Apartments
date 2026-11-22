@@ -38,7 +38,7 @@ def core_delivered(stay, revision, *, reconcile_uncertain=False):
     if guest_transport.mode() != "ultramsg":
         from .message_receipts import core_delivered as central_delivered
 
-        return central_delivered(stay, revision, "07")
+        return central_delivered(stay, revision, "07", reconcile_uncertain=reconcile_uncertain)
     phone = "".join(c for c in stay.guest_phone if c.isdigit())
     stamp = int(stay.starts_at.timestamp() * 1000)
     guide = f"guide:{stay.property.hostaway_listing_map_id}:{stamp}:{phone}"

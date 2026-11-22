@@ -123,7 +123,8 @@ def test_source_is_read_only_and_unknown_facts_never_grant_dispatch(client, reco
     assert facts["source_family"] == "website" and facts["scenario"] == scenario
     assert facts["reservation_revision"] == str(stay.communication_revision)
     assert facts["environment"] == "production"
-    assert facts["current_source_verified"] and facts["domain_authorized"]
+    assert facts["current_source_verified"] and not facts["domain_authorized"]
+    assert "predecessor_delivery_unverified" in facts["blockers"]
     assert facts["dispatch_allowed"] is False and facts["legacy_state"] == "not_attempted"
     assert facts["consent"]["service"] is facts["consent"]["marketing"] is None
     assert facts["human_takeover"] is facts["message"] is facts["render_policy_ref"] is None
