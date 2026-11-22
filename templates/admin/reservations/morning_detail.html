@@ -27,6 +27,7 @@
       </form>
     </details>{% endif %}
   </section>
+    {% if telegram_owned %}<section class="lsa-panel"><p>تُدار رسائل الحجز ورابط الدفع تلقائيًا عبر مسار تليجرام المعتمد.</p></section>{% else %}
     <section class="lsa-panel morning-payment-send" aria-labelledby="morning-send-title">
       <h3 id="morning-send-title">إرسال رسالة واتساب إلى الضيف</h3>
       {% if hostaway_first %}<p><strong>يُرسل رابط الدفع تلقائيًا بعد تأكيد تسليم رسائل تأكيد الحجز وقواعد المنزل وتعليمات الدخول. إذا كان الحجز مسددًا، فلن يُرسل طلب دفع جديد.</strong></p>{% endif %}
@@ -40,6 +41,7 @@
 
       {% endif %}
     </section>
+    {% endif %}
   <section class="lsa-panel">
     <h2>{{ stay.property|localized_property_name }}</h2>
     <dl class="quote-summary"><div><dt>الضيف</dt><dd>{{ stay.guest_name }}</dd></div><div><dt>الجوال</dt><dd dir="ltr">{{ stay.guest_phone }}</dd></div><div><dt>البريد الإلكتروني</dt><dd>{{ stay.guest_email }}</dd></div><div><dt>الدخول</dt><dd dir="ltr">{{ stay.starts_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>الخروج</dt><dd dir="ltr">{{ stay.ends_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}</dd></div><div><dt>المنطقة الزمنية</dt><dd>{{ stay.time_zone }}</dd></div><div><dt>الإجمالي المعتمد</dt><dd>{{ stay.amount_sar|format_money:'SAR' }}</dd></div><div><dt>الحالة</dt><dd>{% if expired %}انتهت مهلة الدفع{% else %}{{ stay.get_status_display }}{% endif %}</dd></div></dl>
@@ -52,7 +54,7 @@
       {% elif hostaway_first or stay.status == 'paid' and stay.paid_at %}<p>بعد فحص التوفر، نسجل ليلة اليوم السابق بخروج يوم الإقامة، وبالمبلغ المعتمد بالريال. لا ينفذ هذا الإجراء دفعًا أو رسالة للضيف.</p><form method="post" data-submit-once>{% csrf_token %}<button type="submit" class="lsa-btn" name="action" value="record_hostaway">فحص التوفر وتسجيل الحجز في هوستاوي</button></form>
       {% else %}<p>لم يُسجل في هوستاوي بعد. يتاح التسجيل من هذه الصفحة بعد توثيق استلام كامل المبلغ.</p>{% endif %}
     </section>
-    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>رابط الدفع ثابت دون مهلة انتهاء زمنية. تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.</p>{% endif %}
+    {% if payment_url and not expired %}<label for="morning-payment-url">رابط السداد الآمن — يمكنك نسخه للضيف</label><input id="morning-payment-url" type="url" value="{{ payment_url }}" readonly dir="ltr" style="width:100%;box-sizing:border-box"><p>رابط الدفع ثابت دون مهلة انتهاء زمنية.{% if not telegram_owned %} تظهر نتيجة إرسال رسالة واتساب في لوحة الإرسال أعلى الصفحة.{% endif %}</p>{% endif %}
     {% if stay.paid_at %}<p>تم توثيق استلام الدفعة: {{ stay.paid_at|timezone:stay.time_zone|date:'Y-m-d H:i' }}.</p>{% endif %}
     {% if not hostaway_booking %}{% if stay.status == 'paid' or stay.status == 'open' or stay.status == 'expired' %}<a class="lsa-btn" href="{% url 'notifications:morning_edit' stay.pk %}">تعديل الحجز</a>{% endif %}{% endif %}
     <form method="post">{% csrf_token %}<button class="lsa-btn" type="submit" name="action" value="verify">فحص نتيجة البطاقة لدى HyperPay</button>{% if stay.status != 'cancelled' %}{% if stay.paid_at %}<label><input type="checkbox" name="confirm_paid_cancellation" value="yes"> أؤكد إلغاء الإقامة وإيقاف رسائلها المستقبلية. الاسترداد المالي يُراجع بصورة مستقلة.</label>{% endif %}<button class="lsa-btn lsa-btn--ghost" type="submit" name="action" value="cancel">إلغاء الحجز</button>{% endif %}</form>

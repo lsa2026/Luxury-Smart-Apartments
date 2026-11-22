@@ -497,6 +497,7 @@ def report_payment_send(request, state):
 @morning_arabic_ui
 def morning_detail(request, stay_id):
     from .telegram_stay_activation import context as telegram_context
+    from .telegram_stay_transport import selected as telegram_selected
 
     stay = get_object_or_404(MorningStay.objects.select_related("property"), pk=stay_id)
     receipt_form = MorningReceiptForm(
@@ -630,6 +631,7 @@ def morning_detail(request, stay_id):
             request,
             title="تفاصيل الحجز الصباحي",
             telegram=telegram_context(request, stay, "07"),
+            telegram_owned=telegram_selected(stay),
             stay=stay,
             payment_url=public_url(stay)
             if settings.HYPERPAY_ENABLED and stay.status in {"open", "expired", "processing"}

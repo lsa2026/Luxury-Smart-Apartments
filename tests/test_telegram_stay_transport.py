@@ -143,6 +143,19 @@ def test_selected_stay_never_reopens_legacy_send_when_new_transport_is_paused(ow
         route.open(lambda: pytest.fail("No provider constructed"))
 
 
+def test_legacy_manual_resend_cannot_change_a_telegram_stay_or_create_delivery(owned):
+    from uuid import uuid4
+
+    from apps.reservations.telegram_stay_financial import modules
+
+    scenario, stay, _ = owned
+    links, domain, _ = modules(scenario)
+    if scenario == "07":
+        with pytest.raises(domain.MorningStayError):
+            links.resend(stay.pk, uuid4(), dispatch_async=False)
+    assert not stay.payment_link_deliveries.exists()
+
+
 def test_due_recovery_uses_only_registered_notice_rows_not_old_events(owned, monkeypatch):
     ids = []
     monkeypatch.setattr(transport, "queue", lambda pk: ids.append(pk))
