@@ -3,6 +3,7 @@
 import json
 from datetime import timedelta
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from django.core import signing
@@ -87,8 +88,9 @@ def test_registration_rejects_unconfigured_and_backlog(record, settings, config)
 def test_due_forward_has_fresh_scoped_read_only_in_header_and_immutable_source_time(journal):
     scenario, _, event = journal
     receiver = Receiver()
-    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 3}
-    assert len(receiver.calls) == 3
+    assert relay.forward_due(client=receiver, limit=3) == {"accepted": 1}
+    assert len(receiver.calls) == 1
+    assert receiver.calls[0][0]["source_message_type"] == "status_new"
     for envelope, headers in receiver.calls:
         assert len(envelope) == 12
         assert envelope["source_occurred_at"] == event.created_at.isoformat()
@@ -108,10 +110,10 @@ def test_missing_or_held_ack_never_retries_or_counts_delivery(journal, reply):
     receiver = Receiver(reply)
     assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
     assert relay.forward_due(client=receiver, limit=3) == {"accepted": 0}
-    assert len(receiver.calls) == 3
+    assert len(receiver.calls) == 1
     assert (
         WebsiteMessageRelay.objects.filter(state="held" if reply == "held" else "uncertain").count()
-        == 3
+        == 1
     )
 
 
@@ -171,3 +173,43 @@ def test_financial_due_and_original_payment_time_are_distinct(record, settings):
         current = relay.current_event(row)
     assert current is not None
     assert current[1]["domain_authorized"] is False
+
+
+def test_blocked_predecessors_do_not_starve_another_current_booking(journal, monkeypatch):
+    scenario, stay, event = journal
+    WebsiteMessageRelay.objects.all().delete()
+    rows = []
+    for i in range(31):
+        rows.append(
+            WebsiteMessageRelay.objects.create(
+                scenario=scenario,
+                event_id=uuid4(),
+                stay_id=stay.pk,
+                revision=str(stay.communication_revision),
+                message_type="status_new",
+                job_sha256=f"{i:064x}",
+                source_occurred_at=event.created_at,
+                not_before=event.created_at,
+                expires_at=stay.ends_at,
+            )
+        )
+    from apps.reservations import message_receipts
+
+    monkeypatch.setattr(message_receipts, "core_slot_delivered", lambda *a: False)
+    monkeypatch.setattr(
+        relay,
+        "current_event",
+        lambda row: (
+            SimpleNamespace(pk=row.event_id, stay=stay),
+            {
+                "source_event_key": f"website:{scenario}:core:{row.event_id}",
+                "domain_authorized": row.pk == rows[-1].pk,
+            },
+        ),
+    )
+    receiver = Receiver()
+    assert relay.forward_due(client=receiver) == {"accepted": 0}
+    assert receiver.calls == []
+    assert relay.forward_due(client=receiver) == {"accepted": 1}
+    assert receiver.calls[0][0]["relay_ref"] == str(rows[-1].pk)
+    assert WebsiteMessageRelay.objects.filter(not_before=event.created_at).count() == 31

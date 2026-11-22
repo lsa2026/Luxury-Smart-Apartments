@@ -273,7 +273,11 @@ def core_facts(stay, event, scenario, locator):
     if stay.status == "cancelled" and purpose != "status_cancelled":
         return None
     result = base_facts(stay, event, scenario, locator, purpose)
-    result["domain_authorized"] = True  # Current domain only; never send permission.
+    from .message_receipts import predecessors_delivered
+
+    result["domain_authorized"] = predecessors_delivered(stay, event, scenario, purpose)
+    if not result["domain_authorized"]:
+        result["blockers"].append("predecessor_delivery_unverified")
     result["legacy_state"] = core_history(stay, purpose, scenario)
     if purpose == "reminder_checkout":
         result["not_before"] = (stay.ends_at - timedelta(hours=1)).isoformat()

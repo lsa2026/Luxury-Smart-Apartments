@@ -2,6 +2,7 @@
 
 import json
 from copy import deepcopy
+from uuid import uuid4
 
 import pytest
 from django.db import transaction
@@ -24,7 +25,7 @@ REQUEST_ID = "n8n20-" + "a" * 64
 def prepared(journal, settings, monkeypatch):
     settings.MESSAGE_RECEIPTS_ENABLED = True
     scenario, stay, event = journal
-    row = relay.WebsiteMessageRelay.objects.get(message_type="house_rules")
+    row = relay.WebsiteMessageRelay.objects.get(message_type="status_new")
     row.state = "forwarding"
     row.save(update_fields=["state"])
     with transaction.atomic():
@@ -200,7 +201,7 @@ def test_accepted_is_not_delivery_unknown_blocks_and_actual_receipt_matches_expe
     )
     assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "uncertain"
     stay = source.SOURCES[row.scenario][0].objects.get(pk=row.stay_id)
-    assert source.core_history(stay, "house_rules", row.scenario) == "uncertain"
+    assert source.core_history(stay, row.message_type, row.scenario) == "uncertain"
     proof.update(
         provider_message_id="synthetic-provider-id",
         wamid="synthetic-wamid",
@@ -270,9 +271,10 @@ def test_all_three_verified_receipts_satisfy_original_gate_and_phone_change_revo
     stay = (
         source.SOURCES[first.scenario][0].objects.select_related("property").get(pk=first.stay_id)
     )
-    rows = relay.WebsiteMessageRelay.objects.exclude(message_type="reminder_checkout").order_by(
-        "message_type"
-    )
+    rows = [
+        relay.WebsiteMessageRelay.objects.get(message_type=kind)
+        for kind in ("status_new", "house_rules", "checkin_guide")
+    ]
     for sequence, row in enumerate(rows, 1):
         row.state = "forwarding"
         row.save(update_fields=["state"])
@@ -338,3 +340,56 @@ def test_proof_schema_and_prepare_lifetime_fail_closed(prepared, monkeypatch, mu
     with pytest.raises(ValueError):
         receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability")
     assert not WebsiteMessageExpectation.objects.exists()
+
+
+def test_late_delivery_callback_uses_existing_expectation_without_read_or_resend(
+    client, prepared, monkeypatch
+):
+    row, _, policy, proof, _ = prepared
+    synthetic_policy(monkeypatch, policy)
+    receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability")
+    prior = WebsiteMessageExpectation.objects.get()
+    deliver(proof)
+    url = reverse("integrations:website_message_receipt")
+    body = {"request_id": REQUEST_ID, "expectation_ref": str(prior.expectation_ref)}
+    for _ in range(2):
+        reply = client.post(
+            url,
+            data=json.dumps(body),
+            content_type="application/json",
+            HTTP_X_LSA_RECEIPT_CAPABILITY="x" * 43,
+        )
+        assert reply.status_code == 200 and reply.json()["code"] == "delivered"
+    assert WebsiteMessageExpectation.objects.count() == 1
+    assert WebsiteMessageExpectation.objects.get().state == "delivered"
+    wrong = client.post(
+        url,
+        data=json.dumps({**body, "expectation_ref": str(uuid4())}),
+        content_type="application/json",
+        HTTP_X_LSA_RECEIPT_CAPABILITY="x" * 43,
+    )
+    assert wrong.status_code == 409
+
+
+def test_callback_reference_cannot_create_first_expectation(client, prepared):
+    _, _, _, proof, _ = prepared
+    deliver(proof)
+    reply = client.post(
+        reverse("integrations:website_message_receipt"),
+        data=json.dumps({"request_id": REQUEST_ID, "expectation_ref": str(uuid4())}),
+        content_type="application/json",
+        HTTP_X_LSA_RECEIPT_CAPABILITY="x" * 43,
+    )
+    assert reply.status_code == 409 and not WebsiteMessageExpectation.objects.exists()
+
+
+def test_read_receipt_advances_delivery_and_cannot_be_downgraded(prepared, monkeypatch):
+    row, _, policy, proof, _ = prepared
+    synthetic_policy(monkeypatch, policy)
+    receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability")
+    deliver(proof)
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "delivered"
+    proof["state"] = "read"
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "read"
+    proof.update(state="accepted", delivered=False)
+    assert receipts.reconcile(row.pk, REQUEST_ID, "synthetic-capability") == "read"

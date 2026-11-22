@@ -143,16 +143,20 @@ def forward_due(*, client=None, limit=1):
     if not enabled():
         return {"accepted": 0}
     accepted = 0
-    for _ in range(min(max(limit, 0), 3)):
+    examined = set()
+    budget = min(max(limit, 0), 3)
+    while len(examined) < 30 and accepted < budget:
         with transaction.atomic():
             row = (
                 WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
                 .filter(state="pending", not_before__lte=timezone.now())
-                .order_by("not_before", "created_at")
+                .exclude(pk__in=examined)
+                .order_by("updated_at", "not_before", "created_at")
                 .first()
             )
             if row is None:
                 break
+            examined.add(row.pk)
             try:
                 current = current_event(row)
             except (InvalidPhoneNumber, ValidationError, KeyError, ValueError, TypeError):
@@ -162,6 +166,17 @@ def forward_due(*, client=None, limit=1):
                 row.save(update_fields=["state", "reason", "updated_at"])
                 continue
             event, facts = current
+            if not row.financial:
+                from .message_receipts import core_slot_delivered
+
+                if core_slot_delivered(event.stay, event, row.scenario, row.message_type):
+                    row.state, row.reason = "satisfied", "verified_existing_delivery"
+                    row.save(update_fields=["state", "reason", "updated_at"])
+                    continue
+            if not facts["domain_authorized"]:
+                row.reason = "predecessor_or_domain_pending"
+                row.save(update_fields=["reason", "updated_at"])
+                continue  # Wait for actual predecessor delivery, not an ACK.
             row.state = "forwarding"
             row.save(update_fields=["state", "updated_at"])
         # Durable fence is committed BEFORE the network. A crash/timeout is not
@@ -215,4 +230,6 @@ def forward_due(*, client=None, limit=1):
         WebsiteMessageRelay.objects.filter(pk=row.pk, state="forwarding").update(
             state=state, reason=reason, request_id=request_id, updated_at=timezone.now()
         )
+        if state != "accepted":
+            break  # One network attempt per default worker round, including held.
     return {"accepted": accepted}

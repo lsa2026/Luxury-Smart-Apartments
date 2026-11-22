@@ -56,8 +56,11 @@ def prepare(stay, *, source, purpose, reference, recipient_kind="guest"):
     )
 
 
-def require_legacy_receipt():
-    # Never query UltraMsg or reinterpret its ACK format for a central operation.
-    # No central status result can be invented while contract19 is pending.
+def require_legacy_receipt(attempt=None):
+    # A historical, database-bound core attempt may retain its original receipt
+    # reader. This cannot query/translate a YCloud result or allow a legacy send.
     if mode() != "ultramsg":
-        raise ValueError("receipt_lookup_uncertain")
+        from .legacy_message_receipts import bound_before_cutover
+
+        if mode() != "ycloud_central" or not bound_before_cutover(attempt):
+            raise ValueError("receipt_lookup_uncertain")

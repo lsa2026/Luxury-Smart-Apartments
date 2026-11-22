@@ -260,7 +260,12 @@ def reconcile(row_id, request_id, capability):
             policy = independent_render_policy(
                 event, facts, render_source.get("context") if before else None
             )
-            if not before or not policy or row.state != "forwarding":
+            if (
+                not before
+                or not policy
+                or row.state != "forwarding"
+                or facts["domain_authorized"] is not True
+            ):
                 return "held"
             now = int(timezone.now().timestamp())
             prepared_at = proof.get("prepared_at_epoch")
@@ -351,6 +356,11 @@ def reconcile(row_id, request_id, capability):
         elif delivered is not False or state in {"delivered", "read"}:
             raise ValueError
         if prior.state in {"delivered", "read"}:
+            if prior.state == "delivered" and delivered is True and state == "read":
+                prior.state = "read"
+                prior.observed_at_epoch = observed
+                prior.receipt_evidence_ref = evidence
+                prior.save(update_fields=["state", "observed_at_epoch", "receipt_evidence_ref"])
             return prior.state  # Never downgrade a trusted delivery.
         prior.attempts_claimed = claims
         prior.provider_message_id, prior.wamid = provider_id or "", wamid or ""
@@ -386,14 +396,22 @@ def receipt(request):
         body = json.loads(request.body, object_pairs_hook=source.unique_object)
         if (
             not isinstance(body, dict)
-            or set(body) != {"request_id", "relay_ref"}
+            or set(body) not in ({"request_id", "relay_ref"}, {"request_id", "expectation_ref"})
             or not isinstance(body["request_id"], str)
             or not re.fullmatch(REQUEST_PATTERN, body["request_id"])
             or not isinstance(capability, str)
             or not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability)
         ):
             raise ValueError
-        row_id = UUID(body["relay_ref"])
+        if "expectation_ref" in body:
+            prior = WebsiteMessageExpectation.objects.filter(
+                expectation_ref=UUID(body["expectation_ref"]), request_id=body["request_id"]
+            ).first()
+            if prior is None:
+                raise ValueError
+            row_id = prior.relay_id
+        else:
+            row_id = UUID(body["relay_ref"])
         if not relay.WebsiteMessageRelay.objects.filter(pk=row_id).exists():
             raise ValueError
         state = reconcile(row_id, body["request_id"], capability)
@@ -402,15 +420,15 @@ def receipt(request):
     return source.response({"code": state, "dispatch_allowed": False})
 
 
-def core_delivered(stay, revision, scenario):
-    if not getattr(settings, "MESSAGE_RECEIPTS_ENABLED", False):
-        return False
-    event = stay.communication_events.filter(revision=revision).first()
-    if not event:
-        return False
-    if not source.current_core(stay, event, source.SOURCES[scenario][4]):
-        return False
+def core_slot_delivered(
+    stay, event, scenario, kind, *, allow_legacy_lookup=False, reconcile_uncertain=False
+):
+    from . import legacy_message_receipts
+
     keys = source.core_keys(stay.pk, event.payload, scenario)
+    key = keys.get(kind)
+    if not key:
+        return False
     phone = source.normalize_phone_number(stay.guest_phone)
     recipient = (
         "site01:"
@@ -418,9 +436,7 @@ def core_delivered(stay, revision, scenario):
             "website-source-recipient.v1", f"{scenario}:{stay.pk}:{phone}", algorithm="sha256"
         ).hexdigest()
     )
-    for kind, key in keys.items():
-        if kind == "reminder_checkout":
-            continue
+    if getattr(settings, "MESSAGE_RECEIPTS_ENABLED", False):
         candidates = WebsiteMessageExpectation.objects.filter(
             relay__scenario=scenario,
             relay__stay_id=stay.pk,
@@ -429,7 +445,7 @@ def core_delivered(stay, revision, scenario):
             state__in=["delivered", "read"],
             attempts_claimed=1,
         )
-        if not any(
+        if any(
             row.identity.get("recipient_ref") == recipient
             and row.identity.get("source_message_type") == kind
             and row.provider_message_id
@@ -437,5 +453,46 @@ def core_delivered(stay, revision, scenario):
             and row.receipt_evidence_ref
             for row in candidates
         ):
-            return False
-    return True
+            return True
+    model = source.SOURCES[scenario][3]
+    old = model.objects.filter(
+        pk=source.legacy_reference(key, scenario),
+        stay=stay,
+        state__in=["accepted", "posting", "uncertain"] if reconcile_uncertain else ["accepted"],
+    ).first()
+    if not old or not legacy_message_receipts.bound_before_cutover(old):
+        return False
+    rows = legacy_message_receipts.cached_rows(old)
+    if not rows and allow_legacy_lookup:
+        from . import day_use08_gateway, morning07_gateway
+
+        gateway = morning07_gateway if scenario == "07" else day_use08_gateway
+        rows = gateway.exact_receipt_messages(old)
+    return any(legacy_message_receipts.delivered(row) for row in rows)
+
+
+def predecessors_delivered(stay, event, scenario, kind):
+    # Source READ and relay checks are database-only. A bound ACK is not delivery.
+    status = "status_" + event.payload["event_type"]
+    required = {"house_rules": [status], "checkin_guide": [status, "house_rules"]}.get(kind, [])
+    return all(core_slot_delivered(stay, event, scenario, predecessor) for predecessor in required)
+
+
+def core_delivered(stay, revision, scenario, *, reconcile_uncertain=False):
+    event = stay.communication_events.filter(revision=revision).first()
+    if not event:
+        return False
+    if not source.current_core(stay, event, source.SOURCES[scenario][4]):
+        return False
+    return all(
+        core_slot_delivered(
+            stay,
+            event,
+            scenario,
+            kind,
+            allow_legacy_lookup=True,
+            reconcile_uncertain=reconcile_uncertain,
+        )
+        for kind in source.core_keys(stay.pk, event.payload, scenario)
+        if kind != "reminder_checkout"
+    )
