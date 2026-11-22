@@ -44,6 +44,7 @@ jobs:
       - name: Test booking writes on the production database engine
         run: >-
           pytest tests/test_owner_modification_workflow.py
+          tests/test_workgroup_queue_audit.py
           tests/test_message_source_authorization.py
           tests/test_transaction_permission_candidate.py
           tests/test_message_source_relay.py
@@ -191,7 +192,7 @@ jobs:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
         run: |
           python manage.py makemigrations --check --dry-run
-          pytest tests/test_website_workgroup.py tests/test_telegram_workgroup.py tests/test_loyalty_workgroup.py tests/test_telegram_stay_transport.py tests/test_telegram_stay_journey.py tests/test_telegram_activation.py tests/test_telegram_authority.py tests/test_telegram_stay_source.py tests/test_telegram_stay_render.py tests/test_telegram_loyalty.py tests/test_reservation_access_links.py tests/test_loyalty_invitation_api.py -q
+          pytest tests/test_workgroup_queue_audit.py tests/test_website_workgroup.py tests/test_telegram_workgroup.py tests/test_loyalty_workgroup.py tests/test_telegram_stay_transport.py tests/test_telegram_stay_journey.py tests/test_telegram_activation.py tests/test_telegram_authority.py tests/test_telegram_stay_source.py tests/test_telegram_stay_render.py tests/test_telegram_loyalty.py tests/test_reservation_access_links.py tests/test_loyalty_invitation_api.py -q
 
       - name: Verify Ruff formatting
         run: ruff format --diff .
