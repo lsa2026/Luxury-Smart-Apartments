@@ -2,6 +2,7 @@
 # ruff: noqa: F811
 
 import os
+from copy import copy
 from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
@@ -115,11 +116,19 @@ def test_binding_rotation_invalidates_but_same_booking_updates_retain_explicit_s
     binding.save()
     assert choices.consent_facts(record[1], record[0])["service"] is None
     post(client, record)
+    original = choices.consent_facts(record[1], record[0])
+    original_rows = BookingWhatsAppChoice.objects.count()
     record[1].communication_revision += 1
     proof = choices.consent_facts(record[1], record[0])
     assert proof["service"] is True
     assert proof["booking_revision"] == record[1].communication_revision - 1
     assert proof["current_booking_revision"] == str(record[1].communication_revision)
+    assert proof["evidence_ref"] == original["evidence_ref"]
+    assert proof["recorded_at"] == original["recorded_at"]
+    assert BookingWhatsAppChoice.objects.count() == original_rows
+    another_stay = copy(record[1])
+    another_stay.pk = uuid4()
+    assert choices.consent_facts(another_stay, record[0])["service"] is None
 
 
 def test_disabled_no_schema_query_and_csrf_required(client, record, guest, settings):
