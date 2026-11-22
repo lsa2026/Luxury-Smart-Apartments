@@ -361,6 +361,7 @@ def core_message(row, packet, stay):
         row.identity["language"],
         body,
         asset_for(row.scenario, row.purpose, row.identity["language"], verified_paid=verified_paid),
+        manual_handoff=workgroup.is_handoff(row),
     ), context["context_sha256"]
 
 

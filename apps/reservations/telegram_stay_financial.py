@@ -155,6 +155,7 @@ def content(row, stay):
         stay.guest_language,
         trusted_copy(fn, stay),
         image(row.purpose, row.scenario, stay.guest_language),
+        manual_handoff=workgroup.is_handoff(row),
     )
     return value, render.sha("approved-existing-financial-copy-v1:" + row.purpose)
 

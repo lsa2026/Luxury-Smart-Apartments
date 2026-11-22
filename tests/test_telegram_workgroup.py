@@ -216,6 +216,17 @@ def test_manual_mode_closes_guest_activation_even_if_old_flags_are_true(group, s
     assert not backend.configured()
 
 
+def test_workgroup_long_copy_can_be_chunked_without_weakening_private_guest_limits():
+    asset = {"asset_ref": "synthetic", "asset_sha256": "a" * 64, "asset_mime": "image/png"}
+    for text, media in [("a" * 1025, asset), ("a" * 4097, None), ("😀" * 1500, asset)]:
+        with pytest.raises(authority.Denied):
+            render.message("en", text, media)
+        result = render.message("en", text, media, manual_handoff=True)
+        assert result["caption_html" if media else "body_html"] == text
+    with pytest.raises(authority.Denied):
+        render.message("en", "a" * 16385, manual_handoff=True)
+
+
 def test_payment_resource_requires_three_group_handoffs_and_current_amount(
     owned, private_source, settings, monkeypatch
 ):

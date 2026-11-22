@@ -99,5 +99,7 @@ def content(row, stay):
         "review_url": policy["review_url"],
     }
     return render.message(
-        stay.guest_language, render.render_html(template, values, stay.guest_language)
+        stay.guest_language,
+        render.render_html(template, values, stay.guest_language),
+        manual_handoff=workgroup.is_handoff(row),
     ), policy["template_sha256"]
