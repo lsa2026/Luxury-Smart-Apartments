@@ -250,15 +250,15 @@ def binding(row):
     return render.sha(row.identity["stay_key"] + ":" + chat + ":" + row.identity["phone_hash"])
 
 
-def asset_for(scenario, purpose, language):
+def asset_for(scenario, purpose, language, *, verified_paid=False):
     if scenario != "07" or purpose != "status_new":
         return None
     from .morning_payment_messages import notice_image
 
-    raw = notice_image(language, confirmed=True)
+    raw = notice_image(language, confirmed=verified_paid)
     # notice_image is the existing approved static source; no new public asset.
     return {
-        "asset_ref": f"site01-morning-confirmed-{language}",
+        "asset_ref": f"site01-morning-{'confirmed' if verified_paid else 'payment'}-{language}",
         "asset_sha256": hashlib.sha256(raw).hexdigest(),
         "asset_mime": "image/png",
     }
@@ -281,10 +281,30 @@ def core_message(row, packet, stay):
         timezone=stay.time_zone,
     )
     body = render.render_html(template, variables, row.identity["language"])
+    verified_paid = False
+    if row.scenario == "07" and row.purpose == "status_new":
+        from .morning07_payments import verified_facts
+
+        current = type(stay).objects.select_related("property").get(pk=stay.pk)
+        if current.communication_revision != row.revision:
+            raise Denied
+        verified_paid = bool(verified_facts(current))
+        if row.asset_ref:
+            language = row.identity["language"]
+            if row.asset_ref not in {
+                f"site01-morning-confirmed-{language}",
+                f"site01-morning-payment-{language}",
+            }:
+                raise Denied
+            if row.asset_ref == f"site01-morning-confirmed-{language}" and not verified_paid:
+                raise Denied("confirmation_image_payment_proof_missing")
+            # An unpaid image remains truthful after payment. Never change a
+            # planned job's media/hash merely because collection later succeeds.
+            verified_paid = row.asset_ref == f"site01-morning-confirmed-{language}"
     return render.message(
         row.identity["language"],
         body,
-        asset_for(row.scenario, row.purpose, row.identity["language"]),
+        asset_for(row.scenario, row.purpose, row.identity["language"], verified_paid=verified_paid),
     ), context["context_sha256"]
 
 

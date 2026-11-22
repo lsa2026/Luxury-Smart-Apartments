@@ -144,6 +144,8 @@ def test_three_core_messages_advance_only_after_exact_native_acceptance(owned, p
         assert result["job"]["method"] == (
             "photo" if scenario == "07" and sequence == 1 else "text"
         )
+        if scenario == "07" and sequence == 1:
+            assert result["job"]["asset_ref"] == "site01-morning-payment-en"
         assert journey.accepted_core(stay, scenario) is (sequence == 3)
     assert not any(k in result for k in ("core_delivered", "guest_read"))
     assert not stay.payment_link_deliveries.exists()
@@ -436,6 +438,29 @@ def test_real_payment_proof_then_success_acceptance_then_one_cross_channel_loyal
     type(paid[1]).objects.filter(pk=paid[1].pk).update(amount_sar="999.00")
     paid[1].refresh_from_db()
     assert financial.financial(value, paid[1], paid[2])["reason"] == "current_paid_core_required"
+
+
+def test_unpaid_confirmation_keeps_non_collection_art_after_payment(owned, private_source):
+    if owned[0] != "07":
+        pytest.skip("Only07 has a confirmation image")
+    initial = next_job(owned)["job"]
+    assert initial["asset_ref"] == "site01-morning-payment-en"
+    fixtures.paid_record(owned)
+    later = next_job(owned)["job"]
+    assert later["asset_ref"] == initial["asset_ref"]
+    assert later["content_sha256"] == initial["content_sha256"]
+
+
+def test_paid_art_requires_current_collection_proof_not_only_hostaway(owned, private_source):
+    if owned[0] != "07":
+        pytest.skip("Only07 has a confirmation image")
+    paid = fixtures.paid_record(owned)
+    result = next_job(owned)["job"]
+    assert result["asset_ref"] == "site01-morning-confirmed-en"
+    receipt = paid[1].offline_receipt
+    type(receipt).objects.filter(pk=receipt.pk).update(amount="999.00")
+    with pytest.raises(authority.Denied, match="confirmation_image_payment_proof_missing"):
+        next_job(owned)
 
 
 def test_review_template_has_its_own_parser_and_source_profile_evidence(
