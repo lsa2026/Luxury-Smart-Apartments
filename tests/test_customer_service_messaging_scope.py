@@ -47,7 +47,12 @@ def test_service_scope_comes_from_current_event_without_extra_opt_in_or_grant(cl
     assert record[1].guest_phone not in str(scope)
     record[1].refresh_from_db()
     assert record[1].legal_acceptance == original
-    assert all(q["sql"].lstrip().upper().startswith("SELECT") for q in queries.captured_queries)
+    # The private read uses an atomic snapshot; transaction-control SQL is not a data write.
+    assert all(
+        q["sql"].lstrip().split()[0].upper()
+        in {"SELECT", "SAVEPOINT", "RELEASE", "BEGIN", "COMMIT", "ROLLBACK"}
+        for q in queries.captured_queries
+    )
 
 
 @pytest.mark.parametrize("kind", ["payment_success", "loyalty_invitation"])
