@@ -63,3 +63,39 @@ def test_source_image_is_checked_not_dropped_and_new_confirmation_never_claims_p
         selector.select_source_message(
             case["facts"], case["context"], asset_reader=lambda *_: b"wrong"
         )
+
+
+GATE_CASES = json.loads((ROOT / "gate-access-parity.json").read_text(encoding="utf8"))["cases"]
+
+
+@pytest.mark.parametrize("case", GATE_CASES, ids=lambda c: c["language"])
+def test_verified_instruction_matches_source19_private_bytes_and_identity_digest(case):
+    from copy import deepcopy
+
+    current = selector.select_source_message(case["facts"], case["context"])
+    assert current.message == case["expected_message"]
+    assert current.content_digest == case["expected_digest"]
+    assert (
+        hashlib.sha256(current.attachment_bytes).hexdigest() == case["expected_attachment_sha256"]
+    )
+    changed = deepcopy(case["context"])
+    changed["gate_access_evidence_ref"] += ":changed"
+    another = selector.select_source_message(case["facts"], changed)
+    assert another.attachment_bytes == current.attachment_bytes
+    assert another.content_digest != current.content_digest
+    assert (
+        another.message["attachment"]["binding_sha256"]
+        != current.message["attachment"]["binding_sha256"]
+    )
+    del changed["gate_access_evidence_ref"]
+    with pytest.raises(selector.V2Hold, match="source_gate_access_not_verified"):
+        selector.select_source_message(case["facts"], changed)
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_real_gate_code_wins_and_old_pdf_bytes_stay_identical(language):
+    values = {**PDF["values"], "gate_access_instruction": "SYNTHETIC IGNORED INSTRUCTION"}
+    assert (
+        hashlib.sha256(render_access_guide(values, language)).hexdigest()
+        == PDF["expected_sha256"][language]
+    )
