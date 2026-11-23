@@ -608,3 +608,30 @@ def test_live_chain_read_holds_revision_lock_until_domain_verification_finishes(
         monkeypatch.setattr(comms, "context", current)
         ext.current_basis(active.event.pk)
         assert pending[0].result(timeout=3) == 1
+
+
+def test_new_source_event_after_original_due_keeps_due_and_does_not_replay_history(
+    active, settings, monkeypatch
+):
+    from apps.reservations.message_relay_models import WebsiteMessageRelay
+
+    _, _, context, _, _, due, end = ext.current_basis(active.event.pk)
+    occurred = due + timedelta(minutes=2)
+    monkeypatch.setattr(ext.timezone, "now", lambda: occurred)
+    enable(settings)
+    type(active.event).objects.filter(pk=active.event.pk).update(created_at=occurred)
+    active.event.refresh_from_db()
+    ext.register_event(active.event)
+    row = WebsiteMessageRelay.objects.get(scenario="02")
+    assert row.not_before == due < row.source_occurred_at == occurred < row.expires_at == end
+    event, facts = ext.facts_for_row(row)
+    assert event.pk == active.event.pk and facts["domain_authorized"] is True
+    assert (
+        facts["not_before"] == due.isoformat()
+        and facts["source_occurred_at"] == occurred.isoformat()
+    )
+    assert facts["legacy_state"] == "unknown"
+    settings.MESSAGE_EXTENSION_SOURCE_CUTOVER_AT = (occurred + timedelta(seconds=1)).isoformat()
+    WebsiteMessageRelay.objects.all().delete()
+    ext.register_event(active.event)
+    assert not WebsiteMessageRelay.objects.exists()
