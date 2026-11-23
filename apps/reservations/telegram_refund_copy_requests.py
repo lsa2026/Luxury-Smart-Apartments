@@ -3,7 +3,7 @@
 import hashlib
 import json
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -141,12 +141,14 @@ def resume_preclaim(row, refund, request_id):
         raise Denied("preclaim_source_changed")
     row.not_before = parse_datetime(current["not_before"])
     row.expires_at = parse_datetime(current["expires_at"])
-    row.state = "planned"
-    row.save(update_fields=["not_before", "expires_at", "state", "updated_at"])
+    # Claim inside the same locked transaction for the final source execution,
+    # so the periodic Celery recovery cannot consume this planned row first.
+    row.state = "dispatching" if source_dispatch else "planned"
     if source_dispatch:
-        from .telegram_booking_events import dispatch
-
-        transaction.on_commit(lambda: dispatch(str(row.pk)), robust=True)
+        row.next_probe_at = timezone.now() + timedelta(minutes=1)
+    row.save(update_fields=["not_before", "expires_at", "state", "next_probe_at", "updated_at"])
+    if source_dispatch:
+        transaction.on_commit(lambda: transport.call(row, "website_handoff"), robust=True)
     else:
         from .tasks import deliver_telegram_booking_event
 
