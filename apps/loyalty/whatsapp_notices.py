@@ -400,6 +400,10 @@ def deliver_movement_notice(key):
     initial = MovementNotice.objects.select_related("ledger", "event").filter(pk=key).first()
     if initial is None:
         return
+    from .workgroup_notices import VERSION as WORKGROUP_VERSION
+
+    if initial.template_version == WORKGROUP_VERSION:
+        return  # A paused workgroup row must never become a legacy provider request.
     with transaction.atomic():
         # Serialize claim/order per member, without holding a database lock during HTTP.
         source = initial.ledger if initial.ledger_id else initial.event

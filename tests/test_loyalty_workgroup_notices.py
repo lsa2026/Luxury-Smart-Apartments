@@ -226,3 +226,14 @@ def test_direct_preview_is_blocked_before_owner_lookup():
 
     with pytest.raises(ValidationError):
         send_catalogue(batch="synthetic", language="ar")
+
+
+def test_workgroup_notice_is_preserved_if_manual_policy_is_temporarily_disabled(settings):
+    _, _, notice = joined()
+    settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+    settings.TELEGRAM_WORKGROUP_ONLY_POLICY = False
+    settings.LOYALTY_WHATSAPP_NOTICES_ENABLED = True
+    settings.ULTRAMSG_ENABLED = True
+    whatsapp_notices.deliver_movement_notice(notice.pk)
+    notice.refresh_from_db()
+    assert notice.status == "queued" and notice.attempts == 0
