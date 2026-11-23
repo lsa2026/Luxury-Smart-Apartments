@@ -10,6 +10,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -1559,6 +1560,9 @@ def refund_detail(request: HttpRequest, refund_id: str) -> HttpResponse:
                     from apps.loyalty.site_adapter import schedule_reconciliation
 
                     schedule_reconciliation(refund.reservation_id)
+                    from .telegram_booking_events import queue_event
+
+                    transaction.on_commit(lambda: queue_event("refund", refund.pk), robust=True)
                     return redirect("notifications:refund_detail", refund_id=refund.pk)
         elif action == "submit_hyperpay_refund":
             gateway_form = RefundGatewaySubmitForm(request.POST)

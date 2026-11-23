@@ -146,6 +146,10 @@ def source_copy(kind, source_id):
         if not created:
             raise ValidationError("invalid_invitation_time")
         purpose = "loyalty_invitation"
+    elif kind == "booking_event":
+        from .telegram_booking_events import source
+
+        body, image, language, phone, name, basis, created, purpose = source(source_id)
     else:
         raise Denied
     if (
@@ -298,7 +302,7 @@ def finish(row):
         PaymentRequestDelivery.objects.filter(
             pk=row.source_id, status__in=["queued", "handoff_wait", "handoff_hold"]
         ).update(status="handed_off", error_code="workgroup_manual_copy")
-    else:
+    elif row.source_kind == "loyalty_invitation":
         from apps.loyalty.booking_invitations import _finish
 
         booking, request_id = row.source_id.split(":", 1)
@@ -374,6 +378,15 @@ def call(row, action):
 def recover():
     if not group.manual_mode():
         return
+    if group.enabled():
+        from .telegram_booking_events import dispatch
+
+        for row_id in (
+            TelegramWebsiteHandoff.objects.filter(source_kind="booking_event", state="planned")
+            .order_by("created_at")
+            .values_list("pk", flat=True)[:2]
+        ):
+            dispatch(row_id)
     for row in TelegramWebsiteHandoff.objects.filter(
         state__in=["dispatching", "uncertain"], probes__lt=10, next_probe_at__lte=timezone.now()
     ).order_by("created_at")[:2]:

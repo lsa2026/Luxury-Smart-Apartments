@@ -274,6 +274,10 @@ def handle_refund_submitted(obligation_id: object) -> None:
             RefundObligation.Status.TRANSFERRED,
         }:
             return
+        if refund.status == RefundObligation.Status.TRANSFERRED:
+            from apps.reservations.telegram_booking_events import queue_event
+
+            queue_event("refund", refund.pk)
         state = "confirmed" if refund.status == RefundObligation.Status.TRANSFERRED else "pending"
         if settings.MODIFICATION_NOTIFICATION_EMAIL_ENABLED:
             queue_email(

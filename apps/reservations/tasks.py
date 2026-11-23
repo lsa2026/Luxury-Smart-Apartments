@@ -42,6 +42,13 @@ def recover_telegram_website_handoffs():
     recover()
 
 
+@shared_task(ignore_result=True, soft_time_limit=45, time_limit=50)
+def deliver_telegram_booking_event(row_id):
+    from .telegram_booking_events import dispatch
+
+    return dispatch(row_id)
+
+
 @shared_task(bind=True, ignore_result=True, max_retries=5, soft_time_limit=35, time_limit=40)
 def refresh_guest_classification_history(self, generation, cursor):
     from .services.guest_classification_history import provider_state, refresh_page
