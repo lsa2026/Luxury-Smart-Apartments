@@ -239,14 +239,13 @@ def test_link_read_obeys_existing_gate_and_channel_ownership(
 
 
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.skipif(connection.vendor != "postgresql", reason="Requires real PostgreSQL row locks")
 def test_postgres_holds_source_lock_through_live_availability(prepared, monkeypatch):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Event
 
     from django.db import close_old_connections
 
-    if connection.vendor != "postgresql":
-        pytest.skip("Requires real PostgreSQL row locks")
     scenario, stay, *_ = prepared
     _, domain = financial.modules(scenario)
     started, finished = Event(), Event()
