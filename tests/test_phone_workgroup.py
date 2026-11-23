@@ -90,7 +90,7 @@ def test_group_acceptance_needs_correct_same_session_consume(
     assert row.pk == challenge.pk and row.job_key == "site01otp:" + str(row.pk)
     assert row.state == "handed_off" and row.source_kind == "phone_code"
     value = bridge[1][0]
-    assert value["contract"] == "tg39_phone_code_packet_v1" and value["sensitive"] is True
+    assert value["contract"] == "tg39_phone_code_packet_v1"
     code = service.code_for(challenge)
     assert code in value["caption_html"]
     assert value["purpose"] == "phone_bind" and value["asset_base64"]

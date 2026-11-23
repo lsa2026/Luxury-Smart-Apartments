@@ -127,7 +127,6 @@ def packet(challenge):
         "source_revision": transport.digest(basis),
         "phone_hash": sha(challenge.phone[1:]),
         "guest_phone_e164": challenge.phone,
-        "guest_name": "",
         "language": challenge.language,
         "purpose": "phone_" + challenge.purpose,
         "content_sha256": content_sha,
@@ -139,7 +138,6 @@ def packet(challenge):
         "asset_base64": base64.b64encode(image).decode("ascii"),
         "not_before": challenge.created_at.isoformat(),
         "expires_at": challenge.expires_at.isoformat(),
-        "sensitive": True,
     }
 
 
