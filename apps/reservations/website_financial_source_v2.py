@@ -1,6 +1,6 @@
 """Closed financial source adapter, independent of sender input and old receipts.
 
-No route invokes this module yet. Read locks and live inventory checks do not
+Private READ routes invoke this module. Read locks and live inventory checks do not
 claim a message, release checkout, change money, or authorize provider dispatch.
 """
 
@@ -130,6 +130,39 @@ def scoped_snapshot(result, stay):
     from .message_receipts import projected_expectation
 
     result["receipt_expectation"] = projected_expectation(result)
+    if (
+        result.get("financial_conditions_verified") is True
+        and result.get("core_delivery_verified") is True
+        and isinstance(result.get("variables"), dict)
+    ):
+        # Private READ wire contract consumed by19, not a caller-supplied render.
+        # Build after final event/resource/URL fields are established; no raw phone
+        # is copied into the template context and no capability is persisted.
+        result["template_context"] = {
+            key: result[key]
+            for key in (
+                "scenario",
+                "source_family",
+                "job_sha256",
+                "reservation_key",
+                "reservation_revision",
+                "recipient_ref",
+                "source_event_key",
+                "source_message_type",
+                "purpose",
+                "language",
+                "not_before",
+                "expires_at",
+            )
+        }
+        result["template_context"].update(
+            source_context_ref="site01-financial-source-2:" + result["job_sha256"],
+            recipient_binding_sha256=source.sha(
+                result["reservation_key"] + ":" + result["recipient_e164"]
+            ),
+            preflight_status="ready",
+            values=dict(result["variables"]),
+        )
     from . import message_source_relay as relay
 
     at = relay.cutover()

@@ -76,6 +76,7 @@ def test_single_current_source_locks_and_rechecks_without_business_writes(prepar
     )
     row.refresh_from_db()
     assert row.state == "queued" and not row.provider_id
+    assert_financial_template_context(value)
 
 
 @pytest.mark.parametrize(
@@ -110,6 +111,7 @@ def test_all_three_deliveries_required_even_when_group_was_handed_off(prepared, 
     assert result["domain_authorized"] is False
     assert "core_delivery_unverified" in result["blockers"]
     assert "variables" not in result
+    assert "template_context" not in result
     assert not prepared[4]
 
 
@@ -150,8 +152,38 @@ def test_confirmation_requires_current_actual_money_not_a_message(prepared):
     assert result["financial_identity"]["payment_status"] == "paid"
     assert result["purpose"] == "payment_confirmation"
     assert result["dispatch_allowed"] is False
+    assert_financial_template_context(result)
     type(stay).objects.filter(pk=stay.pk).update(amount_sar=Decimal("501.00"))
     assert financial.payment_confirmation_source(event.pk, scenario)["available"] is False
+
+
+def assert_financial_template_context(facts):
+    from apps.reservations import website_template_policy_v2 as policy
+    from apps.reservations import website_template_selector_v2 as selector
+
+    context = facts["template_context"]
+    assert context["values"] == facts["variables"]
+    assert context["values"] is not facts["variables"]
+    assert context["source_context_ref"] == "site01-financial-source-2:" + facts["job_sha256"]
+    assert context["preflight_status"] == "ready"
+    assert "recipient_e164" not in context
+    # Match the actual19 reader's normalization, then use the real selector and
+    # independent source policy. A private READ context cannot replace that policy.
+    family = f"lsa{facts['scenario']}_" + (
+        "payment_link" if facts["source_message_type"] == "payment_link" else "payment"
+    )
+    normalized = {**facts, "source_family": family, "source_owner_family": "website"}
+    context = {**context, "source_family": family}
+    selected = selector.select_source_message(normalized, context)
+    assert selected.message["mode"] == "template"
+    scenario = facts["scenario"]
+    model = originals.source.SOURCES[scenario][
+        1 if facts["source_message_type"] == "payment_link" else 2
+    ]
+    event_id = facts.get("booking_event_id") or facts["source_event_id"]
+    expected = policy.policy_from_source(model.objects.get(pk=event_id), facts, context)
+    assert expected is not None
+    assert expected["message"] == selected.message
 
 
 def test_closed_adapter_does_not_change_live_source_endpoint(client, record):
