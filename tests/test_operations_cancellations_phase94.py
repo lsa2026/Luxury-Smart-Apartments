@@ -242,7 +242,7 @@ def test_latest_change_requires_owner_final_price_before_next_action():
     content = response.content.decode()
     assert response.status_code == 200
     assert "اعتماد السعر النهائي" in content
-    assert "إرسال طلب تكوين رابط الدفع إلى أسيل" not in content
+    assert "إرسال طلب رابط الدفع إلى بريد الأعمال" not in content
 
 
 def test_owner_change_execution_can_approve_a_partial_or_zero_refund():
