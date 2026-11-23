@@ -124,7 +124,7 @@ def queue(*, invoice, recipient, actor, request_id):
 def bound(phone, request_id, delivery_id=None, *, lock=False):
     query = SamaInvoiceDispatch.objects.select_related(
         "delivery__invoice", "delivery__presentation"
-    )
+    ).defer("delivery__invoice__pdf_content", "delivery__presentation__pdf_content")
     if lock:
         query = query.select_for_update(of=("self",))
     row = query.get(request_id=uuid.UUID(request_id))
@@ -145,7 +145,6 @@ def bound(phone, request_id, delivery_id=None, *, lock=False):
 def document(row):
     delivery = row.delivery
     invoice = delivery.invoice
-    content = pdf(delivery)
     if (
         not settings.SAMA_INVOICES_ENABLED
         or not settings.SAMA_INVOICE_YCLOUD_ENABLED
@@ -153,9 +152,13 @@ def document(row):
         or not row.not_before <= timezone.now() < row.expires_at
         or not invoice.issued_at
         or invoice.language != row.language
-        or len(content) != row.pdf_bytes
-        or sha(content) != row.pdf_sha256
         or sha(row.caption) != row.caption_sha256
+    ):
+        raise ValidationError("Invoice document unavailable")
+    content = pdf(delivery)
+    if (
+        len(content) != row.pdf_bytes
+        or sha(content) != row.pdf_sha256
         or not content.startswith(b"%PDF-")
     ):
         raise ValidationError("Invoice document unavailable")
