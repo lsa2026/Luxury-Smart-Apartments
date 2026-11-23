@@ -189,3 +189,92 @@ def test_paused_sender_does_not_record_an_approval(refund, request_data, setting
     with pytest.raises(Denied):
         service.run_request(json.dumps(request_data))
     assert not AuditLog.objects.filter(action=service.ACTION).exists()
+
+
+@pytest.fixture
+def preclaim_hold(refund, request_data):
+    service.run_request(json.dumps(request_data))
+    row = TelegramWebsiteHandoff.objects.get()
+    row.state = "held"
+    row.save(update_fields=["state"])
+    return row
+
+
+@pytest.fixture
+def absent_native(monkeypatch):
+    calls = []
+
+    class Backend:
+        authority_context = None
+
+        def call(self, action, key):
+            assert action == "website_handoff_status"
+            transport.authorize(self.authority_context, action, key, {})
+            calls.append(action)
+            return {"available": False}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(transport, "Backend", Backend)
+    return calls
+
+
+def test_operator_can_continue_preclaim_hold_once_without_changing_identity_or_finances(
+    refund, request_data, preclaim_hold, absent_native, monkeypatch
+):
+    row = preclaim_hold
+    original = transport.metadata(row)
+    financial_time = refund.transferred_at
+    old_clock = timezone.now()
+    monkeypatch.setattr(timezone, "now", lambda: old_clock + timedelta(hours=2))
+    assert (
+        service.run_request(json.dumps(request_data))["decision"] == "continued_preclaim_same_job"
+    )
+    row.refresh_from_db()
+    assert transport.metadata(row) == original and row.state == "planned"
+    assert row.not_before == timezone.now() and row.expires_at > timezone.now()
+    assert AuditLog.objects.filter(action=service.ACTION).count() == 2
+    assert absent_native == ["website_handoff_status"]
+    refund.refresh_from_db()
+    assert refund.transferred_at == financial_time and refund.amount == 400
+    # No loop: another old process holding it cannot produce another continuation.
+    row.state = "held"
+    row.save(update_fields=["state"])
+    assert service.run_request(json.dumps(request_data))["decision"] == "existing_held"
+    assert absent_native == ["website_handoff_status"]
+
+
+@pytest.mark.parametrize(
+    "field,value", [("attempt_id", uuid.uuid4()), ("provider_message_id", "123"), ("probes", 1)]
+)
+def test_any_attempt_evidence_forbids_preclaim_continuation(
+    refund, request_data, preclaim_hold, absent_native, field, value
+):
+    setattr(preclaim_hold, field, value)
+    preclaim_hold.save(update_fields=[field])
+    assert service.run_request(json.dumps(request_data))["decision"] == "existing_held"
+    assert not absent_native
+    assert AuditLog.objects.filter(action=service.ACTION).count() == 1
+
+
+def test_existing_native_slot_is_never_reposted(refund, request_data, preclaim_hold, monkeypatch):
+    client = Mock()
+    client.call.return_value = {"available": True}
+    monkeypatch.setattr(transport, "Backend", lambda: client)
+    assert (
+        service.run_request(json.dumps(request_data))["decision"] == "native_slot_present_no_repost"
+    )
+    preclaim_hold.refresh_from_db()
+    assert preclaim_hold.state == "held"
+    assert AuditLog.objects.filter(action=service.ACTION).count() == 1
+
+
+def test_unconfirmed_native_lookup_keeps_hold(refund, request_data, preclaim_hold, monkeypatch):
+    client = Mock()
+    client.call.side_effect = transport.Unavailable
+    monkeypatch.setattr(transport, "Backend", lambda: client)
+    with pytest.raises(Denied):
+        service.run_request(json.dumps(request_data))
+    preclaim_hold.refresh_from_db()
+    assert preclaim_hold.state == "held"
