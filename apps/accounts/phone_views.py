@@ -12,6 +12,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
+from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
@@ -184,6 +185,7 @@ def phone_start(request, *, binding=False):
 
 @never_cache
 @require_http_methods(["GET", "POST"])
+@sensitive_post_parameters("code")
 def phone_confirm(request):
     if not ready():
         raise Http404
@@ -207,7 +209,7 @@ def phone_confirm(request):
             delivery = "expired"
         elif challenge.status in {"pending", "sending"}:
             delivery = "waiting"
-        elif challenge.status == "sent":
+        elif challenge.status in {"sent", "handed_off"}:
             delivery = "accepted"
         else:
             delivery = "failed"

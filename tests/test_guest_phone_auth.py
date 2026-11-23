@@ -193,6 +193,10 @@ def test_profile_phone_widget_is_localized_and_only_loaded_in_details(guest, lan
 
 @pytest.fixture(autouse=True)
 def isolated(settings, monkeypatch):
+    # This fixture explicitly exercises the historical provider in isolation.
+    # Production manual policy never falls back to that provider.
+    settings.TELEGRAM_WORKGROUP_ONLY_POLICY = False
+    settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
     settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = False
     settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = True
     settings.ACCOUNT_WHATSAPP_AUTH_ISOLATED = True

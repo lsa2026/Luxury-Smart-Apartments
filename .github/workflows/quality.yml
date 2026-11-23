@@ -130,6 +130,7 @@ jobs:
           tests/test_loyalty_invitation_history.py
           tests/test_loyalty_invitation_api.py
           tests/test_guest_phone_auth.py
+          tests/test_phone_workgroup.py
           tests/test_guest_identity_management.py
           tests/test_guest_booking_history.py
           tests/test_guest_access_address.py
@@ -190,6 +191,11 @@ jobs:
 
       - name: Run Ruff lint
         run: ruff check .
+
+      - name: Verify transient phone workgroup source without providers
+        run: |
+          python manage.py makemigrations --check --dry-run
+          pytest tests/test_phone_workgroup.py tests/test_guest_phone_auth.py tests/test_guest_identity_management.py -q
 
       - name: Verify closed Telegram draft and invitation boundaries
         env:

@@ -51,6 +51,8 @@ class PhoneChallenge(models.Model):
     binding_version = models.UUIDField(null=True)
     session_digest = models.CharField(max_length=64)
     code_digest = models.CharField(max_length=64, blank=True)
+    workgroup_nonce = models.UUIDField(null=True, editable=False)
+    workgroup_authorized_at = models.DateTimeField(null=True, editable=False)
     status = models.CharField(max_length=12, default="pending")
     attempts = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now)

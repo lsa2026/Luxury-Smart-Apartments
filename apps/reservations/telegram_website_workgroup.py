@@ -38,9 +38,9 @@ def as_html(body, guest_name=""):
     return text.replace(marker, html.escape(guest_name, quote=False))
 
 
-def admitted(created):
+def admitted(created, *, setting="TELEGRAM_WORKGROUP_CUTOVER_AT"):
     try:
-        at = parse_datetime(getattr(settings, "TELEGRAM_WORKGROUP_CUTOVER_AT", ""))
+        at = parse_datetime(getattr(settings, setting, ""))
         return bool(at and timezone.is_aware(at) and at <= created <= timezone.now())
     except (TypeError, ValueError):
         return False
@@ -153,10 +153,26 @@ def source_copy(kind, source_id):
         from .telegram_booking_events import source
 
         body, image, language, phone, name, basis, created, purpose = source(source_id)
+    elif kind in {"loyalty_notice", "loyalty_gift"}:
+        from apps.loyalty import workgroup_notices
+
+        source = (
+            workgroup_notices.source_notice
+            if kind == "loyalty_notice"
+            else workgroup_notices.source_gift
+        )
+        body, image, language, phone, name, basis, created, purpose = source(source_id)
     else:
         raise Denied
     if (
-        not admitted(created)
+        not admitted(
+            created,
+            setting=(
+                "LOYALTY_WORKGROUP_CUTOVER_AT"
+                if kind in {"loyalty_notice", "loyalty_gift"}
+                else "TELEGRAM_WORKGROUP_CUTOVER_AT"
+            ),
+        )
         or not image.startswith(b"\x89PNG\r\n\x1a\n")
         or len(image) > 300_000
         or language not in {"ar", "en", "fr"}
@@ -213,7 +229,7 @@ def authorize(scope, action, key, result):
     if action == "website_handoff" and not group.enabled():
         raise Denied
     row = TelegramWebsiteHandoff.objects.get(pk=uuid.UUID(scope["job"]))
-    if key != str(row.pk):
+    if key != str(row.pk) or row.source_kind == "phone_code":
         raise Denied
     packet = {"contract": "tg39_website_workgroup_packet_v1", **metadata(row)}
     if action == "website_handoff":
@@ -283,6 +299,18 @@ def import_proof(row, proof):
         or not row.created_at <= at <= timezone.now() + timedelta(seconds=5)
     ):
         raise Denied
+    if row.source_kind == "phone_code":
+        from apps.accounts.models import PhoneChallenge
+
+        if (
+            len(ids) != 2
+            or at > row.expires_at
+            or not PhoneChallenge.objects.filter(
+                pk=row.source_id,
+                workgroup_authorized_at__isnull=False,
+            ).exists()
+        ):
+            raise Denied
     with transaction.atomic():
         current = TelegramWebsiteHandoff.objects.select_for_update().get(pk=row.pk)
         if current.state == "handed_off" and (
@@ -313,6 +341,19 @@ def import_proof(row, proof):
 
 
 def finish(row):
+    if row.source_kind == "phone_code":
+        from apps.accounts.phone_workgroup import finish as finish_phone
+
+        finish_phone(row.source_id)
+    elif row.source_kind in {"loyalty_notice", "loyalty_gift"}:
+        from apps.loyalty import workgroup_notices
+
+        callback = (
+            workgroup_notices.finish_notice
+            if row.source_kind == "loyalty_notice"
+            else workgroup_notices.finish_gift
+        )
+        callback(row.source_id, row.provider_message_id)
     if row.source_kind == "booking_event":
         from .telegram_refund_copy_requests import completion
 
@@ -374,7 +415,10 @@ def call(row, action):
     client = None
     try:
         client = Backend()
-        client.authority_context = {"kind": "website_handoff", "job": str(row.pk)}
+        client.authority_context = {
+            "kind": "phone_code_handoff" if row.source_kind == "phone_code" else "website_handoff",
+            "job": str(row.pk),
+        }
         proof = client.call(action, str(row.pk))
         if import_proof(row, proof):
             return
@@ -415,7 +459,16 @@ def recover():
         row.probes += 1
         row.next_probe_at = timezone.now() + timedelta(seconds=min(600, 30 * row.probes))
         row.save(update_fields=["probes", "next_probe_at", "updated_at"])
-        call(row, "website_handoff_status")
+        call(
+            row,
+            "phone_code_handoff_status"
+            if row.source_kind == "phone_code"
+            else "website_handoff_status",
+        )
+        if row.source_kind == "phone_code":
+            from apps.accounts.phone_workgroup import expire_unknown
+
+            expire_unknown(row)
         row.refresh_from_db()
         if row.probes >= 10 and row.state != "handed_off":
             alert(row)
