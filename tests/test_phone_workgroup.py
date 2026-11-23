@@ -288,7 +288,7 @@ def test_proof_cannot_adopt_an_attempt_before_source_release(
     assert not VerifiedPhone.objects.exists()
 
 
-@pytest.mark.parametrize("case", ["one_part", "wrong_phone", "guest_flag"])
+@pytest.mark.parametrize("case", ["one_part", "duplicate_part_ids", "wrong_phone", "guest_flag"])
 def test_receipt_requires_two_parts_exact_identity_and_no_guest_delivery(
     case, guest, bridge, django_capture_on_commit_callbacks
 ):
@@ -298,6 +298,8 @@ def test_receipt_requires_two_parts_exact_identity_and_no_guest_delivery(
     changes = {"attempt_id": str(row.attempt_id)}
     if case == "one_part":
         changes.update(provider_message_ids=["102"], provider_message_id="102")
+    elif case == "duplicate_part_ids":
+        changes.update(provider_message_ids=["102", "102"], provider_message_id="102")
     elif case == "wrong_phone":
         changes.update(phone_hash="0" * 64)
     else:
