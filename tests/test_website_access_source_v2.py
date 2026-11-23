@@ -135,3 +135,32 @@ def test_real_code_remains_authoritative_when_instruction_is_also_present(packet
     assert result["available"] is True
     assert result["values"]["gate_code"] == "NOT_A_REAL_CODE"
     assert "gate_access_instruction" not in result["values"]
+
+
+def test_independent_document_policy_rebuilds_current_source_and_binds_instruction_evidence(packet):
+    from apps.reservations import website_template_policy_v2 as policy
+    from apps.reservations import website_template_selector_v2 as selector
+    from apps.reservations.website_template_contract_v2 import content_digest
+
+    event, facts, context = packet
+    context["values"].update(gate_code="", gate_access_instruction="SYNTHETIC BUILDING ENTRANCE")
+    context["gate_access_evidence_ref"] = "synthetic-owner-gate:20261124"
+    original = deepcopy(context)
+    planned = policy.policy_from_source(event, facts, context)
+    assert planned is not None
+    assert planned["message"]["attachment"]["kind"] == "document"
+    canonical = {
+        **facts,
+        "source_family": "lsa" + facts["scenario"],
+        "source_owner_family": "website",
+    }
+    raw = selector.select_source_message(canonical, original).attachment_bytes
+    context["gate_access_evidence_ref"] += ":new-evidence"
+    rebound = policy.policy_from_source(event, facts, context)
+    assert rebound is not None
+    assert selector.select_source_message(canonical, context).attachment_bytes == raw
+    assert content_digest(planned["language"], planned["message"]) != content_digest(
+        rebound["language"], rebound["message"]
+    )
+    context["values"]["guest_name"] = "UNTRUSTED GUEST"
+    assert policy.policy_from_source(event, facts, context) is None
