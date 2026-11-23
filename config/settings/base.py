@@ -357,6 +357,9 @@ TELEGRAM_STAY_CUTOVER_AT = env("TELEGRAM_STAY_CUTOVER_AT", default="").strip()
 TELEGRAM_WORKGROUP_HANDOFF_ENABLED = strict_bool("TELEGRAM_WORKGROUP_HANDOFF_ENABLED")
 TELEGRAM_WORKGROUP_ONLY_POLICY = True  # Permanent owner policy, independent of sender pause.
 TELEGRAM_WORKGROUP_CUTOVER_AT = env("TELEGRAM_WORKGROUP_CUTOVER_AT", default="").strip()
+TELEGRAM_APPROVED_REFUND_COPY_REQUEST = env(
+    "TELEGRAM_APPROVED_REFUND_COPY_REQUEST", default=""
+).strip()
 
 # Local, cardless payment simulation for development and acceptance testing only.
 # DEBUG is deliberately part of the guard so this can never be enabled in production
