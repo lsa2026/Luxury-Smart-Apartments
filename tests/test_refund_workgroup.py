@@ -272,7 +272,7 @@ def test_manual_transfer_requires_matching_operator_audit_not_a_paid_flag(refund
     refund.save(update_fields=["calculation", "transferred_by"])
     with pytest.raises(Denied):
         source(refund)
-    audit = AuditLog.objects.create(
+    AuditLog.objects.create(
         action="refund.marked_transferred",
         object_type="RefundObligation",
         object_reference=refund.public_reference,
@@ -280,8 +280,8 @@ def test_manual_transfer_requires_matching_operator_audit_not_a_paid_flag(refund
         metadata={"amount": "400.0000", "currency": "SAR"},
     )
     assert source(refund)["purpose"] == "refund_confirmation"
-    audit.metadata["amount"] = "399"
-    audit.save(update_fields=["metadata"])
+    refund.amount = Decimal("399")
+    refund.save(update_fields=["amount"])
     with pytest.raises(Denied):
         source(refund)
 
