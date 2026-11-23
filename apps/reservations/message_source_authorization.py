@@ -69,12 +69,39 @@ PURPOSES = {
 
 
 def projected_consent(stay, scenario, purpose):
-    # Technical rollout only. The optional guest-choice UI and its separate
-    # migration have not been approved for production. Never infer consent
-    # from a phone, terms, an OTA booking or a manager opening this page.
+    # Retain unknown evidence; customer-service messaging does not require a
+    # separate opt-in. Never fabricate a consent grant or a non-revocation.
     return dict.fromkeys(
         ("service", "marketing", "purpose", "evidence_ref", "revoked", "source_scope")
     )
+
+
+def service_scope(facts):
+    """Describe the verified business event, not permission or channel delivery."""
+    kind = facts.get("source_message_type")
+    if kind not in PURPOSES or facts.get("purpose") != PURPOSES[kind]:
+        return None
+    fields = (
+        "reservation_key",
+        "reservation_revision",
+        "recipient_ref",
+        "source_event_key",
+        "source_message_type",
+        "purpose",
+    )
+    if any(not isinstance(facts.get(k), str) or not facts[k] for k in fields):
+        return None
+    return {
+        "contract_version": "lsa01-customer-service-scope-1",
+        "business_identity": "Luxury Smart Apartments",
+        "message_class": "customer_service",
+        **{k: facts[k] for k in fields},
+    }
+
+
+def scoped_facts(facts):
+    facts["service_scope"] = service_scope(facts)
+    return facts
 
 
 def sha(value):
@@ -254,7 +281,7 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         "message": None,
         "render_policy_ref": None,
         "dispatch_allowed": False,
-        "blockers": (["whatsapp_consent_unverified"] if consent["service"] is not True else [])
+        "blockers": (["customer_messaging_withdrawn"] if consent["revoked"] is True else [])
         + ["render_policy_unverified", "human_takeover_requires_owner_ledger"],
     }
     from .message_receipts import projected_expectation
@@ -275,8 +302,9 @@ def core_facts(stay, event, scenario, locator):
     result = base_facts(stay, event, scenario, locator, purpose)
     from .message_receipts import predecessors_delivered
 
-    result["domain_authorized"] = predecessors_delivered(stay, event, scenario, purpose)
-    if not result["domain_authorized"]:
+    predecessors_verified = predecessors_delivered(stay, event, scenario, purpose)
+    result["domain_authorized"] = result["consent"]["revoked"] is not True and predecessors_verified
+    if not predecessors_verified:
         result["blockers"].append("predecessor_delivery_unverified")
     result["legacy_state"] = core_history(stay, purpose, scenario)
     if purpose == "reminder_checkout":
@@ -299,7 +327,7 @@ def core_facts(stay, event, scenario, locator):
     )
     result["trusted_render_variables"] = {k: event.payload.get(k) for k in allowed}
     result["blockers"].append("core_template_and_access_data_owned_by_20")
-    return result
+    return scoped_facts(result)
 
 
 def payment_link_facts(stay, event, scenario, locator):
@@ -338,7 +366,7 @@ def payment_link_facts(stay, event, scenario, locator):
             "payment_link_not_admitted_by_current_intent_contract",
         ]
     )
-    return result
+    return scoped_facts(result)
 
 
 def payment_facts(stay, event, scenario, locator, payments):
@@ -405,10 +433,10 @@ def payment_facts(stay, event, scenario, locator, payments):
         result["blockers"].extend(
             [
                 "payment_notice_delivery_unverified",
-                "loyalty_registry_and_marketing_consent_required",
+                "loyalty_registry_required",
             ]
         )
-    return result
+    return scoped_facts(result)
 
 
 @csrf_exempt  # Authenticated by an existing per-event READ capability, never a cookie.

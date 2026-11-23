@@ -12,7 +12,7 @@ from apps.loyalty.models import Ledger
 from apps.loyalty.notifications import dispatch_due, queue_movement, resolve_recipient
 from apps.loyalty.services import issue_invite, reconcile
 from apps.notifications.models import EmailDelivery
-from apps.notifications.services.email import EmailProviderError, send_queued_email
+from apps.notifications.services.email import send_queued_email
 from tests.test_loyalty_stage8 import booking, join, user
 
 pytestmark = pytest.mark.django_db
@@ -73,10 +73,10 @@ def test_unpublished_or_unsafe_terms_never_send_promotions(settings):
     assert dispatch_due()["status"] == "disabled"
 
 
-def test_invitation_after_actual_arrival_plus_hour_requires_marketing_permission(program):
+def test_service_invitation_after_arrival_needs_no_separate_marketing_opt_in(program):
     u = user("invitation")
     r = booking(u)
-    r.booking_intent.marketing_consent = True
+    r.booking_intent.marketing_consent = False
     r.booking_intent.language = "fr"
     r.booking_intent.save()
     assert dispatch_due()["queued"] == 0
@@ -88,8 +88,9 @@ def test_invitation_after_actual_arrival_plus_hour_requires_marketing_permission
     assert resolve_recipient(queued)[0] == r.booking_intent.guest_email
     r.booking_intent.marketing_consent = False
     r.booking_intent.save()
-    with pytest.raises(EmailProviderError):
-        resolve_recipient(queued)
+    assert resolve_recipient(queued)[0] == r.booking_intent.guest_email
+    r.booking_intent.refresh_from_db()
+    assert r.booking_intent.marketing_consent is False
 
 
 def test_arrival_not_assumed_from_scheduled_date(program):
