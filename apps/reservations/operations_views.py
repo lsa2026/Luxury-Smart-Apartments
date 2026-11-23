@@ -18,8 +18,13 @@ from django.urls import reverse
 from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required, require_operations_access
-from apps.notifications.models import AuditLog, GuestInvoice, WhatsAppDelivery
-from apps.notifications.services.accounting_email import status_for as accounting_status
+from apps.notifications.models import AuditLog, GuestInvoice
+from apps.notifications.services.accounting_email import (
+    status_for as accounting_status,
+)
+from apps.notifications.services.accounting_email import (
+    status_for_modification,
+)
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.ultramsg import (
     send_manual_payment_link_request,
@@ -184,6 +189,8 @@ _MANUAL_DRAFT_AUDIT_LABELS = {
         "أُرسل طلب رابط الدفع تلقائيًا إلى المحاسبة عبر WhatsApp."
     ),
     "manual_booking.accounting_whatsapp_failed": "تعذر إرسال طلب رابط الدفع تلقائيًا إلى المحاسبة.",
+    "modification.accounting_email_sent": "أُرسل طلب رابط فرق التعديل إلى بريد الأعمال.",
+    "modification.accounting_email_attention": "طلب محاسبة التعديل يحتاج مراجعة دون إعادة إرسال.",
     "manual_booking.accounting_email_sent": "قَبِل ناقل بريد الأعمال طلب المحاسبة.",
     "manual_booking.accounting_email_attention": "بريد المحاسبة يحتاج مراجعة دون إعادة إرسال.",
 }
@@ -651,9 +658,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         None,
     )
     increase_delivery = (
-        WhatsAppDelivery.objects.filter(modification_request=increase_adjustment).first()
-        if increase_adjustment is not None
-        else None
+        status_for_modification(increase_adjustment) if increase_adjustment is not None else None
     )
 
     if request.method == "POST":
@@ -820,39 +825,44 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
                 delivery_result = send_modification_payment_link_request(
                     modification_id=adjustment.pk,
                 )
-                if delivery_result.code == "sent":
+                if delivery_result.code == "email_sent":
                     record_audit(
                         request=request,
-                        action="modification.accounting_whatsapp_sent",
+                        action="modification.accounting_email_sent",
                         object_type="BookingModificationRequest",
                         object_reference=adjustment.public_reference,
                         summary=(
                             "The accounting payment-link request for a price increase was sent "
-                            "through UltraMsg."
+                            "through business email."
                         ),
                         metadata={"price_difference": format(adjustment.price_difference, "f")},
                     )
                     messages.success(
                         request,
                         "تأكد التعديل في Hostaway وأُرسل طلب إنشاء رابط المبلغ المتبقي "
-                        "إلى أسيل عبر WhatsApp.",
+                        "إلى بريد الأعمال.",
                     )
                     return redirect("notifications:booking_list")
-                elif delivery_result.code == "already_sent":
+                elif delivery_result.code == "email_already_sent":
                     messages.info(
                         request,
-                        "سبق إرسال طلب رابط فرق التعديل إلى أسيل؛ لم تُرسل رسالة مكررة.",
+                        "سبق إرسال طلب رابط فرق التعديل إلى بريد الأعمال؛ لم تُرسل نسخة مكررة.",
                     )
                     return redirect("notifications:booking_list")
-                elif delivery_result.code == "already_requested":
-                    messages.info(request, "طلب رابط فرق التعديل قيد الإرسال بالفعل إلى أسيل.")
-                    return redirect("notifications:booking_list")
-                elif delivery_result.code == "previously_failed":
-                    messages.error(
-                        request, "فشل طلب الرابط السابق؛ راجع سجل التسليم قبل أي متابعة."
-                    )
                 else:
-                    messages.error(request, "تعذر إرسال طلب رابط فرق التعديل إلى أسيل.")
+                    record_audit(
+                        request=request,
+                        action="modification.accounting_email_attention",
+                        object_type="BookingModificationRequest",
+                        object_reference=adjustment.public_reference,
+                        summary="Accounting request needs review; no delivery retry was made.",
+                        metadata={"delivery_code": delivery_result.code},
+                    )
+                    messages.error(
+                        request,
+                        "طلب المحاسبة يحتاج مراجعة سجل التسليم؛ لم يُعد إرسال الطلب "
+                        "ولم يُنشأ رابط دفع أو يُثبت سداد من هذا التنبيه.",
+                    )
 
     guest_payment_request = reservation.payment_requests.filter(
         Q(modification_request__isnull=True) | Q(approved_at__isnull=False)

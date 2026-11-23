@@ -16,8 +16,7 @@ from django.db import NotSupportedError, connection, transaction
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.notifications.models import WhatsAppDelivery
-from apps.notifications.services.ultramsg import UltraMsgConnectionError
+from apps.notifications.models import EmailDelivery, WhatsAppDelivery
 from apps.payments.models import PaymentAttempt
 from apps.reservations.models import BookingModificationRequest, RefundObligation, Reservation
 from apps.reservations.services.automatic_modifications import execute_automatic_modification
@@ -45,6 +44,8 @@ def isolated_providers(settings):
     settings.HOSTAWAY_LIVE_MODIFICATION_ENABLED = True
     settings.HOSTAWAY_LIVE_EXTENSION_ENABLED = True
     settings.BOOKING_AUTOMATIC_MODIFICATION_APPROVAL = False
+    settings.EMAIL_DELIVERY_ENABLED = True
+    settings.OPERATIONS_EMAIL = "saeed@luxurysmartapartments.com"
     settings.ULTRAMSG_ENABLED = True
     settings.ULTRAMSG_INSTANCE_ID = "instance-test"
     settings.ULTRAMSG_TOKEN = "test-token"
@@ -694,16 +695,17 @@ def test_unpaid_owner_price_then_hostaway_then_full_amount_to_aseel_once(owner_c
             return_value=owner_execution_service(external, reservation),
         ),
         patch(
-            "apps.notifications.services.ultramsg.UltraMsgClient.send_text",
-            return_value={"sent": "true", "id": "test-message"},
+            "apps.notifications.services.accounting_email.EmailMessage.send",
+            autospec=True,
+            return_value=1,
         ) as send,
     ):
 
-        def accepted(**kwargs):
+        def accepted(message, **kwargs):
             modification.refresh_from_db()
             assert modification.status == BookingModificationRequest.Status.COMPLETED
             assert external.calls == 1
-            return {"sent": "true", "id": "test-message"}
+            return 1
 
         send.side_effect = accepted
         payload = {
@@ -715,8 +717,8 @@ def test_unpaid_owner_price_then_hostaway_then_full_amount_to_aseel_once(owner_c
     assert first.status_code == second.status_code == 302
     assert first.url == second.url == reverse("notifications:booking_list")
     assert external.calls == send.call_count == 1
-    assert f"{Decimal(total):,.2f} SAR" in send.call_args.kwargs["body"]
-    assert "/reservations/77001" in send.call_args.kwargs["body"]
+    assert f"{Decimal(total):,.2f} SAR" in send.call_args.args[0].body
+    assert "/reservations/77001" in send.call_args.args[0].body
     assert not RefundObligation.objects.exists()
     reservation.refresh_from_db()
     assert reservation.total_price == Decimal(total)
@@ -804,7 +806,7 @@ def test_hostaway_failure_sends_no_payment_request(owner_client):
             "apps.reservations.services.automatic_modifications.HostawayModificationService",
             return_value=owner_execution_service(external, reservation),
         ),
-        patch("apps.notifications.services.ultramsg.UltraMsgClient.send_text") as send,
+        patch("apps.notifications.services.accounting_email.EmailMessage.send") as send,
     ):
         response = owner_client.post(
             reverse("notifications:booking_detail", args=[reservation.pk]),
@@ -819,7 +821,7 @@ def test_hostaway_failure_sends_no_payment_request(owner_client):
     assert modification.status == BookingModificationRequest.Status.UNKNOWN
 
 
-def test_whatsapp_failure_does_not_undo_or_repeat_hostaway_write(owner_client):
+def test_email_timeout_does_not_undo_or_repeat_hostaway_write(owner_client):
     reservation = confirmed_reservation()
     modification = create_extension(reservation).request
     approve(owner_client, reservation, modification, "50")
@@ -830,8 +832,8 @@ def test_whatsapp_failure_does_not_undo_or_repeat_hostaway_write(owner_client):
             return_value=owner_execution_service(external, reservation),
         ),
         patch(
-            "apps.notifications.services.ultramsg.UltraMsgClient.send_text",
-            side_effect=UltraMsgConnectionError,
+            "apps.notifications.services.accounting_email.EmailMessage.send",
+            side_effect=TimeoutError,
         ) as send,
     ):
         url = reverse("notifications:booking_detail", args=[reservation.pk])
@@ -844,7 +846,8 @@ def test_whatsapp_failure_does_not_undo_or_repeat_hostaway_write(owner_client):
     assert external.calls == send.call_count == 1
     modification.refresh_from_db()
     assert modification.status == BookingModificationRequest.Status.COMPLETED
-    assert WhatsAppDelivery.objects.get().status == WhatsAppDelivery.Status.FAILED
+    assert EmailDelivery.objects.get().status == EmailDelivery.Status.FAILED
+    assert not WhatsAppDelivery.objects.exists()
 
 
 def test_owner_search_never_resurrects_expired_or_superseded_proposal():
@@ -903,7 +906,7 @@ def test_direct_unapproved_post_cannot_send_or_update(owner_client):
     modification = create_extension(reservation).request
     with (
         patch("apps.reservations.operations_views.execute_automatic_modification") as execute,
-        patch("apps.notifications.services.ultramsg.UltraMsgClient.send_text") as send,
+        patch("apps.notifications.services.accounting_email.EmailMessage.send") as send,
     ):
         response = owner_client.post(
             reverse("notifications:booking_detail", args=[reservation.pk]),
