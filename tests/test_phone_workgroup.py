@@ -205,6 +205,7 @@ def test_unknown_recovery_is_status_only_even_after_expiry(
     auth.deliver_phone_code(challenge.pk)
     row = TelegramWebsiteHandoff.objects.get()
     assert row.state == "uncertain" and seen
+    challenge.refresh_from_db()
     assert not VerifiedPhone.objects.exists()
     auth.deliver_phone_code(challenge.pk)
     assert calls == ["phone_code_handoff"]
@@ -278,8 +279,8 @@ def test_proof_cannot_adopt_an_attempt_before_source_release(
     assert not VerifiedPhone.objects.exists()
 
 
-@pytest.mark.parametrize("case", ["one_part", "late_acceptance", "guest_flag"])
-def test_receipt_requires_two_timely_parts_and_no_guest_delivery(
+@pytest.mark.parametrize("case", ["one_part", "wrong_phone", "guest_flag"])
+def test_receipt_requires_two_parts_exact_identity_and_no_guest_delivery(
     case, guest, bridge, django_capture_on_commit_callbacks
 ):
     challenge = begin(guest, django_capture_on_commit_callbacks)
@@ -288,12 +289,31 @@ def test_receipt_requires_two_timely_parts_and_no_guest_delivery(
     changes = {"attempt_id": str(row.attempt_id)}
     if case == "one_part":
         changes.update(provider_message_ids=["102"], provider_message_id="102")
-    elif case == "late_acceptance":
-        changes.update(accepted_at=(row.expires_at + timedelta(seconds=1)).isoformat())
+    elif case == "wrong_phone":
+        changes.update(phone_hash="0" * 64)
     else:
         changes.update(guest_accepted=True)
     with pytest.raises(authority.Denied):
         transport.import_proof(row, proof(row, **changes))
+
+
+def test_late_receipt_records_handoff_but_cannot_extend_code_expiry(
+    guest, bridge, isolated, django_capture_on_commit_callbacks
+):
+    challenge = begin(guest, django_capture_on_commit_callbacks)
+    auth.deliver_phone_code(challenge.pk)
+    challenge.refresh_from_db()
+    row = TelegramWebsiteHandoff.objects.get()
+    isolated.clock[0] = challenge.expires_at + timedelta(seconds=1)
+    assert transport.import_proof(row, proof(row, attempt_id=str(row.attempt_id)))
+    assert (
+        guest.client.post(
+            "/account/mobile/confirm/",
+            {"code": service.code_for(challenge)},
+        ).status_code
+        == 200
+    )
+    assert not VerifiedPhone.objects.exists()
 
 
 def test_new_request_supersedes_handed_off_code_without_replaying_it(

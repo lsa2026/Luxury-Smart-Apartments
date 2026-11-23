@@ -304,7 +304,6 @@ def import_proof(row, proof):
 
         if (
             len(ids) != 2
-            or at > row.expires_at
             or not PhoneChallenge.objects.filter(
                 pk=row.source_id,
                 workgroup_authorized_at__isnull=False,
