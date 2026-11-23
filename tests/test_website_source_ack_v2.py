@@ -58,6 +58,7 @@ def test_initial_binding_cannot_adopt_old_held_or_attempted_state(prepared, chan
 def v2(prepared, monkeypatch, settings):
     settings.MESSAGE_SOURCE_V2_ENABLED = True
     row, _, _, proof, _ = prepared
+    proof["waba_id"] = "2075336595945655"
     event_model = receipts.source.SOURCES[row.scenario][1]
     event = event_model.objects.select_related("stay__property").get(pk=row.event_id)
     type(event.stay.property).objects.filter(pk=event.stay.property_id).update(
@@ -139,7 +140,8 @@ def test_v2_ack_is_independently_reconstructed_and_historical_receipts_still_imp
 
 
 @pytest.mark.parametrize(
-    "change", ["guest", "hash", "components", "context_guest", "pack", "provenance", "extra"]
+    "change",
+    ["guest", "hash", "components", "context_guest", "pack", "provenance", "extra", "waba"],
 )
 def test_v2_planned_content_cannot_establish_its_own_authority(v2, change):
     row, proof, planned, wrapper = v2
@@ -155,6 +157,8 @@ def test_v2_planned_content_cannot_establish_its_own_authority(v2, change):
         planned["source_pack_sha256"] = "e" * 64
     elif change == "provenance":
         wrapper["source_provenance"] = "caller_provided"
+    elif change == "waba":
+        proof["waba_id"] = "unrelated-account"
     else:
         planned["approved"] = True
     try:

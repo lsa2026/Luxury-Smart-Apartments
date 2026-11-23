@@ -285,6 +285,8 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             )
             if version2 and not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
                 return "held"
+            if version2 and identity["waba_id"] != "2075336595945655":
+                raise ValueError
             render_contract = (
                 "yc19-render-source-view-2" if version2 else "yc19-render-source-view-1"
             )

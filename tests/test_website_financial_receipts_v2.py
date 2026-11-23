@@ -90,3 +90,16 @@ def test_historical_receipt_does_not_release_changed_or_ambiguous_resource(proof
     assert not receipts.project_payment_link_receipt(expected)
     delivery.refresh_from_db()
     assert delivery.state in {"waiting_core", "uncertain"}
+
+
+def test_unknown_central_attempt_without_source_provider_id_blocks_fresh_uuid(proof):
+    from apps.reservations.website_financial_source_v2 import payment_link_source
+
+    stay, old_delivery, expected = proof
+    expected.state = "uncertain"
+    expected.provider_message_id = ""
+    expected.save(update_fields=["state", "provider_message_id"])
+    new = stay.payment_link_deliveries.create(fingerprint=old_delivery.fingerprint)
+    result = payment_link_source(new.pk, expected.relay.scenario)
+    assert result["available"] is False
+    assert result["reason"] == "prior_delivery_requires_reconciliation"

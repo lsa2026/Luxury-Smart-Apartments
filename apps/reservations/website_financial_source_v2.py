@@ -263,6 +263,21 @@ def payment_link_source(delivery_id, scenario):
                 .exists()
             ):
                 return hold("prior_delivery_requires_reconciliation")
+            from .message_receipt_models import WebsiteMessageExpectation
+
+            if (
+                WebsiteMessageExpectation.objects.filter(
+                    relay__scenario=scenario,
+                    relay__stay_id=stay.pk,
+                    relay__message_type="payment_link",
+                    attempts_claimed__gt=0,
+                )
+                .exclude(relay__event_id=row.pk)
+                .exists()
+            ):
+                # A central ambiguous POST may have no provider ID and may not
+                # yet be projected onto its delivery. Never conceal it with a new UUID.
+                return hold("prior_delivery_requires_reconciliation")
             if not core_delivered(stay, event, scenario):
                 # Keep a new source journal pending without forwarding or minting
                 # a URL. A missing predecessor is not a stale financial request.
