@@ -7,6 +7,7 @@ from apps.reservations import (
     day_use08_payments,
     day_use_auto_payment,
     day_use_ownership,
+    extension_checkout_source_v2,
     message_receipts,
     message_source_authorization,
     morning07_communications,
@@ -25,6 +26,11 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path(
+        "stay-extensions/checkout/source-authorization/",
+        extension_checkout_source_v2.authorization,
+        name="extension_checkout_source_authorization",
+    ),
     path(
         "morning07/payment-links/source-authorization/",
         website_financial_source_v2.payment_link_authorization,

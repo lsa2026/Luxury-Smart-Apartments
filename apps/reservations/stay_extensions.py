@@ -466,11 +466,15 @@ def refresh_chain(chain_id):
                     "created_unpaid": "created_unpaid",
                 }.get(changed, "changed")
             )
-            StayExtensionEvent.objects.get_or_create(
+            event, event_created = StayExtensionEvent.objects.get_or_create(
                 extension=extension,
                 revision=chain.revision,
                 defaults={"kind": "stay_extension." + kind},
             )
+            if event_created:
+                from .extension_checkout_source_v2 import register_event
+
+                transaction.on_commit(lambda event=event: register_event(event), robust=True)
             transaction.on_commit(lambda pk=extension.pk: _schedule(pk), robust=True)
 
 

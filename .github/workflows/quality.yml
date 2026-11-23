@@ -47,6 +47,7 @@ jobs:
           tests/test_workgroup_queue_audit.py
           tests/test_message_source_authorization.py
           tests/test_website_financial_source_v2.py
+          tests/test_extension_checkout_source_v2.py
           tests/test_website_access_source_v2.py
           tests/test_website_template_contract_v2.py
           tests/test_website_template_selector_v2.py
@@ -209,6 +210,9 @@ jobs:
 
       - name: Verify one-shot operations accounting email without providers
         run: pytest tests/test_accounting_operations_email.py tests/test_modification_accounting_email.py
+
+      - name: Verify scoped terminal-extension source and immutable receipts
+        run: pytest tests/test_extension_checkout_source_v2.py
 
       - name: Verify transient phone workgroup source without providers
         run: |
