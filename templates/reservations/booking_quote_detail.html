@@ -254,7 +254,7 @@
                         </div>
                         {% endif %}
 
-                        <details class="guest-journey__optional"{% if guest_form.special_requests.errors or guest_form.marketing_consent.errors %} open{% endif %}>
+                        <details class="guest-journey__optional"{% if guest_form.special_requests.errors %} open{% endif %}>
                             <summary>
                                 <span aria-hidden="true">＋</span>
                                 <div><strong>{% trans "Optional details" %}</strong><small>{% trans "Special requests and offers" %}</small></div>
@@ -264,9 +264,6 @@
                                     <label for="{{ guest_form.special_requests.id_for_label }}">{{ guest_form.special_requests.label }}</label>
                                     {{ guest_form.special_requests }}
                                     {% for error in guest_form.special_requests.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
-                                </div>
-                                <div class="form-field quote-review__choice guest-journey__marketing{% if guest_form.marketing_consent.errors %} form-field--error{% endif %}">
-                                    <label for="{{ guest_form.marketing_consent.id_for_label }}">{{ guest_form.marketing_consent }}<span>{{ guest_form.marketing_consent.label }}</span></label>
                                 </div>
                             </div>
                         </details>

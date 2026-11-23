@@ -153,7 +153,7 @@ def dispatch_due(limit=100):
 
         arrival = effective_arrival(booking)
         intent = booking.booking_intent
-        if not arrival or not intent or not intent.marketing_consent or not intent.guest_email:
+        if not arrival or not intent or not intent.guest_email:
             continue
         at = datetime.fromisoformat(arrival["at"])
         due = at + timedelta(hours=1)
@@ -246,7 +246,6 @@ def resolve_recipient(delivery):
         arrival = effective_arrival(booking)
         if (
             not intent
-            or not intent.marketing_consent
             or booking.normalized_status not in Reservation.ACTIVE_STATUSES
             or not arrival
         ):

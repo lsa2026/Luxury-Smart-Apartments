@@ -299,4 +299,4 @@ def test_financial_proof_is_rechecked_and_delivery_dependencies_hold(client, rec
 def test_loyalty_never_inherits_service_consent(client, record):
     facts = request_source(client, paid_record(record), "loyalty_invitation", financial=True).json()
     assert facts["consent"]["marketing"] is None and facts["domain_authorized"] is False
-    assert "loyalty_registry_and_marketing_consent_required" in facts["blockers"]
+    assert "loyalty_registry_required" in facts["blockers"]
