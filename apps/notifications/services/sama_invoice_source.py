@@ -309,7 +309,7 @@ def import_receipt(row, value):
         or (
             row.failure_observed
             and row.provider_state == "rejected"
-            and state in {"accepted", "sent"}
+            and state not in {"delivered", "read"}
         )
     )
     if failure and state == "rejected" and row.provider_state not in {"delivered", "read"}:
