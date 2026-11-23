@@ -385,6 +385,25 @@ LABELS = {
         "Arrivée enregistrée ; les autres conditions restent nécessaires pour les points.",
     ),
 }
+LABELS.update(
+    {
+        "gift_status_handoff_wait": (
+            "بانتظار تسليم نسخة الدعوة لفريق العمل لإرسالها يدويًا.",
+            "Waiting to hand the invitation to staff for manual forwarding.",
+            "En attente de remise de l’invitation à l’équipe pour un envoi manuel.",
+        ),
+        "gift_status_handoff_hold": (
+            "تسليم نسخة الدعوة للفريق غير مؤكد؛ لن نكررها تلقائيًا.",
+            "Staff handoff is unconfirmed; the invitation will not be retried automatically.",
+            "La remise à l’équipe est incertaine ; aucune nouvelle tentative automatique.",
+        ),
+        "gift_status_handed_off": (
+            "سُلّمت نسخة الدعوة لفريق العمل؛ إرسالها للضيف أو قراءتها غير متحقق.",
+            "The invitation was handed to staff; guest delivery and reading are unconfirmed.",
+            "L’invitation a été remise à l’équipe ; livraison au client et lecture non confirmées.",
+        ),
+    }
+)
 TYPES = {
     "loyalty": ("مكافأة إقامة", "Stay reward", "Points de séjour"),
     "addition": ("إضافة نقاط", "Points added", "Ajout de points"),

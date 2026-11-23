@@ -181,7 +181,18 @@ class MovementNotice(models.Model):
         max_length=12,
         default="queued",
         choices=[
-            (v, v) for v in ("queued", "sending", "accepted", "uncertain", "failed", "skipped")
+            (v, v)
+            for v in (
+                "queued",
+                "sending",
+                "accepted",
+                "uncertain",
+                "failed",
+                "skipped",
+                "handoff_wait",
+                "handoff_hold",
+                "handed_off",
+            )
         ],
     )
     attempts = models.PositiveSmallIntegerField(default=0)

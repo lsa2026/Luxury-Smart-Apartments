@@ -150,6 +150,10 @@ def owner_preview_binding():
 
 def send_catalogue(*, batch, language="ar", kind=None):
     """No recipient override; only the owner's existing verified membership phone."""
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        raise ValidationError("Direct previews retired under workgroup policy.")
     owner, binding = owner_preview_binding()
     if kind == "booking-invitation":
         from .booking_invitations import invitation_caption as booking_caption

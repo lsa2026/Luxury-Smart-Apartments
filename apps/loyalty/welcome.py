@@ -56,6 +56,10 @@ def image(language):
 
 
 def enabled():
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        return False
     from .services import enabled as programme_enabled
     from .views import approved_terms
 

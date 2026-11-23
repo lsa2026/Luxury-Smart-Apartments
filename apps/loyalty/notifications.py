@@ -84,6 +84,10 @@ MESSAGES = {
 
 
 def messages_enabled():
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        return False
     from .launch import pilot_only
     from .views import approved_terms
 

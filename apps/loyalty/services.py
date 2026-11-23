@@ -163,7 +163,9 @@ def _post(member, group, branch, *, credit=ZERO, debit=ZERO, allow_negative=Fals
         from .notifications import queue_movement
 
         transaction.on_commit(lambda: queue_movement(row.pk), robust=True)
-    if settings.LOYALTY_WHATSAPP_NOTICES_ENABLED:
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode() or settings.LOYALTY_WHATSAPP_NOTICES_ENABLED:
         from .whatsapp_notices import queue_notice
 
         try:
