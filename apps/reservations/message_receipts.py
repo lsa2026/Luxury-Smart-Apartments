@@ -124,7 +124,7 @@ def fetch(request_id, capability, *, content=False, render_source=False):
             raw = bytearray()
             for chunk in reply.iter_bytes():
                 raw.extend(chunk)
-                if len(raw) > 32768:
+                if len(raw) > (131072 if content or render_source else 32768):
                     raise ValueError
     value = json.loads(raw, object_pairs_hook=source.unique_object)
     if not isinstance(value, dict):
@@ -147,9 +147,12 @@ def verified_identity(proof, facts, request_id):
         raise ValueError
     if type(proof.get("reservation_revision")) is not str:
         raise ValueError
-    family = f"lsa{facts['scenario']}" + (
-        "_payment" if ":payment:" in facts["source_event_key"] else ""
+    suffix = (
+        "_payment_link"
+        if ":payment_link:" in facts["source_event_key"]
+        else ("_payment" if ":payment:" in facts["source_event_key"] else "")
     )
+    family = f"lsa{facts['scenario']}" + suffix
     expected = {
         "request_id": request_id,
         "source_family": family,
@@ -216,10 +219,12 @@ def projected_expectation(facts):
 
 
 @sensitive_variables()
-def reconcile(row_id, request_id, capability):
+def reconcile(row_id, request_id, capability, *, expected_binding=None):
     # This capability is independently authenticated by19. It never reuses or
     # promotes a source READ capability to write authority.
     proof = fetch(request_id, capability)
+    if expected_binding is not None and proof.get("binding_ref") != expected_binding:
+        raise ValueError
     before = (
         proof.get("proof_stage") == "intake_held"
         and type(proof.get("attempts_claimed")) is int
@@ -242,11 +247,17 @@ def reconcile(row_id, request_id, capability):
             # still check the current recipient and booking separately.
             if prior.relay_id != row.pk:
                 raise ValueError
+            resource_kind = (
+                "payment_link"
+                if row.message_type == "payment_link"
+                else "payment"
+                if row.financial
+                else "core"
+            )
             expected = {
                 "scenario": row.scenario,
                 "job_sha256": row.job_sha256,
-                "source_event_key": f"website:{row.scenario}:"
-                f"{'payment' if row.financial else 'core'}:{row.event_id}",
+                "source_event_key": f"website:{row.scenario}:{resource_kind}:{row.event_id}",
                 "reservation_key": (
                     f"{'morning07' if row.scenario == '07' else 'dayuse08'}:{row.stay_id}"
                 ),
@@ -267,6 +278,21 @@ def reconcile(row_id, request_id, capability):
             if proof["language"] != event.stay.guest_language:
                 raise ValueError
         if prior is None:
+            version2 = (
+                before
+                and isinstance(render_source, dict)
+                and render_source.get("contract_version") == "yc19-render-source-view-2"
+            )
+            if version2 and not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
+                return "held"
+            render_contract = (
+                "yc19-render-source-view-2" if version2 else "yc19-render-source-view-1"
+            )
+            provenance = (
+                "authenticated_source01_financial"
+                if version2 and facts["source_message_type"] in {"payment_link", "payment_success"}
+                else "private_runtime_rpc_source20"
+            )
             # Existing attempts, unknown posts, legacy receipts and held old
             # intents can never be adopted as a new source expectation.
             if before and (
@@ -282,24 +308,26 @@ def reconcile(row_id, request_id, capability):
                     "domain_recheck_required",
                     "dispatch_allowed",
                 }
-                or render_source.get("contract_version") != "yc19-render-source-view-1"
+                or render_source.get("contract_version") != render_contract
                 or render_source.get("request_id") != request_id
                 or render_source.get("prepare_ref") != proof.get("prepare_ref")
                 or render_source.get("prepared_at_epoch") != proof.get("prepared_at_epoch")
-                or render_source.get("source_provenance") != "private_runtime_rpc_source20"
+                or render_source.get("source_provenance") != provenance
                 or render_source.get("domain_recheck_required") is not True
                 or render_source.get("dispatch_allowed") is not False
             ):
                 raise ValueError
-            policy = independent_render_policy(
-                event, facts, render_source.get("context") if before else None
-            )
-            if (
-                not before
-                or not policy
-                or row.state != "forwarding"
-                or facts["domain_authorized"] is not True
-            ):
+            if not before or row.state != "forwarding" or facts["domain_authorized"] is not True:
+                return "held"
+            if version2:
+                from .website_template_policy_v2 import policy_from_source
+
+                policy = policy_from_source(event, facts, render_source["context"])
+            else:
+                policy = independent_render_policy(
+                    event, facts, render_source.get("context") if before else None
+                )
+            if not policy:
                 return "held"
             now = int(timezone.now().timestamp())
             prepared_at = proof.get("prepared_at_epoch")
@@ -319,8 +347,31 @@ def reconcile(row_id, request_id, capability):
             ):
                 raise ValueError
             digest = content_digest(policy["language"], policy["message"])
+            if version2:
+                from .website_template_selector_v2 import PACK_SHA, SELECTION_REF
+
+                if (
+                    set(planned)
+                    != {
+                        "contract_version",
+                        "request_id",
+                        "prepare_ref",
+                        "prepared_at_epoch",
+                        "language",
+                        "message_input",
+                        "content_digest",
+                        "selection_ref",
+                        "source_pack_sha256",
+                        "content_binding_basis",
+                        "dispatch_allowed",
+                    }
+                    or planned.get("selection_ref") != SELECTION_REF
+                    or planned.get("source_pack_sha256") != PACK_SHA
+                ):
+                    raise ValueError
             if (
-                planned.get("contract_version") != "yc19-prepared-content-1"
+                planned.get("contract_version")
+                != ("yc19-prepared-content-2" if version2 else "yc19-prepared-content-1")
                 or planned.get("request_id") != request_id
                 or planned.get("prepare_ref") != prepare_ref
                 or planned.get("prepared_at_epoch") != prepared_at
@@ -328,7 +379,11 @@ def reconcile(row_id, request_id, capability):
                 or planned.get("language") != proof["language"]
                 or planned.get("message_input") != policy["message"]
                 or planned.get("content_binding_basis")
-                != "planned_pending_source_render_verification"
+                != (
+                    "planned_pending_independent_source_template_verification"
+                    if version2
+                    else "planned_pending_source_render_verification"
+                )
                 or planned.get("dispatch_allowed") is not False
                 or not constant_time_compare(digest, identity["content_digest"])
                 or planned.get("content_digest") != digest
@@ -395,6 +450,9 @@ def reconcile(row_id, request_id, capability):
                 prior.observed_at_epoch = observed
                 prior.receipt_evidence_ref = evidence
                 prior.save(update_fields=["state", "observed_at_epoch", "receipt_evidence_ref"])
+            from .website_financial_receipts_v2 import project_payment_link_receipt
+
+            project_payment_link_receipt(prior)
             return prior.state  # Never downgrade a trusted delivery.
         prior.attempts_claimed = claims
         prior.provider_message_id, prior.wamid = provider_id or "", wamid or ""
@@ -411,7 +469,66 @@ def reconcile(row_id, request_id, capability):
                 "observed_at_epoch",
             ]
         )
+        from .website_financial_receipts_v2 import project_payment_link_receipt
+
+        project_payment_link_receipt(prior)
         return prior.state
+
+
+@sensitive_variables()
+def initial_binding_relay(request_id, binding_ref, capability):
+    """Resolve only an existing forwarding journal from authenticated zero-claim proof."""
+    proof = fetch(request_id, capability)
+    if (
+        set(proof) != PROOF_FIELDS
+        or proof.get("contract_version") != "yc19-receipt-proof-1"
+        or proof.get("source") != "backend19"
+        or proof.get("request_id") != request_id
+        or proof.get("binding_ref") != binding_ref
+        or proof.get("proof_stage") != "intake_held"
+        or type(proof.get("attempts_claimed")) is not int
+        or proof["attempts_claimed"] != 0
+        or proof.get("provider_attempted") is not False
+        or proof.get("provider_message_id") is not None
+        or proof.get("wamid") is not None
+        or proof.get("dispatch_allowed") is not False
+    ):
+        raise ValueError
+    scenario, event_key = proof.get("scenario"), proof.get("source_event_key")
+    if scenario not in {"07", "08"} or not isinstance(event_key, str):
+        raise ValueError
+    match = re.fullmatch(
+        rf"website:{scenario}:(core|payment|payment_link):([0-9a-f-]{{36}})", event_key
+    )
+    if not match or not isinstance(proof.get("reservation_key"), str):
+        raise ValueError
+    kind, event_id = match.groups()
+    event_id = UUID(event_id)
+    prefix = "morning07:" if scenario == "07" else "dayuse08:"
+    if not proof["reservation_key"].startswith(prefix):
+        raise ValueError
+    stay_id = UUID(proof["reservation_key"][len(prefix) :])
+    if (
+        type(proof.get("reservation_revision")) is not str
+        or not isinstance(proof.get("job_sha256"), str)
+        or not re.fullmatch(r"[a-f0-9]{64}", proof["job_sha256"])
+    ):
+        raise ValueError
+    rows = list(
+        relay.WebsiteMessageRelay.objects.filter(
+            scenario=scenario,
+            stay_id=stay_id,
+            event_id=event_id,
+            financial=kind == "payment",
+            message_type=proof.get("source_message_type"),
+            revision=proof["reservation_revision"],
+            job_sha256=proof["job_sha256"],
+            state="forwarding",
+        ).values_list("pk", flat=True)[:2]
+    )
+    if len(rows) != 1:
+        raise ValueError
+    return rows[0]
 
 
 @csrf_exempt  # No cookie/session authority. Only one-request backend proof capability.
@@ -432,14 +549,27 @@ def receipt(request):
         body = json.loads(request.body, object_pairs_hook=source.unique_object)
         if (
             not isinstance(body, dict)
-            or set(body) not in ({"request_id", "relay_ref"}, {"request_id", "expectation_ref"})
+            or set(body)
+            not in (
+                {"request_id", "relay_ref"},
+                {"request_id", "expectation_ref"},
+                {"request_id", "binding_ref"},
+            )
             or not isinstance(body["request_id"], str)
             or not re.fullmatch(REQUEST_PATTERN, body["request_id"])
             or not isinstance(capability, str)
             or not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability)
         ):
             raise ValueError
-        if "expectation_ref" in body:
+        expected_binding = None
+        if "binding_ref" in body:
+            expected_binding = body["binding_ref"]
+            if not isinstance(expected_binding, str) or not re.fullmatch(
+                r"[A-Za-z0-9_.:-]{1,128}", expected_binding
+            ):
+                raise ValueError
+            row_id = initial_binding_relay(body["request_id"], expected_binding, capability)
+        elif "expectation_ref" in body:
             prior = WebsiteMessageExpectation.objects.filter(
                 expectation_ref=UUID(body["expectation_ref"]), request_id=body["request_id"]
             ).first()
@@ -450,7 +580,7 @@ def receipt(request):
             row_id = UUID(body["relay_ref"])
         if not relay.WebsiteMessageRelay.objects.filter(pk=row_id).exists():
             raise ValueError
-        state = reconcile(row_id, body["request_id"], capability)
+        state = reconcile(row_id, body["request_id"], capability, expected_binding=expected_binding)
     except Exception:
         return source.response({"code": "proof_unverified", "dispatch_allowed": False}, 409)
     return source.response({"code": state, "dispatch_allowed": False})

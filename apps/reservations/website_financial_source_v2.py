@@ -101,7 +101,7 @@ def snapshot(stay, event, scenario, kind, identity):
     )
     return {
         **base,
-        "contract_version": "site01-financial-source-2",
+        "financial_source_contract": "site01-financial-source-2",
         "available": True,
         "scenario": scenario,
         "source_message_type": kind,
@@ -126,11 +126,79 @@ def snapshot(stay, event, scenario, kind, identity):
     }
 
 
-def scoped_snapshot(result):
+def scoped_snapshot(result, stay):
     from .message_receipts import projected_expectation
 
     result["receipt_expectation"] = projected_expectation(result)
+    from . import message_source_relay as relay
+
+    at = relay.cutover()
+    # No caller/metadata boolean opens financial dispatch. A fresh source-owned
+    # journal after coordinated cutover is required in addition to the domain checks.
+    from .telegram_stay_transport import selected
+
+    if (
+        getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+        and relay.enabled()
+        and at
+        and not selected(stay)
+        and result.get("core_delivery_verified") is True
+        and result["consent"].get("revoked") is not True
+    ):
+        resource = result["financial_identity"]
+        kind = result["source_message_type"]
+        resource_id = resource["delivery_id" if kind == "payment_link" else "event_id"]
+        created = timezone.datetime.fromisoformat(
+            resource["created_at" if kind == "payment_link" else "recorded_at"]
+        )
+        admitted = relay.WebsiteMessageRelay.objects.filter(
+            scenario=result["scenario"],
+            financial=kind == "payment_success",
+            event_id=resource_id,
+            stay_id=result["reservation_key"].split(":", 1)[1],
+            revision=result["reservation_revision"],
+            message_type=kind,
+            job_sha256=result["job_sha256"],
+            source_occurred_at__gte=at,
+            state__in=["pending", "forwarding"],
+        ).exists()
+        if (
+            admitted
+            and at <= created <= timezone.now()
+            and result["legacy_state"] == "not_attempted"
+        ):
+            result["domain_authorized"] = True
+            result["blockers"] = [
+                b
+                for b in result["blockers"]
+                if b not in {"channel_cutover_required", "source_ack_v2_required"}
+            ]
     return source.scoped_facts(result)
+
+
+def verified_confirmation_fields(event, scenario):
+    payments = source.SOURCES[scenario][5]
+    if (
+        not payments.current(event)
+        or event.payload.get("payment_event_id") != str(event.pk)
+        or event.payload.get("payment_revision") != event.payment_revision
+        or event.payload.get("proof_key") != event.proof_key
+    ):
+        raise ValueError("current_collection_unverified")
+    return {
+        "variables": variables(event.stay, scenario),
+        "financial_identity": {
+            "resource_type": type(event).__name__,
+            "event_id": str(event.pk),
+            "payment_revision": event.payment_revision,
+            "proof_key": event.proof_key,
+            "proof_kind": event.proof_kind,
+            "paid_at": event.stay.paid_at.isoformat(),
+            "payment_status": "paid",
+            "recorded_at": event.created_at.isoformat(),
+        },
+        "financial_conditions_verified": True,
+    }
 
 
 @sensitive_variables()
@@ -196,7 +264,23 @@ def payment_link_source(delivery_id, scenario):
             ):
                 return hold("prior_delivery_requires_reconciliation")
             if not core_delivered(stay, event, scenario):
-                return hold("core_delivery_unverified")
+                # Keep a new source journal pending without forwarding or minting
+                # a URL. A missing predecessor is not a stale financial request.
+                key = ("morning-pay-" if scenario == "07" else "day-use-pay-") + str(row.pk)
+                waiting = source.base_facts(stay, event, scenario, source.sha(key), "payment_link")
+                waiting.update(
+                    available=True,
+                    booking_event_id=str(event.pk),
+                    source_event_id=str(row.pk),
+                    source_event_key=f"website:{scenario}:payment_link:{row.pk}",
+                    source_occurred_at=row.created_at.isoformat(),
+                    not_before=row.created_at.isoformat(),
+                    financial_conditions_verified=False,
+                    core_delivery_verified=False,
+                    financial_identity={"delivery_id": str(row.pk), "fingerprint": row.fingerprint},
+                )
+                waiting["blockers"].append("core_delivery_unverified")
+                return source.scoped_facts(waiting)
             domain.validate_window(
                 stay.starts_at,
                 stay.ends_at,
@@ -254,7 +338,7 @@ def payment_link_source(delivery_id, scenario):
                 core_delivery_verified=True,
                 legacy_state="not_attempted",
             )
-            return scoped_snapshot(result)
+            return scoped_snapshot(result, stay)
     except (ValueError, InvalidPhoneNumber, ZoneInfoNotFoundError):
         return hold("source_values_unverified")
     except (stays.DoesNotExist, Property.DoesNotExist):
@@ -292,6 +376,8 @@ def payment_confirmation_source(event_id, scenario):
                 or event.payload.get("proof_key") != event.proof_key
             ):
                 return hold("current_collection_unverified")
+            core = stay.communication_events.filter(revision=stay.communication_revision).first()
+            core_verified = core_delivered(stay, core, scenario)
             result = snapshot(
                 stay,
                 event,
@@ -318,8 +404,13 @@ def payment_confirmation_source(event_id, scenario):
                 legacy_state=source.payment_facts(
                     stay, event, scenario, result["job_sha256"], payments
                 )["legacy_state"],
+                core_delivery_verified=core_verified,
             )
-            return scoped_snapshot(result)
+            if not core_verified:
+                # Projection remains useful for review; never a grant without core receipts.
+                result["blockers"].append("core_delivery_unverified")
+                return source.scoped_facts(result)
+            return scoped_snapshot(result, stay)
     except Exception:
         return hold("current_collection_unverified")
 

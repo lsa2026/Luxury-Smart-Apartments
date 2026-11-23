@@ -55,6 +55,8 @@ def access_source_values(event, facts, context):
         or not isinstance(context, dict)
     ):
         return hold("access_source_not_in_scope")
+    if context.get("recipient_ref") is None:
+        context = {**context, "recipient_ref": facts.get("recipient_ref")}
     event = type(event).objects.select_related("stay__property").get(pk=event.pk)
     stay = event.stay
     try:

@@ -104,7 +104,10 @@ def test_current_booking_must_match_original_fingerprint_and_snapshot(prepared, 
 
 def test_all_three_deliveries_required_even_when_group_was_handed_off(prepared, monkeypatch):
     monkeypatch.setattr(financial, "core_delivered", lambda *_: False)
-    assert read(prepared)["reason"] == "core_delivery_unverified"
+    result = read(prepared)
+    assert result["domain_authorized"] is False
+    assert "core_delivery_unverified" in result["blockers"]
+    assert "variables" not in result
     assert not prepared[4]
 
 

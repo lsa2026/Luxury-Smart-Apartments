@@ -29,6 +29,15 @@ def sha(value):
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+def source_timestamp(value):
+    if not isinstance(value, str):
+        raise ValueError("source_time_unknown")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.utcoffset() is None:
+        raise ValueError("source_time_unknown")
+    return parsed.timestamp()
+
+
 def validate_message(language, message):
     if (
         language not in {"ar", "en", "fr"}
