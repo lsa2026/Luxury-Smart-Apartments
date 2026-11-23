@@ -212,7 +212,7 @@ def independent_template_policy(projection):
         files("apps.reservations")
         .joinpath("morning_assets", "financial-template-bindings.json")
         .read_bytes()
-    )
+    ).replace(b"\r\n", b"\n")  # Git text checkout endings do not alter the pinned catalog.
     if hashlib.sha256(raw).hexdigest() != REGISTRY_SHA256:
         return hold("template_catalog_integrity_failed")
     pack = json.loads(raw)
