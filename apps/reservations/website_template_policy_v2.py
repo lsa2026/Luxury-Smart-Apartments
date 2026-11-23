@@ -11,6 +11,10 @@ from .website_access_source_v2 import access_source_values
 @sensitive_variables()
 def policy_from_source(event, facts, context):
     scenario = facts.get("scenario")
+    if scenario == "02" and facts.get("source_family") == "lsa_ext_checkout":
+        from .extension_checkout_source_v2 import policy_from_source as extension_policy
+
+        return extension_policy(event, facts, context)
     if scenario not in source.SOURCES or not isinstance(context, dict):
         return None
     kind = facts.get("source_message_type")

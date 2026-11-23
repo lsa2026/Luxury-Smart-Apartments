@@ -164,6 +164,15 @@ def register_payment_link(event, scenario):
 
 
 def current_event(row):
+    if row.scenario == "02":
+        from . import extension_checkout_source_v2 as extension
+
+        if not extension.enabled():
+            return None
+        try:
+            return extension.facts_for_row(row)
+        except Exception:
+            return None
     stays, events, pay_events, _, comms, payments = source.SOURCES[row.scenario]
     if row.message_type == "payment_link":
         if not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
@@ -253,7 +262,10 @@ def current_event(row):
 
 @sensitive_variables()
 def forward_due(*, client=None, limit=1):
-    if not enabled():
+    from . import extension_checkout_source_v2 as extension
+
+    scopes = (["07", "08"] if enabled() else []) + (["02"] if extension.enabled() else [])
+    if not scopes:
         return {"accepted": 0}
     accepted = 0
     examined = set()
@@ -262,7 +274,7 @@ def forward_due(*, client=None, limit=1):
         with transaction.atomic():
             row = (
                 WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
-                .filter(state="pending", not_before__lte=timezone.now())
+                .filter(state="pending", not_before__lte=timezone.now(), scenario__in=scopes)
                 .exclude(
                     reason__in=["deferred_before_claim:" + reason for reason in DEFERRED_REASONS],
                     updated_at__gt=timezone.now() - DEFER_RECHECK,
@@ -283,7 +295,7 @@ def forward_due(*, client=None, limit=1):
                 row.save(update_fields=["state", "reason", "updated_at"])
                 continue
             event, facts = current
-            if not row.financial:
+            if not row.financial and row.scenario in {"07", "08"}:
                 from .message_receipts import core_slot_delivered
 
                 if core_slot_delivered(event.stay, event, row.scenario, row.message_type):
@@ -298,15 +310,20 @@ def forward_due(*, client=None, limit=1):
             row.save(update_fields=["state", "updated_at"])
         # Durable fence is committed BEFORE the network. A crash/timeout is not
         # retried, even if no ACK was received. Reconciliation is separate.
-        comms, payments = source.SOURCES[row.scenario][4:6]
-        capability = payments.capability(event) if row.financial else comms.event_token(event)
+        if row.scenario == "02":
+            capability = extension.read_capability(row, event.extension)
+        else:
+            comms, payments = source.SOURCES[row.scenario][4:6]
+            capability = payments.capability(event) if row.financial else comms.event_token(event)
         envelope = {
             "contract_version": "site01-source-relay-2"
             if getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
             else "site01-source-relay-1",
             "relay_ref": str(row.pk),
             "scenario": row.scenario,
-            "source_kind": "payment_link"
+            "source_kind": "extension_checkout"
+            if row.scenario == "02"
+            else "payment_link"
             if row.message_type == "payment_link"
             else "payment"
             if row.financial

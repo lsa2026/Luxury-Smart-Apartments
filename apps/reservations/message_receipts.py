@@ -152,7 +152,11 @@ def verified_identity(proof, facts, request_id):
         if ":payment_link:" in facts["source_event_key"]
         else ("_payment" if ":payment:" in facts["source_event_key"] else "")
     )
-    family = f"lsa{facts['scenario']}" + suffix
+    family = (
+        "lsa_ext_checkout"
+        if facts.get("scenario") == "02" and facts.get("source_family") == "lsa_ext_checkout"
+        else f"lsa{facts['scenario']}" + suffix
+    )
     expected = {
         "request_id": request_id,
         "source_family": family,
@@ -218,6 +222,26 @@ def projected_expectation(facts):
     return None
 
 
+def historical_website_scope(row):
+    if row.scenario not in {"07", "08"}:
+        raise ValueError
+    resource_kind = (
+        "payment_link"
+        if row.message_type == "payment_link"
+        else "payment"
+        if row.financial
+        else "core"
+    )
+    return {
+        "scenario": row.scenario,
+        "job_sha256": row.job_sha256,
+        "source_event_key": f"website:{row.scenario}:{resource_kind}:{row.event_id}",
+        "reservation_key": f"{'morning07' if row.scenario == '07' else 'dayuse08'}:{row.stay_id}",
+        "reservation_revision": row.revision,
+        "source_message_type": row.message_type,
+    }
+
+
 @sensitive_variables()
 def reconcile(row_id, request_id, capability, *, expected_binding=None):
     # This capability is independently authenticated by19. It never reuses or
@@ -247,35 +271,27 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             # still check the current recipient and booking separately.
             if prior.relay_id != row.pk:
                 raise ValueError
-            resource_kind = (
-                "payment_link"
-                if row.message_type == "payment_link"
-                else "payment"
-                if row.financial
-                else "core"
-            )
-            expected = {
-                "scenario": row.scenario,
-                "job_sha256": row.job_sha256,
-                "source_event_key": f"website:{row.scenario}:{resource_kind}:{row.event_id}",
-                "reservation_key": (
-                    f"{'morning07' if row.scenario == '07' else 'dayuse08'}:{row.stay_id}"
-                ),
-                "reservation_revision": row.revision,
-                "source_message_type": row.message_type,
-            }
+            if row.scenario == "02":
+                from .extension_checkout_source_v2 import historical_scope
+
+                expected = historical_scope(row)
+            else:
+                expected = historical_website_scope(row)
             if any(prior.identity.get(key) != value for key, value in expected.items()):
                 raise ValueError
             identity = verified_identity(proof, prior.identity, request_id)
         else:
-            if not relay.enabled():
+            from .extension_checkout_source_v2 import enabled as extension_enabled
+
+            if not (extension_enabled() if row.scenario == "02" else relay.enabled()):
                 return "held"
             current = relay.current_event(row)
             if current is None:
                 raise ValueError
             event, facts = current
             identity = verified_identity(proof, facts, request_id)
-            if proof["language"] != event.stay.guest_language:
+            language = facts["language"] if row.scenario == "02" else event.stay.guest_language
+            if proof["language"] != language:
                 raise ValueError
         if prior is None:
             version2 = (
@@ -497,6 +513,10 @@ def initial_binding_relay(request_id, binding_ref, capability):
     ):
         raise ValueError
     scenario, event_key = proof.get("scenario"), proof.get("source_event_key")
+    if scenario == "02":
+        from .extension_checkout_source_v2 import initial_relay
+
+        return initial_relay(proof)
     if scenario not in {"07", "08"} or not isinstance(event_key, str):
         raise ValueError
     match = re.fullmatch(
