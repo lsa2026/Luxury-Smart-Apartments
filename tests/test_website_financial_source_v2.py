@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from django.db import connection
+from django.db import connection, transaction
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
@@ -26,7 +26,8 @@ def prepared(record, settings, monkeypatch):
         name_ar="شقة مصطنعة", name_en="Synthetic Apartment", name_fr="Appartement fictif"
     )
     stay.property.refresh_from_db()
-    originals.source.SOURCES[scenario][4].capture_event(stay.pk)
+    with transaction.atomic():
+        originals.source.SOURCES[scenario][4].capture_event(stay.pk)
     stay.refresh_from_db()
     event = stay.latest_communication_event()
     links, domain = financial.modules(scenario)
@@ -47,7 +48,8 @@ def read(prepared):
 def test_single_current_source_locks_and_rechecks_without_business_writes(prepared, language):
     scenario, stay, _, row, calls = prepared
     type(stay).objects.filter(pk=stay.pk).update(guest_language=language)
-    originals.source.SOURCES[scenario][4].capture_event(stay.pk)
+    with transaction.atomic():
+        originals.source.SOURCES[scenario][4].capture_event(stay.pk)
     stay.refresh_from_db()
     links, _ = financial.modules(scenario)
     type(row).objects.filter(pk=row.pk).update(fingerprint=links.fingerprint(stay))

@@ -23,6 +23,21 @@ from .message_relay_models import WebsiteMessageRelay
 
 RELAY_URL = "https://lsa25.app.n8n.cloud/webhook/site01-source-relay-v1"
 READ_HEADER = "X-LSA-Source-Read-Capability"
+DEFERRED_REASONS = {"not_due", "waiting_predecessor", "deferred"}
+DEFERRED_KEYS = {
+    "contract_version",
+    "relay_ref",
+    "job_sha256",
+    "accepted",
+    "status",
+    "reason",
+    "request_id",
+    "attempts_claimed",
+    "provider_message_id",
+    "wamid",
+    "retryable_before_claim",
+}
+DEFER_RECHECK = timedelta(minutes=15)
 
 
 def cutover():
@@ -244,6 +259,10 @@ def forward_due(*, client=None, limit=1):
             row = (
                 WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
                 .filter(state="pending", not_before__lte=timezone.now())
+                .exclude(
+                    reason__in=["deferred_before_claim:" + reason for reason in DEFERRED_REASONS],
+                    updated_at__gt=timezone.now() - DEFER_RECHECK,
+                )
                 .exclude(pk__in=examined)
                 .order_by("updated_at", "not_before", "created_at")
                 .first()
@@ -329,6 +348,20 @@ def forward_due(*, client=None, limit=1):
                     accepted += 1
                 elif body.get("accepted") is False and body.get("status") == "held":
                     state, reason = "held", "downstream_held"
+                elif (
+                    getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+                    and set(body) == DEFERRED_KEYS
+                    and body.get("accepted") is False
+                    and body.get("status") == "deferred"
+                    and body.get("reason") in DEFERRED_REASONS
+                    and body.get("request_id") is None
+                    and type(body.get("attempts_claimed")) is int
+                    and body["attempts_claimed"] == 0
+                    and body.get("provider_message_id") is None
+                    and body.get("wamid") is None
+                    and body.get("retryable_before_claim") is True
+                ):
+                    state, reason = "pending", "deferred_before_claim:" + body["reason"]
         except Exception:
             # Do not log request headers, response bodies or transport exceptions.
             pass
