@@ -389,7 +389,11 @@ def _finish(
             shared = JoinInvitation.objects.select_for_update().get(pk=row["shared_invitation_id"])
             registry.record(shared, "unknown" if status == "uncertain" else status, provider_id)
         booking.save(update_fields=["loyalty_state", "updated_at"])
-        if row.get("past_guest_offer") == PAST_OFFER_KEY and status in {"accepted", "uncertain"}:
+        if row.get("past_guest_offer") == PAST_OFFER_KEY and status in {
+            "accepted",
+            "uncertain",
+            "handed_off",
+        }:
             transaction.on_commit(lambda: apply_for_booking(booking.pk), robust=True)
 
 
