@@ -19,6 +19,7 @@ HEADERS = {"HTTP_AUTHORIZATION": "Bearer " + TOKEN}
 ENABLED = override_settings(
     SAMA_BOOKING_ENABLED=True,
     SAMA_INVOICES_ENABLED=True,
+    SAMA_INVOICE_YCLOUD_ENABLED=True,
     SAMA_BOOKING_KEY_SHA256=hashlib.sha256(TOKEN.encode()).hexdigest(),
     EMAIL_DELIVERY_ENABLED=True,
     ULTRAMSG_ENABLED=True,
@@ -43,6 +44,7 @@ def request_data(phone=PHONE, channels=None, **changes):
         "email": "",
         "language": "ar",
         "confirmed": True,
+        "request_id": "8a155e5d-5929-4c73-8b9b-206b2bdb674a",
         **changes,
     }
 
@@ -232,4 +234,4 @@ def test_concurrent_guest_requests_issue_and_queue_only_once(payload):
     assert all(r["code"] == "invoice_requested" for r in results), results
     assert GuestInvoice.objects.count() == GuestInvoiceDelivery.objects.count() == 1
     assert results[0]["deliveries"][0]["id"] == results[1]["deliveries"][0]["id"]
-    dispatch.assert_called_once()
+    dispatch.assert_not_called()  # Sender19 owns new SMA WhatsApp deliveries.

@@ -77,6 +77,8 @@ jobs:
           tests/test_contact_draft_api.py
           tests/test_contact_inbox_navigation.py
           tests/test_sama_booking_api.py
+          tests/test_sama_invoices.py
+          tests/test_sama_invoice_source.py
           tests/test_manual_booking_operations_phase61.py
           tests/test_manual_booking_address.py
           tests/test_unified_address_paths.py
@@ -198,6 +200,9 @@ jobs:
 
       - name: Verify Ruff formatting
         run: ruff format --diff .
+
+      - name: Verify private SMA19 invoice ownership and provider proofs
+        run: pytest tests/test_sama_invoice_source.py tests/test_sama_invoices.py tests/test_guest_invoices.py -q
 
       - name: Verify scoped website source and future-only relay without live providers
         run: |
