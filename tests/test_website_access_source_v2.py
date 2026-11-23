@@ -93,3 +93,45 @@ def test_source_url_is_a_service_link_not_an_arbitrary_download(packet, value):
     event, facts, context = packet
     context["values"]["map_url"] = value
     assert access.access_source_values(event, facts, context)["available"] is False
+
+
+@pytest.mark.parametrize(
+    "instruction", ["No external gate (synthetic)", "Security at entrance (synthetic)"]
+)
+def test_explicit_private_owner_instruction_is_distinct_from_a_missing_code(packet, instruction):
+    event, facts, context = packet
+    context["values"].update(gate_code="", gate_access_instruction=instruction)
+    context["gate_access_evidence_ref"] = "synthetic-owner-gate:20261124"
+    result = access.access_source_values(event, facts, context)
+    assert result["available"] is True
+    assert result["values"]["gate_code"] == ""
+    assert result["values"]["gate_access_instruction"] == instruction
+
+
+@pytest.mark.parametrize(
+    "missing", ["instruction", "evidence", "wrong_type", "control", "too_long"]
+)
+def test_blank_gate_never_becomes_permission_without_source_evidence(packet, missing):
+    event, facts, context = packet
+    context["values"].update(gate_code="", gate_access_instruction="SYNTHETIC ENTRANCE")
+    context["gate_access_evidence_ref"] = "synthetic-owner-gate:20261124"
+    if missing == "instruction":
+        del context["values"]["gate_access_instruction"]
+    elif missing == "evidence":
+        del context["gate_access_evidence_ref"]
+    elif missing == "wrong_type":
+        context["values"]["gate_code"] = False
+    elif missing == "control":
+        context["gate_access_evidence_ref"] += "\n"
+    else:
+        context["values"]["gate_access_instruction"] = "x" * 2049
+    assert access.access_source_values(event, facts, context)["available"] is False
+
+
+def test_real_code_remains_authoritative_when_instruction_is_also_present(packet):
+    event, facts, context = packet
+    context["values"]["gate_access_instruction"] = "SYNTHETIC UNSELECTED INSTRUCTION"
+    result = access.access_source_values(event, facts, context)
+    assert result["available"] is True
+    assert result["values"]["gate_code"] == "NOT_A_REAL_CODE"
+    assert "gate_access_instruction" not in result["values"]

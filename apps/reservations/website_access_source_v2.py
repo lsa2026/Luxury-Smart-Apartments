@@ -4,6 +4,7 @@ The caller must obtain context from the fixed authenticated render-source view.
 This module has no HTTP route, downloads, PDF writer, ACK or provider operation.
 """
 
+import re
 from urllib.parse import urlsplit
 
 from django.utils import timezone
@@ -109,7 +110,24 @@ def access_source_values(event, facts, context):
         if not isinstance(values, dict) or any(
             not isinstance(values.get(k), str) or not values[k].strip() or len(values[k]) > 4096
             for k in DOCUMENT_FIELDS
+            if k != "gate_code"
         ):
+            return hold("access_document_field_missing")
+        if "gate_code" not in values or not isinstance(values["gate_code"], str):
+            return hold("access_document_field_missing")
+        instruction_used = not values["gate_code"].strip()
+        if instruction_used:
+            instruction = values.get("gate_access_instruction")
+            evidence = context.get("gate_access_evidence_ref")
+            if (
+                not isinstance(instruction, str)
+                or not instruction.strip()
+                or len(instruction) > 2048
+                or not isinstance(evidence, str)
+                or not re.fullmatch(r"[!-~]{1,256}", evidence)
+            ):
+                return hold("access_gate_instruction_unverified")
+        elif len(values["gate_code"]) > 4096:
             return hold("access_document_field_missing")
         if any(values[k] != local[k] for k in LOCAL_FIELDS):
             return hold("access_document_source_mismatch")
@@ -120,7 +138,8 @@ def access_source_values(event, facts, context):
         return {
             "available": True,
             "contract_version": "site01-access-values-2",
-            "values": {k: values[k] for k in DOCUMENT_FIELDS},
+            "values": {k: values[k] for k in DOCUMENT_FIELDS}
+            | ({"gate_access_instruction": instruction} if instruction_used else {}),
             "source_context_ref": context["source_context_ref"],
             "dispatch_allowed": False,
         }
