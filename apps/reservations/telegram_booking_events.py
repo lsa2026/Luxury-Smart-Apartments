@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import DatabaseError, transaction
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.views.decorators.debug import sensitive_variables
 
 from . import telegram_website_workgroup as transport
@@ -57,13 +57,22 @@ REFUND_HEADING = {
 }
 
 
+def stable_money(value, currency, language):
+    from apps.notifications.services.email import _format_money
+
+    # migrate runs with no translations. Preserve its already-journaled ISO
+    # currency label in HTTP and Celery too, while retaining guest-language
+    # digits and separators. Never depend on the caller's active gettext state.
+    with translation.override(None):
+        return _format_money(value, currency, language)
+
+
 @sensitive_variables()
 def source(source_id):
     from apps.accounts.phone_messages import phone_logo
     from apps.notifications.services.email import (
         MESSAGES,
         SUBJECTS,
-        _format_money,
         _localized_property_name,
     )
 
@@ -210,11 +219,11 @@ def source(source_id):
         f"{labels[1]}: {property_name}",
         f"{labels[2]}: {booking.check_in.isoformat()}",
         f"{labels[3]}: {booking.check_out.isoformat()}",
-        f"{labels[4]}: {_format_money(booking.total_price, booking.currency, language)}",
+        f"{labels[4]}: {stable_money(booking.total_price, booking.currency, language)}",
     ]
     if refund:
         lines += [
-            f"{labels[5]}: {_format_money(refund.amount, refund.currency, language)}",
+            f"{labels[5]}: {stable_money(refund.amount, refund.currency, language)}",
             f"{labels[6]}: {refund.public_reference}",
         ]
     basis.update(

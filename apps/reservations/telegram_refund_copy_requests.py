@@ -79,15 +79,34 @@ def project(refund, basis):
     return row.created_at
 
 
-def resume_preclaim(row, refund, request_id):
+def resume_preclaim(row, refund, request_id, rejection_evidence=None):
     """One operator continuation, never a retry of dispatching/unknown attempts."""
+    rejected_readback = rejection_evidence is not None
+    if rejected_readback:
+        # Private server-operator attestation of an observed authority 403, not
+        # an API/caller assertion or a provider receipt. A status-only no-slot
+        # check below is still mandatory. Generic uncertainty never qualifies.
+        e = rejection_evidence
+        at = parse_datetime(e.get("readback_at", "")) if isinstance(e, dict) else None
+        if (
+            not isinstance(e, dict)
+            or set(e) != {"contract", "job_id", "readback_at", "http_status", "evidence_ref"}
+            or e["contract"] != "site01_operator_readback_rejection_v1"
+            or e["job_id"] != str(row.pk)
+            or e["http_status"] != 403
+            or e["evidence_ref"] != "SITE01-OWNER-COPY-20261123-SOURCE403"
+            or not at
+            or not timezone.is_aware(at)
+            or not row.created_at <= at <= timezone.now()
+        ):
+            raise Denied
     if (
-        row.state != "held"
+        row.state != ("uncertain" if rejected_readback else "held")
         or row.attempt_id
         or row.provider_message_id
         or row.provider_message_ids
         or row.accepted_at
-        or row.probes
+        or (row.probes and not rejected_readback)
     ):
         return None
     approval = (
@@ -105,15 +124,20 @@ def resume_preclaim(row, refund, request_id):
             object_type="RefundObligation",
             object_reference=str(refund.pk),
             metadata__request_id=request_id,
-            metadata__source_dispatch_continuation=True,
+            **(
+                {"metadata__readback_rejection_recovered": True}
+                if rejected_readback
+                else {"metadata__source_dispatch_continuation": True}
+            ),
         ).exists()
+        or (rejected_readback and approval.metadata.get("source_dispatch_continuation") is not True)
     ):
         return None
     # An asynchronous continuation can still be held before POST by a different
     # worker runtime. Allow one final source-process continuation, protected by
     # the same locked journal, current hashes and a fresh authenticated no-slot
     # lookup. Never reset a row that may have reached the provider.
-    source_dispatch = approval.metadata.get("preclaim_continuation") is True
+    source_dispatch = rejected_readback or approval.metadata.get("preclaim_continuation") is True
     before = transport.source_copy(row.source_kind, row.source_id)
     fields = ("source_revision", "phone_hash", "content_sha256", "asset_sha256")
     if any(before[k] != getattr(row, k) for k in fields):
@@ -140,6 +164,11 @@ def resume_preclaim(row, refund, request_id):
             "preclaim_continuation": True,
             "source_dispatch_continuation": source_dispatch,
             "native_slot_absent": True,
+            **(
+                {"readback_rejection_recovered": True, "rejection_evidence": rejection_evidence}
+                if rejected_readback
+                else {}
+            ),
         },
     )
     current = transport.source_copy(row.source_kind, row.source_id)
@@ -177,7 +206,10 @@ def run_request(value):
     if not group.enabled():
         raise Denied("workgroup_paused")
     p = json.loads(value)
-    if not isinstance(p, dict) or set(p) != FIELDS:
+    if not isinstance(p, dict) or set(p) not in (
+        FIELDS,
+        FIELDS | {"readback_rejection_evidence"},
+    ):
         raise ValueError("invalid_request")
     request_id = str(uuid.UUID(p["request_id"]))
     if request_id != p["request_id"]:
@@ -223,7 +255,9 @@ def run_request(value):
             TelegramWebsiteHandoff.objects.select_for_update().filter(job_key=job_key).first()
         )
         if existing:
-            result = resume_preclaim(existing, refund, request_id) or {
+            result = resume_preclaim(
+                existing, refund, request_id, p.get("readback_rejection_evidence")
+            ) or {
                 "decision": "existing_" + existing.state,
                 "request_id": request_id,
             }

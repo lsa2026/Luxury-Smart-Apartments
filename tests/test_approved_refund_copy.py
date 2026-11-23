@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
-from django.utils import timezone
+from django.utils import timezone, translation
 
 from apps.notifications.models import AuditLog
 from apps.payments.models import PaymentAttempt
@@ -319,3 +319,137 @@ def test_unconfirmed_native_lookup_keeps_hold(refund, request_data, preclaim_hol
         service.run_request(json.dumps(request_data))
     preclaim_hold.refresh_from_db()
     assert preclaim_hold.state == "held"
+
+
+@pytest.mark.parametrize("language", ["ar", "en", "fr"])
+def test_journal_prepared_without_gettext_matches_http_and_worker_contexts(
+    refund, request_data, language
+):
+    intent = refund.reservation.booking_intent
+    intent.language = language
+    intent.save(update_fields=["language"])
+    with translation.override(None):
+        service.run_request(json.dumps(request_data))
+    row = TelegramWebsiteHandoff.objects.get()
+    for active in (None, "ar", "en", "fr"):
+        with translation.override(active):
+            current = transport.source_copy(row.source_kind, row.source_id)
+            assert current["content_sha256"] == row.content_sha256
+            assert current["source_revision"] == row.source_revision
+            assert "SAR" in current["caption_html"]
+    # Reproduce the original dependency in the common formatter, separately
+    # from the now-stable refund copy renderer.
+    from apps.notifications.services.email import _format_money
+
+    with translation.override(None):
+        raw = _format_money(400, "SAR", "ar")
+    with translation.override("ar"):
+        assert _format_money(400, "SAR", "ar") != raw
+
+
+def test_attested_authority_rejection_requires_absence_and_keeps_one_original_copy(
+    refund,
+    request_data,
+    preclaim_hold,
+    absent_native,
+    monkeypatch,
+    django_capture_on_commit_callbacks,
+):
+    row = preclaim_hold
+    identity = transport.metadata(row)
+    service.run_request(json.dumps(request_data))
+    row.refresh_from_db()
+    row.state = "held"
+    row.save(update_fields=["state"])
+    service.run_request(json.dumps(request_data))  # Final callback deliberately not executed.
+    row.refresh_from_db()
+    row.state, row.probes = "uncertain", 2
+    row.save(update_fields=["state", "probes"])
+    assert service.run_request(json.dumps(request_data))["decision"] == "existing_uncertain"
+    payload = {
+        **request_data,
+        "readback_rejection_evidence": {
+            "contract": "site01_operator_readback_rejection_v1",
+            "job_id": str(row.pk),
+            "readback_at": timezone.now().isoformat(),
+            "http_status": 403,
+            "evidence_ref": "SITE01-OWNER-COPY-20261123-SOURCE403",
+        },
+    }
+    posted = []
+
+    def accepted(saved, action):
+        transport.authorize({"job": str(saved.pk)}, action, str(saved.pk), {})
+        posted.append(action)
+        transport.import_proof(saved, proof(saved))
+
+    monkeypatch.setattr(transport, "call", accepted)
+    with django_capture_on_commit_callbacks(execute=True):
+        assert service.run_request(json.dumps(payload))["decision"] == "source_preclaim_same_job"
+    row.refresh_from_db()
+    assert row.state == "handed_off" and transport.metadata(row) == identity
+    assert row.probes == 2  # Keep historical status-read evidence.
+    assert service.run_request(json.dumps(payload))["decision"] == "existing_handed_off"
+    assert posted == ["website_handoff"] and len(absent_native) == 3
+    assert AuditLog.objects.filter(metadata__readback_rejection_recovered=True).count() == 1
+
+
+def test_stale_status_absence_cannot_overwrite_a_later_source_claim(
+    refund, request_data, monkeypatch
+):
+    service.run_request(json.dumps(request_data))
+    old = TelegramWebsiteHandoff.objects.get()
+    old.state = "uncertain"
+    old.save(update_fields=["state", "updated_at"])
+    current = TelegramWebsiteHandoff.objects.get(pk=old.pk)
+    current.state = "dispatching"
+    current.save(update_fields=["state", "updated_at"])
+    backend = Mock()
+    backend.call.return_value = {"available": False}
+    monkeypatch.setattr(transport, "Backend", lambda: backend)
+    transport.call(old, "website_handoff_status")
+    current.refresh_from_db()
+    assert current.state == "dispatching"
+
+
+@pytest.mark.parametrize("blocker", ["native_present", "provider_id", "attempt_id", "wrong_job"])
+def test_readback_attestation_cannot_bypass_attempt_or_native_scope(
+    refund, request_data, preclaim_hold, absent_native, monkeypatch, blocker
+):
+    row = preclaim_hold
+    service.run_request(json.dumps(request_data))
+    row.refresh_from_db()
+    row.state = "held"
+    row.save(update_fields=["state"])
+    service.run_request(json.dumps(request_data))
+    row.refresh_from_db()
+    row.state = "uncertain"
+    if blocker == "provider_id":
+        row.provider_message_id = "123"
+    elif blocker == "attempt_id":
+        row.attempt_id = uuid.uuid4()
+    row.save()
+    backend = Mock()
+    backend.call.return_value = {"available": True}
+    monkeypatch.setattr(transport, "Backend", lambda: backend)
+    p = {
+        **request_data,
+        "readback_rejection_evidence": {
+            "contract": "site01_operator_readback_rejection_v1",
+            "job_id": str(uuid.uuid4()) if blocker == "wrong_job" else str(row.pk),
+            "readback_at": timezone.now().isoformat(),
+            "http_status": 403,
+            "evidence_ref": "SITE01-OWNER-COPY-20261123-SOURCE403",
+        },
+    }
+    if blocker == "wrong_job":
+        with pytest.raises(Denied):
+            service.run_request(json.dumps(p))
+    else:
+        assert service.run_request(json.dumps(p))["decision"] in {
+            "native_slot_present_no_repost",
+            "existing_uncertain",
+        }
+    row.refresh_from_db()
+    assert row.state == "uncertain"
+    assert not AuditLog.objects.filter(metadata__readback_rejection_recovered=True).exists()

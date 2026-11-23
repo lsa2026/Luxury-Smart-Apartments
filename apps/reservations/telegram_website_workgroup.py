@@ -374,9 +374,9 @@ def call(row, action):
     finally:
         if client:
             client.close()
-    TelegramWebsiteHandoff.objects.filter(pk=row.pk).exclude(state="handed_off").update(
-        state="uncertain"
-    )
+    TelegramWebsiteHandoff.objects.filter(pk=row.pk, updated_at=row.updated_at).exclude(
+        state="handed_off"
+    ).update(state="uncertain")
 
 
 def recover():
