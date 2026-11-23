@@ -39,7 +39,9 @@ def manual(settings, isolated, monkeypatch):
         TelegramWebsiteHandoff._meta.get_field("created_at"), "_get_default", lambda: timezone.now()
     )
     monkeypatch.setattr(
-        TelegramWebsiteHandoff._meta.get_field("next_probe_at"), "_get_default", lambda: timezone.now()
+        TelegramWebsiteHandoff._meta.get_field("next_probe_at"),
+        "_get_default",
+        lambda: timezone.now(),
     )
     monkeypatch.setattr(
         PhoneChallenge._meta.get_field("created_at"), "_get_default", lambda: timezone.now()
