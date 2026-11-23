@@ -220,10 +220,14 @@ def import_receipt(row, value):
     ):
         raise ValidationError("Receipt scope mismatch")
     state, outcome = value.get("state"), value.get("outcome")
+    failure = value.get("failure_observed")
+    if type(failure) is not bool:
+        raise ValidationError("Receipt scope mismatch")
     attempts = value.get("attempts_claimed")
     if type(attempts) is not int or attempts not in {0, 1}:
         raise ValidationError("Receipt scope mismatch")
     accepted = state in {"accepted", "sent", "delivered", "read"} and outcome == "accepted"
+    has_acceptance = accepted or (failure and state == "rejected")
     if not accepted and (state, outcome) not in {
         ("rejected", "rejected"),
         ("unknown", "unknown"),
@@ -231,7 +235,7 @@ def import_receipt(row, value):
         ("expired", "rejected"),
     }:
         raise ValidationError("Receipt scope mismatch")
-    if not accepted and value.get("accepted_at") is not None:
+    if not has_acceptance and value.get("accepted_at") is not None:
         raise ValidationError("Receipt scope mismatch")
     if not isinstance(value.get("outbox_id"), str):
         raise ValidationError("Receipt scope mismatch")
@@ -239,7 +243,7 @@ def import_receipt(row, value):
     if str(outbox) != value["outbox_id"]:
         raise ValidationError("Receipt scope mismatch")
     observed = checked_time(value.get("observed_at"))
-    accepted_at = checked_time(value.get("accepted_at")) if accepted else None
+    accepted_at = checked_time(value.get("accepted_at")) if has_acceptance else None
     if not row.created_at <= observed <= timezone.now() + timedelta(seconds=5):
         raise ValidationError("Receipt time mismatch")
     if attempts == 0:
@@ -258,7 +262,7 @@ def import_receipt(row, value):
             state in {"cancelled", "expired"}
             or not row.not_before <= claimed < row.expires_at
             or not claimed <= observed
-            or (accepted and not claimed <= accepted_at <= observed)
+            or (has_acceptance and not claimed <= accepted_at <= observed)
         ):
             raise ValidationError("Receipt time mismatch")
     for field in ("provider_message_id", "wamid", "business_sender", "waba_id", "phone_id"):
@@ -271,7 +275,7 @@ def import_receipt(row, value):
     if (
         (row.outbox_id and row.outbox_id != outbox)
         or (row.accepted_at and accepted_at and row.accepted_at != accepted_at)
-        or (accepted and not value.get("provider_message_id"))
+        or (has_acceptance and not value.get("provider_message_id"))
         or not re.fullmatch(r"\+[1-9][0-9]{6,14}", value.get("business_sender", ""))
         or not re.fullmatch(r"[1-9][0-9]{1,31}", value.get("waba_id", ""))
         or not re.fullmatch(r"[1-9][0-9]{1,31}", value.get("phone_id", ""))
@@ -279,6 +283,13 @@ def import_receipt(row, value):
         or not 1 <= len(value["receipt_evidence_ref"]) <= 255
     ):
         raise ValidationError("Receipt scope mismatch")
+    if failure and (
+        attempts != 1
+        or state not in {"rejected", "delivered", "read"}
+        or not value.get("provider_message_id")
+        or not value.get("wamid")
+    ):
+        raise ValidationError("Signed failure scope mismatch")
     rank = {
         "unknown": 0,
         "rejected": 0,
@@ -289,20 +300,48 @@ def import_receipt(row, value):
         "delivered": 3,
         "read": 4,
     }
-    if row.observed_at and observed < row.observed_at:
+    if failure:
+        row.failure_observed = True
+        row.failure_evidence_ref = row.failure_evidence_ref or value["receipt_evidence_ref"]
+    preserve_state = bool(
+        (row.observed_at and observed < row.observed_at)
+        or (row.provider_state and rank[state] < rank[row.provider_state])
+        or (
+            row.failure_observed
+            and row.provider_state == "rejected"
+            and state in {"accepted", "sent"}
+        )
+    )
+    if failure and state == "rejected" and row.provider_state not in {"delivered", "read"}:
+        preserve_state = False  # Explicit signed delivery failure, not a weaker API receipt.
+    if preserve_state and not failure:
         return
-    if row.provider_state and rank[state] < rank[row.provider_state]:
-        return  # The stored equal-identity evidence is stronger; never downgrade.
-    row.outbox_id, row.provider_state, row.observed_at = outbox, state, observed
+    if not preserve_state:
+        row.provider_state = state
+    row.outbox_id = outbox
+    row.observed_at = max(observed, row.observed_at) if row.observed_at else observed
     row.accepted_at = row.accepted_at or accepted_at
     for field in ("provider_message_id", "wamid", "business_sender", "waba_id", "phone_id"):
         setattr(row, field, value.get(field) or "")
-    row.receipt_evidence_ref = value["receipt_evidence_ref"]
-    row.proof_sha256 = sha(json.dumps(value, sort_keys=True, separators=(",", ":")))
+    if not preserve_state:
+        row.receipt_evidence_ref = value["receipt_evidence_ref"]
+        row.proof_sha256 = sha(json.dumps(value, sort_keys=True, separators=(",", ":")))
     row.save()
     delivery = row.delivery
-    delivery.status = "accepted" if accepted else "review" if state == "unknown" else "failed"
+    delivery.status = (
+        "accepted"
+        if row.provider_state in {"accepted", "sent", "delivered", "read"}
+        else "review"
+        if row.provider_state == "unknown"
+        else "failed"
+    )
     delivery.accepted_at = delivery.accepted_at or accepted_at
     delivery.attempt_count = max(attempts, delivery.attempt_count)
-    delivery.error_code = "" if accepted else "sma19_" + state
+    delivery.error_code = (
+        "sma19_signed_delivery_failed"
+        if row.failure_observed and row.provider_state == "rejected"
+        else ""
+        if delivery.status == "accepted"
+        else "sma19_" + row.provider_state
+    )
     delivery.save(update_fields=["status", "accepted_at", "attempt_count", "error_code"])

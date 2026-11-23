@@ -38,6 +38,8 @@ class Migration(migrations.Migration):
                 ("observed_at", models.DateTimeField(blank=True, null=True)),
                 ("accepted_at", models.DateTimeField(blank=True, null=True)),
                 ("proof_sha256", models.CharField(blank=True, max_length=64)),
+                ("failure_observed", models.BooleanField(default=False)),
+                ("failure_evidence_ref", models.CharField(blank=True, max_length=255)),
                 (
                     "delivery",
                     models.OneToOneField(

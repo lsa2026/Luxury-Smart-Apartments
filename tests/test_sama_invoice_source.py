@@ -61,6 +61,7 @@ def receipt(row, **changes):
         "observed_at": source.iso(source.timezone.now()),
         "outcome": "accepted",
         "state": "accepted",
+        "failure_observed": False,
         "provider_message_id": "synthetic-provider",
         "wamid": "synthetic-wamid",
         "business_sender": "+966501234567",
@@ -142,8 +143,9 @@ def test_expired_or_modified_pdf_cannot_be_downloaded(dispatch, monkeypatch):
     assert post("document", scope(row)).status_code == 409
     monkeypatch.setattr(source.timezone, "now", lambda: row.not_before + timedelta(seconds=1))
     frozen = row.delivery.presentation if row.delivery.presentation_id else row.delivery.invoice
-    frozen.pdf_content = b"%PDF-changed"
-    frozen.save(update_fields=["pdf_content"])
+    # The model itself rejects issued-invoice rewrites. Simulate storage damage
+    # in this synthetic database to independently verify the byte-hash boundary.
+    type(frozen).objects.filter(pk=frozen.pk).update(pdf_content=b"%PDF-changed")
     assert post("document", scope(row)).status_code == 409
 
 
@@ -209,6 +211,37 @@ def test_historical_receipt_import_after_window_does_not_allow_pdf_resend(dispat
     monkeypatch.setattr(source.timezone, "now", lambda: dispatch.expires_at + timedelta(days=1))
     assert record(dispatch, proof, monkeypatch)[0].status_code == 200
     assert post("document", scope(dispatch)).status_code == 409
+
+
+@pytest.mark.parametrize("prior", ["accepted", "sent", "delivered", "read"])
+def test_signed_failure_is_recorded_without_inventing_a_retry_or_erasing_delivery(
+    dispatch, monkeypatch, prior
+):
+    initial = receipt(dispatch, state=prior)
+    assert record(dispatch, initial, monkeypatch)[0].status_code == 200
+    failed = {
+        **initial,
+        "state": "rejected",
+        "outcome": "rejected",
+        "failure_observed": True,
+        "receipt_evidence_ref": "synthetic-signed-failed-event",
+    }
+    result, _ = record(dispatch, failed, monkeypatch)
+    assert result.status_code == 200 and result.json()["failure_observed"] is True
+    expected = prior if prior in {"delivered", "read"} else "rejected"
+    assert result.json()["provider_state"] == expected
+    dispatch.refresh_from_db()
+    assert dispatch.failure_evidence_ref == "synthetic-signed-failed-event"
+    assert dispatch.delivery.attempt_count == 1 and dispatch.delivery.accepted_at is not None
+    assert dispatch.delivery.status == ("accepted" if prior in {"delivered", "read"} else "failed")
+    # An old API acknowledgement cannot erase a signed failure, and a later
+    # verified read can supersede failure while retaining its separate history.
+    older, _ = record(dispatch, initial, monkeypatch)
+    assert older.json()["provider_state"] == expected
+    read, _ = record(dispatch, {**initial, "state": "read"}, monkeypatch)
+    assert read.json()["provider_state"] == "read" and read.json()["failure_observed"] is True
+    dispatch.refresh_from_db()
+    assert dispatch.failure_evidence_ref == "synthetic-signed-failed-event"
 
 
 def test_receipt_fetch_fixed_origin_no_redirect_and_bounded_capability(monkeypatch):

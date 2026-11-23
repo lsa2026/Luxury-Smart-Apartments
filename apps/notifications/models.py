@@ -360,6 +360,8 @@ class SamaInvoiceDispatch(models.Model):
     observed_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     proof_sha256 = models.CharField(max_length=64, blank=True)
+    failure_observed = models.BooleanField(default=False)
+    failure_evidence_ref = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return str(self.request_id)

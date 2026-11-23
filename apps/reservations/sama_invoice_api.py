@@ -338,6 +338,7 @@ def record(request):
                 source_fingerprint=row.source_fingerprint,
                 deliveries=[projection(row.delivery)],
                 provider_state=row.provider_state,
+                failure_observed=row.failure_observed,
                 receipt_imported=True,
             )
     except (ValidationError, ValueError, source19.SamaInvoiceDispatch.DoesNotExist):
