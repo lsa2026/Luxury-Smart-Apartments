@@ -74,13 +74,15 @@
   <section class="lsa-panel lsa-owner-action lsa-owner-action--payment">
     <h2>تأكيد التعديل وطلب رابط الدفع</h2>
     <p>السعر النهائي <b dir="ltr">{{ increase_adjustment.new_total|format_money:increase_adjustment.currency }}</b> · المدفوع الصافي <b dir="ltr">{{ settlement.paid|format_money:increase_adjustment.currency }}</b> · المتبقي للدفع <b dir="ltr">{{ settlement.due|format_money:increase_adjustment.currency }}</b>.</p>
-    {% if increase_delivery and increase_delivery.status == "sent" %}
-      <p class="help">تم إرسال طلب إنشاء رابط الدفع إلى أسيل. لن تُرسل رسالة أخرى لهذا التعديل.</p>
-    {% elif increase_delivery and increase_delivery.status == "failed" %}
-      <p class="help">تعذر إرسال الطلب سابقًا. راجع سجل واتساب قبل إعادة المحاولة يدويًا.</p>
+    {% if increase_delivery %}
+      {% if increase_delivery.provider == "django" and increase_delivery.status == "sent" %}
+        <p class="help">أُرسل طلب إنشاء رابط الدفع إلى بريد الأعمال. لن يُعاد إرساله لهذا التعديل.</p>
+      {% else %}
+        <p class="help">يوجد طلب محاسبة سابق يحتاج مراجعة سجل التسليم؛ لن يُعاد إرساله تلقائيًا أو عبر ناقل آخر.</p>
+      {% endif %}
     {% else %}
-      <form method="post" class="lsa-owner-form">{% csrf_token %}<input type="hidden" name="action" value="send_modification_payment_link_request"><input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}"><button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إرسال طلب تكوين رابط الدفع إلى أسيل</button></form>
+      <form method="post" class="lsa-owner-form">{% csrf_token %}<input type="hidden" name="action" value="send_modification_payment_link_request"><input type="hidden" name="modification_id" value="{{ increase_adjustment.pk }}"><button class="lsa-btn lsa-btn--gold lsa-owner-form__submit" type="submit">إرسال طلب رابط الدفع إلى بريد الأعمال</button></form>
     {% endif %}
-    <p class="help">يُثبت التعديل في هوستاوي أولًا، ثم يُرسل إلى أسيل طلب إنشاء رابط للمبلغ المتبقي. الحجز يبقى مؤكدًا بانتظار الدفع.</p>
+    <p class="help">يُثبت التعديل في هوستاوي أولًا، ثم يُطلب من المحاسبة إنشاء رابط للمبلغ المتبقي عبر بريد الأعمال. إرسال الطلب لا يثبت إنشاء الرابط أو السداد.</p>
   </section>
   {% endif %}

@@ -1,20 +1,16 @@
-"""UltraMsg delivery for the accountant's manual-payment-link workflow."""
+"""Legacy provider client and accounting renderers; accounting sends use email."""
 
 from __future__ import annotations
 
 import base64
 import logging
-from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
 import httpx
 from django.conf import settings
-from django.db import transaction
-from django.utils import timezone
 from django.utils.html import strip_tags
 
-from apps.notifications.models import WhatsAppDelivery
 from apps.reservations.models import BookingModificationRequest, Reservation
 
 logger = logging.getLogger(__name__)
@@ -175,12 +171,6 @@ class UltraMsgClient:
             raise UltraMsgConnectionError()
 
 
-@dataclass(frozen=True, slots=True)
-class WhatsAppDeliveryResult:
-    code: str
-    delivery: WhatsAppDelivery | None
-
-
 def send_manual_payment_link_request(*, reservation_id: object):
     """Compatibility entry point; manual-link alerts now use operations email."""
     from .accounting_email import send_manual_payment_link_request as send_email
@@ -188,148 +178,11 @@ def send_manual_payment_link_request(*, reservation_id: object):
     return send_email(reservation_id=reservation_id)
 
 
-def send_modification_payment_link_request(*, modification_id: object) -> WhatsAppDeliveryResult:
-    """Ask accounting for a manual link when a confirmed change costs more."""
+def send_modification_payment_link_request(*, modification_id: object):
+    """Compatibility entry point; change-payment alerts use operations email."""
+    from .accounting_email import send_modification_payment_link_request as send_email
 
-    with transaction.atomic():
-        modification = (
-            BookingModificationRequest.objects.select_for_update()
-            .filter(pk=modification_id)
-            .first()
-        )
-        if modification is None:
-            raise ValueError("Modification request was not found.")
-        from apps.reservations.services.owner_settlement import owner_change_blocker, settlement_for
-
-        owner_priced = modification.quote_snapshot.get("owner_final_total") is not None
-        if owner_priced:
-            blocker = owner_change_blocker(modification, completed=True)
-            if blocker or modification.status != BookingModificationRequest.Status.COMPLETED:
-                return WhatsAppDeliveryResult(blocker or "hostaway_confirmation_required", None)
-            if settlement_for(modification.reservation, modification.new_total).due <= 0:
-                return WhatsAppDeliveryResult("nothing_due", None)
-        elif modification.price_difference <= 0:
-            raise ValueError("A payment link is only needed for a positive difference.")
-        delivery, created = WhatsAppDelivery.objects.get_or_create(
-            modification_request=modification,
-            defaults={
-                "message_type": "modification_payment_link_request",
-                "recipient_masked": _mask_phone(settings.ACCOUNTING_WHATSAPP_NUMBER),
-                "recipient_reference": "accounting",
-                "provider": "ultramsg",
-                "idempotency_key": f"modification-payment-link:{modification.public_reference}",
-                "status": (
-                    WhatsAppDelivery.Status.QUEUED
-                    if settings.ULTRAMSG_ENABLED
-                    else WhatsAppDelivery.Status.DISABLED
-                ),
-                "queued_at": timezone.now(),
-                "last_error_code": "" if settings.ULTRAMSG_ENABLED else "ultramsg_disabled",
-            },
-        )
-        if not created:
-            if delivery.status == WhatsAppDelivery.Status.SENT:
-                return WhatsAppDeliveryResult("already_sent", delivery)
-            if delivery.status == WhatsAppDelivery.Status.FAILED:
-                return WhatsAppDeliveryResult("previously_failed", delivery)
-            if delivery.status == WhatsAppDelivery.Status.DISABLED:
-                return WhatsAppDeliveryResult("disabled", delivery)
-            return WhatsAppDeliveryResult("already_requested", delivery)
-        if delivery.status == WhatsAppDelivery.Status.DISABLED:
-            return WhatsAppDeliveryResult("disabled", delivery)
-        delivery.status = WhatsAppDelivery.Status.SENDING
-        delivery.attempt_count = 1
-        delivery.save(update_fields=["status", "attempt_count", "updated_at"])
-
-    # Do not hold a row lock across nullable joins. PostgreSQL rejects
-    # `FOR UPDATE` on the nullable side of the booking_intent join. The
-    # modification itself is locked above; its related data can be read after
-    # the transaction has committed.
-    modification = BookingModificationRequest.objects.select_related(
-        "reservation", "reservation__booking_intent", "reservation__property"
-    ).get(pk=modification.pk)
-    try:
-        body = _modification_payment_message(modification)
-    except Exception:
-        logger.exception(
-            "Could not build the UltraMsg modification-payment message for modification %s.",
-            modification.pk,
-        )
-        return _finish_failure(delivery.pk, "failed", "message_build_failed")
-
-    return _send_delivery(delivery=delivery, body=body)
-
-
-def _send_delivery(*, delivery: WhatsAppDelivery, body: str) -> WhatsAppDeliveryResult:
-    try:
-        with UltraMsgClient() as client:
-            response = client.send_text(
-                recipient=_accounting_recipient(),
-                body=body,
-                reference_id=delivery.idempotency_key,
-            )
-    except UltraMsgConfigurationError:
-        return _finish_failure(delivery.pk, "disabled", "ultramsg_disabled")
-    except UltraMsgConnectionError:
-        return _finish_failure(delivery.pk, "failed", "ultramsg_connection_failed")
-    except UltraMsgResponseError:
-        return _finish_failure(delivery.pk, "failed", "ultramsg_request_rejected")
-
-    with transaction.atomic():
-        delivery = WhatsAppDelivery.objects.select_for_update().get(pk=delivery.pk)
-        delivery.status = WhatsAppDelivery.Status.SENT
-        provider_message_id = response.get("id") or response.get("message_id") or ""
-        delivery.provider_message_id = str(provider_message_id)[:255]
-        delivery.last_error_code = ""
-        delivery.sent_at = timezone.now()
-        delivery.save(
-            update_fields=[
-                "status",
-                "provider_message_id",
-                "last_error_code",
-                "sent_at",
-                "updated_at",
-            ]
-        )
-    return WhatsAppDeliveryResult("sent", delivery)
-
-
-def _finish_failure(
-    delivery_id: object,
-    code: str,
-    error_code: str,
-) -> WhatsAppDeliveryResult:
-    with transaction.atomic():
-        delivery = WhatsAppDelivery.objects.select_for_update().get(pk=delivery_id)
-        delivery.status = (
-            WhatsAppDelivery.Status.DISABLED
-            if code == "disabled"
-            else WhatsAppDelivery.Status.FAILED
-        )
-        delivery.last_error_code = error_code
-        delivery.failed_at = timezone.now()
-        delivery.save(update_fields=["status", "last_error_code", "failed_at", "updated_at"])
-    return WhatsAppDeliveryResult(code, delivery)
-
-
-def _accounting_recipient() -> str:
-    digits = "".join(
-        character for character in settings.ACCOUNTING_WHATSAPP_NUMBER if character.isdigit()
-    )
-    if digits.startswith("00"):
-        digits = digits[2:]
-    elif digits.startswith("0"):
-        digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{digits.lstrip('0')}"
-    elif not digits.startswith(settings.WHATSAPP_DEFAULT_COUNTRY_CODE) and len(digits) <= 9:
-        digits = f"{settings.WHATSAPP_DEFAULT_COUNTRY_CODE}{digits}"
-    if not digits:
-        raise UltraMsgConfigurationError()
-    return f"+{digits}"
-
-
-def _mask_phone(value: str) -> str:
-    digits = "".join(character for character in value if character.isdigit())
-    return f"••••{digits[-4:]}" if digits else "غير مضبوط"
+    return send_email(modification_id=modification_id)
 
 
 def _clean(value: object, *, limit: int = 180) -> str:

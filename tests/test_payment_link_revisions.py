@@ -278,7 +278,7 @@ def test_owner_preview_get_and_missing_confirmation_never_send():
     assert not PaymentAttempt.objects.exists()
     booking = client.get(reverse("notifications:booking_detail", args=[stay.pk]))
     assert "تحديث رابط الدفع ومراجعته" in booking.content.decode()
-    assert "إرسال طلب تكوين رابط الدفع إلى أسيل" in booking.content.decode()
+    assert "إرسال طلب رابط الدفع إلى بريد الأعمال" in booking.content.decode()
 
 
 def test_owner_approval_updates_and_queues_once_without_fallback_message():

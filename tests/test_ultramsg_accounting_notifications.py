@@ -1,4 +1,4 @@
-"""Legacy modification-accounting regressions; manual alerts moved to email tests."""
+"""Compatibility and nullable-join regressions for accounting email."""
 
 from datetime import timedelta
 from unittest.mock import patch
@@ -9,7 +9,7 @@ from django.test import Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.notifications.models import WhatsAppDelivery
+from apps.notifications.models import EmailDelivery
 from apps.notifications.services.ultramsg import (
     send_modification_payment_link_request,
 )
@@ -20,6 +20,8 @@ pytestmark = pytest.mark.django_db
 
 
 @override_settings(
+    EMAIL_DELIVERY_ENABLED=True,
+    OPERATIONS_EMAIL="saeed@luxurysmartapartments.com",
     ULTRAMSG_ENABLED=True,
     ULTRAMSG_API_BASE_URL="https://api.ultramsg.com",
     ULTRAMSG_INSTANCE_ID="instance-test",
@@ -51,18 +53,21 @@ def test_modification_payment_request_does_not_lock_nullable_booking_joins():
     )
 
     with patch(
-        "apps.notifications.services.ultramsg.UltraMsgClient.send_text",
-        return_value={"sent": "true", "id": "provider-modification-1"},
+        "apps.notifications.services.accounting_email.EmailMessage.send",
+        autospec=True,
+        return_value=1,
     ) as send:
         result = send_modification_payment_link_request(modification_id=modification.pk)
 
-    assert result.code == "sent"
+    assert result.code == "email_sent"
     assert send.call_count == 1
-    assert "طلب إنشاء رابط دفع يدوي لفرق تعديل حجز" in send.call_args.kwargs["body"]
-    assert result.delivery.status == WhatsAppDelivery.Status.SENT
+    assert "طلب إنشاء رابط دفع يدوي لفرق تعديل حجز" in send.call_args.args[0].body
+    assert result.delivery.status == EmailDelivery.Status.SENT
 
 
 @override_settings(
+    EMAIL_DELIVERY_ENABLED=True,
+    OPERATIONS_EMAIL="saeed@luxurysmartapartments.com",
     ULTRAMSG_ENABLED=True,
     ULTRAMSG_API_BASE_URL="https://api.ultramsg.com",
     ULTRAMSG_INSTANCE_ID="instance-test",
@@ -104,8 +109,8 @@ def test_successful_modification_request_returns_to_booking_list():
     client.force_login(user)
 
     with patch(
-        "apps.notifications.services.ultramsg.UltraMsgClient.send_text",
-        return_value={"sent": "true", "id": "provider-modification-2"},
+        "apps.notifications.services.accounting_email.EmailMessage.send",
+        return_value=1,
     ):
         response = client.post(
             reverse("notifications:booking_detail", args=[reservation.pk]),
