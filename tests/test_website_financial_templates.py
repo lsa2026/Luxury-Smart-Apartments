@@ -17,6 +17,17 @@ record = source_tests.record
 paid_record = source_tests.paid_record
 
 
+@pytest.fixture(autouse=True)
+def translated_source_labels(record):
+    stay = record[1]
+    type(stay.property).objects.filter(pk=stay.property_id).update(
+        name_ar="شقة اختبار مصطنعة",
+        name_en="Synthetic Test Apartment",
+        name_fr="Appartement de test",
+    )
+    stay.property.refresh_from_db()
+
+
 def link_record(record):
     from apps.reservations import day_use_payment_messages, morning_payment_messages
 
@@ -222,4 +233,14 @@ def test_no_owner_or_purpose_alias(record):
     assert (
         templates.verify_prepared({}, scenario=scenario, kind="loyalty_invitation")["available"]
         is False
+    )
+
+
+def test_missing_source_label_holds_instead_of_inventing_name(record):
+    scenario, stay, event = paid_record(record)
+    type(stay.property).objects.filter(pk=stay.property_id).update(
+        name_ar="", name_en="", name_fr=""
+    )
+    assert templates.payment_success_projection(event, scenario) == templates.hold(
+        "source_variables_unverified"
     )

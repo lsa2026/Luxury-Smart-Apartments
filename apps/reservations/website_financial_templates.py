@@ -7,10 +7,10 @@ content only; domain/consent/media/provider approval remain separate gates.
 import hashlib
 import json
 import re
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from importlib.resources import files
 from urllib.parse import urlsplit
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.conf import settings
 from django.core import signing
@@ -113,7 +113,10 @@ def payment_success_projection(event, scenario):
         or event.payload.get("proof_key") != event.proof_key
     ):
         return hold("current_collection_unverified")
-    values = source_variables(event.stay, scenario)
+    try:
+        values = source_variables(event.stay, scenario)
+    except (ValueError, InvalidOperation, ZoneInfoNotFoundError):
+        return hold("source_variables_unverified")
     result = _projection(
         event.stay,
         scenario,
@@ -182,7 +185,10 @@ def payment_link_projection(stay, delivery, scenario, *, existing_url=None):
     payment_url = _existing_url(stay, scenario, existing_url)
     if payment_url is None:
         return hold("existing_payment_url_not_bound")
-    values = {**source_variables(stay, scenario), "payment_url": payment_url}
+    try:
+        values = {**source_variables(stay, scenario), "payment_url": payment_url}
+    except (ValueError, InvalidOperation, ZoneInfoNotFoundError):
+        return hold("source_variables_unverified")
     result = _projection(
         stay,
         scenario,
