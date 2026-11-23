@@ -10,6 +10,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models.functions import MD5
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from apps.notifications.models import AuditLog
 
@@ -27,6 +28,8 @@ SAFE_REASONS = {
     "booking_identity_or_dates_mismatch",
     "confirmed_refund_not_unique",
     "different_prior_approval",
+    "preclaim_source_changed",
+    "preclaim_remote_status_unavailable",
 }
 FIELDS = {
     "request_id",
@@ -54,7 +57,7 @@ def project(refund, basis):
         AuditLog.objects.filter(
             action=ACTION, object_type="RefundObligation", object_reference=str(refund.pk)
         )
-        .order_by("created_at")
+        .order_by("-created_at")
         .first()
     )
     if not row:
@@ -74,6 +77,70 @@ def project(refund, basis):
         original_transfer_at=refund.transferred_at.isoformat(),
     )
     return row.created_at
+
+
+def resume_preclaim(row, refund, request_id):
+    """One operator continuation, never a retry of dispatching/unknown attempts."""
+    if (
+        row.state != "held"
+        or row.attempt_id
+        or row.provider_message_id
+        or row.provider_message_ids
+        or row.accepted_at
+        or row.probes
+    ):
+        return None
+    approval = (
+        AuditLog.objects.filter(
+            action=ACTION, object_type="RefundObligation", object_reference=str(refund.pk)
+        )
+        .order_by("-created_at")
+        .first()
+    )
+    if (
+        not approval
+        or approval.metadata.get("request_id") != request_id
+        or approval.metadata.get("preclaim_continuation")
+    ):
+        return None
+    before = transport.source_copy(row.source_kind, row.source_id)
+    fields = ("source_revision", "phone_hash", "content_sha256", "asset_sha256")
+    if any(before[k] != getattr(row, k) for k in fields):
+        raise Denied("preclaim_source_changed")
+    client = transport.Backend()
+    try:
+        client.authority_context = {"kind": "website_handoff", "job": str(row.pk)}
+        status = client.call("website_handoff_status", str(row.pk))
+    except transport.Unavailable as exc:
+        raise Denied("preclaim_remote_status_unavailable") from exc
+    finally:
+        client.close()
+    if not isinstance(status, dict) or status.get("available") is not False:
+        return {"decision": "native_slot_present_no_repost", "request_id": request_id}
+    # Same source and immutable job/content identity. Only notification eligibility
+    # is renewed; retain the original audit and financial transfer time forever.
+    AuditLog.objects.create(
+        action=ACTION,
+        object_type="RefundObligation",
+        object_reference=str(refund.pk),
+        summary="Continue proven pre-dispatch hold after native no-slot read; no financial action",
+        metadata={**approval.metadata, "preclaim_continuation": True, "native_slot_absent": True},
+    )
+    current = transport.source_copy(row.source_kind, row.source_id)
+    if any(current[k] != getattr(row, k) for k in fields):
+        raise Denied("preclaim_source_changed")
+    row.not_before = parse_datetime(current["not_before"])
+    row.expires_at = parse_datetime(current["expires_at"])
+    row.state = "planned"
+    row.save(update_fields=["not_before", "expires_at", "state", "updated_at"])
+    from .tasks import deliver_telegram_booking_event
+
+    transaction.on_commit(lambda: deliver_telegram_booking_event.delay(str(row.pk)), robust=True)
+    return {
+        "decision": "continued_preclaim_same_job",
+        "request_id": request_id,
+        "job_id": str(row.pk),
+    }
 
 
 def run_request(value):
@@ -127,7 +194,10 @@ def run_request(value):
         job_key = "site01wg:booking_event:" + transport.sha(source_id)
         existing = TelegramWebsiteHandoff.objects.filter(job_key=job_key).first()
         if existing:
-            result = {"decision": "existing_" + existing.state, "request_id": request_id}
+            result = resume_preclaim(existing, refund, request_id) or {
+                "decision": "existing_" + existing.state,
+                "request_id": request_id,
+            }
             if existing.state == "handed_off":
                 result["provider_message_ids"] = existing.provider_message_ids
             transaction.on_commit(lambda: emit(**result), robust=True)
