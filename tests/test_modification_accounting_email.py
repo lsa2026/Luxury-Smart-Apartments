@@ -24,7 +24,7 @@ def change(settings):
     settings.EMAIL_DELIVERY_ENABLED = True
     settings.OPERATIONS_EMAIL = accounting.BUSINESS_EMAIL
     settings.ULTRAMSG_ENABLED = True
-    stay = make_reservation("SYNTHETIC-CHANGE-" + uuid4().hex)
+    stay = make_reservation("SYN-MOD-" + uuid4().hex[:20])
     stay.hostaway_reservation_id = 990002
     stay.save(update_fields=["hostaway_reservation_id"])
     return BookingModificationRequest.objects.create(
