@@ -16,12 +16,14 @@ function pcScope(p,full=false){const s={contract:'tg39_phone_code_scope_v1'};for
 function pcValidatePacket(p,dispatch,now=Date.now()){
  const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
  if(!p||p.contract!=='tg39_phone_code_packet_v1'||!uuid.test(p.job_id??'')||p.source_kind!=='phone_code'||p.source_id!==p.job_id||p.job_key!=='site01otp:'+p.job_id||p.reference_id!=='site01otp-'+p.job_id||['source_revision','phone_hash','content_sha256'].some(k=>!/^[a-f0-9]{64}$/.test(p[k]??'')))throw Error('PHONE_PACKET_SCOPE_INVALID');
+ const keys=['contract',...PC_META,...(dispatch?['language','purpose','method','caption_html','parse_mode','asset_sha256','asset_mime','asset_base64','guest_phone_e164','not_before','expires_at','content_nonce']:[])];
+ if(Object.keys(p).length!==keys.length||Object.keys(p).some(k=>!keys.includes(k)))throw Error('PHONE_PACKET_FIELDS_INVALID');
  if(!dispatch)return pcScope(p);
  const start=Date.parse(p.not_before),end=Date.parse(p.expires_at),phone=String(p.guest_phone_e164??'').replace(/^\+/,'');
- if(!['ar','en','fr'].includes(p.language)||!['phone_bind','phone_login'].includes(p.purpose)||p.method!=='photo'||p.parse_mode!=='HTML'||p.asset_mime!=='image/png'||p.asset_sha256!==PC_LOGO||typeof p.caption_html!=='string'||!p.caption_html||p.caption_html.length>2400||!Number.isFinite(start)||start>now+5000||!Number.isFinite(end)||end<=now||end>start+300000||!/^[1-9][0-9]{6,14}$/.test(phone)||sha256(phone)!==p.phone_hash)throw Error('PHONE_PACKET_PAYLOAD_INVALID');
+ if(!['ar','en','fr'].includes(p.language)||!['phone_bind','phone_login'].includes(p.purpose)||p.method!=='photo'||p.parse_mode!=='HTML'||p.asset_mime!=='image/png'||p.asset_sha256!==PC_LOGO||typeof p.caption_html!=='string'||!p.caption_html||p.caption_html.length>2400||!/^[a-f0-9]{64}$/.test(p.content_nonce??'')||!Number.isFinite(start)||start>now+5000||!Number.isFinite(end)||end<=now||end>start+300000||!/^[1-9][0-9]{6,14}$/.test(phone)||sha256(phone)!==p.phone_hash)throw Error('PHONE_PACKET_PAYLOAD_INVALID');
  if(typeof p.asset_base64!=='string'||p.asset_base64.length!==43464||!/^[A-Za-z0-9+/]+={0,2}$/.test(p.asset_base64))throw Error('PHONE_APPROVED_LOGO_INVALID');
  const b=Buffer.from(p.asset_base64,'base64');if(b.length!==32598||b.toString('base64')!==p.asset_base64||b.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||sha256(b)!==PC_LOGO)throw Error('PHONE_APPROVED_LOGO_INVALID');
- if(sha256(JSON.stringify([p.language,'HTML','photo',p.caption_html,p.asset_sha256]))!==p.content_sha256)throw Error('PHONE_CONTENT_HASH_INVALID');
+ if(sha256(JSON.stringify([p.language,'HTML','photo',p.caption_html,p.asset_sha256,p.content_nonce]))!==p.content_sha256)throw Error('PHONE_CONTENT_HASH_INVALID');
  pcPlain(p.caption_html);return pcScope(p,true);
 }
 function pcPlan(p,now=Date.now()){
@@ -31,7 +33,7 @@ function pcPlan(p,now=Date.now()){
  const text='<b>🔐 '+label+' — إرسال يدوي عبر واتساب</b>\n📌 مرجع الإشعار: '+pcEscape(p.reference_id)+'\n📞 الجوال: '+phone+'\n<a href="https://wa.me/'+phone+'">💬 فتح واتساب مع صاحب الرقم</a>\n⏰ تنتهي صلاحية الرمز: '+expiry+' بتوقيت الرياض\n<b>أرسل النص إلى صاحب الرقم فقط. وصوله للقروب لا يوثق الهاتف ولا يسجل الدخول:</b>\n<pre>'+pcEscape(pcPlain(p.caption_html))+'</pre>';
  if(text.length>4000||photo.length>1024)throw Error('PHONE_COPY_OVERSIZE');
  const parts=[{part_index:1,method:'photo',html:photo},{part_index:2,method:'text',html:text}];
- for(const part of parts)part.content_sha256=sha256(JSON.stringify([PC_GROUP,'HTML',part.method,part.html,part.method==='photo'?PC_LOGO:'']));
+ for(const part of parts)part.content_sha256=sha256(JSON.stringify([PC_GROUP,'HTML',part.method,part.html,part.method==='photo'?PC_LOGO:'',p.content_nonce]));
  return {scope,parts};
 }
 function pcAuthority(response,request,now=Date.now()){

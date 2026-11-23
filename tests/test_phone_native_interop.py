@@ -17,7 +17,7 @@ isolated = source.isolated
 guest = source.guest
 manual = source.manual
 ROOT = Path(__file__).parent
-NATIVE_SHA = "0a47ca8550f4fb8f1a65c79cadd1ecb7c25bf78076a06a9c0d7ba6d16a4b7bd5"
+NATIVE_SHA = "9c1421ea4b529026d397a833b9d5673116ef909a0631f9026a7fbe0ea0b10b4d"
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
@@ -76,6 +76,7 @@ def test_actual_source_bytes_validate_and_split_in_native_without_persisting_cod
     assert result.returncode == 0, result.stdout.decode("utf8")
     checked = json.loads(result.stdout)
     assert checked["valid"] and checked["code_only_in_text"]
+    assert checked["nonce_not_in_scope_or_parts"]
     assert checked["methods"] == ["photo", "text"]
     assert len(checked["scope_fields"]) == 14 and len(set(checked["part_hashes"])) == 2
     status = service.authorize(

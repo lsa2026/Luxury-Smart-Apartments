@@ -87,6 +87,18 @@ def code_for(challenge):
 
 
 @sensitive_variables()
+def content_nonce_for(challenge):
+    """Private hash blinding: never expose a six-digit brute-force oracle in DB."""
+    if not challenge.workgroup_nonce:
+        raise Denied
+    return salted_hmac(
+        "accounts.workgroup.content-nonce.v1",
+        f"{challenge.pk}:{challenge.workgroup_nonce}",
+        algorithm="sha256",
+    ).hexdigest()
+
+
+@sensitive_variables()
 def packet(challenge):
     if challenge.status != "sending" or not current(challenge):
         raise Denied
@@ -104,9 +116,10 @@ def packet(challenge):
         )
     )
     asset_sha = hashlib.sha256(image).hexdigest()
+    content_nonce = content_nonce_for(challenge)
     content_sha = sha(
         json.dumps(
-            [challenge.language, "HTML", "photo", caption, asset_sha],
+            [challenge.language, "HTML", "photo", caption, asset_sha, content_nonce],
             ensure_ascii=False,
             separators=(",", ":"),
         )
@@ -130,6 +143,7 @@ def packet(challenge):
         "language": challenge.language,
         "purpose": "phone_" + challenge.purpose,
         "content_sha256": content_sha,
+        "content_nonce": content_nonce,
         "method": "photo",
         "caption_html": caption,
         "parse_mode": "HTML",

@@ -108,6 +108,7 @@ def test_group_acceptance_needs_correct_same_session_consume(
     assert VerifiedPhone.objects.count() == 1
     saved = str(list(TelegramWebsiteHandoff.objects.values()))
     assert "caption_html" not in saved and "asset_base64" not in saved and legacy.PHONE not in saved
+    assert "content_nonce" not in saved and value["content_nonce"] not in saved
     # Group metadata cannot be used on the ordinary source/body endpoint.
     with pytest.raises(authority.Denied):
         transport.authorize({"job": str(row.pk)}, "website_handoff", str(row.pk), {})
@@ -227,11 +228,58 @@ def test_unknown_recovery_is_status_only_even_after_expiry(
     ]
     assert (
         guest.client.post(
-            "/account/mobile/confirm/", {"code": service.code_for(challenge)}
+            "/account/mobile/confirm/",
+            {"code": service.code_for(challenge)},
         ).status_code
         == 200
     )
     assert not VerifiedPhone.objects.exists()
+
+
+def test_content_hash_is_blinded_without_changing_the_guest_copy(
+    guest, bridge, django_capture_on_commit_callbacks
+):
+    import hashlib
+    import json
+
+    challenge = begin(guest, django_capture_on_commit_callbacks)
+    auth.deliver_phone_code(challenge.pk)
+    challenge.refresh_from_db()
+    packet = bridge[1][0]
+    old_basis = [
+        packet["language"],
+        "HTML",
+        "photo",
+        packet["caption_html"],
+        packet["asset_sha256"],
+    ]
+    old_hash = hashlib.sha256(
+        json.dumps(
+            old_basis,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf8")
+    ).hexdigest()
+    assert old_hash != packet["content_sha256"]
+    assert len(packet["content_nonce"]) == 64
+    assert packet["content_nonce"] not in packet["caption_html"]
+    assert packet["content_nonce"] == service.content_nonce_for(challenge)
+    status = service.authorize(
+        {"job": str(challenge.pk)},
+        "phone_code_handoff_status",
+        str(challenge.pk),
+        {},
+    )["packet"]
+    assert "content_nonce" not in status
+    assert "content_nonce" not in str(list(PhoneChallenge.objects.values()))
+    other = PhoneChallenge.objects.create(
+        phone=challenge.phone,
+        purpose=challenge.purpose,
+        session_digest=challenge.session_digest,
+        expires_at=challenge.expires_at,
+        workgroup_nonce=uuid.uuid4(),
+    )
+    assert service.content_nonce_for(other) != packet["content_nonce"]
 
 
 def test_hand_off_does_not_remove_attempt_limit(guest, bridge, django_capture_on_commit_callbacks):

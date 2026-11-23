@@ -1,4 +1,4 @@
-// Test-only frozen Native39 validator, SHA256 0a47ca8550f4fb8f1a65c79cadd1ecb7c25bf78076a06a9c0d7ba6d16a4b7bd5.
+// Test-only frozen Native39 validator, SHA256 9c1421ea4b529026d397a833b9d5673116ef909a0631f9026a7fbe0ea0b10b4d.
 // Packet/code/image/phone are transient stdin only; output is limited to checks/hashes.
 import {pcPlan, pcValidatePacket} from './tg39-phone-protocol.fixture.mjs';
 try {
@@ -14,6 +14,7 @@ try {
       valid:true,scope_fields:Object.keys(plan.scope).sort(),
       methods:plan.parts.map(x=>x.method),
       code_only_in_text:!plan.parts[0].html.includes(input.synthetic_code)&&plan.parts[1].html.includes(input.synthetic_code),
+      nonce_not_in_scope_or_parts:!JSON.stringify(plan).includes(p.content_nonce),
       part_hashes:plan.parts.map(x=>x.content_sha256),
     }));
   } else {
