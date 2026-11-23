@@ -1,0 +1,1534 @@
+{
+  "contract_version": "yc19-template-bindings-2",
+  "source_pack_sha256": "97e5ce1947a9bf86476841ea76da9f53e4385fa7a51448d0dbc1877c3c13dcb7",
+  "waba_id": "2075336595945655",
+  "templates": [
+    {
+      "name": "lsa_booking_confirmed_v2",
+      "language": "ar",
+      "purpose": "booking_confirmation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "08"
+      ],
+      "source_message_type": "status_new",
+      "body": "*تأكيد الحجز* ✅\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم تأكيد حجزك رقم {{2}} في {{3}}.\n📅 الدخول: {{4}} الساعة {{5}}.\n📅 الخروج: {{6}} الساعة {{7}}.\n⏰ التوقيت المحلي للعقار: {{8}}.\nمنصة الحجز: {{9}}.\nلأي استفسار بخصوص هذا الحجز، يُرجى الرد على هذه الرسالة.",
+      "body_sha256": "7dea81572fc4bf141fa91b135ed794a8dbbead294886917b9d9e3d489e493086",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_confirmed_v2",
+      "language": "en",
+      "purpose": "booking_confirmation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "08"
+      ],
+      "source_message_type": "status_new",
+      "body": "*Booking confirmed* ✅\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, your booking {{2}} at {{3}} is confirmed.\n📅 Check-in: {{4}} at {{5}}.\n📅 Check-out: {{6}} at {{7}}.\n⏰ Property local time: {{8}}.\nBooking channel: {{9}}.\nPlease reply to this message if you need help with this booking.",
+      "body_sha256": "f23dad02739ca5dd00a65446604f3552e89a7f86942d816170a95cd7f4a51e1a",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_confirmed_v2",
+      "language": "fr",
+      "purpose": "booking_confirmation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "08"
+      ],
+      "source_message_type": "status_new",
+      "body": "*Réservation confirmée* ✅\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, votre réservation {{2}} à {{3}} est confirmée.\n📅 Arrivée : {{4}} à {{5}}.\n📅 Départ : {{6}} à {{7}}.\n⏰ Heure locale du logement : {{8}}.\nPlateforme de réservation : {{9}}.\nPour toute question sur cette réservation, répondez à ce message.",
+      "body_sha256": "fecbba5acc1e2a92d1429431e4f46e67bb28fffbb6f9b74de2276e3862f08074",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_updated_v2",
+      "language": "ar",
+      "purpose": "booking_change",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_modified",
+      "body": "*تحديث بيانات الحجز* 📌\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم تحديث حجزك رقم {{2}} في {{3}}. التفاصيل الحالية:\n📅 الدخول: {{4}} الساعة {{5}}.\n📅 الخروج: {{6}} الساعة {{7}}.\n⏰ التوقيت المحلي للعقار: {{8}}.\nيُرجى اعتماد هذه التفاصيل. للاستفسار عن التعديل، رد على هذه الرسالة.",
+      "body_sha256": "e4e21825e46e8bda028866008cd600deb2dde89a4ea7bbbd7f2521e82cf503d6",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_updated_v2",
+      "language": "en",
+      "purpose": "booking_change",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_modified",
+      "body": "*Booking updated* 📌\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, booking {{2}} at {{3}} has been updated. The current details are:\n📅 Check-in: {{4}} at {{5}}.\n📅 Check-out: {{6}} at {{7}}.\n⏰ Property local time: {{8}}.\nPlease use these updated details. Reply if you need help with the change.",
+      "body_sha256": "a30284ac733edf9da01114a7b9a98bb3468b735e025e5ae3f808656b1d31a529",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_updated_v2",
+      "language": "fr",
+      "purpose": "booking_change",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_modified",
+      "body": "*Réservation mise à jour* 📌\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, la réservation {{2}} à {{3}} a été modifiée. Voici les informations actuelles :\n📅 Arrivée : {{4}} à {{5}}.\n📅 Départ : {{6}} à {{7}}.\n⏰ Heure locale du logement : {{8}}.\nVeuillez vous référer à ces informations. Répondez pour toute question sur la modification.",
+      "body_sha256": "1b0bec6619d3084b36d68b93cf2d51963d516595919cde0db137522725e3946f",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_cancellation_received_v2",
+      "language": "ar",
+      "purpose": "booking_cancellation_request",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_cancelled",
+      "body": "*استلام طلب إلغاء الحجز* 📩\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، استلمنا طلب إلغاء الحجز رقم {{2}} في {{3}} للفترة من {{4}} إلى {{5}}.\nللاستفسار عن حالة الطلب أو شروط الإلغاء، يُرجى الرد على هذه الرسالة.",
+      "body_sha256": "fd5cc134907bbc1e15289345093a9ee344282cab0e0dce420777884a787950f2",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "departure_date"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_cancellation_received_v2",
+      "language": "en",
+      "purpose": "booking_cancellation_request",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_cancelled",
+      "body": "*Cancellation request received* 📩\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, we have received a request to cancel booking {{2}} at {{3}} for {{4}} to {{5}}.\nPlease reply if you have a question about the request status or cancellation terms.",
+      "body_sha256": "70712b7e7afd82ca5ffb06bcf77774277fb3f46eebdf161496a17d75c9d67a35",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "departure_date"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_cancellation_received_v2",
+      "language": "fr",
+      "purpose": "booking_cancellation_request",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_cancelled",
+      "body": "*Demande d’annulation reçue* 📩\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, nous avons reçu une demande d’annulation pour la réservation {{2}} à {{3}}, du {{4}} au {{5}}.\nRépondez pour toute question sur l’état de la demande ou les conditions d’annulation.",
+      "body_sha256": "ce5f82d7839e80d7e3c79915a765d870a03ea1f376779b53e832b9d7e58ef35b",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "departure_date"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_cancelled_v2",
+      "language": "ar",
+      "purpose": "booking_cancellation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_cancelled",
+      "body": "*تأكيد إلغاء الحجز* 📌\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم إلغاء الحجز رقم {{2}} في {{3}} للفترة من {{4}} إلى {{5}}.\nللاستفسار عن شروط الإلغاء أو أي مبلغ مرتبط بالحجز، يُرجى الرد على هذه الرسالة.",
+      "body_sha256": "2049fc87b1f4eac419d47ccd694d513d61946ba3c978f75df027550f1662f17f",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "departure_date"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_cancelled_v2",
+      "language": "en",
+      "purpose": "booking_cancellation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_cancelled",
+      "body": "*Booking cancelled* 📌\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, booking {{2}} at {{3}} for {{4}} to {{5}} has been cancelled.\nPlease reply if you have a question about the cancellation terms or any amount related to this booking.",
+      "body_sha256": "62926b47d6dd47eedd3991b55da74d3a3be4a9f78cb97eb7296dc456bcbd7de3",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "departure_date"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_booking_cancelled_v2",
+      "language": "fr",
+      "purpose": "booking_cancellation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "status_cancelled",
+      "body": "*Réservation annulée* 📌\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, la réservation {{2}} à {{3}}, du {{4}} au {{5}}, a été annulée.\nRépondez pour toute question sur les conditions d’annulation ou un montant lié à cette réservation.",
+      "body_sha256": "5f6a591d8e0e624b5ec30d3b18b8e2eb1175ed38ab88da2db5c02b161d6deac3",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "departure_date"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_house_rules_v2",
+      "language": "ar",
+      "purpose": "house_rules",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "house_rules",
+      "body": "*تعليمات الإقامة* 📋\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، هذه تعليمات الإقامة لحجزك رقم {{2}} في {{3}}:\n1. يمنع التدخين داخل الشقة.\n2. تمنع الحفلات والتجمعات.\n3. يمنع تشغيل الموسيقى بصوت مرتفع أو إحداث إزعاج.\n4. يُرجى احترام الجيران والمحافظة على الهدوء.\n5. استخدم موقف السيارة المخصص للشقة فقط.\n6. يجب استكمال التحقق من هوية الضيف قبل الدخول.\nللاستفسار عن هذه التعليمات، يُرجى الرد على الرسالة. شكرًا لتعاونك.",
+      "body_sha256": "9846afa0a6b1af50d224a0cb8ab7a4942fa2dbdbbcb236ce1b7ee7b530ecd7bc",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_house_rules_v2",
+      "language": "en",
+      "purpose": "house_rules",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "house_rules",
+      "body": "*House rules* 📋\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, these house rules apply to booking {{2}} at {{3}}:\n1. No smoking inside the apartment.\n2. No parties or gatherings.\n3. No loud music or other noise disturbance.\n4. Please respect the neighbors and keep noise down.\n5. Use only the parking space assigned to the apartment.\n6. Guest identity verification must be completed before check-in.\nPlease reply if you have a question about these rules. Thank you for your cooperation.",
+      "body_sha256": "97c8ade342a9e1d89d8d3bbac9cf8de1270dff4d01b28174645c3b0c5038ef11",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_house_rules_v2",
+      "language": "fr",
+      "purpose": "house_rules",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "house_rules",
+      "body": "*Règles du logement* 📋\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, ces règles s’appliquent à la réservation {{2}} à {{3}} :\n1. Interdiction de fumer dans l’appartement.\n2. Pas de fêtes ni de rassemblements.\n3. Pas de musique forte ni de nuisances sonores.\n4. Respectez les voisins et préservez le calme.\n5. Utilisez uniquement la place de parking attribuée.\n6. La vérification de l’identité du voyageur doit être effectuée avant l’arrivée.\nPour toute question sur ces règles, répondez à ce message. Merci de votre coopération.",
+      "body_sha256": "6b32dcfb06f6550505c3e6d3985605ae1ec56dfdacdd2f6fe263c4df8758cba8",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_checkin_arrival_document_v2",
+      "language": "ar",
+      "purpose": "checkin_reminder",
+      "scenarios": [
+        "01",
+        "02",
+        "03",
+        "06"
+      ],
+      "source_message_type": "reminder_checkin",
+      "body": "*تذكير الدخول ودليل الوصول* 🔑\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، يبدأ الدخول لحجزك رقم {{2}} في {{3}} بتاريخ {{4}} الساعة {{5}}، حسب {{6}}.\nأرفقنا دليل العنوان والخريطة وطريقة الوصول إلى المبنى ومعلومات مرافق الشقة كاملة.\nيُرجى الاطلاع على الملف والرد بوقت وصولك المتوقع، أو بأي استفسار عن الوصول.",
+      "body_sha256": "73b6f055d30d60cb580417921d5fcb0a19c63705dff15770fde666ea09d223f1",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "timezone_display"
+      ],
+      "asset": {
+        "kind": "document",
+        "media_type": "application/pdf",
+        "source_fields": [
+          "guest_name",
+          "booking_reference",
+          "listing_name",
+          "arrival_date",
+          "departure_date",
+          "check_in_time",
+          "check_out_time",
+          "timezone",
+          "property_address",
+          "map_url",
+          "video_url",
+          "gate_code",
+          "wifi_net",
+          "wifi_pass"
+        ]
+      }
+    },
+    {
+      "name": "lsa_checkin_arrival_document_v2",
+      "language": "en",
+      "purpose": "checkin_reminder",
+      "scenarios": [
+        "01",
+        "02",
+        "03",
+        "06"
+      ],
+      "source_message_type": "reminder_checkin",
+      "body": "*Check-in reminder and arrival guide* 🔑\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, check-in for booking {{2}} at {{3}} starts on {{4}} at {{5}}, in {{6}}.\nThe attached guide contains the address, map, building arrival instructions and full apartment facilities information.\nPlease read the file and reply with your expected arrival time or any question about reaching the property.",
+      "body_sha256": "6cadf3fed706e46ae4926096e6e812ce9eac92e8c5668c6815cdcbe5e9a19ab7",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "timezone_display"
+      ],
+      "asset": {
+        "kind": "document",
+        "media_type": "application/pdf",
+        "source_fields": [
+          "guest_name",
+          "booking_reference",
+          "listing_name",
+          "arrival_date",
+          "departure_date",
+          "check_in_time",
+          "check_out_time",
+          "timezone",
+          "property_address",
+          "map_url",
+          "video_url",
+          "gate_code",
+          "wifi_net",
+          "wifi_pass"
+        ]
+      }
+    },
+    {
+      "name": "lsa_checkin_arrival_document_v2",
+      "language": "fr",
+      "purpose": "checkin_reminder",
+      "scenarios": [
+        "01",
+        "02",
+        "03",
+        "06"
+      ],
+      "source_message_type": "reminder_checkin",
+      "body": "*Rappel d’arrivée et guide d’accès* 🔑\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, l’arrivée pour la réservation {{2}} à {{3}} est possible le {{4}} à partir de {{5}}, selon {{6}}.\nLe guide joint contient l’adresse, le plan, les indications d’accès à l’immeuble et les informations complètes sur les équipements de l’appartement.\nMerci de lire le fichier et de répondre avec votre heure d’arrivée estimée ou toute question sur l’accès.",
+      "body_sha256": "335236f563186624bc0f5c7c46583d7ef503c5fe67089d5801e4a07ea1a5c8bd",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "timezone_display"
+      ],
+      "asset": {
+        "kind": "document",
+        "media_type": "application/pdf",
+        "source_fields": [
+          "guest_name",
+          "booking_reference",
+          "listing_name",
+          "arrival_date",
+          "departure_date",
+          "check_in_time",
+          "check_out_time",
+          "timezone",
+          "property_address",
+          "map_url",
+          "video_url",
+          "gate_code",
+          "wifi_net",
+          "wifi_pass"
+        ]
+      }
+    },
+    {
+      "name": "lsa_checkout_reminder_v2",
+      "language": "ar",
+      "purpose": "checkout_reminder",
+      "scenarios": [
+        "01",
+        "02",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "reminder_checkout",
+      "body": "*تذكير بموعد الخروج* 🧹\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، نذكّرك بأن موعد الخروج للحجز رقم {{2}} في {{3}} هو {{4}} الساعة {{5}}، حسب {{6}}.\nإذا احتجت مساعدة بخصوص إجراءات الخروج، يُرجى الرد على هذه الرسالة. شكرًا لإقامتك معنا.",
+      "body_sha256": "2ce5b62730eed631c5826d67ab1e91e04a38aed34d13268b7b42b64333eb1f69",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_checkout_reminder_v2",
+      "language": "en",
+      "purpose": "checkout_reminder",
+      "scenarios": [
+        "01",
+        "02",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "reminder_checkout",
+      "body": "*Check-out reminder* 🧹\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, check-out for booking {{2}} at {{3}} is on {{4}} at {{5}}, in {{6}}.\nPlease reply if you need help with check-out arrangements. Thank you for staying with us.",
+      "body_sha256": "e5e19d06f3edaf7124066a538e0f8411ae8c30391807ba9b977f7e2578850df4",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_checkout_reminder_v2",
+      "language": "fr",
+      "purpose": "checkout_reminder",
+      "scenarios": [
+        "01",
+        "02",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "reminder_checkout",
+      "body": "*Rappel de départ* 🧹\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, le départ pour la réservation {{2}} à {{3}} est prévu le {{4}} à {{5}}, selon {{6}}.\nRépondez si vous avez besoin d’aide pour les modalités de départ. Merci pour votre séjour.",
+      "body_sha256": "2ff9c37d0e7d87819d8b25c1cd1455a8a3d16f89f1cf21a2cf858548573bb21b",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_stay_arrival_document_v2",
+      "language": "ar",
+      "purpose": "checkin_guide",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "checkin_guide",
+      "body": "*دليل الوصول إلى إقامتك* 🏠\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، أرفقنا دليل الوصول إلى {{2}} لحجزك رقم {{3}} بتاريخ {{4}}.\nيتضمن الملف العنوان والخريطة وشرح الوصول إلى المبنى ومعلومات مرافق الشقة المحجوزة لك.\nيُرجى مراجعة الدليل قبل الوصول، والرد على هذه الرسالة إذا احتجت مساعدة.",
+      "body_sha256": "ce78c7b5b21ed03884d9289ac3872517a3b9997f5a4a1aac180c80b4c373ff2c",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "arrival_date"
+      ],
+      "asset": {
+        "kind": "document",
+        "media_type": "application/pdf",
+        "source_fields": [
+          "guest_name",
+          "booking_reference",
+          "listing_name",
+          "arrival_date",
+          "departure_date",
+          "check_in_time",
+          "check_out_time",
+          "timezone",
+          "property_address",
+          "map_url",
+          "video_url",
+          "gate_code",
+          "wifi_net",
+          "wifi_pass"
+        ]
+      }
+    },
+    {
+      "name": "lsa_stay_arrival_document_v2",
+      "language": "en",
+      "purpose": "checkin_guide",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "checkin_guide",
+      "body": "*Your accommodation arrival guide* 🏠\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, the attached arrival guide is for your stay at {{2}}, booking {{3}}, on {{4}}.\nIt contains the address, map, building arrival instructions and information about the facilities in your booked apartment.\nPlease read the guide before arrival and reply to this message if you need assistance.",
+      "body_sha256": "105005feb6b503be34766dd8b86c5e1dfd0698bbe38bd3405dc377911772b0cb",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "arrival_date"
+      ],
+      "asset": {
+        "kind": "document",
+        "media_type": "application/pdf",
+        "source_fields": [
+          "guest_name",
+          "booking_reference",
+          "listing_name",
+          "arrival_date",
+          "departure_date",
+          "check_in_time",
+          "check_out_time",
+          "timezone",
+          "property_address",
+          "map_url",
+          "video_url",
+          "gate_code",
+          "wifi_net",
+          "wifi_pass"
+        ]
+      }
+    },
+    {
+      "name": "lsa_stay_arrival_document_v2",
+      "language": "fr",
+      "purpose": "checkin_guide",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "checkin_guide",
+      "body": "*Guide d’accès à votre logement* 🏠\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, le guide joint concerne votre séjour à {{2}}, réservation {{3}} du {{4}}.\nIl contient l’adresse, le plan, les indications d’accès à l’immeuble et les informations sur les équipements de votre appartement réservé.\nVeuillez consulter le guide avant votre arrivée et répondre à ce message si vous avez besoin d’aide.",
+      "body_sha256": "78ace89a56ef20b058b31805d4ec956f0f8b1d484748a55f14c3f0c57a44f5bf",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "arrival_date"
+      ],
+      "asset": {
+        "kind": "document",
+        "media_type": "application/pdf",
+        "source_fields": [
+          "guest_name",
+          "booking_reference",
+          "listing_name",
+          "arrival_date",
+          "departure_date",
+          "check_in_time",
+          "check_out_time",
+          "timezone",
+          "property_address",
+          "map_url",
+          "video_url",
+          "gate_code",
+          "wifi_net",
+          "wifi_pass"
+        ]
+      }
+    },
+    {
+      "name": "lsa_payment_request_v2",
+      "language": "ar",
+      "purpose": "payment_link",
+      "scenarios": [
+        "01",
+        "08"
+      ],
+      "source_message_type": "payment_link",
+      "body": "*سداد مبلغ الحجز* 💳\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، المبلغ المستحق لحجزك رقم {{2}} في {{3}} هو {{4}}، والعملة {{5}}.\nالفترة: من {{6}} إلى {{7}}.\nيمكنك سداد هذا المبلغ عبر رابط الدفع الخاص بالحجز:\n{{8}}\nهذه الرسالة تخص سداد الحجز القائم. إذا احتجت مساعدة بشأن المبلغ أو الرابط، يُرجى الرد على الرسالة.",
+      "body_sha256": "aa3ae87652d5cfea203071af59fb8301e06b8bd940cf8ede9e8249906ed864f7",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "amount",
+        "currency",
+        "arrival_date",
+        "departure_date",
+        "payment_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_payment_request_v2",
+      "language": "en",
+      "purpose": "payment_link",
+      "scenarios": [
+        "01",
+        "08"
+      ],
+      "source_message_type": "payment_link",
+      "body": "*Booking payment* 💳\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, the amount due for booking {{2}} at {{3}} is {{4}}, in {{5}}.\nStay dates: {{6}} to {{7}}.\nYou can pay this amount using the booking payment link:\n{{8}}\nThis message concerns payment for your existing booking. Please reply if you need help with the amount or link.",
+      "body_sha256": "e25f3c43baaa0a4a22bb7da989306c5feb008ba25364ac045d38d289ed564492",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "amount",
+        "currency",
+        "arrival_date",
+        "departure_date",
+        "payment_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_payment_request_v2",
+      "language": "fr",
+      "purpose": "payment_link",
+      "scenarios": [
+        "01",
+        "08"
+      ],
+      "source_message_type": "payment_link",
+      "body": "*Paiement de la réservation* 💳\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, le montant à régler pour la réservation {{2}} à {{3}} est de {{4}}, en {{5}}.\nSéjour : du {{6}} au {{7}}.\nVous pouvez régler ce montant via le lien de paiement de la réservation :\n{{8}}\nCe message concerne le paiement de votre réservation existante. Répondez pour toute question sur le montant ou le lien.",
+      "body_sha256": "4e30d552ba7c00e28b40436502fc11362f525fe4f07da724a7c918f8bfb08bfd",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "amount",
+        "currency",
+        "arrival_date",
+        "departure_date",
+        "payment_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_payment_received_v2",
+      "language": "ar",
+      "purpose": "payment_confirmation",
+      "scenarios": [
+        "01",
+        "07",
+        "08"
+      ],
+      "source_message_type": "payment_success",
+      "body": "*تأكيد استلام السداد* ✅\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم استلام مبلغ {{2}} بالعملة {{3}} لحجزك رقم {{4}} في {{5}}.\nللاستفسار عن هذه العملية، يُرجى الرد على الرسالة. شكرًا لك.",
+      "body_sha256": "6b80b15d70a24e95b135f40ef65131ccfc640383c2e8ef4e5f286347c964009f",
+      "ordered_source_keys": [
+        "guest_name",
+        "amount",
+        "currency",
+        "booking_reference",
+        "listing_name"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_payment_received_v2",
+      "language": "en",
+      "purpose": "payment_confirmation",
+      "scenarios": [
+        "01",
+        "07",
+        "08"
+      ],
+      "source_message_type": "payment_success",
+      "body": "*Payment received* ✅\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, we have received a payment of {{2}} in {{3}} for booking {{4}} at {{5}}.\nPlease reply if you have a question about this payment. Thank you.",
+      "body_sha256": "8fcaa2c44e987bd4e8397e6aa08610fbd7f4ad00ca2e6ad25a5a3e45cc17d2cc",
+      "ordered_source_keys": [
+        "guest_name",
+        "amount",
+        "currency",
+        "booking_reference",
+        "listing_name"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_payment_received_v2",
+      "language": "fr",
+      "purpose": "payment_confirmation",
+      "scenarios": [
+        "01",
+        "07",
+        "08"
+      ],
+      "source_message_type": "payment_success",
+      "body": "*Paiement reçu* ✅\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, nous avons reçu un paiement de {{2}}, en {{3}}, pour la réservation {{4}} à {{5}}.\nRépondez pour toute question concernant ce paiement. Merci.",
+      "body_sha256": "cd693bdb381c2eaf7925bdce4b3a8eff552cad1cf36ce1071cb49b236c4bc6f3",
+      "ordered_source_keys": [
+        "guest_name",
+        "amount",
+        "currency",
+        "booking_reference",
+        "listing_name"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_extension_confirmed_v2",
+      "language": "ar",
+      "purpose": "booking_extension_confirmation",
+      "scenarios": [
+        "01"
+      ],
+      "source_message_type": null,
+      "body": "*تأكيد تمديد الإقامة* ✅\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم تأكيد تمديد إقامتك الحالية في {{2}}.\nمرجع حجز التمديد: {{3}}.\nموعد الخروج المحدّث: {{4}} الساعة {{5}}، حسب {{6}}.\nهذه الرسالة تخص تمديد إقامتك الحالية. للاستفسار عن التمديد، يُرجى الرد على الرسالة.",
+      "body_sha256": "aa40145ace8c6d4b026691e88f460af91cd7e889a50427b1532905a0a64a7eca",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_extension_confirmed_v2",
+      "language": "en",
+      "purpose": "booking_extension_confirmation",
+      "scenarios": [
+        "01"
+      ],
+      "source_message_type": null,
+      "body": "*Stay extension confirmed* ✅\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, the extension of your current stay at {{2}} is confirmed.\nExtension booking reference: {{3}}.\nUpdated check-out: {{4}} at {{5}}, in {{6}}.\nThis message concerns the extension of your current stay. Please reply if you need help with the extension.",
+      "body_sha256": "81ef368281bc61a2e2db75ec986ef93b21a402079ce9f4fd6acd95235309c648",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_extension_confirmed_v2",
+      "language": "fr",
+      "purpose": "booking_extension_confirmation",
+      "scenarios": [
+        "01"
+      ],
+      "source_message_type": null,
+      "body": "*Prolongation du séjour confirmée* ✅\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, la prolongation de votre séjour actuel à {{2}} est confirmée.\nRéférence de la prolongation : {{3}}.\nNouveau départ : {{4}} à {{5}}, selon {{6}}.\nCe message concerne la prolongation de votre séjour actuel. Répondez pour toute question à ce sujet.",
+      "body_sha256": "eafb33de5c663b7f8236914e9363a7d0831abaca9b4ec381f54d5c0dc2304107",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "check_out_time",
+        "timezone_display"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_1_v2",
+      "language": "ar",
+      "purpose": "review_request",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_1",
+      "body": "*طلب تقييم إقامتك* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nيسعدنا الاطلاع على رأيك الصادق حول هذه الإقامة.\nيمكنك مشاركة تقييمك على Google Maps عبر الرابط:\n{{5}}\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+      "body_sha256": "279001b2a803955d2be37894ea4fc50f533d5b40b38b0607185368e6b777bf95",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_1_v2",
+      "language": "en",
+      "purpose": "review_request",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_1",
+      "body": "*Feedback on your stay* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nWe would appreciate your honest feedback on this stay.\nYou can leave your feedback on Google Maps here:\n{{5}}\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+      "body_sha256": "43d8906969e641ee9e5e77e878f48b7af08225673adcbd3fbad1da99857c5e9f",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_1_v2",
+      "language": "fr",
+      "purpose": "review_request",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_1",
+      "body": "*Votre avis sur le séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nVotre avis sincère sur ce séjour nous est utile.\nVous pouvez partager votre avis sur Google Maps ici :\n{{5}}\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+      "body_sha256": "4e7e62db8c929ab6d4428cac907e85639828382ac7074eb0b4160e6443040989",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_1_v2",
+      "language": "ar",
+      "purpose": "review_request",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_1",
+      "body": "*طلب تقييم إقامتك* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nيسعدنا الاطلاع على رأيك الصادق حول هذه الإقامة.\nيمكنك مشاركة التقييم من حسابك على {{5}} أو من رسالة طلب التقييم التي ترسلها لك المنصة.\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+      "body_sha256": "99a0406016cbadb37752c4af5417a4fe455845815ae26bb29afbcbd072f55535",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_1_v2",
+      "language": "en",
+      "purpose": "review_request",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_1",
+      "body": "*Feedback on your stay* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nWe would appreciate your honest feedback on this stay.\nYou can submit feedback from your {{5}} account or from the review invitation sent by that platform.\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+      "body_sha256": "ae2de62002f5a6753ec18060f7dd907cf2da741f3d841617322751cf09ba6836",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_1_v2",
+      "language": "fr",
+      "purpose": "review_request",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_1",
+      "body": "*Votre avis sur le séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nVotre avis sincère sur ce séjour nous est utile.\nVous pouvez laisser un avis depuis votre compte {{5}} ou depuis l’invitation envoyée par cette plateforme.\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+      "body_sha256": "c15b46552a4a719ca041c03077cbc7a9fc79dd581b4f960c84cc3a31bda90f5a",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_2_v2",
+      "language": "ar",
+      "purpose": "review_reminder_2",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_2",
+      "body": "*متابعة تقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذه متابعة لطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة تقييمك على Google Maps عبر الرابط:\n{{5}}\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+      "body_sha256": "c097ca158c560d4717d6a0c6d60628a57861fdda4261d8760a5b37938cb52624",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_2_v2",
+      "language": "en",
+      "purpose": "review_reminder_2",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_2",
+      "body": "*Stay feedback follow-up* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is a follow-up to our request for feedback on this stay.\nYou can leave your feedback on Google Maps here:\n{{5}}\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+      "body_sha256": "145998ce598bb2a5dc3f4ecf697411a0ddb954118831744c044415791b8f1ae7",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_2_v2",
+      "language": "fr",
+      "purpose": "review_reminder_2",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_2",
+      "body": "*Rappel concernant votre séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nNous vous rappelons notre demande d’avis sur ce séjour.\nVous pouvez partager votre avis sur Google Maps ici :\n{{5}}\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+      "body_sha256": "b5d2e4a20e295f7f62d478051844b1e1865fa95ea4b9a3c781b419860e7115c0",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_2_v2",
+      "language": "ar",
+      "purpose": "review_reminder_2",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_2",
+      "body": "*متابعة تقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذه متابعة لطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة التقييم من حسابك على {{5}} أو من رسالة طلب التقييم التي ترسلها لك المنصة.\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+      "body_sha256": "55dcddbd09415406f17c980b97b9a09687b153e70de449c05e740371d88e2702",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_2_v2",
+      "language": "en",
+      "purpose": "review_reminder_2",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_2",
+      "body": "*Stay feedback follow-up* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is a follow-up to our request for feedback on this stay.\nYou can submit feedback from your {{5}} account or from the review invitation sent by that platform.\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+      "body_sha256": "503c6dbf665f9daff2cc98d91df8558f41f0d871d2a55f26f5d14b319c6b3656",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_2_v2",
+      "language": "fr",
+      "purpose": "review_reminder_2",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_2",
+      "body": "*Rappel concernant votre séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nNous vous rappelons notre demande d’avis sur ce séjour.\nVous pouvez laisser un avis depuis votre compte {{5}} ou depuis l’invitation envoyée par cette plateforme.\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+      "body_sha256": "2811d38b16959d7a7875bf72be670b328b9cd9548b01d0344806f019e9f64138",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_3_v2",
+      "language": "ar",
+      "purpose": "review_reminder_3",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_3",
+      "body": "*التذكير الأخير بتقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذا آخر تذكير منّا بطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة تقييمك على Google Maps عبر الرابط:\n{{5}}\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+      "body_sha256": "ce2b610038d01643e4d1148978858e4b8cc14af210e5f9fd7eee88c1475c31db",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_3_v2",
+      "language": "en",
+      "purpose": "review_reminder_3",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_3",
+      "body": "*Final stay feedback reminder* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is our final reminder requesting feedback on this stay.\nYou can leave your feedback on Google Maps here:\n{{5}}\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+      "body_sha256": "2ba7a129f8793e2fd871c084c6f4d244ec17e9e3086d1d6fcdb16b66a6401499",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_google_review_3_v2",
+      "language": "fr",
+      "purpose": "review_reminder_3",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_3",
+      "body": "*Dernier rappel concernant votre avis* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nCeci est notre dernier rappel pour recueillir votre avis sur ce séjour.\nVous pouvez partager votre avis sur Google Maps ici :\n{{5}}\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+      "body_sha256": "f203e87539bc5e84099469a8a318bf9062bcd1896c85cdbd7112ba7959f85239",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "review_url"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_3_v2",
+      "language": "ar",
+      "purpose": "review_reminder_3",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_3",
+      "body": "*التذكير الأخير بتقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذا آخر تذكير منّا بطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة التقييم من حسابك على {{5}} أو من رسالة طلب التقييم التي ترسلها لك المنصة.\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+      "body_sha256": "dd30e9821a7e310e9be3a37e738c3ad38af994437883617f7f5b3122d4e82096",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_3_v2",
+      "language": "en",
+      "purpose": "review_reminder_3",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_3",
+      "body": "*Final stay feedback reminder* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is our final reminder requesting feedback on this stay.\nYou can submit feedback from your {{5}} account or from the review invitation sent by that platform.\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+      "body_sha256": "b819944c2445bde2a8cde58749128c0df78bbf5ec5c86ccb11098b01223af811",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_channel_review_3_v2",
+      "language": "fr",
+      "purpose": "review_reminder_3",
+      "scenarios": [
+        "03",
+        "04",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "review_followup_3",
+      "body": "*Dernier rappel concernant votre avis* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nCeci est notre dernier rappel pour recueillir votre avis sur ce séjour.\nVous pouvez laisser un avis depuis votre compte {{5}} ou depuis l’invitation envoyée par cette plateforme.\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+      "body_sha256": "73cc11a710287ced25bb197418af308eacff472e6e4d0876758654da27c2bdd9",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "departure_date",
+        "booking_platform"
+      ],
+      "asset": null
+    },
+    {
+      "name": "lsa_loyalty_invitation_v2",
+      "language": "ar",
+      "purpose": "loyalty_invitation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "loyalty_invitation",
+      "body": "*دعوة اختيارية إلى برنامج الولاء* 🎁\n*Luxury Smart Apartments 🌿*\n\nمرحبًا {{1}}، يمكنك الانضمام مجانًا إلى برنامج مكافآت ضيوفنا.\nيتيح البرنامج مكافآت بنسبة 3٪ على الإقامات المؤهلة و5٪ عند إقامة ضيف جديد تدعوه، وفق شروطه.\nلا تعني هذه الدعوة استحقاق مكافأة عن الإقامة الحالية؛ الأهلية تخضع لشروط البرنامج.\nللتعرّف على الشروط وإكمال الانضمام عند رغبتك:\n{{2}}\nلتطلب إيقاف دعوات البرنامج، رد بكلمة «إيقاف».",
+      "body_sha256": "20ec4d54c6225fbbf2c080af869221c8611d08a12ea9bf91fed702a7f772ccc3",
+      "ordered_source_keys": [
+        "guest_name",
+        "loyalty_url"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "368b63e23407775d4ffb001bb1d35d3a9c819e708ac36095a93bc01b97260673",
+        "size_bytes": 21488,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_loyalty_invitation_v2",
+      "language": "en",
+      "purpose": "loyalty_invitation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "loyalty_invitation",
+      "body": "*Optional loyalty program invitation* 🎁\n*Luxury Smart Apartments 🌿*\n\nHello {{1}}, you can join our guest rewards program free of charge.\nThe program offers 3% rewards on eligible stays and 5% when a new guest you refer completes a stay, subject to its terms.\nThis invitation does not establish reward eligibility for your current stay; the program terms apply.\nTo read the terms and join if you wish:\n{{2}}\nTo request no further program invitations, reply STOP.",
+      "body_sha256": "fbb7330681e7dea7dde4dd4baa3f5ab1275de113c0fa7c2f2d6d6cd41343e670",
+      "ordered_source_keys": [
+        "guest_name",
+        "loyalty_url"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "d3c33252c211bc59b79a6c71794533aecd95f76dddd8c9640fba2fd461e81c36",
+        "size_bytes": 22893,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_loyalty_invitation_v2",
+      "language": "fr",
+      "purpose": "loyalty_invitation",
+      "scenarios": [
+        "01",
+        "03",
+        "06",
+        "07",
+        "08"
+      ],
+      "source_message_type": "loyalty_invitation",
+      "body": "*Invitation facultative au programme de fidélité* 🎁\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, vous pouvez rejoindre gratuitement notre programme de récompenses.\nIl propose 3% sur les séjours éligibles et 5% lorsqu’un nouveau voyageur recommandé par vous effectue un séjour, selon ses conditions.\nCette invitation ne garantit aucune récompense pour votre séjour actuel ; les conditions du programme s’appliquent.\nPour lire les conditions et adhérer si vous le souhaitez :\n{{2}}\nPour demander l’arrêt des invitations au programme, répondez STOP.",
+      "body_sha256": "9e5ac91b3b204f44a35b3a380e179bb5e75eab775a2e473ddd7ca84af723401d",
+      "ordered_source_keys": [
+        "guest_name",
+        "loyalty_url"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "5111063344b296e526f489b55707193709f125eb8551144cc125de17b9536ab1",
+        "size_bytes": 26679,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_morning_booking_confirmed_v2",
+      "language": "ar",
+      "purpose": "booking_confirmation",
+      "scenarios": [
+        "07"
+      ],
+      "source_message_type": "status_new",
+      "body": "*تأكيد الحجز* ✅\n*Luxury Smart Apartments 🌿*\n\nإقامة صباحية: هذه الرسالة تخص الحجز الصباحي ومواعيده المذكورة أدناه.\n\nعزيزنا {{1}}، تم تأكيد حجزك رقم {{2}} في {{3}}.\n📅 الدخول: {{4}} الساعة {{5}}.\n📅 الخروج: {{6}} الساعة {{7}}.\n⏰ التوقيت المحلي للعقار: {{8}}.\nمنصة الحجز: {{9}}.\nلأي استفسار بخصوص هذا الحجز، يُرجى الرد على هذه الرسالة.",
+      "body_sha256": "259ec24e3e4d34bb7cf9021f2fad537d01cc2cea8203ad82f83d3a02b317b772",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display",
+        "booking_platform"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "1ae56fe8054dce814cfb2f9dce4603ddea11e91796eaf4b15406198b3cd01ac8",
+        "size_bytes": 26711,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_morning_booking_confirmed_v2",
+      "language": "en",
+      "purpose": "booking_confirmation",
+      "scenarios": [
+        "07"
+      ],
+      "source_message_type": "status_new",
+      "body": "*Booking confirmed* ✅\n*Luxury Smart Apartments 🌿*\n\nMorning stay: this message concerns your morning booking and its stated schedule.\n\nDear {{1}}, your booking {{2}} at {{3}} is confirmed.\n📅 Check-in: {{4}} at {{5}}.\n📅 Check-out: {{6}} at {{7}}.\n⏰ Property local time: {{8}}.\nBooking channel: {{9}}.\nPlease reply to this message if you need help with this booking.",
+      "body_sha256": "1e12c14138d9f02e103e9622c146e3f78368f8ead75c1da1ca11d19598cca878",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display",
+        "booking_platform"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "da583735f80b0959417206f89ccf975341cdbe5399dfc43fb14357d3ae88920f",
+        "size_bytes": 25951,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_morning_booking_confirmed_v2",
+      "language": "fr",
+      "purpose": "booking_confirmation",
+      "scenarios": [
+        "07"
+      ],
+      "source_message_type": "status_new",
+      "body": "*Réservation confirmée* ✅\n*Luxury Smart Apartments 🌿*\n\nSéjour matinal : ce message concerne votre réservation du matin et ses horaires.\n\nBonjour {{1}}, votre réservation {{2}} à {{3}} est confirmée.\n📅 Arrivée : {{4}} à {{5}}.\n📅 Départ : {{6}} à {{7}}.\n⏰ Heure locale du logement : {{8}}.\nPlateforme de réservation : {{9}}.\nPour toute question sur cette réservation, répondez à ce message.",
+      "body_sha256": "0541c13821e2d1ef80fa92dd2e0eaee72396b4a693f79f3a3f274fb7291e0e0d",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "arrival_date",
+        "check_in_time",
+        "departure_date",
+        "check_out_time",
+        "timezone_display",
+        "booking_platform"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "70f7e271df0cadcb3873c42bc06048e4b64471b4c58ca5387831b4a26f6dfca9",
+        "size_bytes": 24151,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_morning_payment_request_v2",
+      "language": "ar",
+      "purpose": "payment_link",
+      "scenarios": [
+        "07"
+      ],
+      "source_message_type": "payment_link",
+      "body": "*سداد مبلغ الحجز* 💳\n*Luxury Smart Apartments 🌿*\n\nإقامة صباحية: هذه الرسالة تخص الحجز الصباحي ومواعيده المذكورة أدناه.\n\nعزيزنا {{1}}، المبلغ المستحق لحجزك رقم {{2}} في {{3}} هو {{4}}، والعملة {{5}}.\nالفترة: من {{6}} إلى {{7}}.\nيمكنك سداد هذا المبلغ عبر رابط الدفع الخاص بالحجز:\n{{8}}\nهذه الرسالة تخص سداد الحجز القائم. إذا احتجت مساعدة بشأن المبلغ أو الرابط، يُرجى الرد على الرسالة.",
+      "body_sha256": "cf4d387a9a2543bde251a0b45aea67b3d9dad2d751347cc8ca27ba1462a16775",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "amount",
+        "currency",
+        "arrival_date",
+        "departure_date",
+        "payment_url"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "1ae56fe8054dce814cfb2f9dce4603ddea11e91796eaf4b15406198b3cd01ac8",
+        "size_bytes": 26711,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_morning_payment_request_v2",
+      "language": "en",
+      "purpose": "payment_link",
+      "scenarios": [
+        "07"
+      ],
+      "source_message_type": "payment_link",
+      "body": "*Booking payment* 💳\n*Luxury Smart Apartments 🌿*\n\nMorning stay: this message concerns your morning booking and its stated schedule.\n\nDear {{1}}, the amount due for booking {{2}} at {{3}} is {{4}}, in {{5}}.\nStay dates: {{6}} to {{7}}.\nYou can pay this amount using the booking payment link:\n{{8}}\nThis message concerns payment for your existing booking. Please reply if you need help with the amount or link.",
+      "body_sha256": "b369cd7fae503ad14427941a14006b4ebbb9976ef184139de5ae0ed772248039",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "amount",
+        "currency",
+        "arrival_date",
+        "departure_date",
+        "payment_url"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "da583735f80b0959417206f89ccf975341cdbe5399dfc43fb14357d3ae88920f",
+        "size_bytes": 25951,
+        "media_type": "image/png"
+      }
+    },
+    {
+      "name": "lsa_morning_payment_request_v2",
+      "language": "fr",
+      "purpose": "payment_link",
+      "scenarios": [
+        "07"
+      ],
+      "source_message_type": "payment_link",
+      "body": "*Paiement de la réservation* 💳\n*Luxury Smart Apartments 🌿*\n\nSéjour matinal : ce message concerne votre réservation du matin et ses horaires.\n\nBonjour {{1}}, le montant à régler pour la réservation {{2}} à {{3}} est de {{4}}, en {{5}}.\nSéjour : du {{6}} au {{7}}.\nVous pouvez régler ce montant via le lien de paiement de la réservation :\n{{8}}\nCe message concerne le paiement de votre réservation existante. Répondez pour toute question sur le montant ou le lien.",
+      "body_sha256": "3988c525523cd8cda7c5fe8c385cb7763fdbcb1419b169e2cbe0294bdf11755c",
+      "ordered_source_keys": [
+        "guest_name",
+        "booking_reference",
+        "listing_name",
+        "amount",
+        "currency",
+        "arrival_date",
+        "departure_date",
+        "payment_url"
+      ],
+      "asset": {
+        "kind": "image",
+        "sha256": "70f7e271df0cadcb3873c42bc06048e4b64471b4c58ca5387831b4a26f6dfca9",
+        "size_bytes": 24151,
+        "media_type": "image/png"
+      }
+    }
+  ]
+}

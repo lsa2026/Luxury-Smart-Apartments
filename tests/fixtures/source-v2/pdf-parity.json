@@ -1,0 +1,24 @@
+{
+  "synthetic_only": true,
+  "values": {
+    "guest_name": "SYNTHETIC TEST GUEST",
+    "booking_reference": "TEST-NOT-A-BOOKING-001",
+    "listing_name": "Synthetic Riyadh apartment",
+    "arrival_date": "2026-12-03",
+    "departure_date": "2026-12-05",
+    "check_in_time": "15:00",
+    "check_out_time": "12:00",
+    "timezone": "Asia/Riyadh",
+    "property_address": "Synthetic address for renderer test only",
+    "map_url": "https://maps.google.com/?q=Riyadh",
+    "video_url": "https://example.invalid/arrival-test",
+    "gate_code": "TEST-GATE-ONLY",
+    "wifi_net": "TEST-NETWORK",
+    "wifi_pass": "TEST-PASSWORD-ONLY"
+  },
+  "expected_sha256": {
+    "ar": "68d0fa85cf1464890d52b6ee2d1e35341df7184472a3e680231fb181d76cd4f5",
+    "en": "dd64f303553cddee88aa0cdc5ab0f60f395fc9961c58fc5d38f7610a4844fe77",
+    "fr": "399606a5ff8716b983284f8ce3d538a228e9d2619fe92bff95746f44cd076aad"
+  }
+}

@@ -1,0 +1,2154 @@
+{
+  "contract_version": "yc19-template-catalog-2",
+  "source_pack_sha256": "97e5ce1947a9bf86476841ea76da9f53e4385fa7a51448d0dbc1877c3c13dcb7",
+  "waba_id": "2075336595945655",
+  "state": "complete",
+  "snapshots": [
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_cancelled_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تأكيد إلغاء الحجز* 📌\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم إلغاء الحجز رقم {{2}} في {{3}} للفترة من {{4}} إلى {{5}}.\nللاستفسار عن شروط الإلغاء أو أي مبلغ مرتبط بالحجز، يُرجى الرد على هذه الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "2026-12-03",
+                "2026-12-05"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "126523ef05b6b2c737f970f96928fb94843bfc9f052f588846d9117141e20fac",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "2049fc87b1f4eac419d47ccd694d513d61946ba3c978f75df027550f1662f17f"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_cancelled_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Booking cancelled* 📌\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, booking {{2}} at {{3}} for {{4}} to {{5}} has been cancelled.\nPlease reply if you have a question about the cancellation terms or any amount related to this booking.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "2026-12-03",
+                "2026-12-05"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "35ebffe9bd70eccfe20e6388c18abc77779de7ace5448dc54cf6a4dd4258e6a0",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "62926b47d6dd47eedd3991b55da74d3a3be4a9f78cb97eb7296dc456bcbd7de3"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_cancelled_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Réservation annulée* 📌\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, la réservation {{2}} à {{3}}, du {{4}} au {{5}}, a été annulée.\nRépondez pour toute question sur les conditions d’annulation ou un montant lié à cette réservation.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "2026-12-03",
+                "2026-12-05"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "37d62dad630e49d334c07ae70986fb774427a0790b2487b71bcb551f2bfe481e",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "5f6a591d8e0e624b5ec30d3b18b8e2eb1175ed38ab88da2db5c02b161d6deac3"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_confirmed_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تأكيد الحجز* ✅\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم تأكيد حجزك رقم {{2}} في {{3}}.\n📅 الدخول: {{4}} الساعة {{5}}.\n📅 الخروج: {{6}} الساعة {{7}}.\n⏰ التوقيت المحلي للعقار: {{8}}.\nمنصة الحجز: {{9}}.\nلأي استفسار بخصوص هذا الحجز، يُرجى الرد على هذه الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "2026-12-03",
+                "15:00",
+                "2026-12-05",
+                "12:00",
+                "توقيت الرياض",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "c70de33856b75bd186682854df339e80736949b35055ada3eba423acf2204915",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "7dea81572fc4bf141fa91b135ed794a8dbbead294886917b9d9e3d489e493086"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_confirmed_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Booking confirmed* ✅\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, your booking {{2}} at {{3}} is confirmed.\n📅 Check-in: {{4}} at {{5}}.\n📅 Check-out: {{6}} at {{7}}.\n⏰ Property local time: {{8}}.\nBooking channel: {{9}}.\nPlease reply to this message if you need help with this booking.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "2026-12-03",
+                "15:00",
+                "2026-12-05",
+                "12:00",
+                "Riyadh local time",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "8ff54b75aca960705fb4aed95288c3bf6e0833cedeeae409f4d9cfd3e55aecc7",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "f23dad02739ca5dd00a65446604f3552e89a7f86942d816170a95cd7f4a51e1a"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_confirmed_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Réservation confirmée* ✅\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, votre réservation {{2}} à {{3}} est confirmée.\n📅 Arrivée : {{4}} à {{5}}.\n📅 Départ : {{6}} à {{7}}.\n⏰ Heure locale du logement : {{8}}.\nPlateforme de réservation : {{9}}.\nPour toute question sur cette réservation, répondez à ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "2026-12-03",
+                "15:00",
+                "2026-12-05",
+                "12:00",
+                "heure locale de Riyad",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "4d50ca2d4fafc76780483c3414b4dff73c2866e623dbf044890e0c4844d406d5",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "fecbba5acc1e2a92d1429431e4f46e67bb28fffbb6f9b74de2276e3862f08074"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_updated_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تحديث بيانات الحجز* 📌\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم تحديث حجزك رقم {{2}} في {{3}}. التفاصيل الحالية:\n📅 الدخول: {{4}} الساعة {{5}}.\n📅 الخروج: {{6}} الساعة {{7}}.\n⏰ التوقيت المحلي للعقار: {{8}}.\nيُرجى اعتماد هذه التفاصيل. للاستفسار عن التعديل، رد على هذه الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "2026-12-03",
+                "15:00",
+                "2026-12-05",
+                "12:00",
+                "توقيت الرياض"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "e36f64adcf26a212cb8800e15e87b6a969135f718e6d99e4dd52d1761304a265",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "e4e21825e46e8bda028866008cd600deb2dde89a4ea7bbbd7f2521e82cf503d6"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_updated_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Booking updated* 📌\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, booking {{2}} at {{3}} has been updated. The current details are:\n📅 Check-in: {{4}} at {{5}}.\n📅 Check-out: {{6}} at {{7}}.\n⏰ Property local time: {{8}}.\nPlease use these updated details. Reply if you need help with the change.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "2026-12-03",
+                "15:00",
+                "2026-12-05",
+                "12:00",
+                "Riyadh local time"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "8393193b4fe503f97c03447c14519ac5d77be7a384cdb32649dd8d18c0da7752",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "a30284ac733edf9da01114a7b9a98bb3468b735e025e5ae3f808656b1d31a529"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_booking_updated_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Réservation mise à jour* 📌\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, la réservation {{2}} à {{3}} a été modifiée. Voici les informations actuelles :\n📅 Arrivée : {{4}} à {{5}}.\n📅 Départ : {{6}} à {{7}}.\n⏰ Heure locale du logement : {{8}}.\nVeuillez vous référer à ces informations. Répondez pour toute question sur la modification.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "2026-12-03",
+                "15:00",
+                "2026-12-05",
+                "12:00",
+                "heure locale de Riyad"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "622c28a503af4a4fc1c0caf2d5bc2a8c2686373d6a73b01d3780183eaff06547",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "1b0bec6619d3084b36d68b93cf2d51963d516595919cde0db137522725e3946f"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_cancellation_received_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*استلام طلب إلغاء الحجز* 📩\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، استلمنا طلب إلغاء الحجز رقم {{2}} في {{3}} للفترة من {{4}} إلى {{5}}.\nللاستفسار عن حالة الطلب أو شروط الإلغاء، يُرجى الرد على هذه الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "2026-12-03",
+                "2026-12-05"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "5df2b57b5aae309dca878c96f923dd376d9a6e5833c6853a42c9d0a272b1e00b",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "fd5cc134907bbc1e15289345093a9ee344282cab0e0dce420777884a787950f2"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_cancellation_received_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Cancellation request received* 📩\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, we have received a request to cancel booking {{2}} at {{3}} for {{4}} to {{5}}.\nPlease reply if you have a question about the request status or cancellation terms.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "2026-12-03",
+                "2026-12-05"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "7c6b11e20f2133cf324d8fbb6c7323b4b64ac8a25a889c6c55d590c45cfd701c",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "70712b7e7afd82ca5ffb06bcf77774277fb3f46eebdf161496a17d75c9d67a35"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_cancellation_received_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Demande d’annulation reçue* 📩\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, nous avons reçu une demande d’annulation pour la réservation {{2}} à {{3}}, du {{4}} au {{5}}.\nRépondez pour toute question sur l’état de la demande ou les conditions d’annulation.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "2026-12-03",
+                "2026-12-05"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "2d5a5f0d78068bc9c5026f7bfc780af9359b9a3e1a8e2e887d5729785160a648",
+      "verified_at_epoch": 1795468541,
+      "body_sha256": "ce5f82d7839e80d7e3c79915a765d870a03ea1f376779b53e832b9d7e58ef35b"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_1_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*طلب تقييم إقامتك* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nيسعدنا الاطلاع على رأيك الصادق حول هذه الإقامة.\nيمكنك مشاركة التقييم من حسابك على {{5}} أو من رسالة طلب التقييم التي ترسلها لك المنصة.\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "4fbe2be9430b2d4d148b8af34dd62baa927906896d77184cf2e8d4bb3ae492ea",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "99a0406016cbadb37752c4af5417a4fe455845815ae26bb29afbcbd072f55535"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_1_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Feedback on your stay* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nWe would appreciate your honest feedback on this stay.\nYou can submit feedback from your {{5}} account or from the review invitation sent by that platform.\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "86dc18e85af3ad3cb743015dd2c9e6d05fecc776b7ac464245dc0ef4334e3670",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "ae2de62002f5a6753ec18060f7dd907cf2da741f3d841617322751cf09ba6836"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_1_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Votre avis sur le séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nVotre avis sincère sur ce séjour nous est utile.\nVous pouvez laisser un avis depuis votre compte {{5}} ou depuis l’invitation envoyée par cette plateforme.\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "7f31d199bed60e997392f192ad299495fff622c0886cb8de93018263b8a87a8f",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "c15b46552a4a719ca041c03077cbc7a9fc79dd581b4f960c84cc3a31bda90f5a"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_2_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*متابعة تقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذه متابعة لطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة التقييم من حسابك على {{5}} أو من رسالة طلب التقييم التي ترسلها لك المنصة.\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "524d1c1daefeab22726792bb53da001fc292e6a588b6a08a34c459e99b04694f",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "55dcddbd09415406f17c980b97b9a09687b153e70de449c05e740371d88e2702"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_2_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Stay feedback follow-up* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is a follow-up to our request for feedback on this stay.\nYou can submit feedback from your {{5}} account or from the review invitation sent by that platform.\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "46940517ef6444cd1d1aa84ae66ea33b4c72852cb5a92bf7e5ebba62565cd73c",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "503c6dbf665f9daff2cc98d91df8558f41f0d871d2a55f26f5d14b319c6b3656"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_2_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Rappel concernant votre séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nNous vous rappelons notre demande d’avis sur ce séjour.\nVous pouvez laisser un avis depuis votre compte {{5}} ou depuis l’invitation envoyée par cette plateforme.\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "a34bdbb674e1c2a9ec16c1879d9fa077706b572db8b8314b7f5f0f43ca16b54e",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "2811d38b16959d7a7875bf72be670b328b9cd9548b01d0344806f019e9f64138"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_3_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*التذكير الأخير بتقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذا آخر تذكير منّا بطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة التقييم من حسابك على {{5}} أو من رسالة طلب التقييم التي ترسلها لك المنصة.\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "3960936bcc2bd1732199fe2164f4a40cdeeacb9ca00621b5d73d77594cc8e862",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "dd30e9821a7e310e9be3a37e738c3ad38af994437883617f7f5b3122d4e82096"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_3_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Final stay feedback reminder* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is our final reminder requesting feedback on this stay.\nYou can submit feedback from your {{5}} account or from the review invitation sent by that platform.\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "311984e1c4682613973db052ae7a7179a5dcf0a328b8edb70e7f8ffb50b6d218",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "b819944c2445bde2a8cde58749128c0df78bbf5ec5c86ccb11098b01223af811"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_channel_review_3_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Dernier rappel concernant votre avis* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nCeci est notre dernier rappel pour recueillir votre avis sur ce séjour.\nVous pouvez laisser un avis depuis votre compte {{5}} ou depuis l’invitation envoyée par cette plateforme.\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "Booking.com"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "85ef21e08002378af17f6e1333ad249eb6624fbfe6e052b2e471197c6775bd6a",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "73cc11a710287ced25bb197418af308eacff472e6e4d0876758654da27c2bdd9"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkin_arrival_document_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "DOCUMENT",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/919038333_1715761733294010_7279251348791500172_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=6w0AMuSwyvkQ7kNvwFNPU5V&_nc_oc=Ado26_E118P5eV3gU-Gdedb1dHs1qZmf5pVckAOxSllwawbLOD8389VsPRBFbpXfbJY&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=c8lmpK2fNUMZ3J5Jdi_b7Q&_nc_tpa=Q5bMBQJ8zaFSkeOTQ2Qod3B_Id3Kr3RybFfuj5PE5hZjPcaO5neI6WlIFEERdNXj7eLhcMml2Ygm0AOKFQ&oh=01_Q5Aa6AGAsldnvWHEHTZbmbfFaBe7uU5zGAJpxRZGLE74BClynQ&oe=6B2BE77A"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/919038333_1715761733294010_7279251348791500172_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=6w0AMuSwyvkQ7kNvwFNPU5V&_nc_oc=Ado26_E118P5eV3gU-Gdedb1dHs1qZmf5pVckAOxSllwawbLOD8389VsPRBFbpXfbJY&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=c8lmpK2fNUMZ3J5Jdi_b7Q&_nc_tpa=Q5bMBQJ8zaFSkeOTQ2Qod3B_Id3Kr3RybFfuj5PE5hZjPcaO5neI6WlIFEERdNXj7eLhcMml2Ygm0AOKFQ&oh=01_Q5Aa6AGAsldnvWHEHTZbmbfFaBe7uU5zGAJpxRZGLE74BClynQ&oe=6B2BE77A"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*تذكير الدخول ودليل الوصول* 🔑\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، يبدأ الدخول لحجزك رقم {{2}} في {{3}} بتاريخ {{4}} الساعة {{5}}، حسب {{6}}.\nأرفقنا دليل العنوان والخريطة وطريقة الوصول إلى المبنى ومعلومات مرافق الشقة كاملة.\nيُرجى الاطلاع على الملف والرد بوقت وصولك المتوقع، أو بأي استفسار عن الوصول.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "2026-12-03",
+                "15:00",
+                "توقيت الرياض"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "c8ed8a18071bce3be6600b65f59af28f0a4762be490a565c01bfc68c767dbbc7",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "73b6f055d30d60cb580417921d5fcb0a19c63705dff15770fde666ea09d223f1"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkin_arrival_document_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "DOCUMENT",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924252301_2201458870578930_2158791139529705912_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=e1P5vg4eMrwQ7kNvwEw1vn-&_nc_oc=AdrnaiRMM8fxRY-nqscCCN9pVSmx4oDae1UI3rbY1sLicIG5CdZjpnTc1xSvjppUxHY&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=541C7CiP1tXdrqVra8uu9Q&_nc_tpa=Q5bMBQKmcewxIb86mPHqHTyXInAdQmJ1htRM-ByBkTLlBKnk_gGPWjwSEROmwcDZLF2ioRA95ma9oEf7QA&oh=01_Q5Aa6AF1wTgrR95Zg4dc1kbFGF3PU54kAaFivfJbR82UxcUr6g&oe=6B2BD603"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924252301_2201458870578930_2158791139529705912_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=e1P5vg4eMrwQ7kNvwEw1vn-&_nc_oc=AdrnaiRMM8fxRY-nqscCCN9pVSmx4oDae1UI3rbY1sLicIG5CdZjpnTc1xSvjppUxHY&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=541C7CiP1tXdrqVra8uu9Q&_nc_tpa=Q5bMBQKmcewxIb86mPHqHTyXInAdQmJ1htRM-ByBkTLlBKnk_gGPWjwSEROmwcDZLF2ioRA95ma9oEf7QA&oh=01_Q5Aa6AF1wTgrR95Zg4dc1kbFGF3PU54kAaFivfJbR82UxcUr6g&oe=6B2BD603"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Check-in reminder and arrival guide* 🔑\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, check-in for booking {{2}} at {{3}} starts on {{4}} at {{5}}, in {{6}}.\nThe attached guide contains the address, map, building arrival instructions and full apartment facilities information.\nPlease read the file and reply with your expected arrival time or any question about reaching the property.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "2026-12-03",
+                "15:00",
+                "Riyadh local time"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "44ad6acd22d29b9326cf13e95dd1821c4986174c3bb322323cd7ac19370a3c08",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "6cadf3fed706e46ae4926096e6e812ce9eac92e8c5668c6815cdcbe5e9a19ab7"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkin_arrival_document_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "DOCUMENT",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924562977_2088953345141787_5652141058594185577_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=59rvXeKSukcQ7kNvwFP_mQJ&_nc_oc=AdpTfNpNu2_d44wWo_girXcxgGvRBVP0XLYzb3n2WNskOUhLCopZHsv4r7XoPNVxusM&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=Oxd1ggUla7uX8ed7fVZn6A&_nc_tpa=Q5bMBQIgjlEFli4QaszRe7DFScnxD75O8DzU-cg7VkzFS_J48hk09HirX_41ccrs6RUsyNOJcZqDU1f5Dw&oh=01_Q5Aa6AG8Op-pDmBAv74GaAjUb0HHpJWTv7sc3oAKt7ZfCxcAFg&oe=6B2C0AB0"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924562977_2088953345141787_5652141058594185577_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=59rvXeKSukcQ7kNvwFP_mQJ&_nc_oc=AdpTfNpNu2_d44wWo_girXcxgGvRBVP0XLYzb3n2WNskOUhLCopZHsv4r7XoPNVxusM&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=Oxd1ggUla7uX8ed7fVZn6A&_nc_tpa=Q5bMBQIgjlEFli4QaszRe7DFScnxD75O8DzU-cg7VkzFS_J48hk09HirX_41ccrs6RUsyNOJcZqDU1f5Dw&oh=01_Q5Aa6AG8Op-pDmBAv74GaAjUb0HHpJWTv7sc3oAKt7ZfCxcAFg&oe=6B2C0AB0"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Rappel d’arrivée et guide d’accès* 🔑\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, l’arrivée pour la réservation {{2}} à {{3}} est possible le {{4}} à partir de {{5}}, selon {{6}}.\nLe guide joint contient l’adresse, le plan, les indications d’accès à l’immeuble et les informations complètes sur les équipements de l’appartement.\nMerci de lire le fichier et de répondre avec votre heure d’arrivée estimée ou toute question sur l’accès.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "2026-12-03",
+                "15:00",
+                "heure locale de Riyad"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "25db1c476a587cc2e6edae47eeac4026b62b656099cea64107f7043073667822",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "335236f563186624bc0f5c7c46583d7ef503c5fe67089d5801e4a07ea1a5c8bd"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkout_reminder_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تذكير بموعد الخروج* 🧹\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، نذكّرك بأن موعد الخروج للحجز رقم {{2}} في {{3}} هو {{4}} الساعة {{5}}، حسب {{6}}.\nإذا احتجت مساعدة بخصوص إجراءات الخروج، يُرجى الرد على هذه الرسالة. شكرًا لإقامتك معنا.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "2026-12-05",
+                "12:00",
+                "توقيت الرياض"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "5175ece2b99d3d33c96decb2233093658b437ba9c80f7e9f2f33e03fd3d838cb",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "2ce5b62730eed631c5826d67ab1e91e04a38aed34d13268b7b42b64333eb1f69"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkout_reminder_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Check-out reminder* 🧹\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, check-out for booking {{2}} at {{3}} is on {{4}} at {{5}}, in {{6}}.\nPlease reply if you need help with check-out arrangements. Thank you for staying with us.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "2026-12-05",
+                "12:00",
+                "Riyadh local time"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "5f7debb4c128def2a4fc3ac6ecdd390c66249d583f0fad119b3aec46f58217e5",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "e5e19d06f3edaf7124066a538e0f8411ae8c30391807ba9b977f7e2578850df4"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkout_reminder_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Rappel de départ* 🧹\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, le départ pour la réservation {{2}} à {{3}} est prévu le {{4}} à {{5}}, selon {{6}}.\nRépondez si vous avez besoin d’aide pour les modalités de départ. Merci pour votre séjour.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "2026-12-05",
+                "12:00",
+                "heure locale de Riyad"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "ebf377227a55f7b7afe00df013cab7df1d1e0375e31c7cd662c4f3312fe9e2c6",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "2ff9c37d0e7d87819d8b25c1cd1455a8a3d16f89f1cf21a2cf858548573bb21b"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_extension_confirmed_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تأكيد تمديد الإقامة* ✅\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم تأكيد تمديد إقامتك الحالية في {{2}}.\nمرجع حجز التمديد: {{3}}.\nموعد الخروج المحدّث: {{4}} الساعة {{5}}، حسب {{6}}.\nهذه الرسالة تخص تمديد إقامتك الحالية. للاستفسار عن التمديد، يُرجى الرد على الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "12:00",
+                "توقيت الرياض"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "20261fb0c31ab90500f5432c76682536f49be464832fe3d79a291c16af0a4d2a",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "aa40145ace8c6d4b026691e88f460af91cd7e889a50427b1532905a0a64a7eca"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_extension_confirmed_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Stay extension confirmed* ✅\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, the extension of your current stay at {{2}} is confirmed.\nExtension booking reference: {{3}}.\nUpdated check-out: {{4}} at {{5}}, in {{6}}.\nThis message concerns the extension of your current stay. Please reply if you need help with the extension.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "12:00",
+                "Riyadh local time"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "493e978254bb41f7733fe143218df4468a2240e7c089a6d8e8855ae57764e2e4",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "81ef368281bc61a2e2db75ec986ef93b21a402079ce9f4fd6acd95235309c648"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_extension_confirmed_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Prolongation du séjour confirmée* ✅\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, la prolongation de votre séjour actuel à {{2}} est confirmée.\nRéférence de la prolongation : {{3}}.\nNouveau départ : {{4}} à {{5}}, selon {{6}}.\nCe message concerne la prolongation de votre séjour actuel. Répondez pour toute question à ce sujet.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "12:00",
+                "heure locale de Riyad"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "36395b6579952934afaac22e69d9d2a5cb4c8bc395d96621408556b5a6212018",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "eafb33de5c663b7f8236914e9363a7d0831abaca9b4ec381f54d5c0dc2304107"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_1_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*طلب تقييم إقامتك* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nيسعدنا الاطلاع على رأيك الصادق حول هذه الإقامة.\nيمكنك مشاركة تقييمك على Google Maps عبر الرابط:\n{{5}}\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "9b87609553ef5c3e76f16df4c07d6691b700a17a3c37572ec019dede8441e793",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "279001b2a803955d2be37894ea4fc50f533d5b40b38b0607185368e6b777bf95"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_1_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Feedback on your stay* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nWe would appreciate your honest feedback on this stay.\nYou can leave your feedback on Google Maps here:\n{{5}}\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "c74664b590854a752bbee0a4753cd552dc0b518954c0a5bf658362423aaa00d5",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "43d8906969e641ee9e5e77e878f48b7af08225673adcbd3fbad1da99857c5e9f"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_1_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Votre avis sur le séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nVotre avis sincère sur ce séjour nous est utile.\nVous pouvez partager votre avis sur Google Maps ici :\n{{5}}\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "80555c3ffb0a075a32d828319bbf6e42fa8b729674193109b2484df93a70d643",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "4e7e62db8c929ab6d4428cac907e85639828382ac7074eb0b4160e6443040989"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_2_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*متابعة تقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذه متابعة لطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة تقييمك على Google Maps عبر الرابط:\n{{5}}\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "9875789e98d2c4d84ff6b10e4b5c1565c6390ab3f5436874a74a657076891354",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "c097ca158c560d4717d6a0c6d60628a57861fdda4261d8760a5b37938cb52624"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_2_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Stay feedback follow-up* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is a follow-up to our request for feedback on this stay.\nYou can leave your feedback on Google Maps here:\n{{5}}\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "0e5ad83d287a8ff043227ae19bc2658d3252c01411d3511d204cb299064babe4",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "145998ce598bb2a5dc3f4ecf697411a0ddb954118831744c044415791b8f1ae7"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_2_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Rappel concernant votre séjour* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nNous vous rappelons notre demande d’avis sur ce séjour.\nVous pouvez partager votre avis sur Google Maps ici :\n{{5}}\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "5d8ea92081a4048d5fdc4b78cd3209fc3e68b9485107d4301aeaed7820bf4769",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "b5d2e4a20e295f7f62d478051844b1e1865fa95ea4b9a3c781b419860e7115c0"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_3_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*التذكير الأخير بتقييم الإقامة* 📝\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، شكرًا لإقامتك في {{2}} ضمن الحجز رقم {{3}} المنتهي في {{4}}.\nهذا آخر تذكير منّا بطلب رأيك حول هذه الإقامة.\nيمكنك مشاركة تقييمك على Google Maps عبر الرابط:\n{{5}}\nالمشاركة اختيارية. إذا سبق أن أرسلت تقييمك، شكرًا لك ويمكنك تجاهل الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "877213b36cacd2da4a534aeb805c519de6c2219d2b6d62db47dd3f1d1ff45931",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "ce2b610038d01643e4d1148978858e4b8cc14af210e5f9fd7eee88c1475c31db"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_3_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Final stay feedback reminder* 📝\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, thank you for staying at {{2}} under booking {{3}}, which ended on {{4}}.\nThis is our final reminder requesting feedback on this stay.\nYou can leave your feedback on Google Maps here:\n{{5}}\nSharing feedback is optional. If you have already submitted it, thank you; please disregard this message.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "37b9b0a204481e2ad76dfe9b92b72af66293a7cce5bfbcccafb7f82af731e55a",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "2ba7a129f8793e2fd871c084c6f4d244ec17e9e3086d1d6fcdb16b66a6401499"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_google_review_3_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Dernier rappel concernant votre avis* 📝\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, merci pour votre séjour à {{2}}, réservation {{3}} terminée le {{4}}.\nCeci est notre dernier rappel pour recueillir votre avis sur ce séjour.\nVous pouvez partager votre avis sur Google Maps ici :\n{{5}}\nVotre avis est facultatif. Si vous l’avez déjà envoyé, merci ; vous pouvez ignorer ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-05",
+                "https://example.com/review/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "690489e59f2a607d4a1ef0be9b12de06c4ab8f8661bf95b8bd83dbeeec90b4db",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "f203e87539bc5e84099469a8a318bf9062bcd1896c85cdbd7112ba7959f85239"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_house_rules_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تعليمات الإقامة* 📋\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، هذه تعليمات الإقامة لحجزك رقم {{2}} في {{3}}:\n1. يمنع التدخين داخل الشقة.\n2. تمنع الحفلات والتجمعات.\n3. يمنع تشغيل الموسيقى بصوت مرتفع أو إحداث إزعاج.\n4. يُرجى احترام الجيران والمحافظة على الهدوء.\n5. استخدم موقف السيارة المخصص للشقة فقط.\n6. يجب استكمال التحقق من هوية الضيف قبل الدخول.\nللاستفسار عن هذه التعليمات، يُرجى الرد على الرسالة. شكرًا لتعاونك.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "1ecd8fcfe771b9e08152311736d162207306cd2a55aaa0ae6f00ca24a340ef48",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "9846afa0a6b1af50d224a0cb8ab7a4942fa2dbdbbcb236ce1b7ee7b530ecd7bc"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_house_rules_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*House rules* 📋\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, these house rules apply to booking {{2}} at {{3}}:\n1. No smoking inside the apartment.\n2. No parties or gatherings.\n3. No loud music or other noise disturbance.\n4. Please respect the neighbors and keep noise down.\n5. Use only the parking space assigned to the apartment.\n6. Guest identity verification must be completed before check-in.\nPlease reply if you have a question about these rules. Thank you for your cooperation.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "e1f5446dd7cda3dde15e9b4acf15dd34f0dcb731cf364a1610fe272402a73b30",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "97c8ade342a9e1d89d8d3bbac9cf8de1270dff4d01b28174645c3b0c5038ef11"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_house_rules_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Règles du logement* 📋\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, ces règles s’appliquent à la réservation {{2}} à {{3}} :\n1. Interdiction de fumer dans l’appartement.\n2. Pas de fêtes ni de rassemblements.\n3. Pas de musique forte ni de nuisances sonores.\n4. Respectez les voisins et préservez le calme.\n5. Utilisez uniquement la place de parking attribuée.\n6. La vérification de l’identité du voyageur doit être effectuée avant l’arrivée.\nPour toute question sur ces règles, répondez à ce message. Merci de votre coopération.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "a1630f87e739c3852e91fcaac792d227d1be87914c092c45a65c58bf937b5630",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "6b32dcfb06f6550505c3e6d3985605ae1ec56dfdacdd2f6fe263c4df8758cba8"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_loyalty_invitation_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/920012416_1685082803214127_5622223896680799199_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=7pkAeRrg_MwQ7kNvwGr7i3m&_nc_oc=AdqFfp47W8NejPd4Dfyf0ohH3gUHwM4oFO5baiCOvokKQNCg1Ia6Z3Wv18LMjagpbvk&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=AAeKue6JK-DGscxSctpVvA&_nc_tpa=Q5bMBQIyX6m-hT-UI9pwtjK-PEctBLwUekvMBB-NQPYKKLE7LvvKqXDuGWAb7rHDnMvkAt-AtYN19WqbUQ&oh=01_Q5Aa6AHAf7hCxC3Z6mP3nm35T_kCFoB00Z-DQj4tl6fOCcyY_g&oe=6B2BFE13"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/920012416_1685082803214127_5622223896680799199_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=7pkAeRrg_MwQ7kNvwGr7i3m&_nc_oc=AdqFfp47W8NejPd4Dfyf0ohH3gUHwM4oFO5baiCOvokKQNCg1Ia6Z3Wv18LMjagpbvk&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=AAeKue6JK-DGscxSctpVvA&_nc_tpa=Q5bMBQIyX6m-hT-UI9pwtjK-PEctBLwUekvMBB-NQPYKKLE7LvvKqXDuGWAb7rHDnMvkAt-AtYN19WqbUQ&oh=01_Q5Aa6AHAf7hCxC3Z6mP3nm35T_kCFoB00Z-DQj4tl6fOCcyY_g&oe=6B2BFE13"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*دعوة اختيارية إلى برنامج الولاء* 🎁\n*Luxury Smart Apartments 🌿*\n\nمرحبًا {{1}}، يمكنك الانضمام مجانًا إلى برنامج مكافآت ضيوفنا.\nيتيح البرنامج مكافآت بنسبة 3٪ على الإقامات المؤهلة و5٪ عند إقامة ضيف جديد تدعوه، وفق شروطه.\nلا تعني هذه الدعوة استحقاق مكافأة عن الإقامة الحالية؛ الأهلية تخضع لشروط البرنامج.\nللتعرّف على الشروط وإكمال الانضمام عند رغبتك:\n{{2}}\nلتطلب إيقاف دعوات البرنامج، رد بكلمة «إيقاف».",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "https://luxurysmartapartments.com/"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "6fa8fc3c484b259e9b1d1f9ce20157ba1dfbe72a56bf0aad250f603d6b628456",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "20ec4d54c6225fbbf2c080af869221c8611d08a12ea9bf91fed702a7f772ccc3"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_loyalty_invitation_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924600311_2216242889303319_8269783719625135148_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=n77VZGOuPJgQ7kNvwFBt-V2&_nc_oc=Adol4Hdjt7nzZEntirujcxO8rt1SLu081ImwEDjE4CemlCCkTNdJfTSpe4hzRKjz6X8&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=83kQneqbFbPPXJYqmB-U7A&_nc_tpa=Q5bMBQJRXO8_GOT2E2y5EGI3RlY0YlLpr85D2Tq3jzVQfpBudopQznU8KDRFbSXMmI4Jq_l84tqDtr_I0g&oh=01_Q5Aa6AEsFoDUnjufJFZJwQZ__r-BzxwMpzW5wQPYDn3CAlcQ_w&oe=6B2BD9FF"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924600311_2216242889303319_8269783719625135148_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=n77VZGOuPJgQ7kNvwFBt-V2&_nc_oc=Adol4Hdjt7nzZEntirujcxO8rt1SLu081ImwEDjE4CemlCCkTNdJfTSpe4hzRKjz6X8&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=83kQneqbFbPPXJYqmB-U7A&_nc_tpa=Q5bMBQJRXO8_GOT2E2y5EGI3RlY0YlLpr85D2Tq3jzVQfpBudopQznU8KDRFbSXMmI4Jq_l84tqDtr_I0g&oh=01_Q5Aa6AEsFoDUnjufJFZJwQZ__r-BzxwMpzW5wQPYDn3CAlcQ_w&oe=6B2BD9FF"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Optional loyalty program invitation* 🎁\n*Luxury Smart Apartments 🌿*\n\nHello {{1}}, you can join our guest rewards program free of charge.\nThe program offers 3% rewards on eligible stays and 5% when a new guest you refer completes a stay, subject to its terms.\nThis invitation does not establish reward eligibility for your current stay; the program terms apply.\nTo read the terms and join if you wish:\n{{2}}\nTo request no further program invitations, reply STOP.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "https://luxurysmartapartments.com/"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "a2c0ffc54fe642f1aa7a3a4be7d1a5e89d178c459f3f82b072e808b43f6138a9",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "fbb7330681e7dea7dde4dd4baa3f5ab1275de113c0fa7c2f2d6d6cd41343e670"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_loyalty_invitation_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/925588847_1114243387911139_2675124940620506479_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=lvpiVOAgcLUQ7kNvwGGfY9-&_nc_oc=AdrUPJJZlmm1QeHrEy6P38aUZxADttuyQp1E7AeObqTcexosroqXBgHMYJyyWqFVscw&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=8l5017FGFq9CIy21VdnXMQ&_nc_tpa=Q5bMBQLJGoQD77qsUt3KyUY8PP0y-MokOY2p_7gy6T1xqczbj81Htv36tacdmzjL9AtQCxUJNEceMjZe-g&oh=01_Q5Aa6AEiOeSBtEXlO2bwvDgVBCmoCg_27SaqEanMm-L0hjoR0A&oe=6B2BF619"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/925588847_1114243387911139_2675124940620506479_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=lvpiVOAgcLUQ7kNvwGGfY9-&_nc_oc=AdrUPJJZlmm1QeHrEy6P38aUZxADttuyQp1E7AeObqTcexosroqXBgHMYJyyWqFVscw&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=8l5017FGFq9CIy21VdnXMQ&_nc_tpa=Q5bMBQLJGoQD77qsUt3KyUY8PP0y-MokOY2p_7gy6T1xqczbj81Htv36tacdmzjL9AtQCxUJNEceMjZe-g&oh=01_Q5Aa6AEiOeSBtEXlO2bwvDgVBCmoCg_27SaqEanMm-L0hjoR0A&oe=6B2BF619"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Invitation facultative au programme de fidélité* 🎁\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, vous pouvez rejoindre gratuitement notre programme de récompenses.\nIl propose 3% sur les séjours éligibles et 5% lorsqu’un nouveau voyageur recommandé par vous effectue un séjour, selon ses conditions.\nCette invitation ne garantit aucune récompense pour votre séjour actuel ; les conditions du programme s’appliquent.\nPour lire les conditions et adhérer si vous le souhaitez :\n{{2}}\nPour demander l’arrêt des invitations au programme, répondez STOP.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "https://luxurysmartapartments.com/"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "f0bd7e0c855e1bd46271d6882b1d69172765a49d9c66bd3687cfbb32b1ed96f6",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "9e5ac91b3b204f44a35b3a380e179bb5e75eab775a2e473ddd7ca84af723401d"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_missed_call_followup_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*متابعة اتصالك* 📞\n*Luxury Smart Apartments 🌿*\n\nشكرًا لاتصالك بنا، ونعتذر عن عدم تمكننا من الرد.\nإذا رغبت في متابعة استفسارك هنا، يمكنك الرد على هذه الرسالة. وإذا كان الاستفسار عن حجز جديد، اذكر المدينة وتاريخ الوصول والمغادرة وعدد الضيوف.\nللتعرّف على الشقق يمكنك زيارة موقعنا:\nhttps://luxurysmartapartments.com/hello\nلتطلب إيقاف هذه المتابعات، رد بكلمة «إيقاف»."
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "b1c51e07cb6049c44a82937b15a054c2d5ddb690f40377f2218db1ef8cb54bac",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "3a73bb87020cb81a1f6b31d0472bced78420af03e4332aabd38bc706fda94dd2"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_missed_call_followup_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Following up on your call* 📞\n*Luxury Smart Apartments 🌿*\n\nThank you for calling us. We are sorry we could not answer.\nIf you would like to continue your enquiry here, please reply. For a new booking enquiry, include the city, arrival and departure dates, and number of guests.\nYou can view our apartments on our website:\nhttps://luxurysmartapartments.com/hello\nTo request no further follow-ups, reply STOP."
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "7b072aea13035a92b886c0d82e25401fd11a1f27afacd4b158cb243bc1c05398",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "9b2a3c680b18d900e9422d81b08aeaacf7ffdd8ec0a3e7d61bd3a2b80a39e873"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_missed_call_followup_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "MARKETING",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Suite à votre appel* 📞\n*Luxury Smart Apartments 🌿*\n\nMerci de nous avoir appelés. Nous sommes désolés de ne pas avoir pu répondre.\nSi vous souhaitez poursuivre votre demande ici, répondez à ce message. Pour une nouvelle réservation, précisez la ville, les dates d’arrivée et de départ et le nombre de voyageurs.\nVous pouvez consulter nos appartements sur notre site :\nhttps://luxurysmartapartments.com/hello\nPour demander l’arrêt de ces suivis, répondez STOP."
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "1867a85ecbee2b3b9f816fafc432ad6a9cc3288d64d6c0afcff2b3f335e15330",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "86a2184fa0ea4ea58b40acd28d14290deecf28dac032b11a23efccfd708541af"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_morning_booking_confirmed_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/908771349_1808186343820008_4480558363955235964_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=Pfbv09CuHM0Q7kNvwHyCNCj&_nc_oc=AdpKl_k97Q_d_nCvxiqAO6VTW6GV2wmn7DJrUVKO7gejhlUKQEX0LDNygxB0iZonJa4&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=A5MR7uVQWWCyEkhsffE79Q&_nc_tpa=Q5bMBQLYNM3Hm23oH1UTwc8lSnzz7Bb8wTy15H1vHL_zfl_9ZU2DhRkOPh6bWnC6bX1qDPmK_QXYXtK6YQ&oh=01_Q5Aa6AF_6ytdruc5FwaZRZzn_Q1RONQzKEGYj2Ncnouui1It_g&oe=6B2BF7E1"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/908771349_1808186343820008_4480558363955235964_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=Pfbv09CuHM0Q7kNvwHyCNCj&_nc_oc=AdpKl_k97Q_d_nCvxiqAO6VTW6GV2wmn7DJrUVKO7gejhlUKQEX0LDNygxB0iZonJa4&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=A5MR7uVQWWCyEkhsffE79Q&_nc_tpa=Q5bMBQLYNM3Hm23oH1UTwc8lSnzz7Bb8wTy15H1vHL_zfl_9ZU2DhRkOPh6bWnC6bX1qDPmK_QXYXtK6YQ&oh=01_Q5Aa6AF_6ytdruc5FwaZRZzn_Q1RONQzKEGYj2Ncnouui1It_g&oe=6B2BF7E1"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*تأكيد الحجز* ✅\n*Luxury Smart Apartments 🌿*\n\nإقامة صباحية: هذه الرسالة تخص الحجز الصباحي ومواعيده المذكورة أدناه.\n\nعزيزنا {{1}}، تم تأكيد حجزك رقم {{2}} في {{3}}.\n📅 الدخول: {{4}} الساعة {{5}}.\n📅 الخروج: {{6}} الساعة {{7}}.\n⏰ التوقيت المحلي للعقار: {{8}}.\nمنصة الحجز: {{9}}.\nلأي استفسار بخصوص هذا الحجز، يُرجى الرد على هذه الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "AM-11111111",
+                "شقة العرض A1",
+                "2026-12-03",
+                "06:00",
+                "2026-12-03",
+                "12:00",
+                "توقيت الرياض",
+                "Direct Website"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "b77c3f855f1f1745f168d9dbbcead4ec4168db397b8e05074280dcf90a117f00",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "259ec24e3e4d34bb7cf9021f2fad537d01cc2cea8203ad82f83d3a02b317b772"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_morning_booking_confirmed_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924128115_1823025828956711_8347977880846910158_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=BmJSWMQjD_YQ7kNvwH-PKIA&_nc_oc=AdpCVyTVzmptuOh6hEqovTL6kPzxJrIx961eKJ1wD_AmeWMXsGIEETjEi_8aubcNzEg&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=DS_5D9p69HLN75q6lfM5jw&_nc_tpa=Q5bMBQKIzQt_1hR_nBOZS9K4_abVxOaO_PeRJc5MSRW_myz-JXZitKjjDEx_2WmSjUyml8djtYWm10-Olw&oh=01_Q5Aa6AHgaj2uYMQzPIAR5LkG4BOI5dpmj1O4M3gwoWZqfiHoxg&oe=6B2BF21B"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/924128115_1823025828956711_8347977880846910158_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=BmJSWMQjD_YQ7kNvwH-PKIA&_nc_oc=AdpCVyTVzmptuOh6hEqovTL6kPzxJrIx961eKJ1wD_AmeWMXsGIEETjEi_8aubcNzEg&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=DS_5D9p69HLN75q6lfM5jw&_nc_tpa=Q5bMBQKIzQt_1hR_nBOZS9K4_abVxOaO_PeRJc5MSRW_myz-JXZitKjjDEx_2WmSjUyml8djtYWm10-Olw&oh=01_Q5Aa6AHgaj2uYMQzPIAR5LkG4BOI5dpmj1O4M3gwoWZqfiHoxg&oe=6B2BF21B"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Booking confirmed* ✅\n*Luxury Smart Apartments 🌿*\n\nMorning stay: this message concerns your morning booking and its stated schedule.\n\nDear {{1}}, your booking {{2}} at {{3}} is confirmed.\n📅 Check-in: {{4}} at {{5}}.\n📅 Check-out: {{6}} at {{7}}.\n⏰ Property local time: {{8}}.\nBooking channel: {{9}}.\nPlease reply to this message if you need help with this booking.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "AM-11111111",
+                "Sample Apartment A1",
+                "2026-12-03",
+                "06:00",
+                "2026-12-03",
+                "12:00",
+                "Riyadh local time",
+                "Direct Website"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "a64ed6ff7d3cbc73e15c6f8ba524360c73aba0911a03936db1155b6d3eed6732",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "1e12c14138d9f02e103e9622c146e3f78368f8ead75c1da1ca11d19598cca878"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_morning_booking_confirmed_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/927115674_1746074580450247_561562994990733801_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=YcUfSM3ZfiYQ7kNvwGDl7fQ&_nc_oc=Adprq57LfC1lch70k3_uP8oUkm7Ec2ZKzR7IKKOqp_y2syBqSBJcvD_M3FrDJAMvPxg&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=Fblxw7gWERLm9pVKHb6fEg&_nc_tpa=Q5bMBQKXMXVqS3kfe478EhPD2Mhjnf4Pdw4zH_1UO4XIkf3do_9vBzSeBc8I1kSIP35E3pM3aB3qp58z0Q&oh=01_Q5Aa6AFr6SxYwGf_6wNbrarg5QCc-b6CjEG7aVoPCmKRS-ocLg&oe=6B2BFFFE"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/927115674_1746074580450247_561562994990733801_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=YcUfSM3ZfiYQ7kNvwGDl7fQ&_nc_oc=Adprq57LfC1lch70k3_uP8oUkm7Ec2ZKzR7IKKOqp_y2syBqSBJcvD_M3FrDJAMvPxg&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=Fblxw7gWERLm9pVKHb6fEg&_nc_tpa=Q5bMBQKXMXVqS3kfe478EhPD2Mhjnf4Pdw4zH_1UO4XIkf3do_9vBzSeBc8I1kSIP35E3pM3aB3qp58z0Q&oh=01_Q5Aa6AFr6SxYwGf_6wNbrarg5QCc-b6CjEG7aVoPCmKRS-ocLg&oe=6B2BFFFE"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Réservation confirmée* ✅\n*Luxury Smart Apartments 🌿*\n\nSéjour matinal : ce message concerne votre réservation du matin et ses horaires.\n\nBonjour {{1}}, votre réservation {{2}} à {{3}} est confirmée.\n📅 Arrivée : {{4}} à {{5}}.\n📅 Départ : {{6}} à {{7}}.\n⏰ Heure locale du logement : {{8}}.\nPlateforme de réservation : {{9}}.\nPour toute question sur cette réservation, répondez à ce message.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "AM-11111111",
+                "Appartement exemple A1",
+                "2026-12-03",
+                "06:00",
+                "2026-12-03",
+                "12:00",
+                "heure locale de Riyad",
+                "Direct Website"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "86a48334c234785751e376c385cb7cd807a7f62a83d8cc75d62d0e87f9718f4b",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "0541c13821e2d1ef80fa92dd2e0eaee72396b4a693f79f3a3f274fb7291e0e0d"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_morning_payment_request_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/908771366_902108562930524_8678062238914256378_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=xEXJZ8HgNfkQ7kNvwFyPkQL&_nc_oc=Ado83fvCojjJ52z0Gwi-pX-5TBGzoDFSuDDzrhDLURr4wdr5_hyD869d8Zv9SSus2pc&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=EmcjSVCQ8I_3SwmcC7H8rg&_nc_tpa=Q5bMBQKsypQW_zBabrzc7OOcU79wWjH2GLhNAwnfOkzHnIRilmD-myipIg8vWJp2w_zTRzV7K3mq_0ffXQ&oh=01_Q5Aa6AH4gKfP55VWN5umyM3jks2nOArSSIGBvYMxdr5KXVsGXw&oe=6B2BE912"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/908771366_902108562930524_8678062238914256378_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=xEXJZ8HgNfkQ7kNvwFyPkQL&_nc_oc=Ado83fvCojjJ52z0Gwi-pX-5TBGzoDFSuDDzrhDLURr4wdr5_hyD869d8Zv9SSus2pc&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=EmcjSVCQ8I_3SwmcC7H8rg&_nc_tpa=Q5bMBQKsypQW_zBabrzc7OOcU79wWjH2GLhNAwnfOkzHnIRilmD-myipIg8vWJp2w_zTRzV7K3mq_0ffXQ&oh=01_Q5Aa6AH4gKfP55VWN5umyM3jks2nOArSSIGBvYMxdr5KXVsGXw&oe=6B2BE912"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*سداد مبلغ الحجز* 💳\n*Luxury Smart Apartments 🌿*\n\nإقامة صباحية: هذه الرسالة تخص الحجز الصباحي ومواعيده المذكورة أدناه.\n\nعزيزنا {{1}}، المبلغ المستحق لحجزك رقم {{2}} في {{3}} هو {{4}}، والعملة {{5}}.\nالفترة: من {{6}} إلى {{7}}.\nيمكنك سداد هذا المبلغ عبر رابط الدفع الخاص بالحجز:\n{{8}}\nهذه الرسالة تخص سداد الحجز القائم. إذا احتجت مساعدة بشأن المبلغ أو الرابط، يُرجى الرد على الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "AM-11111111",
+                "شقة العرض A1",
+                "500.00",
+                "SAR",
+                "2026-12-03",
+                "2026-12-03",
+                "https://example.com/payment/AM-11111111"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "7559d7322b32de21d300ae58acda226939560ec0d636430fe08ac09a49703296",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "cf4d387a9a2543bde251a0b45aea67b3d9dad2d751347cc8ca27ba1462a16775"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_morning_payment_request_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/923836897_1640533184221330_5699357451483818556_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=IOFp7Vkt-zYQ7kNvwFfQVRz&_nc_oc=AdosIvmAaC4xAcFE8JFiGecvRJJ7bc5jdYIVMJHNVF8Xho7xcayQpEsYDiAMW8OASVI&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=avbfREB_4XTn2KcKndGSkA&_nc_tpa=Q5bMBQJfofQXEMfsCpcpiDG27WHhwDDA9fQTdrXsob7MaQ1zkM9xYPOOl0rdqQ8FcNVMiHmDXRkfR5058w&oh=01_Q5Aa6AGcpo24mEfEDn6Q61F8fy6AgqcpmZ_dfkXKokwf8y9yVQ&oe=6B2BD828"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/923836897_1640533184221330_5699357451483818556_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=IOFp7Vkt-zYQ7kNvwFfQVRz&_nc_oc=AdosIvmAaC4xAcFE8JFiGecvRJJ7bc5jdYIVMJHNVF8Xho7xcayQpEsYDiAMW8OASVI&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=avbfREB_4XTn2KcKndGSkA&_nc_tpa=Q5bMBQJfofQXEMfsCpcpiDG27WHhwDDA9fQTdrXsob7MaQ1zkM9xYPOOl0rdqQ8FcNVMiHmDXRkfR5058w&oh=01_Q5Aa6AGcpo24mEfEDn6Q61F8fy6AgqcpmZ_dfkXKokwf8y9yVQ&oe=6B2BD828"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Booking payment* 💳\n*Luxury Smart Apartments 🌿*\n\nMorning stay: this message concerns your morning booking and its stated schedule.\n\nDear {{1}}, the amount due for booking {{2}} at {{3}} is {{4}}, in {{5}}.\nStay dates: {{6}} to {{7}}.\nYou can pay this amount using the booking payment link:\n{{8}}\nThis message concerns payment for your existing booking. Please reply if you need help with the amount or link.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "AM-11111111",
+                "Sample Apartment A1",
+                "500.00",
+                "SAR",
+                "2026-12-03",
+                "2026-12-03",
+                "https://example.com/payment/AM-11111111"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "92a3be087db71190ae6d013c00d569e63d3ab7676d7ad81f967d10272f1dfaf1",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "b369cd7fae503ad14427941a14006b4ebbb9976ef184139de5ae0ed772248039"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_morning_payment_request_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "IMAGE",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/925636355_1846152646526631_4971291485224178586_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=Z3AybEtxu1sQ7kNvwH5iaxr&_nc_oc=Ado7BCwdvKvahSpUuxgNW8eb-0klJm5dKnjnvk61KxXGQlCJvAhm6oKYAP_b4pxP8H8&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=kY5OeS9JW320iYiV9h-cEA&_nc_tpa=Q5bMBQIFd4NiajK_DZlZ_3pcDCGJJTe8a_sO43JHqwp0yw4NddjnYscs6u2qPKJ1jrMkl0VnAOAQbdGJIg&oh=01_Q5Aa6AGmp2-P8qSAkmgIYpRk8GjJ1PwDzT3VIA2oVWbt5LBFJw&oe=6B2BE21E"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/925636355_1846152646526631_4971291485224178586_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=Z3AybEtxu1sQ7kNvwH5iaxr&_nc_oc=Ado7BCwdvKvahSpUuxgNW8eb-0klJm5dKnjnvk61KxXGQlCJvAhm6oKYAP_b4pxP8H8&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=kY5OeS9JW320iYiV9h-cEA&_nc_tpa=Q5bMBQIFd4NiajK_DZlZ_3pcDCGJJTe8a_sO43JHqwp0yw4NddjnYscs6u2qPKJ1jrMkl0VnAOAQbdGJIg&oh=01_Q5Aa6AGmp2-P8qSAkmgIYpRk8GjJ1PwDzT3VIA2oVWbt5LBFJw&oe=6B2BE21E"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Paiement de la réservation* 💳\n*Luxury Smart Apartments 🌿*\n\nSéjour matinal : ce message concerne votre réservation du matin et ses horaires.\n\nBonjour {{1}}, le montant à régler pour la réservation {{2}} à {{3}} est de {{4}}, en {{5}}.\nSéjour : du {{6}} au {{7}}.\nVous pouvez régler ce montant via le lien de paiement de la réservation :\n{{8}}\nCe message concerne le paiement de votre réservation existante. Répondez pour toute question sur le montant ou le lien.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "AM-11111111",
+                "Appartement exemple A1",
+                "500.00",
+                "SAR",
+                "2026-12-03",
+                "2026-12-03",
+                "https://example.com/payment/AM-11111111"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "be1b5247f7345d5930e5db41e7c040b5bf8f5bdbe992f47250fdc8b2097b9ec6",
+      "verified_at_epoch": 1795468544,
+      "body_sha256": "3988c525523cd8cda7c5fe8c385cb7763fdbcb1419b169e2cbe0294bdf11755c"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_payment_received_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*تأكيد استلام السداد* ✅\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، تم استلام مبلغ {{2}} بالعملة {{3}} لحجزك رقم {{4}} في {{5}}.\nللاستفسار عن هذه العملية، يُرجى الرد على الرسالة. شكرًا لك.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "500.00",
+                "SAR",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "00b6993d6af1f52661aa5db89585f7cc6a7928830b26df367b54439de18c274f",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "6b80b15d70a24e95b135f40ef65131ccfc640383c2e8ef4e5f286347c964009f"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_payment_received_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Payment received* ✅\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, we have received a payment of {{2}} in {{3}} for booking {{4}} at {{5}}.\nPlease reply if you have a question about this payment. Thank you.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "500.00",
+                "SAR",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "5ea2bf29d3c7a76a12f19cfe943d51bee7fc821602966d2bde45e67d74e5b60c",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "8fcaa2c44e987bd4e8397e6aa08610fbd7f4ad00ca2e6ad25a5a3e45cc17d2cc"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_payment_received_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Paiement reçu* ✅\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, nous avons reçu un paiement de {{2}}, en {{3}}, pour la réservation {{4}} à {{5}}.\nRépondez pour toute question concernant ce paiement. Merci.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "500.00",
+                "SAR",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "d37ee7c704cc970872074111c1bd267a524b14c8c6e6359cf80d67c2b0d71087",
+      "verified_at_epoch": 1795468543,
+      "body_sha256": "cd693bdb381c2eaf7925bdce4b3a8eff552cad1cf36ce1071cb49b236c4bc6f3"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_payment_request_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*سداد مبلغ الحجز* 💳\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، المبلغ المستحق لحجزك رقم {{2}} في {{3}} هو {{4}}، والعملة {{5}}.\nالفترة: من {{6}} إلى {{7}}.\nيمكنك سداد هذا المبلغ عبر رابط الدفع الخاص بالحجز:\n{{8}}\nهذه الرسالة تخص سداد الحجز القائم. إذا احتجت مساعدة بشأن المبلغ أو الرابط، يُرجى الرد على الرسالة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "LSA-EXAMPLE-1001",
+                "شقة العرض A1",
+                "500.00",
+                "SAR",
+                "2026-12-03",
+                "2026-12-05",
+                "https://example.com/payment/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "eaa81cfb96b8fb2bbfee891c74c8eeec7f7736d6f595cc635d9341ac94eace42",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "aa3ae87652d5cfea203071af59fb8301e06b8bd940cf8ede9e8249906ed864f7"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_payment_request_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Booking payment* 💳\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, the amount due for booking {{2}} at {{3}} is {{4}}, in {{5}}.\nStay dates: {{6}} to {{7}}.\nYou can pay this amount using the booking payment link:\n{{8}}\nThis message concerns payment for your existing booking. Please reply if you need help with the amount or link.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "LSA-EXAMPLE-1001",
+                "Sample Apartment A1",
+                "500.00",
+                "SAR",
+                "2026-12-03",
+                "2026-12-05",
+                "https://example.com/payment/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "696e3a6f404159ff3a98c293ffa3a6b7093120647a454b506d8ef56e7216bbb1",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "e25f3c43baaa0a4a22bb7da989306c5feb008ba25364ac045d38d289ed564492"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_payment_request_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Paiement de la réservation* 💳\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, le montant à régler pour la réservation {{2}} à {{3}} est de {{4}}, en {{5}}.\nSéjour : du {{6}} au {{7}}.\nVous pouvez régler ce montant via le lien de paiement de la réservation :\n{{8}}\nCe message concerne le paiement de votre réservation existante. Répondez pour toute question sur le montant ou le lien.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "LSA-EXAMPLE-1001",
+                "Appartement exemple A1",
+                "500.00",
+                "SAR",
+                "2026-12-03",
+                "2026-12-05",
+                "https://example.com/payment/LSA-EXAMPLE-1001"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "1b81b1017a47ca14c17d736cd75c119d3ff3e9699b28fedd3b130cceb1792695",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "4e30d552ba7c00e28b40436502fc11362f525fe4f07da724a7c918f8bfb08bfd"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_stay_arrival_document_v2",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "DOCUMENT",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/908771353_1828907424922266_2141773076864279768_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=c_QyNrMYvP4Q7kNvwENjnt1&_nc_oc=Adp-UI78Q9u9wxaetcJ7G2TJVo97LqgRz02mdKo1gwvKENMUU_mQflkDbjDUiZsGd_U&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=jjeVCrGpkOPtuqp1T4iSdw&_nc_tpa=Q5bMBQK0HjEBIPoLyMOkUpb0eIYQbNxstXmGct9CpH1tH5aUcngnM-dMKAqXUpl62SU3R804jQiPcFfuhA&oh=01_Q5Aa6AEa9STwJFMKL81nfiC7jTegBxPt6heMTV3uQoMhXjG8zA&oe=6B2BF56E"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/908771353_1828907424922266_2141773076864279768_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=c_QyNrMYvP4Q7kNvwENjnt1&_nc_oc=Adp-UI78Q9u9wxaetcJ7G2TJVo97LqgRz02mdKo1gwvKENMUU_mQflkDbjDUiZsGd_U&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=jjeVCrGpkOPtuqp1T4iSdw&_nc_tpa=Q5bMBQK0HjEBIPoLyMOkUpb0eIYQbNxstXmGct9CpH1tH5aUcngnM-dMKAqXUpl62SU3R804jQiPcFfuhA&oh=01_Q5Aa6AEa9STwJFMKL81nfiC7jTegBxPt6heMTV3uQoMhXjG8zA&oe=6B2BF56E"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*دليل الوصول إلى إقامتك* 🏠\n*Luxury Smart Apartments 🌿*\n\nعزيزنا {{1}}، أرفقنا دليل الوصول إلى {{2}} لحجزك رقم {{3}} بتاريخ {{4}}.\nيتضمن الملف العنوان والخريطة وشرح الوصول إلى المبنى ومعلومات مرافق الشقة المحجوزة لك.\nيُرجى مراجعة الدليل قبل الوصول، والرد على هذه الرسالة إذا احتجت مساعدة.",
+          "example": {
+            "body_text": [
+              [
+                "أحمد مثال",
+                "شقة العرض A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-03"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "للمساعدة: +966501205651"
+        }
+      ],
+      "components_sha256": "0d1428639312608231bc72ab91a5f6f277250027a0735437a082db6243600404",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "ce78c7b5b21ed03884d9289ac3872517a3b9997f5a4a1aac180c80b4c373ff2c"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_stay_arrival_document_v2",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "DOCUMENT",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/922680266_4642944012656316_7161263631022071950_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=a6BJEF__aTcQ7kNvwGgYn0T&_nc_oc=AdpYBY-sYXDFwdCTOBUvR7rygKUXefn_1jd9wGc0XQ91Vqa3RM-zTYlFE_nfTgWvgSU&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=nzZmuDvyiguLP_tKiIUj6g&_nc_tpa=Q5bMBQKrUFvDw8nvSb3NnFq5C-KFZ9eSE4ihn63iDmKqBDjPCmHkvG_D3NLbcbSSNSyYMkc2sMjUeJ3s0A&oh=01_Q5Aa6AFj7mHwp-EYAfMWcpcXO7U0u5SNhUglRZUDJCDbq7wr9g&oe=6B2BEAD4"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/922680266_4642944012656316_7161263631022071950_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=a6BJEF__aTcQ7kNvwGgYn0T&_nc_oc=AdpYBY-sYXDFwdCTOBUvR7rygKUXefn_1jd9wGc0XQ91Vqa3RM-zTYlFE_nfTgWvgSU&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=nzZmuDvyiguLP_tKiIUj6g&_nc_tpa=Q5bMBQKrUFvDw8nvSb3NnFq5C-KFZ9eSE4ihn63iDmKqBDjPCmHkvG_D3NLbcbSSNSyYMkc2sMjUeJ3s0A&oh=01_Q5Aa6AFj7mHwp-EYAfMWcpcXO7U0u5SNhUglRZUDJCDbq7wr9g&oe=6B2BEAD4"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Your accommodation arrival guide* 🏠\n*Luxury Smart Apartments 🌿*\n\nDear {{1}}, the attached arrival guide is for your stay at {{2}}, booking {{3}}, on {{4}}.\nIt contains the address, map, building arrival instructions and information about the facilities in your booked apartment.\nPlease read the guide before arrival and reply to this message if you need assistance.",
+          "example": {
+            "body_text": [
+              [
+                "Alex Sample",
+                "Sample Apartment A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-03"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Support: +966501205651"
+        }
+      ],
+      "components_sha256": "26922a5451acb207f70f08588ed6bd835c86bc66c9e7a8ad17a47c609a1085e6",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "105005feb6b503be34766dd8b86c5e1dfd0698bbe38bd3405dc377911772b0cb"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_stay_arrival_document_v2",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "HEADER",
+          "format": "DOCUMENT",
+          "example": {
+            "header_url": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/921225321_1658832435629153_963482892941153691_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=L_QXGKLHCd0Q7kNvwGLTfKZ&_nc_oc=AdoYzma_rGbhBCslHIa10p41mefgNKV-Q17tpZJ1h5yEaiR1DCg0S7SGUCLjMNCyCL4&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=MHrsrsN4Vo_mKmfWBEk-CQ&_nc_tpa=Q5bMBQKcgKoy_R1zavNUYeCEiQ4htAWE0zCdGAFqO9bSq9Ujo81ADL-9qfhrO5p9hqamJDC_Mgq5oLSawA&oh=01_Q5Aa6AHKwPhy_JpAPMEcvdfoj2FcYP7tz1N_Llqk_npLbqG3OQ&oe=6B2BDEAB"
+            ],
+            "header_handle": [
+              "https://scontent.whatsapp.net/v/t61.29466-34/921225321_1658832435629153_963482892941153691_n.pdf?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=L_QXGKLHCd0Q7kNvwGLTfKZ&_nc_oc=AdoYzma_rGbhBCslHIa10p41mefgNKV-Q17tpZJ1h5yEaiR1DCg0S7SGUCLjMNCyCL4&_nc_zt=3&_nc_ht=scontent.whatsapp.net&edm=AIJs65cEAAAA&_nc_gid=MHrsrsN4Vo_mKmfWBEk-CQ&_nc_tpa=Q5bMBQKcgKoy_R1zavNUYeCEiQ4htAWE0zCdGAFqO9bSq9Ujo81ADL-9qfhrO5p9hqamJDC_Mgq5oLSawA&oh=01_Q5Aa6AHKwPhy_JpAPMEcvdfoj2FcYP7tz1N_Llqk_npLbqG3OQ&oe=6B2BDEAB"
+            ]
+          }
+        },
+        {
+          "type": "BODY",
+          "text": "*Guide d’accès à votre logement* 🏠\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}, le guide joint concerne votre séjour à {{2}}, réservation {{3}} du {{4}}.\nIl contient l’adresse, le plan, les indications d’accès à l’immeuble et les informations sur les équipements de votre appartement réservé.\nVeuillez consulter le guide avant votre arrivée et répondre à ce message si vous avez besoin d’aide.",
+          "example": {
+            "body_text": [
+              [
+                "Camille Exemple",
+                "Appartement exemple A1",
+                "LSA-EXAMPLE-1001",
+                "2026-12-03"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "FOOTER",
+          "text": "Assistance : +966501205651"
+        }
+      ],
+      "components_sha256": "06b2c55cb755469491a061f45d233fc6003f3fb860ddaea3e09484c84402f9e3",
+      "verified_at_epoch": 1795468542,
+      "body_sha256": "78ace89a56ef20b058b31805d4ec956f0f8b1d484748a55f14c3f0c57a44f5bf"
+    }
+  ],
+  "errors": [],
+  "provider_send_attempts": 0,
+  "dispatch_allowed": false,
+  "completed_at_epoch": 1795468544
+}

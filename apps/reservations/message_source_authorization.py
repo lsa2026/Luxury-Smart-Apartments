@@ -271,6 +271,7 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         "not_before": event.created_at.isoformat(),
         "expires_at": stay.ends_at.isoformat(),
         "environment": stay.environment,
+        "language": stay.guest_language,
         "domain_authorized": False,
         "current_source_verified": True,
         "current_source_cancelled": stay.status == "cancelled",
@@ -414,6 +415,10 @@ def payment_facts(stay, event, scenario, locator, payments):
     result["blockers"].append("core_delivery_dependency_requires_verified_receipts")
     if purpose == "payment_success":
         result["message"] = payments.render_success(stay)
+        from .website_financial_source_v2 import verified_confirmation_fields
+
+        if getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
+            result.update(verified_confirmation_fields(event, scenario))
     else:
         from apps.loyalty import invitation_registry as registry
 
@@ -487,6 +492,10 @@ def source_authorization(request, *, scenario, financial=False):
         event = model.objects.filter(pk=event_id).first()
         if event is None:
             return response({"code": "unavailable"}, 404)
+        from apps.properties.models import Property
+
+        property_id = stays.objects.values_list("property_id", flat=True).get(pk=event.stay_id)
+        Property.objects.select_for_update().get(pk=property_id)
         stay = (
             stays.objects.select_for_update(of=("self",))
             .select_related("property")
@@ -515,6 +524,19 @@ def source_authorization(request, *, scenario, financial=False):
                 if financial
                 else core_facts(stay, event, scenario, locator)
             )
+            if (
+                financial
+                and facts
+                and facts["source_message_type"] == "payment_success"
+                and getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+            ):
+                from .website_financial_source_v2 import payment_confirmation_source
+
+                facts = payment_confirmation_source(event.pk, scenario)
+                if facts.get("available") is not True:
+                    return response(
+                        {"code": "financial_source_unverified", "dispatch_allowed": False}, 409
+                    )
         except (InvalidPhoneNumber, ValidationError, KeyError, ValueError, TypeError):
             return response({"code": "unverified"}, 409)
         if facts is None:

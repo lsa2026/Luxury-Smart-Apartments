@@ -6,6 +6,7 @@ no backlog scanner, capability store, wait payload or automatic network retry.
 
 import re
 from datetime import timedelta
+from uuid import uuid5
 
 import httpx
 from django.conf import settings
@@ -22,6 +23,21 @@ from .message_relay_models import WebsiteMessageRelay
 
 RELAY_URL = "https://lsa25.app.n8n.cloud/webhook/site01-source-relay-v1"
 READ_HEADER = "X-LSA-Source-Read-Capability"
+DEFERRED_REASONS = {"not_due", "waiting_predecessor", "deferred"}
+DEFERRED_KEYS = {
+    "contract_version",
+    "relay_ref",
+    "job_sha256",
+    "accepted",
+    "status",
+    "reason",
+    "request_id",
+    "attempts_claimed",
+    "provider_message_id",
+    "wamid",
+    "retryable_before_claim",
+}
+DEFER_RECHECK = timedelta(minutes=15)
 
 
 def cutover():
@@ -89,14 +105,93 @@ def register_event(event, scenario, *, financial=False):
                 "expires_at": stay.ends_at,
             },
         )
+    if not financial and stay.status != "cancelled" and not stay.paid_at:
+        register_payment_link(event, scenario)
+
+
+def register_payment_link(event, scenario):
+    """New source event only; creates a message resource, never a financial claim."""
+    if not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False) or not enabled():
+        return
+    from .telegram_stay_transport import selected
+    from .website_financial_source_v2 import modules
+
+    stay = source.SOURCES[scenario][0].objects.get(pk=event.stay_id)
+    at = cutover()
+    if (
+        selected(stay)
+        or event.created_at < at
+        or event.created_at > timezone.now()
+        or stay.environment != "production"
+        or stay.status not in {"open", "expired"}
+        or stay.paid_at
+        or stay.ends_at <= timezone.now()
+        or stay.communication_revision != event.revision
+    ):
+        return
+    links, _ = modules(scenario)
+    delivery, _ = stay.payment_link_deliveries.get_or_create(
+        pk=uuid5(stay.pk, f"source-v2-payment-link-r{event.revision}"),
+        defaults={"state": "waiting_core", "fingerprint": links.fingerprint(stay)},
+    )
+    if (
+        delivery.created_at < at
+        or delivery.state not in {"waiting_core", "queued"}
+        or delivery.provider_id
+        or delivery.completed_at
+        or delivery.fingerprint != links.fingerprint(stay)
+    ):
+        return
+    key = ("morning-pay-" if scenario == "07" else "day-use-pay-") + str(delivery.pk)
+    WebsiteMessageRelay.objects.get_or_create(
+        scenario=scenario,
+        financial=False,
+        event_id=delivery.pk,
+        message_type="payment_link",
+        defaults={
+            "stay_id": stay.pk,
+            "revision": str(event.revision),
+            "job_sha256": source.sha(key),
+            "source_occurred_at": delivery.created_at,
+            "not_before": delivery.created_at,
+            "expires_at": stay.ends_at,
+        },
+    )
 
 
 def current_event(row):
     stays, events, pay_events, _, comms, payments = source.SOURCES[row.scenario]
+    if row.message_type == "payment_link":
+        if not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
+            return None
+        from .website_financial_source_v2 import payment_link_source
+
+        facts = payment_link_source(row.event_id, row.scenario)
+        if not facts.get("available"):
+            return None
+        event = (
+            events.objects.select_related("stay__property")
+            .filter(pk=facts["booking_event_id"], stay_id=row.stay_id)
+            .first()
+        )
+        if (
+            event is None
+            or facts["reservation_revision"] != row.revision
+            or facts["job_sha256"] != row.job_sha256
+            or event.created_at < cutover()
+            or parse_datetime(facts["source_occurred_at"]) != row.source_occurred_at
+            or parse_datetime(facts["expires_at"]) != row.expires_at
+        ):
+            return None
+        return event, facts
     model = pay_events if row.financial else events
     event = model.objects.filter(pk=row.event_id, stay_id=row.stay_id).first()
     if event is None:
         return None
+    from apps.properties.models import Property
+
+    property_id = stays.objects.values_list("property_id", flat=True).get(pk=row.stay_id)
+    Property.objects.select_for_update().get(pk=property_id)
     stay = (
         stays.objects.select_for_update(of=("self",)).select_related("property").get(pk=row.stay_id)
     )
@@ -132,6 +227,16 @@ def current_event(row):
         if row.financial
         else source.core_facts(stay, event, row.scenario, row.job_sha256)
     )
+    if (
+        row.financial
+        and row.message_type == "payment_success"
+        and getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+    ):
+        from .website_financial_source_v2 import payment_confirmation_source
+
+        facts = payment_confirmation_source(event.pk, row.scenario)
+        if not facts.get("available"):
+            return None
     if not facts or facts["source_message_type"] != row.message_type:
         return None
     if (
@@ -154,6 +259,10 @@ def forward_due(*, client=None, limit=1):
             row = (
                 WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
                 .filter(state="pending", not_before__lte=timezone.now())
+                .exclude(
+                    reason__in=["deferred_before_claim:" + reason for reason in DEFERRED_REASONS],
+                    updated_at__gt=timezone.now() - DEFER_RECHECK,
+                )
                 .exclude(pk__in=examined)
                 .order_by("updated_at", "not_before", "created_at")
                 .first()
@@ -188,11 +297,17 @@ def forward_due(*, client=None, limit=1):
         comms, payments = source.SOURCES[row.scenario][4:6]
         capability = payments.capability(event) if row.financial else comms.event_token(event)
         envelope = {
-            "contract_version": "site01-source-relay-1",
+            "contract_version": "site01-source-relay-2"
+            if getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+            else "site01-source-relay-1",
             "relay_ref": str(row.pk),
             "scenario": row.scenario,
-            "source_kind": "payment" if row.financial else "core",
-            "source_event_id": str(event.pk),
+            "source_kind": "payment_link"
+            if row.message_type == "payment_link"
+            else "payment"
+            if row.financial
+            else "core",
+            "source_event_id": str(row.event_id),
             "source_event_key": facts["source_event_key"],
             "source_occurred_at": row.source_occurred_at.isoformat(),
             "job_sha256": row.job_sha256,
@@ -213,7 +328,12 @@ def forward_due(*, client=None, limit=1):
             body = reply.json() if reply.status_code in {200, 202} else {}
             if (
                 isinstance(body, dict)
-                and body.get("contract_version") == "site01-source-relay-ack-1"
+                and body.get("contract_version")
+                == (
+                    "site01-source-relay-ack-2"
+                    if getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+                    else "site01-source-relay-ack-1"
+                )
                 and body.get("relay_ref") == str(row.pk)
                 and body.get("job_sha256") == row.job_sha256
             ):
@@ -228,6 +348,20 @@ def forward_due(*, client=None, limit=1):
                     accepted += 1
                 elif body.get("accepted") is False and body.get("status") == "held":
                     state, reason = "held", "downstream_held"
+                elif (
+                    getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+                    and set(body) == DEFERRED_KEYS
+                    and body.get("accepted") is False
+                    and body.get("status") == "deferred"
+                    and body.get("reason") in DEFERRED_REASONS
+                    and body.get("request_id") is None
+                    and type(body.get("attempts_claimed")) is int
+                    and body["attempts_claimed"] == 0
+                    and body.get("provider_message_id") is None
+                    and body.get("wamid") is None
+                    and body.get("retryable_before_claim") is True
+                ):
+                    state, reason = "pending", "deferred_before_claim:" + body["reason"]
         except Exception:
             # Do not log request headers, response bodies or transport exceptions.
             pass

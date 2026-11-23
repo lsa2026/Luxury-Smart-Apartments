@@ -46,6 +46,13 @@ jobs:
           pytest tests/test_owner_modification_workflow.py
           tests/test_workgroup_queue_audit.py
           tests/test_message_source_authorization.py
+          tests/test_website_financial_source_v2.py
+          tests/test_website_access_source_v2.py
+          tests/test_website_template_contract_v2.py
+          tests/test_website_template_selector_v2.py
+          tests/test_website_source_ack_v2.py
+          tests/test_website_financial_relay_v2.py
+          tests/test_website_financial_receipts_v2.py
           tests/test_transaction_permission_candidate.py
           tests/test_customer_service_messaging_scope.py
           tests/test_message_source_relay.py
@@ -205,6 +212,9 @@ jobs:
 
       - name: Verify customer service scope without extra messaging opt-in
         run: pytest tests/test_customer_service_messaging_scope.py tests/test_message_source_authorization.py tests/test_transaction_permission_candidate.py tests/test_loyalty_notifications_integration.py tests/test_user_provided_data.py -q
+
+      - name: Verify closed v2 financial and private access sources
+        run: pytest tests/test_website_financial_source_v2.py tests/test_website_access_source_v2.py tests/test_website_template_contract_v2.py tests/test_website_template_selector_v2.py tests/test_website_source_ack_v2.py tests/test_website_financial_relay_v2.py tests/test_website_financial_receipts_v2.py tests/test_message_receipts.py tests/test_website_message_policy.py -q
 
       - name: Verify closed Telegram draft and invitation boundaries
         env:
