@@ -21,6 +21,9 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def public_programme(settings, monkeypatch):
+    settings.TELEGRAM_WORKGROUP_ONLY_POLICY = False
+    settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+    settings.ACCOUNT_WORKGROUP_AUTH_ONLY_POLICY = False
     settings.LOYALTY_ENABLED = settings.LOYALTY_UI_ENABLED = True
     settings.LOYALTY_PILOT_ONLY = False
     settings.LOYALTY_PILOT_EMAILS = []

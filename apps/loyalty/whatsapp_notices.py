@@ -31,6 +31,9 @@ STATUSES = {
     "uncertain": "نتيجة الإرسال غير مؤكدة؛ لا إعادة تلقائية",
     "failed": "تعذر تجهيز الإشعار",
     "skipped": "لم يُرسل لعدم تحقق شروط الإرسال",
+    "handoff_wait": "بانتظار تسليم نسخة لقروب العمل",
+    "handoff_hold": "تسليم القروب غير مؤكد؛ لا إعادة تلقائية",
+    "handed_off": "سُلّمت نسخة لقروب العمل؛ إرسال المدير للضيف غير متحقق",
 }
 
 
@@ -174,6 +177,12 @@ def _dispatch(key):
 
 def queue_notice(row):
     """Called only for a newly posted ledger row, within its transaction."""
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        from .workgroup_notices import queue
+
+        return queue(row)
     if not enabled():
         return None
     profile = CustomerProfile.objects.filter(user_id=row.customer_id).first()
@@ -202,6 +211,12 @@ def queue_notice(row):
 
 def queue_lifecycle(event):
     """New join/zero-balance closure events only; never scan historical events."""
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        from .workgroup_notices import queue
+
+        return queue(event, lifecycle=True)
     if (
         not enabled()
         or event.source == "history"
@@ -235,7 +250,9 @@ def queue_lifecycle(event):
 
 def resume_welcome(binding):
     """Resume only a newly queued welcome awaiting proof, never historical movements."""
-    if not enabled():
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode() or not enabled():
         return
     with transaction.atomic():
         notice = (
@@ -374,11 +391,21 @@ def _update(key, **values):
 
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=45)
 def deliver_movement_notice(key):
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        from .workgroup_notices import deliver_notice
+
+        return deliver_notice(key)
     if not enabled():
         return
     initial = MovementNotice.objects.select_related("ledger", "event").filter(pk=key).first()
     if initial is None:
         return
+    from .workgroup_notices import VERSION as WORKGROUP_VERSION
+
+    if initial.template_version == WORKGROUP_VERSION:
+        return  # A paused workgroup row must never become a legacy provider request.
     with transaction.atomic():
         # Serialize claim/order per member, without holding a database lock during HTTP.
         source = initial.ledger if initial.ledger_id else initial.event
@@ -504,6 +531,12 @@ def deliver_movement_notice(key):
 
 
 def recover_notices(limit=100):
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        from .workgroup_notices import recover
+
+        return recover(limit)
     if not enabled():
         return {"status": "disabled", "queued": 0}
     # Only delivery records created at posting time. Never synthesize from old Ledger rows.

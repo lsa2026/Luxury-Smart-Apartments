@@ -115,4 +115,38 @@ for language, text in {
 
 
 def phone_copy():
-    return TEXT.get((get_language() or "ar").split("-")[0], TEXT["ar"])
+    from .phone_auth import workgroup_mode
+
+    language = (get_language() or "ar").split("-")[0]
+    language = language if language in TEXT else "ar"
+    labels = dict(TEXT[language])
+    if workgroup_mode():
+        labels.update(
+            {
+                "ar": {
+                    "intro": "استخدم الجوال المرتبط بحسابك. يرسل فريق الإدارة رمز الدخول إليك يدويًا عبر واتساب.",
+                    "bind_intro": "أكد رقمك واطلب الرمز. يرسله فريق الإدارة إليك يدويًا عبر واتساب؛ أدخله هنا لإتمام التوثيق.",
+                    "send": "طلب الرمز من الإدارة",
+                    "sent": "إذا كان الرقم مؤهلًا، سيجهز الرمز لفريق الإدارة لإرساله إليك يدويًا عبر واتساب.",
+                    "delivery_waiting": "جارٍ تجهيز الرمز لفريق الإدارة. يبقى الطلب صالحًا لخمس دقائق من إنشائه.",
+                    "delivery_accepted": "سُلّمت نسخة الرمز لفريق الإدارة لإرسالها إليك يدويًا. لم يُوثّق رقمك بعد؛ أدخل الرمز هنا عند استلامه.",
+                },
+                "en": {
+                    "intro": "Use your linked mobile. Our administration team forwards your sign-in code manually through WhatsApp.",
+                    "bind_intro": "Check your mobile and request a code. Our administration team forwards it manually through WhatsApp; enter it here to finish verification.",
+                    "send": "Request a code from administration",
+                    "sent": "If this mobile is eligible, the code will be prepared for our administration team to forward manually through WhatsApp.",
+                    "delivery_waiting": "Preparing your code for administration. The request expires five minutes after creation.",
+                    "delivery_accepted": "A copy of the code was handed to administration for manual forwarding. Your mobile is not verified yet; enter the code here when received.",
+                },
+                "fr": {
+                    "intro": "Utilisez votre mobile associé. Notre équipe administrative vous transmet manuellement le code par WhatsApp.",
+                    "bind_intro": "Vérifiez votre mobile et demandez un code. L’administration vous le transmet manuellement par WhatsApp ; saisissez-le ici pour terminer la vérification.",
+                    "send": "Demander le code à l’administration",
+                    "sent": "Si ce mobile est éligible, le code sera préparé pour être transmis manuellement par notre administration sur WhatsApp.",
+                    "delivery_waiting": "Préparation du code pour l’administration. La demande expire cinq minutes après sa création.",
+                    "delivery_accepted": "Une copie du code a été remise à l’administration pour transmission manuelle. Votre mobile n’est pas encore vérifié ; saisissez le code ici à sa réception.",
+                },
+            }[language]
+        )
+    return labels

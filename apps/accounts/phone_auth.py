@@ -42,7 +42,22 @@ def _provider_authenticated(document):
     return isinstance(state, str) and state == "authenticated"
 
 
+def workgroup_mode():
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    return bool(settings.ACCOUNT_WORKGROUP_AUTH_ONLY_POLICY or manual_mode())
+
+
 def ready():
+    if workgroup_mode():
+        from .phone_workgroup import enabled
+
+        return bool(
+            settings.ACCOUNT_WHATSAPP_AUTH_ENABLED
+            and settings.ACCOUNT_WHATSAPP_AUTH_ISOLATED
+            and (settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC or settings.ACCOUNT_WHATSAPP_AUTH_EMAILS)
+            and enabled()
+        )
     return bool(
         settings.ACCOUNT_WHATSAPP_AUTH_ENABLED
         and settings.ACCOUNT_WHATSAPP_AUTH_ISOLATED
@@ -170,7 +185,9 @@ def begin(request, phone, *, purpose):
     with transaction.atomic():
         if previous:
             PhoneChallenge.objects.filter(
-                pk=previous, session_digest=digest, status__in=["pending", "sending", "sent"]
+                pk=previous,
+                session_digest=digest,
+                status__in=["pending", "sending", "sent", "handed_off"],
             ).update(status="superseded", code_digest="")
         challenge = PhoneChallenge.objects.create(
             user=user if allowed(user) else None,
@@ -211,6 +228,11 @@ def _current_binding(row):
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=40)
 def deliver_phone_code(challenge_id):
     """No retries or result/log payloads containing OTPs, phone numbers or responses."""
+    if workgroup_mode():
+        from .phone_workgroup import deliver
+
+        deliver(challenge_id)
+        return
     if not ready():
         return
     with transaction.atomic():
@@ -284,7 +306,7 @@ def consume(request, submitted):
         )
         if (
             not row
-            or row.status != "sent"
+            or not consumable(row)
             or row.expires_at <= timezone.now()
             or row.attempts >= 5
             or not constant_time_compare(row.session_digest, session_key_hash(request))
@@ -333,3 +355,11 @@ def consume(request, submitted):
         row.save(update_fields=["attempts", "status", "code_digest"])
         request.session.pop(PENDING, None)
         return row
+
+
+def consumable(row):
+    if workgroup_mode():
+        from .phone_workgroup import admitted
+
+        return row.status == "handed_off" and admitted(row.created_at)
+    return row.status == "sent"

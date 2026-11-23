@@ -72,6 +72,30 @@ def issue(booking, target, request_id, channel, operator):
     }
 
 
+def issued_offer(booking, offer, row):
+    """An owner-issued staff copy is distinct from guest acceptance or phone proof."""
+    if row.get("status") in {"accepted", "uncertain"}:
+        return True
+    if row.get("status") != "handed_off" or offer.get("channel") != "whatsapp":
+        return False
+    from apps.reservations.telegram_stay_models import TelegramWebsiteHandoff
+    from apps.reservations.telegram_stay_render import sha
+
+    source_id = f"{booking.pk}:{offer['request_id']}"
+    provider = str(row.get("provider_id", ""))
+    if not provider or row.get("past_guest_offer") != KEY:
+        return False
+    return TelegramWebsiteHandoff.objects.filter(
+        source_kind="loyalty_invitation",
+        source_id=source_id,
+        job_key="site01wg:loyalty_invitation:" + sha(source_id),
+        state="handed_off",
+        provider_message_id=provider,
+        attempt_id__isnull=False,
+        accepted_at__isnull=False,
+    ).exists()
+
+
 def retain_sent_offer(booking, target):
     """A deliberate repeat must retain the original delivered/ambiguous reward offer."""
     stored = booking.loyalty_state.get(KEY)
@@ -85,7 +109,7 @@ def retain_sent_offer(booking, target):
             else "owner_join_invitation_email_requests"
         )
         row = booking.loyalty_state.get(key, {}).get(offer["request_id"], {})
-        if row.get("status") not in {"accepted", "uncertain"}:
+        if not issued_offer(booking, offer, row):
             return False
         if (
             offer["booking"] != str(booking.pk)
@@ -111,10 +135,7 @@ def authorized(booking):
             else "owner_join_invitation_email_requests"
         )
         row = booking.loyalty_state.get(requests_key, {}).get(offer["request_id"], {})
-        if (
-            row.get("status") not in {"accepted", "uncertain"}
-            or row.get("operator") != offer["operator"]
-        ):
+        if not issued_offer(booking, offer, row) or row.get("operator") != offer["operator"]:
             return None
         credited = Ledger.objects.filter(
             reservation=booking,
@@ -146,7 +167,7 @@ def authorized(booking):
 
 
 def apply_for_user(user):
-    """Only explicit accepted/ambiguous owner offers, and only the verified phone owner."""
+    """Only issued owner offers, and only the independently verified phone owner."""
     from .services import posting_transaction
     from .site_adapter import _safe_reconcile
 

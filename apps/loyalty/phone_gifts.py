@@ -87,6 +87,12 @@ def confirm_phone_transfer(user, payload):
 
 
 def delivery_ready():
+    from apps.reservations import telegram_workgroup
+
+    if telegram_workgroup.manual_mode():
+        from .workgroup_notices import admitted
+
+        return bool(telegram_workgroup.enabled() and admitted(timezone.now()))
     # Independent of automatic loyalty notices and the sign-in pilot switches.
     return bool(
         settings.ULTRAMSG_ENABLED and settings.ULTRAMSG_INSTANCE_ID and settings.ULTRAMSG_TOKEN
@@ -140,6 +146,10 @@ def queue_invitation(user, *, phone, language, key, consent):
                 "template_version": TEMPLATE_VERSION,
                 "limit_policy": "owner-unlimited" if unlimited else "standard",
             }
+            from apps.reservations.telegram_workgroup import manual_mode
+
+            if manual_mode():
+                result["dispatch_mode"] = "workgroup_manual"
             transaction.on_commit(lambda: _dispatch(sender.pk, key), robust=True)
             return result
 
@@ -238,11 +248,17 @@ def legacy_invitation_message(sender, *, language, url):
 
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=45)
 def deliver_invitation(member_id, key):
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode():
+        from .workgroup_notices import deliver_gift
+
+        return deliver_gift(member_id, key)
     # Claim once before network I/O; an unknown outcome must never be resent automatically.
     with posting_transaction():
         sender = Member.objects.select_for_update().select_related("customer").get(pk=member_id)
         row = sender.command_receipts.get(key, {}).get("result", {})
-        if row.get("status") != "queued":
+        if row.get("status") != "queued" or row.get("dispatch_mode") == "workgroup_manual":
             return
         if (
             not _enabled(sender.customer)

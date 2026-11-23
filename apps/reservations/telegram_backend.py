@@ -53,6 +53,7 @@ class Backend:
                 "render_source": 131072,
                 "review_policy": 32768,
                 "website_handoff": 524288,
+                "phone_code_handoff": 524288,
             }.get(action, 8192)
             with self.client.stream("POST", BASE, json=envelope) as response:
                 body = bytearray()
