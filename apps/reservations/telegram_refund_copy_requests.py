@@ -192,7 +192,9 @@ def run_request(value):
         refund = refunds[0]
         source_id = "refund:" + str(refund.pk)
         job_key = "site01wg:booking_event:" + transport.sha(source_id)
-        existing = TelegramWebsiteHandoff.objects.filter(job_key=job_key).first()
+        existing = (
+            TelegramWebsiteHandoff.objects.select_for_update().filter(job_key=job_key).first()
+        )
         if existing:
             result = resume_preclaim(existing, refund, request_id) or {
                 "decision": "existing_" + existing.state,
