@@ -4,6 +4,7 @@ import base64
 import hashlib
 import html
 import json
+import logging
 import re
 import uuid
 from datetime import timedelta
@@ -20,6 +21,8 @@ from .telegram_authority import Denied
 from .telegram_backend import Backend, Unavailable
 from .telegram_stay_models import TelegramWebsiteHandoff
 from .telegram_stay_render import sha
+
+logger = logging.getLogger(__name__)
 
 
 def digest(value):
@@ -215,15 +218,22 @@ def authorize(scope, action, key, result):
     packet = {"contract": "tg39_website_workgroup_packet_v1", **metadata(row)}
     if action == "website_handoff":
         if row.state != "dispatching" or not row.not_before <= timezone.now() < row.expires_at:
+            logger.warning("Website handoff held job=%s stage=state_or_window", row.pk)
             raise Denied
         try:
             content = source_copy(row.source_kind, row.source_id)
-        except (ValueError, ValidationError, ObjectDoesNotExist, KeyError, TypeError) as exc:
+        except (Denied, ValueError, ValidationError, ObjectDoesNotExist, KeyError, TypeError) as exc:
+            logger.warning("Website handoff held job=%s stage=current_source", row.pk)
             raise Denied from exc
-        if any(
-            content[k] != getattr(row, k)
+        changed = [
+            k
             for k in ("source_revision", "phone_hash", "content_sha256", "asset_sha256")
-        ):
+            if content[k] != getattr(row, k)
+        ]
+        if changed:
+            logger.warning(
+                "Website handoff held job=%s stage=immutable_fields fields=%s", row.pk, changed
+            )
             raise Denied
         packet.update(content)
     result.update(
