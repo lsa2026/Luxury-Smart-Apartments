@@ -197,6 +197,7 @@ def isolated(settings, monkeypatch):
     # Production manual policy never falls back to that provider.
     settings.TELEGRAM_WORKGROUP_ONLY_POLICY = False
     settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+    settings.ACCOUNT_WORKGROUP_AUTH_ONLY_POLICY = False
     settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = False
     settings.ACCOUNT_WHATSAPP_AUTH_ENABLED = True
     settings.ACCOUNT_WHATSAPP_AUTH_ISOLATED = True

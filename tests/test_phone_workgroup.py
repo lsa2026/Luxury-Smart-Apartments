@@ -27,6 +27,7 @@ def manual(settings, isolated, monkeypatch):
     settings.TELEGRAM_WORKGROUP_ONLY_POLICY = True
     settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = True
     settings.ACCOUNT_WORKGROUP_AUTH_ENABLED = True
+    settings.ACCOUNT_WORKGROUP_AUTH_ONLY_POLICY = True
     settings.ACCOUNT_WORKGROUP_AUTH_CUTOVER_AT = (timezone.now() - timedelta(seconds=1)).isoformat()
     settings.ACCOUNT_WHATSAPP_AUTH_PUBLIC = True
     # These historical credentials cannot be a readiness dependency or fallback.
@@ -127,12 +128,20 @@ def test_one_use_private_source_and_duplicate_task_never_regenerate_or_post(
         service.authorize({"job": str(challenge.pk)}, "phone_code_handoff", str(challenge.pk), {})
 
 
-@pytest.mark.parametrize("case", ["flag", "paused", "future_cutover", "missing_cutover"])
+@pytest.mark.parametrize(
+    "case", ["flag", "paused", "both_group_flags_off", "future_cutover", "missing_cutover"]
+)
 def test_manual_pause_is_closed_and_has_no_ultramsg_fallback(case, settings, manual):
     if case == "flag":
         settings.ACCOUNT_WORKGROUP_AUTH_ENABLED = False
     elif case == "paused":
         settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+    elif case == "both_group_flags_off":
+        settings.TELEGRAM_WORKGROUP_HANDOFF_ENABLED = False
+        settings.TELEGRAM_WORKGROUP_ONLY_POLICY = False
+        settings.ULTRAMSG_ENABLED = True
+        settings.ULTRAMSG_INSTANCE_ID = "historical-test-only"
+        settings.ULTRAMSG_TOKEN = "historical-test-only"
     elif case == "future_cutover":
         settings.ACCOUNT_WORKGROUP_AUTH_CUTOVER_AT = (
             timezone.now() + timedelta(seconds=10)

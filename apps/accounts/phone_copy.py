@@ -115,12 +115,12 @@ for language, text in {
 
 
 def phone_copy():
-    from apps.reservations.telegram_workgroup import manual_mode
+    from .phone_auth import workgroup_mode
 
     language = (get_language() or "ar").split("-")[0]
     language = language if language in TEXT else "ar"
     labels = dict(TEXT[language])
-    if manual_mode():
+    if workgroup_mode():
         labels.update(
             {
                 "ar": {

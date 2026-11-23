@@ -42,10 +42,14 @@ def _provider_authenticated(document):
     return isinstance(state, str) and state == "authenticated"
 
 
-def ready():
+def workgroup_mode():
     from apps.reservations.telegram_workgroup import manual_mode
 
-    if manual_mode():
+    return bool(settings.ACCOUNT_WORKGROUP_AUTH_ONLY_POLICY or manual_mode())
+
+
+def ready():
+    if workgroup_mode():
         from .phone_workgroup import enabled
 
         return bool(
@@ -224,9 +228,7 @@ def _current_binding(row):
 @shared_task(ignore_result=True, soft_time_limit=35, time_limit=40)
 def deliver_phone_code(challenge_id):
     """No retries or result/log payloads containing OTPs, phone numbers or responses."""
-    from apps.reservations.telegram_workgroup import manual_mode
-
-    if manual_mode():
+    if workgroup_mode():
         from .phone_workgroup import deliver
 
         deliver(challenge_id)
@@ -356,9 +358,7 @@ def consume(request, submitted):
 
 
 def consumable(row):
-    from apps.reservations.telegram_workgroup import manual_mode
-
-    if manual_mode():
+    if workgroup_mode():
         from .phone_workgroup import admitted
 
         return row.status == "handed_off" and admitted(row.created_at)
