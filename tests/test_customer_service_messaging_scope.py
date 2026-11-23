@@ -80,6 +80,9 @@ def test_known_withdrawal_remains_a_veto_not_a_grant(client, record, monkeypatch
     assert facts["consent"]["service"] is None
     assert facts["domain_authorized"] is False
     assert "customer_messaging_withdrawn" in facts["blockers"]
+    assert (
+        "predecessor_delivery_unverified" not in facts["blockers"]
+    )  # status_new has no predecessor
 
 
 def test_scope_never_falls_back_for_unknown_purpose_or_noncanonical_revision():

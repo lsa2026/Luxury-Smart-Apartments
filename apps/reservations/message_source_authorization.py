@@ -302,10 +302,9 @@ def core_facts(stay, event, scenario, locator):
     result = base_facts(stay, event, scenario, locator, purpose)
     from .message_receipts import predecessors_delivered
 
-    result["domain_authorized"] = result["consent"][
-        "revoked"
-    ] is not True and predecessors_delivered(stay, event, scenario, purpose)
-    if not result["domain_authorized"]:
+    predecessors_verified = predecessors_delivered(stay, event, scenario, purpose)
+    result["domain_authorized"] = result["consent"]["revoked"] is not True and predecessors_verified
+    if not predecessors_verified:
         result["blockers"].append("predecessor_delivery_unverified")
     result["legacy_state"] = core_history(stay, purpose, scenario)
     if purpose == "reminder_checkout":
