@@ -74,6 +74,13 @@ def deferred_client():
     calls = []
 
     def post(url, *, json, headers):
+        assert (
+            url
+            == {
+                "07": "https://lsa25.app.n8n.cloud/webhook/lsa07-morning-stay-v1",
+                "08": "https://lsa25.app.n8n.cloud/webhook/lsa08-day-use-booking-v1",
+            }[json["scenario"]]
+        )
         calls.append(json)
         reply = {
             "contract_version": "site01-source-relay-ack-2",
