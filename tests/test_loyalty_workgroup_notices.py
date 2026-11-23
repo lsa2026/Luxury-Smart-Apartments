@@ -237,3 +237,16 @@ def test_workgroup_notice_is_preserved_if_manual_policy_is_temporarily_disabled(
     whatsapp_notices.deliver_movement_notice(notice.pk)
     notice.refresh_from_db()
     assert notice.status == "queued" and notice.attempts == 0
+
+
+def test_phone_proof_does_not_requeue_legacy_welcome_in_manual_mode(settings):
+    guest, _, notice = joined()
+    notice.template_version = "lifecycle-whatsapp-v1"
+    notice.status = "skipped"
+    notice.error_code = "verified_mobile_required"
+    notice.save(update_fields=["template_version", "status", "error_code"])
+    settings.LOYALTY_WHATSAPP_NOTICES_ENABLED = True
+    binding = VerifiedPhone.objects.create(user=guest, phone="+12025550125")
+    whatsapp_notices.resume_welcome(binding)
+    notice.refresh_from_db()
+    assert notice.status == "skipped" and notice.recipient_binding_id is None

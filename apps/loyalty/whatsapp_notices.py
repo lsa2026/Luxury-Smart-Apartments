@@ -250,7 +250,9 @@ def queue_lifecycle(event):
 
 def resume_welcome(binding):
     """Resume only a newly queued welcome awaiting proof, never historical movements."""
-    if not enabled():
+    from apps.reservations.telegram_workgroup import manual_mode
+
+    if manual_mode() or not enabled():
         return
     with transaction.atomic():
         notice = (
