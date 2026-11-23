@@ -288,6 +288,36 @@ def test_proof_cannot_adopt_an_attempt_before_source_release(
     assert not VerifiedPhone.objects.exists()
 
 
+def test_unknown_attempt_is_pinned_and_cannot_be_replaced(
+    guest, monkeypatch, django_capture_on_commit_callbacks
+):
+    attempt = str(uuid.uuid4())
+
+    class Backend:
+        authority_context = None
+
+        def call(self, action, key):
+            service.authorize(self.authority_context, action, key, {})
+            return proof(
+                TelegramWebsiteHandoff.objects.get(pk=key),
+                attempt_id=attempt,
+                status="unknown",
+                api_accepted=False,
+            )
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(transport, "Backend", Backend)
+    challenge = begin(guest, django_capture_on_commit_callbacks)
+    auth.deliver_phone_code(challenge.pk)
+    row = TelegramWebsiteHandoff.objects.get()
+    assert row.state == "uncertain" and str(row.attempt_id) == attempt
+    with pytest.raises(authority.Denied):
+        transport.import_proof(row, proof(row))
+    assert not VerifiedPhone.objects.exists()
+
+
 @pytest.mark.parametrize("case", ["one_part", "duplicate_part_ids", "wrong_phone", "guest_flag"])
 def test_receipt_requires_two_parts_exact_identity_and_no_guest_delivery(
     case, guest, bridge, django_capture_on_commit_callbacks

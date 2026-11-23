@@ -284,6 +284,21 @@ def import_proof(row, proof):
     if attempt != proof["attempt_id"] or row.attempt_id and str(row.attempt_id) != attempt:
         raise Denied
     if proof.get("status") in {"posting", "unknown"} and proof.get("api_accepted") is False:
+        if row.source_kind == "phone_code":
+            from apps.accounts.models import PhoneChallenge
+
+            if not PhoneChallenge.objects.filter(
+                pk=row.source_id,
+                workgroup_authorized_at__isnull=False,
+            ).exists():
+                raise Denied
+            with transaction.atomic():
+                current = TelegramWebsiteHandoff.objects.select_for_update().get(pk=row.pk)
+                if current.attempt_id and str(current.attempt_id) != attempt:
+                    raise Denied
+                current.attempt_id = attempt
+                current.save(update_fields=["attempt_id"])
+                row.attempt_id = current.attempt_id
         return False
     at = parse_datetime(proof.get("accepted_at", ""))
     ids = proof.get("provider_message_ids")
