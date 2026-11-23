@@ -37,12 +37,12 @@
         <p>سيُنشأ الحجز أولًا في هوستاوي بالسعر المعتمد، ثم يُجهز رابط سداد على الموقع ويُرسل للضيف عبر واتساب. لن يُطلب إنشاء الرابط من المحاسبة في هذا المسار.</p>
         <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment"><button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز وإرسال رابط السداد للضيف</button></form>
         <details>
-          <summary>خيار إضافي: طلب رابط يدوي من أسيل</summary>
-          <p>استخدم هذا الخيار بدل الإرسال المباشر للضيف. يُؤكَّد الحجز في هوستاوي ثم يُرسل طلب إلى أسيل لتكوين الرابط يدويًا. لا يُجهَّز رابط الموقع ولا تُرسل رسالة دفع للضيف من هذا الخيار.</p>
-          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_accounting_link"><button class="lsa-btn lsa-btn--ghost" type="submit">تأكيد الحجز وطلب رابط دفع يدوي من أسيل</button></form>
+          <summary>خيار إضافي: طلب رابط يدوي من المحاسبة</summary>
+          <p>يُؤكَّد الحجز في هوستاوي ثم يُرسل طلب إلى بريد الأعمال لتكوين الرابط يدويًا. لا يُجهَّز رابط الموقع ولا تُرسل رسالة دفع للضيف من هذا الخيار.</p>
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_accounting_link"><button class="lsa-btn lsa-btn--ghost" type="submit">تأكيد الحجز وطلب رابط عبر بريد الأعمال</button></form>
         </details>
         {% else %}
-        <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم يُرسل الموقع طلبًا تلقائيًا عبر WhatsApp إلى {{ accounting_whatsapp_name }} يتضمن بيانات الحجز ورابط Hostaway.</p>
+        <p>سيُنشأ الحجز أولًا في Hostaway لحجز الموعد، ثم يُرسل طلب إلى بريد الأعمال يتضمن بيانات الحجز ورابط Hostaway. هذا التنبيه لا ينشئ رابط دفع ولا يثبت سدادًا.</p>
         <form method="post" novalidate>
           {% csrf_token %}<input type="hidden" name="action" value="create_hostaway_and_request_payment">
           <button class="lsa-btn lsa-btn--gold" type="submit">تأكيد الحجز في Hostaway وإرسال الطلب للمحاسبة</button>
@@ -57,8 +57,10 @@
           <p>تم إنشاء الحجز في Hostaway لحجز الموعد. لا توجد دفعة مسجلة بعد، ولذلك لا يُرسل تأكيد الحجز إلى الضيف إلا بعد إثبات الدفع.</p>
           <p><b>مرجع Hostaway:</b> <span dir="ltr">{{ reservation.hostaway_reservation_id }}</span></p>
           {% if accounting_delivery %}
-            {% if accounting_delivery.status == "sent" %}
-              <p><b>طلب رابط الدفع:</b> أُرسل تلقائيًا إلى {{ accounting_whatsapp_name }} عبر WhatsApp.</p>
+            {% if accounting_delivery.provider == "django" and accounting_delivery.status == "sent" %}
+              <p><b>طلب رابط الدفع:</b> قَبِل ناقل بريد الأعمال الطلب؛ لا يؤكد ذلك قراءته أو إنشاء الرابط.</p>
+            {% elif accounting_delivery.provider != "django" %}
+              <p><b>طلب رابط الدفع:</b> يوجد طلب تاريخي على الناقل السابق؛ لم يُعد إرساله.</p>
             {% elif accounting_delivery.status == "failed" %}
               <p><b>طلب رابط الدفع:</b> تعذر إرساله تلقائيًا. راجع سجل التسليم قبل أي متابعة يدوية.</p>
             {% else %}

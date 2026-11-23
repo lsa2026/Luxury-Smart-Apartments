@@ -1101,6 +1101,12 @@ def send_queued_email(
     *,
     provider: EmailProvider | None = None,
 ) -> EmailSendResult:
+    if EmailDelivery.objects.filter(
+        pk=delivery_id, message_type="manual_payment_link_request"
+    ).exists():
+        # The accounting owner commits a one-shot SMTP fence itself. A generic
+        # retry task or manually requeued status must never repeat that send.
+        return EmailSendResult(False, "accounting_delivery_owned")
     if not settings.EMAIL_DELIVERY_ENABLED:
         EmailDelivery.objects.filter(pk=delivery_id).exclude(
             status=EmailDelivery.Status.SENT

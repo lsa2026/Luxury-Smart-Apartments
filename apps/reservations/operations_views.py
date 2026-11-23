@@ -19,6 +19,7 @@ from django.utils import timezone, translation
 
 from apps.accounts.access import operations_access_required, require_operations_access
 from apps.notifications.models import AuditLog, GuestInvoice, WhatsAppDelivery
+from apps.notifications.services.accounting_email import status_for as accounting_status
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.ultramsg import (
     send_manual_payment_link_request,
@@ -140,11 +141,11 @@ def _accounting_link_action(request: HttpRequest, reservation: Reservation) -> H
     except (ValueError, HyperPayError):
         messages.error(
             request,
-            "تعذر تجهيز طلب أسيل؛ راجع بيانات الحجز وإعدادات إرسال الواتساب.",
+            "تعذر تجهيز طلب المحاسبة؛ راجع بيانات الحجز وإعدادات بريد الأعمال.",
         )
     except Exception:
         logger.error("Optional accounting payment-link request needs review")
-        messages.error(request, "تعذر تأكيد إرسال الطلب إلى أسيل؛ راجع السجل قبل إعادة المحاولة.")
+        messages.error(request, "تعذر تأكيد إرسال البريد؛ راجع السجل قبل أي إعادة محاولة.")
     else:
         record_audit(
             request=request,
@@ -155,20 +156,22 @@ def _accounting_link_action(request: HttpRequest, reservation: Reservation) -> H
             metadata={"status": result.code},
         )
         copy = {
-            "sent": (
-                "قبِل مزود الواتساب طلب إنشاء الرابط اليدوي إلى أسيل؛ وصوله إلى جوالها غير مؤكد هنا."
+            "email_sent": (
+                "قَبِل ناقل البريد طلب المحاسبة إلى بريد الأعمال؛ لا يؤكد ذلك قراءته أو إنشاء الرابط."
             ),
-            "already_sent": "سبق إرسال طلب الرابط اليدوي إلى أسيل؛ لم يُرسل طلب مكرر.",
-            "already_requested": "طلب الرابط اليدوي إلى أسيل قيد الإرسال؛ لم يُرسل طلب إضافي.",
-            "previously_failed": "نتيجة الطلب السابق إلى أسيل تحتاج مراجعة؛ لم يُرسل طلب مكرر.",
-            "disabled": "إرسال الواتساب غير مفعّل؛ لم يُرسل طلب إلى أسيل.",
+            "email_already_sent": "سبق إرسال طلب المحاسبة بالبريد؛ لم يُرسل طلب مكرر.",
+            "email_unknown": "نتيجة البريد غير مؤكدة؛ راجع السجل، ولم تُعد المحاولة.",
+            "email_previously_failed": "الطلب السابق يحتاج مراجعة؛ لم يُرسل بريد مكرر.",
+            "email_failed": "تعذر تجهيز بريد المحاسبة؛ راجع السجل.",
+            "email_disabled": "بريد الأعمال غير جاهز؛ لم يُرسل الطلب.",
+            "legacy_review_required": "يوجد طلب سابق على الناقل القديم؛ راجعه دون إعادة إرسال.",
         }
-        if result.code == "sent":
+        if result.code == "email_sent":
             messages.success(request, copy[result.code])
-        elif result.code in {"already_sent", "already_requested"}:
+        elif result.code == "email_already_sent":
             messages.info(request, copy[result.code])
         else:
-            messages.error(request, copy.get(result.code, "تعذر تأكيد إرسال الطلب إلى أسيل."))
+            messages.error(request, copy.get(result.code, "تعذر تأكيد إرسال بريد المحاسبة."))
     return redirect("notifications:booking_detail", reservation_id=reservation.pk)
 
 
@@ -181,6 +184,8 @@ _MANUAL_DRAFT_AUDIT_LABELS = {
         "أُرسل طلب رابط الدفع تلقائيًا إلى المحاسبة عبر WhatsApp."
     ),
     "manual_booking.accounting_whatsapp_failed": "تعذر إرسال طلب رابط الدفع تلقائيًا إلى المحاسبة.",
+    "manual_booking.accounting_email_sent": "قَبِل ناقل بريد الأعمال طلب المحاسبة.",
+    "manual_booking.accounting_email_attention": "بريد المحاسبة يحتاج مراجعة دون إعادة إرسال.",
 }
 
 _CANCELLATION_AUDIT_LABELS = {
@@ -865,9 +870,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
             "guest_payment_request": guest_payment_request,
             "latest_link_delivery": latest_link_delivery,
-            "accounting_link_delivery": WhatsAppDelivery.objects.filter(
-                reservation=reservation, message_type="manual_payment_link_request"
-            ).first(),
+            "accounting_link_delivery": accounting_status(reservation),
             "manual_receipts_enabled": settings.MANUAL_PAYMENT_RECEIPTS_ENABLED,
             "offline_receipt_form": receipt_form,
             "offline_receipt": getattr(reservation, "offline_payment_receipt", None),
@@ -1023,75 +1026,54 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
                     # happened. Do not turn a delivery-side failure into a
                     # misleading 500 or encourage a duplicate booking retry.
                     logger.exception(
-                        "Manual Hostaway booking %s was created but the accounting WhatsApp "
+                        "Manual Hostaway booking %s was created but the accounting email "
                         "request raised an unexpected error.",
                         created.reservation.pk,
                     )
                     record_audit(
                         request=request,
-                        action="manual_booking.accounting_whatsapp_failed",
+                        action="manual_booking.accounting_email_attention",
                         object_type="ManualBookingDraft",
                         object_reference=draft.public_reference,
-                        summary="The accounting WhatsApp request raised an unexpected error.",
+                        summary="The accounting email request raised an unexpected error.",
                         metadata={"status": "unexpected_error"},
                     )
                     messages.error(
                         request,
                         (
                             "تم إنشاء الحجز في Hostaway بانتظار الدفع، لكن تعذر إرسال طلب "
-                            "رابط الدفع إلى أسيل. لم يُنشأ حجز مكرر؛ راجع سجل التسليم."
+                            "رابط الدفع إلى بريد الأعمال. لم يُنشأ حجز مكرر؛ راجع سجل التسليم."
                         ),
                     )
                     return redirect("notifications:booking_list")
-                if delivery_result.code == "sent":
+                if delivery_result.code in {"email_sent", "email_already_sent"}:
                     record_audit(
                         request=request,
-                        action="manual_booking.accounting_whatsapp_sent",
+                        action="manual_booking.accounting_email_sent",
                         object_type="ManualBookingDraft",
                         object_reference=draft.public_reference,
-                        summary="The accounting payment-link request was sent through UltraMsg.",
-                        metadata={"status": "sent"},
+                        summary="The operations email transport accepted the accounting request.",
+                        metadata={"status": delivery_result.code},
                     )
                     messages.success(
                         request,
-                        (
-                            "تم إنشاء الحجز في Hostaway وهو بانتظار الدفع، وأُرسل طلب رابط "
-                            "الدفع تلقائيًا إلى أسيل عبر WhatsApp."
-                        ),
-                    )
-                elif delivery_result.code == "already_sent":
-                    messages.info(
-                        request,
-                        (
-                            "الحجز موجود في Hostaway بانتظار الدفع. سبق إرسال طلب رابط الدفع "
-                            "إلى أسيل، ولذلك لم تُرسل رسالة مكررة."
-                        ),
-                    )
-                elif delivery_result.code == "already_requested":
-                    messages.info(
-                        request,
-                        "طلب رابط الدفع قيد الإرسال بالفعل إلى أسيل؛ لم تُرسل رسالة إضافية.",
-                    )
-                elif delivery_result.code == "previously_failed":
-                    messages.error(
-                        request,
-                        "فشل طلب رابط الدفع السابق. لم يُعاد الإرسال تلقائيًا لتجنب تكرار الرسالة.",
+                        "الحجز موجود في Hostaway بانتظار الدفع. "
+                        "أُرسل طلب المحاسبة إلى بريد الأعمال؛ "
+                        "لا يؤكد ذلك إنشاء رابط أو تحصيل مبلغ.",
                     )
                 else:
                     record_audit(
                         request=request,
-                        action="manual_booking.accounting_whatsapp_failed",
+                        action="manual_booking.accounting_email_attention",
                         object_type="ManualBookingDraft",
                         object_reference=draft.public_reference,
-                        summary="The automatic accounting payment-link request was not delivered.",
+                        summary="Operations email needs review; no booking or send is repeated.",
                         metadata={"status": delivery_result.code},
                     )
                     messages.error(
                         request,
-                        (
-                            "تم إنشاء الحجز في Hostaway، لكن تعذر إرسال طلب رابط الدفع تلقائيًا "
-                            "إلى أسيل. راجع سجل التسليم قبل أي متابعة يدوية."
-                        ),
+                        "الحجز محفوظ بانتظار الدفع، وطلب بريد المحاسبة يحتاج مراجعة؛ "
+                        "لم يُعد الإرسال تلقائيًا.",
                     )
                 return redirect("notifications:booking_list")
             if created.code == "quote_expired":
@@ -1157,11 +1139,7 @@ def manual_booking_detail(request: HttpRequest, draft_id: str) -> HttpResponse:
     )
     for entry in audit_entries:
         entry.display_summary = _MANUAL_DRAFT_AUDIT_LABELS.get(entry.action, entry.summary)
-    accounting_delivery = (
-        WhatsAppDelivery.objects.filter(reservation=reservation).first()
-        if reservation is not None
-        else None
-    )
+    accounting_delivery = accounting_status(reservation) if reservation is not None else None
     return render(
         request,
         "admin/reservations/manual_booking_detail.html",

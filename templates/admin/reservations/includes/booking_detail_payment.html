@@ -37,13 +37,15 @@
   {% if reservation.source_type == 'direct_website' or reservation.source_type == 'hostaway_manual' %}
   <div class="lsa-booking-detail__accounting">
     <details class="lsa-booking-detail__fold">
-      <summary>خيار إضافي: طلب رابط دفع يدوي من أسيل</summary>
+      <summary>خيار إضافي: طلب رابط دفع يدوي من المحاسبة</summary>
       <p>اختياري فقط، ولا يُرسل تلقائيًا عند تعذر رابط الموقع. قرار الطلب للإدارة بعد مراجعة السداد، حتى مع وجود رابط للموقع أو دفعة قيد التحقق. إرسال الطلب لا يوقف الرابط ولا يثبت الدفع ولا يُحصّل مبلغًا.</p>
       {% if accounting_link_delivery %}
-      <p>طلب أسيل: {% if accounting_link_delivery.status == 'sent' %}قبِل مزود الواتساب الرسالة؛ الوصول إلى جوالها غير مؤكد هنا{% elif accounting_link_delivery.status == 'sending' or accounting_link_delivery.status == 'queued' %}قيد الإرسال{% elif accounting_link_delivery.status == 'disabled' %}الإرسال غير مفعّل{% else %}تحتاج نتيجة الإرسال إلى مراجعة{% endif %}.</p>
-      <p>لمنع ازدواج التحصيل، راجع حالة السداد مع أسيل قبل استخدام أكثر من رابط. هذا تنبيه فقط ولا يمنع اختيار الإدارة. لا تُعاد طلبات المحاسبة تلقائيًا.</p>
+      {% if accounting_link_delivery.provider == 'django' %}
+      <p>بريد المحاسبة: {% if accounting_link_delivery.status == 'sent' %}قَبِل ناقل البريد الطلب؛ لا يؤكد ذلك قراءته أو إنشاء الرابط{% elif accounting_link_delivery.status == 'disabled' %}بريد الأعمال غير جاهز{% else %}تحتاج نتيجة البريد إلى مراجعة؛ لم تُعد المحاولة{% endif %}.</p>
+      {% else %}<p>يوجد طلب تاريخي على الناقل السابق؛ راجع سجله دون إعادة إرساله.</p>{% endif %}
+      <p>لمنع ازدواج التحصيل، راجع حالة السداد مع المحاسبة قبل استخدام أكثر من رابط. هذا تنبيه فقط ولا يمنع اختيار الإدارة. لا تُعاد طلبات المحاسبة تلقائيًا.</p>
       {% else %}
-      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="request_accounting_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إرسال طلب إلى أسيل لتكوين رابط الدفع اليدوي</button></form>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="request_accounting_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">طلب رابط دفع يدوي عبر بريد الأعمال</button></form>
       {% endif %}
     </details>
   </div>

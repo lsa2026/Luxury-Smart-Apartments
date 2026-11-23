@@ -181,65 +181,11 @@ class WhatsAppDeliveryResult:
     delivery: WhatsAppDelivery | None
 
 
-def send_manual_payment_link_request(*, reservation_id: object) -> WhatsAppDeliveryResult:
-    """Send exactly one accountant alert after a manual Hostaway booking.
+def send_manual_payment_link_request(*, reservation_id: object):
+    """Compatibility entry point; manual-link alerts now use operations email."""
+    from .accounting_email import send_manual_payment_link_request as send_email
 
-    A timeout is intentionally not retried automatically: UltraMsg may have
-    accepted the message even when its response is lost.  This prevents a
-    second request from reaching the accountant for the same reservation.
-    """
-
-    with transaction.atomic():
-        reservation = Reservation.objects.select_for_update().filter(pk=reservation_id).first()
-        if reservation is None:
-            raise ValueError("Reservation was not found.")
-        # An accountant alert is an operator decision, not a collection attempt.
-        # It neither revokes a site link nor changes payment/verification state.
-        delivery, created = WhatsAppDelivery.objects.get_or_create(
-            reservation=reservation,
-            modification_request=None,
-            defaults={
-                "message_type": "manual_payment_link_request",
-                "recipient_masked": _mask_phone(settings.ACCOUNTING_WHATSAPP_NUMBER),
-                "recipient_reference": "accounting",
-                "provider": "ultramsg",
-                "idempotency_key": f"manual-payment-link:{reservation.public_reference}",
-                "status": (
-                    WhatsAppDelivery.Status.QUEUED
-                    if settings.ULTRAMSG_ENABLED
-                    else WhatsAppDelivery.Status.DISABLED
-                ),
-                "queued_at": timezone.now(),
-                "last_error_code": "" if settings.ULTRAMSG_ENABLED else "ultramsg_disabled",
-            },
-        )
-        if not created:
-            if delivery.status == WhatsAppDelivery.Status.SENT:
-                return WhatsAppDeliveryResult("already_sent", delivery)
-            if delivery.status == WhatsAppDelivery.Status.FAILED:
-                return WhatsAppDeliveryResult("previously_failed", delivery)
-            if delivery.status == WhatsAppDelivery.Status.DISABLED:
-                return WhatsAppDeliveryResult("disabled", delivery)
-            return WhatsAppDeliveryResult("already_requested", delivery)
-        if delivery.status == WhatsAppDelivery.Status.DISABLED:
-            return WhatsAppDeliveryResult("disabled", delivery)
-        delivery.status = WhatsAppDelivery.Status.SENDING
-        delivery.attempt_count = 1
-        delivery.save(update_fields=["status", "attempt_count", "updated_at"])
-
-    try:
-        body = _manual_payment_message(reservation)
-    except Exception:
-        # The booking is already authoritative in Hostaway. Keep the delivery
-        # row auditable and return an operational failure instead of turning a
-        # successful booking into a generic HTTP 500 page.
-        logger.exception(
-            "Could not build the UltraMsg manual-payment message for reservation %s.",
-            reservation.pk,
-        )
-        return _finish_failure(delivery.pk, "failed", "message_build_failed")
-
-    return _send_delivery(delivery=delivery, body=body)
+    return send_email(reservation_id=reservation_id)
 
 
 def send_modification_payment_link_request(*, modification_id: object) -> WhatsAppDeliveryResult:

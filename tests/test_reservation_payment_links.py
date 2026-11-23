@@ -690,15 +690,16 @@ def test_owner_action_does_not_allow_anonymous_and_redirects_owner():
 
 
 def accounting_sender(settings):
-    settings.ULTRAMSG_ENABLED = True
+    settings.EMAIL_DELIVERY_ENABLED = True
+    settings.OPERATIONS_EMAIL = "saeed@luxurysmartapartments.com"
     settings.ACCOUNTING_WHATSAPP_NUMBER = "+966500000001"
     client = Mock()
-    client.send_text.return_value = {"sent": "true", "id": "fake-accounting-message"}
+    client.send.return_value = 1
     return client
 
 
 def test_optional_accounting_button_is_read_only_and_owner_only():
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
 
     stay, client = manual_stay(), Client()
     url = reverse("notifications:booking_detail", args=[stay.pk])
@@ -707,36 +708,36 @@ def test_optional_accounting_button_is_read_only_and_owner_only():
         403,
         404,
     }
-    assert not WhatsAppDelivery.objects.exists()
+    assert not EmailDelivery.objects.filter(message_type="manual_payment_link_request").exists()
     actor = owner()
     client.force_login(actor)
     html = client.get(url).content.decode()
     assert 'value="request_accounting_payment_link"' in html
     assert 'value="send_guest_payment_link"' in html
     assert "اختياري فقط" in html
-    assert not WhatsAppDelivery.objects.exists()
+    assert not EmailDelivery.objects.filter(message_type="manual_payment_link_request").exists()
     assert not stay.payment_requests.exists()
     csrf_client = Client(enforce_csrf_checks=True)
     csrf_client.force_login(actor)
     assert csrf_client.post(url, {"action": "request_accounting_payment_link"}).status_code == 403
-    assert not WhatsAppDelivery.objects.exists()
+    assert not EmailDelivery.objects.filter(message_type="manual_payment_link_request").exists()
 
 
 def test_optional_accounting_sends_only_to_accountant_and_deduplicates(settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
 
     stay, client = manual_stay(), Client()
     client.force_login(owner())
     fake = accounting_sender(settings)
     url = reverse("notifications:booking_detail", args=[stay.pk])
-    with patch("apps.notifications.services.ultramsg.UltraMsgClient") as cls:
-        cls.return_value.__enter__.return_value = fake
+    with patch("apps.notifications.services.accounting_email.EmailMessage") as cls:
+        cls.return_value = fake
         for _ in range(2):
             response = client.post(url, {"action": "request_accounting_payment_link"})
             assert response.status_code == 302 and response.url == url
-    fake.send_text.assert_called_once()
-    assert fake.send_text.call_args.kwargs["recipient"] == settings.ACCOUNTING_WHATSAPP_NUMBER
-    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
+    fake.send.assert_called_once()
+    assert cls.call_args.kwargs["to"] == [settings.OPERATIONS_EMAIL]
+    assert EmailDelivery.objects.get(recipient_reference=str(stay.pk)).status == "sent"
     assert not stay.payment_requests.exists()
     assert not PaymentAttempt.objects.exists()
     stay.refresh_from_db()
@@ -748,7 +749,7 @@ def test_optional_accounting_sends_only_to_accountant_and_deduplicates(settings)
 @pytest.mark.parametrize("status", ["created", "pending", "unknown", "review", "succeeded"])
 @pytest.mark.parametrize("link_status", ["open", "revoked"])
 def test_optional_accounting_preserves_gateway_attempt(status, link_status, settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
     from apps.notifications.services.ultramsg import send_manual_payment_link_request
 
     stay = manual_stay()
@@ -759,36 +760,36 @@ def test_optional_accounting_preserves_gateway_attempt(status, link_status, sett
     request.status = link_status
     request.save(update_fields=["status"])
     fake = accounting_sender(settings)
-    with patch("apps.notifications.services.ultramsg.UltraMsgClient") as messaging:
-        messaging.return_value.__enter__.return_value = fake
+    with patch("apps.notifications.services.accounting_email.EmailMessage") as messaging:
+        messaging.return_value = fake
         send_manual_payment_link_request(reservation_id=stay.pk)
-    fake.send_text.assert_called_once()
-    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
+    fake.send.assert_called_once()
+    assert EmailDelivery.objects.get(recipient_reference=str(stay.pk)).status == "sent"
     attempt.refresh_from_db()
     assert attempt.status == status
     assert PaymentAttempt.objects.count() == 1
 
 
 def test_optional_accounting_does_not_require_or_stop_open_site_link(settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
 
     stay, client = manual_stay(), Client()
     request = issue_request(stay.pk)
     client.force_login(owner())
     fake = accounting_sender(settings)
     url = reverse("notifications:booking_detail", args=[stay.pk])
-    with patch("apps.notifications.services.ultramsg.UltraMsgClient") as cls:
-        cls.return_value.__enter__.return_value = fake
+    with patch("apps.notifications.services.accounting_email.EmailMessage") as cls:
+        cls.return_value = fake
         client.post(url, {"action": "request_accounting_payment_link"})
     request.refresh_from_db()
     assert request.status == "open" and issue_request(stay.pk).pk == request.pk
-    fake.send_text.assert_called_once()
-    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
+    fake.send.assert_called_once()
+    assert EmailDelivery.objects.get(recipient_reference=str(stay.pk)).status == "sent"
 
 
 @pytest.mark.parametrize("payment_status", ["paid", "fully_paid", "partially_paid"])
 def test_optional_accounting_alert_preserves_collected_booking(payment_status, settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
     from apps.notifications.services.ultramsg import send_manual_payment_link_request
 
     stay = manual_stay()
@@ -801,11 +802,11 @@ def test_optional_accounting_alert_preserves_collected_booking(payment_status, s
         in client.get(reverse("notifications:booking_detail", args=[stay.pk])).content
     )
     fake = accounting_sender(settings)
-    with patch("apps.notifications.services.ultramsg.UltraMsgClient") as messaging:
-        messaging.return_value.__enter__.return_value = fake
+    with patch("apps.notifications.services.accounting_email.EmailMessage") as messaging:
+        messaging.return_value = fake
         send_manual_payment_link_request(reservation_id=stay.pk)
-    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
-    fake.send_text.assert_called_once()
+    assert EmailDelivery.objects.get(recipient_reference=str(stay.pk)).status == "sent"
+    fake.send.assert_called_once()
     stay.refresh_from_db()
     assert stay.payment_status == payment_status
     assert not PaymentAttempt.objects.exists()
@@ -814,7 +815,7 @@ def test_optional_accounting_alert_preserves_collected_booking(payment_status, s
 
 
 def test_new_manual_booking_offers_accounting_as_alternative_not_automatic(settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
 
     stay, client = manual_stay(), Client()
     draft = ManualBookingDraft.objects.get(quote=stay.booking_intent.quote)
@@ -828,21 +829,21 @@ def test_new_manual_booking_offers_accounting_as_alternative_not_automatic(setti
     fake = accounting_sender(settings)
     with (
         patch("apps.reservations.operations_views.create_manual_booking_in_hostaway") as create,
-        patch("apps.notifications.services.ultramsg.UltraMsgClient") as cls,
+        patch("apps.notifications.services.accounting_email.EmailMessage") as cls,
     ):
         create.return_value = SimpleNamespace(code="created", reservation=stay)
-        cls.return_value.__enter__.return_value = fake
+        cls.return_value = fake
         response = client.post(url, {"action": "create_hostaway_and_request_accounting_link"})
     assert response.url == reverse("notifications:booking_detail", args=[stay.pk])
     create.assert_called_once_with(draft_id=draft.pk)
-    fake.send_text.assert_called_once()
-    assert WhatsAppDelivery.objects.get(reservation=stay).status == "sent"
+    fake.send.assert_called_once()
+    assert EmailDelivery.objects.get(recipient_reference=str(stay.pk)).status == "sent"
     assert not ReservationPaymentRequest.objects.exists()
     assert not PaymentAttempt.objects.exists()
 
 
 def test_default_new_manual_booking_still_queues_latest_branded_guest_message(settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
     from apps.payments.payment_link_tasks import PAYMENT_MESSAGE_BRAND, payment_message
 
     stay, client = manual_stay(), Client()
@@ -853,25 +854,25 @@ def test_default_new_manual_booking_still_queues_latest_branded_guest_message(se
     fake = accounting_sender(settings)
     with (
         patch("apps.reservations.operations_views.create_manual_booking_in_hostaway") as create,
-        patch("apps.notifications.services.ultramsg.UltraMsgClient") as cls,
+        patch("apps.notifications.services.accounting_email.EmailMessage") as cls,
     ):
         create.return_value = SimpleNamespace(code="created", reservation=stay)
-        cls.return_value.__enter__.return_value = fake
+        cls.return_value = fake
         response = client.post(
             reverse("notifications:manual_booking_detail", args=[draft.pk]),
             {"action": "create_hostaway_and_request_payment"},
         )
     assert response.url == reverse("notifications:booking_detail", args=[stay.pk])
-    fake.send_text.assert_not_called()
+    fake.send.assert_not_called()
     request = ReservationPaymentRequest.objects.get(reservation=stay)
     assert request.deliveries.get().kind == "link"
     assert PAYMENT_MESSAGE_BRAND in payment_message(request)
     assert "✨" in payment_message(request) and "🔗" in payment_message(request)
-    assert not WhatsAppDelivery.objects.exists()
+    assert not EmailDelivery.objects.filter(message_type="manual_payment_link_request").exists()
 
 
 def test_default_guest_link_failure_never_falls_back_to_accountant():
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
 
     stay, client = manual_stay(), Client()
     client.force_login(owner())
@@ -885,12 +886,12 @@ def test_default_guest_link_failure_never_falls_back_to_accountant():
         )
     assert response.status_code == 302
     accountant.assert_not_called()
-    assert not WhatsAppDelivery.objects.exists()
+    assert not EmailDelivery.objects.filter(message_type="manual_payment_link_request").exists()
 
 
 @pytest.mark.django_db(transaction=True)
 def test_postgres_parallel_accounting_and_site_link_allow_operator_choice_without_charge(settings):
-    from apps.notifications.models import WhatsAppDelivery
+    from apps.notifications.models import EmailDelivery
     from apps.notifications.services.ultramsg import send_manual_payment_link_request
 
     if connection.vendor != "postgresql":
@@ -913,7 +914,7 @@ def test_postgres_parallel_accounting_and_site_link_allow_operator_choice_withou
         finally:
             close_old_connections()
 
-    with patch("apps.notifications.services.ultramsg._send_delivery"):
+    with patch("apps.notifications.services.accounting_email.EmailMessage.send", return_value=1):
         with ThreadPoolExecutor(max_workers=2) as pool:
             results = [
                 f.result(timeout=20)
@@ -921,7 +922,7 @@ def test_postgres_parallel_accounting_and_site_link_allow_operator_choice_withou
             ]
     assert sorted(results) == ["accounting", "site"]
     assert ReservationPaymentRequest.objects.filter(reservation=stay, status="open").count() == 1
-    assert WhatsAppDelivery.objects.filter(reservation=stay).count() == 1
+    assert EmailDelivery.objects.filter(recipient_reference=str(stay.pk)).count() == 1
     assert not PaymentAttempt.objects.exists()
 
 
