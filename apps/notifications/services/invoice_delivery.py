@@ -33,6 +33,13 @@ MESSAGES = {
 def deliver_invoice(delivery_id):
     with transaction.atomic():
         delivery = GuestInvoiceDelivery.objects.select_for_update().get(pk=delivery_id)
+        if (
+            delivery.channel == "whatsapp"
+            and delivery.requested_by.username == "sama-booking-agent"
+        ):
+            # Also veto old SMA queue rows: never fall back to UltraMsg, even
+            # before the additive source table is available during rollout.
+            return delivery.status
         if delivery.status != "queued":
             return delivery.status
         delivery.status = "sending"

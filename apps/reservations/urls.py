@@ -48,6 +48,8 @@ urlpatterns = [
     path("sama/invoice-options/", sama_invoice_api.options, name="sama_invoice_options"),
     path("sama/invoice-send/", sama_invoice_api.send, name="sama_invoice_send"),
     path("sama/invoice-status/", sama_invoice_api.status, name="sama_invoice_status"),
+    path("sama/invoice-document/", sama_invoice_api.document, name="sama_invoice_document"),
+    path("sama/invoice-record/", sama_invoice_api.record, name="sama_invoice_record"),
     path("sama/guest-context/", sama_booking_api.guest_context, name="sama_guest_context"),
     path("sama/guest-history/", sama_booking_api.guest_history, name="sama_guest_history"),
     path(

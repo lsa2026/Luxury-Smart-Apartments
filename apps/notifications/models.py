@@ -331,6 +331,40 @@ class GuestInvoiceDelivery(models.Model):
         }.get(self.error_code, "")
 
 
+class SamaInvoiceDispatch(models.Model):
+    """One private SMA19 document binding; never adopts a legacy delivery."""
+
+    delivery = models.OneToOneField(
+        GuestInvoiceDelivery, on_delete=models.PROTECT, related_name="sma_dispatch"
+    )
+    request_id = models.UUIDField(unique=True)
+    pdf_sha256 = models.CharField(max_length=64)
+    pdf_bytes = models.PositiveIntegerField()
+    pdf_filename = models.CharField(max_length=150)
+    recipient_sha256 = models.CharField(max_length=64)
+    language = models.CharField(max_length=2)
+    caption = models.TextField()
+    caption_sha256 = models.CharField(max_length=64)
+    source_fingerprint = models.CharField(max_length=64)
+    not_before = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    outbox_id = models.UUIDField(null=True, blank=True, unique=True)
+    provider_state = models.CharField(max_length=20, blank=True)
+    provider_message_id = models.CharField(max_length=255, blank=True)
+    wamid = models.CharField(max_length=255, blank=True)
+    business_sender = models.CharField(max_length=32, blank=True)
+    waba_id = models.CharField(max_length=32, blank=True)
+    phone_id = models.CharField(max_length=32, blank=True)
+    receipt_evidence_ref = models.CharField(max_length=255, blank=True)
+    observed_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    proof_sha256 = models.CharField(max_length=64, blank=True)
+
+    def __str__(self):
+        return str(self.request_id)
+
+
 class AuditLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor_user = models.ForeignKey(

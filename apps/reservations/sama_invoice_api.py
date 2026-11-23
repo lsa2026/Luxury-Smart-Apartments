@@ -11,6 +11,7 @@ from django.db import transaction
 from apps.integrations.hostaway.client import HostawayClient
 from apps.notifications.invoice_forms import InvoiceReviewForm, InvoiceSendForm
 from apps.notifications.models import GuestInvoice, GuestInvoiceDelivery
+from apps.notifications.services import sama_invoice_source as source19
 from apps.notifications.services.audit import record_audit
 from apps.notifications.services.invoice_search import find_invoice_bookings, stored_phone
 from apps.notifications.services.invoices import (
@@ -22,6 +23,7 @@ from apps.notifications.services.invoices import (
 
 from .sama_booking_api import actor, authenticated, payload, response
 from .services.sama_guest_context import canonical_phone
+from .telegram_authority import private_endpoint
 
 SALT = "sma-guest-invoice-v1"
 
@@ -119,7 +121,8 @@ def projection(delivery):
 def send(request):
     if not enabled():
         return response("disabled", 503)
-    data = payload(request, ("phone", "selection", "channels", "email", "language", "confirmed"))
+    fields = ("phone", "selection", "channels", "email", "language", "confirmed")
+    data = payload(request, fields) or payload(request, (*fields, "request_id"))
     if (
         data is None
         or not valid_phone(data["phone"])
@@ -148,10 +151,18 @@ def send(request):
     # Validate both requested channels before issuing anything or queueing either one.
     if any(
         (f["channel"] == "email" and not settings.EMAIL_DELIVERY_ENABLED)
-        or (f["channel"] == "whatsapp" and not settings.ULTRAMSG_ENABLED)
+        or (f["channel"] == "whatsapp" and not settings.SAMA_INVOICE_YCLOUD_ENABLED)
         for f in forms
     ):
         return response("delivery_disabled", 503)
+    request_id = None
+    if "whatsapp" in data["channels"]:
+        try:
+            request_id = uuid.UUID(data["request_id"])
+            if str(request_id) != data["request_id"]:
+                raise ValueError
+        except (KeyError, ValueError, TypeError, AttributeError):
+            return response("invalid_request", 400)
     try:
         selected = read_token(data["selection"], data["phone"])
         booking_id = selected["reservation_id"]
@@ -205,17 +216,29 @@ def send(request):
                 invoice.save(update_fields=["snapshot"])
                 reviewed = {**review.cleaned_data, "snapshot_token": snapshot_token(invoice)}
                 invoice = issue_invoice(invoice.pk, reviewed)
-            deliveries = [
-                queue_invoice_delivery(
-                    invoice=invoice,
-                    channel=f["channel"],
-                    recipient=f["recipient"],
-                    actor=service_actor,
-                    retry_failed=False,
-                    delay_seconds=15,  # Let SMA record the request acknowledgement before the PDF.
-                )
-                for f in forms
-            ]
+            deliveries, dispatches = [], []
+            for f in forms:
+                if f["channel"] == "whatsapp":
+                    delivery, binding = source19.queue(
+                        invoice=invoice,
+                        recipient=f["recipient"],
+                        actor=service_actor,
+                        request_id=request_id,
+                    )
+                    deliveries.append(delivery)
+                    if binding:
+                        dispatches.append(source19.projection(binding))
+                else:
+                    deliveries.append(
+                        queue_invoice_delivery(
+                            invoice=invoice,
+                            channel=f["channel"],
+                            recipient=f["recipient"],
+                            actor=service_actor,
+                            retry_failed=False,
+                            delay_seconds=15,
+                        )
+                    )
             request.user = service_actor
             record_audit(
                 request=request,
@@ -227,13 +250,28 @@ def send(request):
             )
     except ValidationError:
         return response("invoice_details_incomplete")
-    return response("invoice_requested", deliveries=[projection(d) for d in deliveries])
+    return response(
+        "invoice_requested", deliveries=[projection(d) for d in deliveries], dispatches=dispatches
+    )
 
 
 @authenticated("POST")
 def status(request):
     if not enabled():
         return response("disabled", 503)
+    by_request = payload(request, ("phone", "request_id"))
+    if by_request:
+        try:
+            if not valid_phone(by_request["phone"]):
+                raise ValidationError("Invalid scope")
+            row = source19.bound(by_request["phone"], by_request["request_id"])
+        except (ValueError, ValidationError, source19.SamaInvoiceDispatch.DoesNotExist):
+            return response("booking_mismatch", 403)
+        return response(
+            "invoice_status",
+            deliveries=[projection(row.delivery)],
+            dispatches=[source19.projection(row)],
+        )
     data = payload(request, ("phone", "deliveries"))
     if (
         data is None
@@ -255,3 +293,52 @@ def status(request):
     if len(deliveries) != len(set(identifiers)):
         return response("booking_mismatch", 403)
     return response("invoice_status", deliveries=[projection(d) for d in deliveries])
+
+
+def private_result(code, http_status=200, **fields):
+    value = response(code, http_status, **fields)
+    value["Cache-Control"] = "no-store, private, max-age=0"
+    value["Referrer-Policy"] = "no-referrer"
+    value["X-Robots-Tag"] = "noindex, nofollow"
+    return value
+
+
+@private_endpoint
+@authenticated("POST")
+def document(request):
+    request._disable_google_integrations = True
+    data = payload(request, ("phone", "request_id", "delivery_id"))
+    if not data or not valid_phone(data["phone"]):
+        return private_result("invalid_request", 400)
+    try:
+        row = source19.bound(data["phone"], data["request_id"], data["delivery_id"])
+        return private_result("invoice_document", **source19.document(row))
+    except (ValidationError, ValueError, source19.SamaInvoiceDispatch.DoesNotExist):
+        return private_result("document_unavailable", 409)
+
+
+@private_endpoint
+@authenticated("POST")
+def record(request):
+    request._disable_google_integrations = True
+    data = payload(request, ("phone", "request_id", "delivery_id", "receipt_capability"))
+    if not data or not valid_phone(data["phone"]):
+        return private_result("invalid_request", 400)
+    try:
+        # Scope check before networking, then lock/recheck before importing proof.
+        source19.bound(data["phone"], data["request_id"], data["delivery_id"])
+        proof = source19.fetch_receipt(data["request_id"], data["receipt_capability"])
+        with transaction.atomic():
+            row = source19.bound(data["phone"], data["request_id"], data["delivery_id"], lock=True)
+            source19.import_receipt(row, proof)
+            return private_result(
+                "invoice_status",
+                request_id=str(row.request_id),
+                delivery_id=str(row.delivery_id),
+                source_fingerprint=row.source_fingerprint,
+                deliveries=[projection(row.delivery)],
+                provider_state=row.provider_state,
+                receipt_imported=True,
+            )
+    except (ValidationError, ValueError, source19.SamaInvoiceDispatch.DoesNotExist):
+        return private_result("receipt_unavailable", 409)
