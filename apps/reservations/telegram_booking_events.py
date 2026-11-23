@@ -226,6 +226,9 @@ def source(source_id):
         currency=booking.currency,
         status=booking.normalized_status,
     )
+    from .telegram_refund_copy_requests import project
+
+    created = project(refund, basis)
     return (
         "\n".join(lines),
         phone_logo(),

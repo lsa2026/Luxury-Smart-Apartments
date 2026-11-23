@@ -296,6 +296,10 @@ def import_proof(row, proof):
 
 
 def finish(row):
+    if row.source_kind == "booking_event":
+        from .telegram_refund_copy_requests import completion
+
+        completion(row)
     if row.source_kind == "payment_request":
         from apps.payments.models import PaymentRequestDelivery
 

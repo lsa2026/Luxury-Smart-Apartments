@@ -63,6 +63,7 @@ jobs:
           tests/test_loyalty_workgroup.py
           tests/test_website_workgroup.py
           tests/test_refund_workgroup.py
+          tests/test_approved_refund_copy.py
           tests/test_channel_card_collections.py
           tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py
@@ -193,7 +194,7 @@ jobs:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
         run: |
           python manage.py makemigrations --check --dry-run
-          pytest tests/test_refund_workgroup.py tests/test_workgroup_queue_audit.py tests/test_website_workgroup.py tests/test_telegram_workgroup.py tests/test_loyalty_workgroup.py tests/test_telegram_stay_transport.py tests/test_telegram_stay_journey.py tests/test_telegram_activation.py tests/test_telegram_authority.py tests/test_telegram_stay_source.py tests/test_telegram_stay_render.py tests/test_telegram_loyalty.py tests/test_reservation_access_links.py tests/test_loyalty_invitation_api.py -q
+          pytest tests/test_approved_refund_copy.py tests/test_refund_workgroup.py tests/test_workgroup_queue_audit.py tests/test_website_workgroup.py tests/test_telegram_workgroup.py tests/test_loyalty_workgroup.py tests/test_telegram_stay_transport.py tests/test_telegram_stay_journey.py tests/test_telegram_activation.py tests/test_telegram_authority.py tests/test_telegram_stay_source.py tests/test_telegram_stay_render.py tests/test_telegram_loyalty.py tests/test_reservation_access_links.py tests/test_loyalty_invitation_api.py -q
 
       - name: Verify Ruff formatting
         run: ruff format --diff .
