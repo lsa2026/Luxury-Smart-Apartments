@@ -222,7 +222,14 @@ def authorize(scope, action, key, result):
             raise Denied
         try:
             content = source_copy(row.source_kind, row.source_id)
-        except (Denied, ValueError, ValidationError, ObjectDoesNotExist, KeyError, TypeError) as exc:
+        except (
+            Denied,
+            ValueError,
+            ValidationError,
+            ObjectDoesNotExist,
+            KeyError,
+            TypeError,
+        ) as exc:
             logger.warning("Website handoff held job=%s stage=current_source", row.pk)
             raise Denied from exc
         changed = [
