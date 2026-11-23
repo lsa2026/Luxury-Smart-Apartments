@@ -182,3 +182,54 @@ def test_exhausted_source_notice_queues_one_safe_operations_email_and_no_retry(o
 def test_ycloud_source_cannot_authorize_a_telegram_owned_stay(owned, client):
     response = source_tests.request_source(client, owned, "status_new")
     assert response.status_code == 409 and response.json()["code"] == "telegram_owned_stay"
+
+
+def source_cutover(settings, at):
+    settings.MESSAGE_SOURCE_AUTH_ENABLED = True
+    settings.MESSAGE_SOURCE_V2_ENABLED = True
+    settings.MESSAGE_SOURCE_RELAY_ENABLED = True
+    settings.WEBSITE_GUEST_MESSAGE_TRANSPORT = "ycloud_central"
+    settings.MESSAGE_SOURCE_CUTOVER_AT = at.isoformat()
+
+
+def test_v2_cutover_stops_new_telegram_registration_without_changing_existing_owner(
+    owned, settings
+):
+    from apps.reservations import message_source_relay
+    from apps.reservations.message_relay_models import WebsiteMessageRelay
+
+    scenario, stay, event = owned
+    before = list(TelegramStayChannel.objects.values())
+    source_cutover(settings, event.created_at - timedelta(seconds=1))
+    with transaction.atomic():
+        assert transport.register(event, scenario) is True
+        message_source_relay.register_event(event, scenario)
+    assert list(TelegramStayChannel.objects.values()) == before
+    assert TelegramStayNotice.objects.count() == 1
+    assert not WebsiteMessageRelay.objects.exists()
+
+
+def test_v2_new_source_is_not_stolen_by_telegram_registration_at_cutover(owned, settings):
+    from apps.reservations import message_source_relay
+    from apps.reservations.message_relay_models import WebsiteMessageRelay
+
+    scenario, stay, event = owned
+    TelegramStayNotice.objects.all().delete()
+    TelegramStayChannel.objects.all().delete()
+    source_cutover(settings, event.created_at - timedelta(seconds=1))
+    with transaction.atomic():
+        assert transport.register(event, scenario) is False
+        message_source_relay.register_event(event, scenario)
+    assert not TelegramStayChannel.objects.exists() and not TelegramStayNotice.objects.exists()
+    assert WebsiteMessageRelay.objects.filter(scenario=scenario, event_id=event.pk).exists()
+    assert not transport.selected(stay)
+
+
+def test_future_v2_cutover_does_not_prematurely_change_telegram_ownership(owned, settings):
+    scenario, stay, event = owned
+    TelegramStayNotice.objects.all().delete()
+    TelegramStayChannel.objects.all().delete()
+    source_cutover(settings, timezone.now() + timedelta(hours=1))
+    with transaction.atomic():
+        assert transport.register(event, scenario) is True
+    assert transport.selected(stay)
