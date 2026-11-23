@@ -21,6 +21,13 @@ from .telegram_stay_models import TelegramWebsiteHandoff
 
 ACTION = "refund.workgroup_copy_requested"
 PREFIX = "SITE01_APPROVED_REFUND_COPY "
+SAFE_REASONS = {
+    "workgroup_paused",
+    "booking_lookup_not_unique",
+    "booking_identity_or_dates_mismatch",
+    "confirmed_refund_not_unique",
+    "different_prior_approval",
+}
 FIELDS = {
     "request_id",
     "reference_md5",
@@ -74,7 +81,7 @@ def run_request(value):
     from .telegram_booking_events import queue_event, source
 
     if not group.enabled():
-        raise Denied
+        raise Denied("workgroup_paused")
     p = json.loads(value)
     if not isinstance(p, dict) or set(p) != FIELDS:
         raise ValueError("invalid_request")
@@ -93,7 +100,7 @@ def run_request(value):
             .select_for_update()[:2]
         )
         if len(bookings) != 1:
-            raise Denied
+            raise Denied("booking_lookup_not_unique")
         booking = bookings[0]
         if (
             hashlib.sha256(booking.public_reference.encode()).hexdigest() != p["reference_sha256"]
@@ -102,7 +109,7 @@ def run_request(value):
             or booking.currency != p["currency"]
             or booking.is_test
         ):
-            raise Denied
+            raise Denied("booking_identity_or_dates_mismatch")
         refunds = list(
             booking.refund_obligations.select_for_update(of=("self",)).filter(
                 status=RefundObligation.Status.TRANSFERRED,
@@ -114,7 +121,7 @@ def run_request(value):
             )[:2]
         )
         if len(refunds) != 1:
-            raise Denied
+            raise Denied("confirmed_refund_not_unique")
         refund = refunds[0]
         source_id = "refund:" + str(refund.pk)
         job_key = "site01wg:booking_event:" + transport.sha(source_id)
@@ -133,7 +140,7 @@ def run_request(value):
         ).first()
         if prior:
             if prior.metadata.get("request_id") != request_id:
-                raise Denied
+                raise Denied("different_prior_approval")
         else:
             AuditLog.objects.create(
                 action=ACTION,
@@ -162,13 +169,18 @@ def after_migrate(sender, **kwargs):
     try:
         request_id = json.loads(value).get("request_id", "invalid")
         run_request(value)
-    except Exception:
+    except Exception as exc:
         # Private provider/source exceptions must never enter deployment logs.
         try:
             safe_id = str(uuid.UUID(str(request_id)))
         except (ValueError, TypeError, AttributeError):
             safe_id = "invalid"
-        emit(safe_id, "held_source_or_existing_attempt_requires_review")
+        reason = (
+            exc.args[0]
+            if exc.args and isinstance(exc.args[0], str) and exc.args[0] in SAFE_REASONS
+            else "source_proof_requires_review"
+        )
+        emit(safe_id, "held_source_or_existing_attempt_requires_review", reason=reason)
 
 
 def completion(row):
