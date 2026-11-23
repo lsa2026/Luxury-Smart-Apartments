@@ -25,7 +25,7 @@ from apps.reservations.telegram_stay_models import TelegramWebsiteHandoff
 from apps.reservations.telegram_stay_render import sha
 
 from . import phone_auth as auth
-from .models import PhoneChallenge
+from .models import CustomerProfile, PhoneChallenge, VerifiedPhone
 from .phone_messages import phone_logo, phone_message
 
 
@@ -57,7 +57,15 @@ def current(challenge):
     if challenge.purpose == "bind":
         from .identity import can_bind_phone
 
-        return can_bind_phone(challenge.user, challenge.phone)
+        return bool(
+            CustomerProfile.objects.filter(
+                user=challenge.user,
+                email_verified_at__isnull=False,
+            ).exists()
+            and not VerifiedPhone.objects.filter(user=challenge.user).exists()
+            and not VerifiedPhone.objects.filter(phone=challenge.phone).exists()
+            and can_bind_phone(challenge.user, challenge.phone)
+        )
     return auth._current_binding(challenge)
 
 
@@ -148,6 +156,8 @@ def deliver(challenge_id):
             )
         )
         if challenge.status != "pending" or challenge.workgroup_nonce or not current(challenge):
+            return
+        if TelegramWebsiteHandoff.objects.filter(job_key="site01otp:" + str(challenge.pk)).exists():
             return
         challenge.workgroup_nonce = uuid.uuid4()
         challenge.code_digest = auth._digest("code", f"{challenge.pk}:{code_for(challenge)}")

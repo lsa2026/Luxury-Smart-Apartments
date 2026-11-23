@@ -39,6 +39,9 @@ def manual(settings, isolated, monkeypatch):
         TelegramWebsiteHandoff._meta.get_field("created_at"), "_get_default", lambda: timezone.now()
     )
     monkeypatch.setattr(
+        TelegramWebsiteHandoff._meta.get_field("next_probe_at"), "_get_default", lambda: timezone.now()
+    )
+    monkeypatch.setattr(
         PhoneChallenge._meta.get_field("created_at"), "_get_default", lambda: timezone.now()
     )
     return forbidden
@@ -227,6 +230,82 @@ def test_hand_off_does_not_remove_attempt_limit(guest, bridge, django_capture_on
     challenge.refresh_from_db()
     assert challenge.status == "locked" and challenge.attempts == 5 and not challenge.code_digest
     assert not VerifiedPhone.objects.exists()
+
+
+def test_login_still_requires_existing_binding_and_same_browser(
+    guest, bridge, django_capture_on_commit_callbacks
+):
+    binding = VerifiedPhone.objects.create(user=guest.user, phone=legacy.PHONE)
+    client = Client()
+    assert legacy.start(client, django_capture_on_commit_callbacks).status_code == 302
+    challenge = PhoneChallenge.objects.get(pk=client.session[auth.PENDING])
+    auth.deliver_phone_code(challenge.pk)
+    challenge.refresh_from_db()
+    assert bridge[1][0]["purpose"] == "phone_login"
+    code = service.code_for(challenge)
+    binding.version = uuid.uuid4()
+    binding.save(update_fields=["version"])
+    assert client.post("/account/mobile/confirm/", {"code": code}).status_code == 200
+    assert "_auth_user_id" not in client.session
+
+
+def test_valid_login_receipt_does_not_log_in_without_code(
+    guest, bridge, django_capture_on_commit_callbacks
+):
+    VerifiedPhone.objects.create(user=guest.user, phone=legacy.PHONE)
+    client = Client()
+    legacy.start(client, django_capture_on_commit_callbacks)
+    challenge = PhoneChallenge.objects.get(pk=client.session[auth.PENDING])
+    auth.deliver_phone_code(challenge.pk)
+    challenge.refresh_from_db()
+    assert "_auth_user_id" not in client.session
+    response = client.post("/account/mobile/confirm/", {"code": service.code_for(challenge)})
+    assert response.status_code == 302
+    assert int(client.session["_auth_user_id"]) == guest.user.pk
+
+
+def test_proof_cannot_adopt_an_attempt_before_source_release(
+    guest, monkeypatch, django_capture_on_commit_callbacks
+):
+    monkeypatch.setattr(transport, "call", lambda *args: None)
+    challenge = begin(guest, django_capture_on_commit_callbacks)
+    auth.deliver_phone_code(challenge.pk)
+    row = TelegramWebsiteHandoff.objects.get()
+    with pytest.raises(authority.Denied):
+        transport.import_proof(row, proof(row))
+    assert not VerifiedPhone.objects.exists()
+
+
+@pytest.mark.parametrize("case", ["one_part", "late_acceptance", "guest_flag"])
+def test_receipt_requires_two_timely_parts_and_no_guest_delivery(
+    case, guest, bridge, django_capture_on_commit_callbacks
+):
+    challenge = begin(guest, django_capture_on_commit_callbacks)
+    auth.deliver_phone_code(challenge.pk)
+    row = TelegramWebsiteHandoff.objects.get()
+    changes = {"attempt_id": str(row.attempt_id)}
+    if case == "one_part":
+        changes.update(provider_message_ids=["102"], provider_message_id="102")
+    elif case == "late_acceptance":
+        changes.update(accepted_at=(row.expires_at + timedelta(seconds=1)).isoformat())
+    else:
+        changes.update(guest_accepted=True)
+    with pytest.raises(authority.Denied):
+        transport.import_proof(row, proof(row, **changes))
+
+
+def test_new_request_supersedes_handed_off_code_without_replaying_it(
+    guest, bridge, isolated, django_capture_on_commit_callbacks
+):
+    old = begin(guest, django_capture_on_commit_callbacks)
+    auth.deliver_phone_code(old.pk)
+    isolated.clock[0] += timedelta(seconds=61)
+    new = begin(guest, django_capture_on_commit_callbacks)
+    old.refresh_from_db()
+    assert old.status == "superseded" and not old.code_digest
+    assert old.pk != new.pk and not new.workgroup_nonce
+    auth.deliver_phone_code(old.pk)
+    assert bridge[0] == ["phone_code_handoff"]
 
 
 @pytest.mark.parametrize("language", ["ar", "en", "fr"])
