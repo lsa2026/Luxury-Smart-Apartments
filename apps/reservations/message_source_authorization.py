@@ -271,6 +271,7 @@ def base_facts(stay, event, scenario, locator, purpose, *, financial=False):
         "not_before": event.created_at.isoformat(),
         "expires_at": stay.ends_at.isoformat(),
         "environment": stay.environment,
+        "language": stay.guest_language,
         "domain_authorized": False,
         "current_source_verified": True,
         "current_source_cancelled": stay.status == "cancelled",

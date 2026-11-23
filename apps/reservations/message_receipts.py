@@ -70,6 +70,16 @@ def independent_render_policy(event, facts, context=None):
 
 
 def content_digest(language, message):
+    if isinstance(message, dict) and set(message) == {
+        "mode",
+        "template_ref",
+        "variables",
+        "components_sha256",
+        "attachment",
+    }:
+        from .website_template_contract_v2 import content_digest as digest_v2
+
+        return digest_v2(language, message)
     if not isinstance(message, dict):
         raise ValueError
     if message.get("mode") == "text" and set(message) == {"mode", "text"}:
