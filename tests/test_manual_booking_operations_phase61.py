@@ -533,7 +533,7 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
     )
     monkeypatch.setattr(
         "apps.reservations.operations_views.send_manual_payment_link_request",
-        lambda **_kwargs: SimpleNamespace(code="sent"),
+        lambda **_kwargs: SimpleNamespace(code="email_sent"),
     )
     client = Client()
     client.force_login(actor)
@@ -545,7 +545,7 @@ def test_owner_confirms_hostaway_booking_then_sends_the_accounting_request(monke
 
     assert response.status_code == 302
     assert response["Location"] == reverse("notifications:booking_list")
-    assert AuditLog.objects.filter(action="manual_booking.accounting_whatsapp_sent").exists()
+    assert AuditLog.objects.filter(action="manual_booking.accounting_email_sent").exists()
 
 
 @override_settings(

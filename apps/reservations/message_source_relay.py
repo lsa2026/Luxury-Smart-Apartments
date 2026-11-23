@@ -22,6 +22,10 @@ from . import message_source_authorization as source
 from .message_relay_models import WebsiteMessageRelay
 
 RELAY_URL = "https://lsa25.app.n8n.cloud/webhook/site01-source-relay-v1"
+V2_RELAY_URLS = {
+    "07": "https://lsa25.app.n8n.cloud/webhook/lsa07-morning-stay-v1",
+    "08": "https://lsa25.app.n8n.cloud/webhook/lsa08-day-use-booking-v1",
+}
 READ_HEADER = "X-LSA-Source-Read-Capability"
 DEFERRED_REASONS = {"not_due", "waiting_predecessor", "deferred"}
 DEFERRED_KEYS = {
@@ -317,14 +321,21 @@ def forward_due(*, client=None, limit=1):
             "expires_at": row.expires_at.isoformat(),
         }
         state, reason, request_id = "uncertain", "ack_unverified", ""
+        target_url = (
+            V2_RELAY_URLS.get(row.scenario, RELAY_URL)
+            if getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+            else RELAY_URL
+        )
         try:
             if client is None:
                 with httpx.Client(
                     timeout=httpx.Timeout(40, connect=5), follow_redirects=False
                 ) as remote:
-                    reply = remote.post(RELAY_URL, json=envelope, headers={READ_HEADER: capability})
+                    reply = remote.post(
+                        target_url, json=envelope, headers={READ_HEADER: capability}
+                    )
             else:
-                reply = client.post(RELAY_URL, json=envelope, headers={READ_HEADER: capability})
+                reply = client.post(target_url, json=envelope, headers={READ_HEADER: capability})
             body = reply.json() if reply.status_code in {200, 202} else {}
             if (
                 isinstance(body, dict)

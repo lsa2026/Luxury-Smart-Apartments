@@ -92,6 +92,7 @@ jobs:
           tests/test_unified_address_paths.py
           tests/test_booking_modifications_phase6.py
           tests/test_ultramsg_accounting_notifications.py
+          tests/test_accounting_operations_email.py
           tests/test_hyperpay_refunds_phase94.py
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
@@ -204,6 +205,9 @@ jobs:
 
       - name: Run Ruff lint
         run: ruff check .
+
+      - name: Verify one-shot operations accounting email without providers
+        run: pytest tests/test_accounting_operations_email.py
 
       - name: Verify transient phone workgroup source without providers
         run: |
