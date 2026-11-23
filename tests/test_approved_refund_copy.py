@@ -238,11 +238,52 @@ def test_operator_can_continue_preclaim_hold_once_without_changing_identity_or_f
     assert absent_native == ["website_handoff_status"]
     refund.refresh_from_db()
     assert refund.transferred_at == financial_time and refund.amount == 400
-    # No loop: another old process holding it cannot produce another continuation.
+    # The worker continuation cannot loop; only a final source-process attempt
+    # is allowed, with another no-slot read and no evidence of any provider POST.
+    row.state = "held"
+    row.save(update_fields=["state"])
+    assert service.run_request(json.dumps(request_data))["decision"] == "source_preclaim_same_job"
+    row.refresh_from_db()
     row.state = "held"
     row.save(update_fields=["state"])
     assert service.run_request(json.dumps(request_data))["decision"] == "existing_held"
-    assert absent_native == ["website_handoff_status"]
+    assert absent_native == ["website_handoff_status", "website_handoff_status"]
+
+
+def test_final_source_dispatch_keeps_original_identity_and_records_one_copy(
+    refund,
+    request_data,
+    preclaim_hold,
+    absent_native,
+    monkeypatch,
+    django_capture_on_commit_callbacks,
+):
+    row = preclaim_hold
+    original = transport.metadata(row)
+    transferred = refund.transferred_at
+    service.run_request(json.dumps(request_data))
+    row.refresh_from_db()
+    row.state = "held"
+    row.save(update_fields=["state"])
+    posts = []
+
+    def accepted(saved, action):
+        assert transport.metadata(saved) == original
+        transport.authorize({"job": str(saved.pk)}, action, str(saved.pk), {})
+        posts.append(action)
+        transport.import_proof(saved, proof(saved))
+
+    monkeypatch.setattr(transport, "call", accepted)
+    with django_capture_on_commit_callbacks(execute=True):
+        result = service.run_request(json.dumps(request_data))
+    assert result["decision"] == "source_preclaim_same_job"
+    row.refresh_from_db()
+    assert row.state == "handed_off" and transport.metadata(row) == original
+    assert service.run_request(json.dumps(request_data))["decision"] == "existing_handed_off"
+    assert events.dispatch(row.pk) == "handed_off"
+    assert posts == ["website_handoff"] and len(absent_native) == 2
+    refund.refresh_from_db()
+    assert refund.transferred_at == transferred and refund.amount == 400
 
 
 @pytest.mark.parametrize(

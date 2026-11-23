@@ -3,7 +3,7 @@
 import hashlib
 import json
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -100,9 +100,20 @@ def resume_preclaim(row, refund, request_id):
     if (
         not approval
         or approval.metadata.get("request_id") != request_id
-        or approval.metadata.get("preclaim_continuation")
+        or AuditLog.objects.filter(
+            action=ACTION,
+            object_type="RefundObligation",
+            object_reference=str(refund.pk),
+            metadata__request_id=request_id,
+            metadata__source_dispatch_continuation=True,
+        ).exists()
     ):
         return None
+    # An asynchronous continuation can still be held before POST by a different
+    # worker runtime. Allow one final source-process continuation, protected by
+    # the same locked journal, current hashes and a fresh authenticated no-slot
+    # lookup. Never reset a row that may have reached the provider.
+    source_dispatch = approval.metadata.get("preclaim_continuation") is True
     before = transport.source_copy(row.source_kind, row.source_id)
     fields = ("source_revision", "phone_hash", "content_sha256", "asset_sha256")
     if any(before[k] != getattr(row, k) for k in fields):
@@ -124,20 +135,36 @@ def resume_preclaim(row, refund, request_id):
         object_type="RefundObligation",
         object_reference=str(refund.pk),
         summary="Continue proven pre-dispatch hold after native no-slot read; no financial action",
-        metadata={**approval.metadata, "preclaim_continuation": True, "native_slot_absent": True},
+        metadata={
+            **approval.metadata,
+            "preclaim_continuation": True,
+            "source_dispatch_continuation": source_dispatch,
+            "native_slot_absent": True,
+        },
     )
     current = transport.source_copy(row.source_kind, row.source_id)
     if any(current[k] != getattr(row, k) for k in fields):
         raise Denied("preclaim_source_changed")
     row.not_before = parse_datetime(current["not_before"])
     row.expires_at = parse_datetime(current["expires_at"])
-    row.state = "planned"
-    row.save(update_fields=["not_before", "expires_at", "state", "updated_at"])
-    from .tasks import deliver_telegram_booking_event
+    # Claim inside the same locked transaction for the final source execution,
+    # so the periodic Celery recovery cannot consume this planned row first.
+    row.state = "dispatching" if source_dispatch else "planned"
+    if source_dispatch:
+        row.next_probe_at = timezone.now() + timedelta(minutes=1)
+    row.save(update_fields=["not_before", "expires_at", "state", "next_probe_at", "updated_at"])
+    if source_dispatch:
+        transaction.on_commit(lambda: transport.call(row, "website_handoff"), robust=True)
+    else:
+        from .tasks import deliver_telegram_booking_event
 
-    transaction.on_commit(lambda: deliver_telegram_booking_event.delay(str(row.pk)), robust=True)
+        transaction.on_commit(
+            lambda: deliver_telegram_booking_event.delay(str(row.pk)), robust=True
+        )
     return {
-        "decision": "continued_preclaim_same_job",
+        "decision": "source_preclaim_same_job"
+        if source_dispatch
+        else "continued_preclaim_same_job",
         "request_id": request_id,
         "job_id": str(row.pk),
     }
