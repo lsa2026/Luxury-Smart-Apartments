@@ -21,7 +21,7 @@ from django.views.decorators.debug import sensitive_variables
 
 from . import message_source_authorization as source
 
-REGISTRY_SHA256 = "762e59f7d67b8b53b061f0c5e5fca61232df38f2ae31c9b558fc8038e7590eb6"
+REGISTRY_SHA256 = "96bc65d92542c58d47cc72f60eeeabccb684320650447a1521dfdbc0ed2e06b5"
 SUCCESS_KEYS = (
     "guest_name",
     "listing_name",
@@ -243,6 +243,22 @@ def independent_template_policy(projection):
         != list(range(1, len(expected) + 1))
     ):
         return hold("template_binding_integrity_failed")
+    components = binding["provider_components"]
+    if (
+        binding["provider_api_metadata_verified"] is not True
+        or binding["provider_status"] != "APPROVED"
+        or binding["category"] != "UTILITY"
+        or binding["waba_id"] != "2075336595945655"
+        or source.sha(
+            json.dumps(components, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        )
+        != binding["provider_components_sha256"]
+        or [c.get("text") for c in components if c.get("type") == "BODY"] != [binding["body"]]
+        or [c.get("format") for c in components if c.get("type") == "HEADER"]
+        != (["IMAGE"] if binding["media"] else [])
+        or any(c.get("type") not in {"BODY", "HEADER", "FOOTER"} for c in components)
+    ):
+        return hold("provider_binding_integrity_failed")
     ordered = [projection["variables"].get(k) for k in expected]
     if any(
         not isinstance(v, str)
@@ -282,7 +298,6 @@ def independent_template_policy(projection):
         "domain_authorized": False,
         "dispatch_allowed": False,
         "blockers": projection["blockers"]
-        + ["provider_template_components_unverified"]
         + (["independent_media_header_proof_required"] if binding["media"] else []),
     }
 

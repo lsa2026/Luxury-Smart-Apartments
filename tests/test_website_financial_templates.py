@@ -87,8 +87,8 @@ def test_exact_twelve_bindings_from_current_source_and_no_writes(
     assert projection["currency"] == "SAR"
     assert projection["reservation_revision"] == str(stay.communication_revision)
     assert policy["dispatch_allowed"] is False and policy["domain_authorized"] is False
-    assert policy["provider_components_sha256"] is None
-    assert policy["provider_api_metadata_verified"] is False
+    assert len(policy["provider_components_sha256"]) == 64
+    assert policy["provider_api_metadata_verified"] is True
     if scenario == "07" and kind == "payment_link":
         asset = (
             templates.files("apps.reservations")
@@ -241,6 +241,7 @@ def test_missing_source_label_holds_instead_of_inventing_name(record):
     type(stay.property).objects.filter(pk=stay.property_id).update(
         name_ar="", name_en="", name_fr=""
     )
+    # A changed label invalidates the original financial snapshot first.
     assert templates.payment_success_projection(event, scenario) == templates.hold(
-        "source_variables_unverified"
+        "current_collection_unverified"
     )
