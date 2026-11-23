@@ -213,6 +213,16 @@ def test_historical_receipt_import_after_window_does_not_allow_pdf_resend(dispat
     assert post("document", scope(dispatch)).status_code == 409
 
 
+@pytest.mark.parametrize("flag", ["SAMA_INVOICES_ENABLED", "SAMA_INVOICE_YCLOUD_ENABLED"])
+def test_turning_off_new_documents_still_allows_bound_historical_receipts(
+    dispatch, monkeypatch, flag
+):
+    proof = receipt(dispatch)
+    monkeypatch.setattr(source.settings, flag, False)
+    assert post("document", scope(dispatch)).status_code == 503
+    assert record(dispatch, proof, monkeypatch)[0].status_code == 200
+
+
 @pytest.mark.parametrize("prior", ["accepted", "sent", "delivered", "read"])
 def test_signed_failure_is_recorded_without_inventing_a_retry_or_erasing_delivery(
     dispatch, monkeypatch, prior

@@ -80,7 +80,12 @@ def projection(row):
 
 
 def queue(*, invoice, recipient, actor, request_id):
-    if not settings.SAMA_INVOICE_YCLOUD_ENABLED or not invoice.issued_at or not invoice.pdf_content:
+    if (
+        not settings.SAMA_INVOICES_ENABLED
+        or not settings.SAMA_INVOICE_YCLOUD_ENABLED
+        or not invoice.issued_at
+        or not invoice.pdf_content
+    ):
         raise ValidationError("SMA invoice source unavailable")
     with transaction.atomic():
         delivery, created = GuestInvoiceDelivery.objects.get_or_create(
@@ -142,7 +147,8 @@ def document(row):
     invoice = delivery.invoice
     content = pdf(delivery)
     if (
-        not settings.SAMA_INVOICE_YCLOUD_ENABLED
+        not settings.SAMA_INVOICES_ENABLED
+        or not settings.SAMA_INVOICE_YCLOUD_ENABLED
         or delivery.status != "queued"
         or not row.not_before <= timezone.now() < row.expires_at
         or not invoice.issued_at

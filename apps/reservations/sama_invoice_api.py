@@ -307,6 +307,8 @@ def private_result(code, http_status=200, **fields):
 @authenticated("POST")
 def document(request):
     request._disable_google_integrations = True
+    if not enabled() or not settings.SAMA_INVOICE_YCLOUD_ENABLED:
+        return private_result("disabled", 503)
     data = payload(request, ("phone", "request_id", "delivery_id"))
     if not data or not valid_phone(data["phone"]):
         return private_result("invalid_request", 400)
