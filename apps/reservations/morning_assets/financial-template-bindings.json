@@ -1,0 +1,288 @@
+{
+  "contract": "site01-financial-bindings-1",
+  "source_sha256": "2244550f72fbd4c208c49efb2bc12ab55281deada48dea66d01dec7e4c9168e9",
+  "variants": [
+    {
+      "name": "lsa08_payment_success_v1",
+      "language": "en",
+      "purpose": "payment_confirmation",
+      "source_message_type": "payment_success",
+      "scenario": "08",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "starts_at_local",
+        "ends_at_local",
+        "amount_sar",
+        "booking_reference"
+      ],
+      "body": "*Payment received successfully* ✅\n\n*Luxury Smart Apartments 🌿*\n\nHello {{1}}،\nWe received payment for your daytime stay.\n\n🏡 *Apartment:* {{2}}\n🕐 *Check-in:* {{3}}\n🕛 *Check-out:* {{4}}\n💳 *Amount:* {{5}} SAR\n*Reference:* {{6}}\n\n──────────\nSupport: +966501205651\nEnjoy your stay 🌿",
+      "body_sha256": "90db42f1a01ee91d26d883c6362027cd8f8d9cc6d08e181a3f8f7a64357aa99f",
+      "media": null,
+      "meta_template_id": "1461196055436201",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa07_payment_success_v1",
+      "language": "ar",
+      "purpose": "payment_confirmation",
+      "source_message_type": "payment_success",
+      "scenario": "07",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "starts_at_local",
+        "ends_at_local",
+        "amount_sar",
+        "booking_reference"
+      ],
+      "body": "*تم استلام دفعتك بنجاح* ✅\n\n*لوكسري سمارت أبارتمنتس 🌿*\n\nمرحبًا {{1}}،\nتم استلام سداد حجزك الصباحي.\n\n🏡 *الشقة:* {{2}}\n🕐 *الدخول:* {{3}}\n🕛 *الخروج:* {{4}}\n💳 *المبلغ:* {{5}} SAR\n*المرجع:* {{6}}\n\n──────────\nللمساعدة: +966501205651\nنتمنى لك إقامة سعيدة 🌿",
+      "body_sha256": "abe5102d28514a1bea5659e877f2ec7f47796048d4d2cca0c7d68cbb0f84e350",
+      "media": null,
+      "meta_template_id": "944445511940068",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa08_payment_link_v1",
+      "language": "ar",
+      "purpose": "payment_link",
+      "source_message_type": "payment_link",
+      "scenario": "08",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "stay_date",
+        "check_in_time",
+        "check_out_time",
+        "timezone",
+        "amount_sar",
+        "payment_url"
+      ],
+      "body": "*تفاصيل الحجز النهاري*\n\nالضيف: {{1}}\n🏡 {{2}}\n{{3}}\n📅 {{4}}\n🕒 الدخول: {{5}}\n🕒 الخروج: {{6}}\n{{7}}\n💳 الإجمالي: SAR {{8}}\n\n*رابط الدفع الآمن*\n{{9}}\n\nالحجز مؤكد في هوستاوي؛ هذا الرابط لسداد المبلغ فقط.",
+      "body_sha256": "579a4865d91847da4a7c8a8d73e9498b8fba21e3876c38b29b125b7522ed377a",
+      "media": null,
+      "meta_template_id": "4717491248484620",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa08_payment_success_v1",
+      "language": "ar",
+      "purpose": "payment_confirmation",
+      "source_message_type": "payment_success",
+      "scenario": "08",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "starts_at_local",
+        "ends_at_local",
+        "amount_sar",
+        "booking_reference"
+      ],
+      "body": "*تم استلام دفعتك بنجاح* ✅\n\n*لوكسري سمارت أبارتمنتس 🌿*\n\nمرحبًا {{1}}،\nتم استلام سداد حجزك النهاري.\n\n🏡 *الشقة:* {{2}}\n🕐 *الدخول:* {{3}}\n🕛 *الخروج:* {{4}}\n💳 *المبلغ:* {{5}} SAR\n*المرجع:* {{6}}\n\n──────────\nللمساعدة: +966501205651\nنتمنى لك إقامة سعيدة 🌿",
+      "body_sha256": "223b3163867c88d066779e08302135a07f1addebbd579124eb8bb20f8d259045",
+      "media": null,
+      "meta_template_id": "1146038684959375",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa08_payment_success_v1",
+      "language": "fr",
+      "purpose": "payment_confirmation",
+      "source_message_type": "payment_success",
+      "scenario": "08",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "starts_at_local",
+        "ends_at_local",
+        "amount_sar",
+        "booking_reference"
+      ],
+      "body": "*Paiement reçu avec succès* ✅\n\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}،\nNous avons reçu le paiement de votre séjour en journée.\n\n🏡 *Appartement:* {{2}}\n🕐 *Arrivée:* {{3}}\n🕛 *Départ:* {{4}}\n💳 *Montant:* {{5}} SAR\n*Référence:* {{6}}\n\n──────────\nAssistance: +966501205651\nBon séjour 🌿",
+      "body_sha256": "912726ac7a65450ff3888055274b7df6974f3679e330e8fb8d2afc8b879041db",
+      "media": null,
+      "meta_template_id": "1489554786610648",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa07_payment_success_v1",
+      "language": "en",
+      "purpose": "payment_confirmation",
+      "source_message_type": "payment_success",
+      "scenario": "07",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "starts_at_local",
+        "ends_at_local",
+        "amount_sar",
+        "booking_reference"
+      ],
+      "body": "*Payment received successfully* ✅\n\n*Luxury Smart Apartments 🌿*\n\nHello {{1}}،\nWe received payment for your morning stay.\n\n🏡 *Apartment:* {{2}}\n🕐 *Check-in:* {{3}}\n🕛 *Check-out:* {{4}}\n💳 *Amount:* {{5}} SAR\n*Reference:* {{6}}\n\n──────────\nSupport: +966501205651\nEnjoy your stay 🌿",
+      "body_sha256": "627340e153fccac99891988d2f541627e76b7debbea8317da7ad4712e3c63713",
+      "media": null,
+      "meta_template_id": "3038959846452787",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa08_payment_link_v1",
+      "language": "fr",
+      "purpose": "payment_link",
+      "source_message_type": "payment_link",
+      "scenario": "08",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "stay_date",
+        "check_in_time",
+        "check_out_time",
+        "timezone",
+        "amount_sar",
+        "payment_url"
+      ],
+      "body": "*Détails du séjour en journée*\n\nClient: {{1}}\n🏡 {{2}}\n{{3}}\n📅 {{4}}\n🕒 Arrivée: {{5}}\n🕒 Départ: {{6}}\n{{7}}\n💳 Total: SAR {{8}}\n\n*Paiement sécurisé*\n{{9}}\n\nVotre réservation est confirmée dans Hostaway ; ce lien sert uniquement au paiement.",
+      "body_sha256": "f64d991995b2d8656a3cec98dcbf40584e27cd975076097f161fa6f33612c5c5",
+      "media": null,
+      "meta_template_id": "2690898501410759",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa07_payment_link_v1",
+      "language": "fr",
+      "purpose": "payment_link",
+      "source_message_type": "payment_link",
+      "scenario": "07",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "stay_date",
+        "check_in_time",
+        "check_out_time",
+        "timezone",
+        "amount_sar",
+        "payment_url"
+      ],
+      "body": "*Détails du séjour matinal*\n\nClient: {{1}}\n🏡 {{2}}\n{{3}}\n📅 {{4}}\n🕒 Arrivée: {{5}}\n🕒 Départ: {{6}}\n{{7}}\n💳 Total: SAR {{8}}\n\n*Paiement sécurisé*\n{{9}}\n\nVotre réservation est confirmée dans Hostaway ; ce lien sert uniquement au paiement.",
+      "body_sha256": "deff472dc3092d438b22356e7c234d1847092c31b432313e8cfc4ef803aa0802",
+      "media": {
+        "source": "apps/reservations/morning_assets/payment-fr.png",
+        "sha256": "70f7e271df0cadcb3873c42bc06048e4b64471b4c58ca5387831b4a26f6dfca9",
+        "mime_type": "image/png"
+      },
+      "meta_template_id": "1112368771416970",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa08_payment_link_v1",
+      "language": "en",
+      "purpose": "payment_link",
+      "source_message_type": "payment_link",
+      "scenario": "08",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "stay_date",
+        "check_in_time",
+        "check_out_time",
+        "timezone",
+        "amount_sar",
+        "payment_url"
+      ],
+      "body": "*DayUse stay details*\n\nGuest: {{1}}\n🏡 {{2}}\n{{3}}\n📅 {{4}}\n🕒 Check-in: {{5}}\n🕒 Check-out: {{6}}\n{{7}}\n💳 Total: SAR {{8}}\n\n*Secure payment*\n{{9}}\n\nYour booking is confirmed in Hostaway; this link is for payment only.",
+      "body_sha256": "23e2b63f956d50834a9bf0fc255dd11d69cc5a4086e116587debede28bfeb177",
+      "media": null,
+      "meta_template_id": "2947815485605386",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa07_payment_link_v1",
+      "language": "ar",
+      "purpose": "payment_link",
+      "source_message_type": "payment_link",
+      "scenario": "07",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "stay_date",
+        "check_in_time",
+        "check_out_time",
+        "timezone",
+        "amount_sar",
+        "payment_url"
+      ],
+      "body": "*تفاصيل الحجز الصباحي*\n\nالضيف: {{1}}\n🏡 {{2}}\n{{3}}\n📅 {{4}}\n🕒 الدخول: {{5}}\n🕒 الخروج: {{6}}\n{{7}}\n💳 الإجمالي: SAR {{8}}\n\n*رابط الدفع الآمن*\n{{9}}\n\nالحجز مؤكد في Hostaway؛ هذا الرابط لسداد المبلغ فقط.",
+      "body_sha256": "aba0e9c7b7e8626d4ba8a4ae9a0ff5ff61acfbd280520c3c1d1e1d32389969be",
+      "media": {
+        "source": "apps/reservations/morning_assets/payment-ar.png",
+        "sha256": "1ae56fe8054dce814cfb2f9dce4603ddea11e91796eaf4b15406198b3cd01ac8",
+        "mime_type": "image/png"
+      },
+      "meta_template_id": "1123505260565749",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa07_payment_success_v1",
+      "language": "fr",
+      "purpose": "payment_confirmation",
+      "source_message_type": "payment_success",
+      "scenario": "07",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "starts_at_local",
+        "ends_at_local",
+        "amount_sar",
+        "booking_reference"
+      ],
+      "body": "*Paiement reçu avec succès* ✅\n\n*Luxury Smart Apartments 🌿*\n\nBonjour {{1}}،\nNous avons reçu le paiement de votre séjour matinal.\n\n🏡 *Appartement:* {{2}}\n🕐 *Arrivée:* {{3}}\n🕛 *Départ:* {{4}}\n💳 *Montant:* {{5}} SAR\n*Référence:* {{6}}\n\n──────────\nAssistance: +966501205651\nBon séjour 🌿",
+      "body_sha256": "95faca3aa6efdc5695df26f87a42f739da2cd4c864ba81cb63fc5e8335c33ad7",
+      "media": null,
+      "meta_template_id": "1772586940474107",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    },
+    {
+      "name": "lsa07_payment_link_v1",
+      "language": "en",
+      "purpose": "payment_link",
+      "source_message_type": "payment_link",
+      "scenario": "07",
+      "ordered_source_keys": [
+        "guest_name",
+        "listing_name",
+        "booking_reference",
+        "stay_date",
+        "check_in_time",
+        "check_out_time",
+        "timezone",
+        "amount_sar",
+        "payment_url"
+      ],
+      "body": "*Morning stay details*\n\nGuest: {{1}}\n🏡 {{2}}\n{{3}}\n📅 {{4}}\n🕒 Check-in: {{5}}\n🕒 Check-out: {{6}}\n{{7}}\n💳 Total: SAR {{8}}\n\n*Secure payment*\n{{9}}\n\nYour booking is confirmed in Hostaway; this link is for payment only.",
+      "body_sha256": "5eef2360896bac576780a3fe52d8f9254cf2794d6280e9c9b24e236a2e59bd5c",
+      "media": {
+        "source": "apps/reservations/morning_assets/payment-en.png",
+        "sha256": "da583735f80b0959417206f89ccf975341cdbe5399dfc43fb14357d3ae88920f",
+        "mime_type": "image/png"
+      },
+      "meta_template_id": "29887352714190051",
+      "provider_components_sha256": null,
+      "provider_api_metadata_verified": false
+    }
+  ]
+}
