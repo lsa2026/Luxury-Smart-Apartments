@@ -100,7 +100,13 @@ def resume_preclaim(row, refund, request_id):
     if (
         not approval
         or approval.metadata.get("request_id") != request_id
-        or approval.metadata.get("source_dispatch_continuation")
+        or AuditLog.objects.filter(
+            action=ACTION,
+            object_type="RefundObligation",
+            object_reference=str(refund.pk),
+            metadata__request_id=request_id,
+            metadata__source_dispatch_continuation=True,
+        ).exists()
     ):
         return None
     # An asynchronous continuation can still be held before POST by a different
