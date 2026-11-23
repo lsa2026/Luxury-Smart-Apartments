@@ -298,7 +298,32 @@ def select_source_message(
         if binding.get("asset", {}) and binding["asset"]["kind"] == "document"
         else set()
     )
+    instruction_used = False
+    if (
+        "gate_code" in required
+        and values.get("gate_code") is not None
+        and not isinstance(values["gate_code"], str)
+    ):
+        raise V2Hold("source_gate_access_not_verified")
+    if "gate_code" in required and not (
+        isinstance(values.get("gate_code"), str) and values["gate_code"].strip()
+    ):
+        instruction = values.get("gate_access_instruction")
+        evidence = context.get("gate_access_evidence_ref")
+        if (
+            not isinstance(instruction, str)
+            or not instruction.strip()
+            or len(instruction) > 2048
+            or not isinstance(evidence, str)
+            or not 1 <= len(evidence) <= 256
+            or any(ord(c) < 33 or ord(c) > 126 for c in evidence)
+        ):
+            raise V2Hold("source_gate_access_not_verified")
+        values["gate_code"] = instruction
+        instruction_used = True
     curated = {k: values.get(k) for k in sorted(required)}
+    if instruction_used:
+        curated.update(gate_access_instruction=instruction, gate_access_evidence_ref=evidence)
     if any(not isinstance(v, str) or not v.strip() for v in curated.values()):
         raise V2Hold("template_source_variable_missing")
     params = [curated[k] for k in keys]

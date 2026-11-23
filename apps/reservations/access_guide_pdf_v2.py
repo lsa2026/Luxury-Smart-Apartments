@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 VERSION = "yc19-access-guide-pdf-2"
+ACCESS_LABEL = {"ar": "دخول المبنى", "en": "Building access", "fr": "Accès à l’immeuble"}
 FIELDS = (
     "guest_name",
     "booking_reference",
@@ -162,7 +163,17 @@ def _visual(value):
 
 
 def render_access_guide(values, language):
+    values = dict(values) if isinstance(values, dict) else values
+    instruction = values.get("gate_access_instruction") if isinstance(values, dict) else None
+    code = values.get("gate_code") if isinstance(values, dict) else None
+    if code is not None and not isinstance(code, str):
+        raise ValueError("access_source_field_missing")
+    if isinstance(instruction, str) and instruction.strip() and not (code or "").strip():
+        values["gate_code"] = instruction
     validate_fields(values, language)
+    instruction_used = (
+        isinstance(instruction, str) and instruction.strip() and values["gate_code"] == instruction
+    )
     with _LOCK:
         _fonts()
         from reportlab.lib.colors import HexColor
@@ -245,7 +256,10 @@ def render_access_guide(values, language):
             lines = wrap(values[key], 11 if key in ("map_url", "video_url") else 12)
             if y < 105:
                 new_page()
-            draw(words[key], y, 12, True)
+            label = (
+                ACCESS_LABEL[language] if key == "gate_code" and instruction_used else words[key]
+            )
+            draw(label, y, 12, True)
             y -= 16
             for line in lines:
                 if y < 68:
