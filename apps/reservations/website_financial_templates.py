@@ -238,9 +238,29 @@ def independent_template_policy(projection):
     ):
         return hold("template_binding_integrity_failed")
     ordered = [projection["variables"].get(k) for k in expected]
-    if any(not isinstance(v, str) or not v or len(v) > 4096 for v in ordered):
+    if any(
+        not isinstance(v, str)
+        or not v.strip()
+        or len(v) > 1024
+        or re.search(r"[\x00-\x1f]|\{\{|\}\}", v)
+        for v in ordered
+    ):
         return hold("source_variable_missing")
     message = {"mode": "template", "template_ref": binding["name"], "variables": ordered}
+    if binding["media"]:
+        asset = (
+            files("apps.reservations")
+            .joinpath("morning_assets", f"payment-{binding['language']}.png")
+            .read_bytes()
+        )
+        if (
+            binding["scenario"] != "07"
+            or binding["source_message_type"] != "payment_link"
+            or binding["media"]["mime_type"] != "image/png"
+            or hashlib.sha256(asset).hexdigest() != binding["media"]["sha256"]
+        ):
+            return hold("source_image_integrity_failed")
+        message["header"] = {"type": "image", "source_sha256": binding["media"]["sha256"]}
     return {
         "available": True,
         "language": binding["language"],

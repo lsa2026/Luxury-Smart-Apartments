@@ -56,11 +56,17 @@ def test_exact_twelve_bindings_from_current_source_and_no_writes(
     assert all(q["sql"].lstrip().upper().startswith("SELECT") for q in queries.captured_queries)
     policy = templates.independent_template_policy(projection)
     assert policy["available"] is True
-    assert policy["message"] == {
+    expected_message = {
         "mode": "template",
         "template_ref": f"lsa{scenario}_{kind}_v1",
         "variables": [projection["variables"][k] for k in expected_keys],
     }
+    if scenario == "07" and kind == "payment_link":
+        expected_message["header"] = {
+            "type": "image",
+            "source_sha256": policy["required_media"]["sha256"],
+        }
+    assert policy["message"] == expected_message
     assert projection["variables"]["amount_sar"] == "500.00"
     prefix = "AM-" if scenario == "07" else "DU-"
     assert projection["variables"]["booking_reference"] == prefix + str(stay.pk)[:8]
@@ -89,6 +95,36 @@ def test_link_is_held_without_persisted_resource_and_does_not_mint(record, monke
     monkeypatch.setattr(links, "public_url", lambda *_: pytest.fail("must not mint link"))
     assert templates.payment_link_projection(stay, row, record[0]) == templates.hold(
         "existing_payment_url_not_bound"
+    )
+
+
+def test_link_image_cannot_be_dropped_or_changed_in_planned_content(record):
+    stay, row, url, _ = link_record(record)
+    projection = templates.payment_link_projection(stay, row, record[0], existing_url=url)
+    policy = templates.independent_template_policy(projection)
+    planned = {
+        "language": policy["language"],
+        "message_input": deepcopy(policy["message"]),
+        "content_digest": policy["content_digest"],
+    }
+    result = templates.verify_prepared(
+        planned, scenario=record[0], kind="payment_link", stay=stay, delivery=row, existing_url=url
+    )
+    assert result["content_matches"] is True and result["source_ack_allowed"] is False
+    if record[0] == "07":
+        del planned["message_input"]["header"]
+    else:
+        planned["message_input"]["header"] = {"type": "image", "source_sha256": "a" * 64}
+    assert (
+        templates.verify_prepared(
+            planned,
+            scenario=record[0],
+            kind="payment_link",
+            stay=stay,
+            delivery=row,
+            existing_url=url,
+        )["available"]
+        is False
     )
 
 
