@@ -211,7 +211,11 @@ def current_basis(event_id):
 
 
 def register_event(event):
-    """Fresh source capture only, never a historical scan or a new due time."""
+    """Fresh source capture only, preserving due even for a new late event.
+
+    The event cutover and current expiry fence history; a past original due
+    does not make a newly captured, unattempted source event historical.
+    """
     if not enabled():
         return
     from .message_relay_models import WebsiteMessageRelay
@@ -227,7 +231,6 @@ def register_event(event):
         event.created_at < cutover()
         or event.created_at > timezone.now()
         or event.revision != extension.chain.revision
-        or due < event.created_at
         or end <= timezone.now()
         or extension.state != "active"
         or not extension.ownership_acknowledged
@@ -277,7 +280,6 @@ def facts_for_row(row):
         or row.expires_at != end
         or cutover() is None
         or event.created_at < cutover()
-        or due < event.created_at
     ):
         raise ValueError("extension_source_journal_changed")
     terminal = str(context["terminal_hostaway_reservation_id"])
