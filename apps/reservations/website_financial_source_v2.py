@@ -38,7 +38,7 @@ def modules(scenario):
     return links, domain
 
 
-def variables(stay, scenario):
+def _variables(stay, scenario, listing):
     if scenario not in source.SOURCES or not isinstance(stay, source.SOURCES[scenario][0]):
         raise ValueError
     amount = stay.amount_sar
@@ -55,7 +55,6 @@ def variables(stay, scenario):
         raise ValueError
     zone = ZoneInfo(stay.time_zone)
     start, end = (value.astimezone(zone) for value in (stay.starts_at, stay.ends_at))
-    listing = getattr(stay.property, "name_" + stay.guest_language, "") or stay.property.name_en
     if not stay.guest_name or not listing:
         raise ValueError
     return {
@@ -72,6 +71,23 @@ def variables(stay, scenario):
         # Canonical validated IANA name until an approved localized display exists.
         "timezone_display": stay.time_zone,
     }
+
+
+def variables(stay, scenario):
+    if scenario not in source.SOURCES or not isinstance(stay, source.SOURCES[scenario][0]):
+        raise ValueError
+    listing = getattr(stay.property, "name_" + stay.guest_language, "") or stay.property.name_en
+    return _variables(stay, scenario, listing)
+
+
+def core_variables(event, scenario):
+    """Match source20's original core snapshot, without changing financial naming."""
+    if scenario not in source.SOURCES or not isinstance(event, source.SOURCES[scenario][1]):
+        raise ValueError
+    event = type(event).objects.select_related("stay__property").get(pk=event.pk)
+    if not source.current_core(event.stay, event, source.SOURCES[scenario][4]):
+        raise ValueError
+    return _variables(event.stay, scenario, event.payload["listing_name"])
 
 
 def core_delivered(stay, event, scenario):

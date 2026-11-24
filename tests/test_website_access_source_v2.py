@@ -4,7 +4,7 @@ import pytest
 
 from apps.reservations import message_source_authorization as source
 from apps.reservations import website_access_source_v2 as access
-from apps.reservations.website_financial_source_v2 import variables
+from apps.reservations.website_financial_source_v2 import core_variables
 from tests import test_message_source_authorization as originals
 
 record = originals.record
@@ -21,7 +21,7 @@ def packet(record):
     event = stay.latest_communication_event()
     locator = source.sha(source.core_keys(stay.pk, event.payload, scenario)["checkin_guide"])
     facts = source.core_facts(stay, event, scenario, locator)
-    local = variables(stay, scenario)
+    local = core_variables(event, scenario)
     context = {key: facts[key] for key in access.IDENTITY_FIELDS}
     context.update(
         source_family=f"lsa{scenario}",

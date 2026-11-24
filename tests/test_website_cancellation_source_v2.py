@@ -237,7 +237,7 @@ def test_cancelled_template_is_independently_rebuilt_with_original_stay_values(c
         not_before=current["not_before"],
         expires_at=current["expires_at"],
         language=current["language"],
-        values=financial.variables(stay, scenario),
+        values=financial.core_variables(event, scenario),
         source_context_ref="synthetic-private-runtime-cancel-context",
     )
     expected = policy.policy_from_source(event, current, context)
