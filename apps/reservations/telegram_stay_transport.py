@@ -58,10 +58,11 @@ def register(event, scenario, *, financial=False):
     if not selected(stay):
         from . import message_source_relay
 
+        source_cutover = message_source_relay.cutover()
         if (
-            getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
-            and message_source_relay.enabled()
-            and message_source_relay.cutover() <= timezone.now()
+            getattr(settings, "WEBSITE_GUEST_MESSAGE_TRANSPORT", "ultramsg") == "ycloud_central"
+            and source_cutover
+            and source_cutover <= timezone.now()
         ):
             return False  # Existing channel ownership is never transferred or deleted.
     from . import day_use_hostaway, morning_hostaway
