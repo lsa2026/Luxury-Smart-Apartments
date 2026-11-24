@@ -27,7 +27,7 @@ def test_public_probe_reads_resolved_settings_without_database_or_dispatch(monke
     assert b"SYNTHETIC_SECRET_MARKER" not in response.content
 
 
-def test_environment_read_is_limited_to_four_known_keys():
+def test_environment_read_is_limited_to_six_known_keys():
     class LimitedEnvironment:
         def get(self, key, default):
             assert key in FIELDS
@@ -77,7 +77,7 @@ def test_non_boolean_setting_is_unknown_not_a_truthy_grant():
     assert snapshot(settings=settings)[FIELDS[0]] is None
 
 
-def test_worker_ready_logs_only_resolved_four_fields(caplog, monkeypatch):
+def test_worker_ready_logs_only_resolved_six_fields(caplog, monkeypatch):
     from config.celery import log_source_purpose_configuration
 
     monkeypatch.setenv(FIELDS[0], "false")
@@ -93,6 +93,26 @@ def test_worker_ready_logs_only_resolved_four_fields(caplog, monkeypatch):
         "values": VALUES,
     }
     assert "SYNTHETIC_SECRET_MARKER" not in caplog.text
+
+
+def test_only_the_six_approved_operational_fields_can_be_read():
+    assert set(FIELDS) == {
+        "MESSAGE_LOYALTY_SOURCE_V2_ENABLED",
+        "MESSAGE_LOYALTY_SOURCE_CUTOVER_AT",
+        "MESSAGE_CANCELLATION_SOURCE_V2_ENABLED",
+        "MESSAGE_CANCELLATION_SOURCE_CUTOVER_AT",
+        "MESSAGE_EXTENSION_SOURCE_V2_ENABLED",
+        "MESSAGE_EXTENSION_SOURCE_CUTOVER_AT",
+    }
+
+
+def test_extension_metadata_does_not_inherit_normal_or_loyalty_cutover():
+    environment = {FIELDS[0]: "true", FIELDS[1]: EPOCH, "MESSAGE_SOURCE_CUTOVER_AT": EPOCH}
+    values = snapshot(environment=environment)
+    assert values["MESSAGE_EXTENSION_SOURCE_V2_ENABLED"] is False
+    assert values["MESSAGE_EXTENSION_SOURCE_CUTOVER_AT"] == ""
+    environment["MESSAGE_EXTENSION_SOURCE_CUTOVER_AT"] = "SYNTHETIC_SECRET_MARKER"
+    assert snapshot(environment=environment)["MESSAGE_EXTENSION_SOURCE_CUTOVER_AT"] is None
 
 
 def test_actual_beat_init_readback_is_isolated_and_has_no_provider_imports():
