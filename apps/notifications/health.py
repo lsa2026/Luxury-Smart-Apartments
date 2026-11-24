@@ -9,10 +9,17 @@ from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.http import JsonResponse
 
+from scheduler_runtime.source_purpose_health import snapshot
+
 
 def live(request: object) -> JsonResponse:
     del request
-    return JsonResponse({"status": "ok"})
+    response = JsonResponse(
+        {"status": "ok", "website_source_purposes": snapshot(settings=settings)}
+    )
+    response["Cache-Control"] = "no-store"
+    response["Referrer-Policy"] = "no-referrer"
+    return response
 
 
 def readiness_status() -> tuple[bool, dict[str, str]]:
