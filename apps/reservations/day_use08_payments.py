@@ -172,6 +172,9 @@ def capture_payment(stay_id):
 
     register_telegram(event, "08", financial=True)
     register_event(event, "08", financial=True)
+    from .website_review_source_v2 import capture_new_payment
+
+    capture_new_payment(event, "08")
     transaction.on_commit(lambda: queue_event(str(event.pk)), robust=True)
     return event
 

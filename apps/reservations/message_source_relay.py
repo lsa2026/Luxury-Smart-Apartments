@@ -269,6 +269,7 @@ def current_event(row):
 @sensitive_variables()
 def forward_due(*, client=None, limit=1):
     from . import extension_checkout_source_v2 as extension
+    from . import website_review_source_v2 as reviews
 
     scopes = (["07", "08"] if enabled() else []) + (["02"] if extension.enabled() else [])
     if not scopes:
@@ -290,6 +291,8 @@ def forward_due(*, client=None, limit=1):
             .exclude(pk__in=examined)
             .order_by("updated_at", "not_before", "created_at")
         )
+        if not reviews.enabled():
+            pending = pending.exclude(message_type__in=reviews.KINDS)
         candidate = pending.values("pk", "message_type").first()
         if candidate is None:
             break

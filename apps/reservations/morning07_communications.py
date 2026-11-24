@@ -147,6 +147,9 @@ def capture_event(stay_id):
 
     register_telegram(event, "07")
     register_event(event, "07")
+    from .website_review_source_v2 import capture_new_core
+
+    capture_new_core(event, "07")
     transaction.on_commit(lambda: queue_stay_event(str(stay.pk)))
 
 

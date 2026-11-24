@@ -36,9 +36,12 @@ def campaign(record, settings, request):
     settings.MESSAGE_RECEIPTS_ENABLED = True
     settings.WEBSITE_GUEST_MESSAGE_TRANSPORT = "ycloud_central"
     settings.MESSAGE_SOURCE_CUTOVER_AT = (timezone.now() - timedelta(hours=1)).isoformat()
+    settings.MESSAGE_REVIEW_SOURCE_V2_ENABLED = False
+    settings.MESSAGE_REVIEW_SOURCE_CUTOVER_AT = settings.MESSAGE_SOURCE_CUTOVER_AT
     comms = original.source.SOURCES[scenario][4]
     with transaction.atomic():
         comms.capture_event(stay.pk)
+    settings.MESSAGE_REVIEW_SOURCE_V2_ENABLED = True
     stay.refresh_from_db()
     event = stay.latest_communication_event()
     result = review.create_technical_slots(event, scenario)
