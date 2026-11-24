@@ -359,6 +359,40 @@ def test_independent_approved_render_uses_each_language_and_four_local_values(pr
     assert wrapper["context"]["values"]["review_url"] == "https://g.page/r/synthetic_only/review"
 
 
+@pytest.mark.parametrize("campaign", ["ar", "en", "fr"], indirect=True)
+def test_all_three_independent_steps_match_current_policy_and_approved_template(
+    campaign, monkeypatch
+):
+    for step in (1, 2, 3):
+        slot, row, facts = due(campaign, monkeypatch, step)
+        assert facts["domain_authorized"] is True
+        ctx = review.compose_review_context(
+            facts, facts["template_context"], packet(facts, campaign[3])
+        )
+        with transaction.atomic():
+            selected = review.policy_from_source(campaign[2], facts, ctx)
+        assert selected is not None
+        assert selected["message"]["template_ref"] == f"lsa_google_review_{step}_v2"
+        expected = WebsiteMessageExpectation.objects.create(
+            request_id=f"synthetic-step-{step}",
+            relay=row,
+            identity={**facts, "binding_ref": "synthetic-binding", "content_digest": "a" * 64},
+            prepare_ref=str(step) * 64,
+            render_policy_ref="synthetic",
+            prepared_at_epoch=int(timezone.now().timestamp()),
+        )
+        with transaction.atomic():
+            review.consume_ack(expected)
+        WebsiteMessageExpectation.objects.filter(pk=expected.pk).update(
+            state="delivered",
+            attempts_claimed=1,
+            provider_message_id="synthetic",
+            wamid="synthetic",
+            receipt_evidence_ref="synthetic-signed",
+            observed_at_epoch=int(timezone.now().timestamp()),
+        )
+
+
 @pytest.mark.parametrize(
     "bad", ["core_capability", "wrong_scenario", "wrong_job", "extra", "expired"]
 )
