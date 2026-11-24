@@ -147,7 +147,9 @@ def verified_identity(proof, facts, request_id):
     if type(proof.get("reservation_revision")) is not str:
         raise ValueError
     suffix = (
-        "_payment_link"
+        "_review"
+        if ":review:" in facts["source_event_key"]
+        else "_payment_link"
         if ":payment_link:" in facts["source_event_key"]
         else ("_payment" if ":payment:" in facts["source_event_key"] else "")
     )
@@ -225,7 +227,9 @@ def historical_website_scope(row):
     if row.scenario not in {"07", "08"}:
         raise ValueError
     resource_kind = (
-        "payment_link"
+        "review"
+        if row.message_type in {"review_followup_1", "review_followup_2", "review_followup_3"}
+        else "payment_link"
         if row.message_type == "payment_link"
         else "payment"
         if row.financial
@@ -311,7 +315,11 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                 "yc19-render-source-view-2" if version2 else "yc19-render-source-view-1"
             )
             provenance = (
-                "authenticated_source01_financial"
+                "authenticated_source01_review+private_runtime_rpc_review_policy20"
+                if version2
+                and facts["source_message_type"]
+                in {"review_followup_1", "review_followup_2", "review_followup_3"}
+                else "authenticated_source01_financial"
                 if version2
                 and facts["source_message_type"]
                 in {"payment_link", "payment_success", "loyalty_invitation"}
@@ -424,6 +432,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             from .website_loyalty_source_v2 import consume_ack
 
             consume_ack(expectation)
+            from .website_review_source_v2 import consume_ack as consume_review_ack
+
+            consume_review_ack(expectation)
             return "prepared"
         if (
             prior.relay_id != row.pk
@@ -535,7 +546,7 @@ def initial_binding_relay(request_id, binding_ref, capability):
     if scenario not in {"07", "08"} or not isinstance(event_key, str):
         raise ValueError
     match = re.fullmatch(
-        rf"website:{scenario}:(core|payment|payment_link):([0-9a-f-]{{36}})", event_key
+        rf"website:{scenario}:(core|payment|payment_link|review):([0-9a-f-]{{36}})", event_key
     )
     if not match or not isinstance(proof.get("reservation_key"), str):
         raise ValueError

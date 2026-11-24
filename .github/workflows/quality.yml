@@ -52,6 +52,7 @@ jobs:
           tests/test_website_financial_source_v2.py
           tests/test_website_core_snapshot_names.py
           tests/test_website_loyalty_source_v2.py
+          tests/test_website_review_source_v2.py
           tests/test_extension_checkout_source_v2.py
           tests/test_website_access_source_v2.py
           tests/test_website_template_contract_v2.py

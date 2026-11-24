@@ -65,6 +65,9 @@ PURPOSES = {
     "payment_success": "payment_confirmation",
     "loyalty_invitation": "loyalty_invitation",
     "payment_link": "payment_link",
+    "review_followup_1": "review_request",
+    "review_followup_2": "review_reminder_2",
+    "review_followup_3": "review_reminder_3",
 }
 
 
