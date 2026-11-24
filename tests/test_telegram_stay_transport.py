@@ -233,3 +233,35 @@ def test_future_v2_cutover_does_not_prematurely_change_telegram_ownership(owned,
     with transaction.atomic():
         assert transport.register(event, scenario) is True
     assert transport.selected(stay)
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_paused_ycloud_does_not_reassign_new_ownership_or_block_existing(owned, settings, existing):
+    from apps.reservations import message_source_relay
+    from apps.reservations.message_relay_models import WebsiteMessageRelay
+
+    scenario, stay, event = owned
+    source_cutover(settings, event.created_at - timedelta(seconds=1))
+    settings.MESSAGE_SOURCE_RELAY_ENABLED = False
+    settings.MESSAGE_SOURCE_V2_ENABLED = False
+    if not existing:
+        TelegramStayNotice.objects.all().delete()
+        TelegramStayChannel.objects.all().delete()
+    prior = list(TelegramStayChannel.objects.values())
+    with transaction.atomic():
+        assert transport.register(event, scenario) is existing
+        message_source_relay.register_event(event, scenario)
+    assert list(TelegramStayChannel.objects.values()) == prior
+    assert TelegramStayNotice.objects.count() == int(existing)
+    assert not WebsiteMessageRelay.objects.exists()
+
+
+def test_source_epoch_alone_cannot_close_a_different_selected_transport(owned, settings):
+    scenario, stay, event = owned
+    TelegramStayNotice.objects.all().delete()
+    TelegramStayChannel.objects.all().delete()
+    source_cutover(settings, event.created_at - timedelta(seconds=1))
+    settings.WEBSITE_GUEST_MESSAGE_TRANSPORT = "ultramsg"
+    with transaction.atomic():
+        assert transport.register(event, scenario) is True
+    assert transport.selected(stay)
