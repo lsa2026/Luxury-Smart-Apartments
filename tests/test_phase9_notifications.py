@@ -870,7 +870,8 @@ def test_csv_export_csrf(superuser) -> None:
 def test_health_live() -> None:
     response = Client().get(reverse("notifications:health_live"))
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json()["status"] == "ok"
+    assert set(response.json()) == {"status", "website_source_purposes"}
 
 
 def test_health_ready() -> None:

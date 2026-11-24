@@ -8,8 +8,15 @@ import os
 from urllib.parse import urlparse
 
 from celery import Celery
+from celery.signals import beat_init
 
 from scheduler_runtime.schedule import build_beat_schedule
+from scheduler_runtime.source_purpose_health import log_snapshot
+
+
+@beat_init.connect
+def log_source_purpose_configuration(**kwargs):
+    log_snapshot("beat")
 
 
 def flag(name: str) -> bool:

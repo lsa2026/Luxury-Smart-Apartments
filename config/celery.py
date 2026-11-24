@@ -13,6 +13,15 @@ app.autodiscover_tasks()
 
 
 @worker_ready.connect
+def log_source_purpose_configuration(**kwargs):
+    from django.conf import settings
+
+    from scheduler_runtime.source_purpose_health import log_snapshot
+
+    log_snapshot("worker", settings=settings)
+
+
+@worker_ready.connect
 def queue_owner_backup_replacement(sender=None, **kwargs):
     """Dispatch only an explicit owner request; empty by default, never a schedule."""
     request_id = os.environ.get("LSA_LOYALTY_REPLACEMENT_REQUEST", "")
