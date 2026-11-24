@@ -383,6 +383,10 @@ def payment_facts(stay, event, scenario, locator, payments):
     )
     if not purpose:
         return None
+    if purpose == "loyalty_invitation" and getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
+        from .website_loyalty_source_v2 import source as loyalty_source
+
+        return loyalty_source(event.pk, scenario)
     result = base_facts(stay, event, scenario, locator, purpose, financial=True)
     result.update(
         payment_revision=event.payment_revision,

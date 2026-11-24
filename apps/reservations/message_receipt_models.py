@@ -12,6 +12,7 @@ class WebsiteMessageExpectation(models.Model):
     expectation_ref = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     prepare_ref = models.CharField(max_length=64, unique=True)
     identity = models.JSONField()
+    source_binding = models.JSONField(default=dict, db_default={}, editable=False)
     render_policy_ref = models.CharField(max_length=128)
     prepared_at_epoch = models.BigIntegerField()
     registered_at = models.DateTimeField(default=timezone.now, editable=False)

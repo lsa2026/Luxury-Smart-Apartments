@@ -89,7 +89,7 @@ class JoinInvitation(models.Model):
     generation = models.PositiveIntegerField(default=1)
     expires_at = models.DateTimeField()
     dispatched_at = models.DateTimeField(null=True, blank=True)
-    provider_id = models.CharField(max_length=100, blank=True)
+    provider_id = models.CharField(max_length=512, blank=True)
     outcomes = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
