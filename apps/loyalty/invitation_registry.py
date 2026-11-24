@@ -248,8 +248,24 @@ def consume(
     day_use_stay=None,
     day_use_payment_event_id=None,
     telegram_stay_message=None,
+    website_message_expectation=None,
 ):
     """One send permit only. Lost preflight responses MUST NOT trigger a provider POST."""
+    if website_message_expectation is not None:
+        if row.channel != "ycloud" or any(
+            value is not None
+            for value in (
+                proof,
+                exclude_legacy,
+                morning_stay,
+                day_use_stay,
+                day_use_payment_event_id,
+                telegram_stay_message,
+            )
+        ):
+            raise ValidationError("website_invitation_permit_conflict")
+    elif row.channel == "ycloud":
+        raise ValidationError("website_invitation_permit_required")
     if proof is not None:
         try:
             data = signing.loads(proof, salt=SALT, max_age=TTL)
@@ -259,7 +275,12 @@ def consume(
             raise ValidationError("ticket_mismatch")
     if row.phone != phone:
         raise ValidationError("phone_changed")
-    if telegram_stay_message is not None:
+    if website_message_expectation is not None:
+        from apps.reservations.website_loyalty_source_v2 import validate_permit
+
+        validate_permit(row, website_message_expectation, phone)
+        booking = None
+    elif telegram_stay_message is not None:
         from apps.reservations.telegram_stay_financial import validate_loyalty_permit
 
         validate_loyalty_permit(row, telegram_stay_message, phone)
@@ -352,6 +373,8 @@ def consume(
 
 
 def record(row, state, provider_id=""):
+    if row.channel == "ycloud" and (not isinstance(provider_id, str) or len(provider_id) > 512):
+        raise ValidationError("provider_id_invalid")
     if state not in {
         "accepted",
         "unknown",

@@ -11,7 +11,6 @@ from uuid import uuid5
 import httpx
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.debug import sensitive_variables
@@ -271,22 +270,33 @@ def forward_due(*, client=None, limit=1):
     examined = set()
     budget = min(max(limit, 0), 3)
     while len(examined) < 30 and accepted < budget:
-        with transaction.atomic():
+        from .website_loyalty_source_v2 import prepare_for_relay, source_lock
+
+        pending = (
+            WebsiteMessageRelay.objects.filter(
+                state="pending", not_before__lte=timezone.now(), scenario__in=scopes
+            )
+            .exclude(
+                reason__in=["deferred_before_claim:" + reason for reason in DEFERRED_REASONS],
+                updated_at__gt=timezone.now() - DEFER_RECHECK,
+            )
+            .exclude(pk__in=examined)
+            .order_by("updated_at", "not_before", "created_at")
+        )
+        candidate = pending.values("pk", "message_type").first()
+        if candidate is None:
+            break
+        with source_lock(is_loyalty=candidate["message_type"] == "loyalty_invitation"):
             row = (
-                WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
-                .filter(state="pending", not_before__lte=timezone.now(), scenario__in=scopes)
-                .exclude(
-                    reason__in=["deferred_before_claim:" + reason for reason in DEFERRED_REASONS],
-                    updated_at__gt=timezone.now() - DEFER_RECHECK,
-                )
-                .exclude(pk__in=examined)
-                .order_by("updated_at", "not_before", "created_at")
+                pending.select_for_update(skip_locked=True)
+                .filter(pk=candidate["pk"], state="pending")
                 .first()
             )
+            examined.add(candidate["pk"])
             if row is None:
-                break
-            examined.add(row.pk)
+                continue
             try:
+                prepare_for_relay(row)
                 current = current_event(row)
             except (InvalidPhoneNumber, ValidationError, KeyError, ValueError, TypeError):
                 current = None

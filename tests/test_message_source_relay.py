@@ -213,3 +213,28 @@ def test_blocked_predecessors_do_not_starve_another_current_booking(journal, mon
     assert relay.forward_due(client=receiver) == {"accepted": 1}
     assert receiver.calls[0][0]["relay_ref"] == str(rows[-1].pk)
     assert WebsiteMessageRelay.objects.filter(not_before=event.created_at).count() == 31
+
+
+def test_concurrent_deferred_reply_is_rechecked_after_candidate_selection(journal, monkeypatch):
+    from contextlib import contextmanager
+
+    from apps.reservations import website_loyalty_source_v2 as loyalty
+
+    row = WebsiteMessageRelay.objects.get(message_type="status_new")
+    WebsiteMessageRelay.objects.exclude(pk=row.pk).update(state="held")
+    original_lock = loyalty.source_lock
+
+    @contextmanager
+    def deferred_during_lock(**kwargs):
+        WebsiteMessageRelay.objects.filter(pk=row.pk).update(
+            reason="deferred_before_claim:waiting_predecessor", updated_at=timezone.now()
+        )
+        with original_lock(**kwargs):
+            yield
+
+    monkeypatch.setattr(loyalty, "source_lock", deferred_during_lock)
+    receiver = Receiver()
+    assert relay.forward_due(client=receiver) == {"accepted": 0}
+    assert receiver.calls == []
+    row.refresh_from_db()
+    assert row.state == "pending" and row.reason == "deferred_before_claim:waiting_predecessor"

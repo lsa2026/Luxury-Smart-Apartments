@@ -91,13 +91,18 @@ def snapshot(stay, event, scenario, kind, identity):
     phone = normalize_phone_number(stay.guest_phone)
     locator = (
         source.sha(source.SOURCES[scenario][5].reference(event.pk, kind)[0])
-        if kind == "payment_success"
+        if kind in {"payment_success", "loyalty_invitation"}
         else source.sha(
             ("morning-pay-" if scenario == "07" else "day-use-pay-") + identity["delivery_id"]
         )
     )
     base = source.base_facts(
-        stay, event, scenario, locator, kind, financial=kind == "payment_success"
+        stay,
+        event,
+        scenario,
+        locator,
+        kind,
+        financial=kind in {"payment_success", "loyalty_invitation"},
     )
     return {
         **base,
@@ -186,7 +191,7 @@ def scoped_snapshot(result, stay):
         )
         admitted = relay.WebsiteMessageRelay.objects.filter(
             scenario=result["scenario"],
-            financial=kind == "payment_success",
+            financial=kind in {"payment_success", "loyalty_invitation"},
             event_id=resource_id,
             stay_id=result["reservation_key"].split(":", 1)[1],
             revision=result["reservation_revision"],
