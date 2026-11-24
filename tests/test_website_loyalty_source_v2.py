@@ -477,10 +477,11 @@ def test_authenticated_read_exports_context_but_does_not_consume(paid, client):
     assert not invitation.dispatched_at
 
 
+@pytest.mark.skipif(
+    connection.vendor != "postgresql", reason="Requires real PostgreSQL advisory and row locks"
+)
 @pytest.mark.django_db(transaction=True)
 def test_postgres_concurrent_source_claims_keep_one_uuid(paid):
-    if connection.vendor != "postgresql":
-        pytest.skip("Requires real PostgreSQL advisory and row locks")
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
 
