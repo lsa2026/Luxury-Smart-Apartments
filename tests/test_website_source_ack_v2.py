@@ -89,7 +89,7 @@ def v2(prepared, monkeypatch, settings):
             f"{facts['reservation_key']}:{facts['recipient_e164']}"
         ),
         values={
-            **financial.variables(event.stay, row.scenario),
+            **financial.core_variables(event, row.scenario),
             "booking_platform": "Direct Website",
         },
     )

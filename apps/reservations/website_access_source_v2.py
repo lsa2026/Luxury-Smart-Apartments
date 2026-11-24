@@ -12,7 +12,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.debug import sensitive_variables
 
 from . import message_source_authorization as source
-from .website_financial_source_v2 import hold, variables
+from .website_financial_source_v2 import core_variables, hold
 
 DOCUMENT_FIELDS = (
     "guest_name",
@@ -105,7 +105,7 @@ def access_source_values(event, facts, context):
             actual, expected = parse_datetime(context[key]), parse_datetime(facts[key])
             if actual is None or not timezone.is_aware(actual) or actual != expected:
                 return hold("access_source_window_unverified")
-        local = variables(stay, scenario)
+        local = core_variables(event, scenario)
         values = context.get("values")
         if not isinstance(values, dict) or any(
             not isinstance(values.get(k), str) or not values[k].strip() or len(values[k]) > 4096

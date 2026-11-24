@@ -63,7 +63,7 @@ def policy_from_source(event, facts, context):
             if bound.get("values") != current.get("variables"):
                 return None
         else:
-            local = financial.variables(event.stay, scenario)
+            local = financial.core_variables(event, scenario)
             values = bound.get("values")
             if not isinstance(values, dict):
                 return None
