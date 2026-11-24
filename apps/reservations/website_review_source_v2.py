@@ -1,4 +1,4 @@
-"""Independent permanent review slots. No producer hook or new send flag.
+"""Independent permanent review slots and strictly future source capture.
 
 Technical scheduling is private metadata; only the existing authenticated
 zero-claim prepare/ACK can bind a slot. Google controls come independently
@@ -80,6 +80,66 @@ def locked_stay(scenario, stay_id):
     return model.objects.select_for_update(of=("self",)).select_related("property").get(pk=stay_id)
 
 
+def technical_stay(scenario, stay_id):
+    # Capture already owns the stay lock. Technical metadata must not reverse
+    # the property's preclaim lock order or authorize any actual dispatch.
+    return (
+        source.SOURCES[scenario][0]
+        .objects.select_for_update(of=("self",))
+        .select_related("property")
+        .get(pk=stay_id)
+    )
+
+
+def cutover():
+    try:
+        at = parse_datetime(getattr(settings, "MESSAGE_REVIEW_SOURCE_CUTOVER_AT", ""))
+    except (ValueError, TypeError):
+        return None
+    return at if at and timezone.is_aware(at) else None
+
+
+def enabled():
+    at, general = cutover(), relay.cutover()
+    return bool(
+        getattr(settings, "MESSAGE_REVIEW_SOURCE_V2_ENABLED", False) is True
+        and getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False) is True
+        and relay.enabled()
+        and at
+        and general
+        and general <= at <= timezone.now()
+    )
+
+
+def capture_new_core(event, scenario):
+    """Called only for a newly inserted, typed original core event, never a scan."""
+    if not enabled():
+        return None
+    campaign = create_technical_slots(event, scenario)
+    if campaign is not None:
+        for slot in campaign.slots.order_by("step"):
+            register_slot(slot.pk)
+    return campaign
+
+
+def capture_new_payment(event, scenario):
+    """New verified payment may complete a new-cohort current core admission."""
+    if not enabled():
+        return None
+    if scenario not in source.SOURCES or not isinstance(event, source.SOURCES[scenario][2]):
+        raise ValueError("review_payment_owner_mismatch")
+    if not cutover() <= event.created_at <= timezone.now():
+        return None
+    # Current core itself must belong to the new review cohort. A new payment
+    # never backfills an older booking or changes the original source timestamp.
+    stay = technical_stay(scenario, event.stay_id)
+    payments = source.SOURCES[scenario][5]
+    if not payments.current(event):
+        return None
+    core = stay.latest_communication_event()
+    return capture_new_core(core, scenario) if core is not None else None
+
+
 def local_history(stay, scenario):
     from .telegram_stay_models import (
         TelegramStayChannel,
@@ -105,23 +165,29 @@ def local_history(stay, scenario):
     return "not_attempted"
 
 
+def payment_eligible(stay, scenario):
+    # Preserve the financial source's exact full-collection, amount/currency,
+    # unresolved-attempt and confirmed-booking checks even after checkout.
+    return source.SOURCES[scenario][5].verified_facts(stay, allow_ended=True) is not None
+
+
 @transaction.atomic
 def create_technical_slots(event, scenario):
-    """Explicit private entry point only; deliberately not wired to capture/beat."""
+    """Create fixed technical slots in the new event's capture transaction."""
     if scenario not in source.SOURCES or not isinstance(event, source.SOURCES[scenario][1]):
         raise ValueError("review_source_owner_mismatch")
-    if not relay.enabled() or not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False):
+    if not enabled():
         return None
-    stay = locked_stay(scenario, event.stay_id)
+    stay = technical_stay(scenario, event.stay_id)
     comms = source.SOURCES[scenario][4]
     event = type(event).objects.get(pk=event.pk, stay=stay)
-    at, now = relay.cutover(), timezone.now()
+    at, now = cutover(), timezone.now()
     if (
         stay.environment != "production"
         or stay.status == "cancelled"
         or not at <= event.created_at <= now < stay.ends_at
         or not source.current_core(stay, event, comms)
-        or not comms.verified_payment(stay)
+        or not payment_eligible(stay, scenario)
         or local_history(stay, scenario) != "not_attempted"
     ):
         return None
@@ -151,14 +217,13 @@ def create_technical_slots(event, scenario):
 
 @transaction.atomic
 def register_slot(slot_id):
-    """Explicit admission only, not an active worker or historical scanner."""
+    """Register one fixed due row for the existing relay worker, never a scanner."""
     slot = WebsiteReviewSlot.objects.select_related("campaign").get(pk=slot_id)
-    stay = locked_stay(slot.campaign.scenario, slot.campaign.stay_id)
+    stay = technical_stay(slot.campaign.scenario, slot.campaign.stay_id)
     slot = WebsiteReviewSlot.objects.select_for_update().select_related("campaign").get(pk=slot_id)
     event = stay.latest_communication_event()
     if (
-        not relay.enabled()
-        or not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+        not enabled()
         or event is None
         or slot.basis.get("scope") != scope(stay, event, slot.campaign.scenario)
         or timezone.now() >= slot.expires_at
@@ -236,8 +301,7 @@ def facts_for_row(row):
     comms = source.SOURCES[scenario][4]
     now = timezone.now()
     if (
-        not relay.enabled()
-        or not getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+        not enabled()
         or event is None
         or not source.current_core(stay, event, comms)
         or slot.campaign.origin_event_id != event.pk
@@ -246,8 +310,8 @@ def facts_for_row(row):
         or stay.environment != "production"
         or stay.status == "cancelled"
         or not comms.admitted(stay)
-        or not comms.verified_payment(stay)
-        or not relay.cutover() <= slot.campaign.source_occurred_at <= now < slot.expires_at
+        or not payment_eligible(stay, scenario)
+        or not cutover() <= slot.campaign.source_occurred_at <= now < slot.expires_at
         or row.revision != str(stay.communication_revision)
         or row.source_occurred_at != slot.campaign.source_occurred_at
         or row.not_before != slot.not_before
