@@ -163,6 +163,13 @@ def register_payment_link(event, scenario):
 
 
 def current_event(row):
+    if row.message_type in {"review_followup_1", "review_followup_2", "review_followup_3"}:
+        from .website_review_source_v2 import facts_for_row
+
+        try:
+            return facts_for_row(row)
+        except Exception:
+            return None
     if row.scenario == "02":
         from . import extension_checkout_source_v2 as extension
 
@@ -305,7 +312,11 @@ def forward_due(*, client=None, limit=1):
                 row.save(update_fields=["state", "reason", "updated_at"])
                 continue
             event, facts = current
-            if not row.financial and row.scenario in {"07", "08"}:
+            if (
+                not row.financial
+                and row.scenario in {"07", "08"}
+                and not row.message_type.startswith("review_followup_")
+            ):
                 from .message_receipts import core_slot_delivered
 
                 if core_slot_delivered(event.stay, event, row.scenario, row.message_type):
@@ -322,6 +333,10 @@ def forward_due(*, client=None, limit=1):
         # retried, even if no ACK was received. Reconciliation is separate.
         if row.scenario == "02":
             capability = extension.read_capability(row, event.extension)
+        elif row.message_type.startswith("review_followup_"):
+            from .website_review_source_v2 import read_capability
+
+            capability = read_capability(row, facts)
         else:
             comms, payments = source.SOURCES[row.scenario][4:6]
             capability = payments.capability(event) if row.financial else comms.event_token(event)
@@ -333,6 +348,8 @@ def forward_due(*, client=None, limit=1):
             "scenario": row.scenario,
             "source_kind": "extension_checkout"
             if row.scenario == "02"
+            else "review"
+            if row.message_type.startswith("review_followup_")
             else "payment_link"
             if row.message_type == "payment_link"
             else "payment"

@@ -19,6 +19,7 @@ from apps.reservations import (
     telegram_stay_journey,
     telegram_stay_source,
     website_financial_source_v2,
+    website_review_source_v2,
 )
 
 from .views import hostaway_unified_webhook
@@ -26,6 +27,18 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path(
+        "morning07/reviews/source-authorization/",
+        website_review_source_v2.authorization,
+        {"scenario": "07"},
+        name="morning07_review_source_authorization",
+    ),
+    path(
+        "day-use08/reviews/source-authorization/",
+        website_review_source_v2.authorization,
+        {"scenario": "08"},
+        name="day_use08_review_source_authorization",
+    ),
     path(
         "stay-extensions/checkout/source-authorization/",
         extension_checkout_source_v2.authorization,

@@ -1112,3 +1112,4 @@ from .day_use_models import (  # noqa: F401, E402
     DayUsePaymentLinkDelivery,
     DayUseStay,
 )
+from .review_source_models import WebsiteReviewCampaign, WebsiteReviewSlot  # noqa: F401, E402
