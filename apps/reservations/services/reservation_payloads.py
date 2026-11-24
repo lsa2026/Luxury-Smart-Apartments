@@ -10,6 +10,7 @@ from apps.integrations.hostaway.reservation_validators import (
     HostawayReservationCreateRequest,
     ReservationFinanceField,
 )
+from apps.payments.countries import ISO_ALPHA2_COUNTRY_CODES
 from apps.reservations.models import Reservation, StayExtension
 
 
@@ -53,6 +54,7 @@ def build_hostaway_reservation_request(
             final_total=reservation.total_price,
         )
     extension = StayExtension.objects.filter(reservation=reservation).first()
+    address = _guest_address_fields(intent)
     return HostawayReservationCreateRequest(
         listing_map_id=listing_map_id,
         channel_id=channel_id,
@@ -60,7 +62,7 @@ def build_hostaway_reservation_request(
         guest_last_name=intent.guest_last_name,
         guest_email=intent.guest_email,
         guest_phone=intent.guest_phone,
-        guest_country_code=intent.guest_country_code,
+        guest_country_code=address.pop("guest_country_code"),
         guest_locale=intent.language,
         guests=reservation.guests,
         check_in=reservation.check_in,
@@ -70,7 +72,37 @@ def build_hostaway_reservation_request(
         finance_fields=finance_fields,
         provider=settings.HOSTAWAY_RESERVATION_PROVIDER,
         host_note="EXT01:" + str(extension.pk) if extension else "",
+        **address,
     )
+
+
+def _guest_address_fields(intent):
+    """Optional saved billing input, never property/OTA-derived guest geography.
+
+    Manual/legacy intents can contain placeholders or only the model's default
+    country. Those do not establish a supplied address. Existing guest country
+    remains unchanged when there is no meaningful address component.
+    """
+
+    def text(name):
+        value = getattr(intent, name, "")
+        if not isinstance(value, str):
+            return ""
+        value = value.strip()
+        return "" if value.casefold() in {"not provided", "unknown", "n/a"} else value
+
+    street, region = text("billing_street1"), text("billing_state")
+    city, postcode = text("billing_city"), text("billing_postcode")
+    country = text("billing_country").upper()
+    supplied = any((street, region, city, postcode))
+    return {
+        "guest_address": "\n".join(part for part in (street, region) if part),
+        "guest_city": city,
+        "guest_zip_code": postcode,
+        "guest_country_code": country
+        if supplied and country in ISO_ALPHA2_COUNTRY_CODES
+        else intent.guest_country_code,
+    }
 
 
 def _override_price_details(

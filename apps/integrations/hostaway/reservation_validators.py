@@ -1,7 +1,7 @@
 """Sanitized DTOs and validators for Hostaway reservation operations."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -94,6 +94,9 @@ class HostawayReservationCreateRequest:
     provider: str
     guest_locale: str = "ar"
     host_note: str = ""
+    guest_address: str = field(default="", repr=False)
+    guest_city: str = field(default="", repr=False)
+    guest_zip_code: str = field(default="", repr=False)
 
     def to_payload(self) -> dict[str, Any]:
         if self.listing_map_id <= 0:
@@ -125,6 +128,17 @@ class HostawayReservationCreateRequest:
             "currency": self.currency.upper(),
             "financeField": [item.to_payload() for item in self.finance_fields],
         }
+        # Documented reservation fields only. Hostaway has no documented
+        # separate guestState field; the source formats any region into address.
+        for key, value, limit in (
+            ("guestAddress", self.guest_address, 151),
+            ("guestCity", self.guest_city, 80),
+            ("guestZipCode", self.guest_zip_code, 16),
+        ):
+            if not isinstance(value, str) or len(value) > limit:
+                raise ValueError("guest_address_invalid")
+            if value:
+                payload[key] = value
         if self.host_note:
             if not re.fullmatch(r"EXT01:[0-9a-f-]{36}", self.host_note):
                 raise ValueError("extension_marker_invalid")
