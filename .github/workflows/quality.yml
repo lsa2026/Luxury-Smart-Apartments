@@ -45,6 +45,7 @@ jobs:
         run: >-
           pytest tests/test_owner_modification_workflow.py
           tests/test_workgroup_queue_audit.py
+          tests/test_future_telegram_channel_audit.py
           tests/test_message_source_authorization.py
           tests/test_website_cancellation_source_v2.py
           tests/test_website_financial_source_v2.py
