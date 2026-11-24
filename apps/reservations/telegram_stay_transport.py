@@ -55,6 +55,15 @@ def register(event, scenario, *, financial=False):
     at = cutover()
     if stay.environment != "production" or stay.created_at < at or event.created_at < at:
         return False
+    if not selected(stay):
+        from . import message_source_relay
+
+        if (
+            getattr(settings, "MESSAGE_SOURCE_V2_ENABLED", False)
+            and message_source_relay.enabled()
+            and message_source_relay.cutover() <= timezone.now()
+        ):
+            return False  # Existing channel ownership is never transferred or deleted.
     from . import day_use_hostaway, morning_hostaway
 
     owner = morning_hostaway if scenario == "07" else day_use_hostaway
