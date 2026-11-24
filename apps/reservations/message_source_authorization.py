@@ -307,6 +307,13 @@ def core_facts(stay, event, scenario, locator):
     result["domain_authorized"] = result["consent"]["revoked"] is not True and predecessors_verified
     if not predecessors_verified:
         result["blockers"].append("predecessor_delivery_unverified")
+    if purpose == "status_cancelled":
+        from .website_cancellation_source_v2 import admitted, verified_fields
+
+        result.update(verified_fields(stay, event, scenario))
+        if result["final_cancellation_verified"] is not True or not admitted(event):
+            result["domain_authorized"] = False
+            result["blockers"].append("confirmed_cancellation_source_and_cutover_required")
     result["legacy_state"] = core_history(stay, purpose, scenario)
     if purpose == "reminder_checkout":
         result["not_before"] = (stay.ends_at - timedelta(hours=1)).isoformat()
