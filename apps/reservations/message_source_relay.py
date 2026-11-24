@@ -272,7 +272,7 @@ def forward_due(*, client=None, limit=1):
     while len(examined) < 30 and accepted < budget:
         from .website_loyalty_source_v2 import prepare_for_relay, source_lock
 
-        candidate = (
+        pending = (
             WebsiteMessageRelay.objects.filter(
                 state="pending", not_before__lte=timezone.now(), scenario__in=scopes
             )
@@ -282,18 +282,17 @@ def forward_due(*, client=None, limit=1):
             )
             .exclude(pk__in=examined)
             .order_by("updated_at", "not_before", "created_at")
-            .values("pk", "message_type")
-            .first()
         )
+        candidate = pending.values("pk", "message_type").first()
         if candidate is None:
             break
-        examined.add(candidate["pk"])
         with source_lock(is_loyalty=candidate["message_type"] == "loyalty_invitation"):
             row = (
-                WebsiteMessageRelay.objects.select_for_update(skip_locked=True)
+                pending.select_for_update(skip_locked=True)
                 .filter(pk=candidate["pk"], state="pending")
                 .first()
             )
+            examined.add(candidate["pk"])
             if row is None:
                 continue
             try:

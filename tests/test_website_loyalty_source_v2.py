@@ -374,6 +374,25 @@ def test_old_or_ambiguous_registry_attempt_never_becomes_a_fresh_permit(paid, st
     assert invitation.generation == 1 and invitation.state == state
 
 
+def test_existing_telegram_owner_cannot_acquire_even_a_local_ycloud_registry_claim(paid):
+    from apps.reservations.telegram_stay_models import TelegramStayChannel
+
+    scenario, stay, event, row = paid
+    TelegramStayChannel.objects.create(
+        scenario=scenario,
+        stay_id=stay.pk,
+        hostaway_id=str(event.payload["hostaway_reservation_id"]),
+        cutover_at=stay.created_at,
+    )
+    facts = read(paid)
+    assert facts.get("loyalty_source_eligible") is not True
+    assert facts.get("domain_authorized") is not True
+    with loyalty.source_lock():
+        loyalty.prepare_for_relay(row)
+    assert not JoinInvitation.objects.exists()
+    assert TelegramStayChannel.objects.filter(scenario=scenario, stay_id=stay.pk).exists()
+
+
 def test_consumption_and_expectation_rollback_together(prepared, monkeypatch):
     paid, invitation, proof, _, _ = prepared
     consume = registry.consume

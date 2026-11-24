@@ -145,7 +145,14 @@ def source(event_id, scenario):
                 loyalty_source_eligible=False,
                 legacy_state="unknown",
             )
-            if not admitted(event) or not ready() or result["consent"]["revoked"] is True:
+            from .telegram_stay_transport import selected
+
+            if (
+                selected(stay)
+                or not admitted(event)
+                or not ready()
+                or result["consent"]["revoked"] is True
+            ):
                 return authority.scoped_facts(result)
             core = stay.communication_events.filter(revision=stay.communication_revision).first()
             if not financial.core_delivered(stay, core, scenario):
