@@ -10,7 +10,6 @@ from uuid import UUID
 
 import httpx
 from django.conf import settings
-from django.db import transaction
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.csrf import csrf_exempt
@@ -257,7 +256,12 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
     )
     planned = fetch(request_id, capability, content=True) if before else None
     render_source = fetch(request_id, capability, render_source=True) if before else None
-    with transaction.atomic():
+    from .website_loyalty_source_v2 import source_lock
+
+    is_loyalty = relay.WebsiteMessageRelay.objects.filter(
+        pk=row_id, message_type="loyalty_invitation"
+    ).exists()
+    with source_lock(is_loyalty=is_loyalty):
         row = relay.WebsiteMessageRelay.objects.select_for_update().get(pk=row_id)
         prior = (
             WebsiteMessageExpectation.objects.select_for_update()
@@ -308,7 +312,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             )
             provenance = (
                 "authenticated_source01_financial"
-                if version2 and facts["source_message_type"] in {"payment_link", "payment_success"}
+                if version2
+                and facts["source_message_type"]
+                in {"payment_link", "payment_success", "loyalty_invitation"}
                 else "private_runtime_rpc_source20"
             )
             # Existing attempts, unknown posts, legacy receipts and held old
@@ -407,7 +413,7 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                 or planned.get("content_digest") != digest
             ):
                 raise ValueError
-            WebsiteMessageExpectation.objects.create(
+            expectation = WebsiteMessageExpectation.objects.create(
                 request_id=request_id,
                 relay=row,
                 identity=identity,
@@ -415,6 +421,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                 prepared_at_epoch=prepared_at,
                 render_policy_ref=policy["render_policy_ref"],
             )
+            from .website_loyalty_source_v2 import consume_ack
+
+            consume_ack(expectation)
             return "prepared"
         if (
             prior.relay_id != row.pk
@@ -471,6 +480,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             from .website_financial_receipts_v2 import project_payment_link_receipt
 
             project_payment_link_receipt(prior)
+            from .website_loyalty_source_v2 import project_receipt
+
+            project_receipt(prior)
             return prior.state  # Never downgrade a trusted delivery.
         prior.attempts_claimed = claims
         prior.provider_message_id, prior.wamid = provider_id or "", wamid or ""
@@ -490,6 +502,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
         from .website_financial_receipts_v2 import project_payment_link_receipt
 
         project_payment_link_receipt(prior)
+        from .website_loyalty_source_v2 import project_receipt
+
+        project_receipt(prior)
         return prior.state
 
 

@@ -56,6 +56,8 @@ def snapshot(row, decision="duplicate", *, allow=False):
         )
         if row.channel == "telegram":
             result.update(channel="telegram", provider_receipt_lookup=False)
+        elif row.channel == "ycloud":
+            result.update(channel="ycloud", send_allowed=False, provider_receipt_lookup=False)
         elif row.channel == "workgroup_manual":
             from apps.reservations.telegram_workgroup import WORKGROUP_ID
 

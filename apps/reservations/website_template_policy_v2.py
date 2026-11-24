@@ -27,6 +27,13 @@ def policy_from_source(event, facts, context):
         elif kind == "payment_success":
             current = financial.payment_confirmation_source(event.pk, scenario)
             family = f"lsa{scenario}_payment"
+        elif kind == "loyalty_invitation":
+            from .website_loyalty_source_v2 import source as loyalty_source
+
+            current = loyalty_source(event.pk, scenario)
+            if current.get("domain_authorized") is not True:
+                return None
+            family = f"lsa{scenario}_payment"
         elif kind in source.PURPOSES and kind not in {"loyalty_invitation"}:
             if not isinstance(event, source.SOURCES[scenario][1]):
                 return None
@@ -57,10 +64,14 @@ def policy_from_source(event, facts, context):
                 return None
         canonical_facts = {**current, "source_family": family, "source_owner_family": "website"}
         bound = selector.match_context(canonical_facts, context)
-        if kind in {"payment_link", "payment_success"}:
+        if kind in {"payment_link", "payment_success", "loyalty_invitation"}:
             # Financial variables and URLs are re-read from source01 under its locks.
             # A backend render-source view cannot replace those values.
             if bound.get("values") != current.get("variables"):
+                return None
+            if kind == "loyalty_invitation" and bound.get("loyalty_identity") != current.get(
+                "loyalty_identity"
+            ):
                 return None
         else:
             local = financial.core_variables(event, scenario)
