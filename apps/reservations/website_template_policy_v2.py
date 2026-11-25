@@ -9,7 +9,7 @@ from .website_access_source_v2 import access_source_values
 
 
 @sensitive_variables()
-def policy_from_source(event, facts, context):
+def policy_from_source(event, facts, context, *, text_access=False):
     scenario = facts.get("scenario")
     if facts.get("source_message_type") in {
         "review_followup_1",
@@ -93,7 +93,7 @@ def policy_from_source(event, facts, context):
                 and access_source_values(event, current, bound).get("available") is not True
             ):
                 return None
-        selected = selector.select_source_message(canonical_facts, bound)
+        selected = selector.select_source_message(canonical_facts, bound, text_access=text_access)
         return {
             "language": bound["language"],
             "message": selected.message,

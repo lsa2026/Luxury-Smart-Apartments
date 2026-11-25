@@ -59,6 +59,7 @@ jobs:
           tests/test_website_template_contract_v2.py
           tests/test_website_template_selector_v2.py
           tests/test_website_source_ack_v2.py
+          tests/test_website_text_access_ack.py
           tests/test_website_financial_relay_v2.py
           tests/test_website_financial_receipts_v2.py
           tests/test_transaction_permission_candidate.py

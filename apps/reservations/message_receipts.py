@@ -353,8 +353,18 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                 return "held"
             if version2:
                 from .website_template_policy_v2 import policy_from_source
+                from .website_text_access_v1 import requested_profile
 
-                policy = policy_from_source(event, facts, render_source["context"])
+                # A known profile identifies a pinned renderer only. Its body
+                # and every source value are still independently reconstructed.
+                policy = policy_from_source(
+                    event,
+                    facts,
+                    render_source["context"],
+                    text_access=requested_profile(
+                        planned.get("selection_ref"), planned.get("source_pack_sha256")
+                    ),
+                )
             else:
                 policy = independent_render_policy(
                     event, facts, render_source.get("context") if before else None
@@ -380,7 +390,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                 raise ValueError
             digest = content_digest(policy["language"], policy["message"])
             if version2:
-                from .website_template_selector_v2 import PACK_SHA, SELECTION_REF
+                from .website_text_access_v1 import selection_identity
+
+                selection_ref, pack_sha = selection_identity(policy["message"])
 
                 if (
                     set(planned)
@@ -397,8 +409,8 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                         "content_binding_basis",
                         "dispatch_allowed",
                     }
-                    or planned.get("selection_ref") != SELECTION_REF
-                    or planned.get("source_pack_sha256") != PACK_SHA
+                    or planned.get("selection_ref") != selection_ref
+                    or planned.get("source_pack_sha256") != pack_sha
                 ):
                     raise ValueError
             if (

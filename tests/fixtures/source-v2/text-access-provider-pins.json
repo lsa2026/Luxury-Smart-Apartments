@@ -1,0 +1,189 @@
+{
+  "reference": "YC20-APPROVED-LEGACY-TEXT-ACCESS-PINS-20261125",
+  "owner_authority": "Immediate replacement approval after owner viewed reinstated bodies",
+  "checked_at_utc": "2026-11-25T13:19:02.699Z",
+  "execution_id": "60126",
+  "waba_id": "2075336595945655",
+  "actual_provider_metadata_verified": true,
+  "canonical_component_sha256_verified": true,
+  "body_only_variants": 6,
+  "snapshots": [
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkin_reminder_v1",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "‏*تذكير بموعد الوصول* 🔑\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزي *{{1}}*، نود إبلاغكم بأن موعد الدخول المتاح لـ *{{2}}* يبدأ من الساعة 3:00 عصراً إن شاء الله.\n‏\n‏🔔 لخدمتكم بشكل أفضل، يسعدنا تزويدنا بموعد وصولكم المتوقع.\n‏\n‏*دليل الوصول الخاص بك:*\n‏\n‏📍 *العنوان:* {{3}}\n‏\n‏🗺️ *الموقع:* {{4}}\n‏\n‏📶 *الواي فاي:* {{5}}\n‏\n‏🔐 *كلمة السر:* {{6}}\n‏\n‏🎥 *شرح الدخول (فيديو):* {{7}}\n‏\n‏🚪 *رقم كود بوابة المبنى:* {{8}}\n‏\n‏⚠️ *ملاحظة:*\n‏\n‏سيتم إرسال كود الدخول الخاص بباب الشقة لك غداً فور الانتهاء من إجراءات التحقق من الهوية.\n‏\n‏*نتمنى لك رحلة سعيدة وإقامة ممتعة* ✨",
+          "example": {
+            "body_text": [
+              [
+                "Test Guest",
+                "Test Apartment",
+                "عنوان تجريبي في الرياض",
+                "https://example.com/test-map",
+                "EXAMPLE_WIFI",
+                "EXAMPLE_PASSWORD",
+                "https://example.com/test-video",
+                "0000"
+              ]
+            ]
+          }
+        }
+      ],
+      "components_sha256": "effd4044508f7a7c5c431660c4ee3c0b35393e871fe5c44629194f2282c001f3",
+      "body_sha256": "d7ee13c873c5103325235fc771f612b9ab1cf8ebf2c2bd0d9512688fdb8a636c"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkin_reminder_v1",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Check-in Reminder* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nDear *{{1}}*, we would like to inform you that check-in for *{{2}}* starts from 3:00 PM.\n\n🔔 To serve you better, please let us know your expected arrival time.\n\n*Your Access Guide:*\n\n📍 *Address:* {{3}}\n\n🗺️ *Location:* {{4}}\n\n📶 *Wi-Fi:* {{5}}\n\n🔐 *Password:* {{6}}\n\n🎥 *Access Video:* {{7}}\n\n🚪 *Building Gate Code:* {{8}}\n\n⚠️ *Note:*\n\nYour unique door code will be sent tomorrow once the ID verification process is complete.\n\n*Wish you a safe trip and a pleasant stay* ✨",
+          "example": {
+            "body_text": [
+              [
+                "Test Guest",
+                "Test Apartment",
+                "Example address, Riyadh",
+                "https://example.com/test-map",
+                "EXAMPLE_WIFI",
+                "EXAMPLE_PASSWORD",
+                "https://example.com/test-video",
+                "0000"
+              ]
+            ]
+          }
+        }
+      ],
+      "components_sha256": "8a446d95f60b5f2fdb76f6bc34da0530346087f092c205534fbdedadb2838b5f",
+      "body_sha256": "8237308a6c1e82e8f20ec7417609b5f564e59bb1afdb779d49807889829eb0b6"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_checkin_reminder_v1",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Rappel d’arrivée* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *{{1}}*, nous vous informons que l’arrivée à *{{2}}* est possible à partir de 15 h 00.\n\n🔔 Afin de mieux vous accueillir, merci de nous communiquer votre heure d’arrivée prévue.\n\n*Votre guide d’accès :*\n\n📍 *Adresse :* {{3}}\n\n🗺️ *Localisation :* {{4}}\n\n📶 *Wi-Fi :* {{5}}\n\n🔐 *Mot de passe :* {{6}}\n\n🎥 *Vidéo d’accès :* {{7}}\n\n🚪 *Code du portail de l’immeuble :* {{8}}\n\n⚠️ *Remarque :*\n\nLe code personnel de la porte de votre appartement vous sera envoyé demain, une fois la vérification de votre pièce d’identité terminée.\n\n*Nous vous souhaitons un bon voyage et un agréable séjour* ✨",
+          "example": {
+            "body_text": [
+              [
+                "Test Guest",
+                "Test Apartment",
+                "Adresse fictive à Riyad",
+                "https://example.com/test-map",
+                "EXAMPLE_WIFI",
+                "EXAMPLE_PASSWORD",
+                "https://example.com/test-video",
+                "0000"
+              ]
+            ]
+          }
+        }
+      ],
+      "components_sha256": "6709f34e6eee0455130eb5634f56065e7dbee39dd397b4672c83071f4fb56a4a",
+      "body_sha256": "6abc1bad12960df56fe60e704d57d538cff2cbe4ff0cc7c1c567217953048585"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_sameday_checkin_guide_v1",
+      "language": "ar",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "‏*تعليمات الدخول* 🔑\n‏\n‏*Luxury Smart Apartments 🌿*\n‏\n‏عزيزنا *{{1}}*، إليك دليل الوصول لـ *{{2}}*:\n‏\n‏📍 *الموقع والعنوان:*\n‏\n‏• خرائط جوجل: {{3}}\n‏\n‏• العنوان: {{4}}\n‏\n‏📶 *الاتصال بالواي فاي:*\n‏\n‏• الشبكة: {{5}}\n‏\n‏• الرقم السري: {{6}}\n‏\n‏🚪 *كود بوابة المجمع الخارجية:* {{7}}\n‏\n‏🎥 *فيديو شرح الوصول:*\n‏\n‏🔗 {{8}}\n‏\n‏🔑 *كود دخول الشقة:*\n‏\n‏للحصول على كود الشقة، تواصل مع فريق الدعم بعد التحقق من الهوية: +966501205651.\n‏\n‏🛎️ *فريق الدعم:*\n‏\n‏+966501205651 ✨",
+          "example": {
+            "body_text": [
+              [
+                "Test Guest",
+                "Test Apartment",
+                "https://example.com/test-map",
+                "Example address, Riyadh",
+                "EXAMPLE_WIFI",
+                "EXAMPLE_PASSWORD",
+                "0000",
+                "https://example.com/test-video"
+              ]
+            ]
+          }
+        }
+      ],
+      "components_sha256": "912901709d2924237ef25391b988d105501a69866a4a8320addcbbe06e360473",
+      "body_sha256": "3a4eaef05591e39cb00b1082f978b60ed019d9e1b8216e277416a18fc002e568"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_sameday_checkin_guide_v1",
+      "language": "en",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Check-in Instructions* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nDear *{{1}}*, please find the access guide for *{{2}}*:\n\n📍 *Location & Address:*\n\n• Google Maps: {{3}}\n\n• Address: {{4}}\n\n📶 *Wi-Fi Connectivity:*\n\n• Network: {{5}}\n\n• Password: {{6}}\n\n🚪 *External Gate Code:* {{7}}\n\n🎥 *Access Tutorial (Video):*\n\n🔗 {{8}}\n\n🔑 *Apartment Access Code:*\n\nContact support after ID verification for your apartment access code: +966501205651.\n\n🛎️ *Support Team:*\n\n+966501205651 ✨",
+          "example": {
+            "body_text": [
+              [
+                "Test Guest",
+                "Test Apartment",
+                "https://example.com/test-map",
+                "Example address, Riyadh",
+                "EXAMPLE_WIFI",
+                "EXAMPLE_PASSWORD",
+                "0000",
+                "https://example.com/test-video"
+              ]
+            ]
+          }
+        }
+      ],
+      "components_sha256": "40ff2308e2750067769dc6c6c119e2c8c4a18cf16778771184f8b6cfa987a221",
+      "body_sha256": "1a8d6f94cb04b4a841be3328fdfb3bed39992d47f3f2221496639c55542668d6"
+    },
+    {
+      "waba_id": "2075336595945655",
+      "name": "lsa_sameday_checkin_guide_v1",
+      "language": "fr",
+      "status": "APPROVED",
+      "category": "UTILITY",
+      "components": [
+        {
+          "type": "BODY",
+          "text": "*Instructions d’arrivée* 🔑\n\n*Luxury Smart Apartments 🌿*\n\nCher/Chère *{{1}}*, voici le guide d’accès à *{{2}}* :\n\n📍 *Localisation et adresse :*\n\n• Google Maps : {{3}}\n\n• Adresse : {{4}}\n\n📶 *Connexion Wi-Fi :*\n\n• Réseau : {{5}}\n\n• Mot de passe : {{6}}\n\n🚪 *Code du portail extérieur :* {{7}}\n\n🎥 *Tutoriel d’accès en vidéo :*\n\n🔗 {{8}}\n\n🔑 *Code d’accès à l’appartement :*\n\nAprès vérification de votre identité, contactez notre équipe pour le code : +966501205651.\n\n🛎️ *Équipe d’assistance :*\n\n+966501205651 ✨",
+          "example": {
+            "body_text": [
+              [
+                "Test Guest",
+                "Test Apartment",
+                "https://example.com/test-map",
+                "Example address, Riyadh",
+                "EXAMPLE_WIFI",
+                "EXAMPLE_PASSWORD",
+                "0000",
+                "https://example.com/test-video"
+              ]
+            ]
+          }
+        }
+      ],
+      "components_sha256": "cb155f4b74d4854ef997607cc395cccd3fd98318d0f762dd10ffd5a258ecf947",
+      "body_sha256": "66d273752f68d1d1fad4288627231dddfa7bf60f188b6a530597d96af3e93ec0"
+    }
+  ],
+  "provider_post": 0,
+  "guest_sends": 0,
+  "frozen_rev3_pack_unchanged": true
+}
