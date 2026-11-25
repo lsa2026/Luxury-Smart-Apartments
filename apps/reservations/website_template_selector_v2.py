@@ -240,7 +240,17 @@ class SelectedMessage:
 
 
 def select_source_message(
-    facts, context, *, bindings=None, provider=None, live_snapshot=None, asset_reader=None
+    facts,
+    context,
+    *,
+    bindings=None,
+    provider=None,
+    live_snapshot=None,
+    asset_reader=None,
+    text_access=False,
+    retained_message=None,
+    retained_at=None,
+    now=None,
 ):
     context = match_context(facts, context)
     if bindings is None or provider is None:
@@ -254,6 +264,23 @@ def select_source_message(
     if len(pins) != 1:
         raise V2Hold("template_provider_pin_missing")
     pin = pins[0]
+    selection_ref = SELECTION_REF
+    from .website_text_access_v1 import override
+
+    try:
+        replacement = override(
+            binding,
+            facts,
+            context,
+            enabled=text_access,
+            retained_message=retained_message,
+            retained_at=retained_at,
+            now=now,
+        )
+    except ValueError as error:
+        raise V2Hold(str(error)) from None
+    if replacement:
+        binding, pin, selection_ref = replacement
     snapshot = live_snapshot or pin
     if (
         snapshot.get("waba_id") != bindings["waba_id"]
@@ -404,7 +431,7 @@ def select_source_message(
     return SelectedMessage(
         message,
         content_digest2(context["language"], message),
-        SELECTION_REF,
+        selection_ref,
         digest2(curated),
         context,
         raw,
