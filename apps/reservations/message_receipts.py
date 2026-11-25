@@ -364,6 +364,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                     text_access=requested_profile(
                         planned.get("selection_ref"), planned.get("source_pack_sha256")
                     ),
+                    retained_message=planned.get("message_input"),
+                    retained_at=proof.get("prepared_at_epoch"),
+                    now=int(timezone.now().timestamp()),
                 )
             else:
                 policy = independent_render_policy(

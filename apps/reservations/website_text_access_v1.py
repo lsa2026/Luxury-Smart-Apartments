@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import re
 import time
 from datetime import UTC, date, datetime, timedelta
@@ -26,7 +27,7 @@ def registry():
     )
     if (
         hashlib.sha256(raw).hexdigest()
-        != "f8d885fb3868b283acbf110a4236bd341c38cda12f7c50e7f5d1037577bf7b1f"
+        != "2c7d44debf47ee71cf6d48a32a79469d710527dd131f77001e726dc835275183"
     ):
         raise ValueError("text_access_registry_changed")
     value = json.loads(raw)
@@ -93,7 +94,9 @@ def reminder_matches(values, now):
         return False
 
 
-def override(base, facts, context, *, enabled=False, retained_message=None, now=None):
+def override(
+    base, facts, context, *, enabled=False, retained_message=None, retained_at=None, now=None
+):
     """Retained message must be from matching durable prepared intent, never caller body."""
     old = retained_message.get("template_ref") if isinstance(retained_message, dict) else None
     if base.get("name") not in DOCUMENT_NAMES or old in DOCUMENT_NAMES:
@@ -109,10 +112,19 @@ def override(base, facts, context, *, enabled=False, retained_message=None, now=
         return None
     if purpose == "checkin_reminder" and facts.get("scenario") in {"07", "08"}:
         raise ValueError("website_reminder_not_supported")
+    actual = time.time() if now is None else now
+    at = actual
+    if old in TEXT_NAMES and purpose == "checkin_reminder":
+        if (
+            type(retained_at) not in (int, float)
+            or not math.isfinite(retained_at)
+            or retained_at > actual + 30
+        ):
+            raise ValueError("trusted_prepared_selection_clock_required")
+        at = retained_at
     name = (
         "lsa_checkin_reminder_v1"
-        if purpose == "checkin_reminder"
-        and reminder_matches(context.get("values") or {}, time.time() if now is None else now)
+        if purpose == "checkin_reminder" and reminder_matches(context.get("values") or {}, at)
         else "lsa_sameday_checkin_guide_v1"
     )
     doc = registry()

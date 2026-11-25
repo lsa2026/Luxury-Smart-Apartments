@@ -207,5 +207,6 @@
       "body_sha256": "66d273752f68d1d1fad4288627231dddfa7bf60f188b6a530597d96af3e93ec0"
     }
   ],
-  "override_sha256": "bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff"
+  "retained_selection_clock": "Matching immutable prepared_at_epoch reconstructs retained text choice. Native initial selection uses the same now as prepare. Fresh prePOST source recheck rejects a reminder if tomorrow15:00 no longer holds, without renaming/rebinding.",
+  "override_sha256": "aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231"
 }

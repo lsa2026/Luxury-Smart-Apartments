@@ -249,6 +249,7 @@ def select_source_message(
     asset_reader=None,
     text_access=False,
     retained_message=None,
+    retained_at=None,
     now=None,
 ):
     context = match_context(facts, context)
@@ -268,7 +269,13 @@ def select_source_message(
 
     try:
         replacement = override(
-            binding, facts, context, enabled=text_access, retained_message=retained_message, now=now
+            binding,
+            facts,
+            context,
+            enabled=text_access,
+            retained_message=retained_message,
+            retained_at=retained_at,
+            now=now,
         )
     except ValueError as error:
         raise V2Hold(str(error)) from None

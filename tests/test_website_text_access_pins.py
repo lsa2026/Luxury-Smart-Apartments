@@ -95,7 +95,12 @@ def test_source_bindings_keep_distinct_order_and_no_document_for_text_access():
 def test_independent_selector_matches_frozen_backend_text_results(case, monkeypatch):
     monkeypatch.setattr("httpx.Client.request", lambda *_a, **_k: pytest.fail("network forbidden"))
     selected = selector.select_source_message(
-        case["facts"], case["context"], text_access=True, now=case["now_epoch"]
+        case["facts"],
+        case["context"],
+        text_access=True,
+        now=case["now_epoch"],
+        retained_message=case.get("retained_message"),
+        retained_at=case.get("retained_at"),
     )
     assert selected.message == case["message"]
     assert selected.message["attachment"] is None and selected.attachment_bytes is None

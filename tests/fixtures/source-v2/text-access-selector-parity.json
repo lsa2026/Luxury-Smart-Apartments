@@ -16,8 +16,8 @@
         "purpose": "checkin_guide",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -28,8 +28,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "checkin_guide",
         "purpose": "checkin_guide",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "ar",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -59,6 +59,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -76,7 +78,7 @@
         "attachment": null
       },
       "content_digest": "c0278701dcd78b4e56e170d9c5664f8143e1a081b54dc87689b62cf41ebb1dba",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -93,8 +95,8 @@
         "purpose": "checkin_reminder",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -105,8 +107,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "reminder_checkin",
         "purpose": "checkin_reminder",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "ar",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -136,6 +138,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_checkin_reminder_v1",
@@ -153,7 +157,7 @@
         "attachment": null
       },
       "content_digest": "346729fdd2a5486937c3d63a6b5aa4a9785e2138ee07671cf46ea570d64cb843",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -170,8 +174,8 @@
         "purpose": "checkin_reminder",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -182,8 +186,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "reminder_checkin",
         "purpose": "checkin_reminder",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "ar",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -213,6 +217,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -230,7 +236,7 @@
         "attachment": null
       },
       "content_digest": "c0278701dcd78b4e56e170d9c5664f8143e1a081b54dc87689b62cf41ebb1dba",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -247,8 +253,8 @@
         "purpose": "checkin_guide",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -259,8 +265,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "checkin_guide",
         "purpose": "checkin_guide",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "ar",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -292,6 +298,8 @@
         "gate_access_evidence_ref": "owner20:synthetic-evidence"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -309,8 +317,196 @@
         "attachment": null
       },
       "content_digest": "55ccd760c1c624ce83ef953f1ea9510666e53e3976df20b83330ddd71aec97b9",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "688766c778d69e430d5c8fda6656d64473e0be886843a339d74e2aa388e609e7"
+    },
+    {
+      "id": "retained_reminder_midnight-ar",
+      "synthetic_only": true,
+      "facts": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "recipient_ref": "source20:synthetic",
+        "recipient_e164": "+15550000001",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
+      },
+      "context": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
+        "recipient_ref": "source20:synthetic",
+        "language": "ar",
+        "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
+        "values": {
+          "guest_name": "SYNTHETIC TEST GUEST",
+          "booking_reference": "TEST-NOT-A-BOOKING-001",
+          "listing_name": "Synthetic Riyadh apartment",
+          "arrival_date": "2026-11-26",
+          "departure_date": "2026-12-05",
+          "check_in_time": "15:00",
+          "check_out_time": "12:00",
+          "timezone": "Asia/Riyadh",
+          "property_address": "Synthetic address for renderer test only",
+          "map_url": "https://maps.google.com/?q=Riyadh",
+          "video_url": "https://example.invalid/arrival-test",
+          "gate_code": "TEST-GATE-ONLY",
+          "wifi_net": "TEST-NETWORK",
+          "wifi_pass": "TEST-PASSWORD-ONLY",
+          "timezone_display": "Asia/Riyadh",
+          "booking_platform": "Booking.com",
+          "amount": "500.00",
+          "currency": "SAR",
+          "payment_url": "https://example.invalid/synthetic-payment",
+          "review_url": "https://g.page/r/SYNTHETIC/review",
+          "loyalty_url": "https://example.invalid/synthetic-invitation"
+        },
+        "source_context_ref": "source20:synthetic-mapping-2"
+      },
+      "now_epoch": 1795640405,
+      "retained_message": {
+        "mode": "template",
+        "template_ref": "lsa_checkin_reminder_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "Synthetic address for renderer test only",
+          "https://maps.google.com/?q=Riyadh",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "https://example.invalid/arrival-test",
+          "TEST-GATE-ONLY"
+        ],
+        "components_sha256": "effd4044508f7a7c5c431660c4ee3c0b35393e871fe5c44629194f2282c001f3",
+        "attachment": null
+      },
+      "retained_at": 1795640395,
+      "message": {
+        "mode": "template",
+        "template_ref": "lsa_checkin_reminder_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "Synthetic address for renderer test only",
+          "https://maps.google.com/?q=Riyadh",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "https://example.invalid/arrival-test",
+          "TEST-GATE-ONLY"
+        ],
+        "components_sha256": "effd4044508f7a7c5c431660c4ee3c0b35393e871fe5c44629194f2282c001f3",
+        "attachment": null
+      },
+      "content_digest": "346729fdd2a5486937c3d63a6b5aa4a9785e2138ee07671cf46ea570d64cb843",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
+      "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
+    },
+    {
+      "id": "retained_guide_next_day-ar",
+      "synthetic_only": true,
+      "facts": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "recipient_ref": "source20:synthetic",
+        "recipient_e164": "+15550000001",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
+      },
+      "context": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
+        "recipient_ref": "source20:synthetic",
+        "language": "ar",
+        "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
+        "values": {
+          "guest_name": "SYNTHETIC TEST GUEST",
+          "booking_reference": "TEST-NOT-A-BOOKING-001",
+          "listing_name": "Synthetic Riyadh apartment",
+          "arrival_date": "2026-11-27",
+          "departure_date": "2026-12-05",
+          "check_in_time": "15:00",
+          "check_out_time": "12:00",
+          "timezone": "Asia/Riyadh",
+          "property_address": "Synthetic address for renderer test only",
+          "map_url": "https://maps.google.com/?q=Riyadh",
+          "video_url": "https://example.invalid/arrival-test",
+          "gate_code": "TEST-GATE-ONLY",
+          "wifi_net": "TEST-NETWORK",
+          "wifi_pass": "TEST-PASSWORD-ONLY",
+          "timezone_display": "Asia/Riyadh",
+          "booking_platform": "Booking.com",
+          "amount": "500.00",
+          "currency": "SAR",
+          "payment_url": "https://example.invalid/synthetic-payment",
+          "review_url": "https://g.page/r/SYNTHETIC/review",
+          "loyalty_url": "https://example.invalid/synthetic-invitation"
+        },
+        "source_context_ref": "source20:synthetic-mapping-2"
+      },
+      "now_epoch": 1795716000.0,
+      "retained_message": {
+        "mode": "template",
+        "template_ref": "lsa_sameday_checkin_guide_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "https://maps.google.com/?q=Riyadh",
+          "Synthetic address for renderer test only",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "TEST-GATE-ONLY",
+          "https://example.invalid/arrival-test"
+        ],
+        "components_sha256": "912901709d2924237ef25391b988d105501a69866a4a8320addcbbe06e360473",
+        "attachment": null
+      },
+      "retained_at": 1795629600.0,
+      "message": {
+        "mode": "template",
+        "template_ref": "lsa_sameday_checkin_guide_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "https://maps.google.com/?q=Riyadh",
+          "Synthetic address for renderer test only",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "TEST-GATE-ONLY",
+          "https://example.invalid/arrival-test"
+        ],
+        "components_sha256": "912901709d2924237ef25391b988d105501a69866a4a8320addcbbe06e360473",
+        "attachment": null
+      },
+      "content_digest": "c0278701dcd78b4e56e170d9c5664f8143e1a081b54dc87689b62cf41ebb1dba",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
+      "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
       "id": "checkin_guide-en",
@@ -326,8 +522,8 @@
         "purpose": "checkin_guide",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -338,8 +534,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "checkin_guide",
         "purpose": "checkin_guide",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "en",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -369,6 +565,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -386,7 +584,7 @@
         "attachment": null
       },
       "content_digest": "8a9f351125b5ff753dcd7e46df96967eea282d55463a361dbf5281b4472fee2b",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -403,8 +601,8 @@
         "purpose": "checkin_reminder",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -415,8 +613,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "reminder_checkin",
         "purpose": "checkin_reminder",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "en",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -446,6 +644,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_checkin_reminder_v1",
@@ -463,7 +663,7 @@
         "attachment": null
       },
       "content_digest": "61297ecc6d3a8fbe113938204f005e0dc689ee60daf66fda7d3bb4620aa8072f",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -480,8 +680,8 @@
         "purpose": "checkin_reminder",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -492,8 +692,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "reminder_checkin",
         "purpose": "checkin_reminder",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "en",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -523,6 +723,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -540,7 +742,7 @@
         "attachment": null
       },
       "content_digest": "8a9f351125b5ff753dcd7e46df96967eea282d55463a361dbf5281b4472fee2b",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -557,8 +759,8 @@
         "purpose": "checkin_guide",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -569,8 +771,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "checkin_guide",
         "purpose": "checkin_guide",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "en",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -602,6 +804,8 @@
         "gate_access_evidence_ref": "owner20:synthetic-evidence"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -619,8 +823,196 @@
         "attachment": null
       },
       "content_digest": "81570e7bff3d57a181c2926814032b512950c13ca4e79951b33539d0dc692872",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "688766c778d69e430d5c8fda6656d64473e0be886843a339d74e2aa388e609e7"
+    },
+    {
+      "id": "retained_reminder_midnight-en",
+      "synthetic_only": true,
+      "facts": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "recipient_ref": "source20:synthetic",
+        "recipient_e164": "+15550000001",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
+      },
+      "context": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
+        "recipient_ref": "source20:synthetic",
+        "language": "en",
+        "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
+        "values": {
+          "guest_name": "SYNTHETIC TEST GUEST",
+          "booking_reference": "TEST-NOT-A-BOOKING-001",
+          "listing_name": "Synthetic Riyadh apartment",
+          "arrival_date": "2026-11-26",
+          "departure_date": "2026-12-05",
+          "check_in_time": "15:00",
+          "check_out_time": "12:00",
+          "timezone": "Asia/Riyadh",
+          "property_address": "Synthetic address for renderer test only",
+          "map_url": "https://maps.google.com/?q=Riyadh",
+          "video_url": "https://example.invalid/arrival-test",
+          "gate_code": "TEST-GATE-ONLY",
+          "wifi_net": "TEST-NETWORK",
+          "wifi_pass": "TEST-PASSWORD-ONLY",
+          "timezone_display": "Asia/Riyadh",
+          "booking_platform": "Booking.com",
+          "amount": "500.00",
+          "currency": "SAR",
+          "payment_url": "https://example.invalid/synthetic-payment",
+          "review_url": "https://g.page/r/SYNTHETIC/review",
+          "loyalty_url": "https://example.invalid/synthetic-invitation"
+        },
+        "source_context_ref": "source20:synthetic-mapping-2"
+      },
+      "now_epoch": 1795640405,
+      "retained_message": {
+        "mode": "template",
+        "template_ref": "lsa_checkin_reminder_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "Synthetic address for renderer test only",
+          "https://maps.google.com/?q=Riyadh",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "https://example.invalid/arrival-test",
+          "TEST-GATE-ONLY"
+        ],
+        "components_sha256": "8a446d95f60b5f2fdb76f6bc34da0530346087f092c205534fbdedadb2838b5f",
+        "attachment": null
+      },
+      "retained_at": 1795640395,
+      "message": {
+        "mode": "template",
+        "template_ref": "lsa_checkin_reminder_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "Synthetic address for renderer test only",
+          "https://maps.google.com/?q=Riyadh",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "https://example.invalid/arrival-test",
+          "TEST-GATE-ONLY"
+        ],
+        "components_sha256": "8a446d95f60b5f2fdb76f6bc34da0530346087f092c205534fbdedadb2838b5f",
+        "attachment": null
+      },
+      "content_digest": "61297ecc6d3a8fbe113938204f005e0dc689ee60daf66fda7d3bb4620aa8072f",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
+      "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
+    },
+    {
+      "id": "retained_guide_next_day-en",
+      "synthetic_only": true,
+      "facts": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "recipient_ref": "source20:synthetic",
+        "recipient_e164": "+15550000001",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
+      },
+      "context": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
+        "recipient_ref": "source20:synthetic",
+        "language": "en",
+        "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
+        "values": {
+          "guest_name": "SYNTHETIC TEST GUEST",
+          "booking_reference": "TEST-NOT-A-BOOKING-001",
+          "listing_name": "Synthetic Riyadh apartment",
+          "arrival_date": "2026-11-27",
+          "departure_date": "2026-12-05",
+          "check_in_time": "15:00",
+          "check_out_time": "12:00",
+          "timezone": "Asia/Riyadh",
+          "property_address": "Synthetic address for renderer test only",
+          "map_url": "https://maps.google.com/?q=Riyadh",
+          "video_url": "https://example.invalid/arrival-test",
+          "gate_code": "TEST-GATE-ONLY",
+          "wifi_net": "TEST-NETWORK",
+          "wifi_pass": "TEST-PASSWORD-ONLY",
+          "timezone_display": "Asia/Riyadh",
+          "booking_platform": "Booking.com",
+          "amount": "500.00",
+          "currency": "SAR",
+          "payment_url": "https://example.invalid/synthetic-payment",
+          "review_url": "https://g.page/r/SYNTHETIC/review",
+          "loyalty_url": "https://example.invalid/synthetic-invitation"
+        },
+        "source_context_ref": "source20:synthetic-mapping-2"
+      },
+      "now_epoch": 1795716000.0,
+      "retained_message": {
+        "mode": "template",
+        "template_ref": "lsa_sameday_checkin_guide_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "https://maps.google.com/?q=Riyadh",
+          "Synthetic address for renderer test only",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "TEST-GATE-ONLY",
+          "https://example.invalid/arrival-test"
+        ],
+        "components_sha256": "40ff2308e2750067769dc6c6c119e2c8c4a18cf16778771184f8b6cfa987a221",
+        "attachment": null
+      },
+      "retained_at": 1795629600.0,
+      "message": {
+        "mode": "template",
+        "template_ref": "lsa_sameday_checkin_guide_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "https://maps.google.com/?q=Riyadh",
+          "Synthetic address for renderer test only",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "TEST-GATE-ONLY",
+          "https://example.invalid/arrival-test"
+        ],
+        "components_sha256": "40ff2308e2750067769dc6c6c119e2c8c4a18cf16778771184f8b6cfa987a221",
+        "attachment": null
+      },
+      "content_digest": "8a9f351125b5ff753dcd7e46df96967eea282d55463a361dbf5281b4472fee2b",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
+      "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
       "id": "checkin_guide-fr",
@@ -636,8 +1028,8 @@
         "purpose": "checkin_guide",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -648,8 +1040,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "checkin_guide",
         "purpose": "checkin_guide",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "fr",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -679,6 +1071,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -696,7 +1090,7 @@
         "attachment": null
       },
       "content_digest": "ef4822afe61cfdd1c3e59794b6267de855b88af4f24c34ef05e5995a632460b2",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -713,8 +1107,8 @@
         "purpose": "checkin_reminder",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -725,8 +1119,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "reminder_checkin",
         "purpose": "checkin_reminder",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "fr",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -756,6 +1150,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_checkin_reminder_v1",
@@ -773,7 +1169,7 @@
         "attachment": null
       },
       "content_digest": "1951edc0e91e035c2f8d32877132383bf33d31a8b9ffc0aed77d0a4cc1dfd5c9",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -790,8 +1186,8 @@
         "purpose": "checkin_reminder",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -802,8 +1198,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "reminder_checkin",
         "purpose": "checkin_reminder",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "fr",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -833,6 +1229,8 @@
         "source_context_ref": "source20:synthetic-mapping-2"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -850,7 +1248,7 @@
         "attachment": null
       },
       "content_digest": "ef4822afe61cfdd1c3e59794b6267de855b88af4f24c34ef05e5995a632460b2",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     },
     {
@@ -867,8 +1265,8 @@
         "purpose": "checkin_guide",
         "recipient_ref": "source20:synthetic",
         "recipient_e164": "+15550000001",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00"
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
       },
       "context": {
         "scenario": "01",
@@ -879,8 +1277,8 @@
         "source_event_key": "synthetic:event:001",
         "source_message_type": "checkin_guide",
         "purpose": "checkin_guide",
-        "not_before": "2026-11-25T13:24:53+00:00",
-        "expires_at": "2026-11-25T13:39:53+00:00",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
         "recipient_ref": "source20:synthetic",
         "language": "fr",
         "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
@@ -912,6 +1310,8 @@
         "gate_access_evidence_ref": "owner20:synthetic-evidence"
       },
       "now_epoch": 1795629600.0,
+      "retained_message": null,
+      "retained_at": null,
       "message": {
         "mode": "template",
         "template_ref": "lsa_sameday_checkin_guide_v1",
@@ -929,8 +1329,196 @@
         "attachment": null
       },
       "content_digest": "5090d8551b3446f92a818c7dd8d46b1a137db54f42c64f24eb43cd129ddbcec6",
-      "selection_ref": "yc19-text-access-render-1:bbc00d7dd32fdca0c2c55cdd9de8a2fdf10644d4d140430a54d62c4b5c87cbff",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
       "source_values_sha256": "688766c778d69e430d5c8fda6656d64473e0be886843a339d74e2aa388e609e7"
+    },
+    {
+      "id": "retained_reminder_midnight-fr",
+      "synthetic_only": true,
+      "facts": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "recipient_ref": "source20:synthetic",
+        "recipient_e164": "+15550000001",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
+      },
+      "context": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
+        "recipient_ref": "source20:synthetic",
+        "language": "fr",
+        "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
+        "values": {
+          "guest_name": "SYNTHETIC TEST GUEST",
+          "booking_reference": "TEST-NOT-A-BOOKING-001",
+          "listing_name": "Synthetic Riyadh apartment",
+          "arrival_date": "2026-11-26",
+          "departure_date": "2026-12-05",
+          "check_in_time": "15:00",
+          "check_out_time": "12:00",
+          "timezone": "Asia/Riyadh",
+          "property_address": "Synthetic address for renderer test only",
+          "map_url": "https://maps.google.com/?q=Riyadh",
+          "video_url": "https://example.invalid/arrival-test",
+          "gate_code": "TEST-GATE-ONLY",
+          "wifi_net": "TEST-NETWORK",
+          "wifi_pass": "TEST-PASSWORD-ONLY",
+          "timezone_display": "Asia/Riyadh",
+          "booking_platform": "Booking.com",
+          "amount": "500.00",
+          "currency": "SAR",
+          "payment_url": "https://example.invalid/synthetic-payment",
+          "review_url": "https://g.page/r/SYNTHETIC/review",
+          "loyalty_url": "https://example.invalid/synthetic-invitation"
+        },
+        "source_context_ref": "source20:synthetic-mapping-2"
+      },
+      "now_epoch": 1795640405,
+      "retained_message": {
+        "mode": "template",
+        "template_ref": "lsa_checkin_reminder_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "Synthetic address for renderer test only",
+          "https://maps.google.com/?q=Riyadh",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "https://example.invalid/arrival-test",
+          "TEST-GATE-ONLY"
+        ],
+        "components_sha256": "6709f34e6eee0455130eb5634f56065e7dbee39dd397b4672c83071f4fb56a4a",
+        "attachment": null
+      },
+      "retained_at": 1795640395,
+      "message": {
+        "mode": "template",
+        "template_ref": "lsa_checkin_reminder_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "Synthetic address for renderer test only",
+          "https://maps.google.com/?q=Riyadh",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "https://example.invalid/arrival-test",
+          "TEST-GATE-ONLY"
+        ],
+        "components_sha256": "6709f34e6eee0455130eb5634f56065e7dbee39dd397b4672c83071f4fb56a4a",
+        "attachment": null
+      },
+      "content_digest": "1951edc0e91e035c2f8d32877132383bf33d31a8b9ffc0aed77d0a4cc1dfd5c9",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
+      "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
+    },
+    {
+      "id": "retained_guide_next_day-fr",
+      "synthetic_only": true,
+      "facts": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "recipient_ref": "source20:synthetic",
+        "recipient_e164": "+15550000001",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00"
+      },
+      "context": {
+        "scenario": "01",
+        "source_family": "lsa_v32",
+        "job_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_key": "synthetic:stay:001",
+        "reservation_revision": "7",
+        "source_event_key": "synthetic:event:001",
+        "source_message_type": "reminder_checkin",
+        "purpose": "checkin_reminder",
+        "not_before": "2026-11-25T13:28:21+00:00",
+        "expires_at": "2026-11-25T13:43:21+00:00",
+        "recipient_ref": "source20:synthetic",
+        "language": "fr",
+        "recipient_binding_sha256": "8fb42d02f7c46e95ddaaeb09615ef588c783a9952a9581dc996f3976266ab33b",
+        "values": {
+          "guest_name": "SYNTHETIC TEST GUEST",
+          "booking_reference": "TEST-NOT-A-BOOKING-001",
+          "listing_name": "Synthetic Riyadh apartment",
+          "arrival_date": "2026-11-27",
+          "departure_date": "2026-12-05",
+          "check_in_time": "15:00",
+          "check_out_time": "12:00",
+          "timezone": "Asia/Riyadh",
+          "property_address": "Synthetic address for renderer test only",
+          "map_url": "https://maps.google.com/?q=Riyadh",
+          "video_url": "https://example.invalid/arrival-test",
+          "gate_code": "TEST-GATE-ONLY",
+          "wifi_net": "TEST-NETWORK",
+          "wifi_pass": "TEST-PASSWORD-ONLY",
+          "timezone_display": "Asia/Riyadh",
+          "booking_platform": "Booking.com",
+          "amount": "500.00",
+          "currency": "SAR",
+          "payment_url": "https://example.invalid/synthetic-payment",
+          "review_url": "https://g.page/r/SYNTHETIC/review",
+          "loyalty_url": "https://example.invalid/synthetic-invitation"
+        },
+        "source_context_ref": "source20:synthetic-mapping-2"
+      },
+      "now_epoch": 1795716000.0,
+      "retained_message": {
+        "mode": "template",
+        "template_ref": "lsa_sameday_checkin_guide_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "https://maps.google.com/?q=Riyadh",
+          "Synthetic address for renderer test only",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "TEST-GATE-ONLY",
+          "https://example.invalid/arrival-test"
+        ],
+        "components_sha256": "cb155f4b74d4854ef997607cc395cccd3fd98318d0f762dd10ffd5a258ecf947",
+        "attachment": null
+      },
+      "retained_at": 1795629600.0,
+      "message": {
+        "mode": "template",
+        "template_ref": "lsa_sameday_checkin_guide_v1",
+        "variables": [
+          "SYNTHETIC TEST GUEST",
+          "Synthetic Riyadh apartment",
+          "https://maps.google.com/?q=Riyadh",
+          "Synthetic address for renderer test only",
+          "TEST-NETWORK",
+          "TEST-PASSWORD-ONLY",
+          "TEST-GATE-ONLY",
+          "https://example.invalid/arrival-test"
+        ],
+        "components_sha256": "cb155f4b74d4854ef997607cc395cccd3fd98318d0f762dd10ffd5a258ecf947",
+        "attachment": null
+      },
+      "content_digest": "ef4822afe61cfdd1c3e59794b6267de855b88af4f24c34ef05e5995a632460b2",
+      "selection_ref": "yc19-text-access-render-1:aa9cb3b2cc87884c987b03ec499b2ad05f04d10535f4b3c6381e0cde70bc3231",
+      "source_values_sha256": "d62ca6737a7f46102d43a0a06067d49839f5e2f13b7cee51da9cb9a9f9f73ab9"
     }
   ]
 }
