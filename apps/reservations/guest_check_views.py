@@ -50,8 +50,37 @@ class GuestCheckForm(forms.Form):
 @translation.override("ar")
 @require_POST
 def guest_classification_check(request):
+    request._disable_google_integrations = True
     if len(request.body) > 4096:
         return JsonResponse({"detail": "invalid_request"}, status=400)
+    if request.POST.get("action") == "lookup_saved_guest":
+        from .services.guest_prefill import lookup
+
+        allowed = {"action", "email", "phone", "country"}
+        if (
+            request.GET
+            or not set(request.POST) <= allowed
+            or any(len(request.POST.getlist(k)) != 1 for k in request.POST)
+        ):
+            response = JsonResponse({"detail": "invalid_request"}, status=400)
+        else:
+            form = GuestCheckForm(request.POST)
+            if not form.is_valid():
+                response = JsonResponse(
+                    {"detail": "invalid_guest", "errors": form.errors}, status=400
+                )
+            else:
+                response = JsonResponse(
+                    lookup(
+                        form.cleaned_data["email"],
+                        form.cleaned_data["phone"],
+                        snapshot=provider_snapshot(),
+                    )
+                )
+        response["Cache-Control"] = "private, no-store"
+        response["Referrer-Policy"] = "no-referrer"
+        response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+        return response
     reference = None
     if request.POST.get("booking_id"):
         try:
