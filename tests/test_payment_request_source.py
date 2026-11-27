@@ -467,6 +467,32 @@ def test_one_redacted_email_for_source_hold_even_on_repeated_reads(fresh):
     assert "1650253" not in notice.recipient_reference
 
 
+def test_invalid_new_source_leaves_recovery_queue_without_replaying_or_starving(fresh):
+    reservation, request = fresh
+    item = delivery(request)
+    reservation.normalized_status = "cancelled"
+    reservation.save(update_fields=["normalized_status"])
+    with patch.object(source, "alert"):
+        assert source.register(item.pk)["status"] == "held"
+    item.refresh_from_db()
+    assert item.status == "held"
+    assert not PaymentRequestDelivery.objects.filter(status="queued").exists()
+    assert not WebsiteMessageRelay.objects.exists()
+
+
+def test_older_queued_resource_keeps_original_state_and_channel(fresh):
+    _, request = fresh
+    item = delivery(request)
+    PaymentRequestDelivery.objects.filter(pk=item.pk).update(
+        created_at=source.cutover() - timedelta(seconds=1)
+    )
+    assert source.routed(item.pk) is False
+    assert source.register(item.pk)["status"] == "held"
+    item.refresh_from_db()
+    assert item.status == "queued"
+    assert not WebsiteMessageRelay.objects.exists()
+
+
 def test_explicit_repeat_cannot_create_alternate_central_sequence(fresh):
     from apps.payments.payment_link_tasks import queue_delivery
 

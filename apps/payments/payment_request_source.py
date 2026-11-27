@@ -365,17 +365,23 @@ def register(delivery_id):
         if existing:
             return {"status": "ycloud", "relay_ref": str(existing.pk)}
         at, now = cutover(), timezone.now()
+        if not enabled() or not at:
+            return {"status": "held", "reason": "source_cutover_or_history"}
         if (
-            not enabled()
-            or not at
-            or not at <= delivery.created_at <= now < delivery.created_at + WINDOW
+            not at <= delivery.created_at <= now < delivery.created_at + WINDOW
             or (delivery.kind == "receipt" and (not request.paid_at or request.paid_at < at))
             or not _pristine(delivery)
         ):
+            if at <= delivery.created_at <= now and delivery.status == "queued":
+                delivery.status, delivery.error_code = "held", "source_cutover_or_history"
+                delivery.save(update_fields=["status", "error_code"])
+                alert(delivery.pk, "source_cutover_or_history")
             return {"status": "held", "reason": "source_cutover_or_history"}
         try:
             binding, _, _ = _basis(delivery, request, reservation)
         except Exception:
+            delivery.status, delivery.error_code = "held", "current_payment_source_unverified"
+            delivery.save(update_fields=["status", "error_code"])
             alert(delivery.pk, "current_payment_source_unverified")
             return {"status": "held", "reason": "current_payment_source_unverified"}
         kind, _ = KINDS[delivery.kind]
@@ -500,6 +506,7 @@ def alert(delivery_id, reason):
         if reason
         in {
             "current_payment_source_unverified",
+            "source_cutover_or_history",
             "source_changed_or_expired",
             "held",
             "uncertain",
