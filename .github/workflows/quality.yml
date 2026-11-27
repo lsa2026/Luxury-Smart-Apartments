@@ -138,6 +138,7 @@ jobs:
           tests/test_operations_users.py
           tests/test_operations_booking_summary.py
           tests/test_guest_classification.py
+          tests/test_guest_prefill.py
           tests/test_unified_booking_phone.py
           tests/test_admin_guest_files.py
           tests/test_booking_detail_layout.py
@@ -278,7 +279,7 @@ jobs:
       - name: Render synthetic contact inbox layouts
         env:
           LSA_CONTACT_VISUAL_DIR: ${{ runner.temp }}/lsa-contact-layout
-        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout tests/test_unified_booking_phone.py::test_render_unified_phone_layout tests/test_admin_guest_files.py::test_render_guest_file_layout tests/test_revised_payment_flow.py::test_render_revised_payment_layout -q
+        run: pytest tests/test_contact_layout.py tests/test_morning_payment_layout.py tests/test_guest_classification.py::test_render_classification_layout tests/test_guest_prefill.py::test_render_recovery_on_manual_booking_form tests/test_unified_booking_phone.py::test_render_unified_phone_layout tests/test_admin_guest_files.py::test_render_guest_file_layout tests/test_revised_payment_flow.py::test_render_revised_payment_layout -q
 
       - name: Check contact inbox layouts on phone and tablet
         env:
@@ -288,6 +289,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/lsa-contact-browser" --no-save playwright@1.62.1
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-contact-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-classification-layout.cjs
+          NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-prefill-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-unified-phone-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-guest-file-layout.cjs
           NODE_PATH="$RUNNER_TEMP/lsa-contact-browser/node_modules" node scripts/check-telegram-activation-layout.cjs
@@ -324,7 +326,7 @@ jobs:
         run: node --test tests/price-calendar.test.cjs
 
       - name: Test progressive admin booking tabs and form safety
-        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs tests/admin-guest-classification.test.cjs tests/admin-guest-check.test.cjs tests/admin-booking-status.test.cjs
+        run: node --test tests/admin-booking-detail.test.cjs tests/admin-morning-availability.test.cjs tests/admin-guest-classification.test.cjs tests/admin-guest-check.test.cjs tests/admin-guest-prefill.test.cjs tests/admin-booking-status.test.cjs
 
       - name: Test noon morning communication contract
         run: node --test tests/morning-noon-contract.test.cjs tests/morning-hostaway-first.test.cjs

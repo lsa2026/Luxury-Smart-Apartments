@@ -1,5 +1,21 @@
 <section class="lsa-guest-check" data-admin-guest-check data-check-url="{% url 'notifications:guest_classification_check' %}"{% if not draft_check %} data-booking-id="{{ reservation.pk }}"{% endif %}>
   {% if not draft_check %}{% csrf_token %}{% endif %}
+  {% if draft_check %}
+  <div class="lsa-guest-check__restore">
+    <h3>ضيف سبق له الحجز؟</h3>
+    <p>أدخل جواله أو بريده أعلاه لاسترجاع الاسم وبيانات التواصل واللغة والعنوان المحفوظ، بدل كتابتها من جديد.</p>
+    <button type="button" class="lsa-btn lsa-btn--gold" data-load-saved-guest hidden>استرجاع بيانات الضيف المحفوظة</button>
+    <p role="status" aria-live="polite" data-saved-guest-status></p>
+    <div data-saved-guest-choices hidden>
+      <label>اختر السجل السابق <select data-saved-guest-choice aria-label="السجل السابق للضيف"></select></label>
+      <div class="lsa-guest-check__preview" data-saved-guest-preview></div>
+      <div class="lsa-guest-check__actions">
+        <button type="button" class="lsa-btn lsa-btn--gold" data-apply-saved-guest>استرجاع كل بيانات الضيف</button>
+        <button type="button" class="lsa-btn lsa-btn--ghost" data-apply-saved-address>استرجاع العنوان فقط</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <button type="button" class="lsa-btn lsa-btn--ghost" data-check-guest>تحديث حالة الضيف من هوستاوي</button>
   <p role="status" aria-live="polite" data-guest-check-result>فحص الجديد والعائد من جميع قنوات هوستاوي بالبريد أو رقم الجوال الدولي الكامل.</p>
 </section>

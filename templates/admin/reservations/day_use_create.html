@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 {% block extrastyle %}<link rel="stylesheet" href="{% static 'css/admin-guest-check.css' %}">{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-morning-stays.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-address.css' %}"><link rel="stylesheet" href="{% static 'css/checkout-phone.css' %}"><link rel="stylesheet" href="{% static 'css/morning-validation.css' %}">{% endblock %}
-{% block extrahead %}<script src="{% static 'js/admin-guest-check.js' %}" defer></script>{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script><script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
+{% block extrahead %}<script src="{% static 'js/admin-guest-check.js' %}" defer></script><script type="module" src="{% static 'js/admin-guest-prefill.js' %}"></script>{{ block.super }}<script src="{% static 'js/admin-day-use.js' %}" defer></script><script src="{% static 'js/checkout-phone.js' %}" defer></script><script src="{% static 'js/morning-validation.js' %}" defer></script><script type="module" src="{% static 'js/checkout-address.js' %}"></script>{% endblock %}
 {% block content_title %}{% endblock %}
 {% block content %}
 <main class="lsa-dashboard lsa-operations-screen" dir="rtl">
