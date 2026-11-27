@@ -107,6 +107,7 @@ jobs:
           tests/test_hyperpay_refunds_phase94.py
           tests/test_hyperpay.py
           tests/test_reservation_payment_links.py
+          tests/test_payment_request_source.py
           tests/test_payment_link_revisions.py
           tests/test_revised_payment_flow.py
           tests/test_payment_link_purchase_receipts.py

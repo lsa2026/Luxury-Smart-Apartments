@@ -13,6 +13,10 @@ def policy_from_source(
     event, facts, context, *, text_access=False, retained_message=None, retained_at=None, now=None
 ):
     scenario = facts.get("scenario")
+    if scenario == "01":
+        from apps.payments.payment_request_source import policy_from_source as payment_policy
+
+        return payment_policy(event, facts, context)
     if facts.get("source_message_type") in {
         "review_followup_1",
         "review_followup_2",

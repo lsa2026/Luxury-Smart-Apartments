@@ -163,6 +163,13 @@ def register_payment_link(event, scenario):
 
 
 def current_event(row):
+    if row.scenario == "01":
+        from apps.payments.payment_request_source import facts_for_row
+
+        try:
+            return facts_for_row(row)
+        except Exception:
+            return None
     if row.message_type in {"review_followup_1", "review_followup_2", "review_followup_3"}:
         from .website_review_source_v2 import facts_for_row
 
@@ -268,10 +275,14 @@ def current_event(row):
 
 @sensitive_variables()
 def forward_due(*, client=None, limit=1):
+    from apps.payments import payment_request_source
+
     from . import extension_checkout_source_v2 as extension
     from . import website_review_source_v2 as reviews
 
     scopes = (["07", "08"] if enabled() else []) + (["02"] if extension.enabled() else [])
+    if payment_request_source.enabled():
+        scopes.append("01")
     if not scopes:
         return {"accepted": 0}
     accepted = 0
@@ -313,6 +324,8 @@ def forward_due(*, client=None, limit=1):
             if current is None:
                 row.state, row.reason = "stale", "source_changed_or_expired"
                 row.save(update_fields=["state", "reason", "updated_at"])
+                if row.scenario == "01":
+                    payment_request_source.alert(row.payment_request_delivery_id, row.reason)
                 continue
             event, facts = current
             if (
@@ -334,7 +347,9 @@ def forward_due(*, client=None, limit=1):
             row.save(update_fields=["state", "updated_at"])
         # Durable fence is committed BEFORE the network. A crash/timeout is not
         # retried, even if no ACK was received. Reconciliation is separate.
-        if row.scenario == "02":
+        if row.scenario == "01":
+            capability = payment_request_source.read_capability(row)
+        elif row.scenario == "02":
             capability = extension.read_capability(row, event.extension)
         elif row.message_type.startswith("review_followup_"):
             from .website_review_source_v2 import read_capability
@@ -349,7 +364,9 @@ def forward_due(*, client=None, limit=1):
             else "site01-source-relay-1",
             "relay_ref": str(row.pk),
             "scenario": row.scenario,
-            "source_kind": "extension_checkout"
+            "source_kind": "payment_request"
+            if row.scenario == "01"
+            else "extension_checkout"
             if row.scenario == "02"
             else "review"
             if row.message_type.startswith("review_followup_")
@@ -427,5 +444,7 @@ def forward_due(*, client=None, limit=1):
             state=state, reason=reason, request_id=request_id, updated_at=timezone.now()
         )
         if state != "accepted":
+            if row.scenario == "01" and state in {"held", "uncertain"}:
+                payment_request_source.alert(row.payment_request_delivery_id, state)
             break  # One network attempt per default worker round, including held.
     return {"accepted": accepted}

@@ -30,6 +30,12 @@ def queue_delivery(request_id, *, kind="link", resend=False):
             raise ValueError("receipt_requires_paid_request")
         previous = request.deliveries.filter(kind=kind).order_by("-sequence").first()
         if previous:
+            from .payment_request_source import routed
+
+            if routed(previous.pk):
+                return (
+                    previous  # Same central slot, including unknown/failed; no alternate sequence.
+                )
             if not resend or kind == "receipt":
                 return previous
             # Each explicit operator resend is a new, auditable delivery,
@@ -253,6 +259,11 @@ def payment_message(request, kind="link", *, owner_review=False):
     time_limit=60,
 )
 def deliver_payment_request_task(delivery_id):
+    from . import payment_request_source
+
+    if payment_request_source.routed(delivery_id):
+        return payment_request_source.register(delivery_id)
+
     from apps.reservations.telegram_workgroup import manual_mode as workgroup_enabled
 
     if workgroup_enabled():

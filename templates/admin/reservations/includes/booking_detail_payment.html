@@ -11,20 +11,24 @@
       {% endfor %}
       {% for delivery in guest_payment_request.deliveries.all %}
         <p>{% if delivery.kind == 'link' %}إرسال الرابط{% else %}تأكيد السداد{% endif %}:
-          {% if delivery.status == 'handed_off' %}سُلّمت نسخة لقروب العمل لإرسالها يدويًا؛ لا إثبات إرسال للضيف{% elif delivery.status == 'handoff_wait' %}بانتظار تسليم نسخة القروب{% elif delivery.status == 'handoff_hold' %}تعذر تأكيد نسخة القروب؛ راجع السجل قبل التكرار{% elif delivery.status == 'sent' %}قبِل مزود الواتساب الرسالة{% elif delivery.status == 'queued' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}جارٍ الإرسال{% elif delivery.status == 'unknown' %}نتيجة الإرسال غير مؤكدة{% else %}تعذر الإرسال{% endif %}
+          {% if delivery.status == 'handed_off' %}سُلّمت نسخة لقروب العمل لإرسالها يدويًا؛ لا إثبات إرسال للضيف{% elif delivery.status == 'handoff_wait' %}بانتظار تسليم نسخة القروب{% elif delivery.status == 'handoff_hold' %}تعذر تأكيد نسخة القروب؛ راجع السجل قبل التكرار{% elif delivery.status == 'sent' or delivery.status == 'accepted' %}قبِل مزود الواتساب الرسالة؛ لم يثبت التسليم بعد{% elif delivery.status == 'delivered' %}تم التسليم وفق الإيصال الموثق{% elif delivery.status == 'read' %}ورد إيصال قراءة موثق{% elif delivery.status == 'queued' or delivery.status == 'ycloud' %}بانتظار التنفيذ{% elif delivery.status == 'sending' %}جارٍ الإرسال{% elif delivery.status == 'unknown' or delivery.status == 'uncertain' %}نتيجة الإرسال غير مؤكدة{% else %}تعذر الإرسال{% endif %}
           {% if delivery.error_code %} — راجع سجل التسليم قبل إعادة المحاولة{% endif %}</p>
       {% endfor %}
     {% endif %}
     {% if not detail_payment_settled %}
+    {% if payment_request_ycloud and latest_link_delivery %}
+    <p>يُرسل رابط الدفع عبر واتساب من سجل الرسالة نفسه. لا تنشأ نسخة ثانية عند إعادة الطلب؛ تُراجع النتيجة في سجل التسليم.</p>
+    {% else %}
     {% if guest_payment_request.status == 'open' and latest_link_delivery %}
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="resend_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">{% if workgroup_manual %}تجهيز نسخة أخرى لقروب العمل{% else %}إعادة إرسال رابط السداد للضيف{% endif %}</button></form>
     {% if latest_link_delivery.status == 'unknown' or latest_link_delivery.status == 'sending' or latest_link_delivery.status == 'queued' %}
     <p>الإرسال السابق قيد التنفيذ أو غير مؤكد؛ إعادة الإرسال اليدوية قد توصل أكثر من نسخة من الرسالة.</p>
     {% endif %}
     {% else %}
-    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">{% if workgroup_manual %}تجهيز رابط السداد لقروب العمل{% else %}إرسال رابط السداد للضيف{% endif %}</button></form>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="send_guest_payment_link"><button class="lsa-btn lsa-btn--gold" type="submit">{% if workgroup_manual and not payment_request_ycloud %}تجهيز رابط السداد لقروب العمل{% else %}إرسال رابط السداد للضيف{% endif %}</button></form>
     {% endif %}
-    <p class="help">{% if workgroup_manual %}تُجهّز نسخة في قروب العمل لينسخها المدير ويرسلها للضيف يدويًا عبر واتساب. لا تُرسل للضيف عبر تليجرام. يُستخدم رابط السداد نفسه دون تكرار التحصيل.{% else %}يمكن للمدير إعادة الإرسال يدويًا دون انتظار دقيقة أو منع بسبب إرسال سابق. يُستخدم الرابط نفسه دون تكرار تحصيل المبلغ. قبول المزود لا يؤكد وصول الرسالة إلى الجوال.{% endif %}</p>
+    {% endif %}
+    <p class="help">{% if payment_request_ycloud %}تُرسل الرسالة عبر واتساب مع إبقاء رابط الدفع والحسابات كما هي. قبول المزود لا يثبت التسليم أو السداد.{% elif workgroup_manual %}تُجهّز نسخة في قروب العمل لينسخها المدير ويرسلها للضيف يدويًا عبر واتساب. لا تُرسل للضيف عبر تليجرام. يُستخدم رابط السداد نفسه دون تكرار التحصيل.{% else %}يمكن للمدير إعادة الإرسال يدويًا دون انتظار دقيقة أو منع بسبب إرسال سابق. يُستخدم الرابط نفسه دون تكرار تحصيل المبلغ. قبول المزود لا يؤكد وصول الرسالة إلى الجوال.{% endif %}</p>
     {% if guest_payment_request.status == 'open' %}
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="revoke_guest_payment_link"><button class="lsa-btn lsa-btn--ghost" type="submit">إيقاف الرابط دون إلغاء الحجز</button></form>
     <p>لا يمكن استبدال الرابط أو إيقافه أثناء وجود محاولة دفع غير محسومة. راجع نتيجة البوابة أولًا.</p>
