@@ -7,7 +7,7 @@ const { pathToFileURL } = require("node:url");
 (async () => {
   const output = process.env.LSA_CONTACT_VISUAL_DIR;
   if (!output) throw new Error("Synthetic output directory required");
-  const executablePath = execFileSync("which", ["google-chrome"], { encoding: "utf8" }).trim();
+  const executablePath = process.env.LSA_TEST_CHROME || execFileSync("which", ["google-chrome"], { encoding: "utf8" }).trim();
   const browser = await chromium.launch({ executablePath, args: ["--allow-file-access-from-files"] });
   try {
     for (const colorScheme of ["light", "dark"]) {
@@ -55,7 +55,7 @@ const { pathToFileURL } = require("node:url");
           }
           const facts = await page.evaluate(() => ({
             width: innerWidth, scroll: document.documentElement.scrollWidth,
-            shortButtons: [...document.querySelectorAll("main .lsa-btn")].some(el => el.getBoundingClientRect().height < 43),
+            shortButtons: [...document.querySelectorAll("main .lsa-btn")].some(el => el.getClientRects().length && el.getBoundingClientRect().height < 43),
           }));
           if (facts.scroll > facts.width + 1 || facts.shortButtons) throw new Error(`${name} ${width}: ${JSON.stringify(facts)}`);
           const poorContrast = await page.locator(".lsa-extension__source h3, .lsa-extension__search input").evaluateAll(elements => {

@@ -14,10 +14,11 @@ const data = source => `data:text/javascript;base64,${Buffer.from(source).toStri
     const browser = await chromium.launch({executablePath, args:['--allow-file-access-from-files']});
     const results = [];
     try {
+        for (const name of ['guest-prefill', 'extension-selection', 'extension-guest'])
         for (const colorScheme of ['light', 'dark']) for (const width of [390, 820, 1366]) {
             const page = await browser.newPage({viewport:{width, height:1000}, colorScheme});
             await page.route(/^https?:/, route => route.abort());
-            await page.goto(pathToFileURL(path.join(output, 'guest-prefill.html')).href);
+            await page.goto(pathToFileURL(path.join(output, `${name}.html`)).href);
             await page.evaluate(() => {
                 window.fetch = async () => ({ok:true, json:async () => ({status:'found', candidates:[{
                     source_label:'حجز سابق تجريبي', saved_at:'2026-11-01', address_kind:'billing',
@@ -30,7 +31,8 @@ const data = source => `data:text/javascript;base64,${Buffer.from(source).toStri
             });
             await page.addScriptTag({type:'module', content:module});
             await page.locator('[name="guest_email"]').fill('synthetic@example.invalid');
-            const price = await page.locator('[name="final_total_price"]').inputValue();
+            const priceField = page.locator('[name="final_total_price"]');
+            const price = await priceField.count() ? await priceField.inputValue() : null;
             await page.locator('[data-load-saved-guest]').click();
             await page.locator('[data-saved-guest-choices]').waitFor({state:'visible'});
             for (const selector of ['[data-load-saved-guest]', '[data-saved-guest-choice]', '[data-apply-saved-guest]', '[data-apply-saved-address]']) {
@@ -38,12 +40,12 @@ const data = source => `data:text/javascript;base64,${Buffer.from(source).toStri
                 if (!bounds || bounds.height < 43 || bounds.x < -1 || bounds.x+bounds.width > width+1) throw Error(`Unusable ${selector} at ${width}`);
             }
             if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth+1)) throw Error(`Overflow at ${width}`);
-            await page.locator('[data-saved-guest-choices]').screenshot({path:path.join(output, `guest-prefill-${colorScheme}-${width}.png`)});
+            await page.locator('[data-saved-guest-choices]').screenshot({path:path.join(output, `guest-prefill-${name}-${colorScheme}-${width}.png`)});
             await page.locator('[data-apply-saved-guest]').click();
             if (await page.locator('[name="guest_first_name"]').inputValue() !== 'ضيف' ||
                 await page.locator('[name="billing_street1"]').inputValue() !== 'King Road 10' ||
-                await page.locator('[name="final_total_price"]').inputValue() !== price) throw Error('Restoration changed wrong fields');
-            results.push({width, colorScheme, restored:true, price_unchanged:true, overflow:false});
+                price !== null && await priceField.inputValue() !== price) throw Error('Restoration changed wrong fields');
+            results.push({name, width, colorScheme, restored:true, price_unchanged:price===null?null:true, overflow:false});
             await page.close();
         }
     } finally {await browser.close();}
