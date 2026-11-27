@@ -110,6 +110,11 @@ def _payment_link_action(request: HttpRequest, reservation: Reservation) -> Http
                 "الحجز محفوظ. حالة إرسال رابط السداد للضيف: "
                 + {
                     "queued": "بانتظار الإرسال",
+                    "ycloud": "بانتظار إرسال واتساب",
+                    "accepted": "قبِل مزود واتساب الطلب؛ لم يثبت التسليم بعد",
+                    "delivered": "تم تسليم الرسالة وفق الإيصال الموثق",
+                    "read": "ورد إيصال قراءة موثق",
+                    "uncertain": "نتيجة غير مؤكدة؛ راجع السجل دون تكرار",
                     "sent": "قبِل مزود الواتساب الرسالة؛ الوصول إلى الجوال غير مؤكد هنا",
                     "sending": "جارٍ الإرسال",
                     "unknown": "نتيجة الإرسال غير مؤكدة؛ يمكنك إعادة الإرسال يدويًا",
@@ -872,6 +877,13 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
         if guest_payment_request
         else None
     )
+    from apps.payments import payment_request_source
+
+    payment_request_ycloud = (
+        payment_request_source.routed(latest_link_delivery.pk)
+        if latest_link_delivery
+        else payment_request_source.active_for_new()
+    )
     return _render_booking_detail(
         request,
         {
@@ -880,6 +892,7 @@ def booking_detail(request: HttpRequest, reservation_id: str) -> HttpResponse:
             "payment_links_enabled": settings.RESERVATION_PAYMENT_LINKS_ENABLED,
             "guest_payment_request": guest_payment_request,
             "latest_link_delivery": latest_link_delivery,
+            "payment_request_ycloud": payment_request_ycloud,
             "accounting_link_delivery": accounting_status(reservation),
             "manual_receipts_enabled": settings.MANUAL_PAYMENT_RECEIPTS_ENABLED,
             "offline_receipt_form": receipt_form,

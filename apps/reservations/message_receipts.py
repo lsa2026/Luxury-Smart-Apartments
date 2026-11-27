@@ -154,7 +154,9 @@ def verified_identity(proof, facts, request_id):
         else ("_payment" if ":payment:" in facts["source_event_key"] else "")
     )
     family = (
-        "lsa_ext_checkout"
+        "lsa01_payment_request"
+        if facts.get("scenario") == "01"
+        else "lsa_ext_checkout"
         if facts.get("scenario") == "02" and facts.get("source_family") == "lsa_ext_checkout"
         else f"lsa{facts['scenario']}" + suffix
     )
@@ -187,7 +189,7 @@ def verified_identity(proof, facts, request_id):
 
 
 def expectation_snapshot(row):
-    return {
+    result = {
         "contract_version": "yc19-source-expectation-1",
         "prepare_ref": row.prepare_ref,
         "request_id": row.request_id,
@@ -200,6 +202,9 @@ def expectation_snapshot(row):
         "expectation_ref": str(row.expectation_ref),
         "registered_before_attempt": True,
     }
+    if row.identity.get("source_family") == "lsa01_payment_request":
+        result["source_binding_sha256"] = row.relay.source_binding_sha256
+    return result
 
 
 def projected_expectation(facts):
@@ -224,6 +229,10 @@ def projected_expectation(facts):
 
 
 def historical_website_scope(row):
+    if row.scenario == "01":
+        from apps.payments.payment_request_source import historical_scope
+
+        return historical_scope(row)
     if row.scenario not in {"07", "08"}:
         raise ValueError
     resource_kind = (
@@ -289,16 +298,26 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
                 raise ValueError
             identity = verified_identity(proof, prior.identity, request_id)
         else:
+            from apps.payments.payment_request_source import enabled as payment_enabled
+
             from .extension_checkout_source_v2 import enabled as extension_enabled
 
-            if not (extension_enabled() if row.scenario == "02" else relay.enabled()):
+            if not (
+                payment_enabled()
+                if row.scenario == "01"
+                else extension_enabled()
+                if row.scenario == "02"
+                else relay.enabled()
+            ):
                 return "held"
             current = relay.current_event(row)
             if current is None:
                 raise ValueError
             event, facts = current
             identity = verified_identity(proof, facts, request_id)
-            language = facts["language"] if row.scenario == "02" else event.stay.guest_language
+            language = (
+                facts["language"] if row.scenario in {"01", "02"} else event.stay.guest_language
+            )
             if proof["language"] != language:
                 raise ValueError
         if prior is None:
@@ -450,6 +469,9 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             from .website_review_source_v2 import consume_ack as consume_review_ack
 
             consume_review_ack(expectation)
+            from apps.payments.payment_request_source import consume_ack as consume_payment_ack
+
+            consume_payment_ack(expectation)
             return "prepared"
         if (
             prior.relay_id != row.pk
@@ -509,12 +531,34 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
             from .website_loyalty_source_v2 import project_receipt
 
             project_receipt(prior)
+            from apps.payments.payment_request_source import project_receipt as project_payment
+
+            project_payment(prior)
             return prior.state  # Never downgrade a trusted delivery.
         prior.attempts_claimed = claims
         prior.provider_message_id, prior.wamid = provider_id or "", wamid or ""
-        prior.state = state if delivered is True else "accepted" if provider_id else "uncertain"
-        prior.receipt_evidence_ref = evidence if delivered is True else ""
-        prior.observed_at_epoch = observed if delivered is True else None
+        failed_payment = row.scenario == "01" and state == "failed"
+        retained_failure = (
+            row.scenario == "01" and prior.state == "failed" and delivered is not True
+        )
+        prior.state = (
+            state
+            if delivered is True
+            else "failed"
+            if failed_payment or retained_failure
+            else "accepted"
+            if provider_id
+            else "uncertain"
+        )
+        signed_failure = (
+            failed_payment
+            and isinstance(evidence, str)
+            and bool(evidence)
+            and type(observed) is int
+            and prior.prepared_at_epoch <= observed <= int(timezone.now().timestamp()) + 30
+        )
+        prior.receipt_evidence_ref = evidence if delivered is True or signed_failure else ""
+        prior.observed_at_epoch = observed if delivered is True or signed_failure else None
         prior.save(
             update_fields=[
                 "attempts_claimed",
@@ -531,7 +575,10 @@ def reconcile(row_id, request_id, capability, *, expected_binding=None):
         from .website_loyalty_source_v2 import project_receipt
 
         project_receipt(prior)
-        return prior.state
+        from apps.payments.payment_request_source import project_receipt as project_payment
+
+        project_payment(prior)
+        return "held" if prior.state == "failed" and row.scenario == "01" else prior.state
 
 
 @sensitive_variables()
@@ -554,6 +601,10 @@ def initial_binding_relay(request_id, binding_ref, capability):
     ):
         raise ValueError
     scenario, event_key = proof.get("scenario"), proof.get("source_event_key")
+    if scenario == "01":
+        from apps.payments.payment_request_source import initial_relay
+
+        return initial_relay(proof)
     if scenario == "02":
         from .extension_checkout_source_v2 import initial_relay
 

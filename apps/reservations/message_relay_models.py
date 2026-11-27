@@ -12,7 +12,15 @@ class WebsiteMessageRelay(models.Model):
     financial = models.BooleanField(default=False)
     event_id = models.UUIDField()
     stay_id = models.UUIDField()
-    revision = models.CharField(max_length=32)
+    revision = models.CharField(max_length=64)
+    payment_request_delivery = models.OneToOneField(
+        "payments.PaymentRequestDelivery",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="ycloud_relay",
+    )
+    source_binding_sha256 = models.CharField(max_length=64, blank=True)
     message_type = models.CharField(max_length=32)
     job_sha256 = models.CharField(max_length=64)
     source_occurred_at = models.DateTimeField()

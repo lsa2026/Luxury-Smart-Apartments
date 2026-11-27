@@ -1,4 +1,4 @@
-"""Read-only, eight-field operational metadata; never an admission decision."""
+"""Read-only, ten-field operational metadata; never an admission decision."""
 
 import json
 import logging
@@ -15,6 +15,8 @@ FIELDS = (
     "MESSAGE_EXTENSION_SOURCE_CUTOVER_AT",
     "MESSAGE_REVIEW_SOURCE_V2_ENABLED",
     "MESSAGE_REVIEW_SOURCE_CUTOVER_AT",
+    "MESSAGE_PAYMENT_REQUEST_SOURCE_V2_ENABLED",
+    "MESSAGE_PAYMENT_REQUEST_SOURCE_CUTOVER_AT",
 )
 _ISO = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})")
 
@@ -35,7 +37,7 @@ def _cutover(value):
 
 
 def snapshot(settings=None, environment=None):
-    """Django processes read resolved settings; isolated beat reads only these eight keys."""
+    """Django processes read resolved settings; isolated beat reads only these ten keys."""
     environment = environ if environment is None else environment
     result = {}
     for key in FIELDS:

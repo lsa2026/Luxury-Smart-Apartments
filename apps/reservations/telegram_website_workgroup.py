@@ -58,6 +58,10 @@ def source_copy(kind, source_id):
         delivery = PaymentRequestDelivery.objects.select_related(
             "request__reservation__booking_intent"
         ).get(pk=source_id)
+        from apps.payments.payment_request_source import routed
+
+        if routed(delivery.pk):
+            raise Denied
         request = delivery.request
         if (
             request.environment != "production"

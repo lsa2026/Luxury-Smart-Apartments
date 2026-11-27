@@ -27,7 +27,7 @@ def test_public_probe_reads_resolved_settings_without_database_or_dispatch(monke
     assert b"SYNTHETIC_SECRET_MARKER" not in response.content
 
 
-def test_environment_read_is_limited_to_eight_known_keys():
+def test_environment_read_is_limited_to_ten_known_keys():
     class LimitedEnvironment:
         def get(self, key, default):
             assert key in FIELDS
@@ -77,7 +77,7 @@ def test_non_boolean_setting_is_unknown_not_a_truthy_grant():
     assert snapshot(settings=settings)[FIELDS[0]] is None
 
 
-def test_worker_ready_logs_only_resolved_eight_fields(caplog, monkeypatch):
+def test_worker_ready_logs_only_resolved_ten_fields(caplog, monkeypatch):
     from config.celery import log_source_purpose_configuration
 
     monkeypatch.setenv(FIELDS[0], "false")
@@ -95,7 +95,7 @@ def test_worker_ready_logs_only_resolved_eight_fields(caplog, monkeypatch):
     assert "SYNTHETIC_SECRET_MARKER" not in caplog.text
 
 
-def test_only_the_eight_approved_operational_fields_can_be_read():
+def test_only_the_ten_approved_operational_fields_can_be_read():
     assert set(FIELDS) == {
         "MESSAGE_LOYALTY_SOURCE_V2_ENABLED",
         "MESSAGE_LOYALTY_SOURCE_CUTOVER_AT",
@@ -105,6 +105,8 @@ def test_only_the_eight_approved_operational_fields_can_be_read():
         "MESSAGE_EXTENSION_SOURCE_CUTOVER_AT",
         "MESSAGE_REVIEW_SOURCE_V2_ENABLED",
         "MESSAGE_REVIEW_SOURCE_CUTOVER_AT",
+        "MESSAGE_PAYMENT_REQUEST_SOURCE_V2_ENABLED",
+        "MESSAGE_PAYMENT_REQUEST_SOURCE_CUTOVER_AT",
     }
 
 

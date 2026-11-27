@@ -135,6 +135,11 @@ def updated_link_review(request, reservation_id, preview_id):
                     "اعتُمد تعديل الحجز وتحديث الرابط. حالة رسالة الضيف: "
                     + {
                         "queued": "بانتظار الإرسال",
+                        "ycloud": "بانتظار إرسال واتساب",
+                        "accepted": "قبل مزود واتساب الطلب؛ لم يثبت التسليم بعد",
+                        "delivered": "تم تسليم الرسالة وفق الإيصال الموثق",
+                        "read": "ورد إيصال قراءة موثق للرسالة",
+                        "uncertain": "نتيجة الإرسال غير مؤكدة؛ تحتاج مراجعة دون تكرار",
                         "sending": "جارٍ الإرسال",
                         "sent": "قبل مزود الواتساب الرسالة",
                         "handed_off": "سُلّمت نسخة لقروب العمل لإرسالها يدويًا",
@@ -142,7 +147,17 @@ def updated_link_review(request, reservation_id, preview_id):
                         "handoff_hold": "نسخة القروب تحتاج مراجعة؛ لا إثبات إرسال للضيف",
                     }.get(delivery.status, "تحتاج مراجعة سجل الإرسال"),
                 )
-                if delivery.status in {"queued", "sending", "sent", "handed_off", "handoff_wait"}:
+                if delivery.status in {
+                    "queued",
+                    "ycloud",
+                    "accepted",
+                    "delivered",
+                    "read",
+                    "sending",
+                    "sent",
+                    "handed_off",
+                    "handoff_wait",
+                }:
                     return redirect("notifications:booking_list")
             except (HyperPayError, CurrencyError, ValueError, ValidationError) as exc:
                 _error(request, exc)

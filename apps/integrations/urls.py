@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.loyalty import invitation_api
+from apps.payments import payment_request_source
 from apps.reservations import (
     day_use08_communications,
     day_use08_gateway,
@@ -27,6 +28,11 @@ from .views import hostaway_unified_webhook
 app_name = "integrations"
 
 urlpatterns = [
+    path(
+        "payments/requests/source-authorization/",
+        payment_request_source.authorization,
+        name="payment_request_source_authorization",
+    ),
     path(
         "morning07/reviews/source-authorization/",
         website_review_source_v2.authorization,
