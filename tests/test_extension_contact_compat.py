@@ -203,7 +203,7 @@ def test_export_contact_wire_fixtures_from_actual_adapter(tmp_path):
         ("version_status", "superseded"),
         ("scenario", []),
         ("scenario", "06"),
-        ("change_type", "new_booking"),
+        ("change_type", "replay_old_booking"),
         ("revision", True),
         ("source_updated_at", "2026-11-28T00:00:00"),
         ("recipient_generation", 2),
@@ -238,6 +238,17 @@ def test_extra_authorization_field_is_not_a_source_grant():
     p["current"]["authorized"] = True
     with pytest.raises(ContactMismatch, match="current_row_shape"):
         project(p)
+
+
+def test_child_creation_can_adopt_its_verified_contact_once_without_resetting_old_identity():
+    p = packet(booking="92001")
+    p["current"]["change_type"] = "new_booking"
+    first = project(p)
+    assert first.recipient_generation == 0
+    assert project(p, first) is first
+    q = successor(p)
+    with pytest.raises(ContactMismatch, match="booking_contact_adoption_mismatch"):
+        project(q, first)
 
 
 def test_scenario06_is_accepted_only_with_its_actual_source_owner_scope():
@@ -363,6 +374,7 @@ def test_verified_unpaid_child_uses_existing_update_template_without_paid_claim(
     case.extension.chain.property = case.property
     assert case.extension.state == "created_unpaid"
     p = packet(chain_id=case.extension.chain_id, booking="92001")
+    p["current"]["change_type"] = "new_booking"
     p["current"]["contact"]["language"] = language
     with CaptureQueriesContext(connection) as queries:
         notice = extension_modification_values(case.extension, project(p))

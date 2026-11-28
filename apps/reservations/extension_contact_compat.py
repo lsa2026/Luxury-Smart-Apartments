@@ -106,7 +106,7 @@ def project_current_contact(
     baseline_generation=0,
     previous=None,
 ):
-    """Project an explicit correction, independently of child active/cancel state.
+    """Adopt child contact or project a correction, independent of cancel state.
 
     Source20 owns persistence/CAS of the current contact projection and the old
     recipient history. No age/cutover check or send decision belongs here.
@@ -142,7 +142,7 @@ def project_current_contact(
         or row["scenario"] != scenario
         or row["version_status"] != "current"
         or not isinstance(row["change_type"], str)
-        or row["change_type"] not in {"personal_update", "phone_update", "cancelled"}
+        or row["change_type"] not in {"new_booking", "personal_update", "phone_update", "cancelled"}
         or type(row["revision"]) is not int
         or row["revision"] < 1
         or type(row["recipient_generation"]) is not int
@@ -199,10 +199,19 @@ def project_current_contact(
         if same_booking
         else (_phone(baseline_phone) if baseline_phone else None)
     )
+    if row["change_type"] == "new_booking" and (
+        same_booking or row["recipient_generation"] != 0 or clean["phone"] != old_phone
+    ):
+        raise ContactMismatch("booking_contact_adoption_mismatch")
     if row["change_type"] == "cancelled" and (previous is None or clean != previous.contact()):
         raise ContactMismatch("cancelled_contact_must_carry_current")
     changed_phone = clean["phone"] != old_phone
-    if previous and clean["phone"] != previous.contact()["phone"] and not changed_phone:
+    if (
+        previous
+        and clean["phone"] != previous.contact()["phone"]
+        and not changed_phone
+        and row["change_type"] != "new_booking"
+    ):
         raise ContactMismatch("contact_requires_current_correction")
     generation = (previous.recipient_generation if same_booking else baseline_generation) + int(
         changed_phone
