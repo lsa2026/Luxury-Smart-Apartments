@@ -240,6 +240,20 @@ def test_extra_authorization_field_is_not_a_source_grant():
         project(p)
 
 
+def test_scenario06_is_accepted_only_with_its_actual_source_owner_scope():
+    p = packet()
+    p["current"]["scenario"] = "06"
+    result = project_current_contact(
+        p,
+        chain_id=p["chain_id"],
+        listing_map_id=8001,
+        scenario="06",
+        member_keys={"91001"},
+        baseline_phone="+966500000000",
+    )
+    assert result.recipient_generation == 0
+
+
 def test_another_members_personal_update_cannot_restore_a_previous_phone():
     p = packet(booking="92001", generation=1, phone="+966551234567")
     current = project(p)
