@@ -16,6 +16,12 @@ from apps.integrations.hostaway.client import HostawayClient
 from apps.notifications.services.audit import record_audit
 from apps.payments.morning_validation import MorningBillingFields, validate_value
 
+from .extension_contact_source import (
+    contact_values,
+    field_provenance,
+    merge_contact_fields,
+    root_contact_source,
+)
 from .manual_bookings import (
     create_manual_booking_in_hostaway,
     finalize_manual_booking_draft,
@@ -27,7 +33,6 @@ from .operations_forms import ManualBookingFinalizeForm
 from .stay_extension_communications import context
 from .stay_extensions import (
     UnsupportedStaySource,
-    billing_initial,
     digest,
     eligible_source,
     guest_initial,
@@ -76,8 +81,11 @@ class ExtensionDatesForm(ExtensionGuestForm):
 
     def __init__(self, *args, raw=None, **kwargs):
         raw = raw or {}
+        values = contact_values(raw)
         draft = SimpleNamespace(
-            billing_address=billing_initial(raw),
+            billing_address={
+                key: value for key, value in values.items() if key.startswith("billing_")
+            },
             final_total_price=Decimal("0"),
             currency=str(raw.get("currency") or "SAR"),
             **guest_initial(raw),
@@ -86,9 +94,17 @@ class ExtensionDatesForm(ExtensionGuestForm):
         self.fields.pop("final_total_price")
 
 
-def _source_ticket(request, snapshot):
+def _source_ticket(request, snapshot, *, contact_raw, displayed_values):
     return signing.dumps(
-        {"user": str(request.user.pk), "id": snapshot["id"], "fingerprint": digest(snapshot)},
+        {
+            "user": str(request.user.pk),
+            "id": snapshot["id"],
+            "fingerprint": digest(snapshot),
+            "contact_root_id": contact_raw["id"],
+            "contact_fields": field_provenance(
+                displayed_values, user_id=request.user.pk, root_id=contact_raw["id"]
+            ),
+        },
         salt=TICKET_SALT,
     )
 
@@ -114,6 +130,22 @@ def source_list(request):
                 snapshot, property_obj = eligible_source(raw)
                 if digest(snapshot) != ticket["fingerprint"]:
                     raise ValueError("source_changed")
+                contact_raw = root_contact_source(raw)
+                if ticket.get("contact_root_id") != contact_raw["id"]:
+                    raise ValueError("contact_root_changed")
+                guest_data = merge_contact_fields(
+                    dates_form.cleaned_data,
+                    contact_raw,
+                    baseline=ticket.get("contact_fields"),
+                    user_id=request.user.pk,
+                    root_id=contact_raw["id"],
+                )
+                # Validate the merged current fields as strictly as owner input.
+                check = ExtensionDatesForm(
+                    {**request.POST.dict(), **guest_data, **guest_data["billing_address"]}
+                )
+                if not check.is_valid():
+                    raise ValueError("current_contact_requires_review")
                 selected = {
                     "snapshot": snapshot,
                     "property": property_obj,
@@ -129,7 +161,7 @@ def source_list(request):
                     check_out=dates_form.cleaned_data["check_out"],
                     guests=dates_form.cleaned_data["guests"],
                     actor=request.user,
-                    guest_data=dates_form.cleaned_data,
+                    guest_data=check.cleaned_data,
                 )
                 record_audit(
                     request=request,
@@ -148,14 +180,20 @@ def source_list(request):
             snapshot, property_obj = eligible_source(raw)
             selected = {"snapshot": snapshot, "property": property_obj, "guest": guest_initial(raw)}
             if dates_form is None:
+                contact_raw = root_contact_source(raw)
                 dates_form = ExtensionDatesForm(
-                    raw=raw,
+                    raw=contact_raw,
                     initial={
-                        "source_ticket": _source_ticket(request, snapshot),
                         "guests": min(snapshot["guests"], 20),
                         "check_out": date.fromisoformat(snapshot["departure_date"])
                         + timedelta(days=1),
                     },
+                )
+                dates_form.initial["source_ticket"] = _source_ticket(
+                    request,
+                    snapshot,
+                    contact_raw=contact_raw,
+                    displayed_values=dates_form.initial,
                 )
             dates_form.fields["check_out"].widget.attrs["min"] = (
                 date.fromisoformat(snapshot["departure_date"]) + timedelta(days=1)

@@ -150,17 +150,22 @@ def acknowledge_ownership(extension_id, *, transport=None):
 
 
 def context(extension, *, verify_live=True, client=None, _retry=True):
+    from .extension_contact_source import provider_context
     from .services.stay_policy import stay_policy_for
 
     chain = extension.chain
     state = chain_context(chain)
     policy = stay_policy_for(chain.property)
     ready = state["chain_state"] != "review"
+    provider_evidence = None
     if verify_live:
         # A stale/dropped webhook cannot authorize sending against changed dates.
         # No writes, messages, or collection checks are performed by this GET.
         try:
-            root = source_snapshot(read_source(chain.root_hostaway_reservation_id, client=client))
+            root_raw = read_source(chain.root_hostaway_reservation_id, client=client)
+            root = source_snapshot(root_raw)
+            root_evidence = provider_context(root_raw)
+            child_evidence = None
             if root != chain.root_snapshot:
                 ready = False
             for item in chain.extensions.select_related("reservation", "draft"):
@@ -168,8 +173,11 @@ def context(extension, *, verify_live=True, client=None, _retry=True):
                 if reservation and reservation.hostaway_reservation_id:
                     raw = read_source(reservation.hostaway_reservation_id, client=client)
                     remote = source_snapshot(raw)
+                    if item.pk == extension.pk:
+                        child_evidence = provider_context(raw)
                     if (
-                        remote["listing_map_id"] != chain.property.hostaway_listing_map_id
+                        remote["id"] != reservation.hostaway_reservation_id
+                        or remote["listing_map_id"] != chain.property.hostaway_listing_map_id
                         or remote["arrival_date"] != reservation.check_in.isoformat()
                         or remote["departure_date"] != reservation.check_out.isoformat()
                         or remote["status"] != reservation.normalized_status
@@ -181,6 +189,12 @@ def context(extension, *, verify_live=True, client=None, _retry=True):
 
                     if Decimal(str(raw.get("totalPrice"))) != reservation.total_price:
                         ready = False
+            if ready:
+                provider_evidence = {
+                    "contract": "site01-extension-provider-context-2",
+                    "root": root_evidence,
+                    "child": child_evidence,
+                }
         except Exception:
             ready = False
     if not ready:
@@ -212,6 +226,7 @@ def context(extension, *, verify_live=True, client=None, _retry=True):
         "creation_ready": extension.draft.status == "ready_for_payment" and bool(reservation),
         "communication_snapshot": communication,
         "communication_contact_extension_id": contact_id,
+        "provider_context_v2": provider_evidence,
         "capability_expires_at": expires_at(extension).isoformat(),
         "check_in_time": f"{policy.check_in_hour:02}:00"
         if policy.check_in_hour is not None
@@ -229,7 +244,10 @@ def context(extension, *, verify_live=True, client=None, _retry=True):
             ).get(pk=extension.pk)
             return context(fresh, verify_live=verify_live, client=client, _retry=False)
         values.update(
-            communication_ready=False, chain_state="review", active_linkage_verified=False
+            communication_ready=False,
+            chain_state="review",
+            active_linkage_verified=False,
+            provider_context_v2=None,
         )
         for member in values["chain_members"]:
             member.update(allow_checkout=False, review_allowed=False, review_anchor_date=None)
