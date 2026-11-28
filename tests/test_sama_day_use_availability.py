@@ -88,8 +88,9 @@ def test_verified_inventory_is_read_only_and_never_quotes_or_authorizes(rig):
     assert "amount_sar" not in str(data)
 
 
+@pytest.mark.parametrize("local_status", ["confirmed", "unknown", "sync_pending"])
 def test_remote_cache_is_fixed_age_not_sliding_and_local_admissions_are_always_read(
-    rig, booking_factory
+    rig, booking_factory, local_status
 ):
     booking = booking_factory("synthetic@example.invalid", "+16502530000")
     p = booking.property
@@ -105,6 +106,7 @@ def test_remote_cache_is_fixed_age_not_sliding_and_local_admissions_are_always_r
     assert rig.remote.get_listing_calendar.call_count == 1
     booking.check_in = rig.clock.now.date() - timedelta(days=3)
     booking.check_out = rig.clock.now.date()
+    booking.normalized_status = local_status
     booking.save()
     blocked = read().json()
     assert blocked["properties"][0]["eligible"] is False
@@ -343,6 +345,50 @@ def test_booking_admitted_for_an_earlier_property_during_a_later_read_is_exclude
         next(row for row in data["properties"] if row["property_slug"] == p.slug)["eligible"]
         is False
     )
+
+
+def test_previous_morning_stay_outside_existing_inventory_turnover_window_does_not_block(rig):
+    p = property_obj()
+    now = rig.clock.now
+    MorningStay.objects.create(
+        request_id=uuid4(),
+        property=p,
+        starts_at=datetime(2026, 11, 26, 22, tzinfo=UTC),
+        ends_at=datetime(2026, 11, 27, 8, tzinfo=UTC),
+        expires_at=now - timedelta(days=1),
+        availability_checked_at=now,
+        created_by=get_user_model().objects.create_user(username="synthetic-admin"),
+        guest_name="Synthetic",
+        guest_phone="+16502530000",
+        guest_email="synthetic@example.invalid",
+        amount_sar=100,
+        environment="production",
+        status="paid",
+    )
+    assert read().json()["properties"][0]["eligible"] is True
+
+
+def test_day_use_allocation_after_the_two_inventory_nights_does_not_block(rig):
+    p = property_obj()
+    now = rig.clock.now
+    DayUseStay.objects.create(
+        request_id=uuid4(),
+        property=p,
+        starts_at=now + timedelta(days=2),
+        ends_at=now + timedelta(days=2, hours=3),
+        inventory_arrival_date=now.date() + timedelta(days=1),
+        inventory_departure_date=now.date() + timedelta(days=3),
+        expires_at=now + timedelta(days=1),
+        availability_checked_at=now,
+        created_by=get_user_model().objects.create_user(username="synthetic-admin"),
+        guest_name="Synthetic",
+        guest_phone="+16502530000",
+        guest_email="synthetic@example.invalid",
+        amount_sar=100,
+        environment="production",
+        status="paid",
+    )
+    assert read().json()["properties"][0]["eligible"] is True
 
 
 def test_changed_mapping_during_remote_read_is_unknown(rig):

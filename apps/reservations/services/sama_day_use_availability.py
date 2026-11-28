@@ -144,14 +144,23 @@ def local_reason(property_obj, start, end):
             "create_unknown",
             "create_pending",
             "ready_for_hostaway",
+            "unknown",
+            "sync_pending",
         ],
     ).exists():
         return "local_stay_or_departure"
     if local_inflight_conflict(property_obj, start, end):
         return "local_inflight"
-    if active_stays(property_obj, start, end + timedelta(hours=3)).exists():
+    # This is an inventory-day preselection, not a requested late checkout.
+    # The booking path applies its exact end-time turnover buffer separately.
+    if active_stays(property_obj, start, end).exists():
         return "day_use_conflict"
-    if morning_active(property_obj, start - timedelta(days=1), end + timedelta(days=1)).exists():
+    zone = property_zone(property_obj)
+    if morning_active(
+        property_obj,
+        datetime.combine(day - timedelta(days=1), time(15), zone),
+        datetime.combine(day + timedelta(days=1), time(12), zone),
+    ).exists():
         return "morning_conflict"
     return None
 
