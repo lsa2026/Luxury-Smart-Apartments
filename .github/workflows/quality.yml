@@ -85,6 +85,7 @@ jobs:
           tests/test_assisted_attribution.py
           tests/test_prepurchase_measurement.py
           tests/test_stay_extensions.py
+          tests/test_extension_created_basis.py
           tests/test_extension_contact_compat.py
           tests/test_extension_contact_source.py
           tests/test_extension_contact_provenance.py

@@ -392,22 +392,17 @@ def recipient_message_key(*, booking_key, message_key, recipient_generation):
     )
 
 
-def extension_modification_values(extension, contact):
-    """Existing verified child-creation notice, with the approved update template.
-
-    Child reference and additional dates are retained. Collection/activation is
-    not a prerequisite or inferred result. No ordinary new-booking bundle or
-    financial purpose is produced. The result is preparation data, not a send.
-    """
+def extension_modification_source_values(extension, person, *, chain_id, reservation_key):
+    """Shared verified child/additional-period values; no generation or dispatch."""
     from .services.stay_policy import stay_policy_for
     from .stay_extensions import _checkout, booking_verified
 
     reservation = extension.reservation
     if (
-        contact.chain_id != str(extension.chain_id)
+        chain_id != str(extension.chain_id)
         or not reservation
         or reservation.is_test
-        or contact.reservation_key != str(reservation.hostaway_reservation_id)
+        or reservation_key != str(reservation.hostaway_reservation_id)
         or extension.state not in {"created_unpaid", "active"}
         or not booking_verified(extension)
     ):
@@ -416,13 +411,11 @@ def extension_modification_values(extension, contact):
     if policy.check_in_hour is None:
         raise ContactMismatch("extension_checkin_time_unavailable")
     checkout, zone = _checkout(extension.chain.property, reservation.check_out)
-    person = contact.contact()
     language = person["language"]
     listing = getattr(extension.chain.property, "name_" + language)
     if not listing:
         raise ContactMismatch("extension_listing_name_unavailable")
     child_key = str(reservation.hostaway_reservation_id)
-    occurrence = "extension-child-created:" + str(extension.pk)
     keys = (
         "guest_name",
         "booking_reference",
@@ -449,6 +442,19 @@ def extension_modification_values(extension, contact):
             strict=True,
         )
     )
+    return values
+
+
+def extension_modification_values(extension, contact):
+    """Projection compatibility only; the source-owned generation is unchanged."""
+    person = contact.contact()
+    values = extension_modification_source_values(
+        extension, person, chain_id=contact.chain_id, reservation_key=contact.reservation_key
+    )
+    language = person["language"]
+    child_key = values["booking_reference"]
+    keys = tuple(values)
+    occurrence = "extension-child-created:" + str(extension.pk)
     return {
         "contract": "site01-extension-modification-compat-1",
         "reservation_key": child_key,
