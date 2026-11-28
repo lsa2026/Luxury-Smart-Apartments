@@ -19,9 +19,10 @@ from apps.reservations.models import StayExtension
 from apps.reservations.stay_extension_communications import context
 from apps.reservations.stay_extension_views import TICKET_SALT
 from apps.reservations.stay_extensions import start_extension
+from tests import test_stay_extensions as extension_cases
 from tests.test_stay_extensions import create_child
 
-pytest_plugins = ["tests.test_stay_extensions"]
+setup_extension = extension_cases.setup_extension
 
 pytestmark = pytest.mark.django_db
 

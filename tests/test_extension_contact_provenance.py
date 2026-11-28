@@ -14,9 +14,10 @@ from apps.reservations.extension_contact_source import (
 )
 from apps.reservations.manual_bookings import create_manual_booking_in_hostaway
 from apps.reservations.models import BookingIntent, HostawayReservationOperation
+from tests import test_stay_extensions as extension_cases
 from tests.test_stay_extensions import FakeHostaway, create_child, finalize
 
-pytest_plugins = ["tests.test_stay_extensions"]
+setup_extension = extension_cases.setup_extension
 pytestmark = pytest.mark.django_db
 
 

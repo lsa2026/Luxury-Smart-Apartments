@@ -152,6 +152,7 @@ def test_charge_storage_migration_preserves_legacy_value_and_null(legacy_value):
 
     _, payment = paid_reservation()
     executor = MigrationExecutor(connection)
+    latest = executor.loader.graph.leaf_nodes()
     before = [("payments", "0020_dayusepaymentattempt_stay_and_more")]
     after = [("payments", "0021_hostaway_charge_id_as_text")]
     executor.migrate(before)
@@ -173,4 +174,6 @@ def test_charge_storage_migration_preserves_legacy_value_and_null(legacy_value):
         entry.refresh_from_db()
         assert entry.remote_charge_id is None
     finally:
-        MigrationExecutor(connection).migrate(after)
+        # Reversing a dependency also reverses later reservation migrations.
+        # Restore all current leaves before other tests use current ORM models.
+        MigrationExecutor(connection).migrate(latest)
