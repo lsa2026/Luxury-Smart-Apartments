@@ -32,6 +32,7 @@ MAX_PROPERTIES = 30
 ZONE = ZoneInfo("Asia/Riyadh")
 KNOWN_EXCLUSIONS = {
     "local_inflight",
+    "physical_unit_unassigned",
     "calendar_blocked",
     "calendar_unavailable",
     "inventory_stay_restriction",
