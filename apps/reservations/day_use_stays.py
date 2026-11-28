@@ -20,7 +20,9 @@ UNRESOLVED = ("created", "pending", "unknown", "review")
 
 
 class DayUseStayError(ValueError):
-    pass
+    def __init__(self, message, *, code="source_unverified"):
+        super().__init__(message)
+        self.code = code
 
 
 def property_zone(property_obj):
@@ -131,8 +133,9 @@ def verify_window(
     allow_started=False,
     allow_elapsed=False,
     linked_stay=None,
+    include_pricing=True,
 ):
-    """No cache, quote, payment, reservation write, or phone-based exclusion."""
+    """No internal cache, quote/payment/reservation write, or phone-based exclusion."""
     zone = property_zone(property_obj)
     validate_window(
         starts_at, ends_at, zone=zone, allow_started=allow_started, allow_elapsed=allow_elapsed
@@ -156,9 +159,12 @@ def verify_window(
                 allow_started=allow_started,
                 allow_elapsed=allow_elapsed,
                 linked_stay=linked_stay,
+                include_pricing=include_pricing,
             )
     if local_inflight_conflict(property_obj, starts_at, ends_at):
-        raise DayUseStayError("توجد محاولة حجز أو دفع أخرى متداخلة غير محسومة.")
+        raise DayUseStayError(
+            "توجد محاولة حجز أو دفع أخرى متداخلة غير محسومة.", code="local_inflight"
+        )
     day = starts_at.astimezone(zone).date()
     previous_day = day - timedelta(days=1)
     calendar = client.get_listing_calendar(
@@ -191,23 +197,37 @@ def verify_window(
             )
         )
         if stock > 1 or any(value is not None and value > 1 for value in counts):
-            raise DayUseStayError("التقويم مجمع لعدة وحدات؛ يلزم تعيين الشقة الفعلية قبل الدفع.")
+            raise DayUseStayError(
+                "التقويم مجمع لعدة وحدات؛ يلزم تعيين الشقة الفعلية قبل الدفع.",
+                code="physical_unit_unassigned",
+            )
         if row.count_blocked_units or row.status.casefold() in {"blocked", "closed", "maintenance"}:
-            raise DayUseStayError("يوجد حجب أو إغلاق يحتاج مراجعة الإدارة.")
+            raise DayUseStayError(
+                "يوجد حجب أو إغلاق يحتاج مراجعة الإدارة.", code="calendar_blocked"
+            )
 
     if linked_stay is None:
         for row in (days[previous_day], days[day]):
+            if row.is_available is None:
+                raise DayUseStayError("حالة إتاحة المخزون غير متحققة.")
             if row.is_available is not True or row.count_reserved_units or row.count_pending_units:
-                raise DayUseStayError("ليلتَا الحجب غير متاحتين بالكامل.")
+                raise DayUseStayError(
+                    "ليلتَا الحجب غير متاحتين بالكامل.", code="calendar_unavailable"
+                )
             if (row.minimum_stay and row.minimum_stay > 2) or (
                 row.maximum_stay and row.maximum_stay < 2
             ):
-                raise DayUseStayError("قيود مدة الحجز في هوستاوي لا تسمح بليلتَي الحجب.")
+                raise DayUseStayError(
+                    "قيود مدة الحجز في هوستاوي لا تسمح بليلتَي الحجب.",
+                    code="inventory_stay_restriction",
+                )
         if (
             days[previous_day].closed_on_arrival
             or days[day + timedelta(days=1)].closed_on_departure
         ):
-            raise DayUseStayError("يوجد قيد وصول أو مغادرة على فترة الحجب.")
+            raise DayUseStayError(
+                "يوجد قيد وصول أو مغادرة على فترة الحجب.", code="inventory_boundary_restriction"
+            )
     from .morning_stays import active_stays as morning_active
 
     if morning_active(
@@ -215,7 +235,7 @@ def verify_window(
         datetime.combine(previous_day, time(15), zone),
         datetime.combine(day + timedelta(days=1), time(12), zone),
     ).exists():
-        raise DayUseStayError("يوجد طلب صباحي يتعارض مع ليلتَي الحجب.")
+        raise DayUseStayError("يوجد طلب صباحي يتعارض مع ليلتَي الحجب.", code="morning_conflict")
     cursor, seen, linked_seen = None, set(), False
     for _ in range(10):
         rows = client.guest_stay_page(previous_day, day + timedelta(days=1), after_id=cursor)
@@ -257,7 +277,10 @@ def verify_window(
             except (ValueError, TypeError, KeyError) as exc:
                 raise DayUseStayError("تواريخ إشغال الوحدة غير متحققة.") from exc
             if arrival < day + timedelta(days=1) and departure > previous_day:
-                raise DayUseStayError("يوجد حجز يتعارض مع ليلتَي الحجب؛ اختر شقة أخرى.")
+                raise DayUseStayError(
+                    "يوجد حجز يتعارض مع ليلتَي الحجب؛ اختر شقة أخرى.",
+                    code="channel_stay_or_departure",
+                )
         if len(rows) < 100:
             break
         cursor = rows[-1]["id"]
@@ -283,7 +306,7 @@ def verify_window(
             raise DayUseStayError("تغيرت هوية حجز هوستاوي أو قيمته؛ يلزم مراجعة الإدارة.")
     pricing = (
         None
-        if linked_stay is not None
+        if linked_stay is not None or not include_pricing
         else price_snapshot(property_obj, starts_at, ends_at, days[day].price, client=client)
     )
     return {

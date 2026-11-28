@@ -51,6 +51,11 @@ urlpatterns = [
     path("sama/invoice-document/", sama_invoice_api.document, name="sama_invoice_document"),
     path("sama/invoice-record/", sama_invoice_api.record, name="sama_invoice_record"),
     path("sama/guest-context/", sama_booking_api.guest_context, name="sama_guest_context"),
+    path(
+        "sama/day-use-availability/",
+        sama_booking_api.day_use_availability,
+        name="sama_day_use_availability",
+    ),
     path("sama/guest-history/", sama_booking_api.guest_history, name="sama_guest_history"),
     path(
         "sama/next-availability/", sama_booking_api.next_availability, name="sama_next_availability"
