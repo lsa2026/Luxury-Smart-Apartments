@@ -155,6 +155,48 @@ def test_departing_today_and_long_stays_block_even_when_the_calendar_looks_free(
 
 
 @pytest.mark.parametrize(
+    "counts",
+    [
+        {"count_available_units": 2},
+        {"available_units_to_sell": 2},
+        {"desired_units_to_sell": 2},
+        {"count_available_units": 1, "count_reserved_units": 1},
+    ],
+)
+def test_unassigned_multiunit_stock_is_excluded_without_hiding_verified_apartments(rig, counts):
+    unassigned = property_obj()
+    assigned = copy(unassigned)
+    assigned.pk = None
+    assigned.slug += "-assigned"
+    assigned.hostaway_listing_id += 1
+    assigned.hostaway_listing_map_id += 1
+    assigned.save()
+
+    def calendar(listing_id, **kw):
+        return SimpleNamespace(
+            days=tuple(
+                replace(make_day(kw["start_date"] + timedelta(days=i)), **counts)
+                if listing_id == unassigned.hostaway_listing_id
+                else make_day(kw["start_date"] + timedelta(days=i))
+                for i in range(3)
+            )
+        )
+
+    rig.remote.get_listing_calendar.side_effect = calendar
+    response = read()
+    assert response.status_code == 200
+    data = response.json()
+    assert data["complete"] and data["offering_allowed"]
+    assert data["coverage"] == {"total": 2, "evaluated": 2, "unknown": 0}
+    rows = {row["property_slug"]: row for row in data["properties"]}
+    assert rows[unassigned.slug]["eligible"] is False
+    assert rows[unassigned.slug]["reason_codes"] == ["physical_unit_unassigned"]
+    assert rows[assigned.slug]["eligible"] is True
+    assert not data["booking_authorized"] and not data["physical_readiness_verified"]
+    rig.remote.create_reservation_with_price_details.assert_not_called()
+
+
+@pytest.mark.parametrize(
     "kind",
     ["missing_day", "unknown_availability", "unknown_status", "provider_failure", "page_limit"],
 )
