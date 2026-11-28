@@ -8,6 +8,7 @@ calls or database writes, and is not wired to a producer or existing payment URL
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
@@ -18,6 +19,7 @@ from django.core.validators import validate_email
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_phone_number
 
 CONTRACT = "site01-extension-contact-compat-1"
+SOURCE20_CONTRACT = "yc20-unified-booking-current-1"
 ROW_KEYS = {
     "row_id",
     "previous_row_id",
@@ -61,11 +63,13 @@ def _uuid(value):
     return value
 
 
-def _text(value, limit, *, required=False):
+def _text(value, limit, *, required=False, multiline=False):
+    if multiline and isinstance(value, str):
+        value = value.replace("\r\n", "\n").replace("\r", "\n")
     if (
         not isinstance(value, str)
         or len(value) > limit
-        or any(ord(c) < 32 for c in value)
+        or any(ord(c) < 32 and not (multiline and c == "\n") for c in value)
         or (required and not value.strip())
     ):
         raise ContactMismatch("source_text_invalid")
@@ -168,7 +172,10 @@ def project_current_contact(
         "email": _text(contact["email"], 254),
         "phone": _phone(contact["phone"]),
         "language": contact["language"],
-        "address": {k: _text(address[k], size) for k, size in ADDRESS_LIMITS.items()},
+        "address": {
+            k: _text(address[k], size, multiline=k == "billing_street1")
+            for k, size in ADDRESS_LIMITS.items()
+        },
     }
     if not isinstance(clean["language"], str) or clean["language"] not in {"ar", "en", "fr"}:
         raise ContactMismatch("source_language_invalid")
@@ -185,7 +192,10 @@ def project_current_contact(
             if previous.binding_sha256 != binding:
                 raise ContactMismatch("immutable_source_row_conflict")
             return previous
-        if updated <= previous.source_updated_at:
+        if updated < previous.source_updated_at or (
+            updated == previous.source_updated_at
+            and previous.reservation_key != row["reservation_key"]
+        ):
             raise ContactMismatch("stale_or_ambiguous_contact")
         if previous.reservation_key == row["reservation_key"] and (
             row["previous_row_id"] != previous.row_id or row["revision"] <= previous.source_revision
@@ -200,7 +210,9 @@ def project_current_contact(
         else (_phone(baseline_phone) if baseline_phone else None)
     )
     if row["change_type"] == "new_booking" and (
-        same_booking or row["recipient_generation"] != 0 or clean["phone"] != old_phone
+        same_booking
+        or row["recipient_generation"] != baseline_generation
+        or clean["phone"] != old_phone
     ):
         raise ContactMismatch("booking_contact_adoption_mismatch")
     if row["change_type"] == "cancelled" and (previous is None or clean != previous.contact()):
@@ -230,6 +242,108 @@ def project_current_contact(
         binding_sha256=binding,
         contact_json=json.dumps(clean, sort_keys=True, ensure_ascii=False),
     )
+
+
+def source20_contact_packet(row, *, chain_id, contract_version):
+    """Map the pinned Source20 candidate row without reading its proposed table.
+
+    Only contact/identity fields are selected. Snapshot aliases reflect the
+    candidate ingest's real field names; contradictory materialized columns
+    are rejected. This data adapter neither proves provenance nor grants send.
+    """
+    if contract_version != SOURCE20_CONTRACT or not isinstance(row, dict):
+        raise ContactMismatch("source20_contract_mismatch")
+    metadata = {
+        "row_id",
+        "previous_row_id",
+        "reservation_key",
+        "revision",
+        "version_status",
+        "scenario",
+        "event_key",
+        "source_updated_at",
+        "recipient_generation",
+        "change_type",
+    }
+    if not metadata <= set(row):
+        raise ContactMismatch("source20_identity_missing")
+    snapshot = row.get("snapshot", {})
+    if not isinstance(snapshot, dict):
+        raise ContactMismatch("source20_snapshot_shape")
+    aliases = {
+        "row_id": "row_id",
+        "reservation_key": "reservation_key",
+        "revision": "reservation_revision",
+        "scenario": "scenario",
+        "event_key": "event_key",
+        "recipient_generation": "recipient_generation",
+    }
+    for top, nested in aliases.items():
+        if nested in snapshot and str(snapshot[nested]) != str(row[top]):
+            raise ContactMismatch("source20_snapshot_identity_conflict")
+
+    def digits(value):
+        result = re.sub(r"[^0-9]", "", _text(value, 64, required=True))
+        return result[2:] if result.startswith("00") else result
+
+    def value(name, alias=None):
+        key = alias or name
+        nested = snapshot.get(key)
+        top = row.get(name)
+        if key in snapshot:
+            if top is not None:
+                a, b = top, nested if nested is not None else ""
+                same = digits(a) == digits(b) if name == "guest_phone" and a and b else a == b
+                if not same:
+                    raise ContactMismatch("source20_materialized_contact_conflict")
+            selected = nested  # Empty is a real clear, not permission to restore old PII.
+        else:
+            selected = top
+        return "" if selected is None else selected
+
+    generation = row["recipient_generation"]
+    if type(generation) is not int or generation < 1:
+        raise ContactMismatch("source20_generation_invalid")
+    phone = _phone("+" + digits(value("guest_phone", "phone")))
+    first, last = value("guest_first_name"), value("guest_last_name")
+    if not first and not last:
+        first = value("guest_name")  # Preserve full name; do not guess a split.
+    if not isinstance(row["change_type"], str):
+        raise ContactMismatch("source20_change_type_unknown")
+    kind = {
+        "new_booking": "new_booking",
+        "phone_change": "phone_update",
+        "personal_update": "personal_update",
+        "stay_dates_change": "personal_update",  # Contact subprojection only.
+        "first_observed_update": "personal_update",
+        "migration": "personal_update",
+        "cancellation": "cancelled",
+    }.get(row["change_type"])
+    if kind is None:
+        raise ContactMismatch("source20_change_type_unknown")
+    return {
+        "contract": CONTRACT,
+        "chain_id": str(chain_id),
+        "current": {
+            **{key: row[key] for key in metadata if key != "change_type"},
+            "listing_map_id": value("listing_map_id"),
+            "change_type": kind,
+            "contact": {
+                "first_name": first,
+                "last_name": last,
+                "email": value("guest_email"),
+                "phone": phone,
+                "language": value("guest_language"),
+                "address": {
+                    "billing_street1": value("guest_address"),
+                    "billing_city": value("guest_city"),
+                    "billing_state": "",  # Source20 has no separate state column.
+                    "billing_country": value("guest_country"),
+                    "billing_postcode": value("guest_postal_code"),
+                },
+            },
+        },
+    }
 
 
 def financial_fingerprint_v2(reservation):

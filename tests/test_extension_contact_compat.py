@@ -1,5 +1,6 @@
 """Candidate-only source compatibility: synthetic data, no producer or provider."""
 
+import hashlib
 import json
 import os
 from copy import deepcopy
@@ -17,11 +18,13 @@ from apps.payments.payment_links import fingerprint as legacy_fingerprint
 from apps.reservations.extension_contact_compat import (
     ADDRESS_LIMITS,
     CONTRACT,
+    SOURCE20_CONTRACT,
     ContactMismatch,
     extension_modification_values,
     financial_fingerprint_v2,
     project_current_contact,
     recipient_message_key,
+    source20_contact_packet,
 )
 from apps.reservations.stay_extensions import chain_context, refresh_chain
 from tests import test_stay_extensions as original
@@ -29,6 +32,7 @@ from tests.test_reservation_payment_links import manual_stay
 
 setup_extension = original.setup_extension
 create_child = original.create_child
+SOURCE20_SHA = "f66c6de45e5a7790e4f01b6c8d38a9deaa789c8cca7fdd008bc2fa210f202112"
 
 
 @pytest.fixture(autouse=True)
@@ -88,6 +92,162 @@ def successor(p):
         ).isoformat(),
     )
     return q
+
+
+def source20_row():
+    p = packet(booking="92001")
+    row = {k: v for k, v in p["current"].items() if k not in {"contact"}}
+    row.update(
+        change_type="new_booking",
+        recipient_generation=1,
+        guest_name="Synthetic Corrected",
+        guest_first_name="Synthetic",
+        guest_last_name="Corrected",
+        guest_phone="966500000000",
+        guest_email="corrected@example.invalid",
+        guest_address="10 Test Road\nRiyadh",
+        guest_city="Riyadh",
+        guest_country="SA",
+        guest_postal_code="12345",
+        guest_language="ar",
+    )
+    row["snapshot"] = {
+        "row_id": row["row_id"],
+        "reservation_key": row["reservation_key"],
+        "reservation_revision": row["revision"],
+        "scenario": row["scenario"],
+        "event_key": row["event_key"],
+        "recipient_generation": 1,
+        "phone": row["guest_phone"],
+        "listing_map_id": row["listing_map_id"],
+        **{k: v for k, v in row.items() if k.startswith("guest_") and k != "guest_phone"},
+        "door_code": "private field must not be copied",
+    }
+    return p["chain_id"], row
+
+
+def adapt(row, chain_id, previous=None, *, scenario="01"):
+    mapped = source20_contact_packet(row, chain_id=chain_id, contract_version=SOURCE20_CONTRACT)
+    return project_current_contact(
+        mapped,
+        chain_id=chain_id,
+        listing_map_id=8001,
+        scenario=scenario,
+        member_keys={"91001", "92001"},
+        baseline_phone="+966500000000",
+        baseline_generation=1,
+        previous=previous,
+    )
+
+
+@pytest.mark.parametrize("phone", ["966500000000", "+966 50 000 0000", "00966500000000"])
+@pytest.mark.parametrize("scenario", ["01", "06"])
+def test_actual_source20_contract_and_phone_formats_keep_its_initial_generation(phone, scenario):
+    path = Path(__file__).parent / "fixtures/source20-current-row-contract-20261128.json"
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest() == SOURCE20_SHA
+    contract = json.loads(raw)
+    assert contract["contract_version"] == SOURCE20_CONTRACT
+    chain_id, row = source20_row()
+    row["scenario"] = row["snapshot"]["scenario"] = scenario
+    assert set(contract["row_identity"]) <= set(row)
+    assert set(contract["contact_fields"]) <= set(row)
+    row["guest_phone"] = phone
+    result = adapt(row, chain_id, scenario=scenario)
+    assert result.recipient_generation == 1 and result.contact()["phone"] == "+966500000000"
+    assert result.contact()["address"]["billing_street1"] == "10 Test Road\nRiyadh"
+    assert "private field" not in result.contact_json
+
+
+def test_source20_snapshot_fallback_and_conflicting_materialized_contact_are_distinct():
+    chain_id, row = source20_row()
+    row["guest_email"] = None
+    assert adapt(row, chain_id).contact()["email"] == "corrected@example.invalid"
+    row["guest_email"] = "conflicting@example.invalid"
+    with pytest.raises(ContactMismatch, match="source20_materialized_contact_conflict"):
+        adapt(row, chain_id)
+    row["guest_email"] = None
+    row["snapshot"]["reservation_revision"] = 999
+    with pytest.raises(ContactMismatch, match="source20_snapshot_identity_conflict"):
+        adapt(row, chain_id)
+
+
+def test_source20_explicit_clear_cannot_restore_an_older_materialized_email():
+    chain_id, row = source20_row()
+    row["snapshot"]["guest_email"] = ""
+    with pytest.raises(ContactMismatch, match="source20_materialized_contact_conflict"):
+        adapt(row, chain_id)
+    row["guest_email"] = None
+    assert adapt(row, chain_id).contact()["email"] == ""
+
+
+def test_current_version_predecessor_can_share_provider_timestamp_without_retiming():
+    chain_id, row = source20_row()
+    first = adapt(row, chain_id)
+    next_row = deepcopy(row)
+    next_row.update(
+        row_id=str(uuid4()),
+        previous_row_id=row["row_id"],
+        revision=2,
+        event_key="v3:92001:2",
+        change_type="personal_update",
+        guest_email="new@example.invalid",
+    )
+    next_row["snapshot"] = {}
+    current = adapt(next_row, chain_id, first)
+    assert current.source_updated_at == first.source_updated_at
+    assert current.recipient_generation == first.recipient_generation
+
+
+def test_source20_phone_change_and_cancellation_carry_keep_generation_two(tmp_path):
+    chain_id, row = source20_row()
+    initial = adapt(row, chain_id)
+    corrected = deepcopy(row)
+    corrected.update(
+        row_id=str(uuid4()),
+        previous_row_id=row["row_id"],
+        revision=2,
+        event_key="v3:92001:2",
+        source_updated_at="2026-11-28T01:00:00+00:00",
+        change_type="phone_change",
+        recipient_generation=2,
+        guest_phone="966551234567",
+    )
+    corrected["snapshot"] = {}  # Full materialized projection, no alias fallback needed.
+    phone = adapt(corrected, chain_id, initial)
+    cancelled = deepcopy(corrected)
+    cancelled.update(
+        row_id=str(uuid4()),
+        previous_row_id=corrected["row_id"],
+        revision=3,
+        event_key="v3:92001:3",
+        source_updated_at="2026-11-28T02:00:00+00:00",
+        change_type="cancellation",
+    )
+    carried = adapt(cancelled, chain_id, phone)
+    assert carried.recipient_generation == 2
+    assert carried.contact()["phone"] == "+966551234567"
+    out = Path(os.environ.get("LSA_EXTENSION_CONTACT_FIXTURE_DIR", tmp_path))
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "source20-current-row.synthetic.json").write_text(
+        json.dumps(
+            {
+                "synthetic_only": True,
+                "source20_contract_sha256": SOURCE20_SHA,
+                "chain_id": chain_id,
+                "rows": [row, corrected, cancelled],
+                "expected_generations": [1, 2, 2],
+                "expected_contact_bindings": [
+                    initial.binding_sha256,
+                    phone.binding_sha256,
+                    carried.binding_sha256,
+                ],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
 
 def test_personal_version_changes_contact_without_new_recipient_or_message_identity():
@@ -228,7 +388,7 @@ def test_conflicting_duplicate_and_stale_or_wrong_predecessor_cannot_replace_cur
     q["current"]["previous_row_id"] = str(uuid4())
     with pytest.raises(ContactMismatch, match="contact_version_chain_mismatch"):
         project(q, current)
-    q["current"]["source_updated_at"] = p["current"]["source_updated_at"]
+    q["current"]["source_updated_at"] = "2026-11-27T00:00:00+00:00"
     with pytest.raises(ContactMismatch, match="stale_or_ambiguous_contact"):
         project(q, current)
 

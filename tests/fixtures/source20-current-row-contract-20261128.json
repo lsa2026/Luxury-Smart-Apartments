@@ -1,0 +1,22 @@
+{
+  "contract_version": "yc20-unified-booking-current-1",
+  "status": "isolated_candidate_not_deployed",
+  "physical_table": "public.lsa_v3_reservations",
+  "canonical_booking_id": "reservation_key = Hostaway reservation id; decimal only",
+  "row_identity": ["row_id", "reservation_key", "revision", "previous_row_id", "version_status", "scenario", "event_key", "source_updated_at", "recipient_generation"],
+  "current_predicate": "version_status='current' AND scenario=<owner>",
+  "uniqueness": "One current row per reservation_key globally; old superseded versions retained",
+  "legacy_current_views": {"01": "public.lsa01_reservations_current", "06": "public.lsa06_v3_reservations"},
+  "legacy_view_fields": ["reservation_key", "revision", "fingerprint", "source_updated_at", "snapshot", "event_key", "calendar_status", "lease_owner", "lease_until", "leased_revision", "updated_at"],
+  "contact_fields": ["guest_name", "guest_first_name", "guest_last_name", "guest_phone", "guest_email", "guest_address", "guest_city", "guest_country", "guest_postal_code", "guest_language"],
+  "phone_normalization": "Digits only, remove leading 00; plus/spacing do not create a recipient change",
+  "recipient_generation": "Increment only on a genuinely different normalized phone; copied old recipient events are not delivery to the new recipient",
+  "message_state": "Each message JSON contains current pointer and immutable-identity events; every business-data version copies both; late receipts update matching identities without creating a version",
+  "dispatch_identity": "job_sha256, source_event_key and dispatch revision stay fixed for an unchanged logical message across personal-data versions; current reservation eligibility is checked separately",
+  "phone_authority": {"existing_shape": "yc20-phone-recovery-source-1 exact14 keys retained", "owner": "Resolved from current scenario, never relation existence", "new_notice_lookup": "automation_phone_recovery_authority_v2(reservation_sha256,source_notice_key) returns the same14 fields for the exact accepted notice"},
+  "admin_phone_notice_key": "missing-phone-v1:lsa_v32:<reservationSHA64>:<revision>:<initial|arrival-2-YYYY-MM-DD|arrival-1-YYYY-MM-DD>:<part02>",
+  "admin_phone_windows": "Initial immediately; arrival-2 and arrival-1 at18:00 property-local with durable per-window dedup; no seven-day or migration-date eligibility veto",
+  "phone_write_authority": "New notice capability never resets an old phone write, unknown outcome, manager identity or notification evidence",
+  "extension_notice": "Existing booking update template; child Hostaway id and additional period after verified creation before payment; chain terminal still requires verified payment",
+  "production_dispatch_test": false
+}
