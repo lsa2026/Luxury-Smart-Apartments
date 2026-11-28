@@ -223,6 +223,19 @@ def test_in_memory_root_read_has_short_reuse_and_no_payload_repr(setup_extension
     assert not capsule.reusable(case.extension)
 
 
+def test_revision_is_submitted_without_a_technical_label(setup_extension):
+    from django.urls import reverse
+
+    case = setup_extension
+    response = case.client.get(
+        reverse("notifications:stay_extension_detail", args=[case.extension.pk])
+    )
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert 'name="extension_contact_revision"' in body
+    assert 'for="id_extension_contact_revision"' not in body
+
+
 @pytest.mark.skipif(connection.vendor != "postgresql", reason="Requires real PostgreSQL row locks")
 @pytest.mark.django_db(transaction=True)
 def test_two_creators_freeze_one_intent_and_one_payload(setup_extension, monkeypatch):
