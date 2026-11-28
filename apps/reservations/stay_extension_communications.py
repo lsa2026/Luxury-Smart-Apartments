@@ -257,6 +257,8 @@ def context(extension, *, verify_live=True, client=None, _retry=True):
 @require_GET
 @never_cache
 def read_context(request, extension_id):
+    from .extension_created_basis import created_booking_update_basis
+
     token = request.headers.get("X-LSA-Extension-Token", "")
     try:
         claims = signing.loads(token, salt=SALT, max_age=500 * 86400)
@@ -287,6 +289,7 @@ def read_context(request, extension_id):
         source_event_id=str(event.pk) if event else None,
         source_event_revision=event.revision if event else None,
         source_event_kind=event.kind if event else None,
+        created_booking_update_basis=created_booking_update_basis(extension, event, values),
     )
     response = JsonResponse(values)
     response["Referrer-Policy"] = "no-referrer"
