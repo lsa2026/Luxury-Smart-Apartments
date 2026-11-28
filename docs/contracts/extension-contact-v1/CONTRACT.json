@@ -1,0 +1,97 @@
+{
+  "contract": "site01-extension-contact-provenance-1",
+  "status": "closed_compatibility_candidate_not_deployed",
+  "database_field": "reservations.ManualBookingDraft.extension_contact_provenance",
+  "migration": "0046_manualbookingdraft_extension_contact_provenance",
+  "default": {},
+  "historical_provenance_backfill": false,
+  "record_keys": [
+    "contract",
+    "draft_id",
+    "root_hostaway_reservation_id",
+    "stay_chain_id",
+    "chain_revision",
+    "revision",
+    "source_hostaway_reservation_id",
+    "baseline_hmac",
+    "explicit_fields",
+    "field_sources"
+  ],
+  "field_keys": [
+    "guest_first_name",
+    "guest_last_name",
+    "guest_email",
+    "guest_phone",
+    "guest_language",
+    "billing_street1",
+    "billing_city",
+    "billing_state",
+    "billing_postcode",
+    "billing_country"
+  ],
+  "field_source_kinds": [
+    "hostaway_root",
+    "selected_hostaway_pending_root",
+    "administrator",
+    "local_saved_address",
+    "unavailable",
+    "default_language"
+  ],
+  "baseline": "keyed SHA256 HMAC per canonical field value, scoped to draft/root/field; no raw contact in provenance",
+  "revision": "positive monotonic site-owned integer; form revision must match locked draft",
+  "transaction": "select_for_update on draft; validate persisted identity/HMAC/origins; current root GET; revalidate merged contact; persist provenance and create fresh intent atomically; build provider payload afterward",
+  "copied_fields": "current root contact; present API billing values including clears outrank stored intent; missing billing fields may use saved address with local_saved_address provenance",
+  "explicit_fields": "retained across saved/rechecked drafts; clear is preserved and must pass existing required-field validation",
+  "existing_intent": "no fresh merge, no rewrite, no new identity or provider retry; existing immutable operation path only",
+  "missing_provenance": "hold before new intent; never infer/backfill authorization for historical draft",
+  "fresh_get_reuse": "in-memory root read only, bound to draft/root/chain revision; reuse within 10 seconds for ownership when previous member is same root; distinct previous child or stale read requires existing verification GET",
+  "provider_read": {
+    "path": "/reservations/stay-extensions/<extension_uuid>/context/",
+    "header": "X-LSA-Extension-Token",
+    "base_contract_version": 1,
+    "additive_key": "provider_context_v2",
+    "contract": "site01-extension-provider-context-2",
+    "keys": [
+      "contract",
+      "root",
+      "child"
+    ],
+    "evidence_keys": [
+      "hostaway_reservation_id",
+      "listing_map_id",
+      "status",
+      "provider_status",
+      "provider_updated_at",
+      "provider_updated_at_raw",
+      "provider_updated_at_field",
+      "contact"
+    ],
+    "contact_keys": [
+      "guest_first_name",
+      "guest_last_name",
+      "guest_email",
+      "guest_phone",
+      "guest_language"
+    ],
+    "extra_context_gets": 0,
+    "unknown_evidence": null,
+    "timestamp": "normalized only if provider value includes explicit offset; raw provider timestamp and field retained; no observed-time or server-zone substitution",
+    "legacy_communication_snapshot": "unchanged until matched Source20/19 cutover"
+  },
+  "created_notice": {
+    "raw_type": "status_modified",
+    "purpose": "booking_change",
+    "template": "lsa_booking_updated_v2",
+    "reference": "created child Hostaway ID",
+    "period": "additional child period",
+    "requires_payment": false,
+    "producer_enabled": false
+  },
+  "authority_boundaries": [
+    "no per-booking recipient_generation invented",
+    "no Supabase connection or key",
+    "no financial request/fingerprint rewrite",
+    "no live guest/provider operation",
+    "no producer/flag/cutover/deployment in candidate"
+  ]
+}

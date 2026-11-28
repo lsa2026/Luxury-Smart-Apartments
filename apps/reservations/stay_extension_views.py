@@ -47,6 +47,7 @@ CURSOR_SALT = "reservations.extension-selector.v1"
 
 
 class ExtensionGuestForm(ManualBookingFinalizeForm):
+    extension_contact_revision = forms.IntegerField(min_value=1, widget=forms.HiddenInput)
     final_total_price = forms.DecimalField(
         label="إجمالي السعر النهائي للتمديد",
         max_digits=14,
@@ -57,6 +58,9 @@ class ExtensionGuestForm(ManualBookingFinalizeForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.initial["extension_contact_revision"] = (
+            getattr(self.draft, "extension_contact_provenance", {}) or {}
+        ).get("revision")
         approved = MorningBillingFields(customer=True)
         for name in ("guest_first_name", "guest_last_name", "guest_email"):
             self.fields[name] = approved.fields[name]
@@ -92,6 +96,7 @@ class ExtensionDatesForm(ExtensionGuestForm):
         )
         super().__init__(*args, draft=draft, require_address=True, **kwargs)
         self.fields.pop("final_total_price")
+        self.fields.pop("extension_contact_revision")
 
 
 def _source_ticket(request, snapshot, *, contact_raw, displayed_values):
@@ -140,6 +145,18 @@ def source_list(request):
                     user_id=request.user.pk,
                     root_id=contact_raw["id"],
                 )
+                posted_values = {
+                    **dates_form.cleaned_data,
+                    **dates_form.cleaned_data["billing_address"],
+                }
+                posted_hashes = field_provenance(
+                    posted_values, user_id=request.user.pk, root_id=contact_raw["id"]
+                )
+                explicit_fields = {
+                    key
+                    for key, value in posted_hashes.items()
+                    if value != ticket["contact_fields"][key]
+                }
                 # Validate the merged current fields as strictly as owner input.
                 check = ExtensionDatesForm(
                     {**request.POST.dict(), **guest_data, **guest_data["billing_address"]}
@@ -162,6 +179,8 @@ def source_list(request):
                     guests=dates_form.cleaned_data["guests"],
                     actor=request.user,
                     guest_data=check.cleaned_data,
+                    contact_source=contact_raw,
+                    explicit_contact_fields=explicit_fields,
                 )
                 record_audit(
                     request=request,
@@ -373,7 +392,12 @@ def detail(request, extension_id):
                     return redirect(
                         "notifications:stay_extension_detail", extension_id=extension.pk
                     )
-                form.add_error(None, "انتهت صلاحية السعر أو تعذر اعتماده. أعد فحص التوفر أولًا.")
+                form.add_error(
+                    None,
+                    "تغيرت بيانات المراجعة. أعد فتح الصفحة وراجع بيانات الضيف قبل اعتمادها."
+                    if result.code == "extension_contact_requires_review"
+                    else "انتهت صلاحية السعر أو تعذر اعتماده. أعد فحص التوفر أولًا.",
+                )
         else:
             messages.error(request, "لا يمكن تنفيذ هذا الإجراء في الحالة الحالية.")
     extension.refresh_from_db()

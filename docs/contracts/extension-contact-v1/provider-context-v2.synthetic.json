@@ -1,0 +1,35 @@
+{
+  "contract": "site01-extension-provider-context-2",
+  "root": {
+    "hostaway_reservation_id": 91001,
+    "listing_map_id": 8001,
+    "status": "confirmed",
+    "provider_status": "new",
+    "provider_updated_at": "2026-11-28T06:00:00+00:00",
+    "provider_updated_at_raw": "2026-11-28T06:00:00Z",
+    "provider_updated_at_field": "updatedOn",
+    "contact": {
+      "guest_first_name": "Synthetic",
+      "guest_last_name": "Root",
+      "guest_email": "root@example.invalid",
+      "guest_phone": "+966500000000",
+      "guest_language": "ar"
+    }
+  },
+  "child": {
+    "hostaway_reservation_id": 92001,
+    "listing_map_id": 8001,
+    "status": "confirmed",
+    "provider_status": "new",
+    "provider_updated_at": "2026-11-28T06:01:00+00:00",
+    "provider_updated_at_raw": "2026-11-28T06:01:00Z",
+    "provider_updated_at_field": "updatedOn",
+    "contact": {
+      "guest_first_name": "Synthetic",
+      "guest_last_name": "Child",
+      "guest_email": "child@example.invalid",
+      "guest_phone": "+966551234567",
+      "guest_language": "ar"
+    }
+  }
+}

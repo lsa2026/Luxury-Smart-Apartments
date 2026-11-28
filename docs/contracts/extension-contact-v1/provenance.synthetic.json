@@ -1,0 +1,40 @@
+{
+  "synthetic_only": true,
+  "not_an_authority_or_live_record": true,
+  "provenance": {
+    "contract": "site01-extension-contact-provenance-1",
+    "draft_id": "20000000-0000-4000-8000-000000000002",
+    "root_hostaway_reservation_id": 91001,
+    "stay_chain_id": "10000000-0000-4000-8000-000000000001",
+    "chain_revision": 7,
+    "revision": 2,
+    "source_hostaway_reservation_id": 91001,
+    "baseline_hmac": {
+      "guest_first_name": "5576b4454ad7f5c98520b797b3ee0fb8ab969e296f6dfef343b517d7b339eb7d",
+      "guest_last_name": "826863470e72a275765e555d1781a5d0f9f73cc67d0ea42d1d4d27a2e32f0fb3",
+      "guest_email": "e94a940fc6a9178705b8acc16213890f29ae5a5200f2cf1ad1fd278f6cbf89e8",
+      "guest_phone": "e5022ca92c1d8612c30797ced2225a7b0dec5aab48c66a2d4451bf1952924991",
+      "guest_language": "81b138ad096bd80b47b898e0381c31336b7d1c68c386dc4091d7a28e6a819124",
+      "billing_street1": "0d70923b498d464dece55a242c365f2916440a4623241f427a3a0d9884a35b55",
+      "billing_city": "e9f95443ecc9de806a49771c1ef5be07dd917754462f484cc1ceaa933bb2ca43",
+      "billing_state": "acb2b00beba94618bbffba24d4b0cc5d53a16e3d863161f3807b98f75eae262d",
+      "billing_postcode": "bd12d71ae1a7084895c87e9726974c3860dff113fce35928812c0cdf8495afee",
+      "billing_country": "c1cecfa38993ec15a817ca3dc65812c752356f1b39f76ec9c34c80c847f46d8d"
+    },
+    "explicit_fields": [
+      "guest_email"
+    ],
+    "field_sources": {
+      "guest_first_name": "hostaway_root",
+      "guest_last_name": "hostaway_root",
+      "guest_email": "administrator",
+      "guest_phone": "hostaway_root",
+      "guest_language": "hostaway_root",
+      "billing_street1": "hostaway_root",
+      "billing_city": "hostaway_root",
+      "billing_state": "hostaway_root",
+      "billing_postcode": "hostaway_root",
+      "billing_country": "hostaway_root"
+    }
+  }
+}

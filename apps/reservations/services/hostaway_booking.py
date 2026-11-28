@@ -131,6 +131,8 @@ class HostawayBookingService:
     def create_manual_reservation_before_payment(
         self,
         reservation: Reservation,
+        *,
+        extension_root_read=None,
     ) -> ReservationCreationOutcome:
         """Create an owner-approved booking in Hostaway before its manual payment.
 
@@ -144,6 +146,7 @@ class HostawayBookingService:
             reservation,
             require_successful_payment=False,
             allow_manual_price_override=True,
+            extension_root_read=extension_root_read,
         )
 
     def create_points_reservation(self, reservation: Reservation) -> ReservationCreationOutcome:
@@ -167,6 +170,7 @@ class HostawayBookingService:
         *,
         require_successful_payment: bool,
         allow_manual_price_override: bool,
+        extension_root_read=None,
     ) -> ReservationCreationOutcome:
         if not settings.HOSTAWAY_LIVE_BOOKING_ENABLED:
             return self._block(reservation, "hostaway_live_booking_disabled")
@@ -219,7 +223,7 @@ class HostawayBookingService:
 
         from apps.reservations.stay_extensions import prepare_ownership
 
-        if not prepare_ownership(reservation, client=self.client):
+        if not prepare_ownership(reservation, client=self.client, root_read=extension_root_read):
             return self._block(reservation, "extension_ownership_requires_review")
 
         operation, can_send = self._prepare_operation(reservation, availability)

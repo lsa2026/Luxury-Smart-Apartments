@@ -125,6 +125,7 @@ def test_root_selection_reuses_get_and_child_selection_reads_root(setup_extensio
     assert root_contact_source(case.raw) == case.raw
     reader.assert_not_called()
     result, _, _ = create_child(case, monkeypatch)
+    reader.reset_mock()
     child = {
         **case.raw,
         "id": result.reservation.hostaway_reservation_id,

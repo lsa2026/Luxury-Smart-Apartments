@@ -176,7 +176,17 @@ def billing_initial(raw):
     }
 
 
-def start_extension(*, raw, check_out, guests, actor, guest_data=None, availability_service=None):
+def start_extension(
+    *,
+    raw,
+    check_out,
+    guests,
+    actor,
+    guest_data=None,
+    availability_service=None,
+    contact_source=None,
+    explicit_contact_fields=None,
+):
     from .manual_bookings import create_manual_booking_draft
 
     snapshot, property_obj = eligible_source(raw)
@@ -247,6 +257,29 @@ def start_extension(*, raw, check_out, guests, actor, guest_data=None, availabil
             draft=draft,
             created_by=actor,
         )
+        from .extension_contact_source import (
+            changed_fields,
+            contact_values,
+            draft_contact_values,
+            make_draft_provenance,
+            source_field_origins,
+        )
+
+        contact_source = contact_source or raw
+        if contact_source["id"] not in {snapshot["id"], chain.root_hostaway_reservation_id}:
+            raise ValueError("contact_source_identity_mismatch")
+        explicit = (
+            explicit_contact_fields
+            if explicit_contact_fields is not None
+            else changed_fields(contact_values(contact_source), draft_contact_values(draft))
+        )
+        draft.extension_contact_provenance = make_draft_provenance(
+            extension,
+            explicit_fields=explicit,
+            source_id=contact_source["id"],
+            source_fields=source_field_origins(contact_source, chain.root_hostaway_reservation_id),
+        )
+        draft.save(update_fields=["extension_contact_provenance", "updated_at"])
         return extension
 
 
@@ -587,7 +620,7 @@ def recover_pending(limit=3):
         deliver_events(extension_id)
 
 
-def prepare_ownership(reservation, *, client=None, transport=None):
+def prepare_ownership(reservation, *, client=None, transport=None, root_read=None):
     """Mandatory exact ownership ACK before provider POST. Unrelated stays no-op."""
     from .stay_extension_communications import acknowledge_ownership
 
@@ -613,7 +646,11 @@ def prepare_ownership(reservation, *, client=None, transport=None):
     if current.hostaway_reservation_id:
         return True
     try:
-        raw = read_source(extension.previous_hostaway_reservation_id, client=client)
+        raw = (
+            root_read.raw
+            if root_read is not None and root_read.reusable(extension)
+            else read_source(extension.previous_hostaway_reservation_id, client=client)
+        )
         snapshot = source_snapshot(raw)
         if (
             snapshot != extension.previous_snapshot

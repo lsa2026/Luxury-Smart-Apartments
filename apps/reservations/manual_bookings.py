@@ -224,6 +224,16 @@ def finalize_manual_booking_draft(
             return ManualBookingDraftFinalization("not_found")
         if draft.status != ManualBookingDraft.Status.QUOTED:
             return ManualBookingDraftFinalization("not_editable", draft)
+        from .extension_contact_source import make_draft_provenance, provenance_for_save
+        from .models import StayExtension
+
+        extension = StayExtension.objects.select_related("chain").filter(draft=draft).first()
+        if extension:
+            extension.draft = draft
+            try:
+                explicit_fields = provenance_for_save(extension, guest_data)
+            except ValueError:
+                return ManualBookingDraftFinalization("extension_contact_requires_review", draft)
         if (
             draft.quote.status != BookingQuote.Status.ACTIVE
             or draft.quote.is_expired
@@ -293,6 +303,14 @@ def finalize_manual_booking_draft(
         except ValidationError:
             return ManualBookingDraftFinalization("invalid_attribution", draft)
         draft.status = ManualBookingDraft.Status.READY_FOR_PAYMENT
+        if extension:
+            previous = draft.extension_contact_provenance
+            draft.extension_contact_provenance = make_draft_provenance(
+                extension,
+                explicit_fields=explicit_fields,
+                source_id=previous["source_hostaway_reservation_id"],
+                revision=previous["revision"] + 1,
+            )
         draft.full_clean()
         draft.save()
     return ManualBookingDraftFinalization("ready_for_payment", draft)
@@ -312,6 +330,7 @@ def create_manual_booking_in_hostaway(
 
     from .models import StayExtension
 
+    root_read = None
     with transaction.atomic():
         draft = (
             ManualBookingDraft.objects.select_for_update()
@@ -342,6 +361,17 @@ def create_manual_booking_in_hostaway(
 
         intent = existing_intent
         if intent is None:
+            if extension:
+                from .extension_contact_source import refresh_before_new_intent
+
+                extension.draft = draft
+                try:
+                    with transaction.atomic():
+                        root_read = refresh_before_new_intent(
+                            extension, client=booking_service.client if booking_service else None
+                        )
+                except Exception:
+                    return ManualBookingHostawayCreation("extension_contact_requires_review", draft)
             billing_address = draft.billing_address or {}
             if billing_address:
                 billing = BillingAddressForm(billing_address)
@@ -400,9 +430,13 @@ def create_manual_booking_in_hostaway(
 
     if booking_service is None:
         with HostawayBookingService() as service:
-            outcome = service.create_manual_reservation_before_payment(reservation)
+            outcome = service.create_manual_reservation_before_payment(
+                reservation, **({"extension_root_read": root_read} if root_read else {})
+            )
     else:
-        outcome = booking_service.create_manual_reservation_before_payment(reservation)
+        outcome = booking_service.create_manual_reservation_before_payment(
+            reservation, **({"extension_root_read": root_read} if root_read else {})
+        )
 
     if outcome.code not in {"confirmed", "awaiting_payment", "already_confirmed"}:
         return ManualBookingHostawayCreation(outcome.code, draft, outcome.reservation)
