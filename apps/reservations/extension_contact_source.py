@@ -11,6 +11,7 @@ from time import monotonic
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.utils.dateparse import parse_datetime
+from django.utils.html import strip_tags
 
 from apps.core.phone_numbers import InvalidPhoneNumber, normalize_booking_phone
 from apps.integrations.hostaway.reservation_validators import validate_reservation_response
@@ -87,6 +88,8 @@ def contact_values(raw):
 
 def _canonical(field, value):
     value = str(value or "").strip()
+    if field in {"guest_first_name", "guest_last_name"}:
+        value = "".join(char for char in strip_tags(value) if char.isprintable()).strip()
     if field == "guest_phone" and value:
         try:
             return normalize_booking_phone(value)

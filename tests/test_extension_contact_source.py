@@ -103,6 +103,18 @@ def test_phone_formatting_is_not_an_explicit_override(setup_extension):
     assert result["guest_phone"] == raw["phone"]
 
 
+def test_automatic_name_cleanup_does_not_become_an_explicit_override(setup_extension):
+    raw = address(setup_extension.raw)
+    raw["guestFirstName"] = "<b>اسم</b>"
+    old = contact_values(raw)
+    data = submitted(old)
+    data["guest_first_name"] = "اسم"
+    baseline = field_provenance(old, user_id=1, root_id=raw["id"])
+    raw["guestFirstName"] = "حديث"
+    result = merge_contact_fields(data, raw, baseline=baseline, user_id=1, root_id=raw["id"])
+    assert result["guest_first_name"] == "حديث"
+
+
 def test_provenance_is_required_and_root_bound(setup_extension):
     raw = address(setup_extension.raw)
     values = contact_values(raw)
