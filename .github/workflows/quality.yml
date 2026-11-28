@@ -95,6 +95,7 @@ jobs:
           tests/test_contact_draft_api.py
           tests/test_contact_inbox_navigation.py
           tests/test_sama_booking_api.py
+          tests/test_sama_day_use_availability.py
           tests/test_sama_invoices.py
           tests/test_sama_invoice_source.py
           tests/test_manual_booking_operations_phase61.py

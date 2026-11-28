@@ -133,9 +133,23 @@ def health(request):
             "guest_context",
             "guest_history",
             "next_availability",
+            "day_use_availability",
         ]
         + (["guest_invoices"] if getattr(settings, "SAMA_INVOICES_ENABLED", False) else []),
     )
+
+
+@authenticated("GET")
+def day_use_availability(request):
+    from .services.sama_day_use_availability import availability
+
+    if request.GET or request.body:
+        return response("invalid_request", 400)
+    result, status_code = availability()
+    result = JsonResponse(result, status=status_code)
+    result["Cache-Control"] = "no-store, private"
+    result["Referrer-Policy"] = "no-referrer"
+    return result
 
 
 @authenticated("POST")
