@@ -260,6 +260,23 @@ def test_missing_catalog_is_unknown_not_empty(rig):
     assert read().status_code == 503
 
 
+@pytest.mark.parametrize("field", ["id", "listingMapId", "status", "arrivalDate", "departureDate"])
+def test_invalid_field_shapes_never_put_a_provider_body_in_the_inventory_cache(rig, field):
+    p = property_obj()
+    row = {
+        "id": 1001,
+        "listingMapId": p.hostaway_listing_map_id,
+        "status": "new",
+        "arrivalDate": "2026-11-27",
+        "departureDate": "2026-11-29",
+    }
+    row[field] = {"phone": "private-provider-body"}
+    rig.remote.guest_stay_page.return_value = [row]
+    response = read()
+    assert response.status_code == 503
+    assert "private-provider-body" not in str(cache._cache)
+
+
 @pytest.mark.parametrize(
     "model,key", [(DayUseStay, "hostaway_day_use"), (MorningStay, "hostaway_morning")]
 )

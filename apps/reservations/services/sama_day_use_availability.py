@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from apps.integrations.hostaway.client import HostawayClient
 from apps.integrations.hostaway.exceptions import HostawayError
+from apps.integrations.hostaway.reservation_validators import normalize_hostaway_reservation_status
 from apps.properties.models import Property
 from apps.reservations.day_use_stays import (
     DayUseStayError,
@@ -50,6 +51,30 @@ def digest(value):
 
 class SourceUnavailable(ValueError):
     pass
+
+
+def occupancy_projection(row):
+    safe = {
+        name: row.get(name) if type(row.get(name)) is int else None
+        for name in ("id", "listingMapId")
+    }
+    status = row.get("status")
+    safe["status"] = (
+        normalize_hostaway_reservation_status(status)
+        if isinstance(status, str) and len(status) <= 64
+        else "unknown"
+    )
+    for name in ("arrivalDate", "departureDate"):
+        value = row.get(name)
+        try:
+            safe[name] = (
+                datetime.fromisoformat(value).date().isoformat()
+                if isinstance(value, str) and len(value) <= 32
+                else None
+            )
+        except ValueError:
+            safe[name] = None
+    return safe
 
 
 class Reader:
@@ -92,13 +117,7 @@ class Reader:
                 or any(not isinstance(row, dict) for row in rows)
             ):
                 raise SourceUnavailable
-            safe = [
-                {
-                    name: row.get(name)
-                    for name in ("id", "listingMapId", "status", "arrivalDate", "departureDate")
-                }
-                for row in rows
-            ]
+            safe = [occupancy_projection(row) for row in rows]
             return safe, safe
 
         return self.read(
