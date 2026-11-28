@@ -5,6 +5,15 @@ from django.db.migrations.executor import MigrationExecutor
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
+@pytest.fixture(autouse=True)
+def restore_current_schema_after_migration_test():
+    latest = MigrationExecutor(connection).loader.graph.leaf_nodes()
+    try:
+        yield
+    finally:
+        MigrationExecutor(connection).migrate(latest)
+
+
 def test_listing_identifier_rename_migrations_preserve_data() -> None:
     executor = MigrationExecutor(connection)
     executor.migrate([("properties", "0001_initial")])

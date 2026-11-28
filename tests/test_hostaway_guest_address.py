@@ -177,16 +177,16 @@ def test_extension_child_uses_saved_correction_address_and_never_changes_ota_par
     assert not ext.Reservation.objects.filter(hostaway_reservation_id=original["id"]).exists()
 
 
-def test_extension_without_address_remains_creatable_without_placeholders(
+def test_extension_address_mutation_requires_reapproval_before_creation(
     setup_extension, monkeypatch
 ):
     case = setup_extension
     ext.finalize(case)
     type(case.extension.draft).objects.filter(pk=case.extension.draft_id).update(billing_address={})
     result, remote, _ = ext.create_child(case, monkeypatch)
-    assert result.code == "created" and len(remote.posts) == 1
-    assert ADDRESS_KEYS.isdisjoint(remote.posts[0])
-    assert remote.posts[0]["guestEmail"] == "corrected@example.invalid"
+    assert result.code == "extension_contact_requires_review"
+    assert not remote.posts
+    assert not ext.Reservation.objects.exists()
 
 
 def test_existing_created_reservation_never_posts_again_for_changed_address(booking, settings):

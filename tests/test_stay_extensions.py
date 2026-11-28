@@ -149,6 +149,9 @@ def finalize(case):
         draft_id=case.extension.draft_id,
         final_total_price=Decimal("500.25"),
         guest_data={
+            "extension_contact_revision": case.extension.draft.extension_contact_provenance[
+                "revision"
+            ],
             "guest_first_name": "ضيف",
             "guest_last_name": "مصحح",
             "guest_email": "corrected@example.invalid",
@@ -172,6 +175,11 @@ class FakeHostaway:
         self.posts = []
 
     def get_reservation_invoice_data(self, reservation_id):
+        if reservation_id == self.case.extension.chain.root_hostaway_reservation_id:
+            return {
+                "status": "success",
+                "result": dict(getattr(self.case, "root_raw", self.case.raw)),
+            }
         assert reservation_id == self.case.raw["id"]
         return {"status": "success", "result": dict(self.case.raw)}
 
@@ -410,7 +418,8 @@ def test_parent_changed_blocks_before_ownership_or_provider_write(setup_extensio
     result = create_manual_booking_in_hostaway(
         draft_id=case.extension.draft_id, booking_service=service
     )
-    assert result.code == "extension_ownership_requires_review" and provider.posts == []
+    assert result.code == "extension_contact_requires_review" and provider.posts == []
+    assert not Reservation.objects.exists()
 
 
 def test_cancelled_child_restores_original_and_changed_active_dates_require_review(
@@ -519,6 +528,7 @@ def test_chain_never_uses_maximum_checkout_across_cancelled_gap(
         new_id=93001,
         guest_phone_override="+966551234567",
         guest_language_override="en",
+        root_raw=first.raw,
     )
     create_child(second, monkeypatch)
     first.extension.refresh_from_db()
